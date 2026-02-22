@@ -23,16 +23,19 @@
       "changes": {
         "dataset_catalog": {
           "action": "skip",
+          "reason": "input_only",
           "old": "main",
           "new": "main"
         },
         "dataset_schema": {
           "action": "skip",
+          "reason": "input_only",
           "old": "default",
           "new": "default"
         },
         "etag": {
           "action": "skip",
+          "reason": "custom",
           "old": [ETAG],
           "remote": [ETAG]
         },

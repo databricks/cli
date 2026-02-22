@@ -51,6 +51,9 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 		return errors.New("please specify --auto-approve since terminal does not support interactive prompts")
 	}
 
+	// Check if context is already initialized (e.g., when called from apps delete override)
+	skipInitContext := logdiag.IsSetup(cmd.Context())
+
 	opts := utils.ProcessOptions{
 		InitFunc: func(b *bundle.Bundle) {
 			// If `--force-lock` is specified, force acquisition of the deployment lock.
@@ -59,8 +62,9 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 			// If `--auto-approve`` is specified, we skip confirmation checks
 			b.AutoApprove = autoApprove
 		},
-		AlwaysPull: true,
-		// Do we need initialize phase here?
+		// Skip context initialization if already initialized by parent command
+		SkipInitContext: skipInitContext,
+		AlwaysPull:      true,
 	}
 
 	b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)

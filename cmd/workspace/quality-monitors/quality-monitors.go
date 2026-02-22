@@ -20,8 +20,12 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "quality-monitors",
-		Short: `A monitor computes and monitors data or model quality metrics for a table over time.`,
-		Long: `A monitor computes and monitors data or model quality metrics for a table over
+		Short: `Deprecated: Please use the Data Quality Monitors API instead (REST: /api/data-quality/v1/monitors), which manages both Data Profiling and Anomaly Detection.`,
+		Long: `Deprecated: Please use the Data Quality Monitors API instead (REST:
+  /api/data-quality/v1/monitors), which manages both Data Profiling and Anomaly
+  Detection.
+
+  A monitor computes and monitors data or model quality metrics for a table over
   time. It generates metrics tables and a dashboard that you can use to monitor
   table health and set alerts. Most write operations require the user to be the
   owner of the table (or its parent schema or parent catalog). Viewing the
@@ -69,7 +73,8 @@ func newCancelRefresh() *cobra.Command {
 	cmd.Short = `Cancel refresh.`
 	cmd.Long = `Cancel refresh.
 
-  Cancels an already-initiated refresh job.
+  Deprecated: Use Data Quality Monitors API instead
+  (/api/data-quality/v1/monitors). Cancels an already-initiated refresh job.
 
   Arguments:
     TABLE_NAME: UC table name in format catalog.schema.table_name. table_name is case
@@ -150,7 +155,9 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create a table monitor.`
 	cmd.Long = `Create a table monitor.
 
-  Creates a new monitor for the specified table.
+  Deprecated: Use Data Quality Monitors API instead
+  (/api/data-quality/v1/monitors). Creates a new monitor for the specified
+  table.
 
   The caller must either: 1. be an owner of the table's parent catalog, have
   **USE_SCHEMA** on the table's parent schema, and have **SELECT** access on the
@@ -196,7 +203,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -247,7 +254,8 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a table monitor.`
 	cmd.Long = `Delete a table monitor.
 
-  Deletes a monitor for the specified table.
+  Deprecated: Use Data Quality Monitors API instead
+  (/api/data-quality/v1/monitors). Deletes a monitor for the specified table.
 
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
@@ -316,7 +324,8 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a table monitor.`
 	cmd.Long = `Get a table monitor.
 
-  Gets a monitor for the specified table.
+  Deprecated: Use Data Quality Monitors API instead
+  (/api/data-quality/v1/monitors). Gets a monitor for the specified table.
 
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
@@ -384,7 +393,9 @@ func newGetRefresh() *cobra.Command {
 	cmd.Short = `Get refresh.`
 	cmd.Long = `Get refresh.
 
-  Gets info about a specific monitor refresh using the given refresh ID.
+  Deprecated: Use Data Quality Monitors API instead
+  (/api/data-quality/v1/monitors). Gets info about a specific monitor refresh
+  using the given refresh ID.
 
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
@@ -454,8 +465,9 @@ func newListRefreshes() *cobra.Command {
 	cmd.Short = `List refreshes.`
 	cmd.Long = `List refreshes.
 
-  Gets an array containing the history of the most recent refreshes (up to 25)
-  for this table.
+  Deprecated: Use Data Quality Monitors API instead
+  (/api/data-quality/v1/monitors). Gets an array containing the history of the
+  most recent refreshes (up to 25) for this table.
 
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
@@ -526,7 +538,9 @@ func newRegenerateDashboard() *cobra.Command {
 	cmd.Short = `Regenerate a monitoring dashboard.`
 	cmd.Long = `Regenerate a monitoring dashboard.
 
-  Regenerates the monitoring dashboard for the specified table.
+  Deprecated: Use Data Quality Monitors API instead
+  (/api/data-quality/v1/monitors). Regenerates the monitoring dashboard for the
+  specified table.
 
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
@@ -563,7 +577,7 @@ func newRegenerateDashboard() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -608,8 +622,9 @@ func newRunRefresh() *cobra.Command {
 	cmd.Short = `Run refresh.`
 	cmd.Long = `Run refresh.
 
-  Queues a metric refresh on the monitor for the specified table. The refresh
-  will execute in the background.
+  Deprecated: Use Data Quality Monitors API instead
+  (/api/data-quality/v1/monitors). Queues a metric refresh on the monitor for
+  the specified table. The refresh will execute in the background.
 
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
@@ -690,7 +705,8 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update a table monitor.`
 	cmd.Long = `Update a table monitor.
 
-  Updates a monitor for the specified table.
+  Deprecated: Use Data Quality Monitors API instead
+  (/api/data-quality/v1/monitors). Updates a monitor for the specified table.
 
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
@@ -735,7 +751,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

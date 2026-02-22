@@ -53,6 +53,10 @@ type DataSourceAlertV2Evaluation struct {
 	Threshold          *DataSourceAlertV2EvaluationThreshold    `json:"threshold,omitempty"`
 }
 
+type DataSourceAlertV2ProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceAlertV2RunAs struct {
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 	UserName             string `json:"user_name,omitempty"`
@@ -75,6 +79,7 @@ type DataSourceAlertV2 struct {
 	LifecycleState    string                           `json:"lifecycle_state,omitempty"`
 	OwnerUserName     string                           `json:"owner_user_name,omitempty"`
 	ParentPath        string                           `json:"parent_path,omitempty"`
+	ProviderConfig    *DataSourceAlertV2ProviderConfig `json:"provider_config,omitempty"`
 	QueryText         string                           `json:"query_text,omitempty"`
 	RunAs             *DataSourceAlertV2RunAs          `json:"run_as,omitempty"`
 	RunAsUserName     string                           `json:"run_as_user_name,omitempty"`

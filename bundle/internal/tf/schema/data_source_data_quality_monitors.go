@@ -68,14 +68,24 @@ type DataSourceDataQualityMonitorsMonitorsDataProfilingConfig struct {
 	WarehouseId                 string                                                                        `json:"warehouse_id,omitempty"`
 }
 
+type DataSourceDataQualityMonitorsMonitorsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceDataQualityMonitorsMonitors struct {
 	AnomalyDetectionConfig *DataSourceDataQualityMonitorsMonitorsAnomalyDetectionConfig `json:"anomaly_detection_config,omitempty"`
 	DataProfilingConfig    *DataSourceDataQualityMonitorsMonitorsDataProfilingConfig    `json:"data_profiling_config,omitempty"`
 	ObjectId               string                                                       `json:"object_id"`
 	ObjectType             string                                                       `json:"object_type"`
+	ProviderConfig         *DataSourceDataQualityMonitorsMonitorsProviderConfig         `json:"provider_config,omitempty"`
+}
+
+type DataSourceDataQualityMonitorsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceDataQualityMonitors struct {
-	Monitors []DataSourceDataQualityMonitorsMonitors `json:"monitors,omitempty"`
-	PageSize int                                     `json:"page_size,omitempty"`
+	Monitors       []DataSourceDataQualityMonitorsMonitors      `json:"monitors,omitempty"`
+	PageSize       int                                          `json:"page_size,omitempty"`
+	ProviderConfig *DataSourceDataQualityMonitorsProviderConfig `json:"provider_config,omitempty"`
 }

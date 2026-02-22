@@ -194,6 +194,8 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
   in a patch request, refer to the type field of the setting returned in the
   :method:settingsv2/listworkspacesettingsmetadata response.
 
+  Note: Page refresh is required for changes to take effect in UI.
+
   Arguments:
     NAME: Name of the setting`
 
@@ -215,7 +217,7 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

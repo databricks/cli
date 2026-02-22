@@ -31,6 +31,7 @@ type DataSourceJobJobSettingsSettingsEmailNotifications struct {
 }
 
 type DataSourceJobJobSettingsSettingsEnvironmentSpec struct {
+	BaseEnvironment    string   `json:"base_environment,omitempty"`
 	Client             string   `json:"client,omitempty"`
 	Dependencies       []string `json:"dependencies,omitempty"`
 	EnvironmentVersion string   `json:"environment_version,omitempty"`
@@ -501,6 +502,7 @@ type DataSourceJobJobSettingsSettingsTaskDashboardTaskSubscription struct {
 
 type DataSourceJobJobSettingsSettingsTaskDashboardTask struct {
 	DashboardId  string                                                         `json:"dashboard_id,omitempty"`
+	Filters      map[string]string                                              `json:"filters,omitempty"`
 	WarehouseId  string                                                         `json:"warehouse_id,omitempty"`
 	Subscription *DataSourceJobJobSettingsSettingsTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }
@@ -548,6 +550,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTaskSubscriptio
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTask struct {
 	DashboardId  string                                                                        `json:"dashboard_id,omitempty"`
+	Filters      map[string]string                                                             `json:"filters,omitempty"`
 	WarehouseId  string                                                                        `json:"warehouse_id,omitempty"`
 	Subscription *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }
@@ -1419,10 +1422,15 @@ type DataSourceJobJobSettings struct {
 	Settings        *DataSourceJobJobSettingsSettings `json:"settings,omitempty"`
 }
 
+type DataSourceJobProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceJob struct {
-	Id          string                    `json:"id,omitempty"`
-	JobId       string                    `json:"job_id,omitempty"`
-	JobName     string                    `json:"job_name,omitempty"`
-	Name        string                    `json:"name,omitempty"`
-	JobSettings *DataSourceJobJobSettings `json:"job_settings,omitempty"`
+	Id             string                       `json:"id,omitempty"`
+	JobId          string                       `json:"job_id,omitempty"`
+	JobName        string                       `json:"job_name,omitempty"`
+	Name           string                       `json:"name,omitempty"`
+	JobSettings    *DataSourceJobJobSettings    `json:"job_settings,omitempty"`
+	ProviderConfig *DataSourceJobProviderConfig `json:"provider_config,omitempty"`
 }

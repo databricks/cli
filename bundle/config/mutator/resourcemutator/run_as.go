@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 type setRunAs struct{}
@@ -110,16 +111,6 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		))
 	}
 
-	// Alerts do not support run_as in the API.
-	if len(b.Config.Resources.Alerts) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"alerts",
-			b.Config.GetLocation("resources.alerts"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
-
 	// Apps do not support run_as in the API.
 	if len(b.Config.Resources.Apps) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
@@ -163,6 +154,24 @@ func setRunAsForPipelines(b *bundle.Bundle) {
 			continue
 		}
 		pipeline.RunAs = &pipelines.RunAs{
+			ServicePrincipalName: runAs.ServicePrincipalName,
+			UserName:             runAs.UserName,
+		}
+	}
+}
+
+func setRunAsForAlerts(b *bundle.Bundle) {
+	runAs := b.Config.RunAs
+	if runAs == nil {
+		return
+	}
+
+	for i := range b.Config.Resources.Alerts {
+		alert := b.Config.Resources.Alerts[i]
+		if alert.RunAs != nil {
+			continue
+		}
+		alert.RunAs = &sql.AlertV2RunAs{
 			ServicePrincipalName: runAs.ServicePrincipalName,
 			UserName:             runAs.UserName,
 		}
@@ -234,5 +243,6 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	setRunAsForJobs(b)
 	setRunAsForPipelines(b)
+	setRunAsForAlerts(b)
 	return nil
 }

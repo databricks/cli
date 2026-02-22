@@ -10,7 +10,9 @@ var SupportedResources = map[string]any{
 	"jobs":                    (*ResourceJob)(nil),
 	"pipelines":               (*ResourcePipeline)(nil),
 	"experiments":             (*ResourceExperiment)(nil),
+	"catalogs":                (*ResourceCatalog)(nil),
 	"schemas":                 (*ResourceSchema)(nil),
+	"external_locations":      (*ResourceExternalLocation)(nil),
 	"volumes":                 (*ResourceVolume)(nil),
 	"models":                  (*ResourceMlflowModel)(nil),
 	"apps":                    (*ResourceApp)(nil),
@@ -18,6 +20,9 @@ var SupportedResources = map[string]any{
 	"database_instances":      (*ResourceDatabaseInstance)(nil),
 	"database_catalogs":       (*ResourceDatabaseCatalog)(nil),
 	"synced_database_tables":  (*ResourceSyncedDatabaseTable)(nil),
+	"postgres_projects":       (*ResourcePostgresProject)(nil),
+	"postgres_branches":       (*ResourcePostgresBranch)(nil),
+	"postgres_endpoints":      (*ResourcePostgresEndpoint)(nil),
 	"alerts":                  (*ResourceAlert)(nil),
 	"clusters":                (*ResourceCluster)(nil),
 	"registered_models":       (*ResourceRegisteredModel)(nil),
@@ -41,9 +46,11 @@ var SupportedResources = map[string]any{
 	"dashboards.permissions":              (*ResourcePermissions)(nil),
 
 	// Grants
-	"schemas.grants":           (*ResourceGrants)(nil),
-	"volumes.grants":           (*ResourceGrants)(nil),
-	"registered_models.grants": (*ResourceGrants)(nil),
+	"catalogs.grants":           (*ResourceGrants)(nil),
+	"schemas.grants":            (*ResourceGrants)(nil),
+	"external_locations.grants": (*ResourceGrants)(nil),
+	"volumes.grants":            (*ResourceGrants)(nil),
+	"registered_models.grants":  (*ResourceGrants)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

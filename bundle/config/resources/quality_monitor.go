@@ -30,6 +30,7 @@ func (s QualityMonitor) MarshalJSON() ([]byte, error) {
 }
 
 func (s *QualityMonitor) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+	//nolint:staticcheck // Bundle quality_monitor still targets legacy monitor endpoints; v1 data-quality migration is separate work.
 	_, err := w.QualityMonitors.Get(ctx, catalog.GetQualityMonitorRequest{
 		TableName: id,
 	})

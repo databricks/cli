@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/google/uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -33,6 +35,7 @@ const (
 	UserID                      = "1000012345"
 	TestDefaultClusterId        = "0123-456789-cluster0"
 	TestDefaultWarehouseId      = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId   = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -127,6 +130,7 @@ type FakeWorkspace struct {
 
 	Jobs                map[int64]jobs.Job
 	JobRuns             map[int64]jobs.Run
+	JobRunOutputs       map[int64]jobs.RunOutput
 	Pipelines           map[string]pipelines.GetPipelineResponse
 	PipelineUpdates     map[string]bool
 	Monitors            map[string]catalog.MonitorInfo
@@ -142,6 +146,7 @@ type FakeWorkspace struct {
 	ModelRegistryModels map[string]ml.Model
 	Clusters            map[string]compute.ClusterDetails
 	Catalogs            map[string]catalog.CatalogInfo
+	ExternalLocations   map[string]catalog.ExternalLocationInfo
 	RegisteredModels    map[string]catalog.RegisteredModelInfo
 	ServingEndpoints    map[string]serving.ServingEndpointDetailed
 
@@ -159,6 +164,15 @@ type FakeWorkspace struct {
 	DatabaseInstances    map[string]database.DatabaseInstance
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
+
+	PostgresProjects   map[string]postgres.Project
+	PostgresBranches   map[string]postgres.Branch
+	PostgresEndpoints  map[string]postgres.Endpoint
+	PostgresOperations map[string]postgres.Operation
+
+	// clusterVenvs caches Python venvs per existing cluster ID,
+	// matching cloud behavior where libraries are cached on running clusters.
+	clusterVenvs map[string]*clusterEnv
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -248,12 +262,14 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 
 		Jobs:                map[int64]jobs.Job{},
 		JobRuns:             map[int64]jobs.Run{},
+		JobRunOutputs:       map[int64]jobs.RunOutput{},
 		Grants:              map[string][]catalog.PrivilegeAssignment{},
 		Pipelines:           map[string]pipelines.GetPipelineResponse{},
 		PipelineUpdates:     map[string]bool{},
 		Monitors:            map[string]catalog.MonitorInfo{},
 		Apps:                map[string]apps.App{},
 		Catalogs:            map[string]catalog.CatalogInfo{},
+		ExternalLocations:   map[string]catalog.ExternalLocationInfo{},
 		Schemas:             map[string]catalog.SchemaInfo{},
 		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
 		Volumes:             map[string]catalog.VolumeInfo{},
@@ -276,6 +292,11 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DatabaseInstances:    map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
+		PostgresProjects:     map[string]postgres.Project{},
+		PostgresBranches:     map[string]postgres.Branch{},
+		PostgresEndpoints:    map[string]postgres.Endpoint{},
+		PostgresOperations:   map[string]postgres.Operation{},
+		clusterVenvs:         map[string]*clusterEnv{},
 		Alerts:               map[string]sql.AlertV2{},
 		Experiments:          map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:  map[string]ml.Model{},
@@ -341,10 +362,16 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	defer s.LockUnlock()()
 	if !recursive {
 		delete(s.files, path)
+		delete(s.directories, path)
 	} else {
 		for key := range s.files {
 			if strings.HasPrefix(key, path) {
 				delete(s.files, key)
+			}
+		}
+		for key := range s.directories {
+			if strings.HasPrefix(key, path) {
+				delete(s.directories, key)
 			}
 		}
 	}
@@ -420,6 +447,44 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 	defer s.LockUnlock()()
 
 	return s.files[path].Data
+}
+
+// FileExists checks if a file exists at the given path.
+func (s *FakeWorkspace) FileExists(path string) bool {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	defer s.LockUnlock()()
+
+	_, exists := s.files[path]
+	return exists
+}
+
+// DirectoryExists checks if a directory exists at the given path.
+func (s *FakeWorkspace) DirectoryExists(path string) bool {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	defer s.LockUnlock()()
+
+	_, exists := s.directories[path]
+	return exists
+}
+
+// clusterEnv represents a cached Python venv for an existing cluster.
+type clusterEnv struct {
+	dir           string          // base temp directory containing the venv
+	venvDir       string          // path to .venv inside dir
+	installedLibs map[string]bool // workspace paths of already-installed wheels
+}
+
+// Cleanup removes all cached cluster venvs.
+func (s *FakeWorkspace) Cleanup() {
+	for _, env := range s.clusterVenvs {
+		os.RemoveAll(env.dir)
+	}
 }
 
 // jsonConvert saves input to a value pointed by output

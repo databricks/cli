@@ -176,6 +176,12 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			return fmt.Errorf("failed to parse terraform state: %w", err)
 		}
 
+		for key, resourceEntry := range terraformResources {
+			if resourceEntry.ID == "" {
+				return fmt.Errorf("failed to intepret terraform state for %s: missing ID", key)
+			}
+		}
+
 		_, localPath := b.StateFilenameDirect(ctx)
 		tempStatePath := localPath + ".temp-migration"
 		if _, err = os.Stat(tempStatePath); err == nil {
@@ -187,7 +193,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 
 		// Run plan check unless --noplancheck is set
 		if !noPlanCheck {
-			fmt.Fprintf(cmd.OutOrStdout(), "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\n")
+			cmdio.LogString(ctx, "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:")
 			if err = runPlanCheck(cmd, extraArgs, extraArgsStr); err != nil {
 				return err
 			}
@@ -239,14 +245,14 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		// For most resources state consists of fully resolved local config snapshot + id.
 		// Dashboards are special in that they also store "etag" in state which is not provided by user but
 		// comes from remote state. If we don't store "etag" in state, we won't detect remote drift, because
-		// local=nil, remote="<some new etag>" which will be classified as "server_side_default".
+		// local=nil, remote="<some new etag>" which will be classified as a backend default and skipped.
 
 		for key := range plan.Plan {
 			etag := etags[key]
 			if etag == "" {
 				continue
 			}
-			sv, ok := deploymentBundle.StructVarCache.Load(key)
+			sv, ok := deploymentBundle.StateCache.Load(key)
 			if !ok {
 				return fmt.Errorf("failed to read state for %q", key)
 			}

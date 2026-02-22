@@ -31,48 +31,45 @@
         }
       },
       "remote_state": {
+        "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "id": "[MY_ID]",
+        "ingestion_definition": {
+          "connection_name": "my_connection",
+          "objects": [
+            {}
+          ]
+        },
         "last_modified": [UNIX_TIME_MILLIS],
+        "libraries": [
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+            }
+          }
+        ],
         "name": "test-pipeline-[UNIQUE_NAME]",
         "pipeline_id": "[MY_ID]",
         "run_as_user_name": "[USERNAME]",
-        "spec": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "id": "[MY_ID]",
-          "ingestion_definition": {
-            "connection_name": "my_connection",
-            "objects": [
-              {}
-            ]
-          },
-          "libraries": [
-            {
-              "file": {
-                "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
-              }
-            }
-          ],
-          "name": "test-pipeline-[UNIQUE_NAME]",
-          "storage": "dbfs:/pipelines/[MY_ID]"
-        },
-        "state": "IDLE"
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[MY_ID]"
       },
       "changes": {
         "ingestion_definition.connection_name": {
           "action": "recreate",
-          "reason": "builtin_rule",
+          "reason": "immutable",
           "old": "my_connection",
           "new": "my_new_connection",
           "remote": "my_connection"
         },
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "dbfs:/pipelines/[MY_ID]"
         }
       }

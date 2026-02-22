@@ -14,7 +14,7 @@ import (
 
 func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 	results := make(map[string]any)
-	err := WalkType(typ, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(typ, func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		for typ.Kind() == reflect.Pointer {
 			typ = typ.Elem()
 		}
@@ -26,8 +26,8 @@ func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 		}
 
 		// Test structpath round trip as well
-		pathNew, err := structpath.Parse(s)
-		if assert.NoError(t, err, "Parse(path.String()) failed for %q: %s", s, err) {
+		pathNew, err := structpath.ParsePattern(s)
+		if assert.NoError(t, err, "ParsePattern(path.String()) failed for %q: %s", s, err) {
 			newS := pathNew.String()
 			assert.Equal(t, path, pathNew, "Parse(path.String()) returned different path;\npath=%#v %q\npathNew=%#v %q", path, s, pathNew, newS)
 			assert.Equal(t, s, newS, "Parse(path.String()).String() is different from path.String()\npath.String()=%q\npathNew.String()=%q", path, pathNew)
@@ -136,7 +136,7 @@ func TestTypeJobSettings(t *testing.T) {
 func TestTypeRoot(t *testing.T) {
 	testStruct(t,
 		reflect.TypeOf(config.Root{}),
-		4300, 4700, // 4322 at the time of the update
+		4300, 4800, // 4754 after adding external locations support
 		map[string]any{
 			"bundle.target":                "",
 			`variables.*.lookup.dashboard`: "",
@@ -167,7 +167,7 @@ func TestTypeRoot(t *testing.T) {
 
 func getReadonlyFields(t *testing.T, rootType reflect.Type) []string {
 	var results []string
-	err := WalkType(rootType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(rootType, func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil || field == nil {
 			return true
 		}
@@ -206,7 +206,7 @@ func TestTypeBundleTag(t *testing.T) {
 	}
 
 	var readonly, internal []string
-	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil || field == nil {
 			return true
 		}
@@ -241,7 +241,7 @@ func TestWalkTypeVisited(t *testing.T) {
 	}
 
 	var visited []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil {
 			return true
 		}
@@ -280,7 +280,7 @@ func TestWalkSkip(t *testing.T) {
 	}
 
 	var seen []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil {
 			return true
 		}

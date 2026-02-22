@@ -1,0 +1,29 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Modify max_concurrent_runs, description, and add timeout"
+edit_resource.py jobs $job_id <<EOF
+r["max_concurrent_runs"] = 5
+r["description"] = "Updated ETL job.\n\nRuns hourly."
+r["timeout_seconds"] = 3600
+EOF
+
+title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

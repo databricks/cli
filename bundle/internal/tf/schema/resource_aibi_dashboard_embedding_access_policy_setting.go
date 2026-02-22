@@ -6,9 +6,14 @@ type ResourceAibiDashboardEmbeddingAccessPolicySettingAibiDashboardEmbeddingAcce
 	AccessPolicyType string `json:"access_policy_type"`
 }
 
+type ResourceAibiDashboardEmbeddingAccessPolicySettingProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceAibiDashboardEmbeddingAccessPolicySetting struct {
 	Etag                               string                                                                               `json:"etag,omitempty"`
 	Id                                 string                                                                               `json:"id,omitempty"`
 	SettingName                        string                                                                               `json:"setting_name,omitempty"`
 	AibiDashboardEmbeddingAccessPolicy *ResourceAibiDashboardEmbeddingAccessPolicySettingAibiDashboardEmbeddingAccessPolicy `json:"aibi_dashboard_embedding_access_policy,omitempty"`
+	ProviderConfig                     *ResourceAibiDashboardEmbeddingAccessPolicySettingProviderConfig                     `json:"provider_config,omitempty"`
 }

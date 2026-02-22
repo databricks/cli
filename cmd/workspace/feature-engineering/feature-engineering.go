@@ -116,7 +116,7 @@ func newCreateFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -184,6 +184,7 @@ func newCreateKafkaConfig() *cobra.Command {
 
 	cmd.Flags().Var(&createKafkaConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: backfill_source
 	// TODO: map via StringToStringVar: extra_options
 	// TODO: complex arg: key_schema
 	// TODO: complex arg: value_schema
@@ -229,7 +230,7 @@ func newCreateKafkaConfig() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -330,7 +331,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -910,7 +911,7 @@ func newUpdateFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -977,6 +978,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 
 	cmd.Flags().Var(&updateKafkaConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: backfill_source
 	// TODO: map via StringToStringVar: extra_options
 	// TODO: complex arg: key_schema
 	// TODO: complex arg: value_schema
@@ -1023,7 +1025,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1131,7 +1133,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

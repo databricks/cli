@@ -17,7 +17,7 @@ import (
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 func NewGeneratePipelineCommand() *cobra.Command {
@@ -149,7 +149,7 @@ like catalogs, schemas, and compute configurations per target.`,
 			return err
 		}
 
-		cmdio.LogString(ctx, "Pipeline configuration successfully saved to "+filename)
+		cmdio.LogString(ctx, "Pipeline configuration successfully saved to "+filepath.ToSlash(filename))
 
 		if bind {
 			return deployment.BindResource(cmd, pipelineKey, pipelineId, true, false, true)

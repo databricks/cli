@@ -73,7 +73,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, ``)
-	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud name.`)
+	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `DEPRECATED: This field is being ignored by the server and will be removed in the future.`)
 	// TODO: complex arg: cloud_resource_container
 	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS]`)
 	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
@@ -157,7 +157,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -436,7 +436,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

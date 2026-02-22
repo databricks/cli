@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+title "create the secret scope"
+trace $CLI bundle deploy
+
+grep -v DELETE < databricks.yml > databricks.yml.tmp && mv databricks.yml.tmp databricks.yml
+
+trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+rm out.requests.txt
+
+trace $CLI bundle deploy
+trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' &> out.deploy.requests.txt

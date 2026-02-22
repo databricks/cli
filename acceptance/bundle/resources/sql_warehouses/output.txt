@@ -79,7 +79,7 @@ Updating deployment state...
 Deployment complete!
 
 === Verify the update request
->>> jq select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2")) out.requests.txt
+>>> jq select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2")) | del(.body.creator_name, .body.warehouse_type) out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/sql/warehouses/[UUID]/edit",
@@ -137,7 +137,4 @@ Resources:
       URL:  (not deployed)
 
 >>> [CLI] bundle destroy --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
-
-Deleting files...
-Destroy complete!
+No active deployment found to destroy!

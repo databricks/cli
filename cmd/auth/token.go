@@ -98,6 +98,16 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
+	// Load unified host flags from the profile if available
+	if existingProfile != nil {
+		if !args.authArguments.IsUnifiedHost && existingProfile.IsUnifiedHost {
+			args.authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
+		}
+		if args.authArguments.WorkspaceID == "" && existingProfile.WorkspaceID != "" {
+			args.authArguments.WorkspaceID = existingProfile.WorkspaceID
+		}
+	}
+
 	err = setHostAndAccountId(ctx, existingProfile, args.authArguments, args.args)
 	if err != nil {
 		return nil, err

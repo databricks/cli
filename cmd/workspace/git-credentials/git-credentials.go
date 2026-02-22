@@ -68,6 +68,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().BoolVar(&createReq.IsDefaultForProvider, "is-default-for-provider", createReq.IsDefaultForProvider, `if the credential is the default for the given provider.`)
 	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `the name of the git credential, used for identification and ease of lookup.`)
 	cmd.Flags().StringVar(&createReq.PersonalAccessToken, "personal-access-token", createReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
+	cmd.Flags().Int64Var(&createReq.PrincipalId, "principal-id", createReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
 
 	cmd.Use = "create GIT_PROVIDER"
 	cmd.Short = `Create a credential entry.`
@@ -109,7 +110,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -152,6 +153,8 @@ func newDelete() *cobra.Command {
 
 	var deleteReq workspace.DeleteCredentialsRequest
 
+	cmd.Flags().Int64Var(&deleteReq.PrincipalId, "principal-id", deleteReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
+
 	cmd.Use = "delete CREDENTIAL_ID"
 	cmd.Short = `Delete a credential.`
 	cmd.Long = `Delete a credential.
@@ -171,7 +174,7 @@ func newDelete() *cobra.Command {
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
-			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx, workspace.ListCredentialsRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -223,6 +226,8 @@ func newGet() *cobra.Command {
 
 	var getReq workspace.GetCredentialsRequest
 
+	cmd.Flags().Int64Var(&getReq.PrincipalId, "principal-id", getReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
+
 	cmd.Use = "get CREDENTIAL_ID"
 	cmd.Short = `Get a credential entry.`
 	cmd.Long = `Get a credential entry.
@@ -242,7 +247,7 @@ func newGet() *cobra.Command {
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
-			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx, workspace.ListCredentialsRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -286,25 +291,35 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
+	*workspace.ListCredentialsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	var listReq workspace.ListCredentialsRequest
+
+	cmd.Flags().Int64Var(&listReq.PrincipalId, "principal-id", listReq.PrincipalId, `The ID of the service principal whose credentials will be listed.`)
+
 	cmd.Use = "list"
 	cmd.Short = `Get Git credentials.`
 	cmd.Long = `Get Git credentials.
 
-  Lists the calling user's Git credentials. One credential per user is
-  supported.`
+  Lists the calling user's Git credentials.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		response := w.GitCredentials.List(ctx)
+
+		response := w.GitCredentials.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -314,7 +329,7 @@ func newList() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
-		fn(cmd)
+		fn(cmd, &listReq)
 	}
 
 	return cmd
@@ -342,6 +357,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&updateReq.IsDefaultForProvider, "is-default-for-provider", updateReq.IsDefaultForProvider, `if the credential is the default for the given provider.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `the name of the git credential, used for identification and ease of lookup.`)
 	cmd.Flags().StringVar(&updateReq.PersonalAccessToken, "personal-access-token", updateReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
+	cmd.Flags().Int64Var(&updateReq.PrincipalId, "principal-id", updateReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
 
 	cmd.Use = "update CREDENTIAL_ID GIT_PROVIDER"
 	cmd.Short = `Update a credential.`
@@ -381,7 +397,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

@@ -25,6 +25,8 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	var authArguments auth.AuthArguments
 	cmd.PersistentFlags().StringVar(&authArguments.Host, "host", "", "Databricks Host")
 	cmd.PersistentFlags().StringVar(&authArguments.AccountID, "account-id", "", "Databricks Account ID")
+	cmd.PersistentFlags().BoolVar(&authArguments.IsUnifiedHost, "experimental-is-unified-host", false, "Flag to indicate if the host is a unified host")
+	cmd.PersistentFlags().StringVar(&authArguments.WorkspaceID, "workspace-id", "", "Databricks Workspace ID")
 
 	cmd.AddCommand(newEnvCommand())
 	cmd.AddCommand(newLoginCommand(&authArguments))
@@ -51,6 +53,19 @@ func promptForAccountID(ctx context.Context) (string, error) {
 
 	prompt := cmdio.Prompt(ctx)
 	prompt.Label = "Databricks account ID"
+	prompt.Default = ""
+	prompt.AllowEdit = true
+	return prompt.Run()
+}
+
+func promptForWorkspaceID(ctx context.Context) (string, error) {
+	if !cmdio.IsPromptSupported(ctx) {
+		// Workspace ID is optional for unified hosts, so return empty string in non-interactive mode
+		return "", nil
+	}
+
+	prompt := cmdio.Prompt(ctx)
+	prompt.Label = "Databricks workspace ID (optional - provide only if using this profile for workspace operations, leave empty for account operations)"
 	prompt.Default = ""
 	prompt.AllowEdit = true
 	return prompt.Run()

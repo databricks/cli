@@ -84,6 +84,13 @@ github.com/databricks/cli/bundle/config/resources.AppPermissionLevel:
         CAN_MANAGE
       - |-
         CAN_USE
+github.com/databricks/cli/bundle/config/resources.Catalog:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "_":
     "markdown_description": |-
@@ -253,6 +260,29 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLeve
         CAN_USE
       - |-
         CAN_MANAGE
+github.com/databricks/cli/bundle/config/resources.ExternalLocationGrantPrivilege:
+  "_":
+    "description": |-
+      Privilege to grant on an external location
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        CREATE_EXTERNAL_TABLE
+      - |-
+        CREATE_EXTERNAL_VOLUME
+      - |-
+        CREATE_MANAGED_STORAGE
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        MANAGE
+      - |-
+        READ_FILES
+      - |-
+        WRITE_FILES
 github.com/databricks/cli/bundle/config/resources.Job:
   "_":
     "markdown_description": |-
@@ -597,23 +627,29 @@ github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege:
       - |-
         CREATE_FUNCTION
       - |-
+        CREATE_MATERIALIZED_VIEW
+      - |-
+        CREATE_MODEL
+      - |-
         CREATE_TABLE
       - |-
         CREATE_VOLUME
       - |-
-        MANAGE
-      - |-
-        USE_SCHEMA
-      - |-
         EXECUTE
       - |-
+        EXTERNAL_USE_SCHEMA
+      - |-
+        MANAGE
+      - |-
         MODIFY
+      - |-
+        READ_VOLUME
       - |-
         REFRESH
       - |-
         SELECT
       - |-
-        READ_VOLUME
+        USE_SCHEMA
       - |-
         WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
@@ -842,6 +878,56 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
     "description": |-
       PLACEHOLDER
   "state": {}
+github.com/databricks/databricks-sdk-go/service/catalog.AwsSqsQueue:
+  "managed_resource_id":
+    "description": |-
+      PLACEHOLDER
+  "queue_url":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.AzureQueueStorage:
+  "managed_resource_id":
+    "description": |-
+      PLACEHOLDER
+  "queue_url":
+    "description": |-
+      PLACEHOLDER
+  "resource_group":
+    "description": |-
+      PLACEHOLDER
+  "subscription_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.EncryptionDetails:
+  "sse_encryption_details":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.FileEventQueue:
+  "managed_aqs":
+    "description": |-
+      PLACEHOLDER
+  "managed_pubsub":
+    "description": |-
+      PLACEHOLDER
+  "managed_sqs":
+    "description": |-
+      PLACEHOLDER
+  "provided_aqs":
+    "description": |-
+      PLACEHOLDER
+  "provided_pubsub":
+    "description": |-
+      PLACEHOLDER
+  "provided_sqs":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.GcpPubsub:
+  "managed_resource_id":
+    "description": |-
+      PLACEHOLDER
+  "subscription_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
   "granularities":
     "description": |-
@@ -863,6 +949,22 @@ github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias:
   "schema_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetails:
+  "algorithm":
+    "description": |-
+      PLACEHOLDER
+  "aws_kms_key_arn":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetailsAlgorithm:
+  "_":
+    "description": |-
+      SSE algorithm to use for encrypting S3 objects
+    "enum":
+      - |-
+        AWS_SSE_KMS
+      - |-
+        AWS_SSE_S3
 github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
   "availability":
     "description": |-
@@ -938,6 +1040,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
   "git_snapshot":
+    "description": |-
+      PLACEHOLDER
+  "sparse_checkout":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:

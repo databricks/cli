@@ -1,0 +1,37 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== JSON output format{
+  "files": [
+    {
+      "path": "[TEST_TMP_DIR]/databricks.yml",
+      "originalContent": "bundle:\n  name: test-bundle-[UNIQUE_NAME]\n\nresources:\n  jobs:\n    test_job:\n      max_concurrent_runs: 1\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: /Users/{{workspace_user_name}}/notebook\n          new_cluster:\n            spark_version: 13.3.x-snapshot-scala2.12\n            node_type_id: [NODE_TYPE_ID]\n            num_workers: 1\n",
+      "modifiedContent": "bundle:\n  name: test-bundle-[UNIQUE_NAME]\n\nresources:\n  jobs:\n    test_job:\n      max_concurrent_runs: 3\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: /Users/{{workspace_user_name}}/notebook\n          new_cluster:\n            spark_version: 13.3.x-snapshot-scala2.12\n            node_type_id: [NODE_TYPE_ID]\n            num_workers: 1\n      tags:\n        env: test\n"
+    }
+  ],
+  "changes": {
+    "resources.jobs.test_job": {
+      "max_concurrent_runs": {
+        "operation": "replace",
+        "value": 3
+      },
+      "tags": {
+        "operation": "add",
+        "value": {
+          "env": "test"
+        }
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

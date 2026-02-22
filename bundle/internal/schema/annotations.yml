@@ -162,6 +162,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The app resource defines a Databricks app.
     "markdown_description": |-
       The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
+  "catalogs":
+    "description": |-
+      PLACEHOLDER
   "clusters":
     "description": |-
       The cluster definitions for the bundle, where each key is the name of a cluster.
@@ -183,6 +186,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The experiment definitions for the bundle, where each key is the name of the experiment.
     "markdown_description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment. See [\_](/dev-tools/bundles/resources.md#experiments).
+  "external_locations":
+    "description": |-
+      PLACEHOLDER
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
@@ -203,6 +209,15 @@ github.com/databricks/cli/bundle/config.Resources:
       The pipeline definitions for the bundle, where each key is the name of the pipeline.
     "markdown_description": |-
       The pipeline definitions for the bundle, where each key is the name of the pipeline. See [\_](/dev-tools/bundles/resources.md#pipelines).
+  "postgres_branches":
+    "description": |-
+      PLACEHOLDER
+  "postgres_endpoints":
+    "description": |-
+      PLACEHOLDER
+  "postgres_projects":
+    "description": |-
+      PLACEHOLDER
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
@@ -424,6 +439,9 @@ github.com/databricks/cli/bundle/config.Workspace:
   "client_id":
     "description": |-
       The client ID for the workspace
+  "experimental_is_unified_host":
+    "description": |-
+      Experimental feature flag to indicate if the host is a unified host
   "file_path":
     "description": |-
       The file path to use within the workspace for both deployments and workflow runs
@@ -445,6 +463,9 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
+  "workspace_id":
+    "description": |-
+      The Databricks workspace ID
 github.com/databricks/cli/bundle/config/resources.Alert:
   "create_time":
     "description": |-
@@ -531,6 +552,91 @@ github.com/databricks/cli/bundle/config/resources.AppPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Catalog:
+  "comment":
+    "description": |-
+      PLACEHOLDER
+  "connection_name":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "options":
+    "description": |-
+      PLACEHOLDER
+  "properties":
+    "description": |-
+      PLACEHOLDER
+  "provider_name":
+    "description": |-
+      PLACEHOLDER
+  "share_name":
+    "description": |-
+      PLACEHOLDER
+  "storage_root":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.CatalogGrant:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        CREATE_CONNECTION
+      - |-
+        CREATE_EXTERNAL_LOCATION
+      - |-
+        CREATE_EXTERNAL_TABLE
+      - |-
+        CREATE_EXTERNAL_VOLUME
+      - |-
+        CREATE_FOREIGN_CATALOG
+      - |-
+        CREATE_FUNCTION
+      - |-
+        CREATE_MANAGED_STORAGE
+      - |-
+        CREATE_MATERIALIZED_VIEW
+      - |-
+        CREATE_MODEL
+      - |-
+        CREATE_SCHEMA
+      - |-
+        CREATE_STORAGE_CREDENTIAL
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        EXECUTE
+      - |-
+        MANAGE
+      - |-
+        MODIFY
+      - |-
+        READ_VOLUME
+      - |-
+        REFRESH
+      - |-
+        SELECT
+      - |-
+        USE_CATALOG
+      - |-
+        USE_CONNECTION
+      - |-
+        USE_SCHEMA
+      - |-
+        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.ClusterPermission:
   "group_name":
     "description": |-
@@ -579,6 +685,50 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.ExternalLocation:
+  "comment":
+    "description": |-
+      PLACEHOLDER
+  "credential_name":
+    "description": |-
+      PLACEHOLDER
+  "enable_file_events":
+    "description": |-
+      PLACEHOLDER
+  "encryption_details":
+    "description": |-
+      PLACEHOLDER
+  "fallback":
+    "description": |-
+      PLACEHOLDER
+  "file_event_queue":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "read_only":
+    "description": |-
+      PLACEHOLDER
+  "skip_validation":
+    "description": |-
+      PLACEHOLDER
+  "url":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.ExternalLocationGrant:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Grant:
@@ -673,6 +823,147 @@ github.com/databricks/cli/bundle/config/resources.PipelinePermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresBranch:
+  "branch_id":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "expire_time":
+    "description": |-
+      PLACEHOLDER
+  "is_protected":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "no_expiry":
+    "description": |-
+      PLACEHOLDER
+  "parent":
+    "description": |-
+      PLACEHOLDER
+  "source_branch":
+    "description": |-
+      PLACEHOLDER
+  "source_branch_lsn":
+    "description": |-
+      PLACEHOLDER
+  "source_branch_time":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "ttl":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
+  "autoscaling_limit_max_cu":
+    "description": |-
+      PLACEHOLDER
+  "autoscaling_limit_min_cu":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "disabled":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_id":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "no_suspension":
+    "description": |-
+      PLACEHOLDER
+  "parent":
+    "description": |-
+      PLACEHOLDER
+  "settings":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "suspend_timeout_duration":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresProject:
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "custom_tags":
+    "description": |-
+      PLACEHOLDER
+  "default_endpoint_settings":
+    "description": |-
+      PLACEHOLDER
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "history_retention_duration":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "pg_version":
+    "description": |-
+      PLACEHOLDER
+  "project_id":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SchemaGrant:

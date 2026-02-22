@@ -18,18 +18,18 @@ Usage:
   databricks bundle [command]
 
 Available Commands:
-  deploy      Deploy bundle
-  deployment  Deployment related commands
-  destroy     Destroy deployed bundle resources
-  generate    Generate bundle configuration
-  init        Initialize using a bundle template
-  open        Open a resource in the browser
-  plan        Show deployment plan
-  run         Run a job, pipeline update or app
-  schema      Generate JSON Schema for bundle configuration
-  summary     Summarize resources deployed by this bundle
-  sync        Synchronize bundle tree to the workspace
-  validate    Validate configuration
+  deploy             Deploy bundle
+  deployment         Deployment related commands
+  destroy            Destroy deployed bundle resources
+  generate           Generate bundle configuration
+  init               Initialize using a bundle template
+  open               Open a resource in the browser
+  plan               Show deployment plan
+  run                Run a job, pipeline update or app
+  schema             Generate JSON Schema for bundle configuration
+  summary            Summarize resources deployed by this bundle
+  sync               Synchronize bundle tree to the workspace
+  validate           Validate configuration
 
 Flags:
   -h, --help          help for bundle

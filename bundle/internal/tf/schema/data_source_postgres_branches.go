@@ -2,17 +2,24 @@
 
 package schema
 
+type DataSourcePostgresBranchesBranchesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourcePostgresBranchesBranchesSpec struct {
-	Default          bool   `json:"default,omitempty"`
+	ExpireTime       string `json:"expire_time,omitempty"`
 	IsProtected      bool   `json:"is_protected,omitempty"`
+	NoExpiry         bool   `json:"no_expiry,omitempty"`
 	SourceBranch     string `json:"source_branch,omitempty"`
 	SourceBranchLsn  string `json:"source_branch_lsn,omitempty"`
 	SourceBranchTime string `json:"source_branch_time,omitempty"`
+	Ttl              string `json:"ttl,omitempty"`
 }
 
 type DataSourcePostgresBranchesBranchesStatus struct {
 	CurrentState     string `json:"current_state,omitempty"`
 	Default          bool   `json:"default,omitempty"`
+	ExpireTime       string `json:"expire_time,omitempty"`
 	IsProtected      bool   `json:"is_protected,omitempty"`
 	LogicalSizeBytes int    `json:"logical_size_bytes,omitempty"`
 	PendingState     string `json:"pending_state,omitempty"`
@@ -23,17 +30,23 @@ type DataSourcePostgresBranchesBranchesStatus struct {
 }
 
 type DataSourcePostgresBranchesBranches struct {
-	CreateTime string                                    `json:"create_time,omitempty"`
-	Name       string                                    `json:"name"`
-	Parent     string                                    `json:"parent,omitempty"`
-	Spec       *DataSourcePostgresBranchesBranchesSpec   `json:"spec,omitempty"`
-	Status     *DataSourcePostgresBranchesBranchesStatus `json:"status,omitempty"`
-	Uid        string                                    `json:"uid,omitempty"`
-	UpdateTime string                                    `json:"update_time,omitempty"`
+	CreateTime     string                                            `json:"create_time,omitempty"`
+	Name           string                                            `json:"name"`
+	Parent         string                                            `json:"parent,omitempty"`
+	ProviderConfig *DataSourcePostgresBranchesBranchesProviderConfig `json:"provider_config,omitempty"`
+	Spec           *DataSourcePostgresBranchesBranchesSpec           `json:"spec,omitempty"`
+	Status         *DataSourcePostgresBranchesBranchesStatus         `json:"status,omitempty"`
+	Uid            string                                            `json:"uid,omitempty"`
+	UpdateTime     string                                            `json:"update_time,omitempty"`
+}
+
+type DataSourcePostgresBranchesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourcePostgresBranches struct {
-	Branches []DataSourcePostgresBranchesBranches `json:"branches,omitempty"`
-	PageSize int                                  `json:"page_size,omitempty"`
-	Parent   string                               `json:"parent"`
+	Branches       []DataSourcePostgresBranchesBranches      `json:"branches,omitempty"`
+	PageSize       int                                       `json:"page_size,omitempty"`
+	Parent         string                                    `json:"parent"`
+	ProviderConfig *DataSourcePostgresBranchesProviderConfig `json:"provider_config,omitempty"`
 }

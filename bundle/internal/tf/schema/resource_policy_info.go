@@ -18,6 +18,10 @@ type ResourcePolicyInfoMatchColumns struct {
 	Condition string `json:"condition,omitempty"`
 }
 
+type ResourcePolicyInfoProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourcePolicyInfoRowFilterUsing struct {
 	Alias    string `json:"alias,omitempty"`
 	Constant string `json:"constant,omitempty"`
@@ -29,21 +33,22 @@ type ResourcePolicyInfoRowFilter struct {
 }
 
 type ResourcePolicyInfo struct {
-	ColumnMask          *ResourcePolicyInfoColumnMask    `json:"column_mask,omitempty"`
-	Comment             string                           `json:"comment,omitempty"`
-	CreatedAt           int                              `json:"created_at,omitempty"`
-	CreatedBy           string                           `json:"created_by,omitempty"`
-	ExceptPrincipals    []string                         `json:"except_principals,omitempty"`
-	ForSecurableType    string                           `json:"for_securable_type"`
-	Id                  string                           `json:"id,omitempty"`
-	MatchColumns        []ResourcePolicyInfoMatchColumns `json:"match_columns,omitempty"`
-	Name                string                           `json:"name,omitempty"`
-	OnSecurableFullname string                           `json:"on_securable_fullname,omitempty"`
-	OnSecurableType     string                           `json:"on_securable_type,omitempty"`
-	PolicyType          string                           `json:"policy_type"`
-	RowFilter           *ResourcePolicyInfoRowFilter     `json:"row_filter,omitempty"`
-	ToPrincipals        []string                         `json:"to_principals"`
-	UpdatedAt           int                              `json:"updated_at,omitempty"`
-	UpdatedBy           string                           `json:"updated_by,omitempty"`
-	WhenCondition       string                           `json:"when_condition,omitempty"`
+	ColumnMask          *ResourcePolicyInfoColumnMask     `json:"column_mask,omitempty"`
+	Comment             string                            `json:"comment,omitempty"`
+	CreatedAt           int                               `json:"created_at,omitempty"`
+	CreatedBy           string                            `json:"created_by,omitempty"`
+	ExceptPrincipals    []string                          `json:"except_principals,omitempty"`
+	ForSecurableType    string                            `json:"for_securable_type"`
+	Id                  string                            `json:"id,omitempty"`
+	MatchColumns        []ResourcePolicyInfoMatchColumns  `json:"match_columns,omitempty"`
+	Name                string                            `json:"name,omitempty"`
+	OnSecurableFullname string                            `json:"on_securable_fullname,omitempty"`
+	OnSecurableType     string                            `json:"on_securable_type,omitempty"`
+	PolicyType          string                            `json:"policy_type"`
+	ProviderConfig      *ResourcePolicyInfoProviderConfig `json:"provider_config,omitempty"`
+	RowFilter           *ResourcePolicyInfoRowFilter      `json:"row_filter,omitempty"`
+	ToPrincipals        []string                          `json:"to_principals"`
+	UpdatedAt           int                               `json:"updated_at,omitempty"`
+	UpdatedBy           string                            `json:"updated_by,omitempty"`
+	WhenCondition       string                            `json:"when_condition,omitempty"`
 }

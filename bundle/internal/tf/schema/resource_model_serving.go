@@ -158,6 +158,7 @@ type ResourceModelServingConfigServedEntitiesExternalModel struct {
 }
 
 type ResourceModelServingConfigServedEntities struct {
+	BurstScalingEnabled       bool                                                   `json:"burst_scaling_enabled,omitempty"`
 	EntityName                string                                                 `json:"entity_name,omitempty"`
 	EntityVersion             string                                                 `json:"entity_version,omitempty"`
 	EnvironmentVars           map[string]string                                      `json:"environment_vars,omitempty"`
@@ -175,6 +176,7 @@ type ResourceModelServingConfigServedEntities struct {
 }
 
 type ResourceModelServingConfigServedModels struct {
+	BurstScalingEnabled       bool              `json:"burst_scaling_enabled,omitempty"`
 	EnvironmentVars           map[string]string `json:"environment_vars,omitempty"`
 	InstanceProfileArn        string            `json:"instance_profile_arn,omitempty"`
 	MaxProvisionedConcurrency int               `json:"max_provisioned_concurrency,omitempty"`
@@ -212,6 +214,10 @@ type ResourceModelServingEmailNotifications struct {
 	OnUpdateSuccess []string `json:"on_update_success,omitempty"`
 }
 
+type ResourceModelServingProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceModelServingRateLimits struct {
 	Calls         int    `json:"calls"`
 	Key           string `json:"key,omitempty"`
@@ -234,6 +240,7 @@ type ResourceModelServing struct {
 	AiGateway          *ResourceModelServingAiGateway          `json:"ai_gateway,omitempty"`
 	Config             *ResourceModelServingConfig             `json:"config,omitempty"`
 	EmailNotifications *ResourceModelServingEmailNotifications `json:"email_notifications,omitempty"`
+	ProviderConfig     *ResourceModelServingProviderConfig     `json:"provider_config,omitempty"`
 	RateLimits         []ResourceModelServingRateLimits        `json:"rate_limits,omitempty"`
 	Tags               []ResourceModelServingTags              `json:"tags,omitempty"`
 }

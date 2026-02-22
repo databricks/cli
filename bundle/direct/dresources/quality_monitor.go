@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -68,6 +66,7 @@ func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *QualityMon
 }
 
 func (r *ResourceQualityMonitor) DoRead(ctx context.Context, id string) (*catalog.MonitorInfo, error) {
+	//nolint:staticcheck // Direct quality_monitor resource still uses legacy monitor endpoints; v1 data-quality migration is separate work.
 	return r.client.QualityMonitors.Get(ctx, catalog.GetQualityMonitorRequest{
 		TableName: id,
 	})
@@ -76,6 +75,7 @@ func (r *ResourceQualityMonitor) DoRead(ctx context.Context, id string) (*catalo
 func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, config *QualityMonitorState) (string, *catalog.MonitorInfo, error) {
 	req := config.CreateMonitor
 	req.TableName = config.TableName
+	//nolint:staticcheck // Direct quality_monitor resource still uses legacy monitor endpoints; v1 data-quality migration is separate work.
 	response, err := r.client.QualityMonitors.Create(ctx, req)
 	if err != nil || response == nil {
 		return "", nil, err
@@ -101,6 +101,7 @@ func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config
 		ForceSendFields:          utils.FilterFields[catalog.UpdateMonitor](config.ForceSendFields),
 	}
 
+	//nolint:staticcheck // Direct quality_monitor resource still uses legacy monitor endpoints; v1 data-quality migration is separate work.
 	response, err := r.client.QualityMonitors.Update(ctx, updateRequest)
 	if err != nil {
 		return nil, err
@@ -110,16 +111,9 @@ func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config
 }
 
 func (r *ResourceQualityMonitor) DoDelete(ctx context.Context, id string) error {
+	//nolint:staticcheck // Direct quality_monitor resource still uses legacy monitor endpoints; v1 data-quality migration is separate work.
 	_, err := r.client.QualityMonitors.Delete(ctx, catalog.DeleteQualityMonitorRequest{
 		TableName: id,
 	})
 	return err
-}
-
-func (r *ResourceQualityMonitor) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *catalog.MonitorInfo) error {
-	if path.String() == "warehouse_id" && change.Old == change.New {
-		change.Action = deployplan.Skip
-		change.Reason = deployplan.ReasonConfigOnly
-	}
-	return nil
 }

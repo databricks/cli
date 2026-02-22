@@ -1,0 +1,160 @@
+
+=== Initial deployment
+>>> [CLI] bundle validate
+Name: update-postgres-project-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle plan
+create postgres_projects.my_project
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-project [MY_PROJECT_ID]
+{
+  "name": "[MY_PROJECT_ID]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "300s"
+    },
+    "display_name": "Original Name",
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+=== Verify no changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== Update display_name and re-deploy
+>>> update_file.py databricks.yml Original Name Updated Name
+
+>>> cat databricks.yml
+bundle:
+  name: update-postgres-project-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "Updated Name"
+      pg_version: 16
+      history_retention_duration: 604800s
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: 300s
+
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-project [MY_PROJECT_ID]
+{
+  "name": "[MY_PROJECT_ID]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "300s"
+    },
+    "display_name": "Updated Name",
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+=== Restore display_name to original value
+>>> update_file.py databricks.yml Updated Name Original Name
+
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-project [MY_PROJECT_ID]
+{
+  "name": "[MY_PROJECT_ID]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "300s"
+    },
+    "display_name": "Original Name",
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-project-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

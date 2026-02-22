@@ -1,3 +1,4 @@
+export DATABRICKS_BUNDLE_ENGINE=
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 print_state.py > out.original_state.json
 

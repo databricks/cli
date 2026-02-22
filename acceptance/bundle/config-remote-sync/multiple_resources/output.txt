@@ -1,0 +1,69 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify both jobs
+=== Detect and save changes
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.job_one
+  max_concurrent_runs: replace
+  tags: add
+
+Resource: resources.jobs.job_two
+  max_concurrent_runs: replace
+  tags: add
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -5,5 +5,5 @@
+   jobs:
+     job_one:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 5
+       tasks:
+         - task_key: main
+@@ -15,6 +15,8 @@
+             num_workers: 1
+
++      tags:
++        team: data
+     job_two:
+-      max_concurrent_runs: 2
++      max_concurrent_runs: 10
+       tasks:
+         - task_key: main
+@@ -26,4 +28,6 @@
+             num_workers: 1
+
++      tags:
++        team: ml
+   clusters:
+     test_cluster:
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.test_cluster
+  delete resources.experiments.test_experiment
+  delete resources.jobs.job_one
+  delete resources.jobs.job_two
+  delete resources.registered_models.test_model
+  delete resources.sql_warehouses.test_warehouse
+  delete resources.volumes.test_volume
+
+This action will result in the deletion of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
+  delete resources.volumes.test_volume
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

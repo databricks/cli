@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/aitools/lib/middlewares"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
@@ -59,16 +58,14 @@ After initialization:
 			return fmt.Errorf("--language must be 'python' or 'sql', got '%s'", language)
 		}
 
-		// Default to workspace default catalog if not specified
-		if catalog == "" {
-			catalog = middlewares.GetDefaultCatalog(ctx)
-		}
-
 		configMap := map[string]any{
 			"project_name":     name,
 			"personal_schemas": "yes",
 			"language":         language,
-			"default_catalog":  catalog,
+		}
+
+		if catalog != "" {
+			configMap["default_catalog"] = catalog
 		}
 
 		return MaterializeTemplate(ctx, TemplateConfig{

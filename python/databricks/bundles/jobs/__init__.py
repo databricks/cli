@@ -29,9 +29,12 @@ __all__ = [
     "ClusterSpec",
     "ClusterSpecDict",
     "ClusterSpecParam",
+    "Compute",
     "ComputeConfig",
     "ComputeConfigDict",
     "ComputeConfigParam",
+    "ComputeDict",
+    "ComputeParam",
     "Condition",
     "ConditionParam",
     "ConditionTask",
@@ -92,6 +95,8 @@ __all__ = [
     "GitSource",
     "GitSourceDict",
     "GitSourceParam",
+    "HardwareAcceleratorType",
+    "HardwareAcceleratorTypeParam",
     "InitScriptInfo",
     "InitScriptInfoDict",
     "InitScriptInfoParam",
@@ -153,6 +158,9 @@ __all__ = [
     "ModelTriggerConfigurationConditionParam",
     "ModelTriggerConfigurationDict",
     "ModelTriggerConfigurationParam",
+    "NodeTypeFlexibility",
+    "NodeTypeFlexibilityDict",
+    "NodeTypeFlexibilityParam",
     "NotebookTask",
     "NotebookTaskDict",
     "NotebookTaskParam",
@@ -213,6 +221,9 @@ __all__ = [
     "SparkSubmitTask",
     "SparkSubmitTaskDict",
     "SparkSubmitTaskParam",
+    "SparseCheckout",
+    "SparseCheckoutDict",
+    "SparseCheckoutParam",
     "SqlTask",
     "SqlTaskAlert",
     "SqlTaskAlertDict",
@@ -329,6 +340,7 @@ from databricks.bundles.jobs._models.cluster_spec import (
     ClusterSpecDict,
     ClusterSpecParam,
 )
+from databricks.bundles.jobs._models.compute import Compute, ComputeDict, ComputeParam
 from databricks.bundles.jobs._models.compute_config import (
     ComputeConfig,
     ComputeConfigDict,
@@ -428,6 +440,10 @@ from databricks.bundles.jobs._models.git_source import (
     GitSourceDict,
     GitSourceParam,
 )
+from databricks.bundles.jobs._models.hardware_accelerator_type import (
+    HardwareAcceleratorType,
+    HardwareAcceleratorTypeParam,
+)
 from databricks.bundles.jobs._models.init_script_info import (
     InitScriptInfo,
     InitScriptInfoDict,
@@ -521,6 +537,11 @@ from databricks.bundles.jobs._models.model_trigger_configuration import (
 from databricks.bundles.jobs._models.model_trigger_configuration_condition import (
     ModelTriggerConfigurationCondition,
     ModelTriggerConfigurationConditionParam,
+)
+from databricks.bundles.jobs._models.node_type_flexibility import (
+    NodeTypeFlexibility,
+    NodeTypeFlexibilityDict,
+    NodeTypeFlexibilityParam,
 )
 from databricks.bundles.jobs._models.notebook_task import (
     NotebookTask,
@@ -616,6 +637,11 @@ from databricks.bundles.jobs._models.spark_submit_task import (
     SparkSubmitTask,
     SparkSubmitTaskDict,
     SparkSubmitTaskParam,
+)
+from databricks.bundles.jobs._models.sparse_checkout import (
+    SparseCheckout,
+    SparseCheckoutDict,
+    SparseCheckoutParam,
 )
 from databricks.bundles.jobs._models.sql_task import SqlTask, SqlTaskDict, SqlTaskParam
 from databricks.bundles.jobs._models.sql_task_alert import (

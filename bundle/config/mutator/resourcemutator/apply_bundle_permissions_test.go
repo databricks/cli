@@ -19,12 +19,17 @@ import (
 // This list exists to ensure that this mutator is updated when new resource is added.
 // These resources are there because they use grants, not permissions:
 var unsupportedResources = []string{
+	"catalogs",
+	"external_locations",
 	"volumes",
 	"schemas",
 	"quality_monitors",
 	"registered_models",
 	"database_catalogs",
 	"synced_database_tables",
+	"postgres_projects",
+	"postgres_branches",
+	"postgres_endpoints",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {

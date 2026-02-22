@@ -61,6 +61,7 @@ type ResourceModelServingProvisionedThroughputAiGateway struct {
 }
 
 type ResourceModelServingProvisionedThroughputConfigServedEntities struct {
+	BurstScalingEnabled   bool   `json:"burst_scaling_enabled,omitempty"`
 	EntityName            string `json:"entity_name"`
 	EntityVersion         string `json:"entity_version"`
 	Name                  string `json:"name,omitempty"`
@@ -87,6 +88,10 @@ type ResourceModelServingProvisionedThroughputEmailNotifications struct {
 	OnUpdateSuccess []string `json:"on_update_success,omitempty"`
 }
 
+type ResourceModelServingProvisionedThroughputProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceModelServingProvisionedThroughputTags struct {
 	Key   string `json:"key"`
 	Value string `json:"value,omitempty"`
@@ -100,5 +105,6 @@ type ResourceModelServingProvisionedThroughput struct {
 	AiGateway          *ResourceModelServingProvisionedThroughputAiGateway          `json:"ai_gateway,omitempty"`
 	Config             *ResourceModelServingProvisionedThroughputConfig             `json:"config,omitempty"`
 	EmailNotifications *ResourceModelServingProvisionedThroughputEmailNotifications `json:"email_notifications,omitempty"`
+	ProviderConfig     *ResourceModelServingProvisionedThroughputProviderConfig     `json:"provider_config,omitempty"`
 	Tags               []ResourceModelServingProvisionedThroughputTags              `json:"tags,omitempty"`
 }

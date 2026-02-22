@@ -19,8 +19,10 @@ type Resources struct {
 	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
 	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
+	Catalogs              map[string]*resources.Catalog              `json:"catalogs,omitempty"`
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
 	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
+	ExternalLocations     map[string]*resources.ExternalLocation     `json:"external_locations,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
@@ -30,6 +32,9 @@ type Resources struct {
 	DatabaseInstances     map[string]*resources.DatabaseInstance     `json:"database_instances,omitempty"`
 	DatabaseCatalogs      map[string]*resources.DatabaseCatalog      `json:"database_catalogs,omitempty"`
 	SyncedDatabaseTables  map[string]*resources.SyncedDatabaseTable  `json:"synced_database_tables,omitempty"`
+	PostgresProjects      map[string]*resources.PostgresProject      `json:"postgres_projects,omitempty"`
+	PostgresBranches      map[string]*resources.PostgresBranch       `json:"postgres_branches,omitempty"`
+	PostgresEndpoints     map[string]*resources.PostgresEndpoint     `json:"postgres_endpoints,omitempty"`
 }
 
 type ConfigResource interface {
@@ -87,7 +92,9 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
 		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
+		collectResourceMap(descriptions["catalogs"], r.Catalogs),
 		collectResourceMap(descriptions["schemas"], r.Schemas),
+		collectResourceMap(descriptions["external_locations"], r.ExternalLocations),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
@@ -98,110 +105,19 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["database_instances"], r.DatabaseInstances),
 		collectResourceMap(descriptions["database_catalogs"], r.DatabaseCatalogs),
 		collectResourceMap(descriptions["synced_database_tables"], r.SyncedDatabaseTables),
+		collectResourceMap(descriptions["postgres_projects"], r.PostgresProjects),
+		collectResourceMap(descriptions["postgres_branches"], r.PostgresBranches),
+		collectResourceMap(descriptions["postgres_endpoints"], r.PostgresEndpoints),
 	}
 }
 
+// FindResourceByConfigKey searches all resource maps for a resource with the given key.
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
 	var found []ConfigResource
-	for k := range r.Jobs {
-		if k == key {
-			found = append(found, r.Jobs[k])
-		}
-	}
 
-	for k := range r.Pipelines {
-		if k == key {
-			found = append(found, r.Pipelines[k])
-		}
-	}
-
-	for k := range r.Apps {
-		if k == key {
-			found = append(found, r.Apps[k])
-		}
-	}
-
-	for k := range r.Schemas {
-		if k == key {
-			found = append(found, r.Schemas[k])
-		}
-	}
-
-	for k := range r.Experiments {
-		if k == key {
-			found = append(found, r.Experiments[k])
-		}
-	}
-
-	for k := range r.Clusters {
-		if k == key {
-			found = append(found, r.Clusters[k])
-		}
-	}
-
-	for k := range r.Volumes {
-		if k == key {
-			found = append(found, r.Volumes[k])
-		}
-	}
-
-	for k := range r.Dashboards {
-		if k == key {
-			found = append(found, r.Dashboards[k])
-		}
-	}
-
-	for k := range r.RegisteredModels {
-		if k == key {
-			found = append(found, r.RegisteredModels[k])
-		}
-	}
-
-	for k := range r.QualityMonitors {
-		if k == key {
-			found = append(found, r.QualityMonitors[k])
-		}
-	}
-
-	for k := range r.ModelServingEndpoints {
-		if k == key {
-			found = append(found, r.ModelServingEndpoints[k])
-		}
-	}
-
-	for k := range r.SecretScopes {
-		if k == key {
-			found = append(found, r.SecretScopes[k])
-		}
-	}
-
-	for k := range r.Alerts {
-		if k == key {
-			found = append(found, r.Alerts[k])
-		}
-	}
-
-	for k := range r.SqlWarehouses {
-		if k == key {
-			found = append(found, r.SqlWarehouses[k])
-		}
-	}
-
-	for k := range r.DatabaseInstances {
-		if k == key {
-			found = append(found, r.DatabaseInstances[k])
-		}
-	}
-
-	for k := range r.DatabaseCatalogs {
-		if k == key {
-			found = append(found, r.DatabaseCatalogs[k])
-		}
-	}
-
-	for k := range r.SyncedDatabaseTables {
-		if k == key {
-			found = append(found, r.SyncedDatabaseTables[k])
+	for _, group := range r.AllResources() {
+		if res, ok := group.Resources[key]; ok {
+			found = append(found, res)
 		}
 	}
 
@@ -230,7 +146,9 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"model_serving_endpoints": (&resources.ModelServingEndpoint{}).ResourceDescription(),
 		"registered_models":       (&resources.RegisteredModel{}).ResourceDescription(),
 		"quality_monitors":        (&resources.QualityMonitor{}).ResourceDescription(),
+		"catalogs":                (&resources.Catalog{}).ResourceDescription(),
 		"schemas":                 (&resources.Schema{}).ResourceDescription(),
+		"external_locations":      (&resources.ExternalLocation{}).ResourceDescription(),
 		"clusters":                (&resources.Cluster{}).ResourceDescription(),
 		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
@@ -241,5 +159,8 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"database_instances":      (&resources.DatabaseInstance{}).ResourceDescription(),
 		"database_catalogs":       (&resources.DatabaseCatalog{}).ResourceDescription(),
 		"synced_database_tables":  (&resources.SyncedDatabaseTable{}).ResourceDescription(),
+		"postgres_projects":       (&resources.PostgresProject{}).ResourceDescription(),
+		"postgres_branches":       (&resources.PostgresBranch{}).ResourceDescription(),
+		"postgres_endpoints":      (&resources.PostgresEndpoint{}).ResourceDescription(),
 	}
 }

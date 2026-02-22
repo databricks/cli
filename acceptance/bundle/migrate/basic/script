@@ -1,3 +1,4 @@
+export DATABRICKS_BUNDLE_ENGINE=
 # Migrating without state, should print a message about missing state.
 trace musterr $CLI bundle deployment migrate
 
@@ -22,8 +23,8 @@ trace musterr $CLI bundle deployment migrate
 
 rm out.requests.txt
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "2 unchanged"  # should be "3 unchanged" once permanent drift is fixed
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "2 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "3 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "3 unchanged"
 trace print_requests.py --get //jobs/get | contains.py 'engine/direct'
 
 trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy
