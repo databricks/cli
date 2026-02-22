@@ -1,0 +1,24 @@
+=== Creating state directory ===
+=== Creating empty WAL file ===
+=== Empty WAL file exists ===
+[FILE_INFO] .databricks/bundle/default/resources.json.wal
+=== Deploy (should handle empty WAL gracefully) ===
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-empty-test/default/files...
+Warn: Failed to read WAL file, moved it to [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal.corrupted and proceeding: WAL file is empty
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+=== Checking WAL file after deploy ===
+Empty WAL deleted (expected)
+=== Corrupted WAL file ===
+[FILE_INFO] .databricks/bundle/default/resources.json.wal.corrupted
+=== State file content ===
+{
+  "lineage": "[UUID]",
+  "serial": [SERIAL],
+  "state_keys": [
+    "resources.jobs.test_job"
+  ]
+}

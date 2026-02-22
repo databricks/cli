@@ -1,9 +1,4 @@
 
->>> [CLI] bundle deploy -t one
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/one/files...
-Deploying resources...
-Deployment complete!
-
 >>> cat out.requests.txt
 {
   "target_count": 3

@@ -1,0 +1,75 @@
+=== First deploy (crashes on job_10) ===
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files...
+Deploying resources...
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
+
+=== WAL content after crash ===
+{"lineage":"[UUID]","serial": [SERIAL]}
+{"k":"resources.jobs.job_01","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"},"description":"first in chain","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-01","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"},"task_key":"task"}]}}}
+{"k":"resources.jobs.job_02","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"},"description":"depends on 1001","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-02","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"},"task_key":"task"}]},"depends_on":[{"node":"resources.jobs.job_01","label":"${resources.jobs.job_01.id}"}]}}
+{"k":"resources.jobs.job_03","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"},"description":"depends on 1001","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-03","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"},"task_key":"task"}]},"depends_on":[{"node":"resources.jobs.job_02","label":"${resources.jobs.job_02.id}"}]}}
+{"k":"resources.jobs.job_04","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"},"description":"depends on 1001","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-04","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"},"task_key":"task"}]},"depends_on":[{"node":"resources.jobs.job_03","label":"${resources.jobs.job_03.id}"}]}}
+{"k":"resources.jobs.job_05","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"},"description":"depends on 1001","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-05","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"},"task_key":"task"}]},"depends_on":[{"node":"resources.jobs.job_04","label":"${resources.jobs.job_04.id}"}]}}
+{"k":"resources.jobs.job_06","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"},"description":"depends on 1001","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-06","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"},"task_key":"task"}]},"depends_on":[{"node":"resources.jobs.job_05","label":"${resources.jobs.job_05.id}"}]}}
+{"k":"resources.jobs.job_07","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"},"description":"depends on 1001","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-07","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"},"task_key":"task"}]},"depends_on":[{"node":"resources.jobs.job_06","label":"${resources.jobs.job_06.id}"}]}}
+{"k":"resources.jobs.job_08","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"},"description":"depends on 1001","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-08","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"},"task_key":"task"}]},"depends_on":[{"node":"resources.jobs.job_07","label":"${resources.jobs.job_07.id}"}]}}
+{"k":"resources.jobs.job_09","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/state/metadata.json"},"description":"depends on 1001","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-09","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files/test.py"},"task_key":"task"}]},"depends_on":[{"node":"resources.jobs.job_08","label":"${resources.jobs.job_08.id}"}]}}
+
+=== Number of jobs saved in WAL ===
+9
+
+=== Bundle summary (reads from WAL) ===
+Recovering state from WAL file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal
+Recovered 9 entries from WAL file.
+Name: wal-chain-test
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default
+Resources:
+  Jobs:
+    job_01:
+      Name: job-01
+      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+    job_02:
+      Name: job-02
+      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+    job_03:
+      Name: job-03
+      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+    job_04:
+      Name: job-04
+      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+    job_05:
+      Name: job-05
+      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+    job_06:
+      Name: job-06
+      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+    job_07:
+      Name: job-07
+      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+    job_08:
+      Name: job-08
+      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+    job_09:
+      Name: job-09
+      URL:  [DATABRICKS_URL]/jobs/1001?o=[NUMID]
+    job_10:
+      Name: job-10
+      URL:  (not deployed)
+
+=== Second deploy (recovery) ===
+
+>>> [CLI] bundle deploy --force-lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== WAL after successful deploy ===
+WAL deleted (expected)

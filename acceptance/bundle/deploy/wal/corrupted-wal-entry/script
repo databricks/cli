@@ -1,0 +1,44 @@
+echo "=== Creating state file with serial 5 ==="
+mkdir -p .databricks/bundle/default
+cat > .databricks/bundle/default/resources.json << 'EOF'
+{
+  "state_version": 1,
+  "cli_version": "0.0.0",
+  "lineage": "test-lineage-123",
+  "serial": 5,
+  "state": {}
+}
+EOF
+
+echo "=== Creating WAL with corrupted LAST entry ==="
+# Corrupted last line is expected (truncated JSON from crash) and should be skipped.
+# Valid entries before it should be recovered.
+cat > .databricks/bundle/default/resources.json.wal << 'EOF'
+{"lineage":"test-lineage-123","serial":6}
+{"k":"resources.jobs.valid_job","v":{"__id__":"1111","state":{"name":"valid-job"}}}
+{"k":"resources.jobs.another_valid","v":{"__id__":"2222","state":{"name":"another-valid"}}}
+{"k":"resources.jobs.partial_write","v":{"__id__":"3333","state":{"name":"partial-
+EOF
+
+echo "=== WAL content ==="
+cat .databricks/bundle/default/resources.json.wal
+
+echo "=== Deploy (should recover valid entries, skip corrupted last line) ==="
+trace $CLI bundle deploy 2>&1
+
+echo "=== Final state (should have recovered entries) ==="
+cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys | sort)}'
+
+echo "=== Corrupted WAL entries file ==="
+if [ -f ".databricks/bundle/default/resources.json.wal.corrupted" ]; then
+    cat .databricks/bundle/default/resources.json.wal.corrupted
+else
+    echo "Missing corrupted WAL entries file (unexpected)"
+fi
+
+echo "=== WAL after successful deploy ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL exists (unexpected)"
+else
+    echo "WAL deleted (expected)"
+fi

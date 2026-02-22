@@ -1,0 +1,26 @@
+echo "=== First deploy (crashes after job_a create, before job_b) ==="
+trace errcode $CLI bundle deploy
+
+echo "=== WAL should exist after crash ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL exists (expected)"
+    cat .databricks/bundle/default/resources.json.wal
+else
+    echo "WAL missing (unexpected)"
+fi
+
+echo "=== State file after crash (should be empty) ==="
+cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'
+
+echo "=== Second deploy (should recover from WAL and complete) ==="
+trace $CLI bundle deploy --force-lock
+
+echo "=== State file after recovery ==="
+cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'
+
+echo "=== WAL file after successful deploy ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL file exists (unexpected)"
+else
+    echo "WAL file deleted (expected)"
+fi

@@ -1,0 +1,28 @@
+echo "=== Creating state directory ==="
+mkdir -p .databricks/bundle/default
+
+echo "=== Creating empty WAL file ==="
+touch .databricks/bundle/default/resources.json.wal
+
+echo "=== Empty WAL file exists ==="
+ls -la .databricks/bundle/default/resources.json.wal
+
+echo "=== Deploy (should handle empty WAL gracefully) ==="
+trace $CLI bundle deploy
+
+echo "=== Checking WAL file after deploy ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL file exists (unexpected)"
+else
+    echo "Empty WAL deleted (expected)"
+fi
+
+echo "=== Corrupted WAL file ==="
+if [ -f ".databricks/bundle/default/resources.json.wal.corrupted" ]; then
+    ls -la .databricks/bundle/default/resources.json.wal.corrupted
+else
+    echo "Corrupted WAL file missing (unexpected)"
+fi
+
+echo "=== State file content ==="
+cat .databricks/bundle/default/resources.json | jq -S '{lineage: .lineage, serial: .serial, state_keys: (.state | keys)}'

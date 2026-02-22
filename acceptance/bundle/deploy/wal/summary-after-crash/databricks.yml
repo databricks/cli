@@ -1,0 +1,27 @@
+bundle:
+  name: wal-summary-test
+
+resources:
+  jobs:
+    job_a:
+      name: "job-a"
+      description: "first job"
+      tasks:
+        - task_key: "task-a"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_b:
+      name: "job-b"
+      description: "depends on ${resources.jobs.job_a.id}"
+      tasks:
+        - task_key: "task-b"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0

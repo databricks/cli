@@ -1,0 +1,16 @@
+# WAL recovery after real crash. First deploy creates job_a then crashes.
+# Second deploy recovers from WAL and completes successfully.
+# job_b depends on job_a, so jobs/get is called after job_a's SaveState.
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.Body = '{"job_id": 1001}'
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/reset"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+KillCaller = 1
+Response.Body = '{"job_id": 1001, "settings": {"name": "test-job"}}'
