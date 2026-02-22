@@ -152,6 +152,8 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
+		authArguments.Profile = profileName
+
 		var scopesList []string
 		if scopes != "" {
 			for _, s := range strings.Split(scopes, ",") {
