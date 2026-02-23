@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -683,4 +684,33 @@ func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount 
 		cmdio.LogString(ctx, codeStyle.Render("    "+nextStepsCmd))
 	}
 	cmdio.LogString(ctx, "")
+}
+
+// SetupNote holds the display name and message for a single plugin setup note.
+type SetupNote struct {
+	Name    string
+	Message string
+}
+
+// PrintSetupNotes renders a styled "Setup Notes" section for selected plugins.
+func PrintSetupNotes(ctx context.Context, notes []SetupNote) {
+	headerStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFAB00")). // Databricks yellow
+		Bold(true)
+
+	nameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#71717A")). // Mid-tone gray
+		Bold(true)
+
+	msgStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#71717A")) // Mid-tone gray
+
+	cmdio.LogString(ctx, headerStyle.Render("  Setup Notes"))
+	cmdio.LogString(ctx, "")
+	for _, n := range notes {
+		cmdio.LogString(ctx, nameStyle.Render("  "+n.Name))
+		indented := strings.ReplaceAll(n.Message, "\n", "\n  ")
+		cmdio.LogString(ctx, msgStyle.Render("  "+indented))
+		cmdio.LogString(ctx, "")
+	}
 }

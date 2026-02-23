@@ -853,6 +853,19 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
 	}
 
+	// Print any onSetupMessage declared by selected plugins in the template manifest.
+	var notes []prompt.SetupNote
+	for _, name := range selectedPlugins {
+		p, ok := m.Plugins[name]
+		if !ok || p.OnSetupMessage == "" {
+			continue
+		}
+		notes = append(notes, prompt.SetupNote{Name: p.DisplayName, Message: p.OnSetupMessage})
+	}
+	if len(notes) > 0 {
+		prompt.PrintSetupNotes(ctx, notes)
+	}
+
 	// Recommend skills installation if coding agents are detected without skills.
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
