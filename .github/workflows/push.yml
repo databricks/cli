@@ -388,7 +388,7 @@ jobs:
 
       # Trigger integration tests if the primary "test" target is triggered by this change.
       - name: Trigger integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' && contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
+        if: ${{ github.event_name == 'pull_request' && (contains(fromJSON(needs.testmask.outputs.targets), 'test') || contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh')) }}
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |-
@@ -400,7 +400,7 @@ jobs:
       # Skip integration tests if the primary "test" target is not triggered by this change.
       # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
       - name: Skip integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
+        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
         uses: actions/github-script@v8
         with:
           script: |
