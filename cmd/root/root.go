@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/agent"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
@@ -147,6 +148,10 @@ Stack Trace:
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
+		if cmdctx.HasConfigUsed(cmd.Context()) {
+			cfg := cmdctx.ConfigUsed(cmd.Context())
+			err = auth.EnrichAuthError(cmd.Context(), cfg, err)
+		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
