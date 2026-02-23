@@ -1,0 +1,32 @@
+export HOME=$TMPDIR/fakehome-$$
+mkdir -p $HOME
+
+# Test install
+trace $CLI completion install --shell bash
+
+# Verify the RC file was created with correct content
+cat $HOME/.bash_profile
+
+# Test status shows installed
+trace $CLI completion status --shell bash
+
+# Test idempotent install
+trace $CLI completion install --shell bash
+
+# Verify still only one block
+cat $HOME/.bash_profile
+
+# Test uninstall
+trace $CLI completion uninstall --shell bash
+
+# Test status after uninstall
+trace $CLI completion status --shell bash
+
+# Test shell subcommands produce output
+$CLI completion bash 2>&1 | head -1
+$CLI completion zsh 2>&1 | head -1
+$CLI completion fish 2>&1 | head -1
+$CLI completion powershell 2>&1 | head -1
+
+# Test bash --no-descriptions
+$CLI completion bash --no-descriptions 2>&1 | head -1

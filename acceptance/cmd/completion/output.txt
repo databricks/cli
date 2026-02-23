@@ -1,0 +1,31 @@
+
+>>> [CLI] completion install --shell bash
+Databricks CLI completions installed for bash.
+Restart your shell or run 'source [HOME]/.bash_profile' to activate.
+# BEGIN databricks-cli completion
+eval "$(databricks completion bash)"
+# END databricks-cli completion
+
+>>> [CLI] completion status --shell bash
+Shell:   bash
+File:    [HOME]/.bash_profile
+Status:  installed
+
+>>> [CLI] completion install --shell bash
+Databricks CLI completions are already installed for bash in [HOME]/.bash_profile.
+# BEGIN databricks-cli completion
+eval "$(databricks completion bash)"
+# END databricks-cli completion
+
+>>> [CLI] completion uninstall --shell bash
+Databricks CLI completions removed for bash from [HOME]/.bash_profile.
+
+>>> [CLI] completion status --shell bash
+Shell:   bash
+File:    [HOME]/.bash_profile
+Status:  not installed
+# bash completion V2 for databricks                           -*- shell-script -*-
+#compdef databricks
+# fish completion for databricks                           -*- shell-script -*-
+# powershell completion for databricks                           -*- shell-script -*-
+# bash completion V2 for databricks                           -*- shell-script -*-
