@@ -25,7 +25,7 @@ const (
 var authTypeDisplayNames = map[string]string{
 	AuthTypeDatabricksCli: "OAuth (databricks-cli)",
 	AuthTypePat:           "Personal Access Token (pat)",
-	AuthTypeBasic:         "Basic (username/password)",
+	AuthTypeBasic:         "Basic",
 	AuthTypeAzureCli:      "Azure CLI (azure-cli)",
 	AuthTypeOAuthM2M:      "OAuth Machine-to-Machine (oauth-m2m)",
 	"azure-msi":           "Azure Managed Identity (azure-msi)",

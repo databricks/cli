@@ -142,7 +142,7 @@ func TestEnrichAuthError(t *testing.T) {
 			},
 			statusCode: 401,
 			contains: []string{
-				"Auth type: Basic (username/password)",
+				"Auth type: Basic",
 				"Check your username/password or run: databricks configure --profile basic-profile",
 			},
 		},
