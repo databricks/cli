@@ -64,6 +64,8 @@ var knownMissingInRemoteType = map[string][]string{
 		"suspend_timeout_duration",
 	},
 	"postgres_projects": {
+		"budget_policy_id",
+		"custom_tags",
 		"default_endpoint_settings",
 		"display_name",
 		"history_retention_duration",

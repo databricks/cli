@@ -9,6 +9,7 @@ cmd/account/custom-app-integration/custom-app-integration.go linguist-generated=
 cmd/account/disable-legacy-features/disable-legacy-features.go linguist-generated=true
 cmd/account/enable-ip-access-lists/enable-ip-access-lists.go linguist-generated=true
 cmd/account/encryption-keys/encryption-keys.go linguist-generated=true
+cmd/account/endpoints/endpoints.go linguist-generated=true
 cmd/account/esm-enablement-account/esm-enablement-account.go linguist-generated=true
 cmd/account/federation-policy/federation-policy.go linguist-generated=true
 cmd/account/groups-v2/groups-v2.go linguist-generated=true
