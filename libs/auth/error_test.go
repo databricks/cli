@@ -8,44 +8,60 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBuildDescribeCommand(t *testing.T) {
 	tests := []struct {
-		name    string
-		profile string
-		arg     u2m.OAuthArgument
-		argErr  error
-		want    string
+		name string
+		cfg  *config.Config
+		want string
 	}{
 		{
-			name:    "with profile",
-			profile: "my-profile",
-			want:    "databricks auth describe --profile my-profile",
+			name: "with profile",
+			cfg:  &config.Config{Profile: "my-profile"},
+			want: "databricks auth describe --profile my-profile",
 		},
 		{
 			name: "workspace host without profile",
-			arg: mustWorkspaceOAuth(t, "https://my-workspace.cloud.databricks.com"),
+			cfg:  &config.Config{Host: "https://my-workspace.cloud.databricks.com"},
 			want: "databricks auth describe --host https://my-workspace.cloud.databricks.com",
 		},
 		{
 			name: "account host without profile",
-			arg: mustAccountOAuth(t, "https://accounts.cloud.databricks.com", "abc123"),
+			cfg:  &config.Config{Host: "https://accounts.cloud.databricks.com", AccountID: "abc123"},
 			want: "databricks auth describe --host https://accounts.cloud.databricks.com --account-id abc123",
 		},
 		{
-			name:   "argErr falls back to bare command",
-			argErr: fmt.Errorf("unknown host type"),
-			want:   "databricks auth describe",
+			name: "unified host with workspace-id",
+			cfg: &config.Config{
+				Host:                       "https://unified.cloud.databricks.com",
+				AccountID:                  "abc123",
+				WorkspaceID:                "ws-456",
+				Experimental_IsUnifiedHost: true,
+			},
+			want: "databricks auth describe --host https://unified.cloud.databricks.com --account-id abc123 --experimental-is-unified-host --workspace-id ws-456",
+		},
+		{
+			name: "unified host without workspace-id",
+			cfg: &config.Config{
+				Host:                       "https://unified.cloud.databricks.com",
+				AccountID:                  "abc123",
+				Experimental_IsUnifiedHost: true,
+			},
+			want: "databricks auth describe --host https://unified.cloud.databricks.com --account-id abc123 --experimental-is-unified-host",
+		},
+		{
+			name: "empty config",
+			cfg:  &config.Config{},
+			want: "databricks auth describe",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := BuildDescribeCommand(tt.profile, tt.arg, tt.argErr)
+			got := BuildDescribeCommand(tt.cfg)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -244,6 +260,21 @@ func TestEnrichAuthError(t *testing.T) {
 			},
 		},
 		{
+			name: "401 with unified host includes workspace-id",
+			cfg: &config.Config{
+				Host:                       "https://unified.cloud.databricks.com",
+				AccountID:                  "acc-123",
+				WorkspaceID:                "ws-456",
+				AuthType:                   AuthTypeDatabricksCli,
+				Experimental_IsUnifiedHost: true,
+			},
+			statusCode: 401,
+			contains: []string{
+				"Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123 --experimental-is-unified-host --workspace-id ws-456",
+				"Check your identity: databricks auth describe --host https://unified.cloud.databricks.com --account-id acc-123 --experimental-is-unified-host --workspace-id ws-456",
+			},
+		},
+		{
 			name: "empty config fields are omitted",
 			cfg: &config.Config{
 				Host: "https://my-workspace.cloud.databricks.com",
@@ -282,20 +313,4 @@ func TestEnrichAuthError(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Helpers to create OAuthArgument types for BuildDescribeCommand tests.
-
-func mustWorkspaceOAuth(t *testing.T, host string) u2m.OAuthArgument {
-	t.Helper()
-	arg, err := u2m.NewProfileWorkspaceOAuthArgument(host, "")
-	require.NoError(t, err)
-	return arg
-}
-
-func mustAccountOAuth(t *testing.T, host, accountID string) u2m.OAuthArgument {
-	t.Helper()
-	arg, err := u2m.NewProfileAccountOAuthArgument(host, accountID, "")
-	require.NoError(t, err)
-	return arg
 }
