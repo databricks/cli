@@ -1,6 +1,7 @@
 package completion
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 
 func newUninstallCmd() *cobra.Command {
 	var shellFlag string
+	var yes bool
 	cmd := &cobra.Command{
 		Use:               "uninstall",
 		Short:             "Uninstall shell completions",
@@ -31,23 +33,54 @@ func newUninstallCmd() *cobra.Command {
 				return err
 			}
 
-			filePath, wasInstalled, err := libcompletion.Uninstall(shell, home)
+			filePath := libcompletion.TargetFilePath(shell, home)
+			displayPath := filepath.ToSlash(filePath)
+
+			// Check current status to avoid a useless prompt.
+			result, err := libcompletion.Status(shell, home)
 			if err != nil {
 				return err
 			}
-			displayPath := filepath.ToSlash(filePath)
 
-			if !wasInstalled {
-				result, statusErr := libcompletion.Status(shell, home)
-				if statusErr == nil && result.Installed && result.Method != "" && result.Method != "marker" {
-					cmdio.LogString(ctx, fmt.Sprintf(
-						"Databricks CLI completions for %s appear to be installed via %s in %s. Nothing to uninstall.",
-						shell,
-						result.Method,
-						filepath.ToSlash(result.FilePath),
-					))
+			if !result.Installed {
+				cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions were not installed for %s.", shell))
+				return nil
+			}
+
+			// Installed by another method (homebrew, package manager) — we can't uninstall it.
+			if result.Method != "" && result.Method != "marker" {
+				cmdio.LogString(ctx, fmt.Sprintf(
+					"Databricks CLI completions for %s appear to be installed via %s in %s. Nothing to uninstall.",
+					shell,
+					result.Method,
+					filepath.ToSlash(result.FilePath),
+				))
+				return nil
+			}
+
+			// Confirm before modifying.
+			if !yes {
+				if !cmdio.IsPromptSupported(ctx) {
+					return errors.New("use --yes to skip the confirmation prompt in non-interactive mode")
+				}
+				cmdio.LogString(ctx, "Shell: "+shell.DisplayName())
+				cmdio.LogString(ctx, "File:  "+displayPath)
+				confirmed, err := cmdio.AskYesOrNo(ctx, "Proceed?")
+				if err != nil {
+					return err
+				}
+				if !confirmed {
 					return nil
 				}
+			}
+
+			_, wasInstalled, err := libcompletion.Uninstall(shell, home)
+			if err != nil {
+				return err
+			}
+
+			if !wasInstalled {
+				// Race: status said installed but uninstall found nothing.
 				cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions were not installed for %s.", shell))
 				return nil
 			}
@@ -56,6 +89,7 @@ func newUninstallCmd() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
 	addShellFlag(cmd, &shellFlag)
 	return cmd
 }

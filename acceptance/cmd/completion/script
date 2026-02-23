@@ -7,16 +7,16 @@ add_repl.py "$HOME" HOME
 export HOMEBREW_PREFIX=/nonexistent
 
 # Test install (use zsh to avoid OS-dependent bash RC file path)
-trace $CLI completion install --shell zsh
+trace $CLI completion install --shell zsh --yes
 
 # Test status shows installed
 trace $CLI completion status --shell zsh
 
-# Test idempotent install
-trace $CLI completion install --shell zsh
+# Test idempotent install (--yes is harmless when already installed)
+trace $CLI completion install --shell zsh --yes
 
 # Test uninstall
-trace $CLI completion uninstall --shell zsh
+trace $CLI completion uninstall --shell zsh --yes
 
 # Test status after uninstall
 trace $CLI completion status --shell zsh
