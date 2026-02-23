@@ -49,12 +49,16 @@ func newUninstallCmd() *cobra.Command {
 
 			// Installed by another method (homebrew, package manager) — we can't uninstall it.
 			if result.Method != "" && result.Method != "marker" {
-				cmdio.LogString(ctx, fmt.Sprintf(
-					"Databricks CLI completions for %s appear to be installed via %s in %s. Nothing to uninstall.",
-					shell,
-					result.Method,
-					filepath.ToSlash(result.FilePath),
-				))
+				switch result.Method {
+				case "homebrew":
+					cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions for %s are provided by Homebrew. Nothing to uninstall.", shell))
+				default:
+					cmdio.LogString(ctx, fmt.Sprintf(
+						"Databricks CLI completions for %s appear to be installed externally in %s. Nothing to uninstall.",
+						shell,
+						filepath.ToSlash(result.FilePath),
+					))
+				}
 				return nil
 			}
 

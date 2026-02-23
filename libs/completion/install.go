@@ -19,14 +19,10 @@ func Install(shell Shell, homeDir string) (filePath string, alreadyInstalled boo
 }
 
 // installFish handles the file-drop model for fish completions.
+// If the file already exists (ours or external), it is not overwritten.
 func installFish(filePath string, shell Shell) (string, bool, error) {
-	content, err := os.ReadFile(filePath)
+	_, err := os.Stat(filePath)
 	if err == nil {
-		// Preserve existing files we don't own (e.g. package manager installs).
-		// If our marker is present, this is also already installed.
-		if strings.Contains(string(content), BeginMarker) {
-			return filePath, true, nil
-		}
 		return filePath, true, nil
 	}
 	if !os.IsNotExist(err) {

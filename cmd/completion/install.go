@@ -41,8 +41,15 @@ func newInstallCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if result.Installed && result.Method == "marker" {
-				cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions are already installed for %s in %s.", shell, displayPath))
+			if result.Installed {
+				switch result.Method {
+				case "marker":
+					cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions are already installed for %s in %s.", shell, displayPath))
+				case "homebrew":
+					cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions for %s are already provided by Homebrew.", shell))
+				default:
+					cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions for %s are already present in %s.", shell, displayPath))
+				}
 				return nil
 			}
 
@@ -62,9 +69,13 @@ func newInstallCmd() *cobra.Command {
 				}
 			}
 
-			_, _, err = libcompletion.Install(shell, home)
+			_, alreadyInstalled, err := libcompletion.Install(shell, home)
 			if err != nil {
 				return err
+			}
+			if alreadyInstalled {
+				cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions are already installed for %s in %s.", shell, displayPath))
+				return nil
 			}
 
 			msg := fmt.Sprintf("Databricks CLI completions installed for %s.\n", shell)
