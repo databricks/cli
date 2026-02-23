@@ -13,7 +13,7 @@ import (
 
 func newUninstallCmd() *cobra.Command {
 	var shellFlag string
-	var yes bool
+	var autoApprove bool
 	cmd := &cobra.Command{
 		Use:               "uninstall",
 		Short:             "Uninstall shell completions",
@@ -59,9 +59,9 @@ func newUninstallCmd() *cobra.Command {
 			}
 
 			// Confirm before modifying.
-			if !yes {
+			if !autoApprove {
 				if !cmdio.IsPromptSupported(ctx) {
-					return errors.New("use --yes to skip the confirmation prompt in non-interactive mode")
+					return errors.New("use --auto-approve to skip the confirmation prompt, or run 'databricks completion status' to preview the detected shell and target file")
 				}
 				cmdio.LogString(ctx, "Shell: "+shell.DisplayName())
 				cmdio.LogString(ctx, "File:  "+displayPath)
@@ -89,7 +89,7 @@ func newUninstallCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompt")
 	addShellFlag(cmd, &shellFlag)
 	return cmd
 }

@@ -1,5 +1,5 @@
 
->>> [CLI] completion install --shell zsh --yes
+>>> [CLI] completion install --shell zsh --auto-approve
 Databricks CLI completions installed for zsh.
 Restart your shell or run 'source home/.zshrc' to activate.
 
@@ -8,10 +8,10 @@ Shell:   zsh
 File:    home/.zshrc
 Status:  installed
 
->>> [CLI] completion install --shell zsh --yes
+>>> [CLI] completion install --shell zsh --auto-approve
 Databricks CLI completions are already installed for zsh in home/.zshrc.
 
->>> [CLI] completion uninstall --shell zsh --yes
+>>> [CLI] completion uninstall --shell zsh --auto-approve
 Databricks CLI completions removed for zsh from home/.zshrc.
 
 >>> [CLI] completion status --shell zsh
