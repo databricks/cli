@@ -14,26 +14,32 @@ import (
 
 // Auth type names returned by credential providers.
 const (
-	AuthTypeDatabricksCli = "databricks-cli"
-	AuthTypePat           = "pat"
-	AuthTypeBasic         = "basic"
-	AuthTypeAzureCli      = "azure-cli"
-	AuthTypeOAuthM2M      = "oauth-m2m"
+	AuthTypeDatabricksCli   = "databricks-cli"
+	AuthTypePat             = "pat"
+	AuthTypeBasic           = "basic"
+	AuthTypeAzureCli        = "azure-cli"
+	AuthTypeOAuthM2M        = "oauth-m2m"
+	AuthTypeAzureMSI        = "azure-msi"
+	AuthTypeAzureSecret     = "azure-client-secret"
+	AuthTypeGoogleCreds     = "google-credentials"
+	AuthTypeGoogleID        = "google-id"
+	AuthTypeGitHubOIDC      = "github-oidc-azure"
+	AuthTypeMetadataService = "metadata-service"
 )
 
 // authTypeDisplayNames maps auth type identifiers to human-readable names.
 var authTypeDisplayNames = map[string]string{
-	AuthTypeDatabricksCli: "OAuth (databricks-cli)",
-	AuthTypePat:           "Personal Access Token (pat)",
-	AuthTypeBasic:         "Basic",
-	AuthTypeAzureCli:      "Azure CLI (azure-cli)",
-	AuthTypeOAuthM2M:      "OAuth Machine-to-Machine (oauth-m2m)",
-	"azure-msi":           "Azure Managed Identity (azure-msi)",
-	"azure-client-secret": "Azure Client Secret (azure-client-secret)",
-	"google-credentials":  "Google Credentials (google-credentials)",
-	"google-id":           "Google Default Credentials (google-id)",
-	"github-oidc-azure":   "GitHub OIDC for Azure (github-oidc-azure)",
-	"metadata-service":    "Metadata Service (metadata-service)",
+	AuthTypeDatabricksCli:   "OAuth (databricks-cli)",
+	AuthTypePat:             "Personal Access Token (pat)",
+	AuthTypeBasic:           "Basic",
+	AuthTypeAzureCli:        "Azure CLI (azure-cli)",
+	AuthTypeOAuthM2M:        "OAuth Machine-to-Machine (oauth-m2m)",
+	AuthTypeAzureMSI:        "Azure Managed Identity (azure-msi)",
+	AuthTypeAzureSecret:     "Azure Client Secret (azure-client-secret)",
+	AuthTypeGoogleCreds:     "Google Credentials (google-credentials)",
+	AuthTypeGoogleID:        "Google Default Credentials (google-id)",
+	AuthTypeGitHubOIDC:      "GitHub OIDC for Azure (github-oidc-azure)",
+	AuthTypeMetadataService: "Metadata Service (metadata-service)",
 }
 
 // AuthTypeDisplayName returns a human-readable name for the given auth type.
@@ -88,12 +94,12 @@ func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
 		fmt.Fprintf(&b, "\nAuth type: %s", AuthTypeDisplayName(cfg.AuthType))
 	}
 
-	b.WriteString("\n\nNext steps:")
+	fmt.Fprint(&b, "\n\nNext steps:")
 
 	if apiErr.StatusCode == http.StatusUnauthorized {
 		writeReauthSteps(ctx, cfg, &b)
 	} else {
-		b.WriteString("\n  - Verify you have the required permissions for this operation")
+		fmt.Fprint(&b, "\n  - Verify you have the required permissions for this operation")
 	}
 
 	// Always suggest checking identity.
@@ -101,7 +107,7 @@ func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
 
 	// Nudge toward profiles when using env-var-based auth.
 	if cfg.Profile == "" {
-		b.WriteString("\n  - Consider configuring a profile: databricks configure --profile <name>")
+		fmt.Fprint(&b, "\n  - Consider configuring a profile: databricks configure --profile <name>")
 	}
 
 	return fmt.Errorf("%w\n%s", err, b.String())
@@ -124,7 +130,7 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 			IsUnifiedHost: cfg.Experimental_IsUnifiedHost,
 		}.ToOAuthArgument()
 		if argErr != nil {
-			b.WriteString("\n  - Re-authenticate: databricks auth login")
+			fmt.Fprint(b, "\n  - Re-authenticate: databricks auth login")
 			return
 		}
 		loginCmd := BuildLoginCommand(ctx, "", oauthArg)
@@ -139,24 +145,24 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 		if cfg.Profile != "" {
 			fmt.Fprintf(b, "\n  - Regenerate your access token or run: databricks configure --profile %s", cfg.Profile)
 		} else {
-			b.WriteString("\n  - Regenerate your access token")
+			fmt.Fprint(b, "\n  - Regenerate your access token")
 		}
 
 	case AuthTypeBasic:
 		if cfg.Profile != "" {
 			fmt.Fprintf(b, "\n  - Check your username/password or run: databricks configure --profile %s", cfg.Profile)
 		} else {
-			b.WriteString("\n  - Check your username and password")
+			fmt.Fprint(b, "\n  - Check your username and password")
 		}
 
 	case AuthTypeAzureCli:
-		b.WriteString("\n  - Re-authenticate with Azure: az login")
+		fmt.Fprint(b, "\n  - Re-authenticate with Azure: az login")
 
 	case AuthTypeOAuthM2M:
-		b.WriteString("\n  - Check your service principal client ID and secret")
+		fmt.Fprint(b, "\n  - Check your service principal client ID and secret")
 
 	default:
-		b.WriteString("\n  - Check your authentication credentials")
+		fmt.Fprint(b, "\n  - Check your authentication credentials")
 	}
 }
 
