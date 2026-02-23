@@ -5,12 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -22,7 +26,7 @@ func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthA
 
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "token [HOST]",
+		Use:   "token [HOST_OR_PROFILE]",
 		Short: "Get authentication token",
 		Long: `Get authentication token from the local cache in ~/.databricks/token-cache.json.
 Refresh the access token if it is expired. Note: This command only works with
@@ -93,6 +97,19 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, errors.New("providing both a profile and host is not supported")
 	}
 
+	// If no --profile flag, try resolving the positional arg as a profile name.
+	// If it matches, use it. If not, fall through to host treatment.
+	if args.profileName == "" && len(args.args) == 1 {
+		candidateProfile, err := loadProfileByName(ctx, args.args[0], args.profiler)
+		if err != nil {
+			return nil, err
+		}
+		if candidateProfile != nil {
+			args.profileName = args.args[0]
+			args.args = nil
+		}
+	}
+
 	existingProfile, err := loadProfileByName(ctx, args.profileName, args.profiler)
 	if err != nil {
 		return nil, err
@@ -111,6 +128,47 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	err = setHostAndAccountId(ctx, existingProfile, args.authArguments, args.args)
 	if err != nil {
 		return nil, err
+	}
+
+	// When no profile was specified, check if multiple profiles match the
+	// effective cache key for this host.
+	if args.profileName == "" && args.authArguments.Host != "" {
+		cfg := &config.Config{
+			Host:                       args.authArguments.Host,
+			AccountID:                  args.authArguments.AccountID,
+			Experimental_IsUnifiedHost: args.authArguments.IsUnifiedHost,
+		}
+		// Canonicalize first so HostType() can correctly identify account hosts
+		// even when the host string lacks a scheme (e.g. "accounts.cloud.databricks.com").
+		cfg.CanonicalHostName()
+		var matchFn profile.ProfileMatchFunction
+		switch cfg.HostType() {
+		case config.AccountHost, config.UnifiedHost:
+			matchFn = profile.WithHostAndAccountID(args.authArguments.Host, args.authArguments.AccountID)
+		default:
+			matchFn = profile.WithHost(args.authArguments.Host)
+		}
+
+		matchingProfiles, err := args.profiler.LoadProfiles(ctx, matchFn)
+		if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
+			return nil, err
+		}
+		if len(matchingProfiles) > 1 {
+			configPath, _ := args.profiler.GetPath(ctx)
+			if configPath == "" {
+				panic("configPath is empty but LoadProfiles returned multiple profiles")
+			}
+			if !cmdio.IsPromptSupported(ctx) {
+				names := strings.Join(matchingProfiles.Names(), " and ")
+				return nil, fmt.Errorf("%s match %s in %s. Use --profile to specify which profile to use",
+					names, args.authArguments.Host, configPath)
+			}
+			selected, err := askForMatchingProfile(ctx, matchingProfiles, args.authArguments.Host)
+			if err != nil {
+				return nil, err
+			}
+			args.profileName = selected
+		}
 	}
 
 	args.authArguments.Profile = args.profileName
@@ -148,4 +206,23 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, fmt.Errorf("%w. %s", err, helpMsg)
 	}
 	return t, nil
+}
+
+func askForMatchingProfile(ctx context.Context, profiles profile.Profiles, host string) (string, error) {
+	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+		Label:             "Multiple profiles match " + host,
+		Items:             profiles,
+		Searcher:          profiles.SearchCaseInsensitive,
+		StartInSearchMode: true,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . | faint }}",
+			Active:   `{{.Name | bold}} ({{.Host|faint}})`,
+			Inactive: `{{.Name}}`,
+			Selected: `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	return profiles[i].Name, nil
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
@@ -89,6 +90,32 @@ func TestToken_loadToken(t *testing.T) {
 				Host:      "https://accounts.cloud.databricks.com",
 				AccountID: "active",
 			},
+			{
+				Name: "workspace-a",
+				Host: "https://workspace-a.cloud.databricks.com",
+			},
+			{
+				Name: "dup1",
+				Host: "https://shared.cloud.databricks.com",
+			},
+			{
+				Name: "dup2",
+				Host: "https://shared.cloud.databricks.com",
+			},
+			{
+				Name:      "acct-dup1",
+				Host:      "https://accounts.cloud.databricks.com",
+				AccountID: "same-account",
+			},
+			{
+				Name:      "acct-dup2",
+				Host:      "https://accounts.cloud.databricks.com",
+				AccountID: "same-account",
+			},
+			{
+				Name: "default.dev",
+				Host: "https://dev.cloud.databricks.com",
+			},
 		},
 	}
 	tokenCache := &inMemoryTokenCache{
@@ -107,6 +134,18 @@ func TestToken_loadToken(t *testing.T) {
 				RefreshToken: "active",
 				Expiry:       time.Now().Add(1 * time.Hour),
 			},
+			"workspace-a": {
+				RefreshToken: "workspace-a",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
+			"https://workspace-a.cloud.databricks.com": {
+				RefreshToken: "workspace-a",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
+			"default.dev": {
+				RefreshToken: "default.dev",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
 		},
 	}
 	validateToken := func(resp *oauth2.Token) {
@@ -116,6 +155,7 @@ func TestToken_loadToken(t *testing.T) {
 
 	cases := []struct {
 		name          string
+		ctx           context.Context
 		args          loadTokenArgs
 		validateToken func(*oauth2.Token)
 		wantErr       string
@@ -223,10 +263,169 @@ func TestToken_loadToken(t *testing.T) {
 			},
 			validateToken: validateToken,
 		},
+		{
+			name: "positional arg resolved as profile name",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"workspace-a"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "positional arg with dot treated as host when no profile matches",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"workspace-a.cloud.databricks.com"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "dotted profile name resolved as profile not host",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"default.dev"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "positional arg not a profile falls through to host",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"nonexistent"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+				},
+			},
+			wantErr: "cache: databricks OAuth is not configured for this host. " +
+				"Try logging in again with `databricks auth login --host https://nonexistent` before retrying. " +
+				"If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
+		},
+		{
+			name: "scheme-less account host ambiguity detected correctly",
+			ctx:  cmdio.MockDiscard(context.Background()),
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host:      "accounts.cloud.databricks.com",
+					AccountID: "same-account",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+				},
+			},
+			wantErr: "acct-dup1 and acct-dup2 match accounts.cloud.databricks.com in <in memory>. Use --profile to specify which profile to use",
+		},
+		{
+			name: "workspace host ambiguity — multiple profiles, non-interactive",
+			ctx:  cmdio.MockDiscard(context.Background()),
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host: "https://shared.cloud.databricks.com",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+				},
+			},
+			wantErr: "dup1 and dup2 match https://shared.cloud.databricks.com in <in memory>. Use --profile to specify which profile to use",
+		},
+		{
+			name: "account host — same host, different account IDs — no ambiguity",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host:      "https://accounts.cloud.databricks.com",
+					AccountID: "active",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "account host — same host AND same account ID — ambiguity",
+			ctx:  cmdio.MockDiscard(context.Background()),
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host:      "https://accounts.cloud.databricks.com",
+					AccountID: "same-account",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+				},
+			},
+			wantErr: "acct-dup1 and acct-dup2 match https://accounts.cloud.databricks.com in <in memory>. Use --profile to specify which profile to use",
+		},
+		{
+			name: "profile flag + positional non-host arg still errors",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "active",
+				args:          []string{"workspace-a"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+				},
+			},
+			wantErr: "providing both a profile and host is not supported",
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got, err := loadToken(context.Background(), c.args)
+			ctx := c.ctx
+			if ctx == nil {
+				ctx = context.Background()
+			}
+			got, err := loadToken(ctx, c.args)
 			if c.wantErr != "" {
 				assert.Equal(t, c.wantErr, err.Error())
 			} else {
