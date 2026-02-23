@@ -21,6 +21,30 @@ const (
 	AuthTypeOAuthM2M      = "oauth-m2m"
 )
 
+// authTypeDisplayNames maps auth type identifiers to human-readable names.
+var authTypeDisplayNames = map[string]string{
+	AuthTypeDatabricksCli: "OAuth (databricks-cli)",
+	AuthTypePat:           "Personal Access Token (pat)",
+	AuthTypeBasic:         "Basic (username/password)",
+	AuthTypeAzureCli:      "Azure CLI (azure-cli)",
+	AuthTypeOAuthM2M:      "OAuth Machine-to-Machine (oauth-m2m)",
+	"azure-msi":           "Azure Managed Identity (azure-msi)",
+	"azure-client-secret": "Azure Client Secret (azure-client-secret)",
+	"google-credentials":  "Google Credentials (google-credentials)",
+	"google-id":           "Google Default Credentials (google-id)",
+	"github-oidc-azure":   "GitHub OIDC for Azure (github-oidc-azure)",
+	"metadata-service":    "Metadata Service (metadata-service)",
+}
+
+// AuthTypeDisplayName returns a human-readable name for the given auth type.
+// Falls back to the raw identifier if no display name is registered.
+func AuthTypeDisplayName(authType string) string {
+	if name, ok := authTypeDisplayNames[strings.ToLower(authType)]; ok {
+		return name
+	}
+	return authType
+}
+
 // RewriteAuthError rewrites the error message for invalid refresh token error.
 // It returns whether the error was rewritten and the rewritten error.
 func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (bool, error) {
@@ -61,7 +85,7 @@ func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
 		fmt.Fprintf(&b, "\nHost:      %s", cfg.Host)
 	}
 	if cfg.AuthType != "" {
-		fmt.Fprintf(&b, "\nAuth type: %s", cfg.AuthType)
+		fmt.Fprintf(&b, "\nAuth type: %s", AuthTypeDisplayName(cfg.AuthType))
 	}
 
 	b.WriteString("\n\nNext steps:")
@@ -158,31 +182,13 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 	return strings.Join(cmd, " ")
 }
 
-// BuildDescribeCommand builds the describe command directly from config fields.
-// This avoids information loss from OAuthArgument conversion (e.g., workspace-id).
+// BuildDescribeCommand builds the describe command for the given config.
+// When a profile is set, it uses --profile. Otherwise it emits a bare command
+// since `databricks auth describe` resolves env vars (DATABRICKS_HOST, etc.)
+// automatically.
 func BuildDescribeCommand(cfg *config.Config) string {
-	cmd := []string{
-		"databricks",
-		"auth",
-		"describe",
-	}
 	if cfg.Profile != "" {
-		cmd = append(cmd, "--profile", cfg.Profile)
-		return strings.Join(cmd, " ")
+		return "databricks auth describe --profile " + cfg.Profile
 	}
-	if cfg.Host != "" {
-		cmd = append(cmd, "--host", cfg.Host)
-	}
-	if cfg.Experimental_IsUnifiedHost {
-		if cfg.AccountID != "" {
-			cmd = append(cmd, "--account-id", cfg.AccountID)
-		}
-		cmd = append(cmd, "--experimental-is-unified-host")
-		if cfg.WorkspaceID != "" {
-			cmd = append(cmd, "--workspace-id", cfg.WorkspaceID)
-		}
-	} else if cfg.AccountID != "" {
-		cmd = append(cmd, "--account-id", cfg.AccountID)
-	}
-	return strings.Join(cmd, " ")
+	return "databricks auth describe"
 }
