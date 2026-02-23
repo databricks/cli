@@ -41,6 +41,16 @@ func TestDetectShellUnsupported(t *testing.T) {
 	assert.ErrorContains(t, err, "supported shells are")
 }
 
+func TestDetectShellPowershellExeNonWindows(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("non-windows test")
+	}
+	// On non-Windows, powershell.exe in $SHELL is unrecognized and should error.
+	t.Setenv("SHELL", "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe")
+	_, err := DetectShell("")
+	assert.ErrorContains(t, err, "unsupported shell")
+}
+
 func TestDetectShellEmptyOnUnix(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("unix-only test")

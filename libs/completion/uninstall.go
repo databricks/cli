@@ -17,9 +17,19 @@ func Uninstall(shell Shell, homeDir string) (filePath string, wasInstalled bool,
 	return uninstallRC(filePath)
 }
 
-// uninstallFish handles the file-drop model: remove the file if it exists.
+// uninstallFish handles the file-drop model: remove the file only if it
+// contains our marker. This avoids deleting completions installed by a package
+// manager or created by the user.
 func uninstallFish(filePath string) (string, bool, error) {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+	content, err := os.ReadFile(filePath)
+	if os.IsNotExist(err) {
+		return filePath, false, nil
+	}
+	if err != nil {
+		return filePath, false, err
+	}
+
+	if !strings.Contains(string(content), BeginMarker) {
 		return filePath, false, nil
 	}
 

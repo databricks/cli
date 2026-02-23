@@ -101,7 +101,8 @@ func TestUninstallFish(t *testing.T) {
 	home := t.TempDir()
 	fishPath := filepath.Join(home, ".config", "fish", "completions", "databricks.fish")
 	require.NoError(t, os.MkdirAll(filepath.Dir(fishPath), 0o755))
-	require.NoError(t, os.WriteFile(fishPath, []byte("# fish completions\n"), 0o644))
+	// Write content that includes our marker (simulating a CLI-managed file).
+	require.NoError(t, os.WriteFile(fishPath, []byte(ShimContent(Fish)), 0o644))
 
 	filePath, wasInstalled, err := Uninstall(Fish, home)
 	require.NoError(t, err)
@@ -110,6 +111,22 @@ func TestUninstallFish(t *testing.T) {
 
 	_, err = os.Stat(fishPath)
 	assert.True(t, os.IsNotExist(err))
+}
+
+func TestUninstallFishForeignFile(t *testing.T) {
+	home := t.TempDir()
+	fishPath := filepath.Join(home, ".config", "fish", "completions", "databricks.fish")
+	require.NoError(t, os.MkdirAll(filepath.Dir(fishPath), 0o755))
+	// Write content without our marker (e.g. installed by a package manager).
+	require.NoError(t, os.WriteFile(fishPath, []byte("# fish completions from homebrew\n"), 0o644))
+
+	_, wasInstalled, err := Uninstall(Fish, home)
+	require.NoError(t, err)
+	assert.False(t, wasInstalled)
+
+	// File must be preserved.
+	_, err = os.Stat(fishPath)
+	assert.NoError(t, err)
 }
 
 func TestUninstallFishNotPresent(t *testing.T) {

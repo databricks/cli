@@ -49,7 +49,15 @@ func DetectShell(flagValue string) (Shell, error) {
 
 	shellEnv := os.Getenv("SHELL")
 	if shellEnv != "" {
-		return shellFromPath(shellEnv)
+		shell, err := shellFromPath(shellEnv)
+		if err == nil {
+			return shell, nil
+		}
+		// On Windows, $SHELL may point to powershell.exe which shellFromPath
+		// doesn't recognize. Fall through to Windows path-based detection.
+		if runtime.GOOS != "windows" {
+			return shell, err
+		}
 	}
 
 	if runtime.GOOS == "windows" {
