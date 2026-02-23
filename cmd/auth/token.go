@@ -156,7 +156,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		if len(matchingProfiles) > 1 {
 			configPath, _ := args.profiler.GetPath(ctx)
 			if configPath == "" {
-				configPath = "~/.databrickscfg"
+				panic("configPath is empty but LoadProfiles returned multiple profiles")
 			}
 			if !cmdio.IsPromptSupported(ctx) {
 				names := strings.Join(matchingProfiles.Names(), " and ")
