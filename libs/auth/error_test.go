@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -69,7 +68,7 @@ func TestBuildDescribeCommand(t *testing.T) {
 
 func TestEnrichAuthError_NonAPIError(t *testing.T) {
 	cfg := &config.Config{Profile: "test", Host: "https://example.com"}
-	original := fmt.Errorf("some random error")
+	original := errors.New("some random error")
 	result := EnrichAuthError(context.Background(), cfg, original)
 	assert.Equal(t, original, result)
 }
@@ -94,7 +93,7 @@ func TestEnrichAuthError_PreservesOriginalError(t *testing.T) {
 	result := EnrichAuthError(context.Background(), cfg, original)
 
 	var unwrapped *apierr.APIError
-	require.True(t, errors.As(result, &unwrapped))
+	require.ErrorAs(t, result, &unwrapped)
 	assert.Equal(t, 403, unwrapped.StatusCode)
 	assert.Equal(t, "PERMISSION_DENIED", unwrapped.ErrorCode)
 }
