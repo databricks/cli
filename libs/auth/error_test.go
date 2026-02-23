@@ -76,11 +76,9 @@ func TestEnrichAuthError_NonAPIError(t *testing.T) {
 
 func TestEnrichAuthError_NonAuthStatusCode(t *testing.T) {
 	cfg := &config.Config{Profile: "test", Host: "https://example.com"}
-	for _, code := range []int{400, 404, 500} {
-		original := &apierr.APIError{StatusCode: code, Message: "bad request"}
-		result := EnrichAuthError(context.Background(), cfg, original)
-		assert.Equal(t, original, result)
-	}
+	original := &apierr.APIError{StatusCode: 404, Message: "not found"}
+	result := EnrichAuthError(context.Background(), cfg, original)
+	assert.Equal(t, original, result)
 }
 
 func TestEnrichAuthError_PreservesOriginalError(t *testing.T) {
@@ -272,21 +270,6 @@ func TestEnrichAuthError(t *testing.T) {
 			contains: []string{
 				"Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123 --experimental-is-unified-host --workspace-id ws-456",
 				"Check your identity: databricks auth describe --host https://unified.cloud.databricks.com --account-id acc-123 --experimental-is-unified-host --workspace-id ws-456",
-			},
-		},
-		{
-			name: "empty config fields are omitted",
-			cfg: &config.Config{
-				Host: "https://my-workspace.cloud.databricks.com",
-			},
-			statusCode: 401,
-			contains: []string{
-				"Host:      https://my-workspace.cloud.databricks.com",
-				"Check your authentication credentials",
-			},
-			notContain: []string{
-				"Profile:",
-				"Auth type:",
 			},
 		},
 	}

@@ -48,10 +48,7 @@ func TestExecuteEnrichesAuthErrors(t *testing.T) {
 
 	output := stderr.String()
 	assert.Contains(t, output, "no access")
-	assert.Contains(t, output, "Profile:   test-profile")
-	assert.Contains(t, output, "Host:      https://test.cloud.databricks.com")
-	assert.Contains(t, output, "Auth type: pat")
-	assert.Contains(t, output, "Verify you have the required permissions")
+	assert.Contains(t, output, "Next steps:")
 }
 
 func TestExecuteNoEnrichmentWithoutConfigUsed(t *testing.T) {

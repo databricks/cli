@@ -168,14 +168,16 @@ func BuildDescribeCommand(cfg *config.Config) string {
 	if cfg.Host != "" {
 		cmd = append(cmd, "--host", cfg.Host)
 	}
-	if cfg.AccountID != "" {
-		cmd = append(cmd, "--account-id", cfg.AccountID)
-	}
 	if cfg.Experimental_IsUnifiedHost {
+		if cfg.AccountID != "" {
+			cmd = append(cmd, "--account-id", cfg.AccountID)
+		}
 		cmd = append(cmd, "--experimental-is-unified-host")
 		if cfg.WorkspaceID != "" {
 			cmd = append(cmd, "--workspace-id", cfg.WorkspaceID)
 		}
+	} else if cfg.AccountID != "" {
+		cmd = append(cmd, "--account-id", cfg.AccountID)
 	}
 	return strings.Join(cmd, " ")
 }
