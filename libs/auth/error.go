@@ -41,8 +41,7 @@ func RewriteAuthError(ctx context.Context, host, accountId, profile string, err 
 }
 
 // EnrichAuthError appends identity context and remediation steps to 401/403 API errors.
-// It never replaces the original error — if enrichment cannot be built, the original
-// error is returned unchanged.
+// For non-API errors or other status codes, the original error is returned unchanged.
 func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
 	var apiErr *apierr.APIError
 	if !errors.As(err, &apiErr) {
@@ -88,6 +87,12 @@ func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
 func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builder) {
 	switch strings.ToLower(cfg.AuthType) {
 	case AuthTypeDatabricksCli:
+		// When profile is set, BuildLoginCommand uses --profile and ignores
+		// the OAuthArgument, so skip the conversion entirely.
+		if cfg.Profile != "" {
+			fmt.Fprintf(b, "\n  - Re-authenticate: databricks auth login --profile %s", cfg.Profile)
+			return
+		}
 		oauthArg, argErr := AuthArguments{
 			Host:          cfg.Host,
 			AccountID:     cfg.AccountID,
@@ -98,10 +103,10 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 			b.WriteString("\n  - Re-authenticate: databricks auth login")
 			return
 		}
-		loginCmd := BuildLoginCommand(ctx, cfg.Profile, oauthArg)
+		loginCmd := BuildLoginCommand(ctx, "", oauthArg)
 		// For unified hosts, BuildLoginCommand (via OAuthArgument) doesn't carry
 		// workspace-id. Append it so the command is actionable.
-		if cfg.Profile == "" && cfg.Experimental_IsUnifiedHost && cfg.WorkspaceID != "" {
+		if cfg.Experimental_IsUnifiedHost && cfg.WorkspaceID != "" {
 			loginCmd += " --workspace-id " + cfg.WorkspaceID
 		}
 		fmt.Fprintf(b, "\n  - Re-authenticate: %s", loginCmd)
