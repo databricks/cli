@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	skillsRepoOwner         = "databricks"
-	skillsRepoName          = "databricks-agent-skills"
-	skillsRepoPath          = "skills"
+	skillsRepoOwner      = "databricks"
+	skillsRepoName       = "databricks-agent-skills"
+	skillsRepoPath       = "skills"
 	defaultSkillsRepoRef = "v0.1.0"
 )
 
