@@ -36,6 +36,16 @@ func newUninstallCmd() *cobra.Command {
 			}
 
 			if !wasInstalled {
+				result, statusErr := libcompletion.Status(shell, home)
+				if statusErr == nil && result.Installed && result.Method != "" && result.Method != "marker" {
+					cmdio.LogString(ctx, fmt.Sprintf(
+						"Databricks CLI completions for %s appear to be installed via %s in %s. Nothing to uninstall.",
+						shell,
+						result.Method,
+						result.FilePath,
+					))
+					return nil
+				}
 				cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions were not installed for %s.", shell))
 				return nil
 			}

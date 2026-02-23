@@ -22,6 +22,7 @@ func TestDetectShellFromEnv(t *testing.T) {
 		{"zsh from /usr/bin/zsh", "/usr/bin/zsh", Zsh},
 		{"fish from /usr/bin/fish", "/usr/bin/fish", Fish},
 		{"pwsh from path", "/usr/local/bin/pwsh", PowerShell},
+		{"pwsh.exe from path", "/usr/local/bin/pwsh.exe", PowerShell},
 	}
 
 	for _, tt := range tests {
@@ -49,6 +50,16 @@ func TestDetectShellPowershellExeNonWindows(t *testing.T) {
 	t.Setenv("SHELL", "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe")
 	_, err := DetectShell("")
 	assert.ErrorContains(t, err, "unsupported shell")
+}
+
+func TestDetectShellPowershellExeWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows-only test")
+	}
+	t.Setenv("SHELL", `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`)
+	got, err := DetectShell("")
+	require.NoError(t, err)
+	assert.Equal(t, PowerShell5, got)
 }
 
 func TestDetectShellEmptyOnUnix(t *testing.T) {

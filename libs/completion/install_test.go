@@ -101,6 +101,24 @@ func TestInstallFish(t *testing.T) {
 	assert.Contains(t, string(content), "databricks completion fish | source")
 }
 
+func TestInstallFishForeignFilePreserved(t *testing.T) {
+	home := t.TempDir()
+	filePath := filepath.Join(home, ".config", "fish", "completions", "databricks.fish")
+	require.NoError(t, os.MkdirAll(filepath.Dir(filePath), 0o755))
+
+	original := "# fish completion from package manager\n"
+	require.NoError(t, os.WriteFile(filePath, []byte(original), 0o644))
+
+	gotPath, alreadyInstalled, err := Install(Fish, home)
+	require.NoError(t, err)
+	assert.True(t, alreadyInstalled)
+	assert.Equal(t, filePath, gotPath)
+
+	content, err := os.ReadFile(filePath)
+	require.NoError(t, err)
+	assert.Equal(t, original, string(content))
+}
+
 func TestInstallFishIdempotent(t *testing.T) {
 	home := t.TempDir()
 

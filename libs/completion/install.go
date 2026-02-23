@@ -20,14 +20,17 @@ func Install(shell Shell, homeDir string) (filePath string, alreadyInstalled boo
 
 // installFish handles the file-drop model for fish completions.
 func installFish(filePath string, shell Shell) (string, bool, error) {
-	if _, err := os.Stat(filePath); err == nil {
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			return filePath, false, err
-		}
+	content, err := os.ReadFile(filePath)
+	if err == nil {
+		// Preserve existing files we don't own (e.g. package manager installs).
+		// If our marker is present, this is also already installed.
 		if strings.Contains(string(content), BeginMarker) {
 			return filePath, true, nil
 		}
+		return filePath, true, nil
+	}
+	if !os.IsNotExist(err) {
+		return filePath, false, err
 	}
 
 	dir := filepath.Dir(filePath)

@@ -49,15 +49,7 @@ func DetectShell(flagValue string) (Shell, error) {
 
 	shellEnv := os.Getenv("SHELL")
 	if shellEnv != "" {
-		shell, err := shellFromPath(shellEnv)
-		if err == nil {
-			return shell, nil
-		}
-		// On Windows, $SHELL may point to powershell.exe which shellFromPath
-		// doesn't recognize. Fall through to Windows path-based detection.
-		if runtime.GOOS != "windows" {
-			return shell, err
-		}
+		return shellFromPath(shellEnv)
 	}
 
 	if runtime.GOOS == "windows" {
@@ -92,7 +84,7 @@ func validateShellFlag(value string) (Shell, error) {
 
 // shellFromPath extracts the shell name from a path like /bin/bash or /usr/bin/zsh.
 func shellFromPath(path string) (Shell, error) {
-	name := filepath.Base(path)
+	name := strings.ToLower(filepath.Base(path))
 
 	switch {
 	case strings.Contains(name, "bash"):
@@ -101,8 +93,12 @@ func shellFromPath(path string) (Shell, error) {
 		return Zsh, nil
 	case strings.Contains(name, "fish"):
 		return Fish, nil
-	case name == "pwsh":
+	case name == "pwsh", name == "pwsh.exe":
 		return PowerShell, nil
+	case name == "powershell", name == "powershell.exe":
+		if runtime.GOOS == "windows" {
+			return PowerShell5, nil
+		}
 	}
 
 	return "", fmt.Errorf("unsupported shell %q: supported shells are bash, zsh, fish, powershell, powershell5", name)
