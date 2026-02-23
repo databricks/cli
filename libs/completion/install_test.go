@@ -3,6 +3,7 @@ package completion
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -77,7 +78,14 @@ func TestInstallPreservesPermissions(t *testing.T) {
 
 	info, err := os.Stat(rcPath)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+
+	if runtime.GOOS != "windows" {
+		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
+	} else {
+		// Windows has different permission semantics; verify file remains writable.
+		err = os.WriteFile(rcPath, []byte("# writable"), 0o600)
+		assert.NoError(t, err)
+	}
 }
 
 func TestInstallFish(t *testing.T) {
