@@ -3,6 +3,7 @@ package completion
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/libs/cmdio"
 	libcompletion "github.com/databricks/cli/libs/completion"
@@ -44,7 +45,7 @@ func newStatusCmd() *cobra.Command {
 			}
 
 			cmdio.LogString(ctx, "Shell:   "+shell.DisplayName())
-			cmdio.LogString(ctx, "File:    "+result.FilePath)
+			cmdio.LogString(ctx, "File:    "+filepath.ToSlash(result.FilePath))
 			cmdio.LogString(ctx, "Status:  "+statusStr)
 			return nil
 		},

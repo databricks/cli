@@ -3,6 +3,7 @@ package completion
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/libs/cmdio"
 	libcompletion "github.com/databricks/cli/libs/completion"
@@ -34,6 +35,7 @@ func newUninstallCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			displayPath := filepath.ToSlash(filePath)
 
 			if !wasInstalled {
 				result, statusErr := libcompletion.Status(shell, home)
@@ -42,7 +44,7 @@ func newUninstallCmd() *cobra.Command {
 						"Databricks CLI completions for %s appear to be installed via %s in %s. Nothing to uninstall.",
 						shell,
 						result.Method,
-						result.FilePath,
+						filepath.ToSlash(result.FilePath),
 					))
 					return nil
 				}
@@ -50,7 +52,7 @@ func newUninstallCmd() *cobra.Command {
 				return nil
 			}
 
-			cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions removed for %s from %s.", shell, filePath))
+			cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions removed for %s from %s.", shell, displayPath))
 			return nil
 		},
 	}

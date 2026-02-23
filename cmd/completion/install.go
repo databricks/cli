@@ -3,6 +3,7 @@ package completion
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/libs/cmdio"
 	libcompletion "github.com/databricks/cli/libs/completion"
@@ -34,9 +35,10 @@ func newInstallCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			displayPath := filepath.ToSlash(filePath)
 
 			if alreadyInstalled {
-				cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions are already installed for %s in %s.", shell, filePath))
+				cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions are already installed for %s in %s.", shell, displayPath))
 				return nil
 			}
 
@@ -45,7 +47,7 @@ func newInstallCmd() *cobra.Command {
 			case libcompletion.PowerShell, libcompletion.PowerShell5:
 				msg += "Restart your shell to activate."
 			default:
-				msg += fmt.Sprintf("Restart your shell or run 'source %s' to activate.", filePath)
+				msg += fmt.Sprintf("Restart your shell or run 'source %s' to activate.", displayPath)
 			}
 			cmdio.LogString(ctx, msg)
 			return nil

@@ -1,28 +1,22 @@
 
 >>> [CLI] completion install --shell zsh
 Databricks CLI completions installed for zsh.
-Restart your shell or run 'source [HOME]/.zshrc' to activate.
-# BEGIN databricks-cli completion
-eval "$(databricks completion zsh)"
-# END databricks-cli completion
+Restart your shell or run 'source home/.zshrc' to activate.
 
 >>> [CLI] completion status --shell zsh
 Shell:   zsh
-File:    [HOME]/.zshrc
+File:    home/.zshrc
 Status:  installed
 
 >>> [CLI] completion install --shell zsh
-Databricks CLI completions are already installed for zsh in [HOME]/.zshrc.
-# BEGIN databricks-cli completion
-eval "$(databricks completion zsh)"
-# END databricks-cli completion
+Databricks CLI completions are already installed for zsh in home/.zshrc.
 
 >>> [CLI] completion uninstall --shell zsh
-Databricks CLI completions removed for zsh from [HOME]/.zshrc.
+Databricks CLI completions removed for zsh from home/.zshrc.
 
 >>> [CLI] completion status --shell zsh
 Shell:   zsh
-File:    [HOME]/.zshrc
+File:    home/.zshrc
 Status:  not installed
 # bash completion V2 for databricks                           -*- shell-script -*-
 #compdef databricks

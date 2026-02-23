@@ -1,3 +1,7 @@
+Ignore = [
+    "home",
+]
+
 Local = true
 Cloud = false
 
