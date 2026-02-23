@@ -40,7 +40,14 @@ func newInstallCmd() *cobra.Command {
 				return nil
 			}
 
-			cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions installed for %s.\nRestart your shell or run 'source %s' to activate.", shell, filePath))
+			msg := fmt.Sprintf("Databricks CLI completions installed for %s.\n", shell)
+			switch shell {
+			case libcompletion.PowerShell, libcompletion.PowerShell5:
+				msg += "Restart your shell to activate."
+			default:
+				msg += fmt.Sprintf("Restart your shell or run 'source %s' to activate.", filePath)
+			}
+			cmdio.LogString(ctx, msg)
 			return nil
 		},
 	}

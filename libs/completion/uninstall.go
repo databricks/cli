@@ -69,13 +69,7 @@ func uninstallRC(filePath string) (string, bool, error) {
 		blockEnd++
 	}
 
-	// Include a leading newline if the block starts after one.
-	blockStart := beginIdx
-	if blockStart > 0 && text[blockStart-1] == '\n' {
-		blockStart--
-	}
-
-	result := text[:blockStart] + text[blockEnd:]
+	result := text[:beginIdx] + text[blockEnd:]
 
 	// Collapse double blank lines left by removal.
 	for strings.Contains(result, "\n\n\n") {

@@ -3,7 +3,6 @@ package completion
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,10 +22,8 @@ func TestUninstallRemovesBlock(t *testing.T) {
 
 	result, err := os.ReadFile(rcPath)
 	require.NoError(t, err)
-	assert.NotContains(t, string(result), BeginMarker)
-	assert.NotContains(t, string(result), EndMarker)
-	assert.Contains(t, string(result), "# before")
-	assert.Contains(t, string(result), "# after")
+	// Assert exact content to verify line boundaries are preserved.
+	assert.Equal(t, "# before\n# after\n", string(result))
 }
 
 func TestUninstallNotInstalled(t *testing.T) {
@@ -133,8 +130,5 @@ func TestInstallThenUninstallRoundTrip(t *testing.T) {
 
 	result, err := os.ReadFile(rcPath)
 	require.NoError(t, err)
-	// Original content should be preserved.
-	assert.True(t, strings.HasPrefix(string(result), "# my zsh config\n"))
-	assert.Contains(t, string(result), "export FOO=bar")
-	assert.NotContains(t, string(result), BeginMarker)
+	assert.Equal(t, original, string(result))
 }
