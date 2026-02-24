@@ -54,14 +54,19 @@ type ResourceJobGitSourceJobSource struct {
 	JobConfigPath       string `json:"job_config_path"`
 }
 
+type ResourceJobGitSourceSparseCheckout struct {
+	Patterns []string `json:"patterns,omitempty"`
+}
+
 type ResourceJobGitSource struct {
-	Branch      string                           `json:"branch,omitempty"`
-	Commit      string                           `json:"commit,omitempty"`
-	Provider    string                           `json:"provider,omitempty"`
-	Tag         string                           `json:"tag,omitempty"`
-	Url         string                           `json:"url"`
-	GitSnapshot *ResourceJobGitSourceGitSnapshot `json:"git_snapshot,omitempty"`
-	JobSource   *ResourceJobGitSourceJobSource   `json:"job_source,omitempty"`
+	Branch         string                              `json:"branch,omitempty"`
+	Commit         string                              `json:"commit,omitempty"`
+	Provider       string                              `json:"provider,omitempty"`
+	Tag            string                              `json:"tag,omitempty"`
+	Url            string                              `json:"url"`
+	GitSnapshot    *ResourceJobGitSourceGitSnapshot    `json:"git_snapshot,omitempty"`
+	JobSource      *ResourceJobGitSourceJobSource      `json:"job_source,omitempty"`
+	SparseCheckout *ResourceJobGitSourceSparseCheckout `json:"sparse_checkout,omitempty"`
 }
 
 type ResourceJobHealthRules struct {

@@ -59,6 +59,7 @@ var knownMissingInRemoteType = map[string][]string{
 		"disabled",
 		"endpoint_id",
 		"endpoint_type",
+		"group",
 		"no_suspension",
 		"settings",
 		"suspend_timeout_duration",
@@ -92,6 +93,7 @@ var knownMissingInStateType = map[string][]string{
 	"apps": {
 		"config",
 		"source_code_path",
+		"git_source",
 	},
 	"dashboards": {
 		"file_path",

@@ -99,7 +99,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		// Get smallest node type (follows Terraform's GetSmallestNodeType)
 		"smallest_node_type": func() (string, error) {
 			if w.Config.Host == "" {
-				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
+				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks auth login'")
 			}
 			if w.Config.IsAzure() {
 				return "Standard_D3_v2", nil
@@ -113,7 +113,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		},
 		"workspace_host": func() (string, error) {
 			if w.Config.Host == "" {
-				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
+				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks auth login'")
 			}
 			return w.Config.Host, nil
 		},

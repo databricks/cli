@@ -221,6 +221,44 @@ func GenerateDotEnvExample(plugins []manifest.Plugin) string {
 	return strings.Join(lines, "\n")
 }
 
+// GenerateAppEnv generates the env entries for app.yaml.
+// Each resource field with an Env mapping produces a YAML list entry with
+// name (the env var) and valueFrom (the resource key in databricks.yml resources).
+// Includes both required resources and optional resources that have values.
+func GenerateAppEnv(plugins []manifest.Plugin, cfg Config) string {
+	var lines []string
+
+	for _, p := range plugins {
+		for _, r := range p.Resources.Required {
+			lines = append(lines, appEnvLines(r)...)
+		}
+		for _, r := range p.Resources.Optional {
+			if hasResourceValues(r, cfg) {
+				lines = append(lines, appEnvLines(r)...)
+			}
+		}
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+// appEnvLines returns app.yaml env entries for a resource.
+// Each field with an Env produces "- name: <ENV>\n  valueFrom: <resourceKey>".
+func appEnvLines(r manifest.Resource) []string {
+	var lines []string
+	for _, fieldName := range r.FieldNames() {
+		field := r.Fields[fieldName]
+		if field.Env == "" || !validEnvVar.MatchString(field.Env) {
+			continue
+		}
+		lines = append(lines,
+			"  - name: "+field.Env,
+			"    valueFrom: "+r.Key(),
+		)
+	}
+	return lines
+}
+
 // appResourceSpec defines how a manifest resource type maps to DABs AppResource YAML.
 type appResourceSpec struct {
 	yamlKey      string      // DABs YAML key under the resource entry (e.g., "sql_warehouse", "uc_securable")

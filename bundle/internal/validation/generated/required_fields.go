@@ -22,6 +22,7 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*.active_deployment.git_source.git_repository":  {"provider", "url"},
 	"resources.apps.*.config.env[*]":                                {"name"},
 	"resources.apps.*.git_repository":                               {"provider", "url"},
+	"resources.apps.*.git_source.git_repository":                    {"provider", "url"},
 	"resources.apps.*.pending_deployment.git_source.git_repository": {"provider", "url"},
 	"resources.apps.*.permissions[*]":                               {"level"},
 	"resources.apps.*.resources[*]":                                 {"name"},
@@ -215,7 +216,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.postgres_branches.*": {"branch_id", "parent"},
 
-	"resources.postgres_endpoints.*": {"endpoint_type", "endpoint_id", "parent"},
+	"resources.postgres_endpoints.*":       {"endpoint_type", "endpoint_id", "parent"},
+	"resources.postgres_endpoints.*.group": {"max", "min"},
 
 	"resources.postgres_projects.*": {"project_id"},
 

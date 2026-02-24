@@ -28,6 +28,10 @@ type ResourceMountGs struct {
 	ServiceAccount string `json:"service_account,omitempty"`
 }
 
+type ResourceMountProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceMountS3 struct {
 	BucketName      string `json:"bucket_name"`
 	InstanceProfile string `json:"instance_profile,omitempty"`
@@ -43,17 +47,18 @@ type ResourceMountWasb struct {
 }
 
 type ResourceMount struct {
-	ClusterId      string             `json:"cluster_id,omitempty"`
-	EncryptionType string             `json:"encryption_type,omitempty"`
-	ExtraConfigs   map[string]string  `json:"extra_configs,omitempty"`
-	Id             string             `json:"id,omitempty"`
-	Name           string             `json:"name,omitempty"`
-	ResourceId     string             `json:"resource_id,omitempty"`
-	Source         string             `json:"source,omitempty"`
-	Uri            string             `json:"uri,omitempty"`
-	Abfs           *ResourceMountAbfs `json:"abfs,omitempty"`
-	Adl            *ResourceMountAdl  `json:"adl,omitempty"`
-	Gs             *ResourceMountGs   `json:"gs,omitempty"`
-	S3             *ResourceMountS3   `json:"s3,omitempty"`
-	Wasb           *ResourceMountWasb `json:"wasb,omitempty"`
+	ClusterId      string                       `json:"cluster_id,omitempty"`
+	EncryptionType string                       `json:"encryption_type,omitempty"`
+	ExtraConfigs   map[string]string            `json:"extra_configs,omitempty"`
+	Id             string                       `json:"id,omitempty"`
+	Name           string                       `json:"name,omitempty"`
+	ResourceId     string                       `json:"resource_id,omitempty"`
+	Source         string                       `json:"source,omitempty"`
+	Uri            string                       `json:"uri,omitempty"`
+	Abfs           *ResourceMountAbfs           `json:"abfs,omitempty"`
+	Adl            *ResourceMountAdl            `json:"adl,omitempty"`
+	Gs             *ResourceMountGs             `json:"gs,omitempty"`
+	ProviderConfig *ResourceMountProviderConfig `json:"provider_config,omitempty"`
+	S3             *ResourceMountS3             `json:"s3,omitempty"`
+	Wasb           *ResourceMountWasb           `json:"wasb,omitempty"`
 }
