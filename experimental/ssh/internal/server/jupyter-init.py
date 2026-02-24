@@ -21,6 +21,7 @@ def _log_exceptions(func):
 @_log_exceptions
 def _setup_dedicated_session():
     from dbruntime import UserNamespaceInitializer
+
     _user_namespace_initializer = UserNamespaceInitializer.getOrCreate()
     _entry_point = _user_namespace_initializer.get_spark_entry_point()
     _globals = _user_namespace_initializer.get_namespace_globals()
@@ -201,6 +202,7 @@ def _register_formatters():
 def _setup_serverless_session():
     import IPython
     from databricks.connect import DatabricksSession
+
     user_ns = getattr(IPython.get_ipython(), "user_ns", {})
     existing_session = getattr(user_ns, "spark", None)
     try:
@@ -215,7 +217,6 @@ def _setup_serverless_session():
         user_ns["spark"] = existing_session
         globals()["spark"] = existing_session
         raise e
-
 
 
 if os.environ.get("DATABRICKS_JUPYTER_SERVERLESS") == "true":
