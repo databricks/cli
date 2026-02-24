@@ -6,6 +6,11 @@ type ResourcePostgresProjectProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type ResourcePostgresProjectSpecCustomTags struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
 type ResourcePostgresProjectSpecDefaultEndpointSettings struct {
 	AutoscalingLimitMaxCu  float64           `json:"autoscaling_limit_max_cu,omitempty"`
 	AutoscalingLimitMinCu  float64           `json:"autoscaling_limit_min_cu,omitempty"`
@@ -15,10 +20,17 @@ type ResourcePostgresProjectSpecDefaultEndpointSettings struct {
 }
 
 type ResourcePostgresProjectSpec struct {
+	BudgetPolicyId           string                                              `json:"budget_policy_id,omitempty"`
+	CustomTags               []ResourcePostgresProjectSpecCustomTags             `json:"custom_tags,omitempty"`
 	DefaultEndpointSettings  *ResourcePostgresProjectSpecDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	DisplayName              string                                              `json:"display_name,omitempty"`
 	HistoryRetentionDuration string                                              `json:"history_retention_duration,omitempty"`
 	PgVersion                int                                                 `json:"pg_version,omitempty"`
+}
+
+type ResourcePostgresProjectStatusCustomTags struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 type ResourcePostgresProjectStatusDefaultEndpointSettings struct {
@@ -31,6 +43,8 @@ type ResourcePostgresProjectStatusDefaultEndpointSettings struct {
 
 type ResourcePostgresProjectStatus struct {
 	BranchLogicalSizeLimitBytes int                                                   `json:"branch_logical_size_limit_bytes,omitempty"`
+	BudgetPolicyId              string                                                `json:"budget_policy_id,omitempty"`
+	CustomTags                  []ResourcePostgresProjectStatusCustomTags             `json:"custom_tags,omitempty"`
 	DefaultEndpointSettings     *ResourcePostgresProjectStatusDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	DisplayName                 string                                                `json:"display_name,omitempty"`
 	HistoryRetentionDuration    string                                                `json:"history_retention_duration,omitempty"`

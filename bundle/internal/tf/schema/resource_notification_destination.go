@@ -50,9 +50,14 @@ type ResourceNotificationDestinationConfig struct {
 	Slack          *ResourceNotificationDestinationConfigSlack          `json:"slack,omitempty"`
 }
 
+type ResourceNotificationDestinationProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceNotificationDestination struct {
-	DestinationType string                                 `json:"destination_type,omitempty"`
-	DisplayName     string                                 `json:"display_name"`
-	Id              string                                 `json:"id,omitempty"`
-	Config          *ResourceNotificationDestinationConfig `json:"config,omitempty"`
+	DestinationType string                                         `json:"destination_type,omitempty"`
+	DisplayName     string                                         `json:"display_name"`
+	Id              string                                         `json:"id,omitempty"`
+	Config          *ResourceNotificationDestinationConfig         `json:"config,omitempty"`
+	ProviderConfig  *ResourceNotificationDestinationProviderConfig `json:"provider_config,omitempty"`
 }

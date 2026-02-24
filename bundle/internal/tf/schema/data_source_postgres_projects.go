@@ -6,6 +6,11 @@ type DataSourcePostgresProjectsProjectsProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type DataSourcePostgresProjectsProjectsSpecCustomTags struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
+}
+
 type DataSourcePostgresProjectsProjectsSpecDefaultEndpointSettings struct {
 	AutoscalingLimitMaxCu  float64           `json:"autoscaling_limit_max_cu,omitempty"`
 	AutoscalingLimitMinCu  float64           `json:"autoscaling_limit_min_cu,omitempty"`
@@ -15,10 +20,17 @@ type DataSourcePostgresProjectsProjectsSpecDefaultEndpointSettings struct {
 }
 
 type DataSourcePostgresProjectsProjectsSpec struct {
+	BudgetPolicyId           string                                                         `json:"budget_policy_id,omitempty"`
+	CustomTags               []DataSourcePostgresProjectsProjectsSpecCustomTags             `json:"custom_tags,omitempty"`
 	DefaultEndpointSettings  *DataSourcePostgresProjectsProjectsSpecDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	DisplayName              string                                                         `json:"display_name,omitempty"`
 	HistoryRetentionDuration string                                                         `json:"history_retention_duration,omitempty"`
 	PgVersion                int                                                            `json:"pg_version,omitempty"`
+}
+
+type DataSourcePostgresProjectsProjectsStatusCustomTags struct {
+	Key   string `json:"key,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 type DataSourcePostgresProjectsProjectsStatusDefaultEndpointSettings struct {
@@ -31,6 +43,8 @@ type DataSourcePostgresProjectsProjectsStatusDefaultEndpointSettings struct {
 
 type DataSourcePostgresProjectsProjectsStatus struct {
 	BranchLogicalSizeLimitBytes int                                                              `json:"branch_logical_size_limit_bytes,omitempty"`
+	BudgetPolicyId              string                                                           `json:"budget_policy_id,omitempty"`
+	CustomTags                  []DataSourcePostgresProjectsProjectsStatusCustomTags             `json:"custom_tags,omitempty"`
 	DefaultEndpointSettings     *DataSourcePostgresProjectsProjectsStatusDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	DisplayName                 string                                                           `json:"display_name,omitempty"`
 	HistoryRetentionDuration    string                                                           `json:"history_retention_duration,omitempty"`
