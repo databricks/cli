@@ -100,12 +100,12 @@ func Lookup(b *bundle.Bundle, key string, filters ...Filter) (Reference, error) 
 	}
 }
 
-// LookupByPrefix returns all resources whose key starts with the given prefix.
-func LookupByPrefix(b *bundle.Bundle, prefix string, filters ...Filter) []Reference {
+// LookupBySubstring returns all resources whose key contains the given substring.
+func LookupBySubstring(b *bundle.Bundle, substr string, filters ...Filter) []Reference {
 	keyOnly, _ := References(b, filters...)
 	var matches []Reference
 	for k, refs := range keyOnly {
-		if strings.HasPrefix(k, prefix) {
+		if strings.Contains(k, substr) {
 			matches = append(matches, refs...)
 		}
 	}
