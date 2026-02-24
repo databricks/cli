@@ -1,6 +1,9 @@
 Local = false
 Cloud = true
-RequiresCluster = true
+RequiresUnityCatalog = true
+
+[CloudEnvs]
+  gcp = false
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["direct"]

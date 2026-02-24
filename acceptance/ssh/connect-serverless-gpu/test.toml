@@ -1,6 +1,12 @@
 Local = false
 Cloud = true
-RequiresCluster = true
+
+# Serverless GPU is only available in newer environments
+RequiresUnityCatalog = true
+
+# Serverless GPU is not available in GCP yet
+[CloudEnvs]
+  gcp = false
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["direct"]
