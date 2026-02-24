@@ -90,6 +90,7 @@ var knownMissingInStateType = map[string][]string{
 	"apps": {
 		"config",
 		"source_code_path",
+		"git_source",
 	},
 	"dashboards": {
 		"file_path",
