@@ -184,6 +184,7 @@ type DataSourceAppApp struct {
 	ServicePrincipalClientId string                             `json:"service_principal_client_id,omitempty"`
 	ServicePrincipalId       int                                `json:"service_principal_id,omitempty"`
 	ServicePrincipalName     string                             `json:"service_principal_name,omitempty"`
+	Space                    string                             `json:"space,omitempty"`
 	UpdateTime               string                             `json:"update_time,omitempty"`
 	Updater                  string                             `json:"updater,omitempty"`
 	Url                      string                             `json:"url,omitempty"`
