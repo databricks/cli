@@ -1010,7 +1010,7 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
     "description": |-
       Configures whether the warehouse should use Photon optimized clusters.
 
-      Defaults to false.
+      Defaults to true.
   "enable_serverless_compute":
     "description": |-
       Configures whether the warehouse should use serverless compute
@@ -1222,6 +1222,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
     "x-databricks-field-behaviors_output_only": |-
       true
 github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "app":
+    "x-databricks-preview": |-
+      PRIVATE
   "database": {}
   "description":
     "description": |-
@@ -1236,6 +1239,7 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "serving_endpoint": {}
   "sql_warehouse": {}
   "uc_securable": {}
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceApp: {}
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
   "database_name": {}
   "instance_name": {}
@@ -1346,6 +1350,14 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouseSqlW
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurable:
   "permission": {}
   "securable_full_name": {}
+  "securable_kind":
+    "description": |-
+      The securable kind from Unity Catalog.
+      See https://docs.databricks.com/api/workspace/tables/get#securable_kind_manifest-securable_kind.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+    "x-databricks-preview": |-
+      PRIVATE
   "securable_type": {}
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurablePermission:
   "_":
@@ -1360,6 +1372,8 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSec
         EXECUTE
       - |-
         USE_CONNECTION
+      - |-
+        MODIFY
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurableType:
   "_":
     "enum":
@@ -4658,6 +4672,20 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScd
         SCD_TYPE_2
       - |-
         APPEND_ONLY
+github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec:
+  "enable_readable_secondaries":
+    "description": |-
+      Whether to allow read-only connections to read-write endpoints. Only relevant for read-write endpoints where
+      size.max > 1.
+  "max":
+    "description": |-
+      The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single
+      compute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to
+      true on the EndpointSpec.
+  "min":
+    "description": |-
+      The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater
+      than or equal to 1.
 github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings:
   "_":
     "description": |-

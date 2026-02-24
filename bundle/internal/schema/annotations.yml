@@ -893,6 +893,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
   "endpoint_type":
     "description": |-
       PLACEHOLDER
+  "group":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
     "description": |-
       PLACEHOLDER

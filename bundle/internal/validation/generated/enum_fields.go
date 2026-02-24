@@ -30,7 +30,7 @@ var EnumFields = map[string][]string{
 	"resources.apps.*.resources[*].secret.permission":           {"MANAGE", "READ", "WRITE"},
 	"resources.apps.*.resources[*].serving_endpoint.permission": {"CAN_MANAGE", "CAN_QUERY", "CAN_VIEW"},
 	"resources.apps.*.resources[*].sql_warehouse.permission":    {"CAN_MANAGE", "CAN_USE", "IS_OWNER"},
-	"resources.apps.*.resources[*].uc_securable.permission":     {"EXECUTE", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"},
+	"resources.apps.*.resources[*].uc_securable.permission":     {"EXECUTE", "MODIFY", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"},
 	"resources.apps.*.resources[*].uc_securable.securable_type": {"CONNECTION", "FUNCTION", "TABLE", "VOLUME"},
 
 	"resources.catalogs.*.grants[*].privileges[*]": {"ALL_PRIVILEGES", "APPLY_TAG", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_SCHEMA", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VOLUME", "EXECUTE", "MANAGE", "MODIFY", "READ_VOLUME", "REFRESH", "SELECT", "USE_CATALOG", "USE_CONNECTION", "USE_SCHEMA", "WRITE_VOLUME"},
