@@ -8,6 +8,6 @@ Auth type: Personal Access Token (pat)
 Next steps:
   - Verify you have the required permissions for this operation
   - Check your identity: databricks auth describe
-  - Consider configuring a profile: databricks configure --profile <name>
+  - Consider setting up a profile: databricks auth login --profile <name>
 
 Exit code: 1

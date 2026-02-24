@@ -99,7 +99,7 @@ func TestEnrichAuthError(t *testing.T) {
 				"\nHost:      https://my-workspace.cloud.databricks.com" +
 				"\nAuth type: Personal Access Token (pat)" +
 				"\n\nNext steps:" +
-				"\n  - Regenerate your access token or run: databricks configure --profile dev" +
+				"\n  - Regenerate your access token or run: databricks auth login --profile dev" +
 				"\n  - Check your identity: databricks auth describe --profile dev",
 		},
 		{
@@ -147,7 +147,7 @@ func TestEnrichAuthError(t *testing.T) {
 				"\nHost:      https://my-workspace.cloud.databricks.com" +
 				"\nAuth type: Basic" +
 				"\n\nNext steps:" +
-				"\n  - Check your username/password or run: databricks configure --profile basic-profile" +
+				"\n  - Check your username/password or run: databricks auth login --profile basic-profile" +
 				"\n  - Check your identity: databricks auth describe --profile basic-profile",
 		},
 		{
@@ -195,7 +195,7 @@ func TestEnrichAuthError(t *testing.T) {
 				"\n\nNext steps:" +
 				"\n  - Regenerate your access token" +
 				"\n  - Check your identity: databricks auth describe" +
-				"\n  - Consider configuring a profile: databricks configure --profile <name>",
+				"\n  - Consider setting up a profile: databricks auth login --profile <name>",
 		},
 		{
 			name: "403 without profile (env var auth)",
@@ -210,7 +210,7 @@ func TestEnrichAuthError(t *testing.T) {
 				"\n\nNext steps:" +
 				"\n  - Verify you have the required permissions for this operation" +
 				"\n  - Check your identity: databricks auth describe" +
-				"\n  - Consider configuring a profile: databricks configure --profile <name>",
+				"\n  - Consider setting up a profile: databricks auth login --profile <name>",
 		},
 		{
 			name: "401 with account host and no profile",
@@ -226,7 +226,7 @@ func TestEnrichAuthError(t *testing.T) {
 				"\n\nNext steps:" +
 				"\n  - Re-authenticate: databricks auth login --host https://accounts.cloud.databricks.com --account-id abc123" +
 				"\n  - Check your identity: databricks auth describe" +
-				"\n  - Consider configuring a profile: databricks configure --profile <name>",
+				"\n  - Consider setting up a profile: databricks auth login --profile <name>",
 		},
 		{
 			name: "401 with unified host includes workspace-id in login",
@@ -244,7 +244,7 @@ func TestEnrichAuthError(t *testing.T) {
 				"\n\nNext steps:" +
 				"\n  - Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123 --experimental-is-unified-host --workspace-id ws-456" +
 				"\n  - Check your identity: databricks auth describe" +
-				"\n  - Consider configuring a profile: databricks configure --profile <name>",
+				"\n  - Consider setting up a profile: databricks auth login --profile <name>",
 		},
 	}
 
