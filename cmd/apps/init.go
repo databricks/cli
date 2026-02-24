@@ -33,6 +33,7 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
+	appkitDefaultVersion = "template-v0.11.0"
 	defaultProfile       = "DEFAULT"
 )
 
@@ -44,7 +45,7 @@ func normalizeVersion(version string) string {
 		return version
 	}
 	if version == "latest" {
-		return appkitDefaultBranch
+		return "main"
 	}
 	if strings.HasPrefix(version, appkitTemplateTagPfx) {
 		return version
@@ -161,7 +162,7 @@ Environment variables:
 
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
-	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: latest release, use 'latest' for main branch)")
+	cmd.Flags().StringVar(&version, "version", "", fmt.Sprintf("AppKit version to use (default: %s, use 'latest' for main branch)", appkitDefaultVersion))
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	_ = cmd.Flags().MarkDeprecated("warehouse-id", "use --set <plugin>.sql-warehouse.id=<value> instead")
@@ -540,8 +541,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		case opts.version != "":
 			gitRef = normalizeVersion(opts.version)
 		default:
-			// Default: use main branch
-			gitRef = appkitDefaultBranch
+			// Default: use pinned version
+			gitRef = appkitDefaultVersion
 		}
 		templateSrc = appkitRepoURL
 	}
