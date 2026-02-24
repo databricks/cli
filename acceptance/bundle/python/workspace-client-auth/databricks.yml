@@ -1,0 +1,13 @@
+bundle:
+  name: workspace_client_auth_test
+
+sync: {paths: []}
+
+python:
+  mutators:
+    - "mutators:test_workspace_client"
+
+resources:
+  jobs:
+    test_job:
+      name: "Test Job"

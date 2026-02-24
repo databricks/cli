@@ -1,0 +1,5 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "job_name": "auth_env_test_job"
+}
