@@ -524,6 +524,67 @@ func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) 
 	}, nil
 }
 
+// PromptForPostgres shows a three-step picker for Lakebase Autoscaling (V2): project, branch, then database.
+func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
+	// Step 1: pick a project
+	var projects []ListItem
+	err := RunWithSpinnerCtx(ctx, "Fetching Postgres projects...", func() error {
+		var fetchErr error
+		projects, fetchErr = ListPostgresProjects(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	projectName, err := PromptFromList(ctx, "Select Postgres Project", "no Postgres projects found", projects, required)
+	if err != nil {
+		return nil, err
+	}
+	if projectName == "" {
+		return nil, nil
+	}
+
+	// Step 2: pick a branch within the project
+	var branches []ListItem
+	err = RunWithSpinnerCtx(ctx, "Fetching branches...", func() error {
+		var fetchErr error
+		branches, fetchErr = ListPostgresBranches(ctx, projectName)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	branchName, err := PromptFromList(ctx, "Select Branch", "no branches found in project "+projectName, branches, required)
+	if err != nil {
+		return nil, err
+	}
+	if branchName == "" {
+		return nil, nil
+	}
+
+	// Step 3: enter a database name (pre-filled with default)
+	dbName := "databricks_postgres"
+	theme := AppkitTheme()
+	err = huh.NewInput().
+		Title("Database name").
+		Description("Enter the database name to connect to").
+		Value(&dbName).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return nil, err
+	}
+	if dbName == "" {
+		return nil, nil
+	}
+	printAnswered(ctx, "Database", dbName)
+
+	return map[string]string{
+		r.Key() + ".branch":   branchName,
+		r.Key() + ".database": dbName,
+	}, nil
+}
+
 // PromptForGenieSpace shows a picker for Genie spaces.
 // Captures both the space ID and name since the DABs schema requires both fields.
 func PromptForGenieSpace(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
