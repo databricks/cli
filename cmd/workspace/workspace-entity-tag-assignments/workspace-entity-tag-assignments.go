@@ -70,7 +70,8 @@ func newCreateTagAssignment() *cobra.Command {
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
       dashboards, geniespaces
-    ENTITY_ID: The identifier of the entity to which the tag is assigned
+    ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
+      entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed`
 
@@ -157,7 +158,8 @@ func newDeleteTagAssignment() *cobra.Command {
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
       dashboards, geniespaces
-    ENTITY_ID: The identifier of the entity to which the tag is assigned
+    ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
+      entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed`
 
@@ -219,7 +221,8 @@ func newGetTagAssignment() *cobra.Command {
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
       dashboards, geniespaces
-    ENTITY_ID: The identifier of the entity to which the tag is assigned
+    ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
+      entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed`
 
@@ -284,7 +287,8 @@ func newListTagAssignments() *cobra.Command {
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
       dashboards, geniespaces
-    ENTITY_ID: The identifier of the entity to which the tag is assigned`
+    ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
+      entity_id is the app name`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -346,7 +350,8 @@ func newUpdateTagAssignment() *cobra.Command {
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
       dashboards, geniespaces
-    ENTITY_ID: The identifier of the entity to which the tag is assigned
+    ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
+      entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed
     UPDATE_MASK: The field mask must be a single string, with multiple fields separated by

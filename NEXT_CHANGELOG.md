@@ -5,3 +5,5 @@
 ### Internal:
 
 ### API Changes
+
+- Bump databricks-sdk-go from v0.111.0 to v0.112.0.

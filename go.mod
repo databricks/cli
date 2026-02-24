@@ -12,7 +12,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
-	github.com/databricks/databricks-sdk-go v0.111.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.112.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause
