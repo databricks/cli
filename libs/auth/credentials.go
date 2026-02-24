@@ -82,6 +82,13 @@ func (c CLICredentials) Name() string {
 var errNoHost = errors.New("no host provided")
 
 // Configure implements [config.CredentialsStrategy].
+//
+// IMPORTANT: This credentials strategy ignores the scopes specified in the
+// config and purely relies on the scopes from the loaded CLI token. This can
+// lead to mismatches if the token was obtained with different scopes than the
+// ones configured in the current profile. This is a temporary limitation that
+// will be addressed in a future release by adding support for dynamic token
+// downscoping.
 func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (credentials.CredentialsProvider, error) {
 	if cfg.Host == "" {
 		return nil, errNoHost
@@ -121,5 +128,6 @@ func authArgumentsFromConfig(cfg *config.Config) AuthArguments {
 		AccountID:     cfg.AccountID,
 		WorkspaceID:   cfg.WorkspaceID,
 		IsUnifiedHost: cfg.Experimental_IsUnifiedHost,
+		Profile:       cfg.Profile,
 	}
 }
