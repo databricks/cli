@@ -12,7 +12,41 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tailscale/hujson"
 )
+
+func parseTestValue(t *testing.T, jsonStr string) hujson.Value {
+	t.Helper()
+	v, err := hujson.Parse([]byte(jsonStr))
+	require.NoError(t, err)
+	return v
+}
+
+func findString(t *testing.T, v hujson.Value, ptr string) (string, bool) {
+	t.Helper()
+	found := v.Find(ptr)
+	if found == nil {
+		return "", false
+	}
+	var s string
+	if err := json.Unmarshal(found.Pack(), &s); err != nil {
+		return "", false
+	}
+	return s, true
+}
+
+func findStringSlice(t *testing.T, v hujson.Value, ptr string) []string {
+	t.Helper()
+	found := v.Find(ptr)
+	if found == nil {
+		return nil
+	}
+	var ss []string
+	if err := json.Unmarshal(found.Pack(), &ss); err != nil {
+		return nil
+	}
+	return ss
+}
 
 func TestGetDefaultSettingsPath_VSCode_Linux(t *testing.T) {
 	if runtime.GOOS != "linux" {
@@ -70,21 +104,19 @@ func TestLoadSettings_Valid(t *testing.T) {
 	tmpDir := t.TempDir()
 	settingsPath := filepath.Join(tmpDir, "settings.json")
 
-	settingsData := map[string]any{
+	settingsData := `{
 		"editor.fontSize": 14,
-		"remote.SSH.serverPickPortsFromRange": map[string]any{
-			"test-conn": "4000-4005",
-		},
-	}
-	data, err := json.Marshal(settingsData)
-	require.NoError(t, err)
-	err = os.WriteFile(settingsPath, data, 0o600)
+		"remote.SSH.serverPickPortsFromRange": {
+			"test-conn": "4000-4005"
+		}
+	}`
+	err := os.WriteFile(settingsPath, []byte(settingsData), 0o600)
 	require.NoError(t, err)
 
 	settings, err := loadSettings(settingsPath)
 	require.NoError(t, err)
-	assert.InDelta(t, float64(14), settings["editor.fontSize"], 0.01)
-	assert.Contains(t, settings, "remote.SSH.serverPickPortsFromRange")
+	assert.NotNil(t, settings.Find("/editor.fontSize"))
+	assert.NotNil(t, settings.Find("/remote.SSH.serverPickPortsFromRange"))
 }
 
 func TestLoadSettings_Invalid(t *testing.T) {
@@ -120,11 +152,12 @@ func TestLoadSettings_WithComments(t *testing.T) {
 
 	settings, err := loadSettings(settingsPath)
 	require.NoError(t, err)
-	assert.InDelta(t, float64(14), settings["editor.fontSize"], 0.01)
-	assert.Contains(t, settings, "remote.SSH.serverPickPortsFromRange")
+	assert.NotNil(t, settings.Find("/editor.fontSize"))
+	assert.NotNil(t, settings.Find("/remote.SSH.serverPickPortsFromRange"))
 
-	portRangeObj := settings["remote.SSH.serverPickPortsFromRange"].(map[string]any)
-	assert.Equal(t, "4000-4005", portRangeObj["test-conn"])
+	val, ok := findString(t, settings, jsonPtr(serverPickPortsKey, "test-conn"))
+	assert.True(t, ok)
+	assert.Equal(t, "4000-4005", val)
 }
 
 func TestLoadSettings_NotExists(t *testing.T) {
@@ -137,28 +170,21 @@ func TestLoadSettings_NotExists(t *testing.T) {
 }
 
 func TestValidateSettings_Complete(t *testing.T) {
-	settings := map[string]any{
-		"remote.SSH.serverPickPortsFromRange": map[string]any{
-			"test-conn": "4000-4005",
-		},
-		"remote.SSH.remotePlatform": map[string]any{
-			"test-conn": "linux",
-		},
+	v := parseTestValue(t, `{
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "4000-4005"},
+		"remote.SSH.remotePlatform": {"test-conn": "linux"},
 		"remote.SSH.remoteServerListenOnSocket": true,
-		"remote.SSH.defaultExtensions": []any{
-			"ms-python.python",
-			"ms-toolsai.jupyter",
-		},
-	}
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
+	}`)
 
-	missing := validateSettings(settings, "test-conn")
+	missing := validateSettings(v, "test-conn")
 	assert.True(t, missing.isEmpty())
 }
 
 func TestValidateSettings_Missing(t *testing.T) {
-	settings := map[string]any{}
+	v := parseTestValue(t, `{}`)
 
-	missing := validateSettings(settings, "test-conn")
+	missing := validateSettings(v, "test-conn")
 	assert.False(t, missing.isEmpty())
 	assert.True(t, missing.portRange)
 	assert.True(t, missing.platform)
@@ -166,41 +192,40 @@ func TestValidateSettings_Missing(t *testing.T) {
 }
 
 func TestValidateSettings_IncorrectValues(t *testing.T) {
-	settings := map[string]any{
-		"remote.SSH.serverPickPortsFromRange": map[string]any{
-			"test-conn": "5000-5005", // Wrong port range
-		},
-		"remote.SSH.remotePlatform": map[string]any{
-			"test-conn": "windows", // Wrong platform
-		},
-		"remote.SSH.defaultExtensions": []any{
-			"ms-python.python", // Missing jupyter
-		},
-	}
+	v := parseTestValue(t, `{
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "5000-5005"},
+		"remote.SSH.remotePlatform": {"test-conn": "windows"},
+		"remote.SSH.defaultExtensions": ["ms-python.python"]
+	}`)
 
-	missing := validateSettings(settings, "test-conn")
+	missing := validateSettings(v, "test-conn")
 	assert.False(t, missing.isEmpty())
 	assert.True(t, missing.portRange)
 	assert.True(t, missing.platform)
 	assert.Equal(t, []string{"ms-toolsai.jupyter"}, missing.extensions)
 }
 
+func TestValidateSettings_DuplicateExtensionsNotReported(t *testing.T) {
+	v := parseTestValue(t, `{
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "4000-4005"},
+		"remote.SSH.remotePlatform": {"test-conn": "linux"},
+		"remote.SSH.remoteServerListenOnSocket": true,
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-python.python", "ms-toolsai.jupyter"]
+	}`)
+
+	missing := validateSettings(v, "test-conn")
+	assert.True(t, missing.isEmpty())
+}
+
 func TestValidateSettings_MissingConnection(t *testing.T) {
-	settings := map[string]any{
-		"remote.SSH.serverPickPortsFromRange": map[string]any{
-			"other-conn": "4000-4005",
-		},
-		"remote.SSH.remotePlatform": map[string]any{
-			"other-conn": "linux",
-		},
-		"remote.SSH.defaultExtensions": []any{
-			"ms-python.python",
-			"ms-toolsai.jupyter",
-		},
-	}
+	v := parseTestValue(t, `{
+		"remote.SSH.serverPickPortsFromRange": {"other-conn": "4000-4005"},
+		"remote.SSH.remotePlatform": {"other-conn": "linux"},
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
+	}`)
 
 	// Validating for a different connection should show port and platform as missing
-	missing := validateSettings(settings, "test-conn")
+	missing := validateSettings(v, "test-conn")
 	assert.False(t, missing.isEmpty())
 	assert.True(t, missing.portRange)
 	assert.True(t, missing.platform)
@@ -208,19 +233,17 @@ func TestValidateSettings_MissingConnection(t *testing.T) {
 }
 
 func TestUpdateSettings_PreserveExistingConnections(t *testing.T) {
-	settings := map[string]any{
-		"remote.SSH.serverPickPortsFromRange": map[string]any{
+	v := parseTestValue(t, `{
+		"remote.SSH.serverPickPortsFromRange": {
 			"conn-a": "5000-5005",
-			"conn-b": "6000-6005",
+			"conn-b": "6000-6005"
 		},
-		"remote.SSH.remotePlatform": map[string]any{
+		"remote.SSH.remotePlatform": {
 			"conn-a": "linux",
-			"conn-b": "darwin",
+			"conn-b": "darwin"
 		},
-		"remote.SSH.defaultExtensions": []any{
-			"other.extension",
-		},
-	}
+		"remote.SSH.defaultExtensions": ["other.extension"]
+	}`)
 
 	missing := &missingSettings{
 		portRange:  true,
@@ -228,31 +251,45 @@ func TestUpdateSettings_PreserveExistingConnections(t *testing.T) {
 		extensions: []string{"ms-python.python", "ms-toolsai.jupyter"},
 	}
 
-	updateSettings(settings, "conn-c", missing)
+	err := updateSettings(&v, "conn-c", missing)
+	require.NoError(t, err)
 
 	// Check that new connection was added
-	portRangeObj := settings["remote.SSH.serverPickPortsFromRange"].(map[string]any)
-	assert.Equal(t, "4000-4005", portRangeObj["conn-c"])
+	val, ok := findString(t, v, jsonPtr(serverPickPortsKey, "conn-c"))
+	assert.True(t, ok)
+	assert.Equal(t, "4000-4005", val)
 
-	platformObj := settings["remote.SSH.remotePlatform"].(map[string]any)
-	assert.Equal(t, "linux", platformObj["conn-c"])
+	val, ok = findString(t, v, jsonPtr(remotePlatformKey, "conn-c"))
+	assert.True(t, ok)
+	assert.Equal(t, "linux", val)
 
 	// Check that existing connections were preserved
-	assert.Equal(t, "5000-5005", portRangeObj["conn-a"])
-	assert.Equal(t, "6000-6005", portRangeObj["conn-b"])
-	assert.Equal(t, "linux", platformObj["conn-a"])
-	assert.Equal(t, "darwin", platformObj["conn-b"])
+	val, ok = findString(t, v, jsonPtr(serverPickPortsKey, "conn-a"))
+	assert.True(t, ok)
+	assert.Equal(t, "5000-5005", val)
+
+	val, ok = findString(t, v, jsonPtr(serverPickPortsKey, "conn-b"))
+	assert.True(t, ok)
+	assert.Equal(t, "6000-6005", val)
+
+	val, ok = findString(t, v, jsonPtr(remotePlatformKey, "conn-a"))
+	assert.True(t, ok)
+	assert.Equal(t, "linux", val)
+
+	val, ok = findString(t, v, jsonPtr(remotePlatformKey, "conn-b"))
+	assert.True(t, ok)
+	assert.Equal(t, "darwin", val)
 
 	// Check that extensions were merged
-	extArray := settings["remote.SSH.defaultExtensions"].([]any)
-	assert.Len(t, extArray, 3)
-	assert.Contains(t, extArray, "other.extension")
-	assert.Contains(t, extArray, "ms-python.python")
-	assert.Contains(t, extArray, "ms-toolsai.jupyter")
+	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
+	assert.Len(t, exts, 3)
+	assert.Contains(t, exts, "other.extension")
+	assert.Contains(t, exts, "ms-python.python")
+	assert.Contains(t, exts, "ms-toolsai.jupyter")
 }
 
 func TestUpdateSettings_NewConnection(t *testing.T) {
-	settings := map[string]any{}
+	v := parseTestValue(t, `{}`)
 
 	missing := &missingSettings{
 		portRange:  true,
@@ -260,87 +297,81 @@ func TestUpdateSettings_NewConnection(t *testing.T) {
 		extensions: []string{"ms-python.python", "ms-toolsai.jupyter"},
 	}
 
-	updateSettings(settings, "new-conn", missing)
+	err := updateSettings(&v, "new-conn", missing)
+	require.NoError(t, err)
 
-	portRangeObj := settings["remote.SSH.serverPickPortsFromRange"].(map[string]any)
-	assert.Equal(t, "4000-4005", portRangeObj["new-conn"])
+	val, ok := findString(t, v, jsonPtr(serverPickPortsKey, "new-conn"))
+	assert.True(t, ok)
+	assert.Equal(t, "4000-4005", val)
 
-	platformObj := settings["remote.SSH.remotePlatform"].(map[string]any)
-	assert.Equal(t, "linux", platformObj["new-conn"])
+	val, ok = findString(t, v, jsonPtr(remotePlatformKey, "new-conn"))
+	assert.True(t, ok)
+	assert.Equal(t, "linux", val)
 
-	extArray := settings["remote.SSH.defaultExtensions"].([]any)
-	assert.Len(t, extArray, 2)
-	assert.Contains(t, extArray, "ms-python.python")
-	assert.Contains(t, extArray, "ms-toolsai.jupyter")
+	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
+	assert.Len(t, exts, 2)
+	assert.Contains(t, exts, "ms-python.python")
+	assert.Contains(t, exts, "ms-toolsai.jupyter")
 }
 
 func TestUpdateSettings_GlobalExtensions(t *testing.T) {
 	// Verify that extensions are global, not per-connection
-	settings := map[string]any{
-		"remote.SSH.defaultExtensions": []any{
-			"ms-python.python",
-		},
-	}
+	v := parseTestValue(t, `{
+		"remote.SSH.defaultExtensions": ["ms-python.python"]
+	}`)
 
 	missing := &missingSettings{
 		extensions: []string{"ms-toolsai.jupyter"},
 	}
 
-	updateSettings(settings, "conn-a", missing)
+	err := updateSettings(&v, "conn-a", missing)
+	require.NoError(t, err)
 
-	extArray := settings["remote.SSH.defaultExtensions"].([]any)
-	assert.Len(t, extArray, 2)
-	assert.Contains(t, extArray, "ms-python.python")
-	assert.Contains(t, extArray, "ms-toolsai.jupyter")
+	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
+	assert.Len(t, exts, 2)
+	assert.Contains(t, exts, "ms-python.python")
+	assert.Contains(t, exts, "ms-toolsai.jupyter")
 
 	// Update for another connection should use the same global array
 	missing2 := &missingSettings{
 		extensions: []string{"another.extension"},
 	}
 
-	updateSettings(settings, "conn-b", missing2)
+	err = updateSettings(&v, "conn-b", missing2)
+	require.NoError(t, err)
 
-	extArray = settings["remote.SSH.defaultExtensions"].([]any)
-	assert.Len(t, extArray, 3)
-	assert.Contains(t, extArray, "ms-python.python")
-	assert.Contains(t, extArray, "ms-toolsai.jupyter")
-	assert.Contains(t, extArray, "another.extension")
+	exts = findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
+	assert.Len(t, exts, 3)
+	assert.Contains(t, exts, "ms-python.python")
+	assert.Contains(t, exts, "ms-toolsai.jupyter")
+	assert.Contains(t, exts, "another.extension")
 }
 
 func TestUpdateSettings_MergeExtensions(t *testing.T) {
-	settings := map[string]any{
-		"remote.SSH.defaultExtensions": []any{
-			"existing.extension",
-			"ms-python.python",
-		},
-	}
+	v := parseTestValue(t, `{
+		"remote.SSH.defaultExtensions": ["existing.extension", "ms-python.python"]
+	}`)
 
 	missing := &missingSettings{
-		extensions: []string{"ms-python.python", "ms-toolsai.jupyter"},
+		extensions: []string{"ms-toolsai.jupyter"}, // ms-python.python already present
 	}
 
-	updateSettings(settings, "test-conn", missing)
+	err := updateSettings(&v, "test-conn", missing)
+	require.NoError(t, err)
 
-	extArray := settings["remote.SSH.defaultExtensions"].([]any)
-	assert.Len(t, extArray, 3)
-	assert.Contains(t, extArray, "existing.extension")
-	assert.Contains(t, extArray, "ms-python.python")
-	assert.Contains(t, extArray, "ms-toolsai.jupyter")
+	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
+	assert.Len(t, exts, 3)
+	assert.Contains(t, exts, "existing.extension")
+	assert.Contains(t, exts, "ms-python.python")
+	assert.Contains(t, exts, "ms-toolsai.jupyter")
 }
 
 func TestUpdateSettings_PartialUpdate(t *testing.T) {
-	settings := map[string]any{
-		"remote.SSH.serverPickPortsFromRange": map[string]any{
-			"test-conn": "4000-4005", // Already correct
-		},
-		"remote.SSH.remotePlatform": map[string]any{
-			"other-conn": "linux",
-		},
-		"remote.SSH.defaultExtensions": []any{
-			"ms-python.python",
-			"ms-toolsai.jupyter",
-		},
-	}
+	v := parseTestValue(t, `{
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "4000-4005"},
+		"remote.SSH.remotePlatform": {"other-conn": "linux"},
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
+	}`)
 
 	missing := &missingSettings{
 		portRange:  false, // Already set
@@ -348,20 +379,26 @@ func TestUpdateSettings_PartialUpdate(t *testing.T) {
 		extensions: nil,   // Already present
 	}
 
-	updateSettings(settings, "test-conn", missing)
+	err := updateSettings(&v, "test-conn", missing)
+	require.NoError(t, err)
 
 	// Port range should not be modified
-	portRangeObj := settings["remote.SSH.serverPickPortsFromRange"].(map[string]any)
-	assert.Equal(t, "4000-4005", portRangeObj["test-conn"])
+	val, ok := findString(t, v, jsonPtr(serverPickPortsKey, "test-conn"))
+	assert.True(t, ok)
+	assert.Equal(t, "4000-4005", val)
 
 	// Platform should be added for test-conn
-	platformObj := settings["remote.SSH.remotePlatform"].(map[string]any)
-	assert.Equal(t, "linux", platformObj["test-conn"])
-	assert.Equal(t, "linux", platformObj["other-conn"]) // Preserve other connection
+	val, ok = findString(t, v, jsonPtr(remotePlatformKey, "test-conn"))
+	assert.True(t, ok)
+	assert.Equal(t, "linux", val)
+
+	val, ok = findString(t, v, jsonPtr(remotePlatformKey, "other-conn"))
+	assert.True(t, ok)
+	assert.Equal(t, "linux", val) // Preserve other connection
 
 	// Extensions should not be modified
-	extArray := settings["remote.SSH.defaultExtensions"].([]any)
-	assert.Len(t, extArray, 2)
+	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
+	assert.Len(t, exts, 2)
 }
 
 func TestBackupSettings(t *testing.T) {
@@ -386,26 +423,23 @@ func TestSaveSettings_Formatting(t *testing.T) {
 	tmpDir := t.TempDir()
 	settingsPath := filepath.Join(tmpDir, "settings.json")
 
-	settings := map[string]any{
-		"remote.SSH.serverPickPortsFromRange": map[string]any{
-			"test-conn": "4000-4005",
-		},
-		"editor.fontSize": 14,
-	}
+	v := parseTestValue(t, `{
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "4000-4005"},
+		"editor.fontSize": 14
+	}`)
 
-	err := saveSettings(settingsPath, settings)
+	err := saveSettings(settingsPath, &v)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(settingsPath)
 	require.NoError(t, err)
 
-	// Verify it's valid JSON
-	var parsed map[string]any
-	err = json.Unmarshal(content, &parsed)
+	// Verify it's valid JSON after standardizing
+	standardized, err := hujson.Standardize(content)
 	require.NoError(t, err)
-
-	// Verify formatting (should have 2-space indent)
-	assert.Contains(t, string(content), "  \"remote.SSH.serverPickPortsFromRange\"")
+	var parsed map[string]any
+	err = json.Unmarshal(standardized, &parsed)
+	require.NoError(t, err)
 
 	// Verify permissions
 	info, err := os.Stat(settingsPath)
@@ -413,6 +447,33 @@ func TestSaveSettings_Formatting(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
 	}
+}
+
+func TestSaveSettings_PreservesComments(t *testing.T) {
+	tmpDir := t.TempDir()
+	settingsPath := filepath.Join(tmpDir, "settings.json")
+
+	original := `{
+	// This is a comment
+	"editor.fontSize": 14
+}`
+	err := os.WriteFile(settingsPath, []byte(original), 0o600)
+	require.NoError(t, err)
+
+	v, err := loadSettings(settingsPath)
+	require.NoError(t, err)
+
+	// Add a new setting
+	missing := &missingSettings{listenOnSocket: true}
+	err = updateSettings(&v, "test-conn", missing)
+	require.NoError(t, err)
+
+	err = saveSettings(settingsPath, &v)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(settingsPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(content), "// This is a comment")
 }
 
 func TestMissingSettings_IsEmpty(t *testing.T) {

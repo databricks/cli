@@ -7,11 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/tidwall/jsonc"
+	"github.com/tailscale/hujson"
 )
 
 const (
@@ -45,6 +46,24 @@ type missingSettings struct {
 
 func (m *missingSettings) isEmpty() bool {
 	return !m.portRange && !m.platform && !m.listenOnSocket && len(m.extensions) == 0
+}
+
+// Builds a JSON Pointer (RFC 6901) from path segments to be used in hujson.Value.Find.
+// Escapes "~" → "~0" and "/" → "~1" per spec.
+func jsonPtr(segments ...string) string {
+	var b strings.Builder
+	r := strings.NewReplacer("~", "~0", "/", "~1")
+	for _, s := range segments {
+		b.WriteByte('/')
+		b.WriteString(r.Replace(s))
+	}
+	return b.String()
+}
+
+type patchOp struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value any    `json:"value,omitempty"`
 }
 
 func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) error {
@@ -85,9 +104,11 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 		log.Warnf(ctx, "Failed to backup settings: %v. Continuing with update.", err)
 	}
 
-	updateSettings(settings, connectionName, missing)
+	if err := updateSettings(&settings, connectionName, missing); err != nil {
+		return fmt.Errorf("failed to update settings: %w", err)
+	}
 
-	if err := saveSettings(settingsPath, settings); err != nil {
+	if err := saveSettings(settingsPath, &settings); err != nil {
 		return fmt.Errorf("failed to save settings: %w", err)
 	}
 
@@ -125,73 +146,76 @@ func getDefaultSettingsPath(ctx context.Context, ide string) (string, error) {
 	return filepath.Join(settingsDir, "settings.json"), nil
 }
 
-func loadSettings(path string) (map[string]any, error) {
+func loadSettings(path string) (hujson.Value, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return hujson.Value{}, err
 	}
-	// VS Code/Cursor settings files are in JSONC format (JSON with comments).
-	cleanJSON := jsonc.ToJSON(data)
-	var settings map[string]any
-	if err := json.Unmarshal(cleanJSON, &settings); err != nil {
-		return nil, fmt.Errorf("failed to parse settings JSON: %w", err)
+	v, err := hujson.Parse(data)
+	if err != nil {
+		return hujson.Value{}, fmt.Errorf("failed to parse settings JSON: %w", err)
 	}
-	return settings, nil
+	return v, nil
 }
 
-func hasCorrectPortRange(settings map[string]any, connectionName string) bool {
-	portRangeObj, ok := settings[serverPickPortsKey].(map[string]any)
-	if !ok {
+func hasCorrectPortRange(v hujson.Value, connectionName string) bool {
+	found := v.Find(jsonPtr(serverPickPortsKey, connectionName))
+	if found == nil {
 		return false
 	}
-	val, ok := portRangeObj[connectionName].(string)
-	return ok && val == portRange
+	lit, ok := found.Value.(hujson.Literal)
+	return ok && lit.String() == portRange
 }
 
-func hasCorrectPlatform(settings map[string]any, connectionName string) bool {
-	platformObj, ok := settings[remotePlatformKey].(map[string]any)
-	if !ok {
+func hasCorrectPlatform(v hujson.Value, connectionName string) bool {
+	found := v.Find(jsonPtr(remotePlatformKey, connectionName))
+	if found == nil {
 		return false
 	}
-	val, ok := platformObj[connectionName].(string)
-	return ok && val == remotePlatform
+	lit, ok := found.Value.(hujson.Literal)
+	return ok && lit.String() == remotePlatform
 }
 
-func hasCorrectListenOnSocket(settings map[string]any) bool {
-	val, ok := settings[listenOnSocketKey].(bool)
-	return ok && val
-}
-
-func getMissingExtensions(settings map[string]any) []string {
-	requiredExtensions := []string{pythonExtension, jupyterExtension}
-
-	extArray, ok := settings[defaultExtensionsKey].([]any)
-	if !ok {
-		return requiredExtensions
+func hasCorrectListenOnSocket(v hujson.Value) bool {
+	found := v.Find(jsonPtr(listenOnSocketKey))
+	if found == nil {
+		return false
 	}
+	lit, ok := found.Value.(hujson.Literal)
+	return ok && lit.Bool()
+}
 
-	existingExts := make(map[string]bool)
-	for _, ext := range extArray {
-		if extStr, ok := ext.(string); ok {
-			existingExts[extStr] = true
+func getMissingExtensions(v hujson.Value) []string {
+	required := []string{pythonExtension, jupyterExtension}
+	found := v.Find(jsonPtr(defaultExtensionsKey))
+	if found == nil {
+		return required
+	}
+	arr, ok := found.Value.(*hujson.Array)
+	if !ok {
+		return required
+	}
+	existingSet := make(map[string]bool, len(arr.Elements))
+	for _, el := range arr.Elements {
+		if lit, ok := el.Value.(hujson.Literal); ok {
+			existingSet[lit.String()] = true
 		}
 	}
-
 	var missing []string
-	for _, reqExt := range requiredExtensions {
-		if !existingExts[reqExt] {
-			missing = append(missing, reqExt)
+	for _, ext := range required {
+		if !existingSet[ext] {
+			missing = append(missing, ext)
 		}
 	}
 	return missing
 }
 
-func validateSettings(settings map[string]any, connectionName string) *missingSettings {
+func validateSettings(v hujson.Value, connectionName string) *missingSettings {
 	return &missingSettings{
-		portRange:      !hasCorrectPortRange(settings, connectionName),
-		platform:       !hasCorrectPlatform(settings, connectionName),
-		listenOnSocket: !hasCorrectListenOnSocket(settings),
-		extensions:     getMissingExtensions(settings),
+		portRange:      !hasCorrectPortRange(v, connectionName),
+		platform:       !hasCorrectPlatform(v, connectionName),
+		listenOnSocket: !hasCorrectListenOnSocket(v),
+		extensions:     getMissingExtensions(v),
 	}
 }
 
@@ -216,16 +240,21 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 		return fmt.Errorf("failed to create settings directory: %w", err)
 	}
 
-	settings := make(map[string]any)
+	v, err := hujson.Parse([]byte("{}"))
+	if err != nil {
+		return fmt.Errorf("failed to create settings: %w", err)
+	}
 	missing := &missingSettings{
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
 		extensions:     []string{pythonExtension, jupyterExtension},
 	}
-	updateSettings(settings, connectionName, missing)
+	if err := updateSettings(&v, connectionName, missing); err != nil {
+		return fmt.Errorf("failed to update settings: %w", err)
+	}
 
-	if err := saveSettings(settingsPath, settings); err != nil {
+	if err := saveSettings(settingsPath, &v); err != nil {
 		return fmt.Errorf("failed to save settings: %w", err)
 	}
 
@@ -247,57 +276,50 @@ func backupSettings(ctx context.Context, path string) error {
 	return os.WriteFile(backupPath, data, 0o600)
 }
 
-func getOrDefault[T any](settings map[string]any, key string, defaultVal T) T {
-	if existing, ok := settings[key].(T); ok {
-		return existing
+// subKeyOp returns a patch op that sets key/subKey=value, creating the parent object if absent.
+func subKeyOp(v *hujson.Value, key, subKey, value string) patchOp {
+	if v.Find(jsonPtr(key)) == nil {
+		return patchOp{"add", jsonPtr(key), map[string]string{subKey: value}}
 	}
-	return defaultVal
+	return patchOp{"add", jsonPtr(key, subKey), value}
 }
 
-func updateSettings(settings map[string]any, connectionName string, missing *missingSettings) {
+func updateSettings(v *hujson.Value, connectionName string, missing *missingSettings) error {
+	var ops []patchOp
 	if missing.portRange {
-		portsConfig := getOrDefault(settings, serverPickPortsKey, make(map[string]any))
-		portsConfig[connectionName] = portRange
-		settings[serverPickPortsKey] = portsConfig
+		ops = append(ops, subKeyOp(v, serverPickPortsKey, connectionName, portRange))
 	}
-
 	if missing.platform {
-		platformConfig := getOrDefault(settings, remotePlatformKey, make(map[string]any))
-		platformConfig[connectionName] = remotePlatform
-		settings[remotePlatformKey] = platformConfig
+		ops = append(ops, subKeyOp(v, remotePlatformKey, connectionName, remotePlatform))
 	}
-
 	if missing.listenOnSocket {
-		settings[listenOnSocketKey] = true
+		ops = append(ops, patchOp{"add", jsonPtr(listenOnSocketKey), true})
 	}
-
 	if len(missing.extensions) > 0 {
-		extArray := getOrDefault(settings, defaultExtensionsKey, []any{})
-		existing := make(map[string]bool)
-		for _, ext := range extArray {
-			if extStr, ok := ext.(string); ok {
-				existing[extStr] = true
+		parent := jsonPtr(defaultExtensionsKey)
+		if v.Find(parent) == nil {
+			ops = append(ops, patchOp{"add", parent, missing.extensions})
+		} else {
+			for _, ext := range missing.extensions {
+				ops = append(ops, patchOp{"add", parent + "/-", ext})
 			}
 		}
-		for _, ext := range missing.extensions {
-			if !existing[ext] {
-				extArray = append(extArray, ext)
-			}
-		}
-		settings[defaultExtensionsKey] = extArray
 	}
+	if len(ops) == 0 {
+		return nil
+	}
+	patchData, err := json.Marshal(ops)
+	if err != nil {
+		return fmt.Errorf("failed to marshal patch: %w", err)
+	}
+	return v.Patch(patchData)
 }
 
-func saveSettings(path string, settings map[string]any) error {
-	data, err := json.MarshalIndent(settings, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal settings: %w", err)
-	}
-
-	if err := os.WriteFile(path, data, 0o600); err != nil {
+func saveSettings(path string, v *hujson.Value) error {
+	v.Format()
+	if err := os.WriteFile(path, v.Pack(), 0o600); err != nil {
 		return fmt.Errorf("failed to write settings file: %w", err)
 	}
-
 	return nil
 }
 
