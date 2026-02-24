@@ -66,9 +66,13 @@ type patchOp struct {
 	Value any    `json:"value,omitempty"`
 }
 
+func logSkippingSettings(ctx context.Context, msg string) {
+	cmdio.LogString(ctx, msg+"\n\nWARNING: the connection might not work as expected\n")
+}
+
 func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) error {
 	if !cmdio.IsPromptSupported(ctx) {
-		log.Debugf(ctx, "Skipping IDE settings check: prompts not supported")
+		logSkippingSettings(ctx, "Skipping IDE settings check: prompts not supported")
 		return nil
 	}
 
@@ -96,7 +100,7 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 		return fmt.Errorf("failed to prompt user: %w", err)
 	}
 	if !shouldUpdate {
-		log.Infof(ctx, "Skipping IDE settings update")
+		logSkippingSettings(ctx, "Skipping IDE settings update")
 		return nil
 	}
 
@@ -259,7 +263,7 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 		return fmt.Errorf("failed to prompt user: %w", err)
 	}
 	if !shouldCreate {
-		log.Infof(ctx, "Skipping IDE settings creation")
+		logSkippingSettings(ctx, "Skipping IDE settings creation")
 		return nil
 	}
 
