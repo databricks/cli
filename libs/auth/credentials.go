@@ -11,14 +11,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
 
-// The CLI relies on its own credentials chain to authenticate the user.
-// This guarantees that the CLI remain stable despite the evolution of
-// the SDK while allowing the customization of some strategies such as
-// "databricks-cli" which has a different behavior than the SDK.
-//
-// Order in which strategies are tested. Iteration proceeds from most
-// specific to most generic, and the first strategy to return a non-nil
-// credentials provider is selected.
+// The credentials chain used by the CLI. It is a custom implementation
+// that differs from the SDK's default credentials chain. This guarantees
+// that the CLI remain stable despite the evolution of the SDK while
+// allowing the customization of some strategies such as "databricks-cli"
+// which has a different behavior than the SDK.
 //
 // Modifying this order could break authentication for users whose
 // environments are compatible with multiple strategies and who rely
@@ -103,6 +100,9 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	return cp, nil
 }
 
+// persistentAuth returns a token source. It is a convenience function that
+// overrides the default implementation of the persistent auth client if
+// an alternative implementation is provided for testing.
 func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
 	if c.persistentAuthFn != nil {
 		return c.persistentAuthFn(ctx, opts...)
