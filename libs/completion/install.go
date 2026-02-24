@@ -3,14 +3,27 @@ package completion
 import (
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 // Install configures shell completion for the given shell. homeDir is used
 // as the base for RC file resolution (typically os.UserHomeDir()).
 // Returns the file path modified and whether it was already installed.
 func Install(shell Shell, homeDir string) (filePath string, alreadyInstalled bool, err error) {
-	filePath = TargetFilePath(shell, homeDir)
+	status, err := Status(shell, homeDir)
+	if err != nil {
+		return TargetFilePath(shell, homeDir), false, err
+	}
+	filePath = status.FilePath
+
+	// For fish, any existing file counts as "already installed" — we don't
+	// overwrite files that may have been installed by a package manager.
+	// For RC-based shells, only our marker block counts.
+	if shell == Fish && status.Installed {
+		return filePath, true, nil
+	}
+	if status.Method == "marker" {
+		return filePath, true, nil
+	}
 
 	if shell == Fish {
 		return installFish(filePath, shell)
@@ -19,16 +32,9 @@ func Install(shell Shell, homeDir string) (filePath string, alreadyInstalled boo
 }
 
 // installFish handles the file-drop model for fish completions.
-// If the file already exists (ours or external), it is not overwritten.
+// The caller must check Status before calling this — existence checks are not
+// repeated here.
 func installFish(filePath string, shell Shell) (string, bool, error) {
-	_, err := os.Stat(filePath)
-	if err == nil {
-		return filePath, true, nil
-	}
-	if !os.IsNotExist(err) {
-		return filePath, false, err
-	}
-
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return filePath, false, err
@@ -38,6 +44,8 @@ func installFish(filePath string, shell Shell) (string, bool, error) {
 }
 
 // installRC handles the RC file model for bash, zsh, and powershell.
+// The caller must check Status before calling this — marker checks are not
+// repeated here.
 func installRC(filePath string, shell Shell) (string, bool, error) {
 	var content []byte
 	var perm os.FileMode = 0o644
@@ -47,9 +55,6 @@ func installRC(filePath string, shell Shell) (string, bool, error) {
 		content, err = os.ReadFile(filePath)
 		if err != nil {
 			return filePath, false, err
-		}
-		if strings.Contains(string(content), BeginMarker) {
-			return filePath, true, nil
 		}
 	}
 

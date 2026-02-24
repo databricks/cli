@@ -3,8 +3,11 @@ package completion
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 )
+
+var multiBlankLine = regexp.MustCompile(`\n{3,}`)
 
 // Uninstall removes shell completion config. Returns the file path that was
 // modified and whether it was actually installed.
@@ -82,9 +85,7 @@ func uninstallRC(filePath string) (string, bool, error) {
 	result := text[:beginIdx] + text[blockEnd:]
 
 	// Collapse double blank lines left by removal.
-	for strings.Contains(result, "\n\n\n") {
-		result = strings.ReplaceAll(result, "\n\n\n", "\n\n")
-	}
+	result = multiBlankLine.ReplaceAllString(result, "\n\n")
 
 	return filePath, true, os.WriteFile(filePath, []byte(result), info.Mode())
 }
