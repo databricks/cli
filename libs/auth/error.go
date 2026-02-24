@@ -107,7 +107,7 @@ func EnrichAuthError(ctx context.Context, cfg *config.Config, err error) error {
 
 	// Nudge toward profiles when using env-var-based auth.
 	if cfg.Profile == "" {
-		fmt.Fprint(&b, "\n  - Consider configuring a profile: databricks configure --profile <name>")
+		fmt.Fprint(&b, "\n  - Consider setting up a profile: databricks auth login --profile <name>")
 	}
 
 	return fmt.Errorf("%w\n%s", err, b.String())
@@ -143,14 +143,14 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 
 	case AuthTypePat:
 		if cfg.Profile != "" {
-			fmt.Fprintf(b, "\n  - Regenerate your access token or run: databricks configure --profile %s", cfg.Profile)
+			fmt.Fprintf(b, "\n  - Regenerate your access token or run: databricks auth login --profile %s", cfg.Profile)
 		} else {
 			fmt.Fprint(b, "\n  - Regenerate your access token")
 		}
 
 	case AuthTypeBasic:
 		if cfg.Profile != "" {
-			fmt.Fprintf(b, "\n  - Check your username/password or run: databricks configure --profile %s", cfg.Profile)
+			fmt.Fprintf(b, "\n  - Check your username/password or run: databricks auth login --profile %s", cfg.Profile)
 		} else {
 			fmt.Fprint(b, "\n  - Check your username and password")
 		}
