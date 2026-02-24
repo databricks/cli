@@ -32,6 +32,7 @@ Settings
 Provisioning
   credentials                         These APIs manage credential configurations for this workspace.
   encryption-keys                     These APIs manage encryption key configurations for this workspace (optional).
+  endpoints                           These APIs manage endpoint configurations for this account.
   networks                            These APIs manage network configurations for customer-managed VPCs (optional).
   private-access                      These APIs manage private access settings for this account.
   storage                             These APIs manage storage configurations for this workspace.
