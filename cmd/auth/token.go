@@ -168,6 +168,8 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 				return nil, err
 			}
 			args.profileName = selected
+		} else if len(matchingProfiles) == 1 {
+			args.profileName = matchingProfiles[0].Name
 		}
 	}
 
