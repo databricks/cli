@@ -268,6 +268,7 @@ type templateVars struct {
 	BundleVariables string
 	BundleResources string
 	TargetVariables string
+	AppEnv          string
 	DotEnv          string
 	DotEnvExample   string
 }
@@ -772,6 +773,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		BundleVariables: bundleVars,
 		BundleResources: bundleRes,
 		TargetVariables: targetVars,
+		AppEnv:          generator.GenerateAppEnv(selectedPluginList, genConfig),
 		DotEnv:          generator.GenerateDotEnv(selectedPluginList, genConfig),
 		DotEnvExample:   generator.GenerateDotEnvExample(selectedPluginList),
 	}
@@ -1159,6 +1161,7 @@ func templateData(vars templateVars) map[string]string {
 		"variables":        vars.BundleVariables,
 		"resources":        vars.BundleResources,
 		"target_variables": vars.TargetVariables,
+		"app_env":          vars.AppEnv,
 		"dotenv":           vars.DotEnv,
 		"dotenv_example":   vars.DotEnvExample,
 	}
