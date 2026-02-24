@@ -349,7 +349,6 @@ func updateSettings(v *hujson.Value, connectionName string, missing *missingSett
 }
 
 func saveSettings(path string, v *hujson.Value) error {
-	v.Format()
 	if err := os.WriteFile(path, v.Pack(), 0o600); err != nil {
 		return fmt.Errorf("failed to write settings file: %w", err)
 	}
