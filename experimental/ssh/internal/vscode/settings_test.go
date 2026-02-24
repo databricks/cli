@@ -404,19 +404,42 @@ func TestUpdateSettings_PartialUpdate(t *testing.T) {
 func TestBackupSettings(t *testing.T) {
 	tmpDir := t.TempDir()
 	settingsPath := filepath.Join(tmpDir, "settings.json")
+	originalBak := settingsPath + ".original.bak"
+	latestBak := settingsPath + ".latest.bak"
 
 	originalContent := []byte(`{"key": "value"}`)
 	err := os.WriteFile(settingsPath, originalContent, 0o600)
 	require.NoError(t, err)
 
 	ctx, _ := cmdio.NewTestContextWithStderr(context.Background())
+
+	// First backup: should create .original.bak
 	err = backupSettings(ctx, settingsPath)
 	require.NoError(t, err)
 
-	backupPath := settingsPath + ".bak"
-	backupContent, err := os.ReadFile(backupPath)
+	content, err := os.ReadFile(originalBak)
 	require.NoError(t, err)
-	assert.Equal(t, originalContent, backupContent)
+	assert.Equal(t, originalContent, content)
+	_, err = os.Stat(latestBak)
+	assert.True(t, os.IsNotExist(err))
+
+	// Second backup: .original.bak exists, should create .latest.bak
+	updatedContent := []byte(`{"key": "updated"}`)
+	err = os.WriteFile(settingsPath, updatedContent, 0o600)
+	require.NoError(t, err)
+
+	err = backupSettings(ctx, settingsPath)
+	require.NoError(t, err)
+
+	// .original.bak must remain unchanged
+	content, err = os.ReadFile(originalBak)
+	require.NoError(t, err)
+	assert.Equal(t, originalContent, content)
+
+	// .latest.bak should have the updated content
+	content, err = os.ReadFile(latestBak)
+	require.NoError(t, err)
+	assert.Equal(t, updatedContent, content)
 }
 
 func TestSaveSettings_Formatting(t *testing.T) {

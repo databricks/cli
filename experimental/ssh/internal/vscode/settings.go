@@ -293,9 +293,16 @@ func backupSettings(ctx context.Context, path string) error {
 		return nil
 	}
 
-	backupPath := path + ".bak"
-	log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(backupPath))
-	return os.WriteFile(backupPath, data, 0o600)
+	originalBak := path + ".original.bak"
+	latestBak := path + ".latest.bak"
+
+	if _, err := os.Stat(originalBak); os.IsNotExist(err) {
+		cmdio.LogString(ctx, fmt.Sprintf("Backing up settings to %s", filepath.ToSlash(originalBak)))
+		return os.WriteFile(originalBak, data, 0o600)
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Backing up settings to %s", filepath.ToSlash(latestBak)))
+	return os.WriteFile(latestBak, data, 0o600)
 }
 
 // subKeyOp returns a patch op that sets key/subKey=value, creating the parent object if absent.
