@@ -40,7 +40,7 @@ func TestResolveOpenArgument_ExactMatch(t *testing.T) {
 	assert.Equal(t, "my_job", key)
 }
 
-func TestResolveOpenArgument_PrefixSingleMatch(t *testing.T) {
+func TestResolveOpenArgument_SubstringSingleMatch(t *testing.T) {
 	ctx := cmdio.MockDiscard(context.Background())
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -58,7 +58,7 @@ func TestResolveOpenArgument_PrefixSingleMatch(t *testing.T) {
 	assert.Equal(t, "foo_job", key)
 }
 
-func TestResolveOpenArgument_PrefixMultipleMatches_NonInteractive(t *testing.T) {
+func TestResolveOpenArgument_SubstringMultipleMatches_NonInteractive(t *testing.T) {
 	ctx := cmdio.MockDiscard(context.Background())
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -74,12 +74,30 @@ func TestResolveOpenArgument_PrefixMultipleMatches_NonInteractive(t *testing.T) 
 
 	_, err := resolveOpenArgument(ctx, b, []string{"my_"})
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "multiple resources match prefix")
+	assert.ErrorContains(t, err, "multiple resources match")
 	assert.ErrorContains(t, err, "my_job_1")
 	assert.ErrorContains(t, err, "my_job_2")
 }
 
-func TestResolveOpenArgument_PrefixNoMatch(t *testing.T) {
+func TestResolveOpenArgument_SubstringMiddleMatch(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"my_foo_job": {JobSettings: jobs.JobSettings{Name: "My Foo Job"}},
+					"bar_job":    {JobSettings: jobs.JobSettings{Name: "Bar Job"}},
+				},
+			},
+		},
+	}
+
+	key, err := resolveOpenArgument(ctx, b, []string{"foo"})
+	require.NoError(t, err)
+	assert.Equal(t, "my_foo_job", key)
+}
+
+func TestResolveOpenArgument_SubstringNoMatch(t *testing.T) {
 	ctx := cmdio.MockDiscard(context.Background())
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -91,7 +109,7 @@ func TestResolveOpenArgument_PrefixNoMatch(t *testing.T) {
 		},
 	}
 
-	// No prefix match; returns the arg as-is.
+	// No substring match; returns the arg as-is.
 	key, err := resolveOpenArgument(ctx, b, []string{"zzz"})
 	require.NoError(t, err)
 	assert.Equal(t, "zzz", key)

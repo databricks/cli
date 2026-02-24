@@ -53,8 +53,8 @@ func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 		return arg, nil
 	}
 
-	// Check for prefix matches.
-	matches := resources.LookupByPrefix(b, arg)
+	// Check for substring matches.
+	matches := resources.LookupBySubstring(b, arg)
 	switch {
 	case len(matches) == 1:
 		return matches[0].Key, nil
@@ -74,7 +74,7 @@ func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 		for _, ref := range matches {
 			keys = append(keys, ref.Key)
 		}
-		return "", fmt.Errorf("multiple resources match prefix %q: %v", arg, keys)
+		return "", fmt.Errorf("multiple resources match %q: %v", arg, keys)
 	}
 
 	// No matches; return the arg as-is and let Lookup handle the "not found" error.
