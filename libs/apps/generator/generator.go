@@ -252,8 +252,8 @@ func appEnvLines(r manifest.Resource) []string {
 			continue
 		}
 		lines = append(lines,
-			fmt.Sprintf("  - name: %s", field.Env),
-			fmt.Sprintf("    valueFrom: %s", r.Key()),
+			"  - name: "+field.Env,
+			"    valueFrom: "+r.Key(),
 		)
 	}
 	return lines
