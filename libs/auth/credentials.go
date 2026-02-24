@@ -47,8 +47,25 @@ var credentialChain = []config.CredentialsStrategy{
 func init() {
 	// Sets the credentials chain for the CLI.
 	config.DefaultCredentialStrategyProvider = func() config.CredentialsStrategy {
-		return config.NewCredentialsChain(credentialChain...)
+		return &defaultCredentials{chain: config.NewCredentialsChain(credentialChain...)}
 	}
+}
+
+// defaultCredentials wraps the CLI credential chain and provides "default"
+// as the fallback name, matching the SDK's DefaultCredentials behavior.
+type defaultCredentials struct {
+	chain config.CredentialsStrategy
+}
+
+func (d *defaultCredentials) Name() string {
+	if name := d.chain.Name(); name != "" {
+		return name
+	}
+	return "default"
+}
+
+func (d *defaultCredentials) Configure(ctx context.Context, cfg *config.Config) (credentials.CredentialsProvider, error) {
+	return d.chain.Configure(ctx, cfg)
 }
 
 // CLICredentials is a credentials strategy that reads OAuth tokens directly
