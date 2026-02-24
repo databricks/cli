@@ -116,6 +116,14 @@ func TestToken_loadToken(t *testing.T) {
 				Name: "default.dev",
 				Host: "https://dev.cloud.databricks.com",
 			},
+			{
+				Name: "unique-ws",
+				Host: "https://unique-ws.cloud.databricks.com",
+			},
+			{
+				Name: "legacy-ws",
+				Host: "https://legacy-ws.cloud.databricks.com",
+			},
 		},
 	}
 	tokenCache := &inMemoryTokenCache{
@@ -144,6 +152,18 @@ func TestToken_loadToken(t *testing.T) {
 			},
 			"default.dev": {
 				RefreshToken: "default.dev",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
+			"unique-ws": {
+				RefreshToken: "unique-ws",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
+			"https://no-profile.cloud.databricks.com": {
+				RefreshToken: "no-profile",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
+			"https://legacy-ws.cloud.databricks.com": {
+				RefreshToken: "legacy-ws",
 				Expiry:       time.Now().Add(1 * time.Hour),
 			},
 		},
@@ -195,7 +215,7 @@ func TestToken_loadToken(t *testing.T) {
 				},
 			},
 			wantErr: `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
-  $ databricks auth login --host https://accounts.cloud.databricks.com --account-id expired`,
+  $ databricks auth login --profile expired`,
 		},
 		{
 			name: "prints helpful login message on invalid response",
@@ -402,6 +422,60 @@ func TestToken_loadToken(t *testing.T) {
 				},
 			},
 			wantErr: "acct-dup1 and acct-dup2 match https://accounts.cloud.databricks.com in <in memory>. Use --profile to specify which profile to use",
+		},
+		{
+			name: "host with one matching profile resolves to profile key",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host: "https://unique-ws.cloud.databricks.com",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "host with no matching profile uses host key",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host: "https://no-profile.cloud.databricks.com",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "host with one matching profile and host-key-only token found via SDK fallback",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host: "https://legacy-ws.cloud.databricks.com",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
 		},
 		{
 			name: "profile flag + positional non-host arg still errors",
