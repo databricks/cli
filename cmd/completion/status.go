@@ -47,6 +47,11 @@ func newStatusCmd() *cobra.Command {
 			cmdio.LogString(ctx, "Shell:   "+shell.DisplayName())
 			cmdio.LogString(ctx, "File:    "+filepath.ToSlash(result.FilePath))
 			cmdio.LogString(ctx, "Status:  "+statusStr)
+
+			if result.Installed {
+				warnIfCompinitMissing(ctx, shell, home)
+			}
+
 			return nil
 		},
 	}

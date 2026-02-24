@@ -59,6 +59,7 @@ func newUninstallCmd() *cobra.Command {
 						filepath.ToSlash(result.FilePath),
 					))
 				}
+				warnIfCompinitMissing(ctx, shell, home)
 				return nil
 			}
 

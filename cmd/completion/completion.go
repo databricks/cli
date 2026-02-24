@@ -1,7 +1,14 @@
 package completion
 
 import (
+	"context"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
+	libcompletion "github.com/databricks/cli/libs/completion"
 	"github.com/spf13/cobra"
 )
 
@@ -165,6 +172,27 @@ to your powershell profile.
 	}
 	cmd.Flags().BoolVar(&noDesc, "no-descriptions", false, "disable completion descriptions")
 	return cmd
+}
+
+// warnIfCompinitMissing prints a warning when zsh completions are present but
+// the user's .zshrc does not call compinit. Without compinit, neither our eval
+// shim nor Homebrew's _databricks file will be loaded.
+func warnIfCompinitMissing(ctx context.Context, shell libcompletion.Shell, home string) {
+	if shell != libcompletion.Zsh {
+		return
+	}
+	rcPath := libcompletion.TargetFilePath(shell, home)
+	content, err := os.ReadFile(rcPath)
+	if err != nil {
+		return
+	}
+	if strings.Contains(string(content), "compinit") {
+		return
+	}
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, "Warning: zsh completions require the completion system to be initialized.")
+	cmdio.LogString(ctx, "Add the following to your "+filepath.ToSlash(rcPath)+":")
+	cmdio.LogString(ctx, "  autoload -U compinit && compinit")
 }
 
 // addShellFlag registers the --shell flag and its completion function on cmd.

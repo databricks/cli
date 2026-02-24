@@ -50,6 +50,7 @@ func newInstallCmd() *cobra.Command {
 				default:
 					cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions for %s are already present in %s.", shell, displayPath))
 				}
+				warnIfCompinitMissing(ctx, shell, home)
 				return nil
 			}
 
@@ -86,6 +87,7 @@ func newInstallCmd() *cobra.Command {
 				msg += fmt.Sprintf("Restart your shell or run 'source %s' to activate.", displayPath)
 			}
 			cmdio.LogString(ctx, msg)
+			warnIfCompinitMissing(ctx, shell, home)
 			return nil
 		},
 	}
