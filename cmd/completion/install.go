@@ -44,14 +44,22 @@ func newInstallCmd() *cobra.Command {
 			if result.Installed {
 				switch result.Method {
 				case "marker":
+					// Our shim is already in the RC file — nothing to do.
 					cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions are already installed for %s in %s.", shell, displayPath))
+					warnIfCompinitMissing(ctx, shell, home)
+					return nil
 				case "homebrew":
-					cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions for %s are already provided by Homebrew.", shell))
+					// Homebrew provides completions via a separate file. The user
+					// may still want a CLI-managed shim in .zshrc (e.g. for a
+					// newer binary). Inform them and proceed with install.
+					cmdio.LogString(ctx, fmt.Sprintf("Note: Databricks CLI completions for %s are also provided by Homebrew.", shell))
 				default:
+					// External file (e.g. fish installed by package manager) — we
+					// can't overwrite it, so report and exit.
 					cmdio.LogString(ctx, fmt.Sprintf("Databricks CLI completions for %s are already present in %s.", shell, displayPath))
+					warnIfCompinitMissing(ctx, shell, home)
+					return nil
 				}
-				warnIfCompinitMissing(ctx, shell, home)
-				return nil
 			}
 
 			// Confirm before writing.
