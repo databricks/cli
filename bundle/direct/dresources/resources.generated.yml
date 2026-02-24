@@ -225,6 +225,8 @@ resources:
         reason: spec:input_only
       - field: endpoint_type
         reason: spec:input_only
+      - field: group
+        reason: spec:input_only
       - field: no_suspension
         reason: spec:input_only
       - field: settings

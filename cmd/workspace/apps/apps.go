@@ -212,13 +212,12 @@ func newCreateSpace() *cobra.Command {
 
 	cmd.Flags().StringVar(&createSpaceReq.Space.Description, "description", createSpaceReq.Space.Description, `The description of the app space.`)
 	// TODO: array: effective_user_api_scopes
-	cmd.Flags().StringVar(&createSpaceReq.Space.Name, "name", createSpaceReq.Space.Name, `The name of the app space.`)
 	// TODO: array: resources
 	// TODO: complex arg: status
 	cmd.Flags().StringVar(&createSpaceReq.Space.UsagePolicyId, "usage-policy-id", createSpaceReq.Space.UsagePolicyId, `The usage policy ID for managing cost at the space level.`)
 	// TODO: array: user_api_scopes
 
-	cmd.Use = "create-space"
+	cmd.Use = "create-space NAME"
 	cmd.Short = `Create an app space.`
 	cmd.Long = `Create an app space.
 
@@ -227,7 +226,12 @@ func newCreateSpace() *cobra.Command {
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
   operation details. The operation's 'name' field can then be used to poll for
-  completion using the get-space-operation command.`
+  completion using the get-space-operation command.
+
+  Arguments:
+    NAME: The name of the app space. The name must contain only lowercase
+      alphanumeric characters and hyphens. It must be unique within the
+      workspace.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -235,7 +239,14 @@ func newCreateSpace() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -255,6 +266,9 @@ func newCreateSpace() *cobra.Command {
 					return err
 				}
 			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createSpaceReq.Space.Name = args[0]
 		}
 
 		// Determine which mode to execute based on flags.
@@ -1680,7 +1694,6 @@ func newUpdateSpace() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateSpaceReq.Space.Description, "description", updateSpaceReq.Space.Description, `The description of the app space.`)
 	// TODO: array: effective_user_api_scopes
-	cmd.Flags().StringVar(&updateSpaceReq.Space.Name, "name", updateSpaceReq.Space.Name, `The name of the app space.`)
 	// TODO: array: resources
 	// TODO: complex arg: status
 	cmd.Flags().StringVar(&updateSpaceReq.Space.UsagePolicyId, "usage-policy-id", updateSpaceReq.Space.UsagePolicyId, `The usage policy ID for managing cost at the space level.`)

@@ -843,6 +843,7 @@ func newStartUpdate() *cobra.Command {
 ]`)
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
+	// TODO: map via StringToStringVar: parameters
 	// TODO: array: refresh_selection
 	// TODO: array: replace_where_overrides
 	// TODO: complex arg: rewind_spec
