@@ -22,7 +22,7 @@ type ErrNoWorkspaceProfiles struct {
 }
 
 func (e ErrNoWorkspaceProfiles) Error() string {
-	return e.path + " does not contain workspace profiles; please create one by running 'databricks configure'"
+	return e.path + " does not contain workspace profiles; please create one by running 'databricks auth login'"
 }
 
 type ErrNoAccountProfiles struct {

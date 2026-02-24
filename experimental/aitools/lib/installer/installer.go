@@ -12,21 +12,22 @@ import (
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/fatih/color"
 )
 
 const (
-	skillsRepoOwner         = "databricks"
-	skillsRepoName          = "databricks-agent-skills"
-	skillsRepoPath          = "skills"
-	defaultSkillsRepoBranch = "main"
+	skillsRepoOwner      = "databricks"
+	skillsRepoName       = "databricks-agent-skills"
+	skillsRepoPath       = "skills"
+	defaultSkillsRepoRef = "v0.1.0"
 )
 
-func getSkillsBranch() string {
-	if branch := os.Getenv("DATABRICKS_SKILLS_BRANCH"); branch != "" {
-		return branch
+func getSkillsRef() string {
+	if ref := os.Getenv("DATABRICKS_SKILLS_REF"); ref != "" {
+		return ref
 	}
-	return defaultSkillsRepoBranch
+	return defaultSkillsRepoRef
 }
 
 // Manifest describes the skills manifest fetched from the skills repo.
@@ -45,8 +46,10 @@ type SkillMeta struct {
 
 // FetchManifest fetches the skills manifest from the skills repo.
 func FetchManifest(ctx context.Context) (*Manifest, error) {
+	ref := getSkillsRef()
+	log.Infof(ctx, "Fetching skills manifest from %s/%s@%s", skillsRepoOwner, skillsRepoName, ref)
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/manifest.json",
-		skillsRepoOwner, skillsRepoName, getSkillsBranch())
+		skillsRepoOwner, skillsRepoName, ref)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -73,7 +76,7 @@ func FetchManifest(ctx context.Context) (*Manifest, error) {
 
 func fetchSkillFile(ctx context.Context, skillName, filePath string) ([]byte, error) {
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s/%s/%s",
-		skillsRepoOwner, skillsRepoName, getSkillsBranch(), skillsRepoPath, skillName, filePath)
+		skillsRepoOwner, skillsRepoName, getSkillsRef(), skillsRepoPath, skillName, filePath)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
