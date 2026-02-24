@@ -85,6 +85,7 @@ func testVars() templateVars {
 			Content: "WH_ID=abc123",
 			Example: "WH_ID=your_sql_warehouse_id",
 		},
+		AppEnv:  "- name: SQL_WAREHOUSE_ID\n  valueFrom: sql_warehouse",
 		Plugins: map[string]*pluginVar{"analytics": {}},
 	}
 }
@@ -147,6 +148,11 @@ func TestExecuteTemplateBackwardCompat(t *testing.T) {
 			name:     "plugin_usages",
 			input:    "{{.plugin_usages}}",
 			expected: "analytics()",
+		},
+		{
+			name:     "app_env",
+			input:    "{{.app_env}}",
+			expected: "- name: SQL_WAREHOUSE_ID\n  valueFrom: sql_warehouse",
 		},
 	}
 
@@ -217,6 +223,11 @@ func TestExecuteTemplateNewKeys(t *testing.T) {
 			name:     "plugins not selected",
 			input:    `{{if .plugins.nonexistent}}yes{{end}}`,
 			expected: "",
+		},
+		{
+			name:     "appEnv",
+			input:    "{{.appEnv}}",
+			expected: "- name: SQL_WAREHOUSE_ID\n  valueFrom: sql_warehouse",
 		},
 	}
 
