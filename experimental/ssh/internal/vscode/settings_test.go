@@ -74,6 +74,32 @@ func TestGetDefaultSettingsPath_Cursor_Linux(t *testing.T) {
 	assert.Equal(t, "/home/testuser/.config/Cursor/User/settings.json", path)
 }
 
+func TestGetDefaultSettingsPath_VSCode_Darwin(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("Skipping Darwin-specific test")
+	}
+
+	ctx := context.Background()
+	ctx = env.Set(ctx, "HOME", "/Users/testuser")
+
+	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
+	require.NoError(t, err)
+	assert.Equal(t, "/Users/testuser/Library/Application Support/Code/User/settings.json", path)
+}
+
+func TestGetDefaultSettingsPath_Cursor_Darwin(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("Skipping Darwin-specific test")
+	}
+
+	ctx := context.Background()
+	ctx = env.Set(ctx, "HOME", "/Users/testuser")
+
+	path, err := getDefaultSettingsPath(ctx, cursorIDE)
+	require.NoError(t, err)
+	assert.Equal(t, "/Users/testuser/Library/Application Support/Cursor/User/settings.json", path)
+}
+
 func TestGetDefaultSettingsPath_VSCode_Windows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("Skipping Windows-specific test")
