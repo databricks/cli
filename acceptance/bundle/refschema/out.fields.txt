@@ -119,6 +119,15 @@ resources.apps.*.effective_user_api_scopes[*]	string	ALL
 resources.apps.*.git_repository	*apps.GitRepository	ALL
 resources.apps.*.git_repository.provider	string	ALL
 resources.apps.*.git_repository.url	string	ALL
+resources.apps.*.git_source	*apps.GitSource	INPUT
+resources.apps.*.git_source.branch	string	INPUT
+resources.apps.*.git_source.commit	string	INPUT
+resources.apps.*.git_source.git_repository	*apps.GitRepository	INPUT
+resources.apps.*.git_source.git_repository.provider	string	INPUT
+resources.apps.*.git_source.git_repository.url	string	INPUT
+resources.apps.*.git_source.resolved_commit	string	INPUT
+resources.apps.*.git_source.source_code_path	string	INPUT
+resources.apps.*.git_source.tag	string	INPUT
 resources.apps.*.id	string	ALL
 resources.apps.*.lifecycle	resources.Lifecycle	INPUT
 resources.apps.*.lifecycle.prevent_destroy	bool	INPUT
