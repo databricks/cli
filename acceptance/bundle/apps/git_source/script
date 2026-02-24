@@ -38,11 +38,3 @@ trace $CLI bundle deploy
 
 title "Verify config update was applied"
 trace $CLI apps get $app_name --output json | jq '{name, git_source}'
-
-title "Destroy bundle (via trap)"
-# Destroy will be called by trap on EXIT
-
-title "Verify app is deleted"
-errcode trace $CLI apps get $app_name
-
-trace $CLI bundle summary
