@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
@@ -155,7 +156,7 @@ func TestToken_loadToken(t *testing.T) {
 
 	cases := []struct {
 		name          string
-		ctx           context.Context
+		setupCtx      func(context.Context) context.Context
 		args          loadTokenArgs
 		validateToken func(*oauth2.Token)
 		wantErr       string
@@ -330,7 +331,6 @@ func TestToken_loadToken(t *testing.T) {
 		},
 		{
 			name: "scheme-less account host ambiguity detected correctly",
-			ctx:  cmdio.MockDiscard(context.Background()),
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{
 					Host:      "accounts.cloud.databricks.com",
@@ -349,7 +349,6 @@ func TestToken_loadToken(t *testing.T) {
 		},
 		{
 			name: "workspace host ambiguity — multiple profiles, non-interactive",
-			ctx:  cmdio.MockDiscard(context.Background()),
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{
 					Host: "https://shared.cloud.databricks.com",
@@ -386,7 +385,6 @@ func TestToken_loadToken(t *testing.T) {
 		},
 		{
 			name: "account host — same host AND same account ID — ambiguity",
-			ctx:  cmdio.MockDiscard(context.Background()),
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{
 					Host:      "https://accounts.cloud.databricks.com",
@@ -418,12 +416,109 @@ func TestToken_loadToken(t *testing.T) {
 			},
 			wantErr: "providing both a profile and host is not supported",
 		},
+		{
+			name: "no args, profiles exist, non-interactive — error with profile hint",
+			args: loadTokenArgs{
+				authArguments:      &auth.AuthArguments{},
+				profileName:        "",
+				args:               []string{},
+				tokenTimeout:       1 * time.Hour,
+				profiler:           profiler,
+				persistentAuthOpts: nil,
+			},
+			wantErr: "no profile specified. Use --profile <name> to specify which profile to use",
+		},
+		{
+			name: "no args, no profiles, non-interactive — error with login hint",
+			args: loadTokenArgs{
+				authArguments:      &auth.AuthArguments{},
+				profileName:        "",
+				args:               []string{},
+				tokenTimeout:       1 * time.Hour,
+				profiler:           profile.InMemoryProfiler{},
+				persistentAuthOpts: nil,
+			},
+			wantErr: "no profiles configured. Run 'databricks auth login' to create a profile",
+		},
+		{
+			name: "no args, no config file, non-interactive — error with login hint",
+			args: loadTokenArgs{
+				authArguments:      &auth.AuthArguments{},
+				profileName:        "",
+				args:               []string{},
+				tokenTimeout:       1 * time.Hour,
+				profiler:           errProfiler{err: profile.ErrNoConfiguration},
+				persistentAuthOpts: nil,
+			},
+			wantErr: "no profiles configured. Run 'databricks auth login' to create a profile",
+		},
+		{
+			name: "no args, DATABRICKS_HOST env resolves",
+			setupCtx: func(ctx context.Context) context.Context {
+				ctx = env.Set(ctx, "DATABRICKS_HOST", "https://workspace-a.cloud.databricks.com")
+				return ctx
+			},
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "no args, DATABRICKS_CONFIG_PROFILE env resolves",
+			setupCtx: func(ctx context.Context) context.Context {
+				ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "active")
+				return ctx
+			},
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "no args, DATABRICKS_HOST takes precedence over DATABRICKS_CONFIG_PROFILE",
+			setupCtx: func(ctx context.Context) context.Context {
+				ctx = env.Set(ctx, "DATABRICKS_HOST", "https://workspace-a.cloud.databricks.com")
+				ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "expired")
+				return ctx
+			},
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := c.ctx
-			if ctx == nil {
-				ctx = context.Background()
+			ctx := cmdio.MockDiscard(context.Background())
+			if c.setupCtx != nil {
+				ctx = c.setupCtx(ctx)
 			}
 			got, err := loadToken(ctx, c.args)
 			if c.wantErr != "" {
@@ -434,4 +529,17 @@ func TestToken_loadToken(t *testing.T) {
 			}
 		})
 	}
+}
+
+// errProfiler is a Profiler that always returns the configured error.
+type errProfiler struct {
+	err error
+}
+
+func (e errProfiler) LoadProfiles(context.Context, profile.ProfileMatchFunction) (profile.Profiles, error) {
+	return nil, e.err
+}
+
+func (e errProfiler) GetPath(context.Context) (string, error) {
+	return "<error>", nil
 }

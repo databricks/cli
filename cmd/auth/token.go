@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -22,6 +23,30 @@ import (
 func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthArgument) string {
 	loginMsg := auth.BuildLoginCommand(ctx, profile, persistentAuth)
 	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
+}
+
+// profileSelectionResult represents the user's choice from the interactive
+// profile picker.
+type profileSelectionResult int
+
+const (
+	profileSelected    profileSelectionResult = iota // User picked a profile
+	enterHostSelected                                // User chose "Enter a host URL manually"
+	createNewSelected                                // User chose "Create a new profile"
+)
+
+// applyUnifiedHostFlags copies unified host fields from the profile to the
+// auth arguments when they are not already set.
+func applyUnifiedHostFlags(p *profile.Profile, args *auth.AuthArguments) {
+	if p == nil {
+		return
+	}
+	if !args.IsUnifiedHost && p.IsUnifiedHost {
+		args.IsUnifiedHost = p.IsUnifiedHost
+	}
+	if args.WorkspaceID == "" && p.WorkspaceID != "" {
+		args.WorkspaceID = p.WorkspaceID
+	}
 }
 
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
@@ -115,14 +140,18 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	// Load unified host flags from the profile if available
-	if existingProfile != nil {
-		if !args.authArguments.IsUnifiedHost && existingProfile.IsUnifiedHost {
-			args.authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
+	applyUnifiedHostFlags(existingProfile, args.authArguments)
+
+	// When no explicit profile, host, or positional args are provided, attempt to
+	// resolve the target through environment variables or interactive profile selection.
+	if args.profileName == "" && args.authArguments.Host == "" && len(args.args) == 0 {
+		var resolvedProfile string
+		resolvedProfile, existingProfile, err = resolveNoArgsToken(ctx, args.profiler, args.authArguments)
+		if err != nil {
+			return nil, err
 		}
-		if args.authArguments.WorkspaceID == "" && existingProfile.WorkspaceID != "" {
-			args.authArguments.WorkspaceID = existingProfile.WorkspaceID
-		}
+		args.profileName = resolvedProfile
+		applyUnifiedHostFlags(existingProfile, args.authArguments)
 	}
 
 	err = setHostAndAccountId(ctx, existingProfile, args.authArguments, args.args)
@@ -225,4 +254,121 @@ func askForMatchingProfile(ctx context.Context, profiles profile.Profiles, host 
 		return "", err
 	}
 	return profiles[i].Name, nil
+}
+
+// resolveNoArgsToken resolves a profile or host when `auth token` is invoked
+// with no explicit profile, host, or positional arguments. It checks environment
+// variables first, then falls back to interactive profile selection or a clear
+// non-interactive error.
+//
+// Returns the resolved profile name and profile (if any). The host and related
+// fields on authArgs are updated in place when resolved via environment variables.
+func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs *auth.AuthArguments) (string, *profile.Profile, error) {
+	// Step 1: Try DATABRICKS_HOST env var (highest priority).
+	if envHost := env.Get(ctx, "DATABRICKS_HOST"); envHost != "" {
+		authArgs.Host = envHost
+		if v := env.Get(ctx, "DATABRICKS_ACCOUNT_ID"); v != "" {
+			authArgs.AccountID = v
+		}
+		if v := env.Get(ctx, "DATABRICKS_WORKSPACE_ID"); v != "" {
+			authArgs.WorkspaceID = v
+		}
+		if ok, _ := env.GetBool(ctx, "DATABRICKS_EXPERIMENTAL_IS_UNIFIED_HOST"); ok {
+			authArgs.IsUnifiedHost = true
+		}
+		return "", nil, nil
+	}
+
+	// Step 2: Try DATABRICKS_CONFIG_PROFILE env var.
+	if envProfile := env.Get(ctx, "DATABRICKS_CONFIG_PROFILE"); envProfile != "" {
+		p, err := loadProfileByName(ctx, envProfile, profiler)
+		if err != nil {
+			return "", nil, err
+		}
+		return envProfile, p, nil
+	}
+
+	// Step 3: No env vars resolved. Load all profiles for interactive selection
+	// or non-interactive error.
+	allProfiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
+		return "", nil, err
+	}
+
+	if !cmdio.IsPromptSupported(ctx) {
+		if len(allProfiles) > 0 {
+			return "", nil, errors.New("no profile specified. Use --profile <name> to specify which profile to use")
+		}
+		return "", nil, errors.New("no profiles configured. Run 'databricks auth login' to create a profile")
+	}
+
+	// Interactive: show profile picker.
+	result, selectedName, err := promptForProfileSelection(ctx, allProfiles)
+	if err != nil {
+		return "", nil, err
+	}
+	switch result {
+	case enterHostSelected:
+		// Fall through — setHostAndAccountId will prompt for the host.
+		return "", nil, nil
+	case createNewSelected:
+		return "", nil, errors.New("to create a new profile, run: databricks auth login")
+	default:
+		p, err := loadProfileByName(ctx, selectedName, profiler)
+		if err != nil {
+			return "", nil, err
+		}
+		return selectedName, p, nil
+	}
+}
+
+// profileSelectItem is used by promptForProfileSelection to render both
+// regular profiles and special action options in the same select list.
+type profileSelectItem struct {
+	Name string
+	Host string
+}
+
+// promptForProfileSelection shows a promptui select list with all configured
+// profiles plus "Enter a host URL" and "Create a new profile" options.
+// Returns the selection type and, when a profile is selected, its name.
+func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (profileSelectionResult, string, error) {
+	items := make([]profileSelectItem, 0, len(profiles)+2)
+	for _, p := range profiles {
+		items = append(items, profileSelectItem{Name: p.Name, Host: p.Host})
+	}
+	enterHostIdx := len(items)
+	items = append(items, profileSelectItem{Name: "Enter a host URL manually"})
+	createProfileIdx := len(items)
+	items = append(items, profileSelectItem{Name: "Create a new profile (run 'databricks auth login')"})
+
+	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+		Label:             "Select a profile",
+		Items:             items,
+		StartInSearchMode: len(profiles) > 5,
+		Searcher: func(input string, index int) bool {
+			input = strings.ToLower(input)
+			name := strings.ToLower(items[index].Name)
+			host := strings.ToLower(items[index].Host)
+			return strings.Contains(name, input) || strings.Contains(host, input)
+		},
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . | faint }}",
+			Active:   `{{.Name | bold}}{{if .Host}} ({{.Host|faint}}){{end}}`,
+			Inactive: `{{.Name}}{{if .Host}} ({{.Host}}){{end}}`,
+			Selected: `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
+		},
+	})
+	if err != nil {
+		return 0, "", err
+	}
+
+	switch i {
+	case enterHostIdx:
+		return enterHostSelected, "", nil
+	case createProfileIdx:
+		return createNewSelected, "", nil
+	default:
+		return profileSelected, profiles[i].Name, nil
+	}
 }
