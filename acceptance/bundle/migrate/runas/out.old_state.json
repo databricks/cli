@@ -35,6 +35,7 @@
             "cluster_policy_id": null,
             "dashboard_id": null,
             "database_instance_name": null,
+            "database_project_name": null,
             "directory_id": null,
             "directory_path": null,
             "experiment_id": null,
@@ -45,6 +46,7 @@
             "notebook_path": null,
             "object_type": "pipelines",
             "pipeline_id": "[UUID]",
+            "provider_config": [],
             "registered_model_id": null,
             "repo_id": null,
             "repo_path": null,
@@ -119,6 +121,7 @@
             "name": "DABs Revenue Pipeline",
             "notification": [],
             "photon": false,
+            "provider_config": [],
             "restart_window": [],
             "root_path": null,
             "run_as": [
