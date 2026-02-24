@@ -243,17 +243,23 @@ func GenerateAppEnv(plugins []manifest.Plugin, cfg Config) string {
 }
 
 // appEnvLines returns app.yaml env entries for a resource.
-// Each field with an Env produces "- name: <ENV>\n  valueFrom: <resourceKey>".
+// Single-field resources use "valueFrom: <key>"; multi-field resources
+// use "valueFrom: <key>.<field>" so the runtime can resolve each field.
 func appEnvLines(r manifest.Resource) []string {
 	var lines []string
+	multiField := len(r.FieldNames()) > 1
 	for _, fieldName := range r.FieldNames() {
 		field := r.Fields[fieldName]
 		if field.Env == "" || !validEnvVar.MatchString(field.Env) {
 			continue
 		}
+		valueFrom := r.Key()
+		if multiField {
+			valueFrom = r.Key() + "." + fieldName
+		}
 		lines = append(lines,
 			"  - name: "+field.Env,
-			"    valueFrom: "+r.Key(),
+			"    valueFrom: "+valueFrom,
 		)
 	}
 	return lines
