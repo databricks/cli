@@ -1,211 +1,190 @@
-package auth_test
+package auth
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"slices"
 	"testing"
-	"time"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
-	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
-type inMemoryTokenCache struct {
-	Tokens map[string]*oauth2.Token
-}
-
-func (c *inMemoryTokenCache) Lookup(key string) (*oauth2.Token, error) {
-	t, ok := c.Tokens[key]
-	if !ok {
-		return nil, cache.ErrNotFound
+// TestCredentialChainOrder purely exists as an extra measure to catch
+// accidental change in the ordering.
+func TestCredentialChainOrder(t *testing.T) {
+	names := make([]string, len(credentialChain))
+	for i, s := range credentialChain {
+		names[i] = s.Name()
 	}
-	return t, nil
+	want := []string{
+		"pat",
+		"basic",
+		"oauth-m2m",
+		"databricks-cli",
+		"metadata-service",
+		"github-oidc",
+		"azure-devops-oidc",
+		"env-oidc",
+		"file-oidc",
+		"github-oidc-azure",
+		"azure-msi",
+		"azure-client-secret",
+		"azure-cli",
+		"google-credentials",
+		"google-id",
+	}
+	if !slices.Equal(names, want) {
+		t.Errorf("credential chain order: want %v, got %v", want, names)
+	}
 }
-
-func (c *inMemoryTokenCache) Store(key string, t *oauth2.Token) error {
-	c.Tokens[key] = t
-	return nil
-}
-
-var _ cache.TokenCache = (*inMemoryTokenCache)(nil)
-
-type mockEndpointSupplier struct{}
-
-func (m *mockEndpointSupplier) GetAccountOAuthEndpoints(_ context.Context, accountHost, _ string) (*u2m.OAuthAuthorizationServer, error) {
-	return &u2m.OAuthAuthorizationServer{
-		TokenEndpoint:         accountHost + "/token",
-		AuthorizationEndpoint: accountHost + "/authorize",
-	}, nil
-}
-
-func (m *mockEndpointSupplier) GetWorkspaceOAuthEndpoints(_ context.Context, workspaceHost string) (*u2m.OAuthAuthorizationServer, error) {
-	return &u2m.OAuthAuthorizationServer{
-		TokenEndpoint:         workspaceHost + "/token",
-		AuthorizationEndpoint: workspaceHost + "/authorize",
-	}, nil
-}
-
-func (m *mockEndpointSupplier) GetUnifiedOAuthEndpoints(_ context.Context, host, _ string) (*u2m.OAuthAuthorizationServer, error) {
-	return &u2m.OAuthAuthorizationServer{
-		TokenEndpoint:         host + "/token",
-		AuthorizationEndpoint: host + "/authorize",
-	}, nil
-}
-
-var _ u2m.OAuthEndpointSupplier = (*mockEndpointSupplier)(nil)
 
 func TestCLICredentialsName(t *testing.T) {
-	c := auth.CLICredentials{}
-	assert.Equal(t, "databricks-cli", c.Name())
+	c := CLICredentials{}
+	if got := c.Name(); got != "databricks-cli" {
+		t.Errorf("Name(): want %q, got %q", "databricks-cli", got)
+	}
 }
 
-func TestCLICredentialsConfigure(t *testing.T) {
-	refreshSuccess := fixtures.HTTPFixture{
-		MatchAny: true,
-		Status:   200,
-		Response: map[string]string{
-			"access_token": "refreshed-access-token",
-			"token_type":   "Bearer",
-			"expires_in":   "3600",
-		},
-	}
-	refreshFailure := fixtures.HTTPFixture{
-		MatchAny: true,
-		Status:   401,
-		Response: map[string]string{
-			"error":             "invalid_request",
-			"error_description": "Refresh token is invalid",
-		},
-	}
-
+func TestAuthArgumentsFromConfig(t *testing.T) {
 	tests := []struct {
-		name    string
-		cfg     *config.Config
-		cache   map[string]*oauth2.Token
-		http    []fixtures.HTTPFixture
-		wantNil bool
-		wantErr string
+		name string
+		cfg  *config.Config
+		want AuthArguments
 	}{
 		{
-			name:    "empty host returns error",
-			cfg:     &config.Config{},
-			wantErr: "no host provided",
+			name: "empty config",
+			cfg:  &config.Config{},
+			want: AuthArguments{},
 		},
 		{
-			name: "workspace host with valid token",
+			name: "workspace host only",
 			cfg: &config.Config{
 				Host: "https://myworkspace.cloud.databricks.com",
 			},
-			cache: map[string]*oauth2.Token{
-				"https://myworkspace.cloud.databricks.com": {
-					AccessToken: "valid-token",
-					Expiry:      time.Now().Add(time.Hour),
-				},
+			want: AuthArguments{
+				Host: "https://myworkspace.cloud.databricks.com",
 			},
 		},
 		{
-			name: "account host with valid token",
+			name: "account host with account ID",
 			cfg: &config.Config{
 				Host:      "https://accounts.cloud.databricks.com",
 				AccountID: "test-account-id",
 			},
-			cache: map[string]*oauth2.Token{
-				"https://accounts.cloud.databricks.com/oidc/accounts/test-account-id": {
-					AccessToken: "valid-account-token",
-					Expiry:      time.Now().Add(time.Hour),
-				},
+			want: AuthArguments{
+				Host:      "https://accounts.cloud.databricks.com",
+				AccountID: "test-account-id",
 			},
 		},
 		{
-			name: "no cached token",
+			name: "all fields",
 			cfg: &config.Config{
-				Host: "https://myworkspace.cloud.databricks.com",
+				Host:                       "https://myhost.com",
+				AccountID:                  "acc-123",
+				WorkspaceID:                "ws-456",
+				Experimental_IsUnifiedHost: true,
 			},
-			cache: map[string]*oauth2.Token{},
+			want: AuthArguments{
+				Host:          "https://myhost.com",
+				AccountID:     "acc-123",
+				WorkspaceID:   "ws-456",
+				IsUnifiedHost: true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := authArgumentsFromConfig(tt.cfg)
+			if got != tt.want {
+				t.Errorf("want %v, got %v", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestCLICredentialsConfigure(t *testing.T) {
+	testErr := errors.New("test error")
+
+	tests := []struct {
+		name             string
+		cfg              *config.Config
+		persistentAuthFn func(ctx context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error)
+		wantErr          error
+		wantToken        string
+	}{
+		{
+			name:    "empty host returns error",
+			cfg:     &config.Config{},
+			wantErr: errNoHost,
 		},
 		{
-			name: "expired token with successful refresh",
+			name: "persistentAuthFn error is propagated",
 			cfg: &config.Config{
 				Host: "https://myworkspace.cloud.databricks.com",
 			},
-			cache: map[string]*oauth2.Token{
-				"https://myworkspace.cloud.databricks.com": {
-					RefreshToken: "valid-refresh",
-					Expiry:       time.Now().Add(-time.Hour),
-				},
+			persistentAuthFn: func(_ context.Context, _ ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+				return nil, testErr
 			},
-			http: []fixtures.HTTPFixture{refreshSuccess},
+			wantErr: testErr,
 		},
 		{
-			name: "expired token with failed refresh",
+			name: "workspace host",
 			cfg: &config.Config{
 				Host: "https://myworkspace.cloud.databricks.com",
 			},
-			cache: map[string]*oauth2.Token{
-				"https://myworkspace.cloud.databricks.com": {
-					RefreshToken: "bad-refresh",
-					Expiry:       time.Now().Add(-time.Hour),
-				},
+			persistentAuthFn: func(_ context.Context, _ ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+				return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
+					return &oauth2.Token{AccessToken: "workspace-token"}, nil
+				}), nil
 			},
-			http: []fixtures.HTTPFixture{refreshFailure},
+			wantToken: "workspace-token",
+		},
+		{
+			name: "account host",
+			cfg: &config.Config{
+				Host:      "https://accounts.cloud.databricks.com",
+				AccountID: "test-account-id",
+			},
+			persistentAuthFn: func(_ context.Context, _ ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+				return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
+					return &oauth2.Token{AccessToken: "account-token"}, nil
+				}), nil
+			},
+			wantToken: "account-token",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
+			c := CLICredentials{persistentAuthFn: tt.persistentAuthFn}
 
-			// Pre-populate the cache using the real cache keys when a cache
-			// map is provided. Test cases use hard-coded keys for readability;
-			// we re-key them here if the config produces a valid OAuthArgument.
-			tokenCache := &inMemoryTokenCache{Tokens: make(map[string]*oauth2.Token)}
-			if tt.cache != nil && tt.cfg.Host != "" {
-				key, err := func() (string, error) {
-					arg, err := auth.AuthArguments{
-						Host:      tt.cfg.Host,
-						AccountID: tt.cfg.AccountID,
-					}.ToOAuthArgument()
-					if err != nil {
-						return "", err
-					}
-					return arg.GetCacheKey(), nil
-				}()
-				if err == nil {
-					for _, tok := range tt.cache {
-						tokenCache.Tokens[key] = tok
-						break // only one token per test case
-					}
-				}
+			got, err := c.Configure(ctx, tt.cfg)
+
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("want error %v, got %v", tt.wantErr, err)
 			}
-
-			opts := []u2m.PersistentAuthOption{
-				u2m.WithTokenCache(tokenCache),
-				u2m.WithOAuthEndpointSupplier(&mockEndpointSupplier{}),
-			}
-			if len(tt.http) > 0 {
-				transport := fixtures.SliceTransport(tt.http)
-				opts = append(opts, u2m.WithHttpClient(&http.Client{Transport: transport}))
-			}
-
-			c := auth.CLICredentials{PersistentAuthOptions: opts}
-			cp, err := c.Configure(ctx, tt.cfg)
-
-			if tt.wantErr != "" {
-				assert.ErrorContains(t, err, tt.wantErr)
+			if tt.wantErr != nil {
 				return
 			}
-			require.NoError(t, err)
-			if tt.wantNil {
-				assert.Nil(t, cp)
-				return
+
+			// Verify the credentials provider sets the correct Bearer token.
+			req, err := http.NewRequest("GET", tt.cfg.Host, nil)
+			if err != nil {
+				t.Fatalf("creating request: %v", err)
 			}
-			require.NotNil(t, cp)
+			if err := got.SetHeaders(req); err != nil {
+				t.Fatalf("SetHeaders: want no error, got %v", err)
+			}
+			want := "Bearer " + tt.wantToken
+			if gotHeader := req.Header.Get("Authorization"); gotHeader != want {
+				t.Errorf("Authorization header: want %q, got %q", want, gotHeader)
+			}
 		})
 	}
 }

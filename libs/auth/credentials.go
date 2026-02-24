@@ -6,46 +6,49 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
+	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	sdkauth "github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
 
+// The CLI relies on its own credentials chain to authenticate the user.
+// This guarantees that the CLI remain stable despite the evolution of
+// the SDK while allowing the customization of some strategies such as
+// "databricks-cli" which has a different behavior than the SDK.
+//
+// Order in which strategies are tested. Iteration proceeds from most
+// specific to most generic, and the first strategy to return a non-nil
+// credentials provider is selected.
+//
+// Modifying this order could break authentication for users whose
+// environments are compatible with multiple strategies and who rely
+// on the current priority for tie-breaking.
+var credentialChain = []config.CredentialsStrategy{
+	config.PatCredentials{},
+	config.BasicCredentials{},
+	config.M2mCredentials{},
+	CLICredentials{}, // custom
+	config.MetadataServiceCredentials{},
+	// OIDC Strategies.
+	config.GitHubOIDCCredentials{},
+	config.AzureDevOpsOIDCCredentials{},
+	config.EnvOIDCCredentials{},
+	config.FileOIDCCredentials{},
+	// Azure strategies.
+	config.AzureGithubOIDCCredentials{},
+	config.AzureMsiCredentials{},
+	config.AzureClientSecretCredentials{},
+	config.AzureCliCredentials{},
+	// Google strategies.
+	config.GoogleCredentials{},
+	config.GoogleDefaultCredentials{},
+}
+
 func init() {
 	// Sets the credentials chain for the CLI.
-	//
-	// The CLI relies on its own credentials chain to authenticate the user.
-	// This guarantees that the CLI remain stable despite the evolution of
-	// the SDK while allowing the customization of some strategies such as
-	// "databricks-cli" which has a different behavior than the SDK.
 	config.DefaultCredentialStrategyProvider = func() config.CredentialsStrategy {
-		// Order in which strategies are tested. Iteration proceeds from most
-		// specific to most generic, and the first strategy to return a non-nil
-		// credentials provider is selected.
-		//
-		// Modifying this order could break authentication for users whose
-		// environments are compatible with multiple strategies and who rely
-		// on the current priority for tie-breaking.
-		return config.NewCredentialsChain(
-			config.PatCredentials{},
-			config.BasicCredentials{},
-			config.M2mCredentials{},
-			CLICredentials{}, // custom
-			config.MetadataServiceCredentials{},
-			// OIDC Strategies.
-			config.GitHubOIDCCredentials{},
-			config.AzureDevOpsOIDCCredentials{},
-			config.EnvOIDCCredentials{},
-			config.FileOIDCCredentials{},
-			// Azure strategies.
-			config.AzureGithubOIDCCredentials{},
-			config.AzureMsiCredentials{},
-			config.AzureClientSecretCredentials{},
-			config.AzureCliCredentials{},
-			// Google strategies.
-			config.GoogleCredentials{},
-			config.GoogleDefaultCredentials{},
-		)
+		return config.NewCredentialsChain(credentialChain...)
 	}
 }
 
@@ -53,7 +56,9 @@ func init() {
 // from the local token store. It replaces the SDK's default "databricks-cli"
 // strategy, which shells out to `databricks auth token` as a subprocess.
 type CLICredentials struct {
-	PersistentAuthOptions []u2m.PersistentAuthOption
+	// persistentAuth is a function to override the default implementation
+	// of the persistent auth client. It exists for testing purposes only.
+	persistentAuthFn func(ctx context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error)
 }
 
 // Name implements [config.CredentialsStrategy].
@@ -61,26 +66,36 @@ func (c CLICredentials) Name() string {
 	return "databricks-cli"
 }
 
+var errNoHost = errors.New("no host provided")
+
 // Configure implements [config.CredentialsStrategy].
 func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (credentials.CredentialsProvider, error) {
 	if cfg.Host == "" {
-		return nil, errors.New("no host provided")
+		return nil, errNoHost
 	}
 	oauthArg, err := authArgumentsFromConfig(cfg).ToOAuthArgument()
 	if err != nil {
 		return nil, err
 	}
-	opts := append(c.PersistentAuthOptions, u2m.WithOAuthArgument(oauthArg))
-	persistentAuth, err := u2m.NewPersistentAuth(ctx, opts...)
+	ts, err := c.persistentAuth(ctx, u2m.WithOAuthArgument(oauthArg))
 	if err != nil {
 		return nil, err
 	}
-	ts := sdkauth.NewCachedTokenSource(
-		authconv.AuthTokenSource(persistentAuth),
-		sdkauth.WithAsyncRefresh(!cfg.DisableOAuthRefreshToken),
+	cp := credentials.NewOAuthCredentialsProviderFromTokenSource(
+		sdkauth.NewCachedTokenSource(ts, sdkauth.WithAsyncRefresh(!cfg.DisableOAuthRefreshToken)),
 	)
-	cp := credentials.NewOAuthCredentialsProviderFromTokenSource(ts)
 	return cp, nil
+}
+
+func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+	if c.persistentAuthFn != nil {
+		return c.persistentAuthFn(ctx, opts...)
+	}
+	ts, err := u2m.NewPersistentAuth(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return authconv.AuthTokenSource(ts), nil
 }
 
 // authArgumentsFromConfig converts an SDK config to AuthArguments.
