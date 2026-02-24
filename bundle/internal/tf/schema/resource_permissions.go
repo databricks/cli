@@ -9,6 +9,10 @@ type ResourcePermissionsAccessControl struct {
 	UserName             string `json:"user_name,omitempty"`
 }
 
+type ResourcePermissionsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourcePermissions struct {
 	AlertV2Id              string                             `json:"alert_v2_id,omitempty"`
 	AppName                string                             `json:"app_name,omitempty"`
@@ -17,6 +21,7 @@ type ResourcePermissions struct {
 	ClusterPolicyId        string                             `json:"cluster_policy_id,omitempty"`
 	DashboardId            string                             `json:"dashboard_id,omitempty"`
 	DatabaseInstanceName   string                             `json:"database_instance_name,omitempty"`
+	DatabaseProjectName    string                             `json:"database_project_name,omitempty"`
 	DirectoryId            string                             `json:"directory_id,omitempty"`
 	DirectoryPath          string                             `json:"directory_path,omitempty"`
 	ExperimentId           string                             `json:"experiment_id,omitempty"`
@@ -39,4 +44,5 @@ type ResourcePermissions struct {
 	WorkspaceFileId        string                             `json:"workspace_file_id,omitempty"`
 	WorkspaceFilePath      string                             `json:"workspace_file_path,omitempty"`
 	AccessControl          []ResourcePermissionsAccessControl `json:"access_control,omitempty"`
+	ProviderConfig         *ResourcePermissionsProviderConfig `json:"provider_config,omitempty"`
 }

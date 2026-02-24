@@ -437,6 +437,7 @@
             "name": "[dev [USERNAME]] my_default_python_etl",
             "notification": [],
             "photon": false,
+            "provider_config": [],
             "restart_window": [],
             "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl",
             "run_as": [],

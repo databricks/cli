@@ -15,6 +15,8 @@ type DataSources struct {
 	Apps                                   map[string]any `json:"databricks_apps,omitempty"`
 	AppsSettingsCustomTemplate             map[string]any `json:"databricks_apps_settings_custom_template,omitempty"`
 	AppsSettingsCustomTemplates            map[string]any `json:"databricks_apps_settings_custom_templates,omitempty"`
+	AppsSpace                              map[string]any `json:"databricks_apps_space,omitempty"`
+	AppsSpaces                             map[string]any `json:"databricks_apps_spaces,omitempty"`
 	AwsAssumeRolePolicy                    map[string]any `json:"databricks_aws_assume_role_policy,omitempty"`
 	AwsBucketPolicy                        map[string]any `json:"databricks_aws_bucket_policy,omitempty"`
 	AwsCrossaccountPolicy                  map[string]any `json:"databricks_aws_crossaccount_policy,omitempty"`
@@ -44,6 +46,8 @@ type DataSources struct {
 	DbfsFile                               map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths                          map[string]any `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory                              map[string]any `json:"databricks_directory,omitempty"`
+	Endpoint                               map[string]any `json:"databricks_endpoint,omitempty"`
+	Endpoints                              map[string]any `json:"databricks_endpoints,omitempty"`
 	EntityTagAssignment                    map[string]any `json:"databricks_entity_tag_assignment,omitempty"`
 	EntityTagAssignments                   map[string]any `json:"databricks_entity_tag_assignments,omitempty"`
 	ExternalLocation                       map[string]any `json:"databricks_external_location,omitempty"`
@@ -139,6 +143,8 @@ func NewDataSources() *DataSources {
 		Apps:                                   make(map[string]any),
 		AppsSettingsCustomTemplate:             make(map[string]any),
 		AppsSettingsCustomTemplates:            make(map[string]any),
+		AppsSpace:                              make(map[string]any),
+		AppsSpaces:                             make(map[string]any),
 		AwsAssumeRolePolicy:                    make(map[string]any),
 		AwsBucketPolicy:                        make(map[string]any),
 		AwsCrossaccountPolicy:                  make(map[string]any),
@@ -168,6 +174,8 @@ func NewDataSources() *DataSources {
 		DbfsFile:                               make(map[string]any),
 		DbfsFilePaths:                          make(map[string]any),
 		Directory:                              make(map[string]any),
+		Endpoint:                               make(map[string]any),
+		Endpoints:                              make(map[string]any),
 		EntityTagAssignment:                    make(map[string]any),
 		EntityTagAssignments:                   make(map[string]any),
 		ExternalLocation:                       make(map[string]any),
