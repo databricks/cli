@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
-	sdkauth "github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
@@ -82,7 +81,7 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 		return nil, err
 	}
 	cp := credentials.NewOAuthCredentialsProviderFromTokenSource(
-		sdkauth.NewCachedTokenSource(ts, sdkauth.WithAsyncRefresh(!cfg.DisableOAuthRefreshToken)),
+		auth.NewCachedTokenSource(ts, auth.WithAsyncRefresh(!cfg.DisableOAuthRefreshToken)),
 	)
 	return cp, nil
 }
