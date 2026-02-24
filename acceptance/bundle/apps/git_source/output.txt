@@ -1,0 +1,72 @@
+
+=== Validate bundle configuration
+>>> [CLI] bundle validate
+Name: app-git-source-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/app-git-source-[UNIQUE_NAME]
+
+Validation OK!
+
+=== Plan bundle deployment
+>>> [CLI] bundle plan
+create apps.my_app
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== Deploy bundle
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Get app details and verify git_source configuration
+>>> [CLI] bundle summary --output json
+
+>>> [CLI] apps get [APP_NAME] --output json
+{
+  "name": "[APP_NAME]",
+  "description": "App with git source",
+  "git_repository": {
+    "provider": "gitHub",
+    "url": "https://github.com/databricks/cli"
+  },
+  "git_source": null
+}
+
+=== Verify no drift after deployment
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Run the app to verify it works
+>>> cat out.app-run
+✓ Getting the status of the app [APP_NAME]
+✓ App is in RUNNING state
+✓ App compute is in ACTIVE state
+✓ Deployment succeeded
+You can access the app at [APP_NAME]-123.cloud.databricksapps.com
+
+=== Update git_source branch and redeploy
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Verify config update was applied
+>>> [CLI] apps get [APP_NAME] --output json
+{
+  "name": "[APP_NAME]",
+  "git_source": null
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.my_app
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/app-git-source-[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
