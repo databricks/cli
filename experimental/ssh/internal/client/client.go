@@ -429,6 +429,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		"shutdownDelay":           opts.ShutdownDelay.String(),
 		"maxClients":              strconv.Itoa(opts.MaxClients),
 		"sessionId":               sessionID,
+		"serverless":              strconv.FormatBool(opts.IsServerlessMode()),
 	}
 
 	cmdio.LogString(ctx, "Submitting a job to start the ssh server...")

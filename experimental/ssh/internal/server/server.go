@@ -34,6 +34,8 @@ type ServerOptions struct {
 	// SessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
 	// Used for metadata storage path. Defaults to ClusterID if not set.
 	SessionID string
+	// Serverless indicates whether the server is running on serverless compute.
+	Serverless bool
 	// The directory to store sshd configuration
 	ConfigDir string
 	// The name of the secrets scope to use for client and server keys
