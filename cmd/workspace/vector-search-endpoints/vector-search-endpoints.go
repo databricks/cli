@@ -32,6 +32,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDeleteEndpoint())
 	cmd.AddCommand(newGetEndpoint())
 	cmd.AddCommand(newListEndpoints())
+	cmd.AddCommand(newPatchEndpoint())
 	cmd.AddCommand(newRetrieveUserVisibleMetrics())
 	cmd.AddCommand(newUpdateEndpointBudgetPolicy())
 	cmd.AddCommand(newUpdateEndpointCustomTags())
@@ -68,6 +69,7 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `The budget policy id to be applied.`)
+	cmd.Flags().Int64Var(&createEndpointReq.MinQps, "min-qps", createEndpointReq.MinQps, `Min QPS for the endpoint.`)
 
 	cmd.Use = "create-endpoint NAME ENDPOINT_TYPE"
 	cmd.Short = `Create an endpoint.`
@@ -317,6 +319,79 @@ func newListEndpoints() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listEndpointsOverrides {
 		fn(cmd, &listEndpointsReq)
+	}
+
+	return cmd
+}
+
+// start patch-endpoint command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var patchEndpointOverrides []func(
+	*cobra.Command,
+	*vectorsearch.PatchEndpointRequest,
+)
+
+func newPatchEndpoint() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var patchEndpointReq vectorsearch.PatchEndpointRequest
+	var patchEndpointJson flags.JsonFlag
+
+	cmd.Flags().Var(&patchEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().Int64Var(&patchEndpointReq.MinQps, "min-qps", patchEndpointReq.MinQps, `Min QPS for the endpoint.`)
+
+	cmd.Use = "patch-endpoint ENDPOINT_NAME"
+	cmd.Short = `Update an endpoint.`
+	cmd.Long = `Update an endpoint.
+
+  Update an endpoint
+
+  Arguments:
+    ENDPOINT_NAME: Name of the vector search endpoint`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := patchEndpointJson.Unmarshal(&patchEndpointReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		patchEndpointReq.EndpointName = args[0]
+
+		response, err := w.VectorSearchEndpoints.PatchEndpoint(ctx, patchEndpointReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range patchEndpointOverrides {
+		fn(cmd, &patchEndpointReq)
 	}
 
 	return cmd

@@ -52,6 +52,7 @@ func (*ResourcePostgresEndpoint) RemapState(remote *postgres.Endpoint) *Postgres
 			AutoscalingLimitMinCu:  0,
 			Disabled:               false,
 			EndpointType:           "",
+			Group:                  nil,
 			NoSuspension:           false,
 			Settings:               nil,
 			SuspendTimeoutDuration: nil,

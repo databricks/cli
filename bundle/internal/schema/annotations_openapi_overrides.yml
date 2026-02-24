@@ -774,6 +774,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "app":
+    "description": |-
+      PLACEHOLDER
   "database":
     "description": |-
       PLACEHOLDER
