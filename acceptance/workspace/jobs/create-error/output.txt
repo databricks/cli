@@ -2,4 +2,12 @@
 >>> [CLI] jobs create --json {"name":"abc"}
 Error: Invalid access token.
 
+Host:      [DATABRICKS_URL]
+Auth type: Personal Access Token (pat)
+
+Next steps:
+  - Verify you have the required permissions for this operation
+  - Check your identity: databricks auth describe
+  - Consider configuring a profile: databricks configure --profile <name>
+
 Exit code: 1

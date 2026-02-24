@@ -1771,6 +1771,9 @@
                       "endpoint_type": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointType"
                       },
+                      "group": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec"
+                      },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
@@ -3305,6 +3308,11 @@
                 {
                   "type": "object",
                   "properties": {
+                    "app": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceApp",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
                     "database": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase"
                     },
@@ -3342,6 +3350,18 @@
                   "required": [
                     "name"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceApp": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -3679,7 +3699,8 @@
                     "WRITE_VOLUME",
                     "SELECT",
                     "EXECUTE",
-                    "USE_CONNECTION"
+                    "USE_CONNECTION",
+                    "MODIFY"
                   ]
                 },
                 {
@@ -8876,6 +8897,36 @@
                     "SCD_TYPE_1",
                     "SCD_TYPE_2",
                     "APPEND_ONLY"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.EndpointGroupSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "enable_readable_secondaries": {
+                      "description": "Whether to allow read-only connections to read-write endpoints. Only relevant for read-write endpoints where\nsize.max \u003e 1.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "max": {
+                      "description": "The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single\ncompute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to\ntrue on the EndpointSpec.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "min": {
+                      "description": "The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater\nthan or equal to 1.",
+                      "$ref": "#/$defs/int"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "max",
+                    "min"
                   ]
                 },
                 {

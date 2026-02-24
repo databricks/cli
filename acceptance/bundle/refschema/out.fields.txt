@@ -162,6 +162,7 @@ resources.apps.*.permissions[*].service_principal_name	string	INPUT
 resources.apps.*.permissions[*].user_name	string	INPUT
 resources.apps.*.resources	[]apps.AppResource	ALL
 resources.apps.*.resources[*]	apps.AppResource	ALL
+resources.apps.*.resources[*].app	*apps.AppResourceApp	ALL
 resources.apps.*.resources[*].database	*apps.AppResourceDatabase	ALL
 resources.apps.*.resources[*].database.database_name	string	ALL
 resources.apps.*.resources[*].database.instance_name	string	ALL
@@ -191,6 +192,7 @@ resources.apps.*.resources[*].sql_warehouse.permission	apps.AppResourceSqlWareho
 resources.apps.*.resources[*].uc_securable	*apps.AppResourceUcSecurable	ALL
 resources.apps.*.resources[*].uc_securable.permission	apps.AppResourceUcSecurableUcSecurablePermission	ALL
 resources.apps.*.resources[*].uc_securable.securable_full_name	string	ALL
+resources.apps.*.resources[*].uc_securable.securable_kind	string	ALL
 resources.apps.*.resources[*].uc_securable.securable_type	apps.AppResourceUcSecurableUcSecurableType	ALL
 resources.apps.*.service_principal_client_id	string	ALL
 resources.apps.*.service_principal_id	int64	ALL
@@ -2541,6 +2543,10 @@ resources.postgres_endpoints.*.create_time	*time.Time	REMOTE
 resources.postgres_endpoints.*.disabled	bool	INPUT	STATE
 resources.postgres_endpoints.*.endpoint_id	string	INPUT	STATE
 resources.postgres_endpoints.*.endpoint_type	postgres.EndpointType	INPUT	STATE
+resources.postgres_endpoints.*.group	*postgres.EndpointGroupSpec	INPUT	STATE
+resources.postgres_endpoints.*.group.enable_readable_secondaries	bool	INPUT	STATE
+resources.postgres_endpoints.*.group.max	int	INPUT	STATE
+resources.postgres_endpoints.*.group.min	int	INPUT	STATE
 resources.postgres_endpoints.*.id	string	INPUT
 resources.postgres_endpoints.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
@@ -2556,6 +2562,10 @@ resources.postgres_endpoints.*.spec.autoscaling_limit_max_cu	float64	REMOTE
 resources.postgres_endpoints.*.spec.autoscaling_limit_min_cu	float64	REMOTE
 resources.postgres_endpoints.*.spec.disabled	bool	REMOTE
 resources.postgres_endpoints.*.spec.endpoint_type	postgres.EndpointType	REMOTE
+resources.postgres_endpoints.*.spec.group	*postgres.EndpointGroupSpec	REMOTE
+resources.postgres_endpoints.*.spec.group.enable_readable_secondaries	bool	REMOTE
+resources.postgres_endpoints.*.spec.group.max	int	REMOTE
+resources.postgres_endpoints.*.spec.group.min	int	REMOTE
 resources.postgres_endpoints.*.spec.no_suspension	bool	REMOTE
 resources.postgres_endpoints.*.spec.settings	*postgres.EndpointSettings	REMOTE
 resources.postgres_endpoints.*.spec.settings.pg_settings	map[string]string	REMOTE
@@ -2567,8 +2577,13 @@ resources.postgres_endpoints.*.status.autoscaling_limit_min_cu	float64	REMOTE
 resources.postgres_endpoints.*.status.current_state	postgres.EndpointStatusState	REMOTE
 resources.postgres_endpoints.*.status.disabled	bool	REMOTE
 resources.postgres_endpoints.*.status.endpoint_type	postgres.EndpointType	REMOTE
+resources.postgres_endpoints.*.status.group	*postgres.EndpointGroupStatus	REMOTE
+resources.postgres_endpoints.*.status.group.enable_readable_secondaries	bool	REMOTE
+resources.postgres_endpoints.*.status.group.max	int	REMOTE
+resources.postgres_endpoints.*.status.group.min	int	REMOTE
 resources.postgres_endpoints.*.status.hosts	*postgres.EndpointHosts	REMOTE
 resources.postgres_endpoints.*.status.hosts.host	string	REMOTE
+resources.postgres_endpoints.*.status.hosts.read_only_host	string	REMOTE
 resources.postgres_endpoints.*.status.pending_state	postgres.EndpointStatusState	REMOTE
 resources.postgres_endpoints.*.status.settings	*postgres.EndpointSettings	REMOTE
 resources.postgres_endpoints.*.status.settings.pg_settings	map[string]string	REMOTE
@@ -2594,6 +2609,11 @@ resources.postgres_projects.*.default_endpoint_settings.suspend_timeout_duration
 resources.postgres_projects.*.display_name	string	INPUT	STATE
 resources.postgres_projects.*.history_retention_duration	*duration.Duration	INPUT	STATE
 resources.postgres_projects.*.id	string	INPUT
+resources.postgres_projects.*.initial_endpoint_spec	*postgres.InitialEndpointSpec	REMOTE
+resources.postgres_projects.*.initial_endpoint_spec.group	*postgres.EndpointGroupSpec	REMOTE
+resources.postgres_projects.*.initial_endpoint_spec.group.enable_readable_secondaries	bool	REMOTE
+resources.postgres_projects.*.initial_endpoint_spec.group.max	int	REMOTE
+resources.postgres_projects.*.initial_endpoint_spec.group.min	int	REMOTE
 resources.postgres_projects.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_projects.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_projects.*.modified_status	string	INPUT

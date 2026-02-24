@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `These APIs manage endpoint configurations for this account.`,
 		Long:    `These APIs manage endpoint configurations for this account.`,
 		GroupID: "provisioning",
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

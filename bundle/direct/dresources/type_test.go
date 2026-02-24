@@ -59,6 +59,7 @@ var knownMissingInRemoteType = map[string][]string{
 		"disabled",
 		"endpoint_id",
 		"endpoint_type",
+		"group",
 		"no_suspension",
 		"settings",
 		"suspend_timeout_duration",

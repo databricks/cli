@@ -346,6 +346,7 @@ func newCreateProject() *cobra.Command {
 
 	cmd.Flags().Var(&createProjectJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: initial_endpoint_spec
 	cmd.Flags().StringVar(&createProjectReq.Project.Name, "name", createProjectReq.Project.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
@@ -1845,6 +1846,7 @@ func newUpdateProject() *cobra.Command {
 
 	cmd.Flags().Var(&updateProjectJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: initial_endpoint_spec
 	cmd.Flags().StringVar(&updateProjectReq.Project.Name, "name", updateProjectReq.Project.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
