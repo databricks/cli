@@ -219,14 +219,42 @@ func validateSettings(v hujson.Value, connectionName string) *missingSettings {
 	}
 }
 
-func promptUserForUpdate(ctx context.Context, ide, connectionName string, _ *missingSettings) (bool, error) {
-	question := fmt.Sprintf("%s settings are missing required configuration for '%s'. Update settings?", getIDEName(ide), connectionName)
+func settingsMessage(connectionName string, missing *missingSettings) string {
+	var lines []string
+	if missing.portRange {
+		lines = append(lines, fmt.Sprintf("  \"%s\": {\"%s\": \"%s\"}", serverPickPortsKey, connectionName, portRange))
+	}
+	if missing.platform {
+		lines = append(lines, fmt.Sprintf("  \"%s\": {\"%s\": \"%s\"}", remotePlatformKey, connectionName, remotePlatform))
+	}
+	if missing.listenOnSocket {
+		lines = append(lines, fmt.Sprintf("  \"%s\": true // Global setting that affects all remote ssh connections", listenOnSocketKey))
+	}
+	if len(missing.extensions) > 0 {
+		quoted := make([]string, len(missing.extensions))
+		for i, ext := range missing.extensions {
+			quoted[i] = fmt.Sprintf("\"%s\"", ext)
+		}
+		lines = append(lines, fmt.Sprintf("  \"%s\": [%s] // Global setting that affects all remote ssh connections", defaultExtensionsKey, strings.Join(quoted, ", ")))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func promptUserForUpdate(ctx context.Context, ide, connectionName string, missing *missingSettings) (bool, error) {
+	question := fmt.Sprintf(
+		"The following settings will be applied to %s for '%s':\n%s\nApply these settings?",
+		getIDEName(ide), connectionName, settingsMessage(connectionName, missing))
 	return cmdio.AskYesOrNo(ctx, question)
 }
 
 func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath string) error {
-	question := fmt.Sprintf("%s settings not found. Create settings with recommended configuration for '%s'?", getIDEName(ide), connectionName)
-	shouldCreate, err := cmdio.AskYesOrNo(ctx, question)
+	missing := &missingSettings{
+		portRange:      true,
+		platform:       true,
+		listenOnSocket: true,
+		extensions:     []string{pythonExtension, jupyterExtension},
+	}
+	shouldCreate, err := promptUserForUpdate(ctx, ide, connectionName, missing)
 	if err != nil {
 		return fmt.Errorf("failed to prompt user: %w", err)
 	}
@@ -243,12 +271,6 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 	v, err := hujson.Parse([]byte("{}"))
 	if err != nil {
 		return fmt.Errorf("failed to create settings: %w", err)
-	}
-	missing := &missingSettings{
-		portRange:      true,
-		platform:       true,
-		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension},
 	}
 	if err := updateSettings(&v, connectionName, missing); err != nil {
 		return fmt.Errorf("failed to update settings: %w", err)
@@ -324,15 +346,13 @@ func saveSettings(path string, v *hujson.Value) error {
 }
 
 func GetManualInstructions(ide, connectionName string) string {
+	missing := &missingSettings{
+		portRange:      true,
+		platform:       true,
+		listenOnSocket: true,
+		extensions:     []string{pythonExtension, jupyterExtension},
+	}
 	return fmt.Sprintf(
-		"To ensure the remote connection works as expected, manually add these settings to your %s settings.json:\n"+
-			"  \"%s\": {\"%s\": \"%s\"},\n"+
-			"  \"%s\": {\"%s\": \"%s\"},\n"+
-			"  \"%s\": true,\n"+
-			"  \"%s\": [\"%s\", \"%s\"]",
-		getIDEName(ide),
-		serverPickPortsKey, connectionName, portRange,
-		remotePlatformKey, connectionName, remotePlatform,
-		listenOnSocketKey,
-		defaultExtensionsKey, pythonExtension, jupyterExtension)
+		"To ensure the remote connection works as expected, manually add these settings to your %s settings.json:\n%s",
+		getIDEName(ide), settingsMessage(connectionName, missing))
 }
