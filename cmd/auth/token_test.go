@@ -558,6 +558,21 @@ func TestToken_loadToken(t *testing.T) {
 				"To authenticate as a service principal, use the Databricks SDK directly",
 		},
 		{
+			name: "M2M profile detected via host resolution",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host: "https://m2m.cloud.databricks.com",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+			},
+			wantErr: `profile "m2m-profile" uses M2M authentication (client_id/client_secret). ` +
+				"`databricks auth token` only supports U2M (user-to-machine) authentication tokens. " +
+				"To authenticate as a service principal, use the Databricks SDK directly",
+		},
+		{
 			name: "no args, DATABRICKS_HOST env resolves",
 			setupCtx: func(ctx context.Context) context.Context {
 				ctx = env.Set(ctx, "DATABRICKS_HOST", "https://workspace-a.cloud.databricks.com")
