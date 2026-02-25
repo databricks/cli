@@ -211,7 +211,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 
 	// Check if the resolved profile uses M2M authentication (client credentials).
 	// The auth token command only supports U2M OAuth tokens.
-	if existingProfile != nil && existingProfile.ClientID != "" {
+	if existingProfile != nil && existingProfile.HasClientCredentials {
 		return nil, fmt.Errorf(
 			"profile %q uses M2M authentication (client_id/client_secret). "+
 				"`databricks auth token` only supports U2M (user-to-machine) authentication tokens. "+

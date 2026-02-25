@@ -126,9 +126,9 @@ func TestToken_loadToken(t *testing.T) {
 				Host: "https://legacy-ws.cloud.databricks.com",
 			},
 			{
-				Name:     "m2m-profile",
-				Host:     "https://m2m.cloud.databricks.com",
-				ClientID: "my-client-id",
+				Name:                 "m2m-profile",
+				Host:                 "https://m2m.cloud.databricks.com",
+				HasClientCredentials: true,
 			},
 		},
 	}
