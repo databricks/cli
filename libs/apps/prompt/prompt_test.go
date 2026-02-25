@@ -3,13 +3,25 @@ package prompt
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// keys creates a tea.KeyMsg for simulating keyboard input in tests.
+func keys(runes ...rune) tea.KeyMsg {
+	return tea.KeyMsg{
+		Type:  tea.KeyRunes,
+		Runes: runes,
+	}
+}
 
 func TestValidateProjectName(t *testing.T) {
 	tests := []struct {
@@ -185,4 +197,91 @@ func TestMaxAppNameLength(t *testing.T) {
 	invalidName := "abcdefghijklmnopqrstuvwxyz1" // 27 chars
 	assert.Len(t, invalidName, 27)
 	assert.Error(t, ValidateProjectName(invalidName))
+}
+
+// TestSelectTitleVisibleWithoutFiltering verifies that a Select field renders
+// its Title on the initial view when Filtering is not activated.
+// This is the behavior after the fix: the Title is always visible.
+func TestSelectTitleVisibleWithoutFiltering(t *testing.T) {
+	field := huh.NewSelect[string]().
+		Options(huh.NewOptions("Warehouse A", "Warehouse B", "Warehouse C")...).
+		Title("Select SQL Warehouse").
+		Description("3 available — press / to filter").
+		Height(8)
+
+	f := huh.NewForm(huh.NewGroup(field))
+	f.Update(f.Init())
+
+	view := ansi.Strip(f.View())
+
+	assert.Contains(t, view, "Select SQL Warehouse", "Title should be visible in initial render")
+	assert.Contains(t, view, "press / to filter", "Description should be visible")
+	assert.Contains(t, view, "Warehouse A", "First option should be visible")
+}
+
+// TestSelectTitleHiddenByFilteringTrue demonstrates that calling
+// Filtering(true) replaces the Title with the filter text input,
+// making the Title invisible. This is the bug that was fixed.
+func TestSelectTitleHiddenByFilteringTrue(t *testing.T) {
+	field := huh.NewSelect[string]().
+		Options(huh.NewOptions("Warehouse A", "Warehouse B", "Warehouse C")...).
+		Title("Select SQL Warehouse").
+		Filtering(true).
+		Height(8)
+
+	f := huh.NewForm(huh.NewGroup(field))
+	f.Update(f.Init())
+
+	view := ansi.Strip(f.View())
+
+	// With Filtering(true), huh replaces the Title with the filter text input.
+	assert.NotContains(t, view, "Select SQL Warehouse",
+		"Title is replaced by filter input when Filtering(true) is set")
+}
+
+// TestSelectSlashKeyActivatesFilter verifies that pressing '/' activates
+// filtering even without Filtering(true), and that it filters options.
+func TestSelectSlashKeyActivatesFilter(t *testing.T) {
+	field := huh.NewSelect[string]().
+		Options(huh.NewOptions("Apple", "Apricot", "Banana")...).
+		Title("Select fruit").
+		Height(8)
+
+	f := huh.NewForm(huh.NewGroup(field))
+	f.Update(f.Init())
+
+	// Title visible before filtering
+	view := ansi.Strip(f.View())
+	assert.Contains(t, view, "Select fruit")
+	assert.Contains(t, view, "Banana")
+
+	// Press '/' to start filtering, then type 'B'
+	m, _ := f.Update(keys('/'))
+	f = m.(*huh.Form)
+	m, _ = f.Update(keys('B'))
+	f = m.(*huh.Form)
+
+	view = ansi.Strip(f.View())
+
+	assert.Contains(t, view, "Banana", "Banana should match filter 'B'")
+	assert.NotContains(t, view, "Apple", "Apple should be filtered out")
+}
+
+// TestSelectHelpShowsFilterHint verifies the help text includes a filter hint.
+func TestSelectHelpShowsFilterHint(t *testing.T) {
+	field := huh.NewSelect[string]().
+		Options(huh.NewOptions("A", "B")...).
+		Title("Pick").
+		Height(8)
+
+	f := huh.NewForm(huh.NewGroup(field))
+	f.Update(f.Init())
+
+	view := ansi.Strip(f.View())
+
+	// huh's default keymap shows "/ filter" in the help line
+	assert.True(t,
+		strings.Contains(view, "/ filter") || strings.Contains(view, "filter"),
+		"Help text should mention filtering is available via '/'",
+	)
 }
