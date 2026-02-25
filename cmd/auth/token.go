@@ -130,8 +130,14 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	// When no profile was specified, check if multiple profiles match the
-	// effective cache key for this host.
+	// When no profile was specified, resolve the host to a profile in
+	// .databrickscfg. This ensures the token cache lookup uses the profile
+	// key (e.g. "logfood") rather than the host URL, which is important
+	// because the SDK's dualWrite is a transitional mechanism: it writes
+	// tokens under both keys for backward compatibility with older SDKs
+	// that only know host keys, but the profile key is the intended
+	// primary key. Once older SDKs have migrated to profile-based keys,
+	// dualWrite and the host key can be removed entirely.
 	if args.profileName == "" && args.authArguments.Host != "" {
 		cfg := &config.Config{
 			Host:                       args.authArguments.Host,
