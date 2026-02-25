@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -30,9 +32,9 @@ func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthA
 type profileSelectionResult int
 
 const (
-	profileSelected    profileSelectionResult = iota // User picked a profile
-	enterHostSelected                                // User chose "Enter a host URL manually"
-	createNewSelected                                // User chose "Create a new profile"
+	profileSelected   profileSelectionResult = iota // User picked a profile
+	enterHostSelected                               // User chose "Enter a host URL manually"
+	createNewSelected                               // User chose "Create a new profile"
 )
 
 // applyUnifiedHostFlags copies unified host fields from the profile to the
@@ -314,7 +316,7 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 		// Fall through — setHostAndAccountId will prompt for the host.
 		return "", nil, nil
 	case createNewSelected:
-		return "", nil, errors.New("to create a new profile, run: databricks auth login")
+		return runInlineLogin(ctx, profiler)
 	default:
 		p, err := loadProfileByName(ctx, selectedName, profiler)
 		if err != nil {
@@ -339,10 +341,10 @@ func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (
 	for _, p := range profiles {
 		items = append(items, profileSelectItem{Name: p.Name, Host: p.Host})
 	}
+	createProfileIdx := len(items)
+	items = append(items, profileSelectItem{Name: "Create a new profile"})
 	enterHostIdx := len(items)
 	items = append(items, profileSelectItem{Name: "Enter a host URL manually"})
-	createProfileIdx := len(items)
-	items = append(items, profileSelectItem{Name: "Create a new profile (run 'databricks auth login')"})
 
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
 		Label:             "Select a profile",
@@ -373,4 +375,70 @@ func promptForProfileSelection(ctx context.Context, profiles profile.Profiles) (
 	default:
 		return profileSelected, profiles[i].Name, nil
 	}
+}
+
+// runInlineLogin runs a minimal interactive login flow: prompts for a profile
+// name and host, performs the OAuth challenge, saves the profile to
+// .databrickscfg, and returns the new profile name and profile.
+func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *profile.Profile, error) {
+	profileName, err := promptForProfile(ctx, "DEFAULT")
+	if err != nil {
+		return "", nil, err
+	}
+
+	existingProfile, err := loadProfileByName(ctx, profileName, profiler)
+	if err != nil {
+		return "", nil, err
+	}
+
+	loginArgs := &auth.AuthArguments{}
+	applyUnifiedHostFlags(existingProfile, loginArgs)
+
+	err = setHostAndAccountId(ctx, existingProfile, loginArgs, nil)
+	if err != nil {
+		return "", nil, err
+	}
+
+	loginArgs.Profile = profileName
+
+	oauthArgument, err := loginArgs.ToOAuthArgument()
+	if err != nil {
+		return "", nil, err
+	}
+	persistentAuth, err := u2m.NewPersistentAuth(ctx,
+		u2m.WithOAuthArgument(oauthArgument),
+		u2m.WithBrowser(openURLSuppressingStderr),
+	)
+	if err != nil {
+		return "", nil, err
+	}
+	defer persistentAuth.Close()
+
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	if err = persistentAuth.Challenge(); err != nil {
+		return "", nil, err
+	}
+
+	err = databrickscfg.SaveToProfile(ctx, &config.Config{
+		Profile:                    profileName,
+		Host:                       loginArgs.Host,
+		AuthType:                   authTypeDatabricksCLI,
+		AccountID:                  loginArgs.AccountID,
+		WorkspaceID:                loginArgs.WorkspaceID,
+		Experimental_IsUnifiedHost: loginArgs.IsUnifiedHost,
+		ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
+	})
+	if err != nil {
+		return "", nil, err
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
+
+	p, err := loadProfileByName(ctx, profileName, profiler)
+	if err != nil {
+		return "", nil, err
+	}
+	return profileName, p, nil
 }
