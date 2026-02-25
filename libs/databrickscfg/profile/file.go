@@ -86,6 +86,7 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 			IsUnifiedHost:       all["experimental_is_unified_host"] == "true",
 			ClusterID:           all["cluster_id"],
 			ServerlessComputeID: all["serverless_compute_id"],
+			ClientID:            all["client_id"],
 		}
 		if fn(profile) {
 			profiles = append(profiles, profile)

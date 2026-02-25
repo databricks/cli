@@ -17,6 +17,7 @@ type Profile struct {
 	IsUnifiedHost       bool
 	ClusterID           string
 	ServerlessComputeID string
+	ClientID            string
 }
 
 func (p Profile) Cloud() string {
