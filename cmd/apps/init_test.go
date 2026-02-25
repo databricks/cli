@@ -202,10 +202,11 @@ func TestNormalizeVersion(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"0.3.0", "v0.3.0"},
-		{"1.0.0", "v1.0.0"},
-		{"v0.3.0", "v0.3.0"},
-		{"v1.0.0", "v1.0.0"},
+		{"0.3.0", "template-v0.3.0"},
+		{"1.0.0", "template-v1.0.0"},
+		{"v0.3.0", "template-v0.3.0"},
+		{"v1.0.0", "template-v1.0.0"},
+		{"template-v0.3.0", "template-v0.3.0"},
 		{"latest", "main"},
 		{"", ""},
 		{"main", "main"},
