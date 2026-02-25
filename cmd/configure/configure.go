@@ -12,6 +12,43 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// patConfigureClearKeys lists profile keys that should be explicitly removed
+// when saving a PAT-based profile via `databricks configure`. This prevents
+// stale auth credentials from other methods (OAuth, Azure, GCP, etc.) from
+// remaining in the profile and causing multi-auth validation failures.
+var patConfigureClearKeys = []string{
+	// OAuth metadata
+	"auth_type",
+	"scopes",
+	// Basic auth
+	"username",
+	"password",
+	// M2M OAuth
+	"client_id",
+	"client_secret",
+	// Google
+	"google_service_account",
+	"google_credentials",
+	// Azure (azure_environment is NOT cleared — it's a non-auth
+	// config property describing the Azure cloud, not a credential)
+	"azure_workspace_resource_id",
+	"azure_use_msi",
+	"azure_client_secret",
+	"azure_client_id",
+	"azure_tenant_id",
+	"azure_login_app_id",
+	// Metadata service
+	"metadata_service_url",
+	// GitHub Actions OIDC
+	"actions_id_token_request_url",
+	"actions_id_token_request_token",
+	// OIDC file/env
+	"databricks_id_token_filepath",
+	"oidc_token_env",
+	// OAuth CLI path
+	"databricks_cli_path",
+}
+
 func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config.Config) error {
 	ctx := cmd.Context()
 
@@ -141,14 +178,28 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		// This is relevant for OAuth only.
 		cfg.DatabricksCliPath = ""
 
-		// Save profile to config file.
+		// Save profile to config file. PAT-based configure clears all
+		// non-PAT auth credentials and OAuth metadata to prevent
+		// multi-auth conflicts in the profile.
+		clearKeys := append([]string{}, patConfigureClearKeys...)
+
+		// Cluster and serverless are mutually exclusive. Clear serverless
+		// when a cluster is being set (via flag or env var).
+		if cfg.ClusterID != "" {
+			clearKeys = append(clearKeys, "serverless_compute_id")
+		}
+
+		// Clear stale unified-host metadata — PAT profiles don't use it,
+		// and leaving it can change HostType() routing.
+		clearKeys = append(clearKeys, "experimental_is_unified_host")
+
 		return databrickscfg.SaveToProfile(ctx, &config.Config{
 			Profile:    cfg.Profile,
 			Host:       cfg.Host,
 			Token:      cfg.Token,
 			ClusterID:  cfg.ClusterID,
 			ConfigFile: cfg.ConfigFile,
-		})
+		}, clearKeys...)
 	}
 
 	return cmd

@@ -423,14 +423,27 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 
 	loginArgs.Profile = profileName
 
+	// Preserve scopes from the existing profile so the inline login
+	// uses the same scopes the user previously configured.
+	var scopesList []string
+	if existingProfile != nil && existingProfile.Scopes != "" {
+		for _, s := range strings.Split(existingProfile.Scopes, ",") {
+			scopesList = append(scopesList, strings.TrimSpace(s))
+		}
+	}
+
 	oauthArgument, err := loginArgs.ToOAuthArgument()
 	if err != nil {
 		return "", nil, err
 	}
-	persistentAuth, err := u2m.NewPersistentAuth(ctx,
+	persistentAuthOpts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(openURLSuppressingStderr),
-	)
+	}
+	if len(scopesList) > 0 {
+		persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
+	}
+	persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 	if err != nil {
 		return "", nil, err
 	}
@@ -443,6 +456,10 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		return "", nil, err
 	}
 
+	clearKeys := oauthLoginClearKeys()
+	if !loginArgs.IsUnifiedHost {
+		clearKeys = append(clearKeys, "experimental_is_unified_host")
+	}
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:                    profileName,
 		Host:                       loginArgs.Host,
@@ -451,7 +468,8 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		WorkspaceID:                loginArgs.WorkspaceID,
 		Experimental_IsUnifiedHost: loginArgs.IsUnifiedHost,
 		ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
-	})
+		Scopes:                     scopesList,
+	}, clearKeys...)
 	if err != nil {
 		return "", nil, err
 	}

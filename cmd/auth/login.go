@@ -155,8 +155,16 @@ depends on the existing profiles you have set in your configuration file
 		authArguments.Profile = profileName
 
 		var scopesList []string
-		if scopes != "" {
+		switch {
+		case scopes != "":
+			// Explicit --scopes flag takes precedence.
 			for _, s := range strings.Split(scopes, ",") {
+				scopesList = append(scopesList, strings.TrimSpace(s))
+			}
+		case existingProfile != nil && existingProfile.Scopes != "":
+			// Preserve scopes from the existing profile so re-login
+			// uses the same scopes the user previously configured.
+			for _, s := range strings.Split(existingProfile.Scopes, ",") {
 				scopesList = append(scopesList, strings.TrimSpace(s))
 			}
 		}
@@ -190,6 +198,18 @@ depends on the existing profiles you have set in your configuration file
 		// 2. Saving the profile.
 
 		var clusterID, serverlessComputeID string
+
+		// Keys to explicitly remove from the profile. OAuth login always
+		// clears incompatible credential fields (PAT, basic auth, M2M).
+		clearKeys := oauthLoginClearKeys()
+
+		// Boolean false is zero-valued and skipped by SaveToProfile's IsZero
+		// check. Explicitly clear experimental_is_unified_host when false so
+		// it doesn't remain sticky from a previous login.
+		if !authArguments.IsUnifiedHost {
+			clearKeys = append(clearKeys, "experimental_is_unified_host")
+		}
+
 		switch {
 		case configureCluster:
 			// Create a workspace client to list clusters for interactive selection.
@@ -210,20 +230,14 @@ depends on the existing profiles you have set in your configuration file
 			if err != nil {
 				return err
 			}
+			// Cluster and serverless are mutually exclusive.
+			clearKeys = append(clearKeys, "serverless_compute_id")
 		case configureServerless:
 			serverlessComputeID = "auto"
+			// Cluster and serverless are mutually exclusive.
+			clearKeys = append(clearKeys, "cluster_id")
 		default:
-			// Respect the existing profile if it exists, even if it has
-			// both cluster and serverless configured. Tools relying on
-			// these fields from the profile will need to handle this case.
-			//
-			// TODO: consider whether we should use this an an opportunity
-			// to clean up the profile under the assumption that serverless
-			// is the preferred option.
-			if existingProfile != nil {
-				clusterID = existingProfile.ClusterID
-				serverlessComputeID = existingProfile.ServerlessComputeID
-			}
+			// Neither flag: preserve both from existing profile via merge semantics.
 		}
 
 		if profileName != "" {
@@ -238,7 +252,7 @@ depends on the existing profiles you have set in your configuration file
 				ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
 				ServerlessComputeID:        serverlessComputeID,
 				Scopes:                     scopesList,
-			})
+			}, clearKeys...)
 			if err != nil {
 				return err
 			}
@@ -399,6 +413,43 @@ func openURLSuppressingStderr(url string) error {
 
 	// Call the browser open function
 	return browserpkg.OpenURL(url)
+}
+
+// oauthLoginClearKeys returns profile keys that should be explicitly removed
+// when performing an OAuth login. This is the complete set of credential and
+// auth-metadata fields from other auth methods that are incompatible with
+// auth_type=databricks-cli. Identity fields (host, account_id, workspace_id)
+// and client settings (http_timeout_seconds, etc.) are NOT cleared.
+func oauthLoginClearKeys() []string {
+	return []string{
+		// PAT
+		"token",
+		// Basic auth
+		"username",
+		"password",
+		// M2M OAuth
+		"client_id",
+		"client_secret",
+		// Google
+		"google_service_account",
+		"google_credentials",
+		// Azure (azure_environment is NOT cleared — it's a non-auth
+		// config property describing the Azure cloud, not a credential)
+		"azure_workspace_resource_id",
+		"azure_use_msi",
+		"azure_client_secret",
+		"azure_client_id",
+		"azure_tenant_id",
+		"azure_login_app_id",
+		// Metadata service
+		"metadata_service_url",
+		// GitHub Actions OIDC
+		"actions_id_token_request_url",
+		"actions_id_token_request_token",
+		// OIDC file/env
+		"databricks_id_token_filepath",
+		"oidc_token_env",
+	}
 }
 
 // getBrowserFunc returns a function that opens the given URL in the browser.

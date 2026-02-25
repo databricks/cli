@@ -178,7 +178,107 @@ token = xyz
 `, string(contents))
 }
 
-func TestSaveToProfile_ClearingPreviousProfile(t *testing.T) {
+func TestSaveToProfile_MergePreservesExistingKeys(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+
+	// First save: profile with host and token.
+	err := SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "abc",
+		Host:       "https://foo",
+		Token:      "xyz",
+	})
+	require.NoError(t, err)
+
+	// Second save: add auth_type but don't mention token.
+	// Token should be preserved by merge semantics.
+	err = SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Host:       "https://foo",
+		AuthType:   "databricks-cli",
+	})
+	require.NoError(t, err)
+
+	file, err := loadOrCreateConfigFile(path)
+	require.NoError(t, err)
+
+	abc, err := file.GetSection("abc")
+	require.NoError(t, err)
+	raw := abc.KeysHash()
+	assert.Len(t, raw, 3)
+	assert.Equal(t, "https://foo", raw["host"])
+	assert.Equal(t, "databricks-cli", raw["auth_type"])
+	assert.Equal(t, "xyz", raw["token"])
+}
+
+func TestSaveToProfile_ClearKeysRemovesSpecifiedKeys(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+
+	// First save: profile with host, token, and cluster_id.
+	err := SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "abc",
+		Host:       "https://foo",
+		Token:      "xyz",
+		ClusterID:  "cluster-123",
+	})
+	require.NoError(t, err)
+
+	// Second save: switch to OAuth, clear token and cluster_id.
+	err = SaveToProfile(ctx, &config.Config{
+		ConfigFile:          path,
+		Host:                "https://foo",
+		AuthType:            "databricks-cli",
+		ServerlessComputeID: "auto",
+	}, "token", "cluster_id")
+	require.NoError(t, err)
+
+	file, err := loadOrCreateConfigFile(path)
+	require.NoError(t, err)
+
+	abc, err := file.GetSection("abc")
+	require.NoError(t, err)
+	raw := abc.KeysHash()
+	assert.Equal(t, "https://foo", raw["host"])
+	assert.Equal(t, "databricks-cli", raw["auth_type"])
+	assert.Equal(t, "auto", raw["serverless_compute_id"])
+	assert.Empty(t, raw["token"], "token should have been cleared")
+	assert.Empty(t, raw["cluster_id"], "cluster_id should have been cleared")
+	assert.Len(t, raw, 3)
+}
+
+func TestSaveToProfile_OverwritesExistingValues(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+
+	// First save: profile with host.
+	err := SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "abc",
+		Host:       "https://old-host",
+	})
+	require.NoError(t, err)
+
+	// Second save: update host value.
+	err = SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "abc",
+		Host:       "https://new-host",
+	})
+	require.NoError(t, err)
+
+	file, err := loadOrCreateConfigFile(path)
+	require.NoError(t, err)
+
+	abc, err := file.GetSection("abc")
+	require.NoError(t, err)
+	raw := abc.KeysHash()
+	assert.Equal(t, "https://new-host", raw["host"])
+}
+
+func TestSaveToProfile_ClearKeysOnNonExistentKeyIsNoop(t *testing.T) {
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 
@@ -186,40 +286,23 @@ func TestSaveToProfile_ClearingPreviousProfile(t *testing.T) {
 		ConfigFile: path,
 		Profile:    "abc",
 		Host:       "https://foo",
-		Token:      "xyz",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
+	// Clear a key that doesn't exist — should not error.
 	err = SaveToProfile(ctx, &config.Config{
 		ConfigFile: path,
-		Profile:    "bcd",
-		Host:       "https://bar",
-		Token:      "zyx",
-	})
-	assert.NoError(t, err)
-	assert.FileExists(t, path+".bak")
-
-	err = SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
+		Profile:    "abc",
 		Host:       "https://foo",
 		AuthType:   "databricks-cli",
-	})
-	assert.NoError(t, err)
+	}, "token", "nonexistent_key")
+	require.NoError(t, err)
 
 	file, err := loadOrCreateConfigFile(path)
-	assert.NoError(t, err)
-
-	assert.Len(t, file.Sections(), 3)
-	assert.True(t, file.HasSection("DEFAULT"))
-	assert.True(t, file.HasSection("bcd"))
-	assert.True(t, file.HasSection("bcd"))
-
-	dlft, err := file.GetSection("DEFAULT")
-	assert.NoError(t, err)
-	assert.Empty(t, dlft.KeysHash())
+	require.NoError(t, err)
 
 	abc, err := file.GetSection("abc")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	raw := abc.KeysHash()
 	assert.Len(t, raw, 2)
 	assert.Equal(t, "https://foo", raw["host"])
