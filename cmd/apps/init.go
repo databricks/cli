@@ -28,11 +28,12 @@ import (
 )
 
 const (
-	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
-	appkitRepoURL       = "https://github.com/databricks/appkit"
-	appkitTemplateDir   = "template"
-	appkitDefaultBranch = "main"
-	defaultProfile      = "DEFAULT"
+	templatePathEnvVar   = "DATABRICKS_APPKIT_TEMPLATE_PATH"
+	appkitRepoURL        = "https://github.com/databricks/appkit"
+	appkitTemplateDir    = "template"
+	appkitDefaultBranch  = "main"
+	appkitTemplateTagPfx = "template-v"
+	defaultProfile       = "DEFAULT"
 )
 
 // normalizeVersion converts a version string to the template tag format "template-vX.X.X".
@@ -45,14 +46,14 @@ func normalizeVersion(version string) string {
 	if version == "latest" {
 		return appkitDefaultBranch
 	}
-	if strings.HasPrefix(version, "template-v") {
+	if strings.HasPrefix(version, appkitTemplateTagPfx) {
 		return version
 	}
 	if strings.HasPrefix(version, "v") {
-		return "template-" + version
+		return appkitTemplateTagPfx + version[1:]
 	}
 	if version[0] >= '0' && version[0] <= '9' {
-		return "template-v" + version
+		return appkitTemplateTagPfx + version
 	}
 	return version
 }
