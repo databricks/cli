@@ -35,6 +35,7 @@ the SSH server and handling the connection proxy.
 	var autoStartCluster bool
 	var userKnownHostsFile string
 	var liteswap string
+	var skipSettingsCheck bool
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (for dedicated clusters)")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
@@ -63,6 +64,9 @@ the SSH server and handling the connection proxy.
 
 	cmd.Flags().StringVar(&liteswap, "liteswap", "", "Liteswap header value for traffic routing (dev/test only)")
 	cmd.Flags().MarkHidden("liteswap")
+
+	cmd.Flags().BoolVar(&skipSettingsCheck, "skip-settings-check", false, "Skip checking and updating IDE settings")
+	cmd.Flags().MarkHidden("skip-settings-check")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// CLI in the proxy mode is executed by the ssh client and can't prompt for input
@@ -113,6 +117,7 @@ the SSH server and handling the connection proxy.
 			ClientPrivateKeyName: clientPrivateKeyName,
 			UserKnownHostsFile:   userKnownHostsFile,
 			Liteswap:             liteswap,
+			SkipSettingsCheck:    skipSettingsCheck,
 			AdditionalArgs:       args,
 		}
 		return client.Run(ctx, wsClient, opts)
