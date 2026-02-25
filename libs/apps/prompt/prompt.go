@@ -227,13 +227,15 @@ func ListSQLWarehouses(ctx context.Context) ([]sql.EndpointInfo, error) {
 
 // PromptFromList shows a picker for items and returns the selected ID.
 // If required is false and items are empty, returns ("", nil). If required is true and items are empty, returns an error.
-func PromptFromList(ctx context.Context, title, emptyMessage string, items []ListItem, required bool) (string, error) {
-	id, _, err := promptFromListWithLabel(ctx, title, emptyMessage, items, required)
+// description is optional context shown to the user (e.g., why this resource is needed).
+func PromptFromList(ctx context.Context, title, description, emptyMessage string, items []ListItem, required bool) (string, error) {
+	id, _, err := promptFromListWithLabel(ctx, title, description, emptyMessage, items, required)
 	return id, err
 }
 
 // promptFromListWithLabel shows a picker and returns both the selected ID and its display label.
-func promptFromListWithLabel(ctx context.Context, title, emptyMessage string, items []ListItem, required bool) (string, string, error) {
+// description is optional context shown to the user (e.g., why this resource is needed).
+func promptFromListWithLabel(ctx context.Context, title, description, emptyMessage string, items []ListItem, required bool) (string, string, error) {
 	if len(items) == 0 {
 		if required {
 			return "", "", errors.New(emptyMessage)
@@ -247,10 +249,16 @@ func promptFromListWithLabel(ctx context.Context, title, emptyMessage string, it
 		options = append(options, huh.NewOption(it.Label, it.ID))
 		labels[it.ID] = it.Label
 	}
+
+	hint := fmt.Sprintf("%d available — type to filter", len(items))
+	if description != "" {
+		hint = description + " · " + hint
+	}
+
 	var selected string
 	err := huh.NewSelect[string]().
 		Title(title).
-		Description(fmt.Sprintf("%d available — type to filter", len(items))).
+		Description(hint).
 		Options(options...).
 		Value(&selected).
 		Filtering(true).
@@ -275,7 +283,7 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch SQL warehouses: %w", err)
 	}
-	return PromptFromList(ctx, "Select SQL Warehouse", "no SQL warehouses found. Create one in your workspace first", items, true)
+	return PromptFromList(ctx, "Select SQL Warehouse", "", "no SQL warehouses found. Create one in your workspace first", items, true)
 }
 
 // singleValueResult wraps a single value into the resource values map.
@@ -303,7 +311,7 @@ func promptForResourceFromLister(ctx context.Context, r manifest.Resource, requi
 	if err != nil {
 		return nil, err
 	}
-	value, err := PromptFromList(ctx, title, emptyMsg, items, required)
+	value, err := PromptFromList(ctx, title, r.Description, emptyMsg, items, required)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +330,7 @@ func PromptForSecret(ctx context.Context, r manifest.Resource, required bool) (m
 	if err != nil {
 		return nil, err
 	}
-	scope, err := PromptFromList(ctx, "Select Secret Scope", "no secret scopes found", scopes, required)
+	scope, err := PromptFromList(ctx, "Select Secret Scope", r.Description, "no secret scopes found", scopes, required)
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +348,7 @@ func PromptForSecret(ctx context.Context, r manifest.Resource, required bool) (m
 	if err != nil {
 		return nil, err
 	}
-	key, err := PromptFromList(ctx, "Select Secret Key", "no keys found in scope "+scope, keys, required)
+	key, err := PromptFromList(ctx, "Select Secret Key", "", "no keys found in scope "+scope, keys, required)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +385,7 @@ func promptUCCatalog(ctx context.Context, required bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return PromptFromList(ctx, "Select Catalog", "no catalogs found", items, required)
+	return PromptFromList(ctx, "Select Catalog", "", "no catalogs found", items, required)
 }
 
 // promptFromListWithBack shows a picker with a "← Go back" option prepended.
@@ -386,7 +394,7 @@ func promptFromListWithBack(ctx context.Context, title string, items []ListItem)
 	withBack := make([]ListItem, 0, len(items)+1)
 	withBack = append(withBack, ListItem{ID: backID, Label: "← Go back"})
 	withBack = append(withBack, items...)
-	value, err := PromptFromList(ctx, title, "", withBack, true)
+	value, err := PromptFromList(ctx, title, "", "", withBack, true)
 	if err != nil {
 		return "", err
 	}
@@ -491,7 +499,7 @@ func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) 
 	if err != nil {
 		return nil, err
 	}
-	instanceName, err := PromptFromList(ctx, "Select Database Instance", "no database instances found", instances, required)
+	instanceName, err := PromptFromList(ctx, "Select Database Instance", r.Description, "no database instances found", instances, required)
 	if err != nil {
 		return nil, err
 	}
@@ -509,7 +517,7 @@ func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) 
 	if err != nil {
 		return nil, err
 	}
-	dbName, err := PromptFromList(ctx, "Select Database", "no databases found in instance "+instanceName, databases, required)
+	dbName, err := PromptFromList(ctx, "Select Database", "", "no databases found in instance "+instanceName, databases, required)
 	if err != nil {
 		return nil, err
 	}
@@ -535,7 +543,7 @@ func PromptForGenieSpace(ctx context.Context, r manifest.Resource, required bool
 	if err != nil {
 		return nil, err
 	}
-	id, name, err := promptFromListWithLabel(ctx, "Select Genie Space", "no Genie spaces found", items, required)
+	id, name, err := promptFromListWithLabel(ctx, "Select Genie Space", r.Description, "no Genie spaces found", items, required)
 	if err != nil {
 		return nil, err
 	}
