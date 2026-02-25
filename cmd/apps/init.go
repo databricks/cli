@@ -457,6 +457,21 @@ func promptForResource(ctx context.Context, r manifest.Resource, theme *huh.Them
 	return map[string]string{r.Key(): value}, nil
 }
 
+// findTemplateProjectDir finds the project source directory within a template.
+// Templates may contain a {{.project_name}} subdirectory that holds the actual project files.
+func findTemplateProjectDir(templateDir string) string {
+	entries, err := os.ReadDir(templateDir)
+	if err != nil {
+		return templateDir
+	}
+	for _, e := range entries {
+		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
+			return filepath.Join(templateDir, e.Name())
+		}
+	}
+	return templateDir
+}
+
 // cloneRepo clones a git repository to a temporary directory.
 func cloneRepo(ctx context.Context, repoURL, branch string) (string, error) {
 	tempDir, err := os.MkdirTemp("", "appkit-template-*")
@@ -602,6 +617,28 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		templateDir = resolvedPath
 		if _, err := os.Stat(templateDir); os.IsNotExist(err) {
 			return fmt.Errorf("template not found at %s (also checked %s/generic)", resolvedPath, resolvedPath)
+		}
+	}
+
+	// Start npm install early in the background while the user answers questions.
+	// npm only needs package.json/package-lock.json which exist in the cloned
+	// template directory. The project_name template variable in package.json
+	// doesn't affect dependency resolution.
+	var npmInstallCh <-chan error
+	var npmSrcDir string
+	if cleanup != nil { // Only for cloned templates (safe to install into temp dir)
+		srcProjDir := findTemplateProjectDir(templateDir)
+		if _, statErr := os.Stat(filepath.Join(srcProjDir, "package.json")); statErr == nil {
+			npmSrcDir = srcProjDir
+			// Ensure .npmrc is available (templates use _npmrc naming convention)
+			npmrcSrc := filepath.Join(srcProjDir, "_npmrc")
+			npmrcDst := filepath.Join(srcProjDir, ".npmrc")
+			if data, readErr := os.ReadFile(npmrcSrc); readErr == nil {
+				if _, statErr2 := os.Stat(npmrcDst); os.IsNotExist(statErr2) {
+					_ = os.WriteFile(npmrcDst, data, 0o644)
+				}
+			}
+			npmInstallCh = initializer.StartNpmInstallAsync(ctx, srcProjDir)
 		}
 	}
 
@@ -809,6 +846,27 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	})
 	if runErr != nil {
 		return runErr
+	}
+
+	// Wait for background npm install (if running) and move node_modules to project.
+	if npmInstallCh != nil {
+		moveErr := prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
+			if installErr := <-npmInstallCh; installErr != nil {
+				return installErr
+			}
+			src := filepath.Join(npmSrcDir, "node_modules")
+			dst := filepath.Join(absOutputDir, "node_modules")
+			if renameErr := os.Rename(src, dst); renameErr != nil {
+				// Fallback for cross-device moves (e.g. /tmp -> home)
+				return exec.CommandContext(ctx, "mv", src, dst).Run()
+			}
+			return nil
+		})
+		if moveErr != nil {
+			log.Warnf(ctx, "Background npm install failed, will retry: %v", moveErr)
+			// Clean up any partial node_modules so Initialize retries properly
+			os.RemoveAll(filepath.Join(absOutputDir, "node_modules"))
+		}
 	}
 
 	// Initialize project based on type (Node.js, Python, etc.)
