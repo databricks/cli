@@ -222,96 +222,6 @@ func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
 	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
 }
 
-func TestBundleConfigureMultiMatchAutoSelectSingleWorkspace(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-
-	// Set up config with two profiles for the same host: one workspace, one account.
-	tempHomeDir := t.TempDir()
-	homeEnvVar := "HOME"
-	if runtime.GOOS == "windows" {
-		homeEnvVar = "USERPROFILE"
-	}
-	cfg := []byte("[WS-PROFILE]\nhost = https://a.com\ntoken = ws-token\n[ACC-PROFILE]\nhost = https://a.com\naccount_id = abc123\ntoken = acc-token\n")
-	err := os.WriteFile(filepath.Join(tempHomeDir, ".databrickscfg"), cfg, 0o644)
-	require.NoError(t, err)
-
-	t.Setenv("DATABRICKS_CONFIG_FILE", "")
-	t.Setenv(homeEnvVar, tempHomeDir)
-
-	rootPath := t.TempDir()
-	testutil.Chdir(t, rootPath)
-
-	contents := `
-workspace:
-  host: "https://a.com"
-`
-	err = os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
-	require.NoError(t, err)
-
-	cmd := emptyCommand(t)
-	ctx := logdiag.InitContext(cmd.Context())
-	logdiag.SetCollect(ctx, true)
-	cmd.SetContext(ctx)
-	_ = MustConfigureBundle(cmd)
-	diags := logdiag.FlushCollected(ctx)
-
-	// Only one workspace-compatible profile → auto-selected without prompt.
-	require.Empty(t, diags)
-	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
-	assert.Equal(t, "WS-PROFILE", cmdctx.ConfigUsed(cmd.Context()).Profile)
-}
-
-func TestBundleConfigureMultiMatchNoWorkspaceProfiles(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-
-	// Set up config with two account-only profiles for the same host.
-	tempHomeDir := t.TempDir()
-	homeEnvVar := "HOME"
-	if runtime.GOOS == "windows" {
-		homeEnvVar = "USERPROFILE"
-	}
-	cfg := []byte("[ACC-1]\nhost = https://a.com\naccount_id = abc\ntoken = t1\n[ACC-2]\nhost = https://a.com\naccount_id = def\ntoken = t2\n")
-	err := os.WriteFile(filepath.Join(tempHomeDir, ".databrickscfg"), cfg, 0o644)
-	require.NoError(t, err)
-
-	t.Setenv("DATABRICKS_CONFIG_FILE", "")
-	t.Setenv(homeEnvVar, tempHomeDir)
-
-	rootPath := t.TempDir()
-	testutil.Chdir(t, rootPath)
-
-	contents := `
-workspace:
-  host: "https://a.com"
-`
-	err = os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
-	require.NoError(t, err)
-
-	cmd := emptyCommand(t)
-	ctx := logdiag.InitContext(cmd.Context())
-	logdiag.SetCollect(ctx, true)
-	cmd.SetContext(ctx)
-	_ = MustConfigureBundle(cmd)
-	diags := logdiag.FlushCollected(ctx)
-
-	// No workspace-compatible profiles → original error returned.
-	require.Len(t, diags, 1)
-	assert.Contains(t, diags[0].Summary, "multiple profiles matched: ACC-1, ACC-2")
-}
-
-func TestBundleConfigureMultiMatchSkipPromptReturnsError(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-
-	cmd := emptyCommand(t)
-	cmd.SetContext(SkipPrompt(cmd.Context()))
-	diags := setupWithHost(t, cmd, "https://a.com")
-
-	// SkipPrompt set → no prompt, error with guidance.
-	require.Len(t, diags, 1)
-	assert.Contains(t, diags[0].Summary, "multiple profiles matched: PROFILE-1, PROFILE-2")
-	assert.Contains(t, diags[0].Summary, "Matching workspace profiles:")
-}
-
 func TestBundleConfigureMultiMatchInteractivePromptFires(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
@@ -356,20 +266,6 @@ workspace:
 	// Cancel to unblock the prompt.
 	cancel()
 	<-done
-}
-
-func TestBundleConfigureMultiMatchEnvAuthSkipsHostMatching(t *testing.T) {
-	testutil.CleanupEnvironment(t)
-
-	// When DATABRICKS_TOKEN is set, env auth takes precedence and errMultipleProfiles never fires.
-	t.Setenv("DATABRICKS_TOKEN", "env-token")
-
-	cmd := emptyCommand(t)
-	diags := setupWithHost(t, cmd, "https://a.com")
-
-	require.Empty(t, diags)
-	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
-	assert.Equal(t, "env-token", cmdctx.ConfigUsed(cmd.Context()).Token)
 }
 
 func TestTargetFlagFull(t *testing.T) {

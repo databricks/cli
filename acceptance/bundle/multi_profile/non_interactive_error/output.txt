@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle validate
+Error: cannot resolve bundle auth configuration: resolve: [DATABRICKS_URL]: multiple profiles matched: profile-1, profile-2: please set DATABRICKS_CONFIG_PROFILE or provide --profile flag to specify one. Config: host=[DATABRICKS_URL], config_file=.databrickscfg, databricks_cli_path=[CLI]. Env: DATABRICKS_CONFIG_FILE, DATABRICKS_CLI_PATH
+
+Matching workspace profiles: profile-1, profile-2
+
+Fix (pick one):
+  1. Set profile in databricks.yml:
+       workspace:
+         profile: profile-1
+  2. Pass a flag:
+       databricks bundle validate --profile profile-1
+  3. Set env var:
+       DATABRICKS_CONFIG_PROFILE=profile-1
+
+Name: multi-profile-non-interactive
+Target: default
+Workspace:
+  Host: [DATABRICKS_URL]
+
+Found 1 error
+
+Exit code: 1

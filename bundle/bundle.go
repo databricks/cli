@@ -245,11 +245,9 @@ func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 	b.client = w
 }
 
-// RetryWorkspaceClient resets the workspace client cache, allowing
+// ClearWorkspaceClient resets the workspace client cache, allowing
 // WorkspaceClientE() to attempt client creation again on the next call.
-// This is used after resolving profile ambiguity to retry with the
-// selected profile.
-func (b *Bundle) RetryWorkspaceClient() {
+func (b *Bundle) ClearWorkspaceClient() {
 	b.clientOnce = sync.Once{}
 	b.client = nil
 	b.clientErr = nil

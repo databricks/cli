@@ -78,6 +78,60 @@ func configureProfile(cmd *cobra.Command, b *bundle.Bundle) {
 	})
 }
 
+// resolveProfileAmbiguity resolves a multi-profile match by filtering to
+// workspace-compatible profiles and either auto-selecting, prompting, or
+// returning a guidance error.
+func resolveProfileAmbiguity(cmd *cobra.Command, b *bundle.Bundle, originalErr error, names []string) (string, error) {
+	ctx := cmd.Context()
+
+	namesMatcher := profile.MatchProfileNames(names...)
+	profiler := profile.GetProfiler(ctx)
+	profiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
+		return namesMatcher(p) && profile.MatchWorkspaceProfiles(p)
+	})
+	if err != nil {
+		if errors.Is(err, profile.ErrNoConfiguration) {
+			return "", originalErr
+		}
+		return "", err
+	}
+
+	switch len(profiles) {
+	case 0:
+		return "", originalErr
+	case 1:
+		// Exactly one workspace-compatible profile — auto-select.
+		// This happens when multiple profiles match a host but only one
+		// is workspace-compatible (the rest are account-only).
+		return profiles[0].Name, nil
+	}
+
+	// Multiple workspace-compatible profiles — need interactive selection.
+	_, hasProfileFlag := profileFlagValue(cmd)
+	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(ctx)
+	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+		return "", fmt.Errorf(
+			"%w\n\nMatching workspace profiles: %s\n\n"+
+				"Fix (pick one):\n"+
+				"  1. Set profile in databricks.yml:\n"+
+				"       workspace:\n"+
+				"         profile: %s\n"+
+				"  2. Pass a flag:\n"+
+				"       %s --profile %s\n"+
+				"  3. Set env var:\n"+
+				"       DATABRICKS_CONFIG_PROFILE=%s",
+			originalErr,
+			strings.Join(profiles.Names(), ", "),
+			profiles[0].Name,
+			cmd.CommandPath(),
+			profiles[0].Name,
+			profiles[0].Name,
+		)
+	}
+
+	return promptForProfileByHost(ctx, profiles, b.Config.Workspace.Host)
+}
+
 // configureBundle loads the bundle configuration and configures flag values, if any.
 func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 	// Load bundle and select target.
@@ -102,74 +156,20 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 	// is a fast operation. It does not perform network I/O or invoke processes (for example the Azure CLI).
 	client, err := b.WorkspaceClientE()
 	if err != nil {
-		// Check if this is a multi-profile ambiguity error.
 		names, isMulti := databrickscfg.AsMultipleProfiles(err)
 		if !isMulti {
 			logdiag.LogError(ctx, err)
 			return
 		}
 
-		// Load profile details for matched names, filtered to
-		// workspace-compatible profiles.
-		namesMatcher := profile.MatchProfileNames(names...)
-		profiler := profile.GetProfiler(ctx)
-		profiles, loadErr := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
-			return namesMatcher(p) && profile.MatchWorkspaceProfiles(p)
-		})
-		if loadErr != nil {
-			if errors.Is(loadErr, profile.ErrNoConfiguration) {
-				logdiag.LogError(ctx, err)
-				return
-			}
-			logdiag.LogError(ctx, loadErr)
+		selected, resolveErr := resolveProfileAmbiguity(cmd, b, err, names)
+		if resolveErr != nil {
+			logdiag.LogError(ctx, resolveErr)
 			return
-		}
-
-		var selected string
-		switch len(profiles) {
-		case 0:
-			// No workspace-compatible profiles. Return original error.
-			logdiag.LogError(ctx, err)
-			return
-		case 1:
-			// Exactly one workspace-compatible profile — auto-select.
-			// This is deterministic and works in non-interactive mode.
-			selected = profiles[0].Name
-		default:
-			// Multiple workspace-compatible profiles — need interactive selection.
-			_, hasProfileFlag := profileFlagValue(cmd)
-			allowPrompt := !hasProfileFlag && !shouldSkipPrompt(ctx)
-			if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
-				logdiag.LogError(ctx, fmt.Errorf(
-					"%w\n\nMatching workspace profiles: %s\n\n"+
-						"Fix (pick one):\n"+
-						"  1. Set profile in databricks.yml:\n"+
-						"       workspace:\n"+
-						"         profile: %s\n"+
-						"  2. Pass a flag:\n"+
-						"       %s --profile %s\n"+
-						"  3. Set env var:\n"+
-						"       DATABRICKS_CONFIG_PROFILE=%s",
-					err,
-					strings.Join(profiles.Names(), ", "),
-					profiles[0].Name,
-					cmd.CommandPath(),
-					profiles[0].Name,
-					profiles[0].Name,
-				))
-				return
-			}
-
-			var selectErr error
-			selected, selectErr = promptForProfileByHost(ctx, profiles, b.Config.Workspace.Host)
-			if selectErr != nil {
-				logdiag.LogError(ctx, selectErr)
-				return
-			}
 		}
 
 		b.Config.Workspace.Profile = selected
-		b.RetryWorkspaceClient()
+		b.ClearWorkspaceClient()
 		client, err = b.WorkspaceClientE()
 		if err != nil {
 			logdiag.LogError(ctx, err)

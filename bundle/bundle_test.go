@@ -180,7 +180,7 @@ func TestBundleGetResourceConfigJobsPointer(t *testing.T) {
 	require.Nil(t, res)
 }
 
-func TestRetryWorkspaceClient(t *testing.T) {
+func TestClearWorkspaceClient(t *testing.T) {
 	// First attempt: profile "profile-A" doesn't exist → error mentions "profile-A".
 	b := &Bundle{}
 	b.Config.Workspace.Host = "https://nonexistent.example.com"
@@ -196,7 +196,7 @@ func TestRetryWorkspaceClient(t *testing.T) {
 
 	// After retry, change the profile to "profile-B" and call again.
 	// If retry didn't re-execute, the error would still mention "profile-A".
-	b.RetryWorkspaceClient()
+	b.ClearWorkspaceClient()
 	b.Config.Workspace.Profile = "profile-B"
 
 	_, err2 := b.WorkspaceClientE()
