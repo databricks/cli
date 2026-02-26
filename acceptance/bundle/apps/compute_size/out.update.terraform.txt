@@ -17,3 +17,8 @@ update API instead.
 Updating deployment state...
 
 Exit code: 1
+
+>>> [CLI] apps get app-[UNIQUE_NAME]
+{
+  "compute_size": "LARGE"
+}
