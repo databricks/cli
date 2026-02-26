@@ -20,7 +20,7 @@ const (
 	skillsRepoOwner      = "databricks"
 	skillsRepoName       = "databricks-agent-skills"
 	skillsRepoPath       = "skills"
-	defaultSkillsRepoRef = "v0.1.0"
+	defaultSkillsRepoRef = "v0.1.1"
 )
 
 func getSkillsRef() string {
