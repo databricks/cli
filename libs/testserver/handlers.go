@@ -379,6 +379,14 @@ func AddDefaultHandlers(server *Server) {
 
 	// Apps:
 
+	server.Handle("POST", "/api/2.0/apps/{name}/update", func(req Request) any {
+		return req.Workspace.AppsCreateUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("GET", "/api/2.0/apps/{name}/update", func(req Request) any {
+		return req.Workspace.AppsGetUpdate(req, req.Vars["name"])
+	})
+
 	server.Handle("GET", "/api/2.0/apps/{name}", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.Apps, req.Vars["name"])
 	})
