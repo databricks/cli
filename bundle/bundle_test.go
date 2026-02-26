@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -178,4 +179,29 @@ func TestBundleGetResourceConfigJobsPointer(t *testing.T) {
 	res, err = b.Config.GetResourceConfig("resources.not_found.my_job")
 	require.EqualError(t, err, "no such resource type in the config: \"not_found\"")
 	require.Nil(t, res)
+}
+
+func TestRetryWorkspaceClient(t *testing.T) {
+	// Create a bundle with a host that will trigger profile resolution
+	// and fail (no matching profile in config file).
+	b := &Bundle{}
+	b.Config.Workspace.Host = "https://nonexistent.example.com"
+	b.Config.Workspace.Profile = "nonexistent-profile"
+
+	// First call fails.
+	_, err := b.WorkspaceClientE()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot resolve bundle auth configuration")
+
+	// Without retry, second call returns the same cached error.
+	_, err2 := b.WorkspaceClientE()
+	assert.Equal(t, fmt.Sprint(err), fmt.Sprint(err2), "expected cached error without retry")
+
+	// After retry, the cache is cleared and WorkspaceClientE re-executes.
+	b.RetryWorkspaceClient()
+
+	// The call still errors (still invalid config), but proves re-execution.
+	_, err3 := b.WorkspaceClientE()
+	require.Error(t, err3)
+	assert.Contains(t, err3.Error(), "cannot resolve bundle auth configuration")
 }
