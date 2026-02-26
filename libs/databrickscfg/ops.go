@@ -80,6 +80,20 @@ func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *con
 	return section, nil
 }
 
+// AuthCredentialKeys returns the config file key names for all auth credential
+// fields from the SDK's ConfigAttributes. These are fields annotated with an
+// auth type (e.g. pat, basic, oauth, azure, google). Use this to clear stale
+// credentials when switching auth methods.
+func AuthCredentialKeys() []string {
+	var keys []string
+	for _, attr := range config.ConfigAttributes {
+		if attr.HasAuthAttribute() {
+			keys = append(keys, attr.Name)
+		}
+	}
+	return keys
+}
+
 // SaveToProfile merges the provided config into a .databrickscfg profile.
 // Non-zero fields in cfg overwrite existing values. Existing keys not
 // mentioned in cfg are preserved. Keys listed in clearKeys are explicitly

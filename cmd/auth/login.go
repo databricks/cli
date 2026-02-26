@@ -416,40 +416,10 @@ func openURLSuppressingStderr(url string) error {
 }
 
 // oauthLoginClearKeys returns profile keys that should be explicitly removed
-// when performing an OAuth login. This is the complete set of credential and
-// auth-metadata fields from other auth methods that are incompatible with
-// auth_type=databricks-cli. Identity fields (host, account_id, workspace_id)
-// and client settings (http_timeout_seconds, etc.) are NOT cleared.
+// when performing an OAuth login. Derives auth credential fields dynamically
+// from the SDK's ConfigAttributes to stay in sync as new auth methods are added.
 func oauthLoginClearKeys() []string {
-	return []string{
-		// PAT
-		"token",
-		// Basic auth
-		"username",
-		"password",
-		// M2M OAuth
-		"client_id",
-		"client_secret",
-		// Google
-		"google_service_account",
-		"google_credentials",
-		// Azure (azure_environment is NOT cleared — it's a non-auth
-		// config property describing the Azure cloud, not a credential)
-		"azure_workspace_resource_id",
-		"azure_use_msi",
-		"azure_client_secret",
-		"azure_client_id",
-		"azure_tenant_id",
-		"azure_login_app_id",
-		// Metadata service
-		"metadata_service_url",
-		// GitHub Actions OIDC
-		"actions_id_token_request_url",
-		"actions_id_token_request_token",
-		// OIDC file/env
-		"databricks_id_token_filepath",
-		"oidc_token_env",
-	}
+	return databrickscfg.AuthCredentialKeys()
 }
 
 // getBrowserFunc returns a function that opens the given URL in the browser.

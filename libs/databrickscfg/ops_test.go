@@ -178,157 +178,103 @@ token = xyz
 `, string(contents))
 }
 
-func TestSaveToProfile_MergePreservesExistingKeys(t *testing.T) {
-	ctx := context.Background()
-	path := filepath.Join(t.TempDir(), "databrickscfg")
+func TestSaveToProfile_MergeSemantics(t *testing.T) {
+	type saveOp struct {
+		cfg       *config.Config
+		clearKeys []string
+	}
 
-	// First save: profile with host and token.
-	err := SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Profile:    "abc",
-		Host:       "https://foo",
-		Token:      "xyz",
-	})
-	require.NoError(t, err)
+	testCases := []struct {
+		name     string
+		profile  string
+		saves    []saveOp
+		wantKeys map[string]string
+	}{
+		{
+			name:    "preserves existing keys on merge",
+			profile: "abc",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "abc", Host: "https://foo", Token: "xyz"}},
+				{cfg: &config.Config{Host: "https://foo", AuthType: "databricks-cli"}},
+			},
+			wantKeys: map[string]string{
+				"host":      "https://foo",
+				"auth_type": "databricks-cli",
+				"token":     "xyz",
+			},
+		},
+		{
+			name:    "clear keys removes specified keys",
+			profile: "abc",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "abc", Host: "https://foo", Token: "xyz", ClusterID: "cluster-123"}},
+				{cfg: &config.Config{Host: "https://foo", AuthType: "databricks-cli", ServerlessComputeID: "auto"}, clearKeys: []string{"token", "cluster_id"}},
+			},
+			wantKeys: map[string]string{
+				"host":                  "https://foo",
+				"auth_type":             "databricks-cli",
+				"serverless_compute_id": "auto",
+			},
+		},
+		{
+			name:    "overwrites existing values",
+			profile: "abc",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "abc", Host: "https://old-host"}},
+				{cfg: &config.Config{Profile: "abc", Host: "https://new-host"}},
+			},
+			wantKeys: map[string]string{
+				"host": "https://new-host",
+			},
+		},
+		{
+			name:    "clear nonexistent key is noop",
+			profile: "abc",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "abc", Host: "https://foo"}},
+				{cfg: &config.Config{Profile: "abc", Host: "https://foo", AuthType: "databricks-cli"}, clearKeys: []string{"token", "nonexistent_key"}},
+			},
+			wantKeys: map[string]string{
+				"host":      "https://foo",
+				"auth_type": "databricks-cli",
+			},
+		},
+		{
+			name:    "writes scopes as comma-separated",
+			profile: "scoped",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "scoped", Host: "https://myworkspace.cloud.databricks.com", AuthType: "databricks-cli", Scopes: []string{"jobs", "pipelines", "clusters"}}},
+			},
+			wantKeys: map[string]string{
+				"host":      "https://myworkspace.cloud.databricks.com",
+				"auth_type": "databricks-cli",
+				"scopes":    "jobs,pipelines,clusters",
+			},
+		},
+	}
 
-	// Second save: add auth_type but don't mention token.
-	// Token should be preserved by merge semantics.
-	err = SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Host:       "https://foo",
-		AuthType:   "databricks-cli",
-	})
-	require.NoError(t, err)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			path := filepath.Join(t.TempDir(), "databrickscfg")
 
-	file, err := loadOrCreateConfigFile(path)
-	require.NoError(t, err)
+			for _, save := range tc.saves {
+				save.cfg.ConfigFile = path
+				err := SaveToProfile(ctx, save.cfg, save.clearKeys...)
+				require.NoError(t, err)
+			}
 
-	abc, err := file.GetSection("abc")
-	require.NoError(t, err)
-	raw := abc.KeysHash()
-	assert.Len(t, raw, 3)
-	assert.Equal(t, "https://foo", raw["host"])
-	assert.Equal(t, "databricks-cli", raw["auth_type"])
-	assert.Equal(t, "xyz", raw["token"])
-}
+			file, err := loadOrCreateConfigFile(path)
+			require.NoError(t, err)
 
-func TestSaveToProfile_ClearKeysRemovesSpecifiedKeys(t *testing.T) {
-	ctx := context.Background()
-	path := filepath.Join(t.TempDir(), "databrickscfg")
+			section, err := file.GetSection(tc.profile)
+			require.NoError(t, err)
 
-	// First save: profile with host, token, and cluster_id.
-	err := SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Profile:    "abc",
-		Host:       "https://foo",
-		Token:      "xyz",
-		ClusterID:  "cluster-123",
-	})
-	require.NoError(t, err)
-
-	// Second save: switch to OAuth, clear token and cluster_id.
-	err = SaveToProfile(ctx, &config.Config{
-		ConfigFile:          path,
-		Host:                "https://foo",
-		AuthType:            "databricks-cli",
-		ServerlessComputeID: "auto",
-	}, "token", "cluster_id")
-	require.NoError(t, err)
-
-	file, err := loadOrCreateConfigFile(path)
-	require.NoError(t, err)
-
-	abc, err := file.GetSection("abc")
-	require.NoError(t, err)
-	raw := abc.KeysHash()
-	assert.Equal(t, "https://foo", raw["host"])
-	assert.Equal(t, "databricks-cli", raw["auth_type"])
-	assert.Equal(t, "auto", raw["serverless_compute_id"])
-	assert.Empty(t, raw["token"], "token should have been cleared")
-	assert.Empty(t, raw["cluster_id"], "cluster_id should have been cleared")
-	assert.Len(t, raw, 3)
-}
-
-func TestSaveToProfile_OverwritesExistingValues(t *testing.T) {
-	ctx := context.Background()
-	path := filepath.Join(t.TempDir(), "databrickscfg")
-
-	// First save: profile with host.
-	err := SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Profile:    "abc",
-		Host:       "https://old-host",
-	})
-	require.NoError(t, err)
-
-	// Second save: update host value.
-	err = SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Profile:    "abc",
-		Host:       "https://new-host",
-	})
-	require.NoError(t, err)
-
-	file, err := loadOrCreateConfigFile(path)
-	require.NoError(t, err)
-
-	abc, err := file.GetSection("abc")
-	require.NoError(t, err)
-	raw := abc.KeysHash()
-	assert.Equal(t, "https://new-host", raw["host"])
-}
-
-func TestSaveToProfile_ClearKeysOnNonExistentKeyIsNoop(t *testing.T) {
-	ctx := context.Background()
-	path := filepath.Join(t.TempDir(), "databrickscfg")
-
-	err := SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Profile:    "abc",
-		Host:       "https://foo",
-	})
-	require.NoError(t, err)
-
-	// Clear a key that doesn't exist — should not error.
-	err = SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Profile:    "abc",
-		Host:       "https://foo",
-		AuthType:   "databricks-cli",
-	}, "token", "nonexistent_key")
-	require.NoError(t, err)
-
-	file, err := loadOrCreateConfigFile(path)
-	require.NoError(t, err)
-
-	abc, err := file.GetSection("abc")
-	require.NoError(t, err)
-	raw := abc.KeysHash()
-	assert.Len(t, raw, 2)
-	assert.Equal(t, "https://foo", raw["host"])
-	assert.Equal(t, "databricks-cli", raw["auth_type"])
-}
-
-func TestSaveToProfile_WithScopes(t *testing.T) {
-	ctx := context.Background()
-	path := filepath.Join(t.TempDir(), "databrickscfg")
-
-	err := SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Profile:    "scoped",
-		Host:       "https://myworkspace.cloud.databricks.com",
-		AuthType:   "databricks-cli",
-		Scopes:     []string{"jobs", "pipelines", "clusters"},
-	})
-	require.NoError(t, err)
-
-	file, err := loadOrCreateConfigFile(path)
-	require.NoError(t, err)
-	section, err := file.GetSection("scoped")
-	require.NoError(t, err)
-	raw := section.KeysHash()
-	assert.Len(t, raw, 3)
-	assert.Equal(t, "https://myworkspace.cloud.databricks.com", raw["host"])
-	assert.Equal(t, "databricks-cli", raw["auth_type"])
-	assert.Equal(t, "jobs,pipelines,clusters", raw["scopes"])
+			raw := section.KeysHash()
+			assert.Len(t, raw, len(tc.wantKeys))
+			for k, v := range tc.wantKeys {
+				assert.Equal(t, v, raw[k], "key %s", k)
+			}
+		})
+	}
 }
