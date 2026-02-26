@@ -125,6 +125,11 @@ func TestToken_loadToken(t *testing.T) {
 				Name: "legacy-ws",
 				Host: "https://legacy-ws.cloud.databricks.com",
 			},
+			{
+				Name:                 "m2m-profile",
+				Host:                 "https://m2m.cloud.databricks.com",
+				HasClientCredentials: true,
+			},
 		},
 	}
 	tokenCache := &inMemoryTokenCache{
@@ -525,6 +530,47 @@ func TestToken_loadToken(t *testing.T) {
 				persistentAuthOpts: nil,
 			},
 			wantErr: "no profiles configured. Run 'databricks auth login' to create a profile",
+		},
+		{
+			name: "M2M profile returns clear error",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "m2m-profile",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+			},
+			wantErr: `profile "m2m-profile" uses M2M authentication (client_id/client_secret). ` +
+				"`databricks auth token` only supports U2M (user-to-machine) authentication tokens. " +
+				"To authenticate as a service principal, use the Databricks SDK directly",
+		},
+		{
+			name: "M2M profile detected via positional arg",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"m2m-profile"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+			},
+			wantErr: `profile "m2m-profile" uses M2M authentication (client_id/client_secret). ` +
+				"`databricks auth token` only supports U2M (user-to-machine) authentication tokens. " +
+				"To authenticate as a service principal, use the Databricks SDK directly",
+		},
+		{
+			name: "M2M profile detected via host resolution",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host: "https://m2m.cloud.databricks.com",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+			},
+			wantErr: `profile "m2m-profile" uses M2M authentication (client_id/client_secret). ` +
+				"`databricks auth token` only supports U2M (user-to-machine) authentication tokens. " +
+				"To authenticate as a service principal, use the Databricks SDK directly",
 		},
 		{
 			name: "no args, DATABRICKS_HOST env resolves",

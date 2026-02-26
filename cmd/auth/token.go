@@ -205,9 +205,25 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 				return nil, err
 			}
 			args.profileName = selected
+			existingProfile, err = loadProfileByName(ctx, selected, args.profiler)
+			if err != nil {
+				return nil, err
+			}
 		} else if len(matchingProfiles) == 1 {
 			args.profileName = matchingProfiles[0].Name
+			existingProfile = &matchingProfiles[0]
 		}
+	}
+
+	// Check if the resolved profile uses M2M authentication (client credentials).
+	// The auth token command only supports U2M OAuth tokens.
+	if existingProfile != nil && existingProfile.HasClientCredentials {
+		return nil, fmt.Errorf(
+			"profile %q uses M2M authentication (client_id/client_secret). "+
+				"`databricks auth token` only supports U2M (user-to-machine) authentication tokens. "+
+				"To authenticate as a service principal, use the Databricks SDK directly",
+			args.profileName,
+		)
 	}
 
 	args.authArguments.Profile = args.profileName

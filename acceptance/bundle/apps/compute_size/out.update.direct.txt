@@ -1,0 +1,11 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-compute-size-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] apps get app-[UNIQUE_NAME]
+{
+  "compute_size": "MEDIUM"
+}
