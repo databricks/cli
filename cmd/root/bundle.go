@@ -147,12 +147,13 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 						"       workspace:\n"+
 						"         profile: %s\n"+
 						"  2. Pass a flag:\n"+
-						"       databricks bundle deploy --profile %s\n"+
+						"       %s --profile %s\n"+
 						"  3. Set env var:\n"+
 						"       DATABRICKS_CONFIG_PROFILE=%s",
 					err,
 					strings.Join(profiles.Names(), ", "),
 					profiles[0].Name,
+					cmd.CommandPath(),
 					profiles[0].Name,
 					profiles[0].Name,
 				))
