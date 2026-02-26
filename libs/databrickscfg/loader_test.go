@@ -1,7 +1,7 @@
 package databrickscfg
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
@@ -154,7 +154,7 @@ func TestAsMultipleProfilesExtractsNames(t *testing.T) {
 }
 
 func TestAsMultipleProfilesReturnsFalseForUnrelatedError(t *testing.T) {
-	names, ok := AsMultipleProfiles(fmt.Errorf("some other error"))
+	names, ok := AsMultipleProfiles(errors.New("some other error"))
 	assert.False(t, ok)
 	assert.Nil(t, names)
 }

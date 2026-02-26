@@ -238,7 +238,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 // profiles match the same host.
 func promptForProfileByHost(ctx context.Context, profiles profile.Profiles, host string) (string, error) {
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             fmt.Sprintf("Multiple profiles match host %s", host),
+		Label:             "Multiple profiles match host " + host,
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,
