@@ -45,7 +45,7 @@ func normalizeVersion(version string) string {
 		return version
 	}
 	if version == "latest" {
-		return "main"
+		return appkitDefaultBranch
 	}
 	if strings.HasPrefix(version, appkitTemplateTagPfx) {
 		return version
