@@ -1,5 +1,0 @@
-[DEFAULT]
-host         = https://host
-account_id   = acc-123
-workspace_id = ws-456
-token        = [DATABRICKS_TOKEN]

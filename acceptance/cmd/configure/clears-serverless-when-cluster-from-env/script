@@ -18,5 +18,3 @@ echo "new-token" | trace $CLI configure --token --host https://host
 
 title "Profile after configure (serverless should be cleared)\n"
 cat "./home/.databrickscfg"
-
-mv "./home/.databrickscfg" "./out.databrickscfg"

@@ -23,6 +23,3 @@ trace $CLI auth login --host $DATABRICKS_HOST --profile DEFAULT
 
 title "Profile after auth login — all non-auth fields should be preserved\n"
 cat "./home/.databrickscfg"
-
-# Track the .databrickscfg file that was created to surface changes.
-mv "./home/.databrickscfg" "./out.databrickscfg"

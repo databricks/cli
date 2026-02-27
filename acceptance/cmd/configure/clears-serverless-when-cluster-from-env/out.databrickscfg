@@ -1,4 +1,0 @@
-[DEFAULT]
-host       = https://host
-cluster_id = env-cluster-789
-token      = [DATABRICKS_TOKEN]
