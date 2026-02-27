@@ -145,11 +145,25 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 		}
 	}
 
-	// Spinner for interactive feedback.
+	// Spinner for interactive feedback, updated every second via ticker.
 	sp := cmdio.NewSpinner(pollCtx)
 	defer sp.Close()
 	start := time.Now()
 	sp.Update("Executing query...")
+
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	go func() {
+		for {
+			select {
+			case <-pollCtx.Done():
+				return
+			case <-ticker.C:
+				elapsed := time.Since(start).Truncate(time.Second)
+				sp.Update(fmt.Sprintf("Executing query... (%s elapsed)", elapsed))
+			}
+		}
+	}()
 
 	// Poll with additive backoff: 1s, 2s, 3s, 4s, 5s (capped).
 	interval := pollIntervalInitial
@@ -162,9 +176,7 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 		case <-time.After(interval):
 		}
 
-		elapsed := time.Since(start).Truncate(time.Second)
-		sp.Update(fmt.Sprintf("Executing query... (%s elapsed)", elapsed))
-		log.Debugf(ctx, "Polling statement %s: %s elapsed", statementID, elapsed)
+		log.Debugf(ctx, "Polling statement %s: %s elapsed", statementID, time.Since(start).Truncate(time.Second))
 
 		pollResp, err := api.GetStatementByStatementId(pollCtx, statementID)
 		if err != nil {
