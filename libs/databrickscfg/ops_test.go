@@ -277,3 +277,66 @@ func TestSaveToProfile_MergeSemantics(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteProfile(t *testing.T) {
+	seedConfig := `; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[first]
+host = https://first.cloud.databricks.com
+
+[second]
+host = https://second.cloud.databricks.com
+`
+
+	cases := []struct {
+		name                    string
+		profileToDelete         string
+		configFilePath          string
+		wantErr                 string
+		wantRemainingSectionCnt int
+	}{
+		{
+			name:                    "delete existing profile",
+			profileToDelete:         "first",
+			wantRemainingSectionCnt: 2, // DEFAULT + second
+		},
+		{
+			name:            "profile not found",
+			profileToDelete: "nonexistent",
+			wantErr:         `profile "nonexistent" not found`,
+		},
+		{
+			name:                    "custom config path",
+			profileToDelete:         "second",
+			configFilePath:          "custom",
+			wantRemainingSectionCnt: 2, // DEFAULT + first
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			dir := t.TempDir()
+
+			filename := ".databrickscfg"
+			if tc.configFilePath != "" {
+				filename = tc.configFilePath
+			}
+			path := filepath.Join(dir, filename)
+			require.NoError(t, os.WriteFile(path, []byte(seedConfig), fileMode))
+
+			err := DeleteProfile(ctx, tc.profileToDelete, path)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+
+			file, err := loadOrCreateConfigFile(path)
+			require.NoError(t, err)
+			assert.Len(t, file.Sections(), tc.wantRemainingSectionCnt)
+			assert.False(t, file.HasSection(tc.profileToDelete))
+		})
+	}
+}

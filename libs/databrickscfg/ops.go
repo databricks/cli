@@ -153,6 +153,45 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 	return configFile.SaveTo(configFile.Path())
 }
 
+// DeleteProfile removes the named profile section from the databrickscfg file.
+// It creates a backup of the original file before modifying it.
+func DeleteProfile(ctx context.Context, profileName, configFilePath string) error {
+	configFile, err := loadOrCreateConfigFile(configFilePath)
+	if err != nil {
+		return err
+	}
+
+	_, err = findMatchingProfile(configFile, func(s *ini.Section) bool {
+		return s.Name() == profileName
+	})
+	if err != nil {
+		return fmt.Errorf("profile %q not found in %s", profileName, configFile.Path())
+	}
+
+	configFile.DeleteSection(profileName)
+
+	section := configFile.Section(ini.DefaultSection)
+	if len(section.Keys()) == 0 && section.Comment == "" {
+		section.Comment = defaultComment
+	}
+
+	orig, backupErr := os.ReadFile(configFile.Path())
+	if len(orig) > 0 && backupErr == nil {
+		log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
+		err = os.WriteFile(configFile.Path()+".bak", orig, fileMode)
+		if err != nil {
+			return fmt.Errorf("backup: %w", err)
+		}
+		log.Infof(ctx, "Overwriting %s", configFile.Path())
+	} else if backupErr != nil {
+		log.Warnf(ctx, "Failed to backup %s: %v. Proceeding to save",
+			configFile.Path(), backupErr)
+	} else {
+		log.Infof(ctx, "Saving %s", configFile.Path())
+	}
+	return configFile.SaveTo(configFile.Path())
+}
+
 func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 	configFile, err := config.LoadFile(cfg.ConfigFile)
 	if err != nil {
