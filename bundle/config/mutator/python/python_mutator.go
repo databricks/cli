@@ -32,6 +32,9 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
+	"github.com/databricks/cli/libs/structs/structwalk"
 )
 
 type phase string
@@ -436,6 +439,11 @@ func explainProcessErr(stderr string) string {
 }
 
 func writeInputFile(inputPath string, input dyn.Value) error {
+	input, err := stripInternalFields(input, reflect.TypeFor[config.Root]())
+	if err != nil {
+		return fmt.Errorf("failed to strip internal fields: %w", err)
+	}
+
 	// we need to marshal dyn.Value instead of bundle.Config to JSON to support
 	// non-string fields assigned with bundle variables
 	rootConfigJson, err := json.Marshal(input.AsAny())
@@ -444,6 +452,73 @@ func writeInputFile(inputPath string, input dyn.Value) error {
 	}
 
 	return os.WriteFile(inputPath, rootConfigJson, 0o600)
+}
+
+func stripInternalFields(input dyn.Value, typ reflect.Type) (dyn.Value, error) {
+	patterns, err := internalFieldPatterns(typ)
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	if len(patterns) == 0 {
+		return input, nil
+	}
+
+	return dyn.Walk(input, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
+		if matchesAnyPattern(dynPathToStructPath(path), patterns) {
+			return dyn.InvalidValue, dyn.ErrDrop
+		}
+
+		return value, nil
+	})
+}
+
+func internalFieldPatterns(typ reflect.Type) ([]*structpath.PatternNode, error) {
+	var patterns []*structpath.PatternNode
+
+	err := structwalk.WalkType(typ, func(path *structpath.PatternNode, _ reflect.Type, field *reflect.StructField) bool {
+		if path.IsRoot() || field == nil {
+			return true
+		}
+
+		if structtag.BundleTag(field.Tag.Get("bundle")).Internal() {
+			patterns = append(patterns, path)
+			return false
+		}
+
+		return true
+	})
+
+	return patterns, err
+}
+
+func dynPathToStructPath(path dyn.Path) *structpath.PathNode {
+	var out *structpath.PathNode
+
+	for _, component := range path {
+		if key := component.Key(); key != "" {
+			out = structpath.NewStringKey(out, key)
+			continue
+		}
+
+		out = structpath.NewIndex(out, component.Index())
+	}
+
+	return out
+}
+
+func matchesAnyPattern(path *structpath.PathNode, patterns []*structpath.PatternNode) bool {
+	if path == nil {
+		return false
+	}
+
+	for _, pattern := range patterns {
+		if path.Len() == pattern.Len() && path.HasPatternPrefix(pattern) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // loadLocationsFile loads locations.json containing source locations for generated YAML.

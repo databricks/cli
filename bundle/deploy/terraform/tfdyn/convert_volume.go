@@ -11,6 +11,12 @@ import (
 )
 
 func convertVolumeResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
+	var err error
+	vin, err = dyn.Set(vin, "volume_path", dyn.InvalidValue)
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(schema.ResourceVolume{}, vin)
 	for _, diag := range diags {

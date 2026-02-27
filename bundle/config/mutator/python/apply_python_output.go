@@ -2,11 +2,14 @@ package python
 
 import (
 	"fmt"
+	"reflect"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // applyPythonOutputResult contains which resources where added, updated, or deleted by Python mutator.
@@ -25,7 +28,12 @@ type applyPythonOutputResult struct {
 // - if property is unchanged in output, it's original location will be preserved
 // - if empty sequence/mapping is deleted in output, it's original value will be preserved
 func applyPythonOutput(root, output dyn.Value) (dyn.Value, applyPythonOutputResult, error) {
-	result, visitor := createOverrideVisitor(root, output)
+	internalPatterns, err := internalFieldPatterns(reflect.TypeFor[config.Root]())
+	if err != nil {
+		return dyn.InvalidValue, applyPythonOutputResult{}, fmt.Errorf("failed to find internal fields: %w", err)
+	}
+
+	result, visitor := createOverrideVisitor(root, output, internalPatterns)
 	merged, err := merge.Override(root, output, visitor)
 	if err != nil {
 		return dyn.InvalidValue, result, err
@@ -34,14 +42,22 @@ func applyPythonOutput(root, output dyn.Value) (dyn.Value, applyPythonOutputResu
 	return merged, result, nil
 }
 
-func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResult, merge.OverrideVisitor) {
+func createOverrideVisitor(leftRoot, rightRoot dyn.Value, internalPatterns []*structpath.PatternNode) (applyPythonOutputResult, merge.OverrideVisitor) {
 	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	deleted := resourcemutator.NewResourceKeySet()
 	updated := resourcemutator.NewResourceKeySet()
 	added := resourcemutator.NewResourceKeySet()
 
+	isInternalPath := func(valuePath dyn.Path) bool {
+		return matchesAnyPattern(dynPathToStructPath(valuePath), internalPatterns)
+	}
+
 	visitor := merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
+			if isInternalPath(valuePath) {
+				return merge.ErrOverrideUndoDelete
+			}
+
 			if isOmitemptyDelete(left) {
 				return merge.ErrOverrideUndoDelete
 			}
@@ -89,6 +105,10 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResu
 			}
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
+			if isInternalPath(valuePath) {
+				return right, nil
+			}
+
 			if !valuePath.HasPrefix(resourcesPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
@@ -135,7 +155,11 @@ func createOverrideVisitor(leftRoot, rightRoot dyn.Value) (applyPythonOutputResu
 				return right, nil
 			}
 		},
-		VisitUpdate: func(valuePath dyn.Path, _, right dyn.Value) (dyn.Value, error) {
+		VisitUpdate: func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
+			if isInternalPath(valuePath) {
+				return left, nil
+			}
+
 			if !valuePath.HasPrefix(resourcesPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
 			}

@@ -12,6 +12,7 @@
           "comment": "COMMENT1",
           "name": "mynewvolume",
           "schema_name": "myschema",
+          "volume_path": "/Volumes/main/myschema/mynewvolume",
           "volume_type": "MANAGED"
         }
       },
@@ -27,6 +28,7 @@
         "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
         "updated_at": [UNIX_TIME_MILLIS][0],
         "volume_id": "[UUID]",
+        "volume_path": "/Volumes/main/myschema/myvolume",
         "volume_type": "MANAGED"
       },
       "changes": {
@@ -41,6 +43,12 @@
           "action": "skip",
           "reason": "backend_default",
           "remote": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+        },
+        "volume_path": {
+          "action": "update",
+          "old": "/Volumes/main/myschema/myvolume",
+          "new": "/Volumes/main/myschema/mynewvolume",
+          "remote": "/Volumes/main/myschema/myvolume"
         }
       }
     }

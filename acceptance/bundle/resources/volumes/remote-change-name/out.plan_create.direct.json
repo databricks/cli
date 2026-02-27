@@ -9,6 +9,7 @@
           "catalog_name": "mycatalog",
           "name": "myname",
           "schema_name": "myschema",
+          "volume_path": "/Volumes/mycatalog/myschema/myname",
           "volume_type": "MANAGED"
         }
       }

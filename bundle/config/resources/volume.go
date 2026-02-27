@@ -44,6 +44,8 @@ type Volume struct {
 	BaseResource
 	catalog.CreateVolumeRequestContent
 
+	VolumePath string `json:"volume_path,omitempty" bundle:"internal"`
+
 	// List of grants to apply on this volume.
 	Grants []VolumeGrant `json:"grants,omitempty"`
 }

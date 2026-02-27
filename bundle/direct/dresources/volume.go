@@ -9,8 +9,78 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+const volumePathPrefix = "/Volumes/"
+
+type VolumeState struct {
+	catalog.CreateVolumeRequestContent
+
+	VolumePath string `json:"volume_path,omitempty"`
+}
+
+// UnmarshalJSON preserves extra fields alongside the embedded SDK type.
+func (s *VolumeState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+// MarshalJSON preserves extra fields alongside the embedded SDK type.
+func (s VolumeState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
+type VolumeRemote struct {
+	catalog.VolumeInfo
+
+	VolumePath string `json:"volume_path,omitempty"`
+}
+
+// Custom marshaler needed because embedded VolumeInfo has its own MarshalJSON
+// which would otherwise take over and ignore additional fields.
+func (s *VolumeRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s VolumeRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
+func makeVolumePath(catalogName, schemaName, name string) string {
+	if catalogName == "" || schemaName == "" || name == "" {
+		return ""
+	}
+
+	return volumePathPrefix + catalogName + "/" + schemaName + "/" + name
+}
+
+func makeVolumeState(input *resources.Volume) *VolumeState {
+	if input == nil {
+		return nil
+	}
+
+	volumePath := input.VolumePath
+	if volumePath == "" {
+		volumePath = makeVolumePath(input.CatalogName, input.SchemaName, input.Name)
+	}
+
+	return &VolumeState{
+		CreateVolumeRequestContent: input.CreateVolumeRequestContent,
+		VolumePath:                 volumePath,
+	}
+}
+
+func makeVolumeRemote(info *catalog.VolumeInfo) *VolumeRemote {
+	if info == nil {
+		return nil
+	}
+
+	return &VolumeRemote{
+		VolumeInfo: *info,
+		VolumePath: makeVolumePath(info.CatalogName, info.SchemaName, info.Name),
+	}
+}
 
 type ResourceVolume struct {
 	client *databricks.WorkspaceClient
@@ -20,35 +90,43 @@ func (*ResourceVolume) New(client *databricks.WorkspaceClient) *ResourceVolume {
 	return &ResourceVolume{client: client}
 }
 
-func (*ResourceVolume) PrepareState(input *resources.Volume) *catalog.CreateVolumeRequestContent {
-	return &input.CreateVolumeRequestContent
+func (*ResourceVolume) PrepareState(input *resources.Volume) *VolumeState {
+	return makeVolumeState(input)
 }
 
-func (*ResourceVolume) RemapState(info *catalog.VolumeInfo) *catalog.CreateVolumeRequestContent {
-	return &catalog.CreateVolumeRequestContent{
-		CatalogName:     info.CatalogName,
-		Comment:         info.Comment,
-		Name:            info.Name,
-		SchemaName:      info.SchemaName,
-		StorageLocation: info.StorageLocation,
-		VolumeType:      info.VolumeType,
-		ForceSendFields: utils.FilterFields[catalog.CreateVolumeRequestContent](info.ForceSendFields),
+func (*ResourceVolume) RemapState(info *VolumeRemote) *VolumeState {
+	state := &VolumeState{
+		CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+			CatalogName:     info.CatalogName,
+			Comment:         info.Comment,
+			Name:            info.Name,
+			SchemaName:      info.SchemaName,
+			StorageLocation: info.StorageLocation,
+			VolumeType:      info.VolumeType,
+			ForceSendFields: utils.FilterFields[catalog.CreateVolumeRequestContent](info.ForceSendFields),
+		},
+		VolumePath: info.VolumePath,
 	}
+	return state
 }
 
-func (r *ResourceVolume) DoRead(ctx context.Context, id string) (*catalog.VolumeInfo, error) {
-	return r.client.Volumes.ReadByName(ctx, id)
+func (r *ResourceVolume) DoRead(ctx context.Context, id string) (*VolumeRemote, error) {
+	response, err := r.client.Volumes.ReadByName(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return makeVolumeRemote(response), nil
 }
 
-func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
-	response, err := r.client.Volumes.Create(ctx, *config)
+func (r *ResourceVolume) DoCreate(ctx context.Context, config *VolumeState) (string, *VolumeRemote, error) {
+	response, err := r.client.Volumes.Create(ctx, config.CreateVolumeRequestContent)
 	if err != nil {
 		return "", nil, err
 	}
-	return response.FullName, response, nil
+	return response.FullName, makeVolumeRemote(response), nil
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ Changes) (*catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *VolumeState, _ Changes) (*VolumeRemote, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
@@ -76,10 +154,10 @@ func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalo
 		log.Warnf(ctx, "volumes: response contains unexpected full_name=%#v (expected %#v)", response.FullName, id)
 	}
 
-	return response, err
+	return makeVolumeRemote(response), err
 }
 
-func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *VolumeState) (string, *VolumeRemote, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
@@ -105,7 +183,7 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 		return "", nil, err
 	}
 
-	return response.FullName, response, nil
+	return response.FullName, makeVolumeRemote(response), nil
 }
 
 func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {

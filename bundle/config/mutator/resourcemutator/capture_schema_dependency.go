@@ -37,6 +37,14 @@ func catalogNameRef(key string) string {
 	return fmt.Sprintf("${resources.catalogs.%s.name}", key)
 }
 
+func volumePath(catalogName, schemaName, name string) string {
+	if catalogName == "" || schemaName == "" || name == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("/Volumes/%s/%s/%s", catalogName, schemaName, name)
+}
+
 func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *resources.Schema) {
 	if catalogName == "" || schemaName == "" {
 		return "", nil
@@ -55,11 +63,11 @@ func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
 		return
 	}
 	schemaK, schema := findSchema(b, v.CatalogName, v.SchemaName)
-	if schema == nil {
-		return
+	if schema != nil {
+		v.SchemaName = schemaNameRef(schemaK)
 	}
 
-	v.SchemaName = schemaNameRef(schemaK)
+	v.VolumePath = volumePath(v.CatalogName, v.SchemaName, v.Name)
 }
 
 func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {

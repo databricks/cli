@@ -232,6 +232,7 @@
         "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
         "updated_at": [UNIX_TIME_MILLIS][2],
         "volume_id": "[UUID]",
+        "volume_path": "/Volumes/mycat/myschema/myvol",
         "volume_type": "MANAGED"
       },
       "changes": {

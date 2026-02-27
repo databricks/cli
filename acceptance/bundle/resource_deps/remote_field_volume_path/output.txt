@@ -17,7 +17,7 @@
     },
     "foo": {
       "catalog_name": "main",
-      "comment": "${resources.volumes.bar.storage_location}",
+      "comment": "${resources.volumes.bar.volume_path}",
       "name": "volumefoo-[UNIQUE_NAME]",
       "schema_name": "${resources.schemas.my.name}",
       "volume_path": "/Volumes/main/${resources.schemas.my.name}/volumefoo-[UNIQUE_NAME]",

@@ -1,0 +1,37 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.volumes.bar": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "name": "volumebar-[UNIQUE_NAME]",
+          "schema_name": "default",
+          "volume_path": "/Volumes/main/default/volumebar-[UNIQUE_NAME]",
+          "volume_type": "MANAGED"
+        }
+      }
+    },
+    "resources.volumes.foo": {
+      "depends_on": [
+        {
+          "node": "resources.volumes.bar",
+          "label": "${resources.volumes.bar.volume_path}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "comment": "/Volumes/main/default/volumebar-[UNIQUE_NAME]",
+          "name": "volumefoo-[UNIQUE_NAME]",
+          "schema_name": "default",
+          "volume_path": "/Volumes/main/default/volumefoo-[UNIQUE_NAME]",
+          "volume_type": "MANAGED"
+        }
+      }
+    }
+  }
+}

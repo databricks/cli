@@ -1,0 +1,15 @@
+bundle:
+  name: testbundle-${UNIQUE_NAME}
+
+resources:
+  volumes:
+    bar:
+      catalog_name: main
+      schema_name: default
+      name: volumebar-${UNIQUE_NAME}
+
+    foo:
+      catalog_name: main
+      schema_name: default
+      name: volumefoo-${UNIQUE_NAME}
+      comment: ${resources.volumes.bar.volume_path}

@@ -24,6 +24,7 @@
           "catalog_name": "main",
           "name": "volume_name",
           "schema_name": "schema_grants_[UNIQUE_NAME]",
+          "volume_path": "/Volumes/main/schema_grants_[UNIQUE_NAME]/volume_name",
           "volume_type": "MANAGED"
         }
       }

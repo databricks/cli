@@ -157,6 +157,29 @@ func TestApplyPythonOutput(t *testing.T) {
 	}
 }
 
+func TestApplyPythonOutput_ignoresInternalFields(t *testing.T) {
+	input := mapOf("resources", mapOf("volumes", mapOf("volume_1", mapOf2(
+		"name", dyn.V("volume"),
+		"volume_path", dyn.V("/Volumes/main/default/volume"),
+	))))
+	output := mapOf("resources", mapOf("volumes", mapOf("volume_1", mapOf(
+		"name", dyn.V("volume"),
+	))))
+
+	merged, state, err := applyPythonOutput(input, output)
+
+	assert.NoError(t, err)
+	assert.Empty(t, state.UpdatedResources.ToArray())
+
+	name, err := dyn.GetByPath(merged, dyn.MustPathFromString("resources.volumes.volume_1.name"))
+	assert.NoError(t, err)
+	assert.Equal(t, "volume", name.MustString())
+
+	volumePath, err := dyn.GetByPath(merged, dyn.MustPathFromString("resources.volumes.volume_1.volume_path"))
+	assert.NoError(t, err)
+	assert.Equal(t, "/Volumes/main/default/volume", volumePath.MustString())
+}
+
 func TestMergeOutput_disallowDelete(t *testing.T) {
 	input := mapOf("not_resource", dyn.V("value"))
 	output := emptyMap()
@@ -244,7 +267,7 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, visitor := createOverrideVisitor(dyn.NilValue, dyn.NilValue)
+			_, visitor := createOverrideVisitor(dyn.NilValue, dyn.NilValue, nil)
 
 			err := visitor.VisitDelete(tc.path, tc.left)
 

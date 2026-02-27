@@ -87,6 +87,7 @@
     "catalog_name": "mycat",
     "name": "myvol",
     "schema_name": "myschema",
+    "volume_path": "/Volumes/mycat/myschema/myvol",
     "volume_type": "MANAGED"
    }
   }

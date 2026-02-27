@@ -44,30 +44,35 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalog1",
 							SchemaName:  "foobar",
+							Name:        "volume1",
 						},
 					},
 					"volume2": {
 						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalog2",
 							SchemaName:  "foobar",
+							Name:        "volume2",
 						},
 					},
 					"volume3": {
 						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalog1",
 							SchemaName:  "barfoo",
+							Name:        "volume3",
 						},
 					},
 					"volume4": {
 						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalogX",
 							SchemaName:  "foobar",
+							Name:        "volume4",
 						},
 					},
 					"volume5": {
 						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
 							CatalogName: "catalog1",
 							SchemaName:  "schemaX",
+							Name:        "volume5",
 						},
 					},
 					"nilVolume":   nil,
@@ -87,7 +92,12 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 	assert.Equal(t, "schemaX", b.Config.Resources.Volumes["volume5"].SchemaName)
 
 	assert.Nil(t, b.Config.Resources.Volumes["nilVolume"])
-	// assert.Nil(t, b.Config.Resources.Volumes["emptyVolume"].CreateVolumeRequestContent)
+	assert.Equal(t, "/Volumes/catalog1/${resources.schemas.schema1.name}/volume1", b.Config.Resources.Volumes["volume1"].VolumePath)
+	assert.Equal(t, "/Volumes/catalog2/${resources.schemas.schema2.name}/volume2", b.Config.Resources.Volumes["volume2"].VolumePath)
+	assert.Equal(t, "/Volumes/catalog1/${resources.schemas.schema3.name}/volume3", b.Config.Resources.Volumes["volume3"].VolumePath)
+	assert.Equal(t, "/Volumes/catalogX/foobar/volume4", b.Config.Resources.Volumes["volume4"].VolumePath)
+	assert.Equal(t, "/Volumes/catalog1/schemaX/volume5", b.Config.Resources.Volumes["volume5"].VolumePath)
+	assert.Equal(t, "", b.Config.Resources.Volumes["emptyVolume"].VolumePath)
 }
 
 func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {

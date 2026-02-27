@@ -6,9 +6,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn/convert"
 
 	"github.com/databricks/cli/bundle/env"
@@ -285,6 +289,34 @@ func TestPythonMutator_disabled(t *testing.T) {
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.NoError(t, diag.Error())
+}
+
+func TestStripInternalFields(t *testing.T) {
+	input, err := convert.FromTyped(config.Root{
+		Resources: config.Resources{
+			Volumes: map[string]*resources.Volume{
+				"foo": {
+					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+						CatalogName: "main",
+						SchemaName:  "default",
+						Name:        "my_volume",
+					},
+					VolumePath: "/Volumes/main/default/my_volume",
+				},
+			},
+		},
+	}, dyn.NilValue)
+	require.NoError(t, err)
+
+	output, err := stripInternalFields(input, reflect.TypeFor[config.Root]())
+	require.NoError(t, err)
+
+	_, err = dyn.GetByPath(output, dyn.MustPathFromString("resources.volumes.foo.volume_path"))
+	require.Error(t, err)
+
+	name, err := dyn.GetByPath(output, dyn.MustPathFromString("resources.volumes.foo.name"))
+	require.NoError(t, err)
+	assert.Equal(t, "my_volume", name.MustString())
 }
 
 func TestPythonMutator_venvNotFound(t *testing.T) {

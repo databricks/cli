@@ -28,6 +28,7 @@ Deployment complete!
       "name": "myvolume",
       "schema_name": "myschema",
       "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]",
+      "volume_path": "/Volumes/main/myschema/myvolume",
       "volume_type": "MANAGED"
     }
   }
