@@ -157,18 +157,21 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 		select {
 		case <-pollCtx.Done():
 			cancelStatement()
-			return nil, errors.New("query cancelled")
+			cmdio.LogString(ctx, "Query cancelled.")
+			return nil, root.ErrAlreadyPrinted
 		case <-time.After(interval):
 		}
 
 		elapsed := time.Since(start).Truncate(time.Second)
 		sp.Update(fmt.Sprintf("Executing query... (%s elapsed)", elapsed))
+		log.Debugf(ctx, "Polling statement %s: %s elapsed", statementID, elapsed)
 
 		pollResp, err := api.GetStatementByStatementId(pollCtx, statementID)
 		if err != nil {
 			if pollCtx.Err() != nil {
 				cancelStatement()
-				return nil, errors.New("query cancelled")
+				cmdio.LogString(ctx, "Query cancelled.")
+				return nil, root.ErrAlreadyPrinted
 			}
 			return nil, fmt.Errorf("poll statement status: %w", err)
 		}

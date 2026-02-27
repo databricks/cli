@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/sql"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -144,8 +145,7 @@ func TestExecuteAndPollCancelledContextCallsCancelExecution(t *testing.T) {
 	cancel()
 
 	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cancelled")
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
 }
 
 func TestResolveWarehouseIDWithFlag(t *testing.T) {
