@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -12,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +40,32 @@ If --delete is specified, the profile is also removed from ~/.databrickscfg
 (or the file specified by the DATABRICKS_CONFIG_FILE environment variable).
 
 You will need to run "databricks auth login" to re-authenticate after
-logging out.`,
+logging out.
+
+This command requires a profile to be specified (using --profile). If you
+omit --profile and run in an interactive terminal, you'll be shown an
+interactive profile picker to select which profile to log out of.
+
+While this command always removes the specified profile, the runtime behaviour
+depends on whether you run it in an interactive terminal and which flags you
+provide.
+
+1. If you specify --profile, the command will log out of that profile.
+   In an interactive terminal, you'll be asked to confirm unless --force
+   is specified.
+
+2. If you omit --profile and run in an interactive terminal, you'll be shown
+   an interactive picker listing all profiles from your configuration file.
+   Profiles are sorted alphabetically by name. You can search by profile
+   name, host, or account ID. After selecting a profile, you'll be asked to
+   confirm unless --force is specified.
+
+3. If you omit --profile and run in a non-interactive environment (e.g.
+   CI/CD pipelines), the command will fail with an error asking you to
+   specify --profile.
+
+4. Use --force to skip the confirmation prompt. This is required when
+   running in non-interactive mode; otherwise the command will fail.`,
 	}
 
 	var force bool
