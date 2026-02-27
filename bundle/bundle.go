@@ -245,6 +245,14 @@ func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 	b.client = w
 }
 
+// ClearWorkspaceClient resets the workspace client cache, allowing
+// WorkspaceClientE() to attempt client creation again on the next call.
+func (b *Bundle) ClearWorkspaceClient() {
+	b.clientOnce = sync.Once{}
+	b.client = nil
+	b.clientErr = nil
+}
+
 // LocalStateDir returns directory to use for temporary files for this bundle without creating
 // Scoped to the bundle's target.
 func (b *Bundle) GetLocalStateDir(ctx context.Context, paths ...string) string {
