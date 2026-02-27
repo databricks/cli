@@ -55,7 +55,11 @@ logging out.`,
 			if !cmdio.IsPromptSupported(ctx) {
 				return errors.New("the command is being run in a non-interactive environment, please specify a profile to log out of using --profile")
 			}
-			return errors.New("please specify a profile to log out of using --profile")
+			selected, err := promptForLogoutProfile(ctx, profile.DefaultProfiler)
+			if err != nil {
+				return err
+			}
+			profileName = selected
 		}
 
 		tokenCache, err := cache.NewFileTokenCache()
@@ -178,6 +182,65 @@ func getMatchingProfile(ctx context.Context, profileName string, profiler profil
 	}
 
 	return &profiles[0], nil
+}
+
+type logoutProfileItem struct {
+	PaddedName string
+	profile.Profile
+}
+
+// promptForLogoutProfile shows an interactive profile picker for logout.
+// Account profiles are displayed as "name (account: id)", workspace profiles
+// as "name (host)".
+func promptForLogoutProfile(ctx context.Context, profiler profile.Profiler) (string, error) {
+	allProfiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+	if err != nil {
+		return "", err
+	}
+	if len(allProfiles) == 0 {
+		return "", errors.New("no profiles configured. Run 'databricks auth login' to create a profile")
+	}
+
+	slices.SortFunc(allProfiles, func(a, b profile.Profile) int {
+		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+	})
+
+	maxNameLen := 0
+	for _, p := range allProfiles {
+		maxNameLen = max(maxNameLen, len(p.Name))
+	}
+
+	items := make([]logoutProfileItem, len(allProfiles))
+	for i, p := range allProfiles {
+		items[i] = logoutProfileItem{
+			PaddedName: fmt.Sprintf("%-*s", maxNameLen, p.Name),
+			Profile:    p,
+		}
+	}
+
+	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+		Label:             "Select a profile to log out of",
+		Items:             items,
+		StartInSearchMode: len(items) > 5,
+		// Allow searching by name, host, and account ID.
+		Searcher: func(input string, index int) bool {
+			input = strings.ToLower(input)
+			name := strings.ToLower(items[index].Name)
+			host := strings.ToLower(items[index].Host)
+			accountID := strings.ToLower(items[index].AccountID)
+			return strings.Contains(name, input) || strings.Contains(host, input) || strings.Contains(accountID, input)
+		},
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . | faint }}",
+			Active:   `▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}`,
+			Inactive: `  {{.PaddedName}}{{if .AccountID}} (account: {{.AccountID | faint}}){{else}} ({{.Host | faint}}){{end}}`,
+			Selected: `{{ "Selected profile" | faint }}: {{ .Name | bold }}`,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	return items[i].Name, nil
 }
 
 // clearTokenCache removes cached OAuth tokens for the given profile from the
