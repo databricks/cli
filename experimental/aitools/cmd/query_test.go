@@ -127,7 +127,7 @@ func TestExecuteAndPollFailsDuringPolling(t *testing.T) {
 	assert.Contains(t, err.Error(), "RESOURCE_EXHAUSTED")
 }
 
-func TestExecuteAndPollCancelledContext(t *testing.T) {
+func TestExecuteAndPollCancelledContextCallsCancelExecution(t *testing.T) {
 	ctx, cancel := context.WithCancel(cmdio.MockDiscard(context.Background()))
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
@@ -135,6 +135,11 @@ func TestExecuteAndPollCancelledContext(t *testing.T) {
 		StatementId: "stmt-1",
 		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
 	}, nil)
+
+	// CancelExecution must be called when context is cancelled (not just on signal).
+	mockAPI.EXPECT().CancelExecution(mock.Anything, sql.CancelExecutionRequest{
+		StatementId: "stmt-1",
+	}).Return(nil).Once()
 
 	cancel()
 

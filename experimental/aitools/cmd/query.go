@@ -116,7 +116,7 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 		return resp, checkFailedState(resp.Status)
 	}
 
-	// Set up Ctrl+C handling: cancel context + server-side cancellation.
+	// Set up Ctrl+C: signal cancels the poll context, cleanup is unified below.
 	pollCtx, pollCancel := context.WithCancel(ctx)
 	defer pollCancel()
 
@@ -124,25 +124,26 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	defer signal.Stop(sigCh)
 
-	cancelDone := make(chan struct{})
 	go func() {
 		select {
 		case <-sigCh:
 			log.Infof(ctx, "Received interrupt, cancelling query %s", statementID)
 			pollCancel()
-
-			// Best-effort server-side cancellation with independent context.
-			cancelCtx, cancel := context.WithTimeout(context.Background(), cancelTimeout)
-			defer cancel()
-			if err := api.CancelExecution(cancelCtx, sql.CancelExecutionRequest{
-				StatementId: statementID,
-			}); err != nil {
-				log.Warnf(ctx, "Failed to cancel statement %s: %v", statementID, err)
-			}
-			close(cancelDone)
 		case <-pollCtx.Done():
 		}
 	}()
+
+	// cancelStatement performs best-effort server-side cancellation.
+	// Called on any poll exit due to context cancellation (signal or parent).
+	cancelStatement := func() {
+		cancelCtx, cancel := context.WithTimeout(context.Background(), cancelTimeout)
+		defer cancel()
+		if err := api.CancelExecution(cancelCtx, sql.CancelExecutionRequest{
+			StatementId: statementID,
+		}); err != nil {
+			log.Warnf(ctx, "Failed to cancel statement %s: %v", statementID, err)
+		}
+	}
 
 	// Spinner for interactive feedback.
 	sp := cmdio.NewSpinner(pollCtx)
@@ -150,14 +151,12 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 	start := time.Now()
 	sp.Update("Executing query...")
 
+	// Poll with additive backoff: 1s, 2s, 3s, 4s, 5s (capped).
 	interval := pollIntervalInitial
 	for {
 		select {
 		case <-pollCtx.Done():
-			select {
-			case <-cancelDone:
-			case <-time.After(cancelTimeout):
-			}
+			cancelStatement()
 			return nil, errors.New("query cancelled")
 		case <-time.After(interval):
 		}
@@ -168,10 +167,7 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 		pollResp, err := api.GetStatementByStatementId(pollCtx, statementID)
 		if err != nil {
 			if pollCtx.Err() != nil {
-				select {
-				case <-cancelDone:
-				case <-time.After(cancelTimeout):
-				}
+				cancelStatement()
 				return nil, errors.New("query cancelled")
 			}
 			return nil, fmt.Errorf("poll statement status: %w", err)
@@ -190,7 +186,7 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 			}, nil
 		}
 
-		interval = min(interval*2, pollIntervalMax)
+		interval = min(interval+time.Second, pollIntervalMax)
 	}
 }
 
