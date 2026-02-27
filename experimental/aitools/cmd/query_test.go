@@ -227,6 +227,20 @@ func TestCheckFailedState(t *testing.T) {
 	assert.Contains(t, err.Error(), "closed")
 }
 
+func TestCheckFailedStateMapKeyHint(t *testing.T) {
+	err := checkFailedState(&sql.StatementStatus{
+		State: sql.StatementStateFailed,
+		Error: &sql.ServiceError{
+			ErrorCode: "BAD_REQUEST",
+			Message:   "[UNRESOLVED_MAP_KEY.WITH_SUGGESTION] Cannot resolve column",
+		},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Hint:")
+	assert.Contains(t, err.Error(), "single quotes")
+	assert.Contains(t, err.Error(), "--file")
+}
+
 func TestPollingConstants(t *testing.T) {
 	assert.Equal(t, 1*time.Second, pollIntervalInitial)
 	assert.Equal(t, 5*time.Second, pollIntervalMax)

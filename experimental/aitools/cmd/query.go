@@ -228,6 +228,10 @@ func checkFailedState(status *sql.StatementStatus) error {
 		msg := "query failed"
 		if status.Error != nil {
 			msg = fmt.Sprintf("query failed: %s %s", status.Error.ErrorCode, status.Error.Message)
+			if strings.Contains(status.Error.Message, "UNRESOLVED_MAP_KEY") {
+				msg += "\n\nHint: your shell may have stripped quotes from the SQL string. " +
+					"Use single quotes for map keys (e.g. info['key']) or pass the query via --file."
+			}
 		}
 		return errors.New(msg)
 	case sql.StatementStateCanceled:
@@ -254,6 +258,7 @@ func cleanSQL(s string) string {
 		}
 		lines = append(lines, line)
 	}
+
 	return strings.Join(lines, "\n")
 }
 
