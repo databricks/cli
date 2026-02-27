@@ -32,8 +32,9 @@ func newLogoutCommand() *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "logout",
-		Short: "Log out of a Databricks profile",
+		Use:    "logout",
+		Short:  "Log out of a Databricks profile",
+		Hidden: true,
 		Long: fmt.Sprintf(`Log out of a Databricks profile.
 
 This command removes the specified profile from %s and deletes
@@ -94,11 +95,11 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 			return errors.New("please specify --force to skip confirmation in non-interactive mode")
 		}
 
-		configPath := args.configFilePath
-		if configPath == "" {
-			configPath = "~/.databrickscfg"
+		configPath, err := args.profiler.GetPath(ctx)
+		if err != nil {
+			return err
 		}
-		err := cmdio.RenderWithTemplate(ctx, map[string]string{
+		err = cmdio.RenderWithTemplate(ctx, map[string]string{
 			"ProfileName": args.profileName,
 			"ConfigPath":  configPath,
 		}, "", logoutWarningTemplate)
@@ -115,23 +116,20 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		}
 	}
 
-	clearTokenCache(ctx, *matchedProfile, args.profiler, args.tokenCache)
-
 	err = databrickscfg.DeleteProfile(ctx, args.profileName, args.configFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to remove profile: %w", err)
 	}
 
+	clearTokenCache(ctx, *matchedProfile, args.profiler, args.tokenCache)
+
+	cmdio.LogString(ctx, fmt.Sprintf("Successfully logged out of profile %q.", args.profileName))
 	return nil
 }
 
 // getMatchingProfile loads a profile by name and returns an error with
 // available profile names if the profile is not found.
 func getMatchingProfile(ctx context.Context, profileName string, profiler profile.Profiler) (*profile.Profile, error) {
-	if profiler == nil {
-		return nil, errors.New("profiler cannot be nil")
-	}
-
 	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
 	if err != nil {
 		return nil, err
@@ -152,34 +150,49 @@ func getMatchingProfile(ctx context.Context, profileName string, profiler profil
 // clearTokenCache removes cached OAuth tokens for the given profile from the
 // token cache. It removes:
 //  1. The entry keyed by the profile name.
-//  2. The entry keyed by the host URL, but only if no other remaining profile
-//     references the same host.
+//  2. The entry keyed by the host-based cache key, but only if no other
+//     remaining profile references the same key. For account and unified
+//     profiles, the cache key includes the OIDC path
+//     (host/oidc/accounts/<account_id>).
 func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenCache cache.TokenCache) {
 	if tokenCache == nil {
 		return
 	}
 
-	profileName := p.Name
-	if err := tokenCache.Store(profileName, nil); err != nil {
-		log.Warnf(ctx, "Failed to delete profile-keyed token for profile %q: %v", profileName, err)
+	if err := tokenCache.Store(p.Name, nil); err != nil {
+		log.Warnf(ctx, "Failed to delete profile-keyed token for profile %q: %v", p.Name, err)
 	}
 
-	host := strings.TrimRight(p.Host, "/")
-	if host == "" {
+	hostCacheKey, matchFn := hostCacheKeyAndMatchFn(p)
+	if hostCacheKey == "" {
 		return
 	}
 
-	otherProfilesUsingHost, err := profiler.LoadProfiles(ctx, func(candidate profile.Profile) bool {
-		return candidate.Name != profileName && profile.WithHost(host)(candidate)
+	otherProfiles, err := profiler.LoadProfiles(ctx, func(candidate profile.Profile) bool {
+		return candidate.Name != p.Name && matchFn(candidate)
 	})
 	if err != nil {
-		log.Warnf(ctx, "Failed to load profiles using host %q: %v", host, err)
+		log.Warnf(ctx, "Failed to load profiles for host cache key %q: %v", hostCacheKey, err)
 		return
 	}
 
-	if len(otherProfilesUsingHost) == 0 {
-		if err := tokenCache.Store(host, nil); err != nil {
-			log.Warnf(ctx, "Failed to delete host-keyed token for host %q: %v", host, err)
+	if len(otherProfiles) == 0 {
+		if err := tokenCache.Store(hostCacheKey, nil); err != nil {
+			log.Warnf(ctx, "Failed to delete host-keyed token for %q: %v", hostCacheKey, err)
 		}
 	}
+}
+
+// hostCacheKeyAndMatchFn returns the token cache key and a profile match
+// function for the host-based token entry. Account and unified profiles use
+// host/oidc/accounts/<account_id> as the cache key and match on both host and
+// account ID; workspace profiles use just the host.
+func hostCacheKeyAndMatchFn(p profile.Profile) (string, profile.ProfileMatchFunction) {
+	host := strings.TrimRight(p.Host, "/")
+
+	if p.AccountID != "" {
+		return host + "/oidc/accounts/" + p.AccountID, profile.WithHostAndAccountID(host, p.AccountID)
+	}
+
+	return host, profile.WithHost(host)
 }
