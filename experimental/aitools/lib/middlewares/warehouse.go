@@ -101,5 +101,23 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 		}, nil
 	}
 
+	// Check user's default warehouse override (set via the SQL UI or CLI).
+	// Only CUSTOM overrides are used; LAST_SELECTED requires UI state we don't have.
+	override, err := w.Warehouses.GetDefaultWarehouseOverride(ctx, sql.GetDefaultWarehouseOverrideRequest{
+		Name: "default-warehouse-overrides/me",
+	})
+	if err == nil && override.Type == sql.DefaultWarehouseOverrideTypeCustom && override.WarehouseId != "" {
+		warehouse, err := w.Warehouses.Get(ctx, sql.GetWarehouseRequest{
+			Id: override.WarehouseId,
+		})
+		if err == nil {
+			return &sql.EndpointInfo{
+				Id:    warehouse.Id,
+				Name:  warehouse.Name,
+				State: warehouse.State,
+			}, nil
+		}
+	}
+
 	return cfgpickers.GetDefaultWarehouse(ctx, w)
 }
