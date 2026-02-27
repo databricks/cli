@@ -214,6 +214,8 @@ func isTerminalState(status *sql.StatementStatus) bool {
 	case sql.StatementStateSucceeded, sql.StatementStateFailed,
 		sql.StatementStateCanceled, sql.StatementStateClosed:
 		return true
+	case sql.StatementStatePending, sql.StatementStateRunning:
+		return false
 	}
 	return false
 }
@@ -238,6 +240,8 @@ func checkFailedState(status *sql.StatementStatus) error {
 		return errors.New("query was cancelled")
 	case sql.StatementStateClosed:
 		return errors.New("query was closed before results could be fetched")
+	case sql.StatementStatePending, sql.StatementStateRunning, sql.StatementStateSucceeded:
+		return nil
 	}
 	return nil
 }
