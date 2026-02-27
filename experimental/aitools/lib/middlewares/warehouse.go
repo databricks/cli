@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
@@ -85,6 +86,32 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 		return nil, fmt.Errorf("get databricks client: %w", err)
 	}
 
+	warehouse, err := resolveWarehouse(ctx, w)
+	if err != nil {
+		return nil, err
+	}
+
+	// Start the warehouse if it's not running.
+	if warehouse.State == sql.StateStopped || warehouse.State == sql.StateStopping {
+		wait, err := w.Warehouses.Start(ctx, sql.StartRequest{Id: warehouse.Id})
+		if err != nil {
+			return nil, fmt.Errorf("start warehouse %s: %w", warehouse.Id, err)
+		}
+		resp, err := wait.Get()
+		if err != nil {
+			return nil, fmt.Errorf("wait for warehouse %s to start: %w", warehouse.Id, err)
+		}
+		warehouse.State = resp.State
+	}
+
+	return warehouse, nil
+}
+
+// resolveWarehouse selects a warehouse using the following priority:
+// 1. DATABRICKS_WAREHOUSE_ID env var
+// 2. User's default warehouse override (CUSTOM type only)
+// 3. Server-side default / first usable warehouse by state
+func resolveWarehouse(ctx context.Context, w *databricks.WorkspaceClient) (*sql.EndpointInfo, error) {
 	// first resolve DATABRICKS_WAREHOUSE_ID env variable
 	warehouseID := env.Get(ctx, "DATABRICKS_WAREHOUSE_ID")
 	if warehouseID != "" {
