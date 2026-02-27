@@ -16,6 +16,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const logoutWarningTemplate = `{{ "Warning" | yellow }}: This will permanently log out of profile {{ .ProfileName | bold }}.
+
+The following changes will be made:
+  - Remove profile {{ .ProfileName | bold }} from {{ .ConfigPath }}
+  - Delete any cached OAuth tokens for this profile
+
+You will need to run {{ "databricks auth login" | bold }} to re-authenticate.
+`
+
 func newLogoutCommand() *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
 	if runtime.GOOS == "windows" {
@@ -85,13 +94,19 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 			return errors.New("please specify --force to skip confirmation in non-interactive mode")
 		}
 
-		question := fmt.Sprintf(
-			"WARNING: This will remove profile %q from %s and delete "+
-				"any cached OAuth tokens associated with it. You will need to run "+
-				"\"databricks auth login\" to re-authenticate.\n\nAre you sure?",
-			args.profileName, args.configFilePath)
+		configPath := args.configFilePath
+		if configPath == "" {
+			configPath = "~/.databrickscfg"
+		}
+		err := cmdio.RenderWithTemplate(ctx, map[string]string{
+			"ProfileName": args.profileName,
+			"ConfigPath":  configPath,
+		}, "", logoutWarningTemplate)
+		if err != nil {
+			return err
+		}
 
-		approved, err := cmdio.AskYesOrNo(ctx, question)
+		approved, err := cmdio.AskYesOrNo(ctx, "Are you sure?")
 		if err != nil {
 			return err
 		}
