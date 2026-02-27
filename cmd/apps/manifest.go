@@ -26,7 +26,7 @@ func runManifestOnly(ctx context.Context, templatePath, branch, version string) 
 		case version != "":
 			gitRef = normalizeVersion(version)
 		default:
-			gitRef = appkitDefaultBranch
+			gitRef = appkitDefaultVersion
 		}
 		templateSrc = appkitRepoURL
 	}

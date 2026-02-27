@@ -1,7 +1,7 @@
 [project]
 name = "databricks-bundles"
 description = "Python support for Databricks Asset Bundles"
-version = "0.290.0"
+version = "0.290.1"
 
 authors = [
     { name = "Gleb Kanterov", email = "gleb.kanterov@databricks.com" },
