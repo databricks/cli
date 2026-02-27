@@ -110,7 +110,7 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 		warehouse, err := w.Warehouses.Get(ctx, sql.GetWarehouseRequest{
 			Id: override.WarehouseId,
 		})
-		if err == nil {
+		if err == nil && warehouse.State != sql.StateDeleted && warehouse.State != sql.StateDeleting {
 			return &sql.EndpointInfo{
 				Id:    warehouse.Id,
 				Name:  warehouse.Name,
