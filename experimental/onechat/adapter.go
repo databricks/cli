@@ -27,56 +27,64 @@ const (
 	uiTypeFinalResponse = "FINAL_RESPONSE"
 )
 
+// Content and role constants.
+const (
+	roleAssistant     = "assistant"
+	contentOutputText = "output_text"
+)
+
 // AdaptSSE converts a raw OneChat SSE data payload into StreamEvents.
 // It handles error events, response.done/completed, and response.output_item.added.
 // The .updated and .done item variants are ignored to prevent duplicate rendering.
 func AdaptSSE(data string) []agentstream.StreamEvent {
+	b := []byte(data)
+
 	var envelope SSEEventEnvelope
-	if err := json.Unmarshal([]byte(data), &envelope); err != nil {
+	if err := json.Unmarshal(b, &envelope); err != nil {
 		return nil
 	}
 
 	switch envelope.Type {
 	case eventError:
-		return adaptError(data)
+		return adaptError(b, data)
 	case eventResponseDone, eventResponseComplete:
-		return adaptResponseDone(data)
+		return adaptResponseDone(b, data)
 	case eventOutputItemAdded:
-		return adaptOutputItem(data)
+		return adaptOutputItem(b, data)
 	default:
 		// Ignore .updated, .done item variants and other event types.
 		return nil
 	}
 }
 
-func adaptError(data string) []agentstream.StreamEvent {
+func adaptError(b []byte, raw string) []agentstream.StreamEvent {
 	var sseErr SSEError
-	if err := json.Unmarshal([]byte(data), &sseErr); err != nil || sseErr.Message == "" {
+	if err := json.Unmarshal(b, &sseErr); err != nil || sseErr.Message == "" {
 		return nil
 	}
 	return []agentstream.StreamEvent{{
 		Kind:      agentstream.EventError,
 		Text:      sseErr.Message,
 		ErrorCode: sseErr.ErrorCodeString(),
-		Raw:       data,
+		Raw:       raw,
 	}}
 }
 
-func adaptResponseDone(data string) []agentstream.StreamEvent {
+func adaptResponseDone(b []byte, raw string) []agentstream.StreamEvent {
 	var done SSEResponseDone
-	if err := json.Unmarshal([]byte(data), &done); err != nil {
+	if err := json.Unmarshal(b, &done); err != nil {
 		return nil
 	}
 	return []agentstream.StreamEvent{{
 		Kind:   agentstream.EventDone,
 		Status: done.Response.Status,
-		Raw:    data,
+		Raw:    raw,
 	}}
 }
 
-func adaptOutputItem(data string) []agentstream.StreamEvent {
+func adaptOutputItem(b []byte, raw string) []agentstream.StreamEvent {
 	var event SSEOutputItemEvent
-	if err := json.Unmarshal([]byte(data), &event); err != nil {
+	if err := json.Unmarshal(b, &event); err != nil {
 		return nil
 	}
 
@@ -86,10 +94,10 @@ func adaptOutputItem(data string) []agentstream.StreamEvent {
 		return []agentstream.StreamEvent{{
 			Kind: agentstream.EventThinking,
 			Text: "Thinking...",
-			Raw:  data,
+			Raw:  raw,
 		}}
 	case itemMessage:
-		return adaptMessage(item, data)
+		return adaptMessage(item, raw)
 	case itemFunctionCall:
 		return []agentstream.StreamEvent{{
 			Kind: agentstream.EventToolCall,
@@ -97,26 +105,26 @@ func adaptOutputItem(data string) []agentstream.StreamEvent {
 				Name:      item.Name,
 				Arguments: item.Arguments,
 			},
-			Raw: data,
+			Raw: raw,
 		}}
 	default:
 		return nil
 	}
 }
 
-func adaptMessage(item OutputItem, data string) []agentstream.StreamEvent {
-	if item.Role != "assistant" {
+func adaptMessage(item OutputItem, raw string) []agentstream.StreamEvent {
+	if item.Role != roleAssistant {
 		return nil
 	}
 
 	if item.UIType() == uiTypeThought {
 		// Thoughts become status-line updates.
 		for _, c := range item.Content {
-			if c.Type == "output_text" && c.Text != "" {
+			if c.Type == contentOutputText && c.Text != "" {
 				return []agentstream.StreamEvent{{
 					Kind: agentstream.EventThinking,
 					Text: c.Text,
-					Raw:  data,
+					Raw:  raw,
 				}}
 			}
 		}
@@ -126,11 +134,11 @@ func adaptMessage(item OutputItem, data string) []agentstream.StreamEvent {
 	// FINAL_RESPONSE or unlabeled assistant messages become text output.
 	var events []agentstream.StreamEvent
 	for _, c := range item.Content {
-		if c.Type == "output_text" && c.Text != "" {
+		if c.Type == contentOutputText && c.Text != "" {
 			events = append(events, agentstream.StreamEvent{
 				Kind: agentstream.EventText,
 				Text: c.Text,
-				Raw:  data,
+				Raw:  raw,
 			})
 		}
 	}

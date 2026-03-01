@@ -9,8 +9,8 @@ import (
 
 // SQL tool name constants.
 const (
-	ToolExecuteSQL      = "execute_sql"
-	ToolExecuteSQLQuery = "execute_sql_query"
+	toolExecuteSQL      = "execute_sql"
+	toolExecuteSQLQuery = "execute_sql_query"
 )
 
 // sqlArgs is the JSON shape of execute_sql function call arguments.
@@ -27,9 +27,9 @@ type sqlQueryArgs struct {
 	Thought string `json:"thought"`
 }
 
-// IsSQLTool returns true if the tool name is a SQL execution tool.
-func IsSQLTool(name string) bool {
-	return name == ToolExecuteSQL || name == ToolExecuteSQLQuery
+// isSQLTool returns true if the tool name is a SQL execution tool.
+func isSQLTool(name string) bool {
+	return name == toolExecuteSQL || name == toolExecuteSQLQuery
 }
 
 // renderSQL parses SQL tool arguments and prints the SQL query.
@@ -53,13 +53,13 @@ func renderSQL(w io.Writer, name, arguments string) {
 // Handles both execute_sql and execute_sql_query argument formats.
 func parseSQLArgs(name, arguments string) (sql, title string) {
 	switch name {
-	case ToolExecuteSQL:
+	case toolExecuteSQL:
 		var args sqlArgs
 		if err := json.Unmarshal([]byte(arguments), &args); err != nil {
 			return "", ""
 		}
 		return args.SQL, args.Title
-	case ToolExecuteSQLQuery:
+	case toolExecuteSQLQuery:
 		var args sqlQueryArgs
 		if err := json.Unmarshal([]byte(arguments), &args); err != nil {
 			return "", ""

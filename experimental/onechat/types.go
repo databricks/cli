@@ -46,13 +46,13 @@ type SSEOutputItemEvent struct {
 }
 
 // SSEResponseDone is the payload for response.done events.
+// Only the Status field is used; Output is omitted to avoid deserializing it.
 type SSEResponseDone struct {
 	Type     string `json:"type"`
 	Response struct {
-		ID             string       `json:"id"`
-		Status         string       `json:"status"`
-		Output         []OutputItem `json:"output"`
-		ConversationID string       `json:"conversation_id"`
+		ID             string `json:"id"`
+		Status         string `json:"status"`
+		ConversationID string `json:"conversation_id"`
 	} `json:"response"`
 }
 

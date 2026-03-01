@@ -6,6 +6,12 @@ import (
 	"io"
 )
 
+// Response status constants.
+const (
+	statusCompleted = "completed"
+	statusError     = "error"
+)
+
 // RenderDebug prints every raw SSE data line to w as-is.
 func RenderDebug(r io.Reader, w io.Writer) error {
 	reader := NewSSEReader(r)
@@ -25,7 +31,7 @@ func RenderDebug(r io.Reader, w io.Writer) error {
 // The adapt function converts each raw SSE payload into StreamEvents.
 func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts RenderOptions) error {
 	reader := NewSSEReader(r)
-	status := &statusLine{w: stderr}
+	status := newStatusLine(stderr)
 	status.update("Waiting for response...")
 
 	for {
@@ -48,7 +54,7 @@ func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts R
 				status.clear()
 				renderMarkdown(stdout, se.Text)
 			case EventToolCall:
-				if se.ToolCall != nil && opts.ShowSQL && IsSQLTool(se.ToolCall.Name) {
+				if se.ToolCall != nil && opts.ShowSQL && isSQLTool(se.ToolCall.Name) {
 					status.clear()
 					renderSQL(stdout, se.ToolCall.Name, se.ToolCall.Arguments)
 				}
@@ -58,7 +64,7 @@ func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts R
 				return fmt.Errorf("API error: %s: %s", se.ErrorCode, se.Text)
 			case EventDone:
 				status.clear()
-				if se.Status != "" && se.Status != "completed" {
+				if se.Status != "" && se.Status != statusCompleted {
 					return fmt.Errorf("response finished with status %q", se.Status)
 				}
 			}
@@ -70,7 +76,7 @@ func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts R
 // Returns an error on API errors so the CLI exits non-zero.
 func RenderJSON(r io.Reader, w io.Writer, adapt AdapterFunc) error {
 	reader := NewSSEReader(r)
-	result := StreamResult{Status: "completed"}
+	result := StreamResult{Status: statusCompleted}
 	var apiErr error
 
 	for {
@@ -95,18 +101,18 @@ func RenderJSON(r io.Reader, w io.Writer, adapt AdapterFunc) error {
 						Name:      se.ToolCall.Name,
 						Arguments: se.ToolCall.Arguments,
 					}
-					if IsSQLTool(se.ToolCall.Name) {
+					if isSQLTool(se.ToolCall.Name) {
 						tc.SQL, tc.Title = parseSQLArgs(se.ToolCall.Name, se.ToolCall.Arguments)
 					}
 					result.ToolCalls = append(result.ToolCalls, tc)
 				}
 			case EventError:
-				result.Status = "error"
+				result.Status = statusError
 				result.Text = se.Text
 				apiErr = fmt.Errorf("API error: %s: %s", se.ErrorCode, se.Text)
 			case EventDone:
-				if se.Status != "" && se.Status != "completed" {
-					result.Status = "error"
+				if se.Status != "" && se.Status != statusCompleted {
+					result.Status = statusError
 					apiErr = fmt.Errorf("response finished with status %q", se.Status)
 				}
 			}
