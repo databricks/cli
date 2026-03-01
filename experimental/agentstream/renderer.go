@@ -23,7 +23,7 @@ func RenderDebug(r io.Reader, w io.Writer) error {
 
 // RenderText renders the SSE stream as human-readable text.
 // The adapt function converts each raw SSE payload into StreamEvents.
-func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc) error {
+func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc, opts RenderOptions) error {
 	reader := NewSSEReader(r)
 	status := &statusLine{w: stderr}
 	status.update("Waiting for response...")
@@ -48,9 +48,9 @@ func RenderText(r io.Reader, stdout, stderr io.Writer, adapt AdapterFunc) error 
 				status.clear()
 				renderMarkdown(stdout, se.Text)
 			case EventToolCall:
-				if se.ToolCall != nil && se.ToolCall.Name == "execute_sql" {
+				if se.ToolCall != nil && opts.ShowSQL && IsSQLTool(se.ToolCall.Name) {
 					status.clear()
-					renderSQL(stdout, se.ToolCall.Arguments)
+					renderSQL(stdout, se.ToolCall.Name, se.ToolCall.Arguments)
 				}
 			case EventError:
 				status.clear()
@@ -95,8 +95,8 @@ func RenderJSON(r io.Reader, w io.Writer, adapt AdapterFunc) error {
 						Name:      se.ToolCall.Name,
 						Arguments: se.ToolCall.Arguments,
 					}
-					if se.ToolCall.Name == "execute_sql" {
-						tc.SQL, tc.Title = parseSQLArgs(se.ToolCall.Arguments)
+					if IsSQLTool(se.ToolCall.Name) {
+						tc.SQL, tc.Title = parseSQLArgs(se.ToolCall.Name, se.ToolCall.Arguments)
 					}
 					result.ToolCalls = append(result.ToolCalls, tc)
 				}

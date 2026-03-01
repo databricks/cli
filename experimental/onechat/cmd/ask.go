@@ -12,6 +12,7 @@ import (
 func newAskCmd() *cobra.Command {
 	var warehouseID string
 	var debug bool
+	var includeSQL bool
 
 	cmd := &cobra.Command{
 		Use:   "ask QUESTION",
@@ -50,12 +51,14 @@ Examples:
 				return agentstream.RenderJSON(body, cmd.OutOrStdout(), onechatlib.AdaptSSE)
 			}
 
-			return agentstream.RenderText(body, cmd.OutOrStdout(), cmd.ErrOrStderr(), onechatlib.AdaptSSE)
+			opts := agentstream.RenderOptions{ShowSQL: includeSQL}
+			return agentstream.RenderText(body, cmd.OutOrStdout(), cmd.ErrOrStderr(), onechatlib.AdaptSSE, opts)
 		},
 	}
 
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID (auto-resolves if omitted)")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Print raw SSE events for debugging")
+	cmd.Flags().BoolVar(&includeSQL, "include-sql", false, "Show SQL queries executed by the agent")
 
 	return cmd
 }

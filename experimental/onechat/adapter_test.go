@@ -19,6 +19,8 @@ const finalResponseData = `{"type":"response.output_item.added","output_index":1
 
 const sqlData = `{"type":"response.output_item.added","output_index":2,"item":{"type":"function_call","id":"fc1","call_id":"c1","status":"completed","name":"execute_sql","arguments":"{\"sql\":\"SELECT SUM(amount) FROM sales\",\"title\":\"Total Sales\"}"}}`
 
+const sqlQueryData = `{"type":"response.output_item.added","output_index":9,"item":{"type":"function_call","id":"toolu_1","call_id":"toolu_1","name":"execute_sql_query","arguments":"{\"thought\":\"Let me sample the table\",\"query\":\"SELECT * FROM kie.test.bbc_articles LIMIT 3\"}","metadata":{"ui_type":"QUERY_EXECUTION","query":"SELECT * FROM kie.test.bbc_articles LIMIT 3"}}}`
+
 const doneData = `{"type":"response.completed","response":{"id":"resp_1","status":"completed","output":[]}}`
 
 const doneFailedData = `{"type":"response.done","response":{"id":"resp_1","status":"failed","output":[]}}`
@@ -86,6 +88,15 @@ func TestAdaptSSE_DoneFailed(t *testing.T) {
 	require.Len(t, events, 1)
 	assert.Equal(t, agentstream.EventDone, events[0].Kind)
 	assert.Equal(t, "failed", events[0].Status)
+}
+
+func TestAdaptSSE_ExecuteSQLQuery(t *testing.T) {
+	events := AdaptSSE(sqlQueryData)
+	require.Len(t, events, 1)
+	assert.Equal(t, agentstream.EventToolCall, events[0].Kind)
+	require.NotNil(t, events[0].ToolCall)
+	assert.Equal(t, "execute_sql_query", events[0].ToolCall.Name)
+	assert.Contains(t, events[0].ToolCall.Arguments, "SELECT * FROM kie.test.bbc_articles LIMIT 3")
 }
 
 func TestAdaptSSE_IgnoresUpdatedAndDoneItemVariants(t *testing.T) {

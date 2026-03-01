@@ -32,6 +32,11 @@ type ToolCallEvent struct {
 // Each protocol (OneChat, ChatCompletions, Anthropic) implements one of these.
 type AdapterFunc func(data string) []StreamEvent
 
+// RenderOptions controls what RenderText displays.
+type RenderOptions struct {
+	ShowSQL bool // display SQL queries executed by the agent
+}
+
 // StreamResult is the structured output for --output json mode.
 type StreamResult struct {
 	Status    string     `json:"status"`

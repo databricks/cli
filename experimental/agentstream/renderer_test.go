@@ -48,7 +48,7 @@ func TestRenderText_MessageAndThinking(t *testing.T) {
 	})
 	input := fakeSSE("reasoning", "message", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt)
+	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 
 	assert.Contains(t, stderr.String(), "Waiting for response...")
@@ -66,11 +66,44 @@ func TestRenderText_SQLExecution(t *testing.T) {
 	})
 	input := fakeSSE("sql", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt)
+	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{ShowSQL: true})
 	require.NoError(t, err)
 
 	assert.Contains(t, stdout.String(), "SQL executed (Total Sales):")
 	assert.Contains(t, stdout.String(), "SELECT SUM(amount) FROM sales")
+}
+
+func TestRenderText_SQLHiddenByDefault(t *testing.T) {
+	adapt := testAdapter(map[string][]StreamEvent{
+		"sql": {{Kind: EventToolCall, ToolCall: &ToolCallEvent{
+			Name:      "execute_sql",
+			Arguments: `{"sql":"SELECT 1","title":"Test"}`,
+		}}},
+		"done": {{Kind: EventDone, Status: "completed"}},
+	})
+	input := fakeSSE("sql", "done")
+	var stdout, stderr bytes.Buffer
+	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
+	require.NoError(t, err)
+
+	assert.NotContains(t, stdout.String(), "SQL executed")
+}
+
+func TestRenderText_ExecuteSQLQuery(t *testing.T) {
+	adapt := testAdapter(map[string][]StreamEvent{
+		"sql": {{Kind: EventToolCall, ToolCall: &ToolCallEvent{
+			Name:      "execute_sql_query",
+			Arguments: `{"query":"SELECT * FROM kie.test.bbc_articles LIMIT 3","thought":"Let me sample the table"}`,
+		}}},
+		"done": {{Kind: EventDone, Status: "completed"}},
+	})
+	input := fakeSSE("sql", "done")
+	var stdout, stderr bytes.Buffer
+	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{ShowSQL: true})
+	require.NoError(t, err)
+
+	assert.Contains(t, stdout.String(), "SQL executed:")
+	assert.Contains(t, stdout.String(), "SELECT * FROM kie.test.bbc_articles LIMIT 3")
 }
 
 func TestRenderText_Error(t *testing.T) {
@@ -79,7 +112,7 @@ func TestRenderText_Error(t *testing.T) {
 	})
 	input := fakeSSE("error")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt)
+	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.Error(t, err)
 	assert.Contains(t, stderr.String(), "No eligible SQL warehouse found")
 }
@@ -91,7 +124,7 @@ func TestRenderText_FailedResponseStatus(t *testing.T) {
 	})
 	input := fakeSSE("msg", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt)
+	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed")
 }
@@ -104,7 +137,7 @@ func TestRenderText_ThoughtsGoToStderr(t *testing.T) {
 	})
 	input := fakeSSE("thought", "response", "done")
 	var stdout, stderr bytes.Buffer
-	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt)
+	err := RenderText(strings.NewReader(input), &stdout, &stderr, adapt, RenderOptions{})
 	require.NoError(t, err)
 
 	assert.NotContains(t, stdout.String(), "I will search for tables...")
@@ -178,6 +211,26 @@ func TestRenderJSON_EmptyStream(t *testing.T) {
 	var result StreamResult
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &result))
 	assert.Equal(t, "completed", result.Status)
+}
+
+func TestRenderJSON_ExecuteSQLQuery(t *testing.T) {
+	adapt := testAdapter(map[string][]StreamEvent{
+		"sql": {{Kind: EventToolCall, ToolCall: &ToolCallEvent{
+			Name:      "execute_sql_query",
+			Arguments: `{"query":"SELECT COUNT(*) FROM kie.test.bbc_articles","thought":"Check row count"}`,
+		}}},
+		"done": {{Kind: EventDone, Status: "completed"}},
+	})
+	input := fakeSSE("sql", "done")
+	var buf bytes.Buffer
+	err := RenderJSON(strings.NewReader(input), &buf, adapt)
+	require.NoError(t, err)
+
+	var result StreamResult
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &result))
+	require.Len(t, result.ToolCalls, 1)
+	assert.Equal(t, "execute_sql_query", result.ToolCalls[0].Name)
+	assert.Equal(t, "SELECT COUNT(*) FROM kie.test.bbc_articles", result.ToolCalls[0].SQL)
 }
 
 func TestRenderMarkdown_StripsEmbeddedBlocks(t *testing.T) {
