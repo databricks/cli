@@ -33,6 +33,9 @@ type walker struct {
 // that should be mapped to float64 instead of int for cty.Number types.
 // Generated from Terraform provider schema based on databricks-sdk-go types.
 var floatAttributePaths = map[string]bool{
+	// Alert thresholds - double_value fields hold fractional values (e.g., 1.3)
+	"databricks_alert_v2.evaluation.threshold.value.double_value": true,
+
 	// Postgres Service - autoscaling compute units support fractional values (e.g., 0.5 CU)
 	"databricks_postgres_endpoint.spec.autoscaling_limit_max_cu":                                      true,
 	"databricks_postgres_endpoint.spec.autoscaling_limit_min_cu":                                      true,
