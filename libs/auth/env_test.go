@@ -9,7 +9,7 @@ import (
 
 func TestAuthEnv(t *testing.T) {
 	in := &config.Config{
-		Profile:            "thisshouldbeignored",
+		Profile:            "myprofile",
 		Host:               "https://test.com",
 		Token:              "test-token",
 		Password:           "test-password",
@@ -24,6 +24,7 @@ func TestAuthEnv(t *testing.T) {
 	}
 
 	expected := map[string]string{
+		"DATABRICKS_CONFIG_PROFILE":       "myprofile",
 		"DATABRICKS_HOST":                 "https://test.com",
 		"DATABRICKS_TOKEN":                "test-token",
 		"DATABRICKS_PASSWORD":             "test-password",
