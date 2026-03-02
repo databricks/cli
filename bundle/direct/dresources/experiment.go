@@ -2,8 +2,11 @@ package dresources
 
 import (
 	"context"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -69,4 +72,31 @@ func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
 	return r.client.Experiments.DeleteExperiment(ctx, ml.DeleteExperiment{
 		ExperimentId: id,
 	})
+}
+
+// OverrideChangeDesc suppresses drift for the experiment name field when the
+// only difference is the /Workspace prefix. Stripping the prefix is necessary
+// to avoid a persistent diff because the backend strips the /Workspace prefix,
+// so remote returns "/Users/..." while the config has "/Workspace/Users/...".
+//
+// This matches the Terraform provider's experimentNameSuppressDiff behavior.
+// https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/mlflow/resource_mlflow_experiment.go#L35
+func (*ResourceExperiment) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *ml.Experiment) error {
+	if path.String() != "name" {
+		return nil
+	}
+
+	newStr, newOk := change.New.(string)
+	remoteStr, remoteOk := change.Remote.(string)
+	if !newOk || !remoteOk {
+		return nil
+	}
+
+	normalizedNew := strings.TrimSuffix(strings.TrimPrefix(newStr, "/Workspace"), "/")
+	normalizedRemote := strings.TrimSuffix(strings.TrimPrefix(remoteStr, "/Workspace"), "/")
+	if normalizedNew == normalizedRemote {
+		change.Action = deployplan.Skip
+	}
+
+	return nil
 }
