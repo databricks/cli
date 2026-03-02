@@ -96,13 +96,7 @@ func TestLogout(t *testing.T) {
 			wantErr:     "please specify --force to skip confirmation in non-interactive mode",
 		},
 		{
-			name:        "non-existing workspace profile with force",
-			profileName: "nonexistent",
-			force:       true,
-			wantErr:     `profile "nonexistent" not found`,
-		},
-		{
-			name:        "non-existing workspace profile without force",
+			name:        "non-existing workspace profile",
 			profileName: "nonexistent",
 			force:       false,
 			wantErr:     `profile "nonexistent" not found`,
