@@ -30,14 +30,12 @@ import (
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
 
 func newImportCommand() *cobra.Command {
 	var name string
 	var outputDir string
-	var cleanup bool
 	var forceImport bool
 	var quiet bool
 
@@ -56,7 +54,6 @@ The command will:
 3. Bind the bundle to the existing app
 4. Deploy the bundle in direct mode
 5. Start the app
-6. Optionally clean up the previous app folder (if --cleanup is set)
 
 If no app name is specified, the command will list all available apps in your
 workspace, with apps you own sorted to the top.
@@ -67,9 +64,6 @@ Examples:
 
   # Import with custom output directory
   databricks apps import --name my-app --output-dir ~/my-apps/analytics
-
-  # Import and clean up the old app folder
-  databricks apps import --name my-app --cleanup
 
   # Force re-import of your own app (only works for apps you own)
   databricks apps import --name my-app --force-import
@@ -174,38 +168,14 @@ Examples:
 				return fmt.Errorf("failed to create output directory: %w", err)
 			}
 
-			// Save the workspace path for cleanup
-			var oldSourceCodePath string
-
 			// Run the import in the output directory
-			err = runImport(ctx, w, name, outputDir, &oldSourceCodePath, forceImport, currentUserEmail, quiet)
+			err = runImport(ctx, w, name, outputDir, forceImport, currentUserEmail, quiet)
 			if err != nil {
 				return err
 			}
 
-			// Clean up the previous app folder if requested
-			if cleanup && oldSourceCodePath != "" {
-				if !quiet {
-					cmdio.LogString(ctx, "Cleaning up previous app folder")
-				}
-
-				err = w.Workspace.Delete(ctx, workspace.Delete{
-					Path:      oldSourceCodePath,
-					Recursive: true,
-				})
-				if err != nil {
-					// Log warning but don't fail
-					cmdio.LogString(ctx, fmt.Sprintf("Warning: failed to clean up app folder %s: %v", oldSourceCodePath, err))
-				} else if !quiet {
-					cmdio.LogString(ctx, "Cleaned up app folder: "+oldSourceCodePath)
-				}
-			}
-
 			if !quiet {
 				cmdio.LogString(ctx, fmt.Sprintf("\n✓ App '%s' has been successfully imported to %s", name, outputDir))
-				if cleanup && oldSourceCodePath != "" {
-					cmdio.LogString(ctx, "✓ Previous app folder has been cleaned up")
-				}
 				cmdio.LogString(ctx, "\nYou can now deploy changes with: databricks bundle deploy")
 			}
 
@@ -215,14 +185,13 @@ Examples:
 
 	cmd.Flags().StringVar(&name, "name", "", "Name of the app to import (if not specified, lists all apps)")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to output the bundle to (defaults to app name)")
-	cmd.Flags().BoolVar(&cleanup, "cleanup", false, "Clean up the previous app folder and all its contents")
 	cmd.Flags().BoolVar(&forceImport, "force-import", false, "Force re-import of an app that was already imported (only works for apps you own)")
 	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress informational messages (only show errors and prompts)")
 
 	return cmd
 }
 
-func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outputDir string, oldSourceCodePath *string, forceImport bool, currentUserEmail string, quiet bool) error {
+func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outputDir string, forceImport bool, currentUserEmail string, quiet bool) error {
 	// Step 1: Load the app from workspace
 	if !quiet {
 		cmdio.LogString(ctx, fmt.Sprintf("Loading app '%s' configuration", appName))
@@ -231,9 +200,6 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	if err != nil {
 		return fmt.Errorf("failed to get app: %w", err)
 	}
-
-	// Save the old source code path for cleanup
-	*oldSourceCodePath = app.DefaultSourceCodePath
 
 	// Check if the app's source code path is inside a .bundle folder (indicating it was already imported)
 	alreadyImported := app.DefaultSourceCodePath != "" && strings.Contains(app.DefaultSourceCodePath, "/.bundle/")
