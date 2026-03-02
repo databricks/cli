@@ -846,6 +846,7 @@ func newStartUpdate() *cobra.Command {
 	// TODO: map via StringToStringVar: parameters
 	// TODO: array: refresh_selection
 	// TODO: array: replace_where_overrides
+	// TODO: array: reset_checkpoint_selection
 	// TODO: complex arg: rewind_spec
 	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 

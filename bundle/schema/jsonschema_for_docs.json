@@ -139,6 +139,11 @@
                     "doNotSuggest": true,
                     "x-since-version": "v0.283.0"
                   },
+                  "git_source": {
+                    "description": "Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)\nto use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.\nThe source_code_path within git_source specifies the relative path to the app code within the repository.",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource",
+                    "x-since-version": "v0.290.0"
+                  },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
@@ -166,7 +171,8 @@
                     "description": "Name of the space this app belongs to.",
                     "$ref": "#/$defs/string",
                     "x-databricks-preview": "PRIVATE",
-                    "doNotSuggest": true
+                    "doNotSuggest": true,
+                    "x-since-version": "v0.290.0"
                   },
                   "usage_policy_id": {
                     "$ref": "#/$defs/string",
@@ -1641,7 +1647,8 @@
                     "x-since-version": "v0.287.0"
                   },
                   "group": {
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec",
+                    "x-since-version": "v0.290.0"
                   },
                   "lifecycle": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
@@ -1675,10 +1682,12 @@
                 "type": "object",
                 "properties": {
                   "budget_policy_id": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v0.290.0"
                   },
                   "custom_tags": {
-                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag"
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag",
+                    "x-since-version": "v0.290.0"
                   },
                   "default_endpoint_settings": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings",
@@ -1687,6 +1696,9 @@
                   "display_name": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
+                  },
+                  "enable_pg_native_login": {
+                    "$ref": "#/$defs/bool"
                   },
                   "history_retention_duration": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
@@ -3081,8 +3093,7 @@
               "properties": {
                 "app": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceApp",
-                  "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "x-since-version": "v0.290.0"
                 },
                 "database": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase",
@@ -3109,6 +3120,11 @@
                   "description": "Name of the App Resource.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.239.0"
+                },
+                "postgres": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgres",
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
                 },
                 "secret": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret",
@@ -3248,6 +3264,33 @@
                 "IS_OWNER",
                 "CAN_MANAGE_RUN",
                 "CAN_VIEW"
+              ]
+            },
+            "apps.AppResourcePostgres": {
+              "type": "object",
+              "properties": {
+                "branch": {
+                  "$ref": "#/$defs/string",
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
+                },
+                "database": {
+                  "$ref": "#/$defs/string",
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
+                },
+                "permission": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgresPostgresPermission",
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "apps.AppResourcePostgresPostgresPermission": {
+              "type": "string",
+              "enum": [
+                "CAN_CONNECT_AND_CREATE"
               ]
             },
             "apps.AppResourceSecret": {
@@ -5290,7 +5333,8 @@
                 "sparse_checkout": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SparseCheckout",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v0.290.0"
                 }
               },
               "additionalProperties": false,
@@ -6009,7 +6053,8 @@
               "properties": {
                 "patterns": {
                   "description": "List of patterns to include for sparse checkout.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v0.290.0"
                 }
               },
               "additionalProperties": false
@@ -7228,6 +7273,12 @@
                   "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e",
                   "$ref": "#/$defs/slice/string",
                   "x-since-version": "v0.257.0"
+                },
+                "environment_version": {
+                  "description": "The environment version of the serverless Python environment used to execute\ncustomer Python code. Each environment version includes a specific Python\nversion and a curated set of pre-installed libraries with defined versions,\nproviding a stable and reproducible execution environment.\n\nDatabricks supports a three-year lifecycle for each environment version.\nFor available versions and their included packages, see\nhttps://docs.databricks.com/aws/en/release-notes/serverless/environment-version/\n\nThe value should be a string representing the environment version number, for example: `\"4\"`.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
                 }
               },
               "additionalProperties": false
@@ -7527,15 +7578,18 @@
               "properties": {
                 "enable_readable_secondaries": {
                   "description": "Whether to allow read-only connections to read-write endpoints. Only relevant for read-write endpoints where\nsize.max \u003e 1.",
-                  "$ref": "#/$defs/bool"
+                  "$ref": "#/$defs/bool",
+                  "x-since-version": "v0.290.0"
                 },
                 "max": {
                   "description": "The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single\ncompute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to\ntrue on the EndpointSpec.",
-                  "$ref": "#/$defs/int"
+                  "$ref": "#/$defs/int",
+                  "x-since-version": "v0.290.0"
                 },
                 "min": {
                   "description": "The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater\nthan or equal to 1.",
-                  "$ref": "#/$defs/int"
+                  "$ref": "#/$defs/int",
+                  "x-since-version": "v0.290.0"
                 }
               },
               "additionalProperties": false,
@@ -7569,11 +7623,13 @@
               "properties": {
                 "key": {
                   "description": "The key of the custom tag.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.290.0"
                 },
                 "value": {
                   "description": "The value of the custom tag.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.290.0"
                 }
               },
               "additionalProperties": false

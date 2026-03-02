@@ -948,6 +948,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
   "display_name":
     "description": |-
       PLACEHOLDER
+  "enable_pg_native_login":
+    "description": |-
+      PLACEHOLDER
   "history_retention_duration":
     "description": |-
       PLACEHOLDER
