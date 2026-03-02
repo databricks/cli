@@ -116,6 +116,8 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		}
 	}
 
+	// First delete the profile and then perform best-effort token cache cleanup
+	// to avoid partial cleanup in case of errors from profile deletion.
 	err = databrickscfg.DeleteProfile(ctx, args.profileName, args.configFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to remove profile: %w", err)

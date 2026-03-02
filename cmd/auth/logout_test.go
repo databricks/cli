@@ -33,6 +33,18 @@ account_id = def456
 experimental_is_unified_host = true
 `
 
+var logoutTestTokensCackeConfig = map[string]*oauth2.Token{
+	"my-workspace":        {AccessToken: "shared-workspace-token"},
+	"shared-workspace":    {AccessToken: "shared-workspace-token"},
+	"my-unique-workspace": {AccessToken: "my-unique-workspace-token"},
+	"my-account":          {AccessToken: "my-account-token"},
+	"my-unified":          {AccessToken: "my-unified-token"},
+	"https://my-workspace.cloud.databricks.com":                  {AccessToken: "shared-workspace-host-token"},
+	"https://my-unique-workspace.cloud.databricks.com":           {AccessToken: "unique-workspace-host-token"},
+	"https://accounts.cloud.databricks.com/oidc/accounts/abc123": {AccessToken: "account-host-token"},
+	"https://unified.cloud.databricks.com/oidc/accounts/def456":  {AccessToken: "unified-host-token"},
+}
+
 func writeTempConfig(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), ".databrickscfg")
@@ -42,30 +54,55 @@ func writeTempConfig(t *testing.T, content string) string {
 
 func TestLogout(t *testing.T) {
 	cases := []struct {
-		name        string
-		profileName string
-		force       bool
-		wantErr     string
+		name         string
+		profileName  string
+		hostBasedKey string
+		isSharedKey  bool
+		force        bool
+		wantErr      string
 	}{
 		{
-			name:        "existing profile with force",
-			profileName: "my-workspace",
-			force:       true,
+			name:         "existing workspace profile with shared host",
+			profileName:  "my-workspace",
+			hostBasedKey: "https://my-workspace.cloud.databricks.com",
+			isSharedKey:  true,
+			force:        true,
 		},
 		{
-			name:        "existing profile without force in non-interactive mode",
+			name:         "existing workspace profile with unique host",
+			profileName:  "my-unique-workspace",
+			hostBasedKey: "https://my-unique-workspace.cloud.databricks.com",
+			isSharedKey:  false,
+			force:        true,
+		},
+		{
+			name:         "existing account profile",
+			profileName:  "my-account",
+			hostBasedKey: "https://accounts.cloud.databricks.com/oidc/accounts/abc123",
+			isSharedKey:  false,
+			force:        true,
+		},
+		{
+			name:         "existing unified profile",
+			profileName:  "my-unified",
+			hostBasedKey: "https://unified.cloud.databricks.com/oidc/accounts/def456",
+			isSharedKey:  false,
+			force:        true,
+		},
+		{
+			name:        "existing workspace profile without force in non-interactive mode",
 			profileName: "my-workspace",
 			force:       false,
 			wantErr:     "please specify --force to skip confirmation in non-interactive mode",
 		},
 		{
-			name:        "non-existing profile with force",
+			name:        "non-existing workspace profile with force",
 			profileName: "nonexistent",
 			force:       true,
 			wantErr:     `profile "nonexistent" not found`,
 		},
 		{
-			name:        "non-existing profile without force",
+			name:        "non-existing workspace profile without force",
 			profileName: "nonexistent",
 			force:       false,
 			wantErr:     `profile "nonexistent" not found`,
@@ -79,10 +116,7 @@ func TestLogout(t *testing.T) {
 			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
 			tokenCache := &inMemoryTokenCache{
-				Tokens: map[string]*oauth2.Token{
-					"my-workspace": {AccessToken: "token1"},
-					"https://my-workspace.cloud.databricks.com": {AccessToken: "token1"},
-				},
+				Tokens: logoutTestTokensCackeConfig,
 			}
 
 			err := runLogout(ctx, logoutArgs{
@@ -92,6 +126,7 @@ func TestLogout(t *testing.T) {
 				tokenCache:     tokenCache,
 				configFilePath: configPath,
 			})
+
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				return
@@ -101,84 +136,14 @@ func TestLogout(t *testing.T) {
 			// Verify profile was removed from config.
 			profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName(tc.profileName))
 			require.NoError(t, err)
-			assert.Empty(t, profiles)
+			assert.Empty(t, profiles, "expected profile %q to be removed", tc.profileName)
 
 			// Verify tokens were cleaned up.
-			assert.Nil(t, tokenCache.Tokens[tc.profileName])
-		})
-	}
-}
-
-func TestLogoutTokenCacheCleanup(t *testing.T) {
-	cases := []struct {
-		name          string
-		profileName   string
-		tokens        map[string]*oauth2.Token
-		wantRemoved   []string
-		wantPreserved []string
-	}{
-		{
-			name:        "workspace shared host preserves host-keyed token",
-			profileName: "my-workspace",
-			tokens: map[string]*oauth2.Token{
-				"my-workspace":     {AccessToken: "token1"},
-				"shared-workspace": {AccessToken: "token2"},
-				"https://my-workspace.cloud.databricks.com": {AccessToken: "host-token"},
-			},
-			wantRemoved:   []string{"my-workspace"},
-			wantPreserved: []string{"https://my-workspace.cloud.databricks.com", "shared-workspace"},
-		},
-		{
-			name:        "workspace unique host clears host-keyed token",
-			profileName: "my-unique-workspace",
-			tokens: map[string]*oauth2.Token{
-				"my-unique-workspace":                              {AccessToken: "token1"},
-				"https://my-unique-workspace.cloud.databricks.com": {AccessToken: "host-token"},
-			},
-			wantRemoved: []string{"my-unique-workspace", "https://my-unique-workspace.cloud.databricks.com"},
-		},
-		{
-			name:        "account profile clears OIDC-keyed token",
-			profileName: "my-account",
-			tokens: map[string]*oauth2.Token{
-				"my-account": {AccessToken: "token1"},
-				"https://accounts.cloud.databricks.com/oidc/accounts/abc123": {AccessToken: "account-token"},
-			},
-			wantRemoved: []string{"my-account", "https://accounts.cloud.databricks.com/oidc/accounts/abc123"},
-		},
-		{
-			name:        "unified profile clears OIDC-keyed token",
-			profileName: "my-unified",
-			tokens: map[string]*oauth2.Token{
-				"my-unified": {AccessToken: "token1"},
-				"https://unified.cloud.databricks.com/oidc/accounts/def456": {AccessToken: "unified-token"},
-			},
-			wantRemoved: []string{"my-unified", "https://unified.cloud.databricks.com/oidc/accounts/def456"},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := cmdio.MockDiscard(context.Background())
-			configPath := writeTempConfig(t, logoutTestConfig)
-			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
-
-			tokenCache := &inMemoryTokenCache{Tokens: tc.tokens}
-
-			err := runLogout(ctx, logoutArgs{
-				profileName:    tc.profileName,
-				force:          true,
-				profiler:       profile.DefaultProfiler,
-				tokenCache:     tokenCache,
-				configFilePath: configPath,
-			})
-			require.NoError(t, err)
-
-			for _, key := range tc.wantRemoved {
-				assert.Nil(t, tokenCache.Tokens[key], "expected token %q to be removed", key)
-			}
-			for _, key := range tc.wantPreserved {
-				assert.NotNil(t, tokenCache.Tokens[key], "expected token %q to be preserved", key)
+			assert.Nil(t, tokenCache.Tokens[tc.profileName], "expected token %q to be removed", tc.profileName)
+			if tc.isSharedKey {
+				assert.NotNil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be preserved", tc.hostBasedKey)
+			} else {
+				assert.Nil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be removed", tc.hostBasedKey)
 			}
 		})
 	}
