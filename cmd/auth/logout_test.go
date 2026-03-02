@@ -33,7 +33,7 @@ account_id = def456
 experimental_is_unified_host = true
 `
 
-var logoutTestTokensCackeConfig = map[string]*oauth2.Token{
+var logoutTestTokensCacheConfig = map[string]*oauth2.Token{
 	"my-workspace":        {AccessToken: "shared-workspace-token"},
 	"shared-workspace":    {AccessToken: "shared-workspace-token"},
 	"my-unique-workspace": {AccessToken: "my-unique-workspace-token"},
@@ -116,7 +116,7 @@ func TestLogout(t *testing.T) {
 			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
 			tokenCache := &inMemoryTokenCache{
-				Tokens: logoutTestTokensCackeConfig,
+				Tokens: logoutTestTokensCacheConfig,
 			}
 
 			err := runLogout(ctx, logoutArgs{
