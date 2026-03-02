@@ -124,6 +124,13 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, errors.New("providing both a profile and host is not supported")
 	}
 
+	// When no explicit --profile flag is provided, check the env var. This
+	// handles the case where downstream tools (like the Terraform provider)
+	// pass --host but not --profile, while DATABRICKS_CONFIG_PROFILE is set.
+	if args.profileName == "" {
+		args.profileName = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
+	}
+
 	// If no --profile flag, try resolving the positional arg as a profile name.
 	// If it matches, use it. If not, fall through to host treatment.
 	if args.profileName == "" && len(args.args) == 1 {
