@@ -127,6 +127,76 @@ func (i *Import) GetImportID(resourceType, resourceName string) string {
 	return ""
 }
 
+// ForEach calls fn for each import entry in the configuration.
+func (i *Import) ForEach(fn func(resourceType, resourceName, importID string)) {
+	if i == nil {
+		return
+	}
+	for name, r := range i.Jobs {
+		fn("jobs", name, r.ID)
+	}
+	for name, r := range i.Pipelines {
+		fn("pipelines", name, r.ID)
+	}
+	for name, r := range i.Models {
+		fn("models", name, r.ID)
+	}
+	for name, r := range i.Experiments {
+		fn("experiments", name, r.ID)
+	}
+	for name, r := range i.ModelServingEndpoints {
+		fn("model_serving_endpoints", name, r.ID)
+	}
+	for name, r := range i.RegisteredModels {
+		fn("registered_models", name, r.ID)
+	}
+	for name, r := range i.QualityMonitors {
+		fn("quality_monitors", name, r.ID)
+	}
+	for name, r := range i.Schemas {
+		fn("schemas", name, r.ID)
+	}
+	for name, r := range i.Volumes {
+		fn("volumes", name, r.ID)
+	}
+	for name, r := range i.Clusters {
+		fn("clusters", name, r.ID)
+	}
+	for name, r := range i.Dashboards {
+		fn("dashboards", name, r.ID)
+	}
+	for name, r := range i.Apps {
+		fn("apps", name, r.ID)
+	}
+	for name, r := range i.SecretScopes {
+		fn("secret_scopes", name, r.ID)
+	}
+	for name, r := range i.Alerts {
+		fn("alerts", name, r.ID)
+	}
+	for name, r := range i.SqlWarehouses {
+		fn("sql_warehouses", name, r.ID)
+	}
+	for name, r := range i.DatabaseInstances {
+		fn("database_instances", name, r.ID)
+	}
+	for name, r := range i.DatabaseCatalogs {
+		fn("database_catalogs", name, r.ID)
+	}
+	for name, r := range i.SyncedDatabaseTables {
+		fn("synced_database_tables", name, r.ID)
+	}
+	for name, r := range i.PostgresProjects {
+		fn("postgres_projects", name, r.ID)
+	}
+	for name, r := range i.PostgresBranches {
+		fn("postgres_branches", name, r.ID)
+	}
+	for name, r := range i.PostgresEndpoints {
+		fn("postgres_endpoints", name, r.ID)
+	}
+}
+
 // IsEmpty returns true if no imports are defined.
 func (i *Import) IsEmpty() bool {
 	if i == nil {

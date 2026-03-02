@@ -1,0 +1,18 @@
+bundle:
+  name: test-import-recreate
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline
+      storage: /new/storage/path
+      libraries:
+        - notebook:
+            path: ./nb.sql
+
+targets:
+  default:
+    import:
+      pipelines:
+        foo:
+          id: "PLACEHOLDER_PIPELINE_ID"

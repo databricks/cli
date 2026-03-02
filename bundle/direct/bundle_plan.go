@@ -125,6 +125,21 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
+	// Validate all import entries reference resources defined in config.
+	var importErrors []string
+	importConfig.ForEach(func(resourceType, resourceName, importID string) {
+		key := "resources." + resourceType + "." + resourceName
+		if _, ok := plan.Plan[key]; !ok {
+			importErrors = append(importErrors, fmt.Sprintf("import block references undefined resource %q; define it in the resources section or remove the import block", key))
+		}
+	})
+	if len(importErrors) > 0 {
+		for _, msg := range importErrors {
+			logdiag.LogError(ctx, errors.New(msg))
+		}
+		return nil, errors.New("import validation failed")
+	}
+
 	b.Plan = plan
 
 	g, err := makeGraph(plan)
