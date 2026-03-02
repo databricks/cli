@@ -1,0 +1,5 @@
+
+=== Without account_id (should error)
+Error: the command is being run in a non-interactive environment, please specify an account ID using --account-id
+
+Exit code: 1
