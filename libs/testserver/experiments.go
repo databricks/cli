@@ -105,7 +105,8 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 
 	// Update the experiment
 	if updateReq.NewName != "" {
-		experiment.Experiment.Name = updateReq.NewName
+		// Strip /Workspace prefix from experiment name to match cloud behavior
+		experiment.Experiment.Name = strings.TrimPrefix(updateReq.NewName, "/Workspace")
 
 		// The server modifies the value of the tag as well. Mimic that behaviour
 		// in the test server as well.

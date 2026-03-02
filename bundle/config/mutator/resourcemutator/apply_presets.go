@@ -141,6 +141,9 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if e == nil {
 			continue
 		}
+		// Strip /Workspace prefix from experiment names to ensure consistent
+		// behavior between the direct and terraform deployment engines.
+		e.Name = strings.TrimPrefix(e.Name, "/Workspace")
 		filepath := e.Name
 		dir := path.Dir(filepath)
 		base := path.Base(filepath)

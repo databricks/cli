@@ -17,12 +17,10 @@ trace $CLI bundle deployment bind experiment1 ${EXPERIMENT_ID} --auto-approve
 
 trace $CLI bundle deploy --force-lock --auto-approve
 
-trace $CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}' > out.get.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}'
 
 trace $CLI bundle deployment unbind experiment1
 
 trace $CLI bundle destroy --auto-approve
 
-trace $CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}' > out.get2.$DATABRICKS_BUNDLE_ENGINE.json
-diff out.get.$DATABRICKS_BUNDLE_ENGINE.json out.get2.$DATABRICKS_BUNDLE_ENGINE.json
-rm out.get2.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}'
