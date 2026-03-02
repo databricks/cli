@@ -66,6 +66,12 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		objectIdRef = prefix + "${" + baseNode + ".endpoint_id}"
 	}
 
+	// Postgres projects store their hierarchical name ("projects/{project_id}") as the state ID,
+	// but the permissions API expects just the project_id.
+	if strings.HasPrefix(baseNode, "resources.postgres_projects.") {
+		objectIdRef = prefix + "${" + baseNode + ".project_id}"
+	}
+
 	return &structvar.StructVar{
 		Value: &PermissionsState{
 			ObjectID:    "", // Always a reference, defined in Refs below
