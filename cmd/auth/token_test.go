@@ -172,6 +172,10 @@ func TestToken_loadToken(t *testing.T) {
 				RefreshToken: "legacy-ws",
 				Expiry:       time.Now().Add(1 * time.Hour),
 			},
+			"dup1": {
+				RefreshToken: "dup1",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
 		},
 	}
 	validateToken := func(resp *oauth2.Token) {
@@ -613,7 +617,7 @@ func TestToken_loadToken(t *testing.T) {
 			validateToken: validateToken,
 		},
 		{
-			name: "no args, DATABRICKS_HOST takes precedence over DATABRICKS_CONFIG_PROFILE",
+			name: "no args, DATABRICKS_CONFIG_PROFILE env takes precedence over DATABRICKS_HOST",
 			setupCtx: func(ctx context.Context) context.Context {
 				ctx = env.Set(ctx, "DATABRICKS_HOST", "https://workspace-a.cloud.databricks.com")
 				ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "expired")
@@ -625,6 +629,27 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "host flag with profile env var disambiguates multi-profile",
+			setupCtx: func(ctx context.Context) context.Context {
+				return env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "dup1")
+			},
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host: "https://shared.cloud.databricks.com",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
