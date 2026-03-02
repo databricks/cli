@@ -72,6 +72,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		updateCount := 0
 		deleteCount := 0
 		unchangedCount := 0
+		importCount := 0
 
 		for _, change := range plan.GetActions() {
 			switch change.ActionType {
@@ -87,6 +88,11 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				createCount++
 			case deployplan.Skip, deployplan.Undefined:
 				unchangedCount++
+			case deployplan.Import:
+				importCount++
+			case deployplan.ImportAndUpdate:
+				importCount++
+				updateCount++
 			}
 		}
 
@@ -95,7 +101,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
 			// Print summary line and actions to stdout
-			totalChanges := createCount + updateCount + deleteCount
+			totalChanges := createCount + updateCount + deleteCount + importCount
 			if totalChanges > 0 {
 				// Print all actions in the order they were processed
 				for _, action := range plan.GetActions() {
@@ -103,12 +109,22 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 						continue
 					}
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")
-					fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
+					// For import actions, include the import ID
+					if action.ActionType.IsImport() {
+						entry := plan.Plan[action.ResourceKey]
+						fmt.Fprintf(out, "%s %s (id: %s)\n", action.ActionType.StringShort(), key, entry.ImportID)
+					} else {
+						fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
+					}
 				}
 				fmt.Fprintln(out)
 			}
 			// Note, this string should not be changed, "bundle deployment migrate" depends on this format:
-			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchangedCount)
+			if importCount > 0 {
+				fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged, %d to import\n", createCount, updateCount, deleteCount, unchangedCount, importCount)
+			} else {
+				fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchangedCount)
+			}
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")
 			if err != nil {

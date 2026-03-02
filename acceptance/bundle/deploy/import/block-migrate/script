@@ -1,0 +1,2 @@
+# Try to run migration with import blocks - should fail
+trace musterr $CLI bundle deployment migrate

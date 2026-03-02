@@ -69,6 +69,11 @@ type Target struct {
 	Sync *Sync `json:"sync,omitempty"`
 
 	Permissions []resources.Permission `json:"permissions,omitempty"`
+
+	// Import specifies existing workspace resources to import into bundle management.
+	// Resources listed here will be bound to the bundle at deploy time.
+	// This field is only valid for the direct deployment engine.
+	Import *Import `json:"import,omitempty"`
 }
 
 const (

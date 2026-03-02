@@ -28,34 +28,43 @@ type ActionType string
 // If case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	Undefined    ActionType = ""
-	Skip         ActionType = "skip"
-	Resize       ActionType = "resize"
-	Update       ActionType = "update"
-	UpdateWithID ActionType = "update_id"
-	Create       ActionType = "create"
-	Recreate     ActionType = "recreate"
-	Delete       ActionType = "delete"
+	Undefined       ActionType = ""
+	Skip            ActionType = "skip"
+	Resize          ActionType = "resize"
+	Update          ActionType = "update"
+	UpdateWithID    ActionType = "update_id"
+	Create          ActionType = "create"
+	Recreate        ActionType = "recreate"
+	Delete          ActionType = "delete"
+	Import          ActionType = "import"
+	ImportAndUpdate ActionType = "import_and_update"
 )
 
 var actionOrder = map[ActionType]int{
-	Undefined:    0,
-	Skip:         1,
-	Resize:       2,
-	Update:       3,
-	UpdateWithID: 4,
-	Create:       5,
-	Recreate:     6,
-	Delete:       7,
+	Undefined:       0,
+	Skip:            1,
+	Resize:          2,
+	Update:          3,
+	UpdateWithID:    4,
+	Create:          5,
+	Recreate:        6,
+	Delete:          7,
+	Import:          8,
+	ImportAndUpdate: 9,
 }
 
 func (a ActionType) KeepsID() bool {
 	switch a {
-	case Create, UpdateWithID, Recreate, Delete:
+	case Create, UpdateWithID, Recreate, Delete, Import, ImportAndUpdate:
 		return false
 	default:
 		return true
 	}
+}
+
+// IsImport returns true if the action is an import action.
+func (a ActionType) IsImport() bool {
+	return a == Import || a == ImportAndUpdate
 }
 
 // StringShort short version of action string, without suffix

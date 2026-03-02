@@ -109,7 +109,7 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string, importConfig *config.Import) (*deployplan.Plan, error) {
 	err := b.StateDB.Open(statePath)
 	if err != nil {
 		return nil, fmt.Errorf("reading state from %s: %w", statePath, err)
@@ -120,7 +120,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, err
 	}
 
-	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data)
+	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data, importConfig)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
@@ -196,6 +196,22 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
+
+		// Handle import block: if ImportID is set, this resource should be imported
+		if entry.ImportID != "" {
+			if hasEntry {
+				// Resource is already in state - check if IDs match
+				if dbentry.ID != entry.ImportID {
+					logdiag.LogError(ctx, fmt.Errorf("%s: resource already bound to ID %q, cannot import as %q; remove the import block or unbind the existing resource", errorPrefix, dbentry.ID, entry.ImportID))
+					return false
+				}
+				// IDs match - proceed with normal planning (resource was previously imported)
+			} else {
+				// Not in state - this is a new import
+				return b.handleImportPlan(ctx, resourceKey, entry, adapter, errorPrefix)
+			}
+		}
+
 		if !hasEntry {
 			entry.Action = deployplan.Create
 			return true
@@ -709,7 +725,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 	return true
 }
 
-func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database, importConfig *config.Import) (*deployplan.Plan, error) {
 	p := deployplan.NewPlanDirect()
 
 	// Copy state metadata to plan for validation during apply
@@ -871,9 +887,17 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)
 		}
 
+		// Check if this resource has an import block defined
+		resourceType, resourceName := getResourceTypeAndName(node)
+		importID := ""
+		if importConfig != nil {
+			importID = importConfig.GetImportID(resourceType, resourceName)
+		}
+
 		e := deployplan.PlanEntry{
 			DependsOn: dependsOn,
 			NewState:  newStateJSON,
+			ImportID:  importID,
 		}
 
 		p.Plan[node] = &e
@@ -943,4 +967,94 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 	}
 
 	return adapter, nil
+}
+
+// handleImportPlan handles planning for resources that should be imported from the workspace.
+// This is called when a resource has an import block defined and is not yet in the state.
+func (b *DeploymentBundle) handleImportPlan(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, adapter *dresources.Adapter, errorPrefix string) bool {
+	importID := entry.ImportID
+
+	// Read the remote resource to verify it exists and get current state
+	remoteState, err := adapter.DoRead(ctx, importID)
+	if err != nil {
+		if isResourceGone(err) {
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource with ID %q does not exist in workspace", errorPrefix, importID))
+		} else {
+			logdiag.LogError(ctx, fmt.Errorf("%s: reading remote resource id=%q: %w", errorPrefix, importID, err))
+		}
+		return false
+	}
+
+	entry.RemoteState = remoteState
+	b.RemoteStateCache.Store(resourceKey, remoteState)
+
+	// Get the new state config
+	sv, ok := b.StateCache.Load(resourceKey)
+	if !ok {
+		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry", errorPrefix))
+		return false
+	}
+
+	// Compare remote state with config to determine if update needed
+	remoteStateComparable, err := adapter.RemapState(remoteState)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state: %w", errorPrefix, err))
+		return false
+	}
+
+	remoteDiff, err := structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
+		return false
+	}
+
+	// For imports, there's no "saved state" so we compare remote directly with config
+	entry.Changes, err = prepareChanges(ctx, adapter, nil, remoteDiff, nil, remoteStateComparable)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+		return false
+	}
+
+	err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
+		return false
+	}
+
+	// Determine action based on changes
+	maxAction := getMaxAction(entry.Changes)
+
+	// Block recreate action for imported resources
+	if maxAction == deployplan.Recreate {
+		logdiag.LogError(ctx, fmt.Errorf("%s: cannot recreate resource with import block; this would destroy the existing workspace resource. Remove the import block to allow recreation", errorPrefix))
+		return false
+	}
+
+	if maxAction == deployplan.Skip || maxAction == deployplan.Undefined {
+		entry.Action = deployplan.Import
+	} else {
+		entry.Action = deployplan.ImportAndUpdate
+	}
+
+	return true
+}
+
+// getResourceTypeAndName extracts the resource type and name from a resource key.
+// For example, "resources.jobs.my_job" returns ("jobs", "my_job").
+// For child resources like "resources.jobs.my_job.permissions", returns ("jobs.permissions", "my_job").
+func getResourceTypeAndName(resourceKey string) (resourceType, resourceName string) {
+	dp, err := dyn.NewPathFromString(resourceKey)
+	if err != nil || len(dp) < 3 {
+		return "", ""
+	}
+
+	resourceType = dp[1].Key()
+	resourceName = dp[2].Key()
+
+	// Handle child resources (permissions, grants)
+	if len(dp) >= 4 && (dp[3].Key() == "permissions" || dp[3].Key() == "grants") {
+		resourceType = dp[1].Key() + "." + dp[3].Key()
+	}
+
+	return resourceType, resourceName
 }

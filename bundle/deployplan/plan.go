@@ -74,6 +74,7 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 
 type PlanEntry struct {
 	ID          string                   `json:"id,omitempty"`
+	ImportID    string                   `json:"import_id,omitempty"`
 	DependsOn   []DependsOnEntry         `json:"depends_on,omitempty"`
 	Action      ActionType               `json:"action,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`

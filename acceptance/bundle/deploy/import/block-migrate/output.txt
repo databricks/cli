@@ -1,0 +1,3 @@
+
+>>> musterr [CLI] bundle deployment migrate
+Error: cannot run 'bundle deployment migrate' when import blocks are defined in the target configuration; import blocks are only supported with the direct deployment engine

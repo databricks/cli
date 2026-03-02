@@ -56,6 +56,40 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 }
 
+// Import handles importing an existing workspace resource into the bundle state.
+// For Import action, it just saves the state with the import ID.
+// For ImportAndUpdate action, it also applies config changes to the resource.
+func (d *DeploymentUnit) Import(ctx context.Context, db *dstate.DeploymentState, importID string, newState any, actionType deployplan.ActionType, changes deployplan.Changes) error {
+	if actionType == deployplan.ImportAndUpdate {
+		// Apply updates to the imported resource
+		if !d.Adapter.HasDoUpdate() {
+			return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
+		}
+
+		remoteState, err := d.Adapter.DoUpdate(ctx, importID, newState, changes)
+		if err != nil {
+			return fmt.Errorf("updating imported resource id=%s: %w", importID, err)
+		}
+
+		err = d.SetRemoteState(remoteState)
+		if err != nil {
+			return err
+		}
+
+		log.Infof(ctx, "Imported and updated %s id=%s", d.ResourceKey, importID)
+	} else {
+		log.Infof(ctx, "Imported %s id=%s", d.ResourceKey, importID)
+	}
+
+	// Save state with the imported ID
+	err := db.SaveState(d.ResourceKey, importID, newState, d.DependsOn)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", importID, err)
+	}
+
+	return nil
+}
+
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
 	newID, remoteState, err := d.Adapter.DoCreate(ctx, newState)
 	if err != nil {

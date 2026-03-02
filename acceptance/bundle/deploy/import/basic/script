@@ -1,0 +1,21 @@
+# Create a job in the workspace
+NEW_JOB_ID=$($CLI jobs create --json '{"name": "test-import-job", "environments": [{"environment_key": "default", "spec": {"client": "1"}}], "tasks": [{"task_key": "my_task", "environment_key": "default", "spark_python_task": {"python_file": "/Workspace/test.py"}}]}' | jq -r .job_id)
+add_repl.py $NEW_JOB_ID NEW_JOB_ID
+
+# Update the databricks.yml with the actual job ID
+update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
+
+# Run plan - should show import action
+trace $CLI bundle plan
+
+# Deploy with auto-approve
+trace $CLI bundle deploy --auto-approve
+
+# Plan again - should show no changes (skip)
+trace $CLI bundle plan
+
+# Verify state file contains the imported ID
+trace print_state.py | contains.py "$NEW_JOB_ID"
+
+# Cleanup
+trace $CLI bundle destroy --auto-approve

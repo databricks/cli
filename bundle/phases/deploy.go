@@ -215,7 +215,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
 	if engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
-		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, localPath)
+		var importConfig *config.Import
+		if b.Target != nil {
+			importConfig = b.Target.Import
+		}
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, localPath, importConfig)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

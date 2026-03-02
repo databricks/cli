@@ -154,6 +154,11 @@ WARNING: Both direct deployment engine and this command are experimental and not
 		}
 		ctx := cmd.Context()
 
+		// Check for import blocks - migration is not allowed with import blocks defined
+		if b.Target != nil && b.Target.Import != nil && !b.Target.Import.IsEmpty() {
+			return errors.New("cannot run 'bundle deployment migrate' when import blocks are defined in the target configuration; import blocks are only supported with the direct deployment engine")
+		}
+
 		if stateDesc.Lineage == "" {
 			// TODO: mention bundle.engine once it's there
 			cmdio.LogString(ctx, `Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
@@ -231,7 +236,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			}
 		}()
 
-		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, tempStatePath)
+		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, tempStatePath, nil)
 		if err != nil {
 			return err
 		}
