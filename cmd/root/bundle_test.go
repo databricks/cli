@@ -7,9 +7,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -34,6 +36,7 @@ func setupDatabricksCfg(t *testing.T) {
 
 func emptyCommand(t *testing.T) *cobra.Command {
 	ctx := context.Background()
+	ctx = cmdio.MockDiscard(ctx)
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
 	initProfileFlag(cmd)
@@ -97,6 +100,8 @@ func TestBundleConfigureWithMultipleMatches(t *testing.T) {
 	diags := setupWithHost(t, cmd, "https://a.com")
 	require.Len(t, diags, 1)
 	assert.Contains(t, diags[0].Summary, "multiple profiles matched: PROFILE-1, PROFILE-2")
+	assert.Contains(t, diags[0].Summary, "Matching workspace profiles: PROFILE-1, PROFILE-2")
+	assert.Contains(t, diags[0].Summary, "DATABRICKS_CONFIG_PROFILE=PROFILE-1")
 }
 
 func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
@@ -215,6 +220,52 @@ func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
 	assert.Equal(t, "https://a.com", cmdctx.ConfigUsed(cmd.Context()).Host)
 	assert.Equal(t, "b", cmdctx.ConfigUsed(cmd.Context()).Token)
 	assert.Equal(t, "PROFILE-2", cmdctx.ConfigUsed(cmd.Context()).Profile)
+}
+
+func TestBundleConfigureMultiMatchInteractivePromptFires(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	setupDatabricksCfg(t)
+
+	rootPath := t.TempDir()
+	testutil.Chdir(t, rootPath)
+
+	contents := `
+workspace:
+  host: "https://a.com"
+`
+	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	ctx, io := cmdio.SetupTest(ctx, cmdio.TestOptions{PromptSupported: true})
+	defer io.Done()
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(ctx)
+	initProfileFlag(cmd)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		ctx := logdiag.InitContext(cmd.Context())
+		logdiag.SetCollect(ctx, true)
+		cmd.SetContext(ctx)
+		_ = MustConfigureBundle(cmd)
+	}()
+
+	// Verify the prompt fires by reading output from stderr.
+	// promptui with StartInSearchMode writes a search cursor first.
+	line, _, readErr := io.Stderr.ReadLine()
+	if assert.NoError(t, readErr, "expected prompt output on stderr") {
+		assert.Contains(t, string(line), "Search:")
+	}
+
+	// Cancel to unblock the prompt.
+	cancel()
+	<-done
 }
 
 func TestTargetFlagFull(t *testing.T) {

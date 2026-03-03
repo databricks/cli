@@ -67,6 +67,9 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 	setEnv += " GIT_CONFIG_GLOBAL=/Workspace/.proc/self/git/config"
 	setEnv += " ENABLE_DATABRICKS_CLI=true"
 	setEnv += " PYTHONPYCACHEPREFIX=/tmp/pycache"
+	if opts.Serverless {
+		setEnv += " DATABRICKS_JUPYTER_SERVERLESS=true"
+	}
 
 	sshdConfigContent := "PubkeyAuthentication yes\n" +
 		"PasswordAuthentication no\n" +

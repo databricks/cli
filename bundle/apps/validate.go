@@ -15,11 +15,21 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 	usedSourceCodePaths := make(map[string]string)
 
 	for key, app := range b.Config.Resources.Apps {
-		if app.SourceCodePath == "" {
+		if app.SourceCodePath == "" && app.GitSource == nil {
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
-				Summary:   "Missing app source code path",
-				Detail:    fmt.Sprintf("app resource '%s' is missing required source_code_path field", key),
+				Summary:   "Missing app source code path or git source",
+				Detail:    fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field", key),
+				Locations: b.Config.GetLocations("resources.apps." + key),
+			})
+			continue
+		}
+
+		if app.SourceCodePath != "" && app.GitSource != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "Both source_code_path and git_source fields are set",
+				Detail:    fmt.Sprintf("app resource '%s' should have either source_code_path or git_source field, not both", key),
 				Locations: b.Config.GetLocations("resources.apps." + key),
 			})
 			continue

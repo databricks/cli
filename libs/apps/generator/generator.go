@@ -299,6 +299,11 @@ var appResourceSpecs = map[string]appResourceSpec{
 		varFields:  [][2]string{{"instance_name", "instance_name"}, {"database_name", "database_name"}},
 		permission: "CAN_CONNECT_AND_CREATE",
 	},
+	"postgres": {
+		yamlKey:    "postgres",
+		varFields:  [][2]string{{"branch", "branch"}, {"database", "database"}},
+		permission: "CAN_CONNECT_AND_CREATE",
+	},
 	"genie_space": {
 		yamlKey:    "genie_space",
 		varFields:  [][2]string{{"name", "name"}, {"id", "space_id"}},

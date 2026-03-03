@@ -59,6 +59,20 @@ func TestWithHost(t *testing.T) {
 	}
 }
 
+func TestMatchProfileNames(t *testing.T) {
+	fn := MatchProfileNames("dev", "staging")
+
+	assert.True(t, fn(Profile{Name: "dev"}))
+	assert.True(t, fn(Profile{Name: "staging"}))
+	assert.False(t, fn(Profile{Name: "production"}))
+	assert.False(t, fn(Profile{Name: ""}))
+}
+
+func TestMatchProfileNamesEmpty(t *testing.T) {
+	fn := MatchProfileNames()
+	assert.False(t, fn(Profile{Name: "anything"}))
+}
+
 func TestWithHostAndAccountID(t *testing.T) {
 	cases := []struct {
 		name             string

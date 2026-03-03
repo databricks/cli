@@ -50,7 +50,7 @@ For each table, returns:
 			sess.Set(middlewares.DatabricksClientKey, w)
 			ctx = session.WithSession(ctx, sess)
 
-			warehouseID, err := middlewares.GetWarehouseID(ctx)
+			warehouseID, err := middlewares.GetWarehouseID(ctx, true)
 			if err != nil {
 				return err
 			}

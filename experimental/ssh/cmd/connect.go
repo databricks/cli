@@ -1,7 +1,6 @@
 package ssh
 
 import (
-	"errors"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
@@ -82,22 +81,6 @@ the SSH server and handling the connection proxy.
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		wsClient := cmdctx.WorkspaceClient(ctx)
-
-		if !proxyMode && clusterID == "" && connectionName == "" {
-			return errors.New("please provide --cluster flag with the cluster ID, or --name flag with the connection name (for serverless compute)")
-		}
-
-		if accelerator != "" && connectionName == "" {
-			return errors.New("--accelerator flag can only be used with serverless compute (--name flag)")
-		}
-
-		// Remove when we add support for serverless CPU
-		if connectionName != "" && accelerator == "" {
-			return errors.New("--name flag requires --accelerator to be set (for now we only support serverless GPU compute)")
-		}
-
-		// TODO: validate connectionName if provided
-
 		opts := client.ClientOptions{
 			Profile:              wsClient.Config.Profile,
 			ClusterID:            clusterID,
@@ -119,6 +102,9 @@ the SSH server and handling the connection proxy.
 			Liteswap:             liteswap,
 			SkipSettingsCheck:    skipSettingsCheck,
 			AdditionalArgs:       args,
+		}
+		if err := opts.Validate(); err != nil {
+			return err
 		}
 		return client.Run(ctx, wsClient, opts)
 	}

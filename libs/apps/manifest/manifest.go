@@ -68,6 +68,7 @@ type Plugin struct {
 	Package            string    `json:"package"`
 	RequiredByTemplate bool      `json:"requiredByTemplate"`
 	Resources          Resources `json:"resources"`
+	OnSetupMessage     string    `json:"onSetupMessage"`
 }
 
 // Manifest represents the appkit.plugins.json file structure.
