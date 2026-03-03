@@ -207,7 +207,14 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 				return nil, fmt.Errorf("%s match %s in %s. Use --profile to specify which profile to use",
 					names, args.authArguments.Host, configPath)
 			}
-			selected, err := askForMatchingProfile(ctx, matchingProfiles, args.authArguments.Host)
+			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
+				Label:             "Multiple profiles match " + args.authArguments.Host,
+				StartInSearchMode: true,
+				Profiles:          matchingProfiles,
+				ActiveTemplate:    `{{.Name | bold}} ({{.Host|faint}})`,
+				InactiveTemplate:  `{{.Name}}`,
+				SelectedTemplate:  `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -268,25 +275,6 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, fmt.Errorf("%w. %s", err, helpMsg)
 	}
 	return t, nil
-}
-
-func askForMatchingProfile(ctx context.Context, profiles profile.Profiles, host string) (string, error) {
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             "Multiple profiles match " + host,
-		Items:             profiles,
-		Searcher:          profiles.SearchCaseInsensitive,
-		StartInSearchMode: true,
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}} ({{.Host|faint}})`,
-			Inactive: `{{.Name}}`,
-			Selected: `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
-		},
-	})
-	if err != nil {
-		return "", err
-	}
-	return profiles[i].Name, nil
 }
 
 // resolveNoArgsToken resolves a profile or host when `auth token` is invoked
