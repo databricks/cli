@@ -693,6 +693,19 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "comment":
     "description": |-
@@ -955,6 +968,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
     "description": |-
       PLACEHOLDER
   "pg_version":

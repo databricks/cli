@@ -219,7 +219,8 @@ var RequiredFields = map[string][]string{
 	"resources.postgres_endpoints.*":       {"endpoint_type", "endpoint_id", "parent"},
 	"resources.postgres_endpoints.*.group": {"max", "min"},
 
-	"resources.postgres_projects.*": {"project_id"},
+	"resources.postgres_projects.*":                {"project_id"},
+	"resources.postgres_projects.*.permissions[*]": {"level"},
 
 	"resources.quality_monitors.*":                   {"assets_dir", "output_schema_name", "table_name"},
 	"resources.quality_monitors.*.custom_metrics[*]": {"definition", "input_columns", "name", "output_data_type", "type"},
