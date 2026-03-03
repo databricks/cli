@@ -1,2 +1,4 @@
 json.gcp_attributes.availability = "PREEMPTIBLE_GCP";
+json.gcp_attributes.first_on_demand = 1;
+json.gcp_attributes.use_preemptible_executors = false;
 json.gcp_attributes.zone_id = "auto";

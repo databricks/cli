@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
@@ -90,11 +91,18 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	return Response{}
 }
 
+func setDefault(obj any, path string, value any) {
+	if val, _ := structaccess.GetByString(obj, path); val == nil {
+		_ = structaccess.SetByString(obj, path, value)
+	}
+}
+
 // clusterFixUps applies server-side defaults that the real API sets.
 func clusterFixUps(cluster *compute.ClusterDetails) {
-	if cluster.GcpAttributes != nil {
-		structaccess.SetDefault(cluster, "gcp_attributes.first_on_demand", 1)
-		structaccess.SetDefault(cluster, "gcp_attributes.use_preemptible_executors", false)
+	gcp := cluster.GcpAttributes
+	if gcp != nil {
+		setDefault(gcp, "first_on_demand", 1)
+		setDefault(gcp, "use_preemptible_executors", false)
 	} else if cluster.AwsAttributes == nil {
 		cluster.AwsAttributes = &compute.AwsAttributes{
 			Availability: compute.AwsAvailabilitySpotWithFallback,
