@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -157,6 +158,65 @@ func TestResolveWarehouseIDWithFlag(t *testing.T) {
 	id, err := resolveWarehouseID(ctx, nil, "explicit-id")
 	require.NoError(t, err)
 	assert.Equal(t, "explicit-id", id)
+}
+
+func TestSelectQueryOutputMode(t *testing.T) {
+	tests := []struct {
+		name              string
+		outputType        flags.Output
+		stdoutInteractive bool
+		promptSupported   bool
+		rowCount          int
+		want              queryOutputMode
+	}{
+		{
+			name:              "json flag always returns json",
+			outputType:        flags.OutputJSON,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			rowCount:          999,
+			want:              queryOutputModeJSON,
+		},
+		{
+			name:              "non interactive stdout returns json",
+			outputType:        flags.OutputText,
+			stdoutInteractive: false,
+			promptSupported:   true,
+			rowCount:          5,
+			want:              queryOutputModeJSON,
+		},
+		{
+			name:              "missing stdin interactivity falls back to static table",
+			outputType:        flags.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   false,
+			rowCount:          staticTableThreshold + 10,
+			want:              queryOutputModeStaticTable,
+		},
+		{
+			name:              "small results use static table",
+			outputType:        flags.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			rowCount:          staticTableThreshold,
+			want:              queryOutputModeStaticTable,
+		},
+		{
+			name:              "large results use interactive table",
+			outputType:        flags.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			rowCount:          staticTableThreshold + 1,
+			want:              queryOutputModeInteractiveTable,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := selectQueryOutputMode(tc.outputType, tc.stdoutInteractive, tc.promptSupported, tc.rowCount)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }
 
 func TestFetchAllRowsSingleChunk(t *testing.T) {

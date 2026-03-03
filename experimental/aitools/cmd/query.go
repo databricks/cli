@@ -40,6 +40,32 @@ const (
 	staticTableThreshold = 30
 )
 
+type queryOutputMode int
+
+const (
+	queryOutputModeJSON queryOutputMode = iota
+	queryOutputModeStaticTable
+	queryOutputModeInteractiveTable
+)
+
+func selectQueryOutputMode(outputType flags.Output, stdoutInteractive bool, promptSupported bool, rowCount int) queryOutputMode {
+	if outputType == flags.OutputJSON {
+		return queryOutputModeJSON
+	}
+	if !stdoutInteractive {
+		return queryOutputModeJSON
+	}
+	// Interactive table browsing requires keyboard input from stdin.
+	// If prompts are not supported, prefer static table output instead.
+	if !promptSupported {
+		return queryOutputModeStaticTable
+	}
+	if rowCount <= staticTableThreshold {
+		return queryOutputModeStaticTable
+	}
+	return queryOutputModeInteractiveTable
+}
+
 func newQueryCmd() *cobra.Command {
 	var warehouseID string
 	var filePath string
@@ -56,7 +82,8 @@ exists, it is read as a SQL file automatically.
 The command auto-detects an available warehouse unless --warehouse is set
 or the DATABRICKS_WAREHOUSE_ID environment variable is configured.
 
-Output includes the query results as JSON and row count.`,
+Output is JSON in non-interactive contexts. In interactive terminals it renders
+tables, and large results open an interactive table browser.`,
 		Example: `  databricks experimental aitools tools query "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --warehouse abc123 "SELECT 1"
   databricks experimental aitools tools query --file report.sql
@@ -94,17 +121,15 @@ Output includes the query results as JSON and row count.`,
 				return nil
 			}
 
-			// Use table output only when stdout is a TTY with color support.
-			// cmdio.IsInteractive checks stderr (for spinners), but output
-			// format depends on whether stdout itself is a terminal.
+			// Output format depends on stdout capabilities.
+			// Interactive table browsing also requires prompt-capable stdin.
 			stdoutInteractive := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
+			promptSupported := cmdio.IsPromptSupported(ctx)
 
-			switch {
-			case root.OutputType(cmd) == flags.OutputJSON:
+			switch selectQueryOutputMode(root.OutputType(cmd), stdoutInteractive, promptSupported, len(rows)) {
+			case queryOutputModeJSON:
 				return renderJSON(cmd.OutOrStdout(), columns, rows)
-			case !stdoutInteractive:
-				return renderJSON(cmd.OutOrStdout(), columns, rows)
-			case len(rows) <= staticTableThreshold:
+			case queryOutputModeStaticTable:
 				return renderStaticTable(cmd.OutOrStdout(), columns, rows)
 			default:
 				return renderInteractiveTable(cmd.OutOrStdout(), columns, rows)
