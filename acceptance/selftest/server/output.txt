@@ -2,6 +2,10 @@
 >>> curl -s [DATABRICKS_URL]/api/2.0/preview/scim/v2/Me
 {
     "id": "[USERID]",
+    "name": {
+        "familyName": "[USERNAME]",
+        "givenName": "[USERNAME]"
+    },
     "userName": "[USERNAME]"
 }
 >>> curl -sD - [DATABRICKS_URL]/custom/endpoint?query=param
