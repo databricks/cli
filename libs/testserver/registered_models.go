@@ -83,3 +83,68 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		Body: existing,
 	}
 }
+
+func (s *FakeWorkspace) RegisteredModelsSetAlias(req Request, fullName, alias string) Response {
+	defer s.LockUnlock()()
+
+	existing, ok := s.RegisteredModels[fullName]
+	if !ok {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body:       fmt.Sprintf("registered model %s not found", fullName),
+		}
+	}
+
+	var setRequest catalog.SetRegisteredModelAliasRequest
+	if err := json.Unmarshal(req.Body, &setRequest); err != nil {
+		return Response{
+			Body:       fmt.Sprintf("internal error: %s", err),
+			StatusCode: http.StatusInternalServerError,
+		}
+	}
+
+	newAlias := catalog.RegisteredModelAlias{
+		AliasName:  alias,
+		VersionNum: setRequest.VersionNum,
+	}
+
+	// Update existing alias or append new one.
+	found := false
+	for i, a := range existing.Aliases {
+		if a.AliasName == alias {
+			existing.Aliases[i] = newAlias
+			found = true
+			break
+		}
+	}
+	if !found {
+		existing.Aliases = append(existing.Aliases, newAlias)
+	}
+
+	s.RegisteredModels[fullName] = existing
+	return Response{
+		Body: newAlias,
+	}
+}
+
+func (s *FakeWorkspace) RegisteredModelsDeleteAlias(fullName, alias string) Response {
+	defer s.LockUnlock()()
+
+	existing, ok := s.RegisteredModels[fullName]
+	if !ok {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body:       fmt.Sprintf("registered model %s not found", fullName),
+		}
+	}
+
+	for i, a := range existing.Aliases {
+		if a.AliasName == alias {
+			existing.Aliases = append(existing.Aliases[:i], existing.Aliases[i+1:]...)
+			break
+		}
+	}
+
+	s.RegisteredModels[fullName] = existing
+	return Response{}
+}
