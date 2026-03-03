@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // gitFiles returns a list of all git-tracked files in the repository.
@@ -117,11 +119,15 @@ func CreateArchive(archiveDir, binDir, repoRoot string) error {
 		// JqDownloader{Arch: "arm64", BinDir: binDir},
 	}
 
+	var errgroup errgroup.Group
 	for _, downloader := range downloaders {
-		err := downloader.Download()
-		if err != nil {
-			return fmt.Errorf("failed to download %s: %w", downloader, err)
-		}
+		errgroup.Go(func() error {
+			return downloader.Download()
+		})
+	}
+
+	if err := errgroup.Wait(); err != nil {
+		return fmt.Errorf("failed to download tools: %w", err)
 	}
 
 	gitFiles, err := gitFiles(repoRoot)
