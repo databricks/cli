@@ -1,0 +1,27 @@
+
+=== Initial config
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+host = https://default.cloud.databricks.com
+token = default-token
+
+; Dev workspace
+[dev]
+host = https://dev.cloud.databricks.com
+token = dev-token
+
+=== Delete the DEFAULT profile
+>>> [CLI] auth logout --profile DEFAULT --force
+Successfully logged out of profile "DEFAULT".
+
+=== Backup file should exist
+OK: Backup file exists
+
+=== Config after logout — empty DEFAULT with comment should remain at top
+; Dev workspace
+[dev]
+host  = https://dev.cloud.databricks.com
+token = dev-token
+
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
