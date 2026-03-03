@@ -1,5 +1,5 @@
 RecordRequests = false
 
-# The aliases input_only classification lives in the direct engine, so scope
+# Alias syncing via SetAlias/DeleteAlias lives in the direct engine, so scope
 # this regression there.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

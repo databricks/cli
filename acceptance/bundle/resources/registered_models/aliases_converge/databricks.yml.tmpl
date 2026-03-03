@@ -8,9 +8,9 @@ resources:
       comment: $COMMENT
       catalog_name: main
       schema_name: default
-      # Aliases live on model versions and GET does not echo them back
-      # (DoRead uses IncludeAliases=false), so a config that sets them used to
-      # report a perpetual in-place update and never converge.
+      # Aliases are synced via SetAlias/DeleteAlias and read back with
+      # IncludeAliases=true; a config that sets them must converge instead of
+      # reporting a perpetual in-place update.
       aliases:
         - alias_name: champion
-          id: alias-champion
+          version_num: 1
