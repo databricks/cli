@@ -159,32 +159,50 @@ func TestResolveWarehouseIDWithFlag(t *testing.T) {
 	assert.Equal(t, "explicit-id", id)
 }
 
-func TestFormatQueryResultNoResults(t *testing.T) {
+func TestFetchAllRowsSingleChunk(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
 	resp := &sql.StatementResponse{
-		Status: &sql.StatementStatus{State: sql.StatementStateSucceeded},
+		StatementId: "stmt-1",
+		Manifest:    &sql.ResultManifest{TotalChunkCount: 1},
+		Result:      &sql.ResultData{DataArray: [][]string{{"1", "alice"}, {"2", "bob"}}},
 	}
-	output, err := formatQueryResult(resp)
+
+	rows, err := fetchAllRows(ctx, mockAPI, resp)
 	require.NoError(t, err)
-	assert.Contains(t, output, "no results")
+	assert.Equal(t, [][]string{{"1", "alice"}, {"2", "bob"}}, rows)
 }
 
-func TestFormatQueryResultWithData(t *testing.T) {
+func TestFetchAllRowsMultiChunk(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
 	resp := &sql.StatementResponse{
-		Status: &sql.StatementStatus{State: sql.StatementStateSucceeded},
-		Manifest: &sql.ResultManifest{
-			Schema: &sql.ResultSchema{
-				Columns: []sql.ColumnInfo{{Name: "id"}, {Name: "name"}},
-			},
-		},
-		Result: &sql.ResultData{
-			DataArray: [][]string{{"1", "alice"}, {"2", "bob"}},
-		},
+		StatementId: "stmt-1",
+		Manifest:    &sql.ResultManifest{TotalChunkCount: 3},
+		Result:      &sql.ResultData{DataArray: [][]string{{"1", "a"}}},
 	}
-	output, err := formatQueryResult(resp)
+
+	mockAPI.EXPECT().GetStatementResultChunkNByStatementIdAndChunkIndex(mock.Anything, "stmt-1", 1).
+		Return(&sql.ResultData{DataArray: [][]string{{"2", "b"}}}, nil).Once()
+	mockAPI.EXPECT().GetStatementResultChunkNByStatementIdAndChunkIndex(mock.Anything, "stmt-1", 2).
+		Return(&sql.ResultData{DataArray: [][]string{{"3", "c"}}}, nil).Once()
+
+	rows, err := fetchAllRows(ctx, mockAPI, resp)
 	require.NoError(t, err)
-	assert.Contains(t, output, "alice")
-	assert.Contains(t, output, "bob")
-	assert.Contains(t, output, "Row count: 2")
+	assert.Equal(t, [][]string{{"1", "a"}, {"2", "b"}, {"3", "c"}}, rows)
+}
+
+func TestFetchAllRowsNilResult(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	resp := &sql.StatementResponse{StatementId: "stmt-1"}
+
+	rows, err := fetchAllRows(ctx, mockAPI, resp)
+	require.NoError(t, err)
+	assert.Nil(t, rows)
 }
 
 func TestIsTerminalState(t *testing.T) {

@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +16,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -34,6 +34,10 @@ const (
 
 	// cancelTimeout is how long to wait for server-side cancellation.
 	cancelTimeout = 10 * time.Second
+
+	// staticTableThreshold is the maximum number of rows rendered as a static table.
+	// Beyond this, an interactive scrollable table is used.
+	staticTableThreshold = 30
 )
 
 func newQueryCmd() *cobra.Command {
@@ -79,13 +83,32 @@ Output includes the query results as JSON and row count.`,
 				return err
 			}
 
-			output, err := formatQueryResult(resp)
+			columns := extractColumns(resp.Manifest)
+			rows, err := fetchAllRows(ctx, w.StatementExecution, resp)
 			if err != nil {
 				return err
 			}
 
-			cmdio.LogString(ctx, output)
-			return nil
+			if len(columns) == 0 && len(rows) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "Query executed successfully (no results)")
+				return nil
+			}
+
+			// Use table output only when stdout is a TTY with color support.
+			// cmdio.IsInteractive checks stderr (for spinners), but output
+			// format depends on whether stdout itself is a terminal.
+			stdoutInteractive := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
+
+			switch {
+			case root.OutputType(cmd) == flags.OutputJSON:
+				return renderJSON(cmd.OutOrStdout(), columns, rows)
+			case !stdoutInteractive:
+				return renderJSON(cmd.OutOrStdout(), columns, rows)
+			case len(rows) <= staticTableThreshold:
+				return renderStaticTable(cmd.OutOrStdout(), columns, rows)
+			default:
+				return renderInteractiveTable(cmd.OutOrStdout(), columns, rows)
+			}
 		},
 	}
 
@@ -273,6 +296,31 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 	}
 }
 
+// fetchAllRows collects all result rows, fetching additional chunks if needed.
+func fetchAllRows(ctx context.Context, api sql.StatementExecutionInterface, resp *sql.StatementResponse) ([][]string, error) {
+	if resp.Result == nil {
+		return nil, nil
+	}
+
+	rows := append([][]string{}, resp.Result.DataArray...)
+
+	totalChunks := 0
+	if resp.Manifest != nil {
+		totalChunks = resp.Manifest.TotalChunkCount
+	}
+
+	for chunk := 1; chunk < totalChunks; chunk++ {
+		log.Debugf(ctx, "Fetching result chunk %d/%d for statement %s", chunk+1, totalChunks, resp.StatementId)
+		chunkResp, err := api.GetStatementResultChunkNByStatementIdAndChunkIndex(ctx, resp.StatementId, chunk)
+		if err != nil {
+			return nil, fmt.Errorf("fetch result chunk %d: %w", chunk, err)
+		}
+		rows = append(rows, chunkResp.DataArray...)
+	}
+
+	return rows, nil
+}
+
 // isTerminalState returns true if the statement has reached a final state.
 func isTerminalState(status *sql.StatementStatus) bool {
 	if status == nil {
@@ -332,44 +380,4 @@ func cleanSQL(s string) string {
 	}
 
 	return strings.Join(lines, "\n")
-}
-
-func formatQueryResult(resp *sql.StatementResponse) (string, error) {
-	var sb strings.Builder
-
-	if resp.Manifest == nil || resp.Result == nil {
-		sb.WriteString("Query executed successfully (no results)\n")
-		return sb.String(), nil
-	}
-
-	var columns []string
-	if resp.Manifest.Schema != nil {
-		for _, col := range resp.Manifest.Schema.Columns {
-			columns = append(columns, col.Name)
-		}
-	}
-
-	var rows []map[string]any
-	if resp.Result.DataArray != nil {
-		for _, row := range resp.Result.DataArray {
-			rowMap := make(map[string]any)
-			for i, val := range row {
-				if i < len(columns) {
-					rowMap[columns[i]] = val
-				}
-			}
-			rows = append(rows, rowMap)
-		}
-	}
-
-	output, err := json.MarshalIndent(rows, "", "  ")
-	if err != nil {
-		return "", fmt.Errorf("marshal results: %w", err)
-	}
-
-	sb.Write(output)
-	sb.WriteString("\n\n")
-	sb.WriteString(fmt.Sprintf("Row count: %d\n", len(rows)))
-
-	return sb.String(), nil
 }
