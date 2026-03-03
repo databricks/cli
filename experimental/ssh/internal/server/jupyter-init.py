@@ -164,7 +164,15 @@ def _register_pip_magics():
         entry_point,
     )
     ip = get_ipython()
-    ip.register_magics(PipMagicOverrides(entry_point, globals()["sc"]._conf, user_ns))
+
+    try:
+        # Older DBRs
+        pip_magic = PipMagicOverrides(entry_point, ip.user_ns["sc"]._conf, user_ns)
+    except Exception:
+        # Newer DBRs
+        pip_magic = PipMagicOverrides(entry_point, user_ns, ip)
+
+    ip.register_magics(pip_magic)
 
 
 @_log_exceptions
@@ -182,19 +190,16 @@ def _register_formatters():
 
 
 def _initialize_dbconnect_spark_session():
-    import IPython
     from databricks.connect import DatabricksSession
-    user_ns = getattr(IPython.get_ipython(), "user_ns", {})
+    user_ns = get_ipython().user_ns
     existing_session = user_ns.get("spark")
     # Clear the existing local spark session, otherwise DatabricksSession will re-use it.
     user_ns["spark"] = None
-    globals()["spark"] = None
     try:
         # DatabricksSession will use the existing env vars for the connection.
         return DatabricksSession.builder.serverless(True).getOrCreate()
     except Exception:
         user_ns["spark"] = existing_session
-        globals()["spark"] = existing_session
         raise
 
 
@@ -235,13 +240,13 @@ def _setup_globals(is_serverless: bool):
     if spark is not None:
         ns_globals["table"] = spark.table
         ns_globals["sql"] = spark.sql
+    user_ns = get_ipython().user_ns
     for name, value in ns_globals.items():
         print(f"Registering global: {name} = {value}")
-        if name not in globals():
-            globals()[name] = value
+        user_ns[name] = value
     # 'display' from the runtime uses custom widgets that don't work in Jupyter.
     # We use the IPython display instead (in combination with the html formatter for DataFrames).
-    globals()["display"] = ip_display
+    user_ns["display"] = ip_display
 
 
 _setup_globals(os.environ.get("DATABRICKS_JUPYTER_SERVERLESS") == "true")
