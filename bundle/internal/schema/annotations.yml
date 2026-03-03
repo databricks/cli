@@ -96,6 +96,74 @@ github.com/databricks/cli/bundle/config.Git:
       The origin URL of the repository.
     "markdown_description": |-
       The origin URL of the repository. See [\_](/dev-tools/bundles/settings.md#git).
+github.com/databricks/cli/bundle/config.Import:
+  "alerts":
+    "description": |-
+      The alert resources to import, where each key is the resource name in the bundle.
+  "apps":
+    "description": |-
+      The app resources to import, where each key is the resource name in the bundle.
+  "clusters":
+    "description": |-
+      The cluster resources to import, where each key is the resource name in the bundle.
+  "dashboards":
+    "description": |-
+      The dashboard resources to import, where each key is the resource name in the bundle.
+  "database_catalogs":
+    "description": |-
+      The database catalog resources to import, where each key is the resource name in the bundle.
+  "database_instances":
+    "description": |-
+      The database instance resources to import, where each key is the resource name in the bundle.
+  "experiments":
+    "description": |-
+      The experiment resources to import, where each key is the resource name in the bundle.
+  "jobs":
+    "description": |-
+      The job resources to import, where each key is the resource name in the bundle.
+  "model_serving_endpoints":
+    "description": |-
+      The model serving endpoint resources to import, where each key is the resource name in the bundle.
+  "models":
+    "description": |-
+      The model resources to import, where each key is the resource name in the bundle.
+  "pipelines":
+    "description": |-
+      The pipeline resources to import, where each key is the resource name in the bundle.
+  "postgres_branches":
+    "description": |-
+      The Postgres branch resources to import, where each key is the resource name in the bundle.
+  "postgres_endpoints":
+    "description": |-
+      The Postgres endpoint resources to import, where each key is the resource name in the bundle.
+  "postgres_projects":
+    "description": |-
+      The Postgres project resources to import, where each key is the resource name in the bundle.
+  "quality_monitors":
+    "description": |-
+      The quality monitor resources to import, where each key is the resource name in the bundle.
+  "registered_models":
+    "description": |-
+      The registered model resources to import, where each key is the resource name in the bundle.
+  "schemas":
+    "description": |-
+      The schema resources to import, where each key is the resource name in the bundle.
+  "secret_scopes":
+    "description": |-
+      The secret scope resources to import, where each key is the resource name in the bundle.
+  "sql_warehouses":
+    "description": |-
+      The SQL warehouse resources to import, where each key is the resource name in the bundle.
+  "synced_database_tables":
+    "description": |-
+      The synced database table resources to import, where each key is the resource name in the bundle.
+  "volumes":
+    "description": |-
+      The volume resources to import, where each key is the resource name in the bundle.
+github.com/databricks/cli/bundle/config.ImportResource:
+  "id":
+    "description": |-
+      The ID of the existing workspace resource to import.
 github.com/databricks/cli/bundle/config.Lock:
   "enabled":
     "description": |-
@@ -380,6 +448,9 @@ github.com/databricks/cli/bundle/config.Target:
   "git":
     "description": |-
       The Git version control settings for the target.
+  "import":
+    "description": |-
+      The existing workspace resources to import into bundle management for this target.
   "mode":
     "description": |-
       The deployment mode for the target.
