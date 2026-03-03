@@ -95,6 +95,17 @@ func AuthCredentialKeys() []string {
 	return keys
 }
 
+func writeConfigFile(ctx context.Context, configFile *config.File) error {
+	section := configFile.Section(ini.DefaultSection)
+	if len(section.Keys()) == 0 && section.Comment == "" {
+		section.Comment = defaultComment
+	}
+	if err := backupConfigFile(ctx, configFile); err != nil {
+		return err
+	}
+	return configFile.SaveTo(configFile.Path())
+}
+
 func backupConfigFile(ctx context.Context, configFile *config.File) error {
 	orig, backupErr := os.ReadFile(configFile.Path())
 	if len(orig) > 0 && backupErr == nil {
@@ -148,16 +159,7 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 		key.SetValue(attr.GetString(cfg))
 	}
 
-	// Add a comment to the default section if it's empty.
-	section = configFile.Section(ini.DefaultSection)
-	if len(section.Keys()) == 0 && section.Comment == "" {
-		section.Comment = defaultComment
-	}
-
-	if err := backupConfigFile(ctx, configFile); err != nil {
-		return err
-	}
-	return configFile.SaveTo(configFile.Path())
+	return writeConfigFile(ctx, configFile)
 }
 
 // DeleteProfile removes the named profile section from the databrickscfg file.
@@ -186,15 +188,7 @@ func DeleteProfile(ctx context.Context, profileName, configFilePath string) erro
 		configFile.DeleteSection(profileName)
 	}
 
-	section := configFile.Section(ini.DefaultSection)
-	if len(section.Keys()) == 0 && section.Comment == "" {
-		section.Comment = defaultComment
-	}
-
-	if err := backupConfigFile(ctx, configFile); err != nil {
-		return err
-	}
-	return configFile.SaveTo(configFile.Path())
+	return writeConfigFile(ctx, configFile)
 }
 
 func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
