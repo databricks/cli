@@ -1,5 +1,5 @@
 bundle:
-  name: test-import-block-migrate
+  name: test-bind-terraform
 
 resources:
   jobs:
@@ -17,7 +17,7 @@ resources:
 
 targets:
   default:
-    import:
+    bind:
       jobs:
         foo:
           id: "12345"

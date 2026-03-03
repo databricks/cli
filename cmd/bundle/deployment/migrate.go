@@ -154,9 +154,9 @@ WARNING: Both direct deployment engine and this command are experimental and not
 		}
 		ctx := cmd.Context()
 
-		// Check for import blocks - migration is not allowed with import blocks defined
-		if b.Target != nil && b.Target.Import != nil && !b.Target.Import.IsEmpty() {
-			return errors.New("cannot run 'bundle deployment migrate' when import blocks are defined in the target configuration; import blocks are only supported with the direct deployment engine")
+		// Check for bind blocks - migration is not allowed with bind blocks defined
+		if b.Target != nil && !b.Target.Bind.IsEmpty() {
+			return errors.New("cannot run 'bundle deployment migrate' when bind blocks are defined in the target configuration; bind blocks are only supported with the direct deployment engine")
 		}
 
 		if stateDesc.Lineage == "" {

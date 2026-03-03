@@ -109,7 +109,7 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string, importConfig *config.Import) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string, bindConfig config.Bind) (*deployplan.Plan, error) {
 	err := b.StateDB.Open(statePath)
 	if err != nil {
 		return nil, fmt.Errorf("reading state from %s: %w", statePath, err)
@@ -120,24 +120,24 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, err
 	}
 
-	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data, importConfig)
+	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data, bindConfig)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	// Validate all import entries reference resources defined in config.
-	var importErrors []string
-	importConfig.ForEach(func(resourceType, resourceName, importID string) {
+	// Validate all bind entries reference resources defined in config.
+	var bindErrors []string
+	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
 		key := "resources." + resourceType + "." + resourceName
 		if _, ok := plan.Plan[key]; !ok {
-			importErrors = append(importErrors, fmt.Sprintf("import block references undefined resource %q; define it in the resources section or remove the import block", key))
+			bindErrors = append(bindErrors, fmt.Sprintf("bind block references undefined resource %q; define it in the resources section or remove the bind block", key))
 		}
 	})
-	if len(importErrors) > 0 {
-		for _, msg := range importErrors {
+	if len(bindErrors) > 0 {
+		for _, msg := range bindErrors {
 			logdiag.LogError(ctx, errors.New(msg))
 		}
-		return nil, errors.New("import validation failed")
+		return nil, errors.New("bind validation failed")
 	}
 
 	b.Plan = plan
@@ -212,18 +212,18 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
 
-		// Handle import block: if ImportID is set, this resource should be imported
-		if entry.ImportID != "" {
+		// Handle bind block: if BindID is set, this resource should be bound
+		if entry.BindID != "" {
 			if hasEntry {
 				// Resource is already in state - check if IDs match
-				if dbentry.ID != entry.ImportID {
-					logdiag.LogError(ctx, fmt.Errorf("%s: resource already bound to ID %q, cannot import as %q; remove the import block or unbind the existing resource", errorPrefix, dbentry.ID, entry.ImportID))
+				if dbentry.ID != entry.BindID {
+					logdiag.LogError(ctx, fmt.Errorf("%s: resource already bound to ID %q, cannot bind as %q; remove the bind block or unbind the existing resource", errorPrefix, dbentry.ID, entry.BindID))
 					return false
 				}
-				// IDs match - proceed with normal planning (resource was previously imported)
+				// IDs match - proceed with normal planning (resource was previously bound)
 			} else {
-				// Not in state - this is a new import
-				return b.handleImportPlan(ctx, resourceKey, entry, adapter, errorPrefix)
+				// Not in state - this is a new bind
+				return b.handleBindPlan(ctx, resourceKey, entry, adapter, errorPrefix)
 			}
 		}
 
@@ -740,7 +740,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 	return true
 }
 
-func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database, importConfig *config.Import) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database, bindConfig config.Bind) (*deployplan.Plan, error) {
 	p := deployplan.NewPlanDirect()
 
 	// Copy state metadata to plan for validation during apply
@@ -902,17 +902,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)
 		}
 
-		// Check if this resource has an import block defined
+		// Check if this resource has a bind block defined
 		resourceType, resourceName := getResourceTypeAndName(node)
-		importID := ""
-		if importConfig != nil {
-			importID = importConfig.GetImportID(resourceType, resourceName)
-		}
+		bindID := bindConfig.GetBindID(resourceType, resourceName)
 
 		e := deployplan.PlanEntry{
 			DependsOn: dependsOn,
 			NewState:  newStateJSON,
-			ImportID:  importID,
+			BindID:    bindID,
 		}
 
 		p.Plan[node] = &e
@@ -984,18 +981,18 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 	return adapter, nil
 }
 
-// handleImportPlan handles planning for resources that should be imported from the workspace.
-// This is called when a resource has an import block defined and is not yet in the state.
-func (b *DeploymentBundle) handleImportPlan(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, adapter *dresources.Adapter, errorPrefix string) bool {
-	importID := entry.ImportID
+// handleBindPlan handles planning for resources that should be bound from the workspace.
+// This is called when a resource has a bind block defined and is not yet in the state.
+func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, adapter *dresources.Adapter, errorPrefix string) bool {
+	bindID := entry.BindID
 
 	// Read the remote resource to verify it exists and get current state
-	remoteState, err := adapter.DoRead(ctx, importID)
+	remoteState, err := adapter.DoRead(ctx, bindID)
 	if err != nil {
 		if isResourceGone(err) {
-			logdiag.LogError(ctx, fmt.Errorf("%s: resource with ID %q does not exist in workspace", errorPrefix, importID))
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource with ID %q does not exist in workspace", errorPrefix, bindID))
 		} else {
-			logdiag.LogError(ctx, fmt.Errorf("%s: reading remote resource id=%q: %w", errorPrefix, importID, err))
+			logdiag.LogError(ctx, fmt.Errorf("%s: reading remote resource id=%q: %w", errorPrefix, bindID, err))
 		}
 		return false
 	}
@@ -1023,7 +1020,7 @@ func (b *DeploymentBundle) handleImportPlan(ctx context.Context, resourceKey str
 		return false
 	}
 
-	// For imports, there's no "saved state" so we compare remote directly with config
+	// For binds, there's no "saved state" so we compare remote directly with config
 	entry.Changes, err = prepareChanges(ctx, adapter, nil, remoteDiff, nil, remoteStateComparable)
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
@@ -1039,16 +1036,16 @@ func (b *DeploymentBundle) handleImportPlan(ctx context.Context, resourceKey str
 	// Determine action based on changes
 	maxAction := getMaxAction(entry.Changes)
 
-	// Block recreate action for imported resources
+	// Block recreate action for bound resources
 	if maxAction == deployplan.Recreate {
-		logdiag.LogError(ctx, fmt.Errorf("%s: cannot recreate resource with import block; this would destroy the existing workspace resource. Remove the import block to allow recreation", errorPrefix))
+		logdiag.LogError(ctx, fmt.Errorf("%s: cannot recreate resource with bind block; this would destroy the existing workspace resource. Remove the bind block to allow recreation", errorPrefix))
 		return false
 	}
 
 	if maxAction == deployplan.Skip || maxAction == deployplan.Undefined {
-		entry.Action = deployplan.Import
+		entry.Action = deployplan.Bind
 	} else {
-		entry.Action = deployplan.ImportAndUpdate
+		entry.Action = deployplan.BindAndUpdate
 	}
 
 	return true

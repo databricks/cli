@@ -8,7 +8,7 @@
 
 ### Bundles
 
-* Add declarative import support for direct deployment engine ([#4630](https://github.com/databricks/cli/pull/4630)).
+* Add declarative bind support for direct deployment engine ([#4630](https://github.com/databricks/cli/pull/4630)).
 
 ### Dependency updates
 

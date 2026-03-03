@@ -1,6 +1,0 @@
-
->>> musterr [CLI] bundle plan
-Error: import block references undefined resource "resources.jobs.bar"; define it in the resources section or remove the import block
-
-Error: import validation failed
-

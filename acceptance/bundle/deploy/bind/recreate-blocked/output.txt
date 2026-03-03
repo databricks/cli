@@ -1,0 +1,6 @@
+
+>>> musterr [CLI] bundle plan
+Error: cannot plan resources.pipelines.foo: cannot recreate resource with bind block; this would destroy the existing workspace resource. Remove the bind block to allow recreation
+
+Error: planning failed
+

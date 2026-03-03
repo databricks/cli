@@ -1,10 +1,10 @@
 bundle:
-  name: test-import-basic
+  name: test-bind-not-found
 
 resources:
   jobs:
     foo:
-      name: test-import-job
+      name: test-job
       environments:
         - environment_key: default
           spec:
@@ -17,7 +17,7 @@ resources:
 
 targets:
   default:
-    import:
+    bind:
       jobs:
         foo:
-          id: "PLACEHOLDER_JOB_ID"
+          id: "999999999"

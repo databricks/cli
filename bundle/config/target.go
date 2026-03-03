@@ -70,10 +70,10 @@ type Target struct {
 
 	Permissions []resources.Permission `json:"permissions,omitempty"`
 
-	// Import specifies existing workspace resources to import into bundle management.
+	// Bind specifies existing workspace resources to bind into bundle management.
 	// Resources listed here will be bound to the bundle at deploy time.
 	// This field is only valid for the direct deployment engine.
-	Import *Import `json:"import,omitempty"`
+	Bind Bind `json:"bind,omitempty"`
 }
 
 const (

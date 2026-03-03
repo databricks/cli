@@ -5,5 +5,5 @@ add_repl.py $NEW_PIPELINE_ID NEW_PIPELINE_ID
 # Update the databricks.yml with the actual pipeline ID
 update_file.py databricks.yml 'PLACEHOLDER_PIPELINE_ID' "$NEW_PIPELINE_ID"
 
-# Run plan - should fail because changing storage requires recreate which is blocked for imports
+# Run plan - should fail because changing storage requires recreate which is blocked for binds
 trace musterr $CLI bundle plan

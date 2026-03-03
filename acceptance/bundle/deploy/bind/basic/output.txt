@@ -1,11 +1,11 @@
 
 >>> [CLI] bundle plan
-import jobs.foo (id: [NEW_JOB_ID])
+bind jobs.foo (id: [NEW_JOB_ID])
 
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to import
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-import-basic/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-basic/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -25,7 +25,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
    "state": {
     "deployment": {
      "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-import-basic/default/state/metadata.json"
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bind-basic/default/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "environments": [
@@ -38,7 +38,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
     ],
     "format": "MULTI_TASK",
     "max_concurrent_runs": 1,
-    "name": "test-import-job",
+    "name": "test-bind-job",
     "queue": {
      "enabled": true
     },
@@ -46,7 +46,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
      {
       "environment_key": "default",
       "spark_python_task": {
-       "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-import-basic/default/files/hello.py"
+       "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bind-basic/default/files/hello.py"
       },
       "task_key": "my_task"
      }
@@ -60,7 +60,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 The following resources will be deleted:
   delete resources.jobs.foo
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-import-basic/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-basic/default
 
 Deleting files...
 Destroy complete!

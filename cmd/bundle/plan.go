@@ -72,7 +72,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		updateCount := 0
 		deleteCount := 0
 		unchangedCount := 0
-		importCount := 0
+		bindCount := 0
 
 		for _, change := range plan.GetActions() {
 			switch change.ActionType {
@@ -88,10 +88,10 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				createCount++
 			case deployplan.Skip, deployplan.Undefined:
 				unchangedCount++
-			case deployplan.Import:
-				importCount++
-			case deployplan.ImportAndUpdate:
-				importCount++
+			case deployplan.Bind:
+				bindCount++
+			case deployplan.BindAndUpdate:
+				bindCount++
 				updateCount++
 			}
 		}
@@ -101,7 +101,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
 			// Print summary line and actions to stdout
-			totalChanges := createCount + updateCount + deleteCount + importCount
+			totalChanges := createCount + updateCount + deleteCount + bindCount
 			if totalChanges > 0 {
 				// Print all actions in the order they were processed
 				for _, action := range plan.GetActions() {
@@ -109,10 +109,10 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 						continue
 					}
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")
-					// For import actions, include the import ID
-					if action.ActionType.IsImport() {
+					// For bind actions, include the bind ID
+					if action.ActionType.IsBind() {
 						entry := plan.Plan[action.ResourceKey]
-						fmt.Fprintf(out, "%s %s (id: %s)\n", action.ActionType.StringShort(), key, entry.ImportID)
+						fmt.Fprintf(out, "%s %s (id: %s)\n", action.ActionType.StringShort(), key, entry.BindID)
 					} else {
 						fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
 					}
@@ -120,8 +120,8 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				fmt.Fprintln(out)
 			}
 			// Note, this string should not be changed, "bundle deployment migrate" depends on this format:
-			if importCount > 0 {
-				fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged, %d to import\n", createCount, updateCount, deleteCount, unchangedCount, importCount)
+			if bindCount > 0 {
+				fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged, %d to bind\n", createCount, updateCount, deleteCount, unchangedCount, bindCount)
 			} else {
 				fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchangedCount)
 			}

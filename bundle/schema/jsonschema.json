@@ -2490,6 +2490,27 @@
             "config.ArtifactType": {
               "type": "string"
             },
+            "config.BindResource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "description": "The ID of the existing workspace resource to bind.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "config.Bundle": {
               "oneOf": [
                 {
@@ -2625,125 +2646,6 @@
                     }
                   },
                   "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "config.Import": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "alerts": {
-                      "description": "The alert resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "apps": {
-                      "description": "The app resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "clusters": {
-                      "description": "The cluster resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "dashboards": {
-                      "description": "The dashboard resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "database_catalogs": {
-                      "description": "The database catalog resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "database_instances": {
-                      "description": "The database instance resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "experiments": {
-                      "description": "The experiment resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "jobs": {
-                      "description": "The job resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "model_serving_endpoints": {
-                      "description": "The model serving endpoint resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "models": {
-                      "description": "The model resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "pipelines": {
-                      "description": "The pipeline resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "postgres_branches": {
-                      "description": "The Postgres branch resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "postgres_endpoints": {
-                      "description": "The Postgres endpoint resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "postgres_projects": {
-                      "description": "The Postgres project resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "quality_monitors": {
-                      "description": "The quality monitor resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "registered_models": {
-                      "description": "The registered model resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "schemas": {
-                      "description": "The schema resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "secret_scopes": {
-                      "description": "The secret scope resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "sql_warehouses": {
-                      "description": "The SQL warehouse resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "synced_database_tables": {
-                      "description": "The synced database table resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    },
-                    "volumes": {
-                      "description": "The volume resources to import, where each key is the resource name in the bundle.",
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.ImportResource"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "config.ImportResource": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "description": "The ID of the existing workspace resource to import.",
-                      "$ref": "#/$defs/string"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "id"
-                  ]
                 },
                 {
                   "type": "string",
@@ -3025,6 +2927,10 @@
                       "description": "The artifacts to include in the target deployment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact"
                     },
+                    "bind": {
+                      "description": "The existing workspace resources to bind into bundle management for this target.",
+                      "$ref": "#/$defs/map/map/github.com/databricks/cli/bundle/config.BindResource"
+                    },
                     "bundle": {
                       "description": "The bundle attributes when deploying to this target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle"
@@ -3046,10 +2952,6 @@
                     "git": {
                       "description": "The Git version control settings for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git"
-                    },
-                    "import": {
-                      "description": "The existing workspace resources to import into bundle management for this target.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Import"
                     },
                     "mode": {
                       "description": "The deployment mode for the target.",
@@ -10746,12 +10648,12 @@
                   }
                 ]
               },
-              "config.Command": {
+              "config.BindResource": {
                 "oneOf": [
                   {
                     "type": "object",
                     "additionalProperties": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Command"
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.BindResource"
                     }
                   },
                   {
@@ -10760,12 +10662,12 @@
                   }
                 ]
               },
-              "config.ImportResource": {
+              "config.Command": {
                 "oneOf": [
                   {
                     "type": "object",
                     "additionalProperties": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ImportResource"
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Command"
                     }
                   },
                   {
@@ -10801,6 +10703,30 @@
                     "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                   }
                 ]
+              }
+            }
+          }
+        }
+      },
+      "map": {
+        "github.com": {
+          "databricks": {
+            "cli": {
+              "bundle": {
+                "config.BindResource": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.BindResource"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                }
               }
             }
           }

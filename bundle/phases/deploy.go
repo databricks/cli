@@ -213,19 +213,19 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
-	// Validate import blocks are only used with the direct deployment engine.
-	if !engine.IsDirect() && b.Target != nil && b.Target.Import != nil && !b.Target.Import.IsEmpty() {
-		logdiag.LogError(ctx, errors.New("import blocks in the target configuration are only supported with the direct deployment engine; set DATABRICKS_BUNDLE_ENGINE=direct or remove the import blocks"))
+	// Validate bind blocks are only used with the direct deployment engine.
+	if !engine.IsDirect() && b.Target != nil && !b.Target.Bind.IsEmpty() {
+		logdiag.LogError(ctx, errors.New("bind blocks in the target configuration are only supported with the direct deployment engine; set DATABRICKS_BUNDLE_ENGINE=direct or remove the bind blocks"))
 		return nil
 	}
 
 	if engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
-		var importConfig *config.Import
+		var bindConfig config.Bind
 		if b.Target != nil {
-			importConfig = b.Target.Import
+			bindConfig = b.Target.Bind
 		}
-		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, localPath, importConfig)
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, localPath, bindConfig)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

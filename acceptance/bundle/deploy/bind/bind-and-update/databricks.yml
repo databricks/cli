@@ -1,10 +1,10 @@
 bundle:
-  name: test-import-terraform
+  name: test-bind-update
 
 resources:
   jobs:
     foo:
-      name: test-job
+      name: updated-job-name
       environments:
         - environment_key: default
           spec:
@@ -17,7 +17,7 @@ resources:
 
 targets:
   default:
-    import:
+    bind:
       jobs:
         foo:
-          id: "12345"
+          id: "PLACEHOLDER_JOB_ID"

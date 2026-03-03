@@ -1,11 +1,11 @@
 
 >>> [CLI] bundle plan
-import jobs.foo (id: [NEW_JOB_ID])
+bind jobs.foo (id: [NEW_JOB_ID])
 
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to import
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged, 1 to bind
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-import-update/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-update/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -17,7 +17,7 @@ updated-job-name
 The following resources will be deleted:
   delete resources.jobs.foo
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-import-update/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bind-update/default
 
 Deleting files...
 Destroy complete!

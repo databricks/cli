@@ -1,5 +1,5 @@
 bundle:
-  name: test-import-recreate
+  name: test-bind-recreate
 
 resources:
   pipelines:
@@ -12,7 +12,7 @@ resources:
 
 targets:
   default:
-    import:
+    bind:
       pipelines:
         foo:
           id: "PLACEHOLDER_PIPELINE_ID"

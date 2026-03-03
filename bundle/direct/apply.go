@@ -56,19 +56,19 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 }
 
-// Import handles importing an existing workspace resource into the bundle state.
-// For Import action, it just saves the state with the import ID.
-// For ImportAndUpdate action, it also applies config changes to the resource.
-func (d *DeploymentUnit) Import(ctx context.Context, db *dstate.DeploymentState, importID string, newState any, actionType deployplan.ActionType, changes deployplan.Changes) error {
-	if actionType == deployplan.ImportAndUpdate {
-		// Apply updates to the imported resource
+// DeclarativeBind handles binding an existing workspace resource into the bundle state.
+// For Bind action, it just saves the state with the bind ID.
+// For BindAndUpdate action, it also applies config changes to the resource.
+func (d *DeploymentUnit) DeclarativeBind(ctx context.Context, db *dstate.DeploymentState, bindID string, newState any, actionType deployplan.ActionType, changes deployplan.Changes) error {
+	if actionType == deployplan.BindAndUpdate {
+		// Apply updates to the bound resource
 		if !d.Adapter.HasDoUpdate() {
 			return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 		}
 
-		remoteState, err := d.Adapter.DoUpdate(ctx, importID, newState, changes)
+		remoteState, err := d.Adapter.DoUpdate(ctx, bindID, newState, changes)
 		if err != nil {
-			return fmt.Errorf("updating imported resource id=%s: %w", importID, err)
+			return fmt.Errorf("updating bound resource id=%s: %w", bindID, err)
 		}
 
 		err = d.SetRemoteState(remoteState)
@@ -76,15 +76,15 @@ func (d *DeploymentUnit) Import(ctx context.Context, db *dstate.DeploymentState,
 			return err
 		}
 
-		log.Infof(ctx, "Imported and updated %s id=%s", d.ResourceKey, importID)
+		log.Infof(ctx, "Bound and updated %s id=%s", d.ResourceKey, bindID)
 	} else {
-		log.Infof(ctx, "Imported %s id=%s", d.ResourceKey, importID)
+		log.Infof(ctx, "Bound %s id=%s", d.ResourceKey, bindID)
 	}
 
-	// Save state with the imported ID
-	err := db.SaveState(d.ResourceKey, importID, newState, d.DependsOn)
+	// Save state with the bound ID
+	err := db.SaveState(d.ResourceKey, bindID, newState, d.DependsOn)
 	if err != nil {
-		return fmt.Errorf("saving state id=%s: %w", importID, err)
+		return fmt.Errorf("saving state id=%s: %w", bindID, err)
 	}
 
 	return nil

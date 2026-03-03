@@ -1,5 +1,5 @@
 bundle:
-  name: test-import-orphaned
+  name: test-bind-block-migrate
 
 resources:
   jobs:
@@ -17,7 +17,7 @@ resources:
 
 targets:
   default:
-    import:
+    bind:
       jobs:
-        bar:
+        foo:
           id: "12345"

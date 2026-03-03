@@ -1,10 +1,10 @@
 bundle:
-  name: test-import-update
+  name: test-bind-orphaned
 
 resources:
   jobs:
     foo:
-      name: updated-job-name
+      name: test-job
       environments:
         - environment_key: default
           spec:
@@ -17,7 +17,7 @@ resources:
 
 targets:
   default:
-    import:
+    bind:
       jobs:
-        foo:
-          id: "PLACEHOLDER_JOB_ID"
+        bar:
+          id: "12345"
