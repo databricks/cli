@@ -168,6 +168,12 @@ func DeleteProfile(ctx context.Context, profileName, configFilePath string) erro
 		return fmt.Errorf("cannot load config file %s: %w", configFilePath, err)
 	}
 
+	// If the profile doesn't exist, return an error to avoid
+	// creating a backup file with the same content as the original file.
+	if _, err := configFile.SectionsByName(profileName); err != nil {
+		return fmt.Errorf("profile %s not found: %w", profileName, err)
+	}
+
 	configFile.DeleteSection(profileName)
 
 	section := configFile.Section(ini.DefaultSection)

@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
@@ -26,9 +25,14 @@ You will need to run {{ "databricks auth login" | bold }} to re-authenticate.
 `
 
 func newLogoutCommand() *cobra.Command {
-	defaultConfigPath := "~/.databrickscfg"
-	if runtime.GOOS == "windows" {
-		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
+	profiler := profile.DefaultProfiler
+
+	configPath, err := profiler.GetPath(context.Background())
+	// If the config path is not found, revert to the default path for the description as a fallback.
+	// During the execution of the command, if this is the case an error will be returned.
+	if err != nil {
+		log.Warnf(context.Background(), "Failed to get config path: %v, using default path ~/.databrickscfg", err)
+		configPath = "~/.databrickscfg"
 	}
 
 	cmd := &cobra.Command{
@@ -41,7 +45,7 @@ This command removes the specified profile from %s and deletes
 any associated cached OAuth tokens.
 
 You will need to run "databricks auth login" to re-authenticate after
-logging out.`, defaultConfigPath),
+logging out.`, configPath),
 	}
 
 	var force bool
@@ -67,9 +71,9 @@ logging out.`, defaultConfigPath),
 		return runLogout(ctx, logoutArgs{
 			profileName:    profileName,
 			force:          force,
-			profiler:       profile.DefaultProfiler,
+			profiler:       profiler,
 			tokenCache:     tokenCache,
-			configFilePath: os.Getenv("DATABRICKS_CONFIG_FILE"),
+			configFilePath: env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		})
 	}
 
@@ -112,6 +116,7 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 			return err
 		}
 		if !approved {
+			cmdio.LogString(ctx, "Aborting logout... No changes were made.")
 			return nil
 		}
 	}
