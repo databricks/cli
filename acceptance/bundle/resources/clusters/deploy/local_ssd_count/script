@@ -11,4 +11,4 @@ print_requests.py //cluster > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 title "Cluster should exist after bundle deployment:\n"
 CLUSTER_ID=`read_id.py test_cluster`
-$CLI clusters get "${CLUSTER_ID}" | gron.py | grep json.gcp_attributes > out.result.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI clusters get "${CLUSTER_ID}" | gron.py | grep json.gcp_attributes > out.result.$DATABRICKS_BUNDLE_ENGINE.txt
