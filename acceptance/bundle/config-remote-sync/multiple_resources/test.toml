@@ -1,4 +1,5 @@
 Cloud = true
+RequiresUnityCatalog = true
 
 RecordRequests = false
 Ignore = [".databricks", "dummy.whl", "databricks.yml", "databricks.yml.backup"]
