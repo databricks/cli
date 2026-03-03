@@ -1,0 +1,48 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Create valid paths so that initial deploy succeeds
+mkdir -p pipeline_root src
+echo '# Databricks notebook source' > src/notebook.py
+
+cleanup() {
+  # Restore valid paths for destroy to work
+  mkdir -p pipeline_root src
+  echo '# Databricks notebook source' > src/notebook.py
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+pipeline_id="$(read_id.py my_pipeline)"
+
+
+title "Set correct paths and add git info remotely"
+edit_resource.py pipelines $pipeline_id <<EOF
+r["root_path"] = "${PWD}/pipeline_root_v2"
+EOF
+
+edit_resource.py jobs $job_id <<EOF
+r["tasks"][0]["notebook_task"]["notebook_path"] = "/Users/${CURRENT_USER_NAME}/notebook"
+r["git_source"] = {
+    "git_url": "https://github.com/databricks/databricks-sdk-go.git",
+    "git_branch": "main",
+    "git_provider": "gitHub"
+}
+EOF
+
+
+title "Break local paths to simulate stale config"
+# Remove the directories so the config now references non-existent relative paths
+rm -rf pipeline_root src
+
+
+title "Sync with broken local paths"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
