@@ -1,0 +1,31 @@
+=== Deploy (job_a created and saved, then crash on jobs/get) ===
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-summary-test/default/files...
+Deploying resources...
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
+=== State directory contents after crash ===
+deployment.json
+resources.json
+resources.json.wal
+sync-snapshots
+=== WAL should exist after crash ===
+WAL exists (expected)
+{"lineage":"[UUID]","serial": [SERIAL]}
+{"k":"resources.jobs.job_a","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-summary-test/default/state/metadata.json"},"description":"first job","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-a","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-summary-test/default/files/test.py"},"task_key":"task-a"}]}}}
+=== State file after crash ===
+{
+  "serial": [SERIAL],
+  "state_keys": []
+}
+=== Bundle summary (should show job_a from WAL) ===
+
+>>> [CLI] bundle summary -o json
+Recovering state from WAL file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal
+Recovered 1 entries from WAL file.
+{
+  "job_a_id": "1001",
+  "job_b_id": null
+}

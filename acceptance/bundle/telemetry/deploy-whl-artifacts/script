@@ -2,9 +2,9 @@ uv venv -q .venv
 venv_activate
 uv pip install -q setuptools
 
-trace $CLI bundle deploy -t one
+trace $CLI bundle deploy -t one > out.deploy-one.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
-trace $CLI bundle deploy -t two
+trace $CLI bundle deploy -t two > out.deploy-two.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
 trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental | {bool_values}'
 
