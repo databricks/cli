@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"strings"
@@ -22,6 +23,9 @@ import (
 )
 
 const (
+	// sqlFileExtension is the file extension used to auto-detect SQL files.
+	sqlFileExtension = ".sql"
+
 	// pollIntervalInitial is the starting interval between status polls.
 	pollIntervalInitial = 1 * time.Second
 
@@ -34,27 +38,35 @@ const (
 
 func newQueryCmd() *cobra.Command {
 	var warehouseID string
+	var filePath string
 
 	cmd := &cobra.Command{
-		Use:   "query SQL",
+		Use:   "query [SQL | file.sql]",
 		Short: "Execute SQL against a Databricks warehouse",
 		Long: `Execute a SQL statement against a Databricks SQL warehouse and return results.
+
+SQL can be provided as a positional argument, read from a file with --file,
+or piped via stdin. If the positional argument ends in .sql and the file
+exists, it is read as a SQL file automatically.
 
 The command auto-detects an available warehouse unless --warehouse is set
 or the DATABRICKS_WAREHOUSE_ID environment variable is configured.
 
 Output includes the query results as JSON and row count.`,
 		Example: `  databricks experimental aitools tools query "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
-  databricks experimental aitools tools query --warehouse abc123 "SELECT 1"`,
-		Args:    cobra.ExactArgs(1),
+  databricks experimental aitools tools query --warehouse abc123 "SELECT 1"
+  databricks experimental aitools tools query --file report.sql
+  databricks experimental aitools tools query report.sql
+  echo "SELECT 1" | databricks experimental aitools tools query`,
+		Args:    cobra.MaximumNArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 
-			sqlStatement := cleanSQL(args[0])
-			if sqlStatement == "" {
-				return errors.New("SQL statement is required")
+			sqlStatement, err := resolveSQL(ctx, cmd, args, filePath)
+			if err != nil {
+				return err
 			}
 
 			wID, err := resolveWarehouseID(ctx, w, warehouseID)
@@ -78,8 +90,64 @@ Output includes the query results as JSON and row count.`,
 	}
 
 	cmd.Flags().StringVarP(&warehouseID, "warehouse", "w", "", "SQL warehouse ID to use for execution")
+	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to a SQL file to execute")
 
 	return cmd
+}
+
+// resolveSQL determines the SQL statement to execute from the available input sources.
+// Priority: --file flag > positional arg > stdin.
+func resolveSQL(ctx context.Context, cmd *cobra.Command, args []string, filePath string) (string, error) {
+	var raw string
+
+	switch {
+	case filePath != "":
+		if len(args) > 0 {
+			return "", errors.New("cannot use both --file and a positional SQL argument")
+		}
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			return "", fmt.Errorf("read SQL file: %w", err)
+		}
+		raw = string(data)
+
+	case len(args) > 0:
+		// If the argument looks like a .sql file, try to read it.
+		// Only fall through to literal SQL if the file doesn't exist.
+		// Surface other errors (permission denied, etc.) directly.
+		if strings.HasSuffix(args[0], sqlFileExtension) {
+			data, err := os.ReadFile(args[0])
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return "", fmt.Errorf("read SQL file: %w", err)
+			}
+			if err == nil {
+				raw = string(data)
+				break
+			}
+		}
+		raw = args[0]
+
+	default:
+		// No args: try reading from stdin if it's piped.
+		// If stdin was overridden (e.g. cmd.SetIn in tests), always read from it.
+		// Otherwise, only read if stdin is not a TTY (i.e. piped input).
+		in := cmd.InOrStdin()
+		_, isOsFile := in.(*os.File)
+		if isOsFile && cmdio.IsPromptSupported(ctx) {
+			return "", errors.New("no SQL provided; pass a SQL string, use --file, or pipe via stdin")
+		}
+		data, err := io.ReadAll(in)
+		if err != nil {
+			return "", fmt.Errorf("read stdin: %w", err)
+		}
+		raw = string(data)
+	}
+
+	result := cleanSQL(raw)
+	if result == "" {
+		return "", errors.New("SQL statement is empty after removing comments and blank lines")
+	}
+	return result, nil
 }
 
 // resolveWarehouseID returns the warehouse ID to use for query execution.
