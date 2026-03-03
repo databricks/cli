@@ -5,8 +5,8 @@ mkdir -p pipeline_root src
 echo '# Databricks notebook source' > src/notebook.py
 
 cleanup() {
-  # Restore valid paths for destroy to work
-  mkdir -p pipeline_root src
+  # Restore valid paths for destroy to work (includes pipeline_root_v2 from sync)
+  mkdir -p pipeline_root pipeline_root_v2 src
   echo '# Databricks notebook source' > src/notebook.py
   trace $CLI bundle destroy --auto-approve
 }

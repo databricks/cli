@@ -6,8 +6,44 @@ Deployment complete!
 === Set correct paths and add git info remotely
 === Break local paths to simulate stale config
 === Sync with broken local paths
-Error: notebook src/notebook.py not found
+Detected changes in 2 resource(s):
 
+Resource: resources.jobs.my_job
+  git_source: add
+  tasks[task_key='main'].notebook_task.notebook_path: replace
+
+Resource: resources.pipelines.my_pipeline
+  root_path: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -6,5 +6,5 @@
+     my_pipeline:
+       name: test-pipeline-[UNIQUE_NAME]
+-      root_path: ./pipeline_root
++      root_path: ./pipeline_root_v2
+       libraries:
+         - notebook:
+@@ -16,9 +16,13 @@
+         - task_key: main
+           notebook_task:
+-            notebook_path: ./src/notebook.py
++            notebook_path: /Users/[USERNAME]/notebook
+           new_cluster:
+             spark_version: 13.3.x-snapshot-scala2.12
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
++      git_source:
++        git_branch: main
++        git_provider: gitHub
++        git_url: https://github.com/databricks/databricks-sdk-go.git
+
+ targets:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -22,5 +58,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
-Exit code: 1
