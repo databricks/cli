@@ -55,3 +55,39 @@ func TestAppsValidateSameSourcePath(t *testing.T) {
 	require.Equal(t, "Duplicate app source code path", diags[0].Summary)
 	require.Contains(t, diags[0].Detail, "has the same source code path as app resource")
 }
+
+func TestAppsValidateBothSourceCodePathAndGitSource(t *testing.T) {
+	tmpDir := t.TempDir()
+	testutil.Touch(t, tmpDir, "app1", "app.py")
+
+	b := &bundle.Bundle{
+		BundleRootPath: tmpDir,
+		SyncRootPath:   tmpDir,
+		SyncRoot:       vfs.MustNew(tmpDir),
+		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/foo/bar/",
+			},
+			Resources: config.Resources{
+				Apps: map[string]*resources.App{
+					"app1": {
+						App: apps.App{
+							Name: "app1",
+						},
+						SourceCodePath: "./app1",
+						GitSource: &apps.GitSource{
+							Branch: "main",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
+
+	diags := bundle.ApplySeq(context.Background(), b, mutator.TranslatePaths(), Validate())
+	require.Len(t, diags, 1)
+	require.Equal(t, "Both source_code_path and git_source fields are set", diags[0].Summary)
+	require.Contains(t, diags[0].Detail, "should have either source_code_path or git_source field, not both")
+}
