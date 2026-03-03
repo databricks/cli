@@ -18,7 +18,7 @@ var RequiredFields = map[string][]string{
 	"resources.alerts.*.permissions[*]":              {"level"},
 	"resources.alerts.*.schedule":                    {"quartz_cron_schedule", "timezone_id"},
 
-	"resources.apps.*": {"name", "source_code_path"},
+	"resources.apps.*": {"name"},
 	"resources.apps.*.active_deployment.git_source.git_repository":  {"provider", "url"},
 	"resources.apps.*.config.env[*]":                                {"name"},
 	"resources.apps.*.git_repository":                               {"provider", "url"},
