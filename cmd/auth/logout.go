@@ -35,37 +35,28 @@ func newLogoutCommand() *cobra.Command {
 		Hidden: true,
 		Long: `Log out of a Databricks profile.
 
-This command deletes any cached OAuth tokens for the specified profile.
-If --delete is specified, the profile is also removed from ~/.databrickscfg
-(or the file specified by the DATABRICKS_CONFIG_FILE environment variable).
+This command clears any cached OAuth tokens for the specified profile so
+that the next CLI invocation requires re-authentication. The profile
+entry in ~/.databrickscfg is left intact unless --delete is also specified.
 
-You will need to run "databricks auth login" to re-authenticate after
-logging out.
+This command requires a profile to be specified (using --profile) or an
+interactive terminal. If you omit --profile and run in an interactive
+terminal, you'll be shown a profile picker. In a non-interactive
+environment (e.g. CI/CD), omitting --profile is an error.
 
-This command requires a profile to be specified (using --profile). If you
-omit --profile and run in an interactive terminal, you'll be shown an
-interactive profile picker to select which profile to log out of.
+1. If you specify --profile, the command logs out of that profile. In an
+   interactive terminal you'll be asked to confirm unless --force is set.
 
-While this command always removes the specified profile, the runtime behaviour
-depends on whether you run it in an interactive terminal and which flags you
-provide.
+2. If you omit --profile in an interactive terminal, a searchable picker
+   lists all profiles from the configuration file. You can search by
+   name, host, or account ID.
 
-1. If you specify --profile, the command will log out of that profile.
-   In an interactive terminal, you'll be asked to confirm unless --force
-   is specified.
+3. If you omit --profile in a non-interactive environment, the command
+   fails with an error asking you to specify --profile.
 
-2. If you omit --profile and run in an interactive terminal, you'll be shown
-   an interactive picker listing all profiles from your configuration file.
-   Profiles are sorted alphabetically by name. You can search by profile
-   name, host, or account ID. After selecting a profile, you'll be asked to
-   confirm unless --force is specified.
+4. Use --force to skip the confirmation prompt.
 
-3. If you omit --profile and run in a non-interactive environment (e.g.
-   CI/CD pipelines), the command will fail with an error asking you to
-   specify --profile.
-
-4. Use --force to skip the confirmation prompt. This is required when
-   running in non-interactive mode; otherwise the command will fail.`,
+5. Use --delete to also remove the profile section from ~/.databrickscfg.`,
 	}
 
 	var force bool
