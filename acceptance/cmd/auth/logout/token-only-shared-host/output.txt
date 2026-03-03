@@ -1,0 +1,51 @@
+
+=== Token cache before logout
+{
+  "tokens": {
+    "dev": {
+      "access_token": "dev-cached-token",
+      "token_type": "Bearer"
+    },
+    "https://shared.cloud.databricks.com": {
+      "access_token": "shared-host-token",
+      "token_type": "Bearer"
+    },
+    "staging": {
+      "access_token": "staging-cached-token",
+      "token_type": "Bearer"
+    }
+  },
+  "version": 1
+}
+
+=== Logout dev without --delete
+>>> [CLI] auth logout --profile dev --force
+Successfully logged out of profile "dev". To remove the profile from the config file, use --delete.
+
+=== Config after logout — both profiles should still exist
+[DEFAULT]
+
+[dev]
+host = https://shared.cloud.databricks.com
+token = dev-token
+
+[staging]
+host = https://shared.cloud.databricks.com
+token = staging-token
+
+=== Token cache after logout — dev removed, host preserved (shared with staging)
+{
+  "tokens": {
+    "https://shared.cloud.databricks.com": {
+      "access_token": "shared-host-token",
+      "expiry": "0001-01-01T00:00:00Z",
+      "token_type": "Bearer"
+    },
+    "staging": {
+      "access_token": "staging-cached-token",
+      "expiry": "0001-01-01T00:00:00Z",
+      "token_type": "Bearer"
+    }
+  },
+  "version": 1
+}

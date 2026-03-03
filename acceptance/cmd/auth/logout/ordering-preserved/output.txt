@@ -22,8 +22,8 @@ token = gamma-token
 warehouse_id = gamma-warehouse
 
 === Delete first non-default profile (alpha)
->>> [CLI] auth logout --profile alpha --force
-Successfully logged out of profile "alpha".
+>>> [CLI] auth logout --profile alpha --force --delete
+Successfully logged out of and deleted profile "alpha".
 
 === Backup file should exist
 OK: Backup file exists
@@ -45,8 +45,8 @@ token        = gamma-token
 warehouse_id = gamma-warehouse
 
 === Delete last profile (gamma)
->>> [CLI] auth logout --profile gamma --force
-Successfully logged out of profile "gamma".
+>>> [CLI] auth logout --profile gamma --force --delete
+Successfully logged out of and deleted profile "gamma".
 
 === Config after deleting gamma
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.

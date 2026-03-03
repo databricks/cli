@@ -11,8 +11,8 @@ host = https://dev.cloud.databricks.com
 token = dev-token
 
 === Delete the DEFAULT profile
->>> [CLI] auth logout --profile DEFAULT --force
-Successfully logged out of profile "DEFAULT".
+>>> [CLI] auth logout --profile DEFAULT --force --delete
+Successfully logged out of and deleted profile "DEFAULT".
 
 === Backup file should exist
 OK: Backup file exists
