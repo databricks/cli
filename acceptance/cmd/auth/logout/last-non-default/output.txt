@@ -1,0 +1,20 @@
+
+=== Initial config
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+; The only non-default profile
+[only-profile]
+host = https://only.cloud.databricks.com
+token = only-token
+
+=== Delete the only non-default profile
+>>> [CLI] auth logout --profile only-profile --force
+Successfully logged out of profile "only-profile".
+
+=== Backup file should exist
+OK: Backup file exists
+
+=== Config after logout — DEFAULT section with comment should remain
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
