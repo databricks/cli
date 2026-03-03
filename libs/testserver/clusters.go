@@ -92,7 +92,10 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 
 // clusterFixUps applies server-side defaults that the real API sets.
 func clusterFixUps(cluster *compute.ClusterDetails) {
-	if cluster.AwsAttributes == nil {
+	if cluster.GcpAttributes != nil {
+		structaccess.SetDefault(cluster, "gcp_attributes.first_on_demand", 1)
+		structaccess.SetDefault(cluster, "gcp_attributes.use_preemptible_executors", false)
+	} else if cluster.AwsAttributes == nil {
 		cluster.AwsAttributes = &compute.AwsAttributes{
 			Availability: compute.AwsAvailabilitySpotWithFallback,
 			ZoneId:       "us-east-1c",
