@@ -14,8 +14,9 @@ const ManifestFileName = "appkit.plugins.json"
 // ResourceField describes a single field within a multi-field resource.
 // Multi-field resources (e.g., database, secret) need separate env vars and values per field.
 type ResourceField struct {
-	Env         string `json:"env"`
-	Description string `json:"description"`
+	Env          string `json:"env"`
+	Description  string `json:"description"`
+	BundleIgnore bool   `json:"bundleIgnore,omitempty"`
 }
 
 // Resource defines a Databricks resource required or optional for a plugin.
