@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -37,6 +38,8 @@ import (
 var sshServerBootstrapScript string
 
 var errServerMetadata = errors.New("server metadata error")
+
+var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
 const (
 	sshServerTaskKey         = "start_ssh_server"
@@ -95,6 +98,26 @@ type ClientOptions struct {
 	Liteswap string
 	// If true, skip checking and updating IDE settings.
 	SkipSettingsCheck bool
+}
+
+func (o *ClientOptions) Validate() error {
+	if !o.ProxyMode && o.ClusterID == "" && o.ConnectionName == "" {
+		return errors.New("please provide --cluster flag with the cluster ID, or --name flag with the connection name (for serverless compute)")
+	}
+	if o.Accelerator != "" && o.ConnectionName == "" {
+		return errors.New("--accelerator flag can only be used with serverless compute (--name flag)")
+	}
+	// TODO: Remove when we add support for serverless CPU
+	if o.ConnectionName != "" && o.Accelerator == "" {
+		return errors.New("--name flag requires --accelerator to be set (for now we only support serverless GPU compute)")
+	}
+	if o.ConnectionName != "" && !connectionNameRegex.MatchString(o.ConnectionName) {
+		return fmt.Errorf("connection name %q must consist of letters, numbers, dashes, and underscores", o.ConnectionName)
+	}
+	if o.IDE != "" && o.IDE != VSCodeOption && o.IDE != CursorOption {
+		return fmt.Errorf("invalid IDE value: %q, expected %q or %q", o.IDE, VSCodeOption, CursorOption)
+	}
+	return nil
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {
@@ -287,10 +310,6 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 }
 
 func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {
-	if opts.IDE != VSCodeOption && opts.IDE != CursorOption {
-		return fmt.Errorf("invalid IDE value: %s, expected '%s' or '%s'", opts.IDE, VSCodeOption, CursorOption)
-	}
-
 	connectionName := opts.SessionIdentifier()
 	if connectionName == "" {
 		return errors.New("connection name is required for IDE integration")
@@ -452,6 +471,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		"shutdownDelay":           opts.ShutdownDelay.String(),
 		"maxClients":              strconv.Itoa(opts.MaxClients),
 		"sessionId":               sessionID,
+		"serverless":              strconv.FormatBool(opts.IsServerlessMode()),
 	}
 
 	cmdio.LogString(ctx, "Submitting a job to start the ssh server...")

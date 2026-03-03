@@ -23,7 +23,7 @@ Deployment complete!
     },
     "threshold": {
       "value": {
-        "double_value": 2
+        "double_value": 1.3
       }
     }
   },

@@ -68,3 +68,41 @@ func TestConvertAlert(t *testing.T) {
 		},
 	}, out.Permissions["alert_test_alert"])
 }
+
+func TestConvertAlertWithThresholdDoubleValue(t *testing.T) {
+	src := resources.Alert{
+		AlertV2: sql.AlertV2{
+			DisplayName: "test_alert",
+			QueryText:   "SELECT 1",
+			WarehouseId: "test_warehouse_id",
+			Evaluation: sql.AlertV2Evaluation{
+				ComparisonOperator: "EQUAL",
+				Source: sql.AlertV2OperandColumn{
+					Name: "1",
+				},
+				Threshold: &sql.AlertV2Operand{
+					Value: &sql.AlertV2OperandValue{
+						DoubleValue: 1.3,
+					},
+				},
+			},
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = alertConverter{}.Convert(ctx, "test_alert", vin, out)
+	require.NoError(t, err)
+
+	alert := out.AlertV2["test_alert"]
+	alertMap := alert.(map[string]any)
+	evaluation := alertMap["evaluation"].(map[string]any)
+	threshold := evaluation["threshold"].(map[string]any)
+	value := threshold["value"].(map[string]any)
+
+	// Assert the fractional double_value is preserved after normalization.
+	assert.InDelta(t, 1.3, value["double_value"], 0.0001)
+}

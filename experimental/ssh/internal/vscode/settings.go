@@ -16,7 +16,9 @@ import (
 )
 
 const (
-	portRange            = "4000-4005"
+	// TODO: change to 4000-4005 when the relevant changes are fully deployed.
+	// The ports below can also be used by PyTorch, but we have a bigger range available for it.
+	portRange            = "29500-29505"
 	remotePlatform       = "linux"
 	pythonExtension      = "ms-python.python"
 	jupyterExtension     = "ms-toolsai.jupyter"

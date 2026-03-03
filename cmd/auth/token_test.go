@@ -125,6 +125,11 @@ func TestToken_loadToken(t *testing.T) {
 				Name: "legacy-ws",
 				Host: "https://legacy-ws.cloud.databricks.com",
 			},
+			{
+				Name:                 "m2m-profile",
+				Host:                 "https://m2m.cloud.databricks.com",
+				HasClientCredentials: true,
+			},
 		},
 	}
 	tokenCache := &inMemoryTokenCache{
@@ -165,6 +170,10 @@ func TestToken_loadToken(t *testing.T) {
 			},
 			"https://legacy-ws.cloud.databricks.com": {
 				RefreshToken: "legacy-ws",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
+			"dup1": {
+				RefreshToken: "dup1",
 				Expiry:       time.Now().Add(1 * time.Hour),
 			},
 		},
@@ -532,6 +541,47 @@ func TestToken_loadToken(t *testing.T) {
 			wantErr: "no profiles configured. Run 'databricks auth login' to create a profile",
 		},
 		{
+			name: "M2M profile returns clear error",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "m2m-profile",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+			},
+			wantErr: `profile "m2m-profile" uses M2M authentication (client_id/client_secret). ` +
+				"`databricks auth token` only supports U2M (user-to-machine) authentication tokens. " +
+				"To authenticate as a service principal, use the Databricks SDK directly",
+		},
+		{
+			name: "M2M profile detected via positional arg",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"m2m-profile"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+			},
+			wantErr: `profile "m2m-profile" uses M2M authentication (client_id/client_secret). ` +
+				"`databricks auth token` only supports U2M (user-to-machine) authentication tokens. " +
+				"To authenticate as a service principal, use the Databricks SDK directly",
+		},
+		{
+			name: "M2M profile detected via host resolution",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host: "https://m2m.cloud.databricks.com",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
+			},
+			wantErr: `profile "m2m-profile" uses M2M authentication (client_id/client_secret). ` +
+				"`databricks auth token` only supports U2M (user-to-machine) authentication tokens. " +
+				"To authenticate as a service principal, use the Databricks SDK directly",
+		},
+		{
 			name: "no args, DATABRICKS_HOST env resolves",
 			setupCtx: func(ctx context.Context) context.Context {
 				ctx = env.Set(ctx, "DATABRICKS_HOST", "https://workspace-a.cloud.databricks.com")
@@ -572,7 +622,7 @@ func TestToken_loadToken(t *testing.T) {
 			validateToken: validateToken,
 		},
 		{
-			name: "no args, DATABRICKS_HOST takes precedence over DATABRICKS_CONFIG_PROFILE",
+			name: "no args, DATABRICKS_CONFIG_PROFILE env takes precedence over DATABRICKS_HOST",
 			setupCtx: func(ctx context.Context) context.Context {
 				ctx = env.Set(ctx, "DATABRICKS_HOST", "https://workspace-a.cloud.databricks.com")
 				ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "expired")
@@ -584,6 +634,27 @@ func TestToken_loadToken(t *testing.T) {
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "host flag with profile env var disambiguates multi-profile",
+			setupCtx: func(ctx context.Context) context.Context {
+				return env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "dup1")
+			},
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{
+					Host: "https://shared.cloud.databricks.com",
+				},
+				profileName:  "",
+				args:         []string{},
+				tokenTimeout: 1 * time.Hour,
+				profiler:     profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),

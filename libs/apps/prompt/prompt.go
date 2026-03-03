@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -523,6 +524,67 @@ func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) 
 	}, nil
 }
 
+// PromptForPostgres shows a three-step picker for Lakebase Autoscaling (V2): project, branch, then database.
+func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
+	// Step 1: pick a project
+	var projects []ListItem
+	err := RunWithSpinnerCtx(ctx, "Fetching Postgres projects...", func() error {
+		var fetchErr error
+		projects, fetchErr = ListPostgresProjects(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	projectName, err := PromptFromList(ctx, "Select Postgres Project", "no Postgres projects found", projects, required)
+	if err != nil {
+		return nil, err
+	}
+	if projectName == "" {
+		return nil, nil
+	}
+
+	// Step 2: pick a branch within the project
+	var branches []ListItem
+	err = RunWithSpinnerCtx(ctx, "Fetching branches...", func() error {
+		var fetchErr error
+		branches, fetchErr = ListPostgresBranches(ctx, projectName)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	branchName, err := PromptFromList(ctx, "Select Branch", "no branches found in project "+projectName, branches, required)
+	if err != nil {
+		return nil, err
+	}
+	if branchName == "" {
+		return nil, nil
+	}
+
+	// Step 3: enter a database name (pre-filled with default)
+	dbName := "databricks_postgres"
+	theme := AppkitTheme()
+	err = huh.NewInput().
+		Title("Database name").
+		Description("Enter the database name to connect to").
+		Value(&dbName).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return nil, err
+	}
+	if dbName == "" {
+		return nil, nil
+	}
+	printAnswered(ctx, "Database", dbName)
+
+	return map[string]string{
+		r.Key() + ".branch":   branchName,
+		r.Key() + ".database": dbName,
+	}, nil
+}
+
 // PromptForGenieSpace shows a picker for Genie spaces.
 // Captures both the space ID and name since the DABs schema requires both fields.
 func PromptForGenieSpace(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
@@ -683,4 +745,33 @@ func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount 
 		cmdio.LogString(ctx, codeStyle.Render("    "+nextStepsCmd))
 	}
 	cmdio.LogString(ctx, "")
+}
+
+// SetupNote holds the display name and message for a single plugin setup note.
+type SetupNote struct {
+	Name    string
+	Message string
+}
+
+// PrintSetupNotes renders a styled "Setup Notes" section for selected plugins.
+func PrintSetupNotes(ctx context.Context, notes []SetupNote) {
+	headerStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFAB00")). // Databricks yellow
+		Bold(true)
+
+	nameStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#71717A")). // Mid-tone gray
+		Bold(true)
+
+	msgStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#71717A")) // Mid-tone gray
+
+	cmdio.LogString(ctx, headerStyle.Render("  Setup Notes"))
+	cmdio.LogString(ctx, "")
+	for _, n := range notes {
+		cmdio.LogString(ctx, nameStyle.Render("  "+n.Name))
+		indented := strings.ReplaceAll(n.Message, "\n", "\n  ")
+		cmdio.LogString(ctx, msgStyle.Render("  "+indented))
+		cmdio.LogString(ctx, "")
+	}
 }

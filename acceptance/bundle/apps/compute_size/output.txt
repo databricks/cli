@@ -1,0 +1,17 @@
+
+=== Deploy bundle
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-compute-size-[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Update compute size and redeploy
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.my_app
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/app-compute-size-[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

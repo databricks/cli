@@ -1,0 +1,24 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-compute-size-[UNIQUE_NAME]/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: failed to update app
+
+  with databricks_app.my_app,
+  on bundle.tf.json line 20, in resource.databricks_app.my_app:
+  20:       }
+
+Compute size updates are not supported in this update API. Please use the new
+update API instead.
+
+
+Updating deployment state...
+
+Exit code: 1
+
+>>> [CLI] apps get app-[UNIQUE_NAME]
+{
+  "compute_size": "LARGE"
+}
