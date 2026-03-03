@@ -48,7 +48,7 @@ const (
 	queryOutputModeInteractiveTable
 )
 
-func selectQueryOutputMode(outputType flags.Output, stdoutInteractive bool, promptSupported bool, rowCount int) queryOutputMode {
+func selectQueryOutputMode(outputType flags.Output, stdoutInteractive, promptSupported bool, rowCount int) queryOutputMode {
 	if outputType == flags.OutputJSON {
 		return queryOutputModeJSON
 	}

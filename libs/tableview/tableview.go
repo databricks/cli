@@ -16,9 +16,6 @@ const (
 	horizontalScrollStep = 4
 	footerHeight         = 1
 	searchFooterHeight   = 2
-)
-
-const (
 	// headerLines is the number of non-data lines at the top (header + separator).
 	headerLines = 2
 )
@@ -36,9 +33,8 @@ func Run(w io.Writer, columns []string, rows [][]string) error {
 	lines := renderTableLines(columns, rows)
 
 	m := model{
-		lines:     lines,
-		totalRows: len(rows),
-		cursor:    headerLines, // Start on first data row.
+		lines:  lines,
+		cursor: headerLines, // Start on first data row.
 	}
 
 	p := tea.NewProgram(m, tea.WithOutput(w))
@@ -133,16 +129,13 @@ func highlightSearch(line, query string) string {
 }
 
 // renderContent builds the viewport content with cursor and search highlighting.
+// Search highlighting is applied first on clean text, then cursor style wraps the result.
 func (m model) renderContent() string {
 	result := make([]string, len(m.lines))
 	for i, line := range m.lines {
 		rendered := highlightSearch(line, m.searchQuery)
 		if i == m.cursor {
-			rendered = cursorStyle.Render(line)
-			if m.searchQuery != "" {
-				// Apply search highlight on top of cursor for the current line.
-				rendered = highlightSearch(cursorStyle.Render(line), m.searchQuery)
-			}
+			rendered = cursorStyle.Render(rendered)
 		}
 		result[i] = rendered
 	}
@@ -150,11 +143,10 @@ func (m model) renderContent() string {
 }
 
 type model struct {
-	viewport  viewport.Model
-	lines     []string
-	totalRows int
-	ready     bool
-	cursor    int // line index of the highlighted row
+	viewport viewport.Model
+	lines    []string
+	ready    bool
+	cursor   int // line index of the highlighted row
 
 	// Search state.
 	searching   bool
@@ -162,6 +154,10 @@ type model struct {
 	searchQuery string
 	matchLines  []int
 	matchIdx    int
+}
+
+func (m model) dataRowCount() int {
+	return max(len(m.lines)-headerLines, 0)
 }
 
 func (m model) Init() tea.Cmd {
@@ -321,10 +317,10 @@ func (m model) View() string {
 func (m model) renderFooter() string {
 	if m.searching {
 		prompt := searchStyle.Render("/ " + m.searchInput + "█")
-		return footerStyle.Render(fmt.Sprintf("%d rows", m.totalRows)) + "\n" + prompt
+		return footerStyle.Render(fmt.Sprintf("%d rows", m.dataRowCount())) + "\n" + prompt
 	}
 
-	parts := []string{fmt.Sprintf("%d rows", m.totalRows)}
+	parts := []string{fmt.Sprintf("%d rows", m.dataRowCount())}
 
 	if m.searchQuery != "" && len(m.matchLines) > 0 {
 		parts = append(parts, fmt.Sprintf("match %d/%d", m.matchIdx+1, len(m.matchLines)))
