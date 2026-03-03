@@ -2,6 +2,9 @@ package mcp
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -9,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -245,4 +249,116 @@ func TestPollingConstants(t *testing.T) {
 	assert.Equal(t, 1*time.Second, pollIntervalInitial)
 	assert.Equal(t, 5*time.Second, pollIntervalMax)
 	assert.Equal(t, 10*time.Second, cancelTimeout)
+}
+
+// newTestCmd creates a minimal cobra.Command for testing resolveSQL.
+func newTestCmd() *cobra.Command {
+	return &cobra.Command{Use: "test"}
+}
+
+func TestResolveSQLFromFileFlag(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	dir := t.TempDir()
+	path := filepath.Join(dir, "query.sql")
+	err := os.WriteFile(path, []byte("SELECT 1"), 0o644)
+	require.NoError(t, err)
+
+	cmd := newTestCmd()
+	result, err := resolveSQL(ctx, cmd, nil, path)
+	require.NoError(t, err)
+	assert.Equal(t, "SELECT 1", result)
+}
+
+func TestResolveSQLFromFileFlagWithComments(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	dir := t.TempDir()
+	path := filepath.Join(dir, "query.sql")
+	err := os.WriteFile(path, []byte("-- header comment\nSELECT 1\n-- trailing"), 0o644)
+	require.NoError(t, err)
+
+	cmd := newTestCmd()
+	result, err := resolveSQL(ctx, cmd, nil, path)
+	require.NoError(t, err)
+	assert.Equal(t, "SELECT 1", result)
+}
+
+func TestResolveSQLFileFlagConflictsWithArg(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	cmd := newTestCmd()
+	_, err := resolveSQL(ctx, cmd, []string{"SELECT 1"}, "/some/file.sql")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot use both --file and a positional SQL argument")
+}
+
+func TestResolveSQLFromPositionalArg(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	cmd := newTestCmd()
+	result, err := resolveSQL(ctx, cmd, []string{"SELECT 42"}, "")
+	require.NoError(t, err)
+	assert.Equal(t, "SELECT 42", result)
+}
+
+func TestResolveSQLAutoDetectsSQLFile(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	dir := t.TempDir()
+	path := filepath.Join(dir, "report.sql")
+	err := os.WriteFile(path, []byte("SELECT * FROM sales"), 0o644)
+	require.NoError(t, err)
+
+	cmd := newTestCmd()
+	result, err := resolveSQL(ctx, cmd, []string{path}, "")
+	require.NoError(t, err)
+	assert.Equal(t, "SELECT * FROM sales", result)
+}
+
+func TestResolveSQLNonexistentSQLFileTreatedAsString(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	cmd := newTestCmd()
+	result, err := resolveSQL(ctx, cmd, []string{"nonexistent.sql"}, "")
+	require.NoError(t, err)
+	assert.Equal(t, "nonexistent.sql", result)
+}
+
+func TestResolveSQLFromStdin(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	cmd := newTestCmd()
+	cmd.SetIn(strings.NewReader("SELECT 1 FROM stdin_test"))
+
+	result, err := resolveSQL(ctx, cmd, nil, "")
+	require.NoError(t, err)
+	assert.Equal(t, "SELECT 1 FROM stdin_test", result)
+}
+
+func TestResolveSQLEmptyFileReturnsError(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	dir := t.TempDir()
+	path := filepath.Join(dir, "empty.sql")
+	err := os.WriteFile(path, []byte(""), 0o644)
+	require.NoError(t, err)
+
+	cmd := newTestCmd()
+	_, err = resolveSQL(ctx, cmd, nil, path)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+}
+
+func TestResolveSQLCommentsOnlyFileReturnsError(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	dir := t.TempDir()
+	path := filepath.Join(dir, "comments.sql")
+	err := os.WriteFile(path, []byte("-- just a comment\n-- another"), 0o644)
+	require.NoError(t, err)
+
+	cmd := newTestCmd()
+	_, err = resolveSQL(ctx, cmd, nil, path)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "empty")
+}
+
+func TestResolveSQLMissingFileReturnsError(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	cmd := newTestCmd()
+	_, err := resolveSQL(ctx, cmd, nil, "/nonexistent/path/query.sql")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "read SQL file")
 }
