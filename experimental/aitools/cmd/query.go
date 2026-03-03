@@ -23,6 +23,9 @@ import (
 )
 
 const (
+	// sqlFileExtension is the file extension used to auto-detect SQL files.
+	sqlFileExtension = ".sql"
+
 	// pollIntervalInitial is the starting interval between status polls.
 	pollIntervalInitial = 1 * time.Second
 
@@ -110,12 +113,8 @@ func resolveSQL(ctx context.Context, cmd *cobra.Command, args []string, filePath
 
 	case len(args) > 0:
 		// If the argument looks like a .sql file and exists on disk, read it.
-		if strings.HasSuffix(args[0], ".sql") {
-			if _, err := os.Stat(args[0]); err == nil {
-				data, err := os.ReadFile(args[0])
-				if err != nil {
-					return "", fmt.Errorf("read SQL file: %w", err)
-				}
+		if strings.HasSuffix(args[0], sqlFileExtension) {
+			if data, err := os.ReadFile(args[0]); err == nil {
 				raw = string(data)
 				break
 			}
