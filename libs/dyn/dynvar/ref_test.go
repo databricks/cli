@@ -54,6 +54,85 @@ func TestIsPureVariableReference(t *testing.T) {
 	assert.True(t, IsPureVariableReference("${foo.bar}"))
 }
 
+func TestFindAllInterpolationReferences(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []InterpolationReference
+	}{
+		{
+			input:    "no interpolation",
+			expected: nil,
+		},
+		{
+			input: "${var.foo}",
+			expected: []InterpolationReference{
+				{Match: "${var.foo}", Path: "var.foo"},
+			},
+		},
+		{
+			input: "echo ${bundle.name} and ${workspace.host}",
+			expected: []InterpolationReference{
+				{Match: "${bundle.name}", Path: "bundle.name"},
+				{Match: "${workspace.host}", Path: "workspace.host"},
+			},
+		},
+		{
+			input: "${resources.jobs.my_job.id}",
+			expected: []InterpolationReference{
+				{Match: "${resources.jobs.my_job.id}", Path: "resources.jobs.my_job.id"},
+			},
+		},
+		{
+			input: "${FOO}",
+			expected: []InterpolationReference{
+				{Match: "${FOO}", Path: "FOO"},
+			},
+		},
+		{
+			// Bash parameter expansion doesn't match DAB regex
+			input:    "${VAR:-default}",
+			expected: nil,
+		},
+		{
+			// Plain bash variable without braces
+			input:    "$FOO",
+			expected: nil,
+		},
+		{
+			input: "${variables.my_var.value}",
+			expected: []InterpolationReference{
+				{Match: "${variables.my_var.value}", Path: "variables.my_var.value"},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		refs := FindAllInterpolationReferences(tc.input)
+		assert.Equal(t, tc.expected, refs, "input: %s", tc.input)
+	}
+}
+
+func TestHasValidDABPrefix(t *testing.T) {
+	// Valid DAB prefixes
+	assert.True(t, HasValidDABPrefix("var.foo"))
+	assert.True(t, HasValidDABPrefix("bundle.name"))
+	assert.True(t, HasValidDABPrefix("workspace.host"))
+	assert.True(t, HasValidDABPrefix("variables.my_var.value"))
+	assert.True(t, HasValidDABPrefix("resources.jobs.my_job.id"))
+	assert.True(t, HasValidDABPrefix("artifacts.my_artifact.path"))
+
+	// Prefix alone (edge case - valid but may not resolve to anything useful)
+	assert.True(t, HasValidDABPrefix("var"))
+	assert.True(t, HasValidDABPrefix("bundle"))
+
+	// Invalid prefixes (not known DAB prefixes)
+	assert.False(t, HasValidDABPrefix("FOO"))
+	assert.False(t, HasValidDABPrefix("MY_VAR"))
+	assert.False(t, HasValidDABPrefix("unknown.path"))
+	assert.False(t, HasValidDABPrefix("env.VAR"))
+	assert.False(t, HasValidDABPrefix(""))
+}
+
 func TestPureReferenceToPath(t *testing.T) {
 	for _, tc := range []struct {
 		in  string

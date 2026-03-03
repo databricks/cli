@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle validate
+Name: valid-interpolation
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/valid-interpolation/default
+
+Validation OK!

@@ -1,40 +1,48 @@
 
 >>> [CLI] bundle deploy
-Error: Found ${FOO} in script one. Interpolation syntax ${...} is not allowed in scripts
-  at scripts.one.content
+Error: Invalid interpolation reference ${FOO} in script invalid_env_var
+  at scripts.invalid_env_var.content
   in databricks.yml:6:14
 
-We do not support the ${...} interpolation syntax in scripts because
-it's ambiguous whether it's a variable reference or reference to an
-environment variable.
+The interpolation reference ${FOO} does not start with a valid prefix.
+Valid prefixes are: var, bundle, workspace, variables, resources, artifacts.
 
-Error: Found ${var.BAR} in script two. Interpolation syntax ${...} is not allowed in scripts
-  at scripts.two.content
+If you meant to use an environment variable, use $FOO instead of ${FOO}.
+If you meant to use a bundle variable, use ${var.FOO} instead.
+
+Error: Invalid interpolation reference ${unknown.path} in script invalid_unknown_prefix
+  at scripts.invalid_unknown_prefix.content
   in databricks.yml:8:14
 
-We do not support the ${...} interpolation syntax in scripts because
-it's ambiguous whether it's a variable reference or reference to an
-environment variable.
+The interpolation reference ${unknown.path} does not start with a valid prefix.
+Valid prefixes are: var, bundle, workspace, variables, resources, artifacts.
+
+If you meant to use an environment variable, use $unknown.path instead of ${unknown.path}.
+If you meant to use a bundle variable, use ${var.unknown.path} instead.
 
 
 Exit code: 1
 
 >>> [CLI] bundle run foo
-Error: Found ${FOO} in script one. Interpolation syntax ${...} is not allowed in scripts
-  at scripts.one.content
+Error: Invalid interpolation reference ${FOO} in script invalid_env_var
+  at scripts.invalid_env_var.content
   in databricks.yml:6:14
 
-We do not support the ${...} interpolation syntax in scripts because
-it's ambiguous whether it's a variable reference or reference to an
-environment variable.
+The interpolation reference ${FOO} does not start with a valid prefix.
+Valid prefixes are: var, bundle, workspace, variables, resources, artifacts.
 
-Error: Found ${var.BAR} in script two. Interpolation syntax ${...} is not allowed in scripts
-  at scripts.two.content
+If you meant to use an environment variable, use $FOO instead of ${FOO}.
+If you meant to use a bundle variable, use ${var.FOO} instead.
+
+Error: Invalid interpolation reference ${unknown.path} in script invalid_unknown_prefix
+  at scripts.invalid_unknown_prefix.content
   in databricks.yml:8:14
 
-We do not support the ${...} interpolation syntax in scripts because
-it's ambiguous whether it's a variable reference or reference to an
-environment variable.
+The interpolation reference ${unknown.path} does not start with a valid prefix.
+Valid prefixes are: var, bundle, workspace, variables, resources, artifacts.
+
+If you meant to use an environment variable, use $unknown.path instead of ${unknown.path}.
+If you meant to use a bundle variable, use ${var.unknown.path} instead.
 
 
 Exit code: 1
