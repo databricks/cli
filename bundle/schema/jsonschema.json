@@ -228,7 +228,6 @@
                     },
                     "additionalProperties": false,
                     "required": [
-                      "source_code_path",
                       "name"
                     ]
                   },
