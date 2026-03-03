@@ -44,7 +44,8 @@ func (p Profiles) SearchCaseInsensitive(input string, index int) bool {
 	input = strings.ToLower(input)
 	name := strings.ToLower(p[index].Name)
 	host := strings.ToLower(p[index].Host)
-	return strings.Contains(name, input) || strings.Contains(host, input)
+	accountID := strings.ToLower(p[index].AccountID)
+	return strings.Contains(name, input) || strings.Contains(host, input) || strings.Contains(accountID, input)
 }
 
 func (p Profiles) Names() []string {
