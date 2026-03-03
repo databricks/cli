@@ -229,19 +229,11 @@ resources:
         reason: managed
       - field: budget_policy_id
         reason: no_update_api
-      - field: name
-        reason: no_update_api
-      - field: description
-        reason: no_update_api
         # There is PublicPreview endpoints but we're not using it https://docs.databricks.com/api/workspace/servingendpoints/put
       - field: rate_limits
         reason: not_implemented
     ignore_local_changes:
       - field: budget_policy_id
-        reason: no_update_api
-      - field: name
-        reason: no_update_api
-      - field: description
         reason: no_update_api
       - field: rate_limits
         reason: not_implemented
