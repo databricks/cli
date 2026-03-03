@@ -365,3 +365,13 @@ host = https://only.cloud.databricks.com
 		})
 	}
 }
+
+func TestDeleteProfile_NotFound(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(path, []byte(""), fileMode))
+
+	err := DeleteProfile(ctx, "not-found", path)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "profile not-found not found")
+}
