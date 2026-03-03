@@ -155,7 +155,7 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		if res.Job == nil {
 			continue
 		}
-		s.upsertPermission(fmt.Sprintf("/jobs/%s", res.Job.Id), iam.AccessControlResponse{
+		s.upsertPermission("/jobs/"+res.Job.Id, iam.AccessControlResponse{
 			ServicePrincipalName: app.ServicePrincipalName,
 			AllPermissions: []iam.Permission{{
 				PermissionLevel: iam.PermissionLevel(res.Job.Permission),
