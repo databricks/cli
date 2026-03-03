@@ -1,0 +1,1 @@
+resources.volumes.*.volume_path	string	REMOTE

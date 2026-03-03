@@ -1,0 +1,2 @@
+trace $CLI bundle debug refschema | grep '^resources.volumes.\*.volume_path[[:space:]]\+string[[:space:]]\+REMOTE$' > out.volume_path.txt
+trace cat out.volume_path.txt

@@ -2975,6 +2975,7 @@ resources.volumes.*.updated_at	int64	REMOTE
 resources.volumes.*.updated_by	string	REMOTE
 resources.volumes.*.url	string	INPUT
 resources.volumes.*.volume_id	string	REMOTE
+resources.volumes.*.volume_path	string	REMOTE
 resources.volumes.*.volume_type	catalog.VolumeType	ALL
 resources.volumes.*.grants.full_name	string	ALL
 resources.volumes.*.grants.grants	[]dresources.GrantAssignment	ALL
