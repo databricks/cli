@@ -2,6 +2,16 @@
 
 package schema
 
+type ResourcePostgresProjectInitialEndpointSpecGroup struct {
+	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
+	Max                       int  `json:"max"`
+	Min                       int  `json:"min"`
+}
+
+type ResourcePostgresProjectInitialEndpointSpec struct {
+	Group *ResourcePostgresProjectInitialEndpointSpecGroup `json:"group,omitempty"`
+}
+
 type ResourcePostgresProjectProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
@@ -54,12 +64,13 @@ type ResourcePostgresProjectStatus struct {
 }
 
 type ResourcePostgresProject struct {
-	CreateTime     string                                 `json:"create_time,omitempty"`
-	Name           string                                 `json:"name,omitempty"`
-	ProjectId      string                                 `json:"project_id"`
-	ProviderConfig *ResourcePostgresProjectProviderConfig `json:"provider_config,omitempty"`
-	Spec           *ResourcePostgresProjectSpec           `json:"spec,omitempty"`
-	Status         *ResourcePostgresProjectStatus         `json:"status,omitempty"`
-	Uid            string                                 `json:"uid,omitempty"`
-	UpdateTime     string                                 `json:"update_time,omitempty"`
+	CreateTime          string                                      `json:"create_time,omitempty"`
+	InitialEndpointSpec *ResourcePostgresProjectInitialEndpointSpec `json:"initial_endpoint_spec,omitempty"`
+	Name                string                                      `json:"name,omitempty"`
+	ProjectId           string                                      `json:"project_id"`
+	ProviderConfig      *ResourcePostgresProjectProviderConfig      `json:"provider_config,omitempty"`
+	Spec                *ResourcePostgresProjectSpec                `json:"spec,omitempty"`
+	Status              *ResourcePostgresProjectStatus              `json:"status,omitempty"`
+	Uid                 string                                      `json:"uid,omitempty"`
+	UpdateTime          string                                      `json:"update_time,omitempty"`
 }

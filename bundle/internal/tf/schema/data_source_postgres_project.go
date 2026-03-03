@@ -2,6 +2,16 @@
 
 package schema
 
+type DataSourcePostgresProjectInitialEndpointSpecGroup struct {
+	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
+	Max                       int  `json:"max"`
+	Min                       int  `json:"min"`
+}
+
+type DataSourcePostgresProjectInitialEndpointSpec struct {
+	Group *DataSourcePostgresProjectInitialEndpointSpecGroup `json:"group,omitempty"`
+}
+
 type DataSourcePostgresProjectProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
@@ -54,11 +64,12 @@ type DataSourcePostgresProjectStatus struct {
 }
 
 type DataSourcePostgresProject struct {
-	CreateTime     string                                   `json:"create_time,omitempty"`
-	Name           string                                   `json:"name"`
-	ProviderConfig *DataSourcePostgresProjectProviderConfig `json:"provider_config,omitempty"`
-	Spec           *DataSourcePostgresProjectSpec           `json:"spec,omitempty"`
-	Status         *DataSourcePostgresProjectStatus         `json:"status,omitempty"`
-	Uid            string                                   `json:"uid,omitempty"`
-	UpdateTime     string                                   `json:"update_time,omitempty"`
+	CreateTime          string                                        `json:"create_time,omitempty"`
+	InitialEndpointSpec *DataSourcePostgresProjectInitialEndpointSpec `json:"initial_endpoint_spec,omitempty"`
+	Name                string                                        `json:"name"`
+	ProviderConfig      *DataSourcePostgresProjectProviderConfig      `json:"provider_config,omitempty"`
+	Spec                *DataSourcePostgresProjectSpec                `json:"spec,omitempty"`
+	Status              *DataSourcePostgresProjectStatus              `json:"status,omitempty"`
+	Uid                 string                                        `json:"uid,omitempty"`
+	UpdateTime          string                                        `json:"update_time,omitempty"`
 }

@@ -104,6 +104,9 @@ type DataSourceAppsAppPendingDeployment struct {
 	UpdateTime          string                                                 `json:"update_time,omitempty"`
 }
 
+type DataSourceAppsAppResourcesApp struct {
+}
+
 type DataSourceAppsAppResourcesDatabase struct {
 	DatabaseName string `json:"database_name"`
 	InstanceName string `json:"instance_name"`
@@ -145,10 +148,12 @@ type DataSourceAppsAppResourcesSqlWarehouse struct {
 type DataSourceAppsAppResourcesUcSecurable struct {
 	Permission        string `json:"permission"`
 	SecurableFullName string `json:"securable_full_name"`
+	SecurableKind     string `json:"securable_kind,omitempty"`
 	SecurableType     string `json:"securable_type"`
 }
 
 type DataSourceAppsAppResources struct {
+	App             *DataSourceAppsAppResourcesApp             `json:"app,omitempty"`
 	Database        *DataSourceAppsAppResourcesDatabase        `json:"database,omitempty"`
 	Description     string                                     `json:"description,omitempty"`
 	Experiment      *DataSourceAppsAppResourcesExperiment      `json:"experiment,omitempty"`

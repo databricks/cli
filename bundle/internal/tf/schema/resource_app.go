@@ -108,6 +108,9 @@ type ResourceAppProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type ResourceAppResourcesApp struct {
+}
+
 type ResourceAppResourcesDatabase struct {
 	DatabaseName string `json:"database_name"`
 	InstanceName string `json:"instance_name"`
@@ -149,10 +152,12 @@ type ResourceAppResourcesSqlWarehouse struct {
 type ResourceAppResourcesUcSecurable struct {
 	Permission        string `json:"permission"`
 	SecurableFullName string `json:"securable_full_name"`
+	SecurableKind     string `json:"securable_kind,omitempty"`
 	SecurableType     string `json:"securable_type"`
 }
 
 type ResourceAppResources struct {
+	App             *ResourceAppResourcesApp             `json:"app,omitempty"`
 	Database        *ResourceAppResourcesDatabase        `json:"database,omitempty"`
 	Description     string                               `json:"description,omitempty"`
 	Experiment      *ResourceAppResourcesExperiment      `json:"experiment,omitempty"`
