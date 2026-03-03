@@ -198,9 +198,7 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 		datasetSchema := req.URL.Query().Get("dataset_schema")
 		dashboard.SerializedDashboard = transformSerializedDashboard(updateReq.SerializedDashboard, datasetCatalog, datasetSchema)
 	}
-	if updateReq.WarehouseId != "" {
-		dashboard.WarehouseId = updateReq.WarehouseId
-	}
+	dashboard.WarehouseId = updateReq.WarehouseId
 	dashboard.UpdateTime = time.Now().UTC().Format(time.RFC3339)
 
 	s.Dashboards[dashboardId] = dashboard
