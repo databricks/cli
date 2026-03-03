@@ -14,7 +14,7 @@ title "Initial config\n"
 cat "./home/.databrickscfg"
 
 title "Delete the only non-default profile"
-trace $CLI auth logout --profile only-profile --force
+trace $CLI auth logout --profile only-profile --force --delete
 
 title "Backup file should exist\n"
 assert_backup_exists

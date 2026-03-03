@@ -1,0 +1,38 @@
+sethome "./home"
+
+cat > "./home/.databrickscfg" <<'EOF'
+[DEFAULT]
+
+[dev]
+host = https://dev.cloud.databricks.com
+token = dev-token
+EOF
+
+mkdir -p "./home/.databricks"
+cat > "./home/.databricks/token-cache.json" <<'EOF'
+{
+  "version": 1,
+  "tokens": {
+    "dev": {
+      "access_token": "dev-cached-token",
+      "token_type": "Bearer"
+    },
+    "https://dev.cloud.databricks.com": {
+      "access_token": "dev-host-token",
+      "token_type": "Bearer"
+    }
+  }
+}
+EOF
+
+title "Token cache before logout\n"
+jq -S '.' "./home/.databricks/token-cache.json"
+
+title "Logout without --delete"
+trace $CLI auth logout --profile dev --force
+
+title "Config after logout — profile should still exist\n"
+cat "./home/.databrickscfg"
+
+title "Token cache after logout — both entries should be removed\n"
+jq -S '.' "./home/.databricks/token-cache.json"
