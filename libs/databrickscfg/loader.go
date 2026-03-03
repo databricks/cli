@@ -22,6 +22,16 @@ func (e errMultipleProfiles) Error() string {
 	return "multiple profiles matched: " + strings.Join(e, ", ")
 }
 
+// AsMultipleProfiles checks if the error is caused by multiple profiles
+// matching the same host. If so, it returns the matching profile names.
+func AsMultipleProfiles(err error) ([]string, bool) {
+	var e errMultipleProfiles
+	if errors.As(err, &e) {
+		return []string(e), true
+	}
+	return nil, false
+}
+
 func findMatchingProfile(configFile *config.File, matcher func(*ini.Section) bool) (*ini.Section, error) {
 	// Look for sections in the configuration file that match the configured host.
 	var matching []*ini.Section

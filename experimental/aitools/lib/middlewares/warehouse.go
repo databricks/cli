@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
@@ -39,7 +40,9 @@ func loadWarehouseInBackground(ctx context.Context) {
 	sess.Set("warehouse_endpoint", warehouse)
 }
 
-func GetWarehouseEndpoint(ctx context.Context) (*sql.EndpointInfo, error) {
+// GetWarehouseEndpoint returns the resolved warehouse endpoint.
+// If autoStart is true and the warehouse is stopped, it will be started automatically.
+func GetWarehouseEndpoint(ctx context.Context, autoStart bool) (*sql.EndpointInfo, error) {
 	sess, err := session.GetSession(ctx)
 	if err != nil {
 		return nil, err
@@ -68,15 +71,47 @@ func GetWarehouseEndpoint(ctx context.Context) (*sql.EndpointInfo, error) {
 		sess.Set("warehouse_endpoint", warehouse)
 	}
 
-	return warehouse.(*sql.EndpointInfo), nil
+	endpoint := warehouse.(*sql.EndpointInfo)
+
+	if autoStart && (endpoint.State == sql.StateStopped || endpoint.State == sql.StateStopping) {
+		endpoint, err = startWarehouse(ctx, endpoint.Id)
+		if err != nil {
+			return nil, err
+		}
+		sess.Set("warehouse_endpoint", endpoint)
+	}
+
+	return endpoint, nil
 }
 
-func GetWarehouseID(ctx context.Context) (string, error) {
-	warehouse, err := GetWarehouseEndpoint(ctx)
+// GetWarehouseID returns the resolved warehouse ID.
+// If autoStart is true and the warehouse is stopped, it will be started automatically.
+func GetWarehouseID(ctx context.Context, autoStart bool) (string, error) {
+	warehouse, err := GetWarehouseEndpoint(ctx, autoStart)
 	if err != nil {
 		return "", err
 	}
 	return warehouse.Id, nil
+}
+
+func startWarehouse(ctx context.Context, id string) (*sql.EndpointInfo, error) {
+	w, err := GetDatabricksClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get databricks client: %w", err)
+	}
+	wait, err := w.Warehouses.Start(ctx, sql.StartRequest{Id: id})
+	if err != nil {
+		return nil, fmt.Errorf("start warehouse %s: %w", id, err)
+	}
+	resp, err := wait.Get()
+	if err != nil {
+		return nil, fmt.Errorf("wait for warehouse %s to start: %w", id, err)
+	}
+	return &sql.EndpointInfo{
+		Id:    resp.Id,
+		Name:  resp.Name,
+		State: resp.State,
+	}, nil
 }
 
 func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
@@ -84,7 +119,14 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get databricks client: %w", err)
 	}
+	return resolveWarehouse(ctx, w)
+}
 
+// resolveWarehouse selects a warehouse using the following priority:
+// 1. DATABRICKS_WAREHOUSE_ID env var
+// 2. User's default warehouse override (CUSTOM type only)
+// 3. Server-side default / first usable warehouse by state
+func resolveWarehouse(ctx context.Context, w *databricks.WorkspaceClient) (*sql.EndpointInfo, error) {
 	// first resolve DATABRICKS_WAREHOUSE_ID env variable
 	warehouseID := env.Get(ctx, "DATABRICKS_WAREHOUSE_ID")
 	if warehouseID != "" {
@@ -99,6 +141,24 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 			Name:  warehouse.Name,
 			State: warehouse.State,
 		}, nil
+	}
+
+	// Check user's default warehouse override (set via the SQL UI or CLI).
+	// Only CUSTOM overrides are used; LAST_SELECTED requires UI state we don't have.
+	override, err := w.Warehouses.GetDefaultWarehouseOverride(ctx, sql.GetDefaultWarehouseOverrideRequest{
+		Name: "default-warehouse-overrides/me",
+	})
+	if err == nil && override.Type == sql.DefaultWarehouseOverrideTypeCustom && override.WarehouseId != "" {
+		warehouse, err := w.Warehouses.Get(ctx, sql.GetWarehouseRequest{
+			Id: override.WarehouseId,
+		})
+		if err == nil && warehouse.State != sql.StateDeleted && warehouse.State != sql.StateDeleting {
+			return &sql.EndpointInfo{
+				Id:    warehouse.Id,
+				Name:  warehouse.Name,
+				State: warehouse.State,
+			}, nil
+		}
 	}
 
 	return cfgpickers.GetDefaultWarehouse(ctx, w)

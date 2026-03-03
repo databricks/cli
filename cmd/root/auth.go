@@ -234,6 +234,27 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// promptForProfileByHost prompts the user to select a profile when multiple
+// profiles match the same host.
+func promptForProfileByHost(ctx context.Context, profiles profile.Profiles, host string) (string, error) {
+	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+		Label:             "Multiple profiles match host " + host,
+		Items:             profiles,
+		Searcher:          profiles.SearchCaseInsensitive,
+		StartInSearchMode: true,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . | faint }}",
+			Active:   `{{.Name | bold}}{{if .AccountID}} (account: {{.AccountID|faint}}){{end}}{{if .WorkspaceID}} (workspace: {{.WorkspaceID|faint}}){{end}}`,
+			Inactive: `{{.Name}}{{if .AccountID}} (account: {{.AccountID}}){{end}}{{if .WorkspaceID}} (workspace: {{.WorkspaceID}}){{end}}`,
+			Selected: `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	return profiles[i].Name, nil
+}
+
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 	profiler := profile.GetProfiler(ctx)
 	path, err := profiler.GetPath(ctx)

@@ -80,7 +80,26 @@ func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *con
 	return section, nil
 }
 
-func SaveToProfile(ctx context.Context, cfg *config.Config) error {
+// AuthCredentialKeys returns the config file key names for all auth credential
+// fields from the SDK's ConfigAttributes. These are fields annotated with an
+// auth type (e.g. pat, basic, oauth, azure, google). Use this to clear stale
+// credentials when switching auth methods.
+func AuthCredentialKeys() []string {
+	var keys []string
+	for _, attr := range config.ConfigAttributes {
+		if attr.HasAuthAttribute() {
+			keys = append(keys, attr.Name)
+		}
+	}
+	return keys
+}
+
+// SaveToProfile merges the provided config into a .databrickscfg profile.
+// Non-zero fields in cfg overwrite existing values. Existing keys not
+// mentioned in cfg are preserved. Keys listed in clearKeys are explicitly
+// removed (use this for mutually exclusive fields like cluster_id vs
+// serverless_compute_id, or to drop stale auth credentials on auth-type switch).
+func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string) error {
 	configFile, err := loadOrCreateConfigFile(cfg.ConfigFile)
 	if err != nil {
 		return err
@@ -95,11 +114,13 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 	cfg.Profile = ""
 	cfg.ConfigFile = ""
 
-	// clear old keys in case we're overriding the section
-	for _, oldKey := range section.KeyStrings() {
-		section.DeleteKey(oldKey)
+	// Explicitly remove keys the caller wants cleared.
+	for _, key := range clearKeys {
+		section.DeleteKey(key)
 	}
 
+	// Write non-zero fields from the new config. Iterates ConfigAttributes
+	// in declaration order for deterministic key ordering on new profiles.
 	for _, attr := range config.ConfigAttributes {
 		if attr.IsZero(cfg) {
 			continue

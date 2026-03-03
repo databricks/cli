@@ -39,7 +39,7 @@ type App struct {
 
 	// SourceCodePath is a required field used by DABs to point to Databricks app source code
 	// on local disk and to the corresponding workspace path during app deployment.
-	SourceCodePath string `json:"source_code_path"`
+	SourceCodePath string `json:"source_code_path,omitempty"`
 
 	// Config represents inline app.yaml configuration for the app.
 	// When specified, this configuration is written to an app.yaml file in the source code path during deployment.

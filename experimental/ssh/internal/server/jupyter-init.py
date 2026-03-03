@@ -1,7 +1,7 @@
 from typing import List, Optional
 from IPython.core.getipython import get_ipython
 from IPython.display import display as ip_display
-from dbruntime import UserNamespaceInitializer
+import os
 
 
 def _log_exceptions(func):
@@ -18,18 +18,21 @@ def _log_exceptions(func):
     return wrapper
 
 
-_user_namespace_initializer = UserNamespaceInitializer.getOrCreate()
-_entry_point = _user_namespace_initializer.get_spark_entry_point()
-_globals = _user_namespace_initializer.get_namespace_globals()
-for name, value in _globals.items():
-    print(f"Registering global: {name} = {value}")
-    if name not in globals():
-        globals()[name] = value
+@_log_exceptions
+def _setup_dedicated_session():
+    from dbruntime import UserNamespaceInitializer
 
+    _user_namespace_initializer = UserNamespaceInitializer.getOrCreate()
+    _entry_point = _user_namespace_initializer.get_spark_entry_point()
+    _globals = _user_namespace_initializer.get_namespace_globals()
+    for name, value in _globals.items():
+        print(f"Registering global: {name} = {value}")
+        if name not in globals():
+            globals()[name] = value
 
-# 'display' from the runtime uses custom widgets that don't work in Jupyter.
-# We use the IPython display instead (in combination with the html formatter for DataFrames).
-globals()["display"] = ip_display
+    # 'display' from the runtime uses custom widgets that don't work in Jupyter.
+    # We use the IPython display instead (in combination with the html formatter for DataFrames).
+    globals()["display"] = ip_display
 
 
 @_log_exceptions
@@ -157,19 +160,28 @@ def _parse_line_for_databricks_magics(lines: List[str]) -> List[str]:
 
 
 @_log_exceptions
-def _register_magics():
-    """Register the magic command parser with IPython."""
-    from dbruntime.DatasetInfo import UserNamespaceDict
-    from dbruntime.PipMagicOverrides import PipMagicOverrides
-
-    user_ns = UserNamespaceDict(
-        _user_namespace_initializer.get_namespace_globals(),
-        _entry_point.getDriverConf(),
-        _entry_point,
-    )
+def _register_common_magics():
+    """Register the common magic command parser with IPython."""
     ip = get_ipython()
     ip.input_transformers_cleanup.append(_parse_line_for_databricks_magics)
-    ip.register_magics(PipMagicOverrides(_entry_point, _globals["sc"]._conf, user_ns))
+
+
+@_log_exceptions
+def _register_pip_magics(user_namespace_initializer: any, entry_point: any):
+    """Register the pip magic command parser with IPython."""
+    from dbruntime.DatasetInfo import UserNamespaceDict
+    from dbruntime.PipMagicOverrides import PipMagicOverrides
+    from dbruntime import UserNamespaceInitializer
+
+    user_namespace_initializer = UserNamespaceInitializer.getOrCreate()
+    entry_point = user_namespace_initializer.get_spark_entry_point()
+    user_ns = UserNamespaceDict(
+        user_namespace_initializer.get_namespace_globals(),
+        entry_point.getDriverConf(),
+        entry_point,
+    )
+    ip = get_ipython()
+    ip.register_magics(PipMagicOverrides(entry_point, globals["sc"]._conf, user_ns))
 
 
 @_log_exceptions
@@ -186,6 +198,34 @@ def _register_formatters():
     html_formatter.for_type(DataFrame, df_html)
 
 
-_register_magics()
+@_log_exceptions
+def _setup_serverless_session():
+    import IPython
+    from databricks.connect import DatabricksSession
+
+    user_ns = getattr(IPython.get_ipython(), "user_ns", {})
+    existing_session = getattr(user_ns, "spark", None)
+    try:
+        # Clear the existing local spark session, otherwise DatabricksSession will re-use it.
+        user_ns["spark"] = None
+        globals()["spark"] = None
+        # DatabricksSession will use the existing env vars for the connection.
+        spark_session = DatabricksSession.builder.serverless(True).getOrCreate()
+        user_ns["spark"] = spark_session
+        globals()["spark"] = spark_session
+    except Exception as e:
+        user_ns["spark"] = existing_session
+        globals()["spark"] = existing_session
+        raise e
+
+
+if os.environ.get("DATABRICKS_JUPYTER_SERVERLESS") == "true":
+    _setup_serverless_session()
+else:
+    _setup_dedicated_session()
+    _register_pip_magics()
+
+
+_register_common_magics()
 _register_formatters()
 _register_runtime_hooks()

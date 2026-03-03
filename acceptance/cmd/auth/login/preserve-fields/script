@@ -1,0 +1,25 @@
+sethome "./home"
+
+# Create an initial profile with cluster_id, warehouse_id, azure_environment,
+# and a custom key that is not a recognized SDK config attribute.
+cat > "./home/.databrickscfg" <<EOF
+[DEFAULT]
+host = $DATABRICKS_HOST
+cluster_id = existing-cluster-123
+warehouse_id = warehouse-456
+azure_environment = USGOVERNMENT
+custom_key = my-custom-value
+EOF
+
+title "Initial profile\n"
+cat "./home/.databrickscfg"
+
+# Use a fake browser that performs a GET on the authorization URL
+# and follows the redirect back to localhost.
+export BROWSER="browser.py"
+
+title "Run auth login (no --configure-cluster or --configure-serverless)"
+trace $CLI auth login --host $DATABRICKS_HOST --profile DEFAULT
+
+title "Profile after auth login — all non-auth fields should be preserved\n"
+cat "./home/.databrickscfg"

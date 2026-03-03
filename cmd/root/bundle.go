@@ -2,11 +2,17 @@ package root
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -72,6 +78,60 @@ func configureProfile(cmd *cobra.Command, b *bundle.Bundle) {
 	})
 }
 
+// resolveProfileAmbiguity resolves a multi-profile match by filtering to
+// workspace-compatible profiles and either auto-selecting, prompting, or
+// returning a guidance error.
+func resolveProfileAmbiguity(cmd *cobra.Command, b *bundle.Bundle, originalErr error, names []string) (string, error) {
+	ctx := cmd.Context()
+
+	namesMatcher := profile.MatchProfileNames(names...)
+	profiler := profile.GetProfiler(ctx)
+	profiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
+		return namesMatcher(p) && profile.MatchWorkspaceProfiles(p)
+	})
+	if err != nil {
+		if errors.Is(err, profile.ErrNoConfiguration) {
+			return "", originalErr
+		}
+		return "", err
+	}
+
+	switch len(profiles) {
+	case 0:
+		return "", originalErr
+	case 1:
+		// Exactly one workspace-compatible profile — auto-select.
+		// This happens when multiple profiles match a host but only one
+		// is workspace-compatible (the rest are account-only).
+		return profiles[0].Name, nil
+	}
+
+	// Multiple workspace-compatible profiles — need interactive selection.
+	_, hasProfileFlag := profileFlagValue(cmd)
+	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(ctx)
+	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+		return "", fmt.Errorf(
+			"%w\n\nMatching workspace profiles: %s\n\n"+
+				"Fix (pick one):\n"+
+				"  1. Set profile in databricks.yml:\n"+
+				"       workspace:\n"+
+				"         profile: %s\n"+
+				"  2. Pass a flag:\n"+
+				"       %s --profile %s\n"+
+				"  3. Set env var:\n"+
+				"       DATABRICKS_CONFIG_PROFILE=%s",
+			originalErr,
+			strings.Join(profiles.Names(), ", "),
+			profiles[0].Name,
+			cmd.CommandPath(),
+			profiles[0].Name,
+			profiles[0].Name,
+		)
+	}
+
+	return promptForProfileByHost(ctx, profiles, b.Config.Workspace.Host)
+}
+
 // configureBundle loads the bundle configuration and configures flag values, if any.
 func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 	// Load bundle and select target.
@@ -96,9 +156,27 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 	// is a fast operation. It does not perform network I/O or invoke processes (for example the Azure CLI).
 	client, err := b.WorkspaceClientE()
 	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		names, isMulti := databrickscfg.AsMultipleProfiles(err)
+		if !isMulti {
+			logdiag.LogError(ctx, err)
+			return
+		}
+
+		selected, resolveErr := resolveProfileAmbiguity(cmd, b, err, names)
+		if resolveErr != nil {
+			logdiag.LogError(ctx, resolveErr)
+			return
+		}
+
+		b.Config.Workspace.Profile = selected
+		b.ClearWorkspaceClient()
+		client, err = b.WorkspaceClientE()
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
 	}
+
 	ctx = cmdctx.SetConfigUsed(ctx, client.Config)
 	cmd.SetContext(ctx)
 }

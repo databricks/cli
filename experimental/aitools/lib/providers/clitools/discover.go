@@ -16,7 +16,7 @@ import (
 // Discover provides workspace context and workflow guidance.
 // Returns L1 (flow) always + L2 (target) for detected target types + L3 (skills) listing.
 func Discover(ctx context.Context, workingDirectory string) (string, error) {
-	warehouse, err := middlewares.GetWarehouseEndpoint(ctx)
+	warehouse, err := middlewares.GetWarehouseEndpoint(ctx, false)
 	if err != nil {
 		log.Debugf(ctx, "Failed to get default warehouse (non-fatal): %v", err)
 		warehouse = nil

@@ -26,6 +26,18 @@ func MatchAllProfiles(p Profile) bool {
 	return true
 }
 
+// MatchProfileNames returns a match function that matches profiles by name.
+func MatchProfileNames(names ...string) ProfileMatchFunction {
+	nameSet := make(map[string]struct{}, len(names))
+	for _, n := range names {
+		nameSet[n] = struct{}{}
+	}
+	return func(p Profile) bool {
+		_, ok := nameSet[p.Name]
+		return ok
+	}
+}
+
 func WithName(name string) ProfileMatchFunction {
 	return func(p Profile) bool {
 		return p.Name == name

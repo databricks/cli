@@ -124,6 +124,13 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, errors.New("providing both a profile and host is not supported")
 	}
 
+	// When no explicit --profile flag is provided, check the env var. This
+	// handles the case where downstream tools (like the Terraform provider)
+	// pass --host but not --profile, while DATABRICKS_CONFIG_PROFILE is set.
+	if args.profileName == "" {
+		args.profileName = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
+	}
+
 	// If no --profile flag, try resolving the positional arg as a profile name.
 	// If it matches, use it. If not, fall through to host treatment.
 	if args.profileName == "" && len(args.args) == 1 {
@@ -205,9 +212,25 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 				return nil, err
 			}
 			args.profileName = selected
+			existingProfile, err = loadProfileByName(ctx, selected, args.profiler)
+			if err != nil {
+				return nil, err
+			}
 		} else if len(matchingProfiles) == 1 {
 			args.profileName = matchingProfiles[0].Name
+			existingProfile = &matchingProfiles[0]
 		}
+	}
+
+	// Check if the resolved profile uses M2M authentication (client credentials).
+	// The auth token command only supports U2M OAuth tokens.
+	if existingProfile != nil && existingProfile.HasClientCredentials {
+		return nil, fmt.Errorf(
+			"profile %q uses M2M authentication (client_id/client_secret). "+
+				"`databricks auth token` only supports U2M (user-to-machine) authentication tokens. "+
+				"To authenticate as a service principal, use the Databricks SDK directly",
+			args.profileName,
+		)
 	}
 
 	args.authArguments.Profile = args.profileName
@@ -407,14 +430,27 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 
 	loginArgs.Profile = profileName
 
+	// Preserve scopes from the existing profile so the inline login
+	// uses the same scopes the user previously configured.
+	var scopesList []string
+	if existingProfile != nil && existingProfile.Scopes != "" {
+		for _, s := range strings.Split(existingProfile.Scopes, ",") {
+			scopesList = append(scopesList, strings.TrimSpace(s))
+		}
+	}
+
 	oauthArgument, err := loginArgs.ToOAuthArgument()
 	if err != nil {
 		return "", nil, err
 	}
-	persistentAuth, err := u2m.NewPersistentAuth(ctx,
+	persistentAuthOpts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(openURLSuppressingStderr),
-	)
+	}
+	if len(scopesList) > 0 {
+		persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
+	}
+	persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 	if err != nil {
 		return "", nil, err
 	}
@@ -427,6 +463,10 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		return "", nil, err
 	}
 
+	clearKeys := oauthLoginClearKeys()
+	if !loginArgs.IsUnifiedHost {
+		clearKeys = append(clearKeys, "experimental_is_unified_host")
+	}
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:                    profileName,
 		Host:                       loginArgs.Host,
@@ -435,7 +475,8 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		WorkspaceID:                loginArgs.WorkspaceID,
 		Experimental_IsUnifiedHost: loginArgs.IsUnifiedHost,
 		ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
-	})
+		Scopes:                     scopesList,
+	}, clearKeys...)
 	if err != nil {
 		return "", nil, err
 	}

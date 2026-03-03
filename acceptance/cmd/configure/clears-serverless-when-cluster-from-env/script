@@ -1,0 +1,20 @@
+sethome "./home"
+
+# Pre-populate a profile with serverless_compute_id.
+cat > "./home/.databrickscfg" <<EOF
+[DEFAULT]
+host                  = https://host
+serverless_compute_id = auto
+EOF
+
+title "Initial profile with serverless_compute_id\n"
+cat "./home/.databrickscfg"
+
+# Set cluster ID via env var (not via --configure-cluster flag).
+export DATABRICKS_CLUSTER_ID=env-cluster-789
+
+title "Run configure with cluster from env var"
+echo "new-token" | trace $CLI configure --token --host https://host
+
+title "Profile after configure (serverless should be cleared)\n"
+cat "./home/.databrickscfg"

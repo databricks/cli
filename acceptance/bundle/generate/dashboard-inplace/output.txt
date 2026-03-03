@@ -21,7 +21,7 @@ Deployment complete!
   "path":"/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources/test dashboard.lvdash.json",
   "serialized_dashboard":"{\"a\":\"b\"}\n",
   "update_time":"[TIMESTAMP]",
-  "warehouse_id":"my-warehouse-1234"
+  "warehouse_id":""
 }
 
 === update the dashboard file using bundle generate

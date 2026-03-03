@@ -1,0 +1,22 @@
+sethome "./home"
+
+# Pre-populate a profile with OAuth metadata and unified host fields
+# (as if `auth login` was previously run against a unified host).
+cat > "./home/.databrickscfg" <<EOF
+[DEFAULT]
+host                         = https://host
+auth_type                    = databricks-cli
+scopes                       = all-apis
+experimental_is_unified_host = true
+account_id                   = acc-123
+workspace_id                 = ws-456
+EOF
+
+title "Initial profile (OAuth with unified host)\n"
+cat "./home/.databrickscfg"
+
+title "Run configure with PAT token"
+echo "new-token" | trace $CLI configure --token --host https://host
+
+title "Profile after PAT configure\n"
+cat "./home/.databrickscfg"
