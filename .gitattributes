@@ -1,3 +1,4 @@
+NEXT_CHANGELOG.md merge=union
 cmd/account/access-control/access-control.go linguist-generated=true
 cmd/account/billable-usage/billable-usage.go linguist-generated=true
 cmd/account/budget-policy/budget-policy.go linguist-generated=true
