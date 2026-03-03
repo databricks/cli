@@ -335,15 +335,11 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 	for _, ch := range remoteDiff {
 		entry := m[ch.Path.String()]
 		if entry == nil {
-			// we have difference for remoteState but not difference for localState
-			// from remoteDiff we can find out remote value (ch.Old) and new config value (ch.New) but we don't know oldState value
-			oldStateVal, err := structaccess.Get(oldState, ch.Path)
-			var notFound *structaccess.NotFoundError
-			if err != nil && !errors.As(err, &notFound) {
-				log.Debugf(ctx, "Constructing diff: accessing %q on %T: %s", ch.Path, oldState, err)
-			}
+			// We have a difference for remoteState but not for localState.
+			// No local diff means oldState == newConfig for this field,
+			// so ch.New (from newConfig) is also the oldState value.
 			m[ch.Path.String()] = &deployplan.ChangeDesc{
-				Old:    oldStateVal,
+				Old:    ch.New,
 				New:    ch.New,
 				Remote: ch.Old,
 			}
