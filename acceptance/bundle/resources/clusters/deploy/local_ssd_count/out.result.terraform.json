@@ -1,0 +1,2 @@
+json.gcp_attributes.availability = "PREEMPTIBLE_GCP";
+json.gcp_attributes.zone_id = "auto";

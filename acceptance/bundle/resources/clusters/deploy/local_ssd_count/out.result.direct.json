@@ -1,0 +1,3 @@
+json.gcp_attributes.availability = "PREEMPTIBLE_GCP";
+json.gcp_attributes.local_ssd_count = 0;
+json.gcp_attributes.zone_id = "auto";
