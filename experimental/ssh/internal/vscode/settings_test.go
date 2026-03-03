@@ -133,7 +133,7 @@ func TestLoadSettings_Valid(t *testing.T) {
 	settingsData := `{
 		"editor.fontSize": 14,
 		"remote.SSH.serverPickPortsFromRange": {
-			"test-conn": "4000-4005"
+			"test-conn": "29500-29505"
 		}
 	}`
 	err := os.WriteFile(settingsPath, []byte(settingsData), 0o600)
@@ -167,7 +167,7 @@ func TestLoadSettings_WithComments(t *testing.T) {
 		"editor.fontSize": 14,
 		/* Connection settings */
 		"remote.SSH.serverPickPortsFromRange": {
-			"test-conn": "4000-4005" // Port range for SSH
+			"test-conn": "29500-29505" // Port range for SSH
 		},
 		"remote.SSH.remotePlatform": {
 			"test-conn": "linux", // trailing comma
@@ -183,7 +183,7 @@ func TestLoadSettings_WithComments(t *testing.T) {
 
 	val, ok := findString(t, settings, jsonPtr(serverPickPortsKey, "test-conn"))
 	assert.True(t, ok)
-	assert.Equal(t, "4000-4005", val)
+	assert.Equal(t, "29500-29505", val)
 }
 
 func TestLoadSettings_NotExists(t *testing.T) {
@@ -197,7 +197,7 @@ func TestLoadSettings_NotExists(t *testing.T) {
 
 func TestValidateSettings_Complete(t *testing.T) {
 	v := parseTestValue(t, `{
-		"remote.SSH.serverPickPortsFromRange": {"test-conn": "4000-4005"},
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
 		"remote.SSH.remotePlatform": {"test-conn": "linux"},
 		"remote.SSH.remoteServerListenOnSocket": true,
 		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
@@ -233,7 +233,7 @@ func TestValidateSettings_IncorrectValues(t *testing.T) {
 
 func TestValidateSettings_DuplicateExtensionsNotReported(t *testing.T) {
 	v := parseTestValue(t, `{
-		"remote.SSH.serverPickPortsFromRange": {"test-conn": "4000-4005"},
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
 		"remote.SSH.remotePlatform": {"test-conn": "linux"},
 		"remote.SSH.remoteServerListenOnSocket": true,
 		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-python.python", "ms-toolsai.jupyter"]
@@ -245,7 +245,7 @@ func TestValidateSettings_DuplicateExtensionsNotReported(t *testing.T) {
 
 func TestValidateSettings_MissingConnection(t *testing.T) {
 	v := parseTestValue(t, `{
-		"remote.SSH.serverPickPortsFromRange": {"other-conn": "4000-4005"},
+		"remote.SSH.serverPickPortsFromRange": {"other-conn": "29500-29505"},
 		"remote.SSH.remotePlatform": {"other-conn": "linux"},
 		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
 	}`)
@@ -283,7 +283,7 @@ func TestUpdateSettings_PreserveExistingConnections(t *testing.T) {
 	// Check that new connection was added
 	val, ok := findString(t, v, jsonPtr(serverPickPortsKey, "conn-c"))
 	assert.True(t, ok)
-	assert.Equal(t, "4000-4005", val)
+	assert.Equal(t, "29500-29505", val)
 
 	val, ok = findString(t, v, jsonPtr(remotePlatformKey, "conn-c"))
 	assert.True(t, ok)
@@ -328,7 +328,7 @@ func TestUpdateSettings_NewConnection(t *testing.T) {
 
 	val, ok := findString(t, v, jsonPtr(serverPickPortsKey, "new-conn"))
 	assert.True(t, ok)
-	assert.Equal(t, "4000-4005", val)
+	assert.Equal(t, "29500-29505", val)
 
 	val, ok = findString(t, v, jsonPtr(remotePlatformKey, "new-conn"))
 	assert.True(t, ok)
@@ -394,7 +394,7 @@ func TestUpdateSettings_MergeExtensions(t *testing.T) {
 
 func TestUpdateSettings_PartialUpdate(t *testing.T) {
 	v := parseTestValue(t, `{
-		"remote.SSH.serverPickPortsFromRange": {"test-conn": "4000-4005"},
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
 		"remote.SSH.remotePlatform": {"other-conn": "linux"},
 		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
 	}`)
@@ -411,7 +411,7 @@ func TestUpdateSettings_PartialUpdate(t *testing.T) {
 	// Port range should not be modified
 	val, ok := findString(t, v, jsonPtr(serverPickPortsKey, "test-conn"))
 	assert.True(t, ok)
-	assert.Equal(t, "4000-4005", val)
+	assert.Equal(t, "29500-29505", val)
 
 	// Platform should be added for test-conn
 	val, ok = findString(t, v, jsonPtr(remotePlatformKey, "test-conn"))
@@ -473,7 +473,7 @@ func TestSaveSettings_Formatting(t *testing.T) {
 	settingsPath := filepath.Join(tmpDir, "settings.json")
 
 	v := parseTestValue(t, `{
-		"remote.SSH.serverPickPortsFromRange": {"test-conn": "4000-4005"},
+		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
 		"editor.fontSize": 14
 	}`)
 
@@ -541,7 +541,7 @@ func TestGetManualInstructions_VSCode(t *testing.T) {
 
 	assert.Contains(t, instructions, "VS Code")
 	assert.Contains(t, instructions, "test-conn")
-	assert.Contains(t, instructions, "4000-4005")
+	assert.Contains(t, instructions, "29500-29505")
 	assert.Contains(t, instructions, "linux")
 	assert.Contains(t, instructions, "ms-python.python")
 	assert.Contains(t, instructions, "ms-toolsai.jupyter")
@@ -555,7 +555,7 @@ func TestGetManualInstructions_Cursor(t *testing.T) {
 
 	assert.Contains(t, instructions, "Cursor")
 	assert.Contains(t, instructions, "my-connection")
-	assert.Contains(t, instructions, "4000-4005")
+	assert.Contains(t, instructions, "29500-29505")
 	assert.Contains(t, instructions, "linux")
 	assert.Contains(t, instructions, "ms-python.python")
 	assert.Contains(t, instructions, "ms-toolsai.jupyter")
