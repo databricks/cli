@@ -112,9 +112,15 @@ func resolveSQL(ctx context.Context, cmd *cobra.Command, args []string, filePath
 		raw = string(data)
 
 	case len(args) > 0:
-		// If the argument looks like a .sql file and exists on disk, read it.
+		// If the argument looks like a .sql file, try to read it.
+		// Only fall through to literal SQL if the file doesn't exist.
+		// Surface other errors (permission denied, etc.) directly.
 		if strings.HasSuffix(args[0], sqlFileExtension) {
-			if data, err := os.ReadFile(args[0]); err == nil {
+			data, err := os.ReadFile(args[0])
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return "", fmt.Errorf("read SQL file: %w", err)
+			}
+			if err == nil {
 				raw = string(data)
 				break
 			}

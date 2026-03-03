@@ -257,108 +257,115 @@ func newTestCmd() *cobra.Command {
 }
 
 func TestResolveSQLFromFileFlag(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
 	dir := t.TempDir()
 	path := filepath.Join(dir, "query.sql")
 	err := os.WriteFile(path, []byte("SELECT 1"), 0o644)
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(ctx, cmd, nil, path)
+	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 1", result)
 }
 
 func TestResolveSQLFromFileFlagWithComments(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
 	dir := t.TempDir()
 	path := filepath.Join(dir, "query.sql")
 	err := os.WriteFile(path, []byte("-- header comment\nSELECT 1\n-- trailing"), 0o644)
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(ctx, cmd, nil, path)
+	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 1", result)
 }
 
 func TestResolveSQLFileFlagConflictsWithArg(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
 	cmd := newTestCmd()
-	_, err := resolveSQL(ctx, cmd, []string{"SELECT 1"}, "/some/file.sql")
+	_, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{"SELECT 1"}, "/some/file.sql")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot use both --file and a positional SQL argument")
 }
 
 func TestResolveSQLFromPositionalArg(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
 	cmd := newTestCmd()
-	result, err := resolveSQL(ctx, cmd, []string{"SELECT 42"}, "")
+	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{"SELECT 42"}, "")
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 42", result)
 }
 
 func TestResolveSQLAutoDetectsSQLFile(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
 	dir := t.TempDir()
 	path := filepath.Join(dir, "report.sql")
 	err := os.WriteFile(path, []byte("SELECT * FROM sales"), 0o644)
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(ctx, cmd, []string{path}, "")
+	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{path}, "")
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT * FROM sales", result)
 }
 
 func TestResolveSQLNonexistentSQLFileTreatedAsString(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
 	cmd := newTestCmd()
-	result, err := resolveSQL(ctx, cmd, []string{"nonexistent.sql"}, "")
+	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{"nonexistent.sql"}, "")
 	require.NoError(t, err)
 	assert.Equal(t, "nonexistent.sql", result)
 }
 
+func TestResolveSQLUnreadableSQLFileReturnsError(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "locked.sql")
+	err := os.WriteFile(path, []byte("SELECT 1"), 0o644)
+	require.NoError(t, err)
+
+	// Remove read permission to simulate an unreadable file.
+	err = os.Chmod(path, 0o000)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.Chmod(path, 0o644) })
+
+	cmd := newTestCmd()
+	_, err = resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{path}, "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "read SQL file")
+}
+
 func TestResolveSQLFromStdin(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
 	cmd := newTestCmd()
 	cmd.SetIn(strings.NewReader("SELECT 1 FROM stdin_test"))
 
-	result, err := resolveSQL(ctx, cmd, nil, "")
+	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, "")
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 1 FROM stdin_test", result)
 }
 
 func TestResolveSQLEmptyFileReturnsError(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
 	dir := t.TempDir()
 	path := filepath.Join(dir, "empty.sql")
 	err := os.WriteFile(path, []byte(""), 0o644)
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(ctx, cmd, nil, path)
+	_, err = resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty")
 }
 
 func TestResolveSQLCommentsOnlyFileReturnsError(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
 	dir := t.TempDir()
 	path := filepath.Join(dir, "comments.sql")
 	err := os.WriteFile(path, []byte("-- just a comment\n-- another"), 0o644)
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(ctx, cmd, nil, path)
+	_, err = resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty")
 }
 
 func TestResolveSQLMissingFileReturnsError(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
 	cmd := newTestCmd()
-	_, err := resolveSQL(ctx, cmd, nil, "/nonexistent/path/query.sql")
+	_, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, "/nonexistent/path/query.sql")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "read SQL file")
 }
