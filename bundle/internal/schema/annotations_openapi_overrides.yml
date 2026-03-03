@@ -47,9 +47,6 @@ github.com/databricks/cli/bundle/config/resources.App:
   "effective_usage_policy_id":
     "description": |-
       PLACEHOLDER
-  "git_source":
-    "description": |-
-      PLACEHOLDER
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -263,13 +260,6 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLeve
         CAN_USE
       - |-
         CAN_MANAGE
-github.com/databricks/cli/bundle/config/resources.ExternalLocation:
-  "grants":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ExternalLocationGrantPrivilege:
   "_":
     "description": |-
