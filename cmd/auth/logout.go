@@ -15,10 +15,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const logoutWarningTemplate = `{{ "Warning" | yellow }}: This will permanently log out of profile {{ .ProfileName | bold }}.
+const logoutWarningTemplate = `{{ "Warning" | yellow }}: This will {{ if .DeleteProfile }}log out of and delete profile {{ .ProfileName | bold }}{{ else }}log out of profile {{ .ProfileName | bold }}{{ end }}.
 
 The following changes will be made:
+{{- if .DeleteProfile }}
   - Remove profile {{ .ProfileName | bold }} from {{ .ConfigPath }}
+{{- end }}
   - Delete any cached OAuth tokens for this profile
 
 You will need to run {{ "databricks auth login" | bold }} to re-authenticate.
@@ -41,8 +43,8 @@ func newLogoutCommand() *cobra.Command {
 		Hidden: true,
 		Long: fmt.Sprintf(`Log out of a Databricks profile.
 
-This command removes the specified profile from %s and deletes
-any associated cached OAuth tokens.
+This command deletes any cached OAuth tokens for the specified profile.
+If --delete is specified, the profile is also removed from %s.
 
 You will need to run "databricks auth login" to re-authenticate after
 logging out.`, configPath),
@@ -50,8 +52,10 @@ logging out.`, configPath),
 
 	var force bool
 	var profileName string
+	var deleteProfile bool
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
 	cmd.Flags().StringVar(&profileName, "profile", "", "The profile to log out of")
+	cmd.Flags().BoolVar(&deleteProfile, "delete", false, "Delete the profile from the config file")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -71,6 +75,7 @@ logging out.`, configPath),
 		return runLogout(ctx, logoutArgs{
 			profileName:    profileName,
 			force:          force,
+			deleteProfile:  deleteProfile,
 			profiler:       profiler,
 			tokenCache:     tokenCache,
 			configFilePath: env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
@@ -83,6 +88,7 @@ logging out.`, configPath),
 type logoutArgs struct {
 	profileName    string
 	force          bool
+	deleteProfile  bool
 	profiler       profile.Profiler
 	tokenCache     cache.TokenCache
 	configFilePath string
@@ -103,9 +109,10 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		if err != nil {
 			return err
 		}
-		err = cmdio.RenderWithTemplate(ctx, map[string]string{
-			"ProfileName": args.profileName,
-			"ConfigPath":  configPath,
+		err = cmdio.RenderWithTemplate(ctx, map[string]any{
+			"ProfileName":   args.profileName,
+			"ConfigPath":    configPath,
+			"DeleteProfile": args.deleteProfile,
 		}, "", logoutWarningTemplate)
 		if err != nil {
 			return err
@@ -121,16 +128,21 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		}
 	}
 
-	// First delete the profile and then perform best-effort token cache cleanup
-	// to avoid partial cleanup in case of errors from profile deletion.
-	err = databrickscfg.DeleteProfile(ctx, args.profileName, args.configFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to remove profile: %w", err)
+	if args.deleteProfile {
+		err = databrickscfg.DeleteProfile(ctx, args.profileName, args.configFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to remove profile: %w", err)
+		}
 	}
 
+	// Always clear the token cache to ensure that re-authentication is required.
 	clearTokenCache(ctx, *matchedProfile, args.profiler, args.tokenCache)
 
-	cmdio.LogString(ctx, fmt.Sprintf("Successfully logged out of profile %q.", args.profileName))
+	if args.deleteProfile {
+		cmdio.LogString(ctx, fmt.Sprintf("Successfully logged out of and deleted profile %q.", args.profileName))
+	} else {
+		cmdio.LogString(ctx, fmt.Sprintf("Successfully logged out of profile %q. To remove the profile from the config file, use --delete.", args.profileName))
+	}
 	return nil
 }
 

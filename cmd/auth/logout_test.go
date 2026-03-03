@@ -45,6 +45,14 @@ var logoutTestTokensCacheConfig = map[string]*oauth2.Token{
 	"https://unified.cloud.databricks.com/oidc/accounts/def456":  {AccessToken: "unified-host-token"},
 }
 
+func copyTokens(src map[string]*oauth2.Token) map[string]*oauth2.Token {
+	dst := make(map[string]*oauth2.Token, len(src))
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
+}
+
 func writeTempConfig(t *testing.T, content string) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), ".databrickscfg")
@@ -54,12 +62,13 @@ func writeTempConfig(t *testing.T, content string) string {
 
 func TestLogout(t *testing.T) {
 	cases := []struct {
-		name         string
-		profileName  string
-		hostBasedKey string
-		isSharedKey  bool
-		force        bool
-		wantErr      string
+		name          string
+		profileName   string
+		hostBasedKey  string
+		isSharedKey   bool
+		force         bool
+		deleteProfile bool
+		wantErr       string
 	}{
 		{
 			name:         "existing workspace profile with shared host",
@@ -101,6 +110,38 @@ func TestLogout(t *testing.T) {
 			force:       false,
 			wantErr:     `profile "nonexistent" not found`,
 		},
+		{
+			name:          "delete workspace profile with shared host",
+			profileName:   "my-workspace",
+			hostBasedKey:  "https://my-workspace.cloud.databricks.com",
+			isSharedKey:   true,
+			force:         true,
+			deleteProfile: true,
+		},
+		{
+			name:          "delete workspace profile with unique host",
+			profileName:   "my-unique-workspace",
+			hostBasedKey:  "https://my-unique-workspace.cloud.databricks.com",
+			isSharedKey:   false,
+			force:         true,
+			deleteProfile: true,
+		},
+		{
+			name:          "delete account profile",
+			profileName:   "my-account",
+			hostBasedKey:  "https://accounts.cloud.databricks.com/oidc/accounts/abc123",
+			isSharedKey:   false,
+			force:         true,
+			deleteProfile: true,
+		},
+		{
+			name:          "delete unified profile",
+			profileName:   "my-unified",
+			hostBasedKey:  "https://unified.cloud.databricks.com/oidc/accounts/def456",
+			isSharedKey:   false,
+			force:         true,
+			deleteProfile: true,
+		},
 	}
 
 	for _, tc := range cases {
@@ -110,12 +151,13 @@ func TestLogout(t *testing.T) {
 			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
 			tokenCache := &inMemoryTokenCache{
-				Tokens: logoutTestTokensCacheConfig,
+				Tokens: copyTokens(logoutTestTokensCacheConfig),
 			}
 
 			err := runLogout(ctx, logoutArgs{
 				profileName:    tc.profileName,
 				force:          tc.force,
+				deleteProfile:  tc.deleteProfile,
 				profiler:       profile.DefaultProfiler,
 				tokenCache:     tokenCache,
 				configFilePath: configPath,
@@ -127,10 +169,13 @@ func TestLogout(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			// Verify profile was removed from config.
 			profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName(tc.profileName))
 			require.NoError(t, err)
-			assert.Empty(t, profiles, "expected profile %q to be removed", tc.profileName)
+			if tc.deleteProfile {
+				assert.Empty(t, profiles, "expected profile %q to be removed", tc.profileName)
+			} else {
+				assert.NotEmpty(t, profiles, "expected profile %q to still exist", tc.profileName)
+			}
 
 			// Verify tokens were cleaned up.
 			assert.Nil(t, tokenCache.Tokens[tc.profileName], "expected token %q to be removed", tc.profileName)
@@ -161,7 +206,31 @@ func TestLogoutNoTokens(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Profile should still be removed from config even without cached tokens.
+	// Without --delete, profile should still exist.
+	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName("my-workspace"))
+	require.NoError(t, err)
+	assert.NotEmpty(t, profiles)
+}
+
+func TestLogoutNoTokensWithDelete(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	configPath := writeTempConfig(t, logoutTestConfig)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	tokenCache := &inMemoryTokenCache{
+		Tokens: map[string]*oauth2.Token{},
+	}
+
+	err := runLogout(ctx, logoutArgs{
+		profileName:    "my-workspace",
+		force:          true,
+		deleteProfile:  true,
+		profiler:       profile.DefaultProfiler,
+		tokenCache:     tokenCache,
+		configFilePath: configPath,
+	})
+	require.NoError(t, err)
+
 	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName("my-workspace"))
 	require.NoError(t, err)
 	assert.Empty(t, profiles)
