@@ -45,7 +45,12 @@ to see which profile is currently the default.`,
 				return errors.New("no profiles configured. Run 'databricks auth login' to create a profile")
 			}
 
-			currentDefault, _ := databrickscfg.GetDefaultProfile(configFile)
+			// Use the already-loaded config file to resolve the current default,
+			// avoiding a redundant file read.
+			currentDefault := ""
+			if iniFile, err := profile.DefaultProfiler.Get(ctx); err == nil {
+				currentDefault = databrickscfg.GetDefaultProfileFrom(iniFile)
+			}
 			selectedName, err := promptForSwitchProfile(ctx, allProfiles, currentDefault)
 			if err != nil {
 				return err

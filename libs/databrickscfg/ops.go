@@ -37,15 +37,9 @@ func GetDefaultProfile(ctx context.Context, configFilePath string) (string, erro
 // loadConfigFile loads a config file without creating it if it doesn't exist.
 // Returns (nil, nil) when the file is not found.
 func loadConfigFile(ctx context.Context, filename string) (*config.File, error) {
-	if filename == "" {
-		filename = "~/.databrickscfg"
-	}
-	if strings.HasPrefix(filename, "~") {
-		homedir, err := env.UserHomeDir(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("cannot find homedir: %w", err)
-		}
-		filename = fmt.Sprintf("%s%s", homedir, filename[1:])
+	filename, err := resolveConfigFilePath(ctx, filename)
+	if err != nil {
+		return nil, err
 	}
 	configFile, err := config.LoadFile(filename)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -55,6 +49,21 @@ func loadConfigFile(ctx context.Context, filename string) (*config.File, error) 
 		return nil, fmt.Errorf("parse %s: %w", filename, err)
 	}
 	return configFile, nil
+}
+
+// resolveConfigFilePath defaults to ~/.databrickscfg and expands ~ to the home directory.
+func resolveConfigFilePath(ctx context.Context, filename string) (string, error) {
+	if filename == "" {
+		filename = "~/.databrickscfg"
+	}
+	if strings.HasPrefix(filename, "~") {
+		homedir, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return "", fmt.Errorf("cannot find homedir: %w", err)
+		}
+		filename = fmt.Sprintf("%s%s", homedir, filename[1:])
+	}
+	return filename, nil
 }
 
 // GetDefaultProfileFrom returns the name of the default profile from an
@@ -151,17 +160,9 @@ func backupAndSaveConfigFile(ctx context.Context, configFile *config.File) error
 }
 
 func loadOrCreateConfigFile(ctx context.Context, filename string) (*config.File, error) {
-	if filename == "" {
-		filename = "~/.databrickscfg"
-	}
-	// Expand ~ to home directory, as we need a deterministic name for os.OpenFile
-	// to work in the cases when ~/.databrickscfg does not exist yet
-	if strings.HasPrefix(filename, "~") {
-		homedir, err := env.UserHomeDir(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("cannot find homedir: %w", err)
-		}
-		filename = fmt.Sprintf("%s%s", homedir, filename[1:])
+	filename, err := resolveConfigFilePath(ctx, filename)
+	if err != nil {
+		return nil, err
 	}
 	configFile, err := config.LoadFile(filename)
 	if err != nil && errors.Is(err, fs.ErrNotExist) {

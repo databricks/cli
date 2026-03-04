@@ -73,8 +73,4 @@ func TestProfilesDefaultMarker(t *testing.T) {
 	defaultProfile, err := databrickscfg.GetDefaultProfile(ctx, configFile)
 	require.NoError(t, err)
 	assert.Equal(t, "profile-a", defaultProfile)
-
-	// Verify the Default field logic used in profiles.go.
-	assert.Equal(t, "profile-a", defaultProfile, "profile-a should be the default")
-	assert.NotEqual(t, "profile-b", defaultProfile, "profile-b should not be the default")
 }
