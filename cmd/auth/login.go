@@ -430,10 +430,11 @@ func openURLSuppressingStderr(url string) error {
 
 // hasNoProfiles returns true if the config file has no existing profiles.
 // Used to detect first-profile creation so we can auto-set it as default.
+// Returns true when the config file doesn't exist yet (ErrNoConfiguration).
 func hasNoProfiles(ctx context.Context, profiler profile.Profiler) bool {
 	profiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
 	if err != nil {
-		return false
+		return errors.Is(err, profile.ErrNoConfiguration)
 	}
 	return len(profiles) == 0
 }

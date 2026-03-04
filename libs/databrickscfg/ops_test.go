@@ -243,6 +243,8 @@ func TestGetDefaultProfile_NoFile(t *testing.T) {
 	got, err := GetDefaultProfile(context.Background(), path)
 	require.NoError(t, err)
 	assert.Equal(t, "", got)
+	// Verify the file was NOT created as a side effect.
+	assert.NoFileExists(t, path)
 }
 
 func TestSetDefaultProfile(t *testing.T) {

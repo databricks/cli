@@ -21,13 +21,40 @@ const defaultComment = "The profile defined in the DEFAULT section is to be used
 const databricksCliSettingsSection = "databricks-cli-settings"
 
 // GetDefaultProfile returns the name of the default profile by loading the
-// config file at configFilePath. See GetDefaultProfileFrom for resolution order.
+// config file at configFilePath. Returns "" if the file doesn't exist.
+// See GetDefaultProfileFrom for resolution order.
 func GetDefaultProfile(ctx context.Context, configFilePath string) (string, error) {
-	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
+	configFile, err := loadConfigFile(ctx, configFilePath)
 	if err != nil {
 		return "", err
 	}
+	if configFile == nil {
+		return "", nil
+	}
 	return GetDefaultProfileFrom(configFile), nil
+}
+
+// loadConfigFile loads a config file without creating it if it doesn't exist.
+// Returns (nil, nil) when the file is not found.
+func loadConfigFile(ctx context.Context, filename string) (*config.File, error) {
+	if filename == "" {
+		filename = "~/.databrickscfg"
+	}
+	if strings.HasPrefix(filename, "~") {
+		homedir, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("cannot find homedir: %w", err)
+		}
+		filename = fmt.Sprintf("%s%s", homedir, filename[1:])
+	}
+	configFile, err := config.LoadFile(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("parse %s: %w", filename, err)
+	}
+	return configFile, nil
 }
 
 // GetDefaultProfileFrom returns the name of the default profile from an

@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth"
@@ -254,4 +256,31 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHasNoProfiles_FreshMachine(t *testing.T) {
+	// On a fresh machine there is no config file. LoadProfiles returns
+	// ErrNoConfiguration. hasNoProfiles must treat this as "no profiles"
+	// (return true), not as an error (return false).
+	ctx := context.Background()
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "nonexistent"))
+	assert.True(t, hasNoProfiles(ctx, profile.DefaultProfiler))
+}
+
+func TestHasNoProfiles_EmptyFile(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configFile, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	assert.True(t, hasNoProfiles(ctx, profile.DefaultProfiler))
+}
+
+func TestHasNoProfiles_WithExistingProfile(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configFile, []byte("[p1]\nhost = https://abc\n"), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	assert.False(t, hasNoProfiles(ctx, profile.DefaultProfiler))
 }
