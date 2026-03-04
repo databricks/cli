@@ -86,7 +86,7 @@ func (t *WorkspaceT) RunPython(code string) (string, error) {
 		require.NoError(t, err, "Unexpected error from CommandExecution.Start(clusterID=%v)", t.TestClusterID())
 
 		t.Cleanup(func() {
-			err := t.exec.Destroy(t.ctx)
+			err := t.exec.Destroy(context.WithoutCancel(t.ctx))
 			require.NoError(t, err)
 		})
 	}

@@ -30,7 +30,7 @@ func temporarySecretScope(ctx context.Context, t *acc.WorkspaceT) string {
 
 	// Delete the scope after the test.
 	t.Cleanup(func() {
-		err := t.W.Secrets.DeleteScopeByScope(ctx, scope)
+		err := t.W.Secrets.DeleteScopeByScope(context.WithoutCancel(ctx), scope)
 		require.NoError(t, err)
 	})
 

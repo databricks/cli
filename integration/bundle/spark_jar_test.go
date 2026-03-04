@@ -70,7 +70,7 @@ func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, arti
 	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		destroyBundle(t, ctx, bundleRoot)
+		destroyBundle(t, context.WithoutCancel(ctx), bundleRoot)
 	})
 
 	if testing.Short() {

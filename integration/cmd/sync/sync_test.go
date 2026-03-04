@@ -48,7 +48,7 @@ func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Contex
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := wsc.Repos.DeleteByRepoId(ctx, repoInfo.Id)
+		err := wsc.Repos.DeleteByRepoId(context.WithoutCancel(ctx), repoInfo.Id)
 		assert.NoError(t, err)
 	})
 
