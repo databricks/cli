@@ -22,6 +22,7 @@ const (
 	SchemaGrantPrivilegeCreateFunction         SchemaGrantPrivilege = "CREATE_FUNCTION"
 	SchemaGrantPrivilegeCreateMaterializedView SchemaGrantPrivilege = "CREATE_MATERIALIZED_VIEW"
 	SchemaGrantPrivilegeCreateModel            SchemaGrantPrivilege = "CREATE_MODEL"
+	SchemaGrantPrivilegeCreateModelVersion     SchemaGrantPrivilege = "CREATE_MODEL_VERSION"
 	SchemaGrantPrivilegeCreateTable            SchemaGrantPrivilege = "CREATE_TABLE"
 	SchemaGrantPrivilegeCreateVolume           SchemaGrantPrivilege = "CREATE_VOLUME"
 	SchemaGrantPrivilegeExecute                SchemaGrantPrivilege = "EXECUTE"
@@ -43,6 +44,7 @@ func (SchemaGrantPrivilege) Values() []SchemaGrantPrivilege {
 		SchemaGrantPrivilegeCreateFunction,
 		SchemaGrantPrivilegeCreateMaterializedView,
 		SchemaGrantPrivilegeCreateModel,
+		SchemaGrantPrivilegeCreateModelVersion,
 		SchemaGrantPrivilegeCreateTable,
 		SchemaGrantPrivilegeCreateVolume,
 		SchemaGrantPrivilegeExecute,

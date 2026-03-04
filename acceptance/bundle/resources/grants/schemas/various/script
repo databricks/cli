@@ -1,0 +1,8 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle validate
+trace $CLI bundle deploy
+trace $CLI grants get schema main.myschema-$UNIQUE_NAME
+
+update_file.py databricks.yml CREATE_TABLE CREATE_TABLE_INVALID_GRANT
+trace $CLI bundle validate 2>&1 | contains.py "Warning"
+trace $CLI bundle deploy > out.deploy_error.$DATABRICKS_BUNDLE_ENGINE.txt
