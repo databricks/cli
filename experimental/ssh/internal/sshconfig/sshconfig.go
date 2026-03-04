@@ -16,7 +16,7 @@ const (
 )
 
 func GetConfigDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := os.UserHomeDir() //nolint:forbidigo // TODO: thread ctx through public API
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
@@ -24,7 +24,7 @@ func GetConfigDir() (string, error) {
 }
 
 func GetMainConfigPath() (string, error) {
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := os.UserHomeDir() //nolint:forbidigo // TODO: thread ctx through public API
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}

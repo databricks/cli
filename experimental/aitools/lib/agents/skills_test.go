@@ -1,6 +1,7 @@
 package agents
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,7 +15,7 @@ func TestHasDatabricksSkillsInstalledNoAgents(t *testing.T) {
 	Registry = []Agent{}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled())
+	assert.True(t, HasDatabricksSkillsInstalled(context.Background()))
 }
 
 func TestHasDatabricksSkillsInstalledCanonicalOnly(t *testing.T) {
@@ -27,12 +28,12 @@ func TestHasDatabricksSkillsInstalledCanonicalOnly(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return filepath.Join(tmpHome, ".claude"), nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return filepath.Join(tmpHome, ".claude"), nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled())
+	assert.True(t, HasDatabricksSkillsInstalled(context.Background()))
 }
 
 func TestHasDatabricksSkillsInstalledIgnoresAgentDir(t *testing.T) {
@@ -47,12 +48,12 @@ func TestHasDatabricksSkillsInstalledIgnoresAgentDir(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return agentDir, nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return agentDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled())
+	assert.False(t, HasDatabricksSkillsInstalled(context.Background()))
 }
 
 func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
@@ -67,12 +68,12 @@ func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return tmpDir, nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return tmpDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled())
+	assert.False(t, HasDatabricksSkillsInstalled(context.Background()))
 }
 
 func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
@@ -84,12 +85,12 @@ func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return tmpDir, nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return tmpDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled())
+	assert.False(t, HasDatabricksSkillsInstalled(context.Background()))
 }
 
 func TestHasDatabricksSkillsInstalledCustomSubdirNotChecked(t *testing.T) {
@@ -103,13 +104,13 @@ func TestHasDatabricksSkillsInstalledCustomSubdirNotChecked(t *testing.T) {
 		{
 			Name:         "test-agent",
 			DisplayName:  "Test Agent",
-			ConfigDir:    func() (string, error) { return filepath.Join(tmpHome, ".gemini", "antigravity"), nil },
+			ConfigDir:    func(_ context.Context) (string, error) { return filepath.Join(tmpHome, ".gemini", "antigravity"), nil },
 			SkillsSubdir: "global_skills",
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled())
+	assert.False(t, HasDatabricksSkillsInstalled(context.Background()))
 }
 
 func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
@@ -126,10 +127,10 @@ func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return agentDir, nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return agentDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled())
+	assert.True(t, HasDatabricksSkillsInstalled(context.Background()))
 }

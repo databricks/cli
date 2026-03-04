@@ -18,7 +18,7 @@ import (
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
 func GetLocalSSHKeyPath(sessionID, keysDir string) (string, error) {
 	if keysDir == "" {
-		homeDir, err := os.UserHomeDir()
+		homeDir, err := os.UserHomeDir() //nolint:forbidigo // TODO: thread ctx through public API
 		if err != nil {
 			return "", fmt.Errorf("failed to get home directory: %w", err)
 		}
