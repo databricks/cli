@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -160,7 +161,8 @@ func getMatchingProfile(ctx context.Context, profileName string, profiler profil
 			return nil, fmt.Errorf("profile %q not found", profileName)
 		}
 
-		return nil, fmt.Errorf("profile %q not found. Available profiles: %s", profileName, allProfiles.Names())
+		names := strings.Join(allProfiles.Names(), ", ")
+		return nil, fmt.Errorf("profile %q not found. Available profiles: %s", profileName, names)
 	}
 
 	return &profiles[0], nil
