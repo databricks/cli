@@ -220,7 +220,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return fmt.Errorf("failed to get or generate SSH key pair from secrets: %w", err)
 	}
 
-	keyPath, err := keys.GetLocalSSHKeyPath(sessionID, opts.SSHKeysDir)
+	keyPath, err := keys.GetLocalSSHKeyPath(ctx, sessionID, opts.SSHKeysDir)
 	if err != nil {
 		return fmt.Errorf("failed to get local keys folder: %w", err)
 	}
@@ -323,7 +323,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 	databricksUserName := currentUser.UserName
 
 	// Ensure SSH config entry exists
-	configPath, err := sshconfig.GetMainConfigPath()
+	configPath, err := sshconfig.GetMainConfigPath(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get SSH config path: %w", err)
 	}
@@ -354,7 +354,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 
 func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {
 	// Ensure the Include directive exists in the main SSH config
-	err := sshconfig.EnsureIncludeDirective(configPath)
+	err := sshconfig.EnsureIncludeDirective(ctx, configPath)
 	if err != nil {
 		return err
 	}
