@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -182,6 +183,9 @@ func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) 
 		profile := cfg.Profile
 		if profile == "" {
 			profile = "default"
+			if resolved, err := databrickscfg.GetDefaultProfile(cmd.Context(), cfg.ConfigFile); err == nil && resolved != "" {
+				profile = fmt.Sprintf("default (%s)", resolved)
+			}
 		}
 		details.Configuration["profile"] = &config.AttrConfig{Value: profile, Source: config.Source{Type: config.SourceDynamicConfig}}
 	}
