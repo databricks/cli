@@ -18,6 +18,111 @@ const fileMode = 0o600
 
 const defaultComment = "The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified."
 
+const databricksCliSettingsSection = "databricks-cli-settings"
+
+// GetDefaultProfile returns the name of the default profile by loading the
+// config file at configFilePath. See GetDefaultProfileFrom for resolution order.
+func GetDefaultProfile(ctx context.Context, configFilePath string) (string, error) {
+	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
+	if err != nil {
+		return "", err
+	}
+	return GetDefaultProfileFrom(configFile), nil
+}
+
+// GetDefaultProfileFrom returns the name of the default profile from an
+// already-loaded config file. It uses the following resolution order:
+//  1. Explicit default_profile key in [databricks-cli-settings].
+//  2. If there is exactly one profile in the file, return it.
+//  3. If a profile named DEFAULT exists, return it.
+//  4. Empty string (no default).
+func GetDefaultProfileFrom(configFile *config.File) string {
+	// 1. Check for explicit default_profile setting.
+	section, err := configFile.GetSection(databricksCliSettingsSection)
+	if err == nil {
+		key, err := section.GetKey("default_profile")
+		if err == nil && key.String() != "" {
+			return key.String()
+		}
+	}
+
+	// Collect profile sections (sections that have a "host" key, excluding
+	// the settings section).
+	var profileNames []string
+	hasDefault := false
+	for _, s := range configFile.Sections() {
+		if s.Name() == databricksCliSettingsSection {
+			continue
+		}
+		if !s.HasKey("host") {
+			continue
+		}
+		profileNames = append(profileNames, s.Name())
+		if s.Name() == ini.DefaultSection {
+			hasDefault = true
+		}
+	}
+
+	// 2. Exactly one profile: treat it as the default.
+	if len(profileNames) == 1 {
+		return profileNames[0]
+	}
+
+	// 3. Legacy fallback: a DEFAULT section with a host key.
+	if hasDefault {
+		return ini.DefaultSection
+	}
+
+	return ""
+}
+
+// SetDefaultProfile writes the default_profile key to the [databricks-cli-settings] section.
+func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
+	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
+	if err != nil {
+		return err
+	}
+
+	section, err := configFile.GetSection(databricksCliSettingsSection)
+	if err != nil {
+		// Section doesn't exist, create it.
+		section, err = configFile.NewSection(databricksCliSettingsSection)
+		if err != nil {
+			return fmt.Errorf("cannot create %s section: %w", databricksCliSettingsSection, err)
+		}
+	}
+
+	section.Key("default_profile").SetValue(profileName)
+
+	return backupAndSaveConfigFile(ctx, configFile)
+}
+
+// backupAndSaveConfigFile adds a default section comment if needed, creates
+// a .bak backup of the existing file, and saves the config file to disk.
+func backupAndSaveConfigFile(ctx context.Context, configFile *config.File) error {
+	// Add a comment to the default section if it's empty.
+	section := configFile.Section(ini.DefaultSection)
+	if len(section.Keys()) == 0 && section.Comment == "" {
+		section.Comment = defaultComment
+	}
+
+	orig, backupErr := os.ReadFile(configFile.Path())
+	if len(orig) > 0 && backupErr == nil {
+		log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
+		err := os.WriteFile(configFile.Path()+".bak", orig, fileMode)
+		if err != nil {
+			return fmt.Errorf("backup: %w", err)
+		}
+		log.Infof(ctx, "Overwriting %s", configFile.Path())
+	} else if backupErr != nil {
+		log.Warnf(ctx, "Failed to backup %s: %v. Proceeding to save",
+			configFile.Path(), backupErr)
+	} else {
+		log.Infof(ctx, "Saving %s", configFile.Path())
+	}
+	return configFile.SaveTo(configFile.Path())
+}
+
 func loadOrCreateConfigFile(ctx context.Context, filename string) (*config.File, error) {
 	if filename == "" {
 		filename = "~/.databrickscfg"
@@ -130,27 +235,7 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 		key.SetValue(attr.GetString(cfg))
 	}
 
-	// Add a comment to the default section if it's empty.
-	section = configFile.Section(ini.DefaultSection)
-	if len(section.Keys()) == 0 && section.Comment == "" {
-		section.Comment = defaultComment
-	}
-
-	orig, backupErr := os.ReadFile(configFile.Path())
-	if len(orig) > 0 && backupErr == nil {
-		log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
-		err = os.WriteFile(configFile.Path()+".bak", orig, fileMode)
-		if err != nil {
-			return fmt.Errorf("backup: %w", err)
-		}
-		log.Infof(ctx, "Overwriting %s", configFile.Path())
-	} else if backupErr != nil {
-		log.Warnf(ctx, "Failed to backup %s: %v. Proceeding to save",
-			configFile.Path(), backupErr)
-	} else {
-		log.Infof(ctx, "Saving %s", configFile.Path())
-	}
-	return configFile.SaveTo(configFile.Path())
+	return backupAndSaveConfigFile(ctx, configFile)
 }
 
 func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {

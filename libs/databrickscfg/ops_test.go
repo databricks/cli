@@ -177,6 +177,149 @@ token = xyz
 `, string(contents))
 }
 
+func TestGetDefaultProfile(t *testing.T) {
+	testCases := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name:    "explicit default_profile setting",
+			content: "[databricks-cli-settings]\ndefault_profile = my-workspace\n\n[my-workspace]\nhost = https://abc\n",
+			want:    "my-workspace",
+		},
+		{
+			name:    "single profile fallback",
+			content: "[profile1]\nhost = https://abc\n",
+			want:    "profile1",
+		},
+		{
+			name:    "multiple profiles no default",
+			content: "[profile1]\nhost = https://abc\n\n[profile2]\nhost = https://def\n",
+			want:    "",
+		},
+		{
+			name:    "multiple profiles with DEFAULT fallback",
+			content: "[DEFAULT]\nhost = https://abc\n\n[profile2]\nhost = https://def\n",
+			want:    "DEFAULT",
+		},
+		{
+			name:    "settings section without key single profile",
+			content: "[databricks-cli-settings]\n\n[profile1]\nhost = https://abc\n",
+			want:    "profile1",
+		},
+		{
+			name:    "empty config file",
+			content: "",
+			want:    "",
+		},
+		{
+			name:    "settings section is not counted as a profile",
+			content: "[databricks-cli-settings]\nsome_key = value\n\n[profile1]\nhost = https://abc\n",
+			want:    "profile1",
+		},
+		{
+			name:    "section without host is not a profile",
+			content: "[no-host]\naccount_id = abc\n\n[profile1]\nhost = https://abc\n",
+			want:    "profile1",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "databrickscfg")
+			err := os.WriteFile(path, []byte(tc.content), 0o600)
+			require.NoError(t, err)
+
+			got, err := GetDefaultProfile(context.Background(), path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestGetDefaultProfile_NoFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	got, err := GetDefaultProfile(context.Background(), path)
+	require.NoError(t, err)
+	assert.Equal(t, "", got)
+}
+
+func TestSetDefaultProfile(t *testing.T) {
+	testCases := []struct {
+		name    string
+		initial string
+		profile string
+		wantKey string
+	}{
+		{
+			name:    "creates section and key",
+			initial: "[profile1]\nhost = https://abc\n",
+			profile: "profile1",
+			wantKey: "profile1",
+		},
+		{
+			name:    "updates existing key",
+			initial: "[databricks-cli-settings]\ndefault_profile = old-profile\n\n[profile1]\nhost = https://abc\n",
+			profile: "new-profile",
+			wantKey: "new-profile",
+		},
+		{
+			name:    "creates section in empty file",
+			initial: "",
+			profile: "my-workspace",
+			wantKey: "my-workspace",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			path := filepath.Join(t.TempDir(), "databrickscfg")
+			err := os.WriteFile(path, []byte(tc.initial), 0o600)
+			require.NoError(t, err)
+
+			err = SetDefaultProfile(ctx, tc.profile, path)
+			require.NoError(t, err)
+
+			got, err := GetDefaultProfile(ctx, path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantKey, got)
+		})
+	}
+}
+
+func TestSetDefaultProfile_RoundTrip(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+
+	// Start with a profile.
+	err := SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "my-workspace",
+		Host:       "https://abc.cloud.databricks.com",
+		Token:      "xyz",
+	})
+	require.NoError(t, err)
+
+	// Set it as default.
+	err = SetDefaultProfile(ctx, "my-workspace", path)
+	require.NoError(t, err)
+
+	// Read it back.
+	got, err := GetDefaultProfile(ctx, path)
+	require.NoError(t, err)
+	assert.Equal(t, "my-workspace", got)
+
+	// Verify the profile section is still intact.
+	file, err := loadOrCreateConfigFile(ctx, path)
+	require.NoError(t, err)
+	section, err := file.GetSection("my-workspace")
+	require.NoError(t, err)
+	assert.Equal(t, "https://abc.cloud.databricks.com", section.Key("host").String())
+	assert.Equal(t, "xyz", section.Key("token").String())
+}
+
 func TestSaveToProfile_MergeSemantics(t *testing.T) {
 	type saveOp struct {
 		cfg       *config.Config

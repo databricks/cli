@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -467,6 +468,10 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 	if !loginArgs.IsUnifiedHost {
 		clearKeys = append(clearKeys, "experimental_is_unified_host")
 	}
+
+	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+	firstProfile := hasNoProfiles(ctx, profiler)
+
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:                    profileName,
 		Host:                       loginArgs.Host,
@@ -474,11 +479,17 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		AccountID:                  loginArgs.AccountID,
 		WorkspaceID:                loginArgs.WorkspaceID,
 		Experimental_IsUnifiedHost: loginArgs.IsUnifiedHost,
-		ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
+		ConfigFile:                 configFile,
 		Scopes:                     scopesList,
 	}, clearKeys...)
 	if err != nil {
 		return "", nil, err
+	}
+
+	if firstProfile {
+		if err := databrickscfg.SetDefaultProfile(ctx, profileName, configFile); err != nil {
+			log.Debugf(ctx, "Failed to auto-set default profile: %v", err)
+		}
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))

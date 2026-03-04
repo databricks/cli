@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -26,6 +27,7 @@ type profileMetadata struct {
 	Cloud       string `json:"cloud"`
 	AuthType    string `json:"auth_type"`
 	Valid       bool   `json:"valid"`
+	Default     bool   `json:"default,omitempty"`
 }
 
 func (c *profileMetadata) IsEmpty() bool {
@@ -92,7 +94,7 @@ func newProfilesCommand() *cobra.Command {
 		Annotations: map[string]string{
 			"template": cmdio.Heredoc(`
 			{{header "Name"}}	{{header "Host"}}	{{header "Valid"}}
-			{{range .Profiles}}{{.Name | green}}	{{.Host|cyan}}	{{bool .Valid}}
+			{{range .Profiles}}{{.Name | green}}{{if .Default}} (Default){{end}}	{{.Host|cyan}}	{{bool .Valid}}
 			{{end}}`),
 		},
 	}
@@ -111,6 +113,9 @@ func newProfilesCommand() *cobra.Command {
 		} else if err != nil {
 			return fmt.Errorf("cannot parse config file: %w", err)
 		}
+
+		defaultProfile := databrickscfg.GetDefaultProfileFrom(iniFile)
+
 		var wg sync.WaitGroup
 		for _, v := range iniFile.Sections() {
 			hash := v.KeysHash()
@@ -119,6 +124,7 @@ func newProfilesCommand() *cobra.Command {
 				Host:        hash["host"],
 				AccountID:   hash["account_id"],
 				WorkspaceID: hash["workspace_id"],
+				Default:     v.Name() == defaultProfile,
 			}
 			if profile.IsEmpty() {
 				continue

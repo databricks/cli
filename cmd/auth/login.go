@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/exec"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
@@ -241,6 +242,12 @@ depends on the existing profiles you have set in your configuration file
 		}
 
 		if profileName != "" {
+			configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+
+			// Check if this is a brand new profile with no other profiles in the file.
+			// If so, we'll auto-set it as the default after saving.
+			isFirstProfile := existingProfile == nil && hasNoProfiles(ctx, profile.DefaultProfiler)
+
 			err := databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:                    profileName,
 				Host:                       authArguments.Host,
@@ -249,12 +256,18 @@ depends on the existing profiles you have set in your configuration file
 				WorkspaceID:                authArguments.WorkspaceID,
 				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 				ClusterID:                  clusterID,
-				ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
+				ConfigFile:                 configFile,
 				ServerlessComputeID:        serverlessComputeID,
 				Scopes:                     scopesList,
 			}, clearKeys...)
 			if err != nil {
 				return err
+			}
+
+			if isFirstProfile {
+				if err := databrickscfg.SetDefaultProfile(ctx, profileName, configFile); err != nil {
+					log.Debugf(ctx, "Failed to auto-set default profile: %v", err)
+				}
 			}
 
 			cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
@@ -413,6 +426,16 @@ func openURLSuppressingStderr(url string) error {
 
 	// Call the browser open function
 	return browserpkg.OpenURL(url)
+}
+
+// hasNoProfiles returns true if the config file has no existing profiles.
+// Used to detect first-profile creation so we can auto-set it as default.
+func hasNoProfiles(ctx context.Context, profiler profile.Profiler) bool {
+	profiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+	if err != nil {
+		return false
+	}
+	return len(profiles) == 0
 }
 
 // oauthLoginClearKeys returns profile keys that should be explicitly removed
