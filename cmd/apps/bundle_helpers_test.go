@@ -1,7 +1,6 @@
 package apps
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -166,7 +165,7 @@ func TestHandleAlreadyInStateError(t *testing.T) {
 			return err
 		}
 
-		handled, _ := handleAlreadyInStateError(context.Background(), cmd, err, "test-app", []string{"ACTIVE"}, "is deployed", mockWrapper)
+		handled, _ := handleAlreadyInStateError(t.Context(), cmd, err, "test-app", []string{"ACTIVE"}, "is deployed", mockWrapper)
 		assert.False(t, handled)
 	})
 }

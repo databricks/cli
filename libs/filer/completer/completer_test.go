@@ -1,7 +1,6 @@
 package completer
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -14,7 +13,7 @@ import (
 )
 
 func setupCompleter(t *testing.T, onlyDirs bool) *completer {
-	ctx := context.Background()
+	ctx := t.Context()
 	// Needed to make type context.valueCtx for mockFilerForPath
 	ctx = cmdctx.SetWorkspaceClient(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient)
 

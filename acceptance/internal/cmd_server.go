@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"strings"
@@ -27,7 +26,7 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 		// Change current working directory to match the callsite.
 		defer chdir(t, q.Get("cwd"))()
 
-		c := testcli.NewRunner(t, context.Background(), args...)
+		c := testcli.NewRunner(t, t.Context(), args...)
 		c.Verbose = false
 		stdout, stderr, err := c.Run()
 		result := map[string]any{

@@ -35,7 +35,7 @@ func setupDatabricksCfg(t *testing.T) {
 }
 
 func emptyCommand(t *testing.T) *cobra.Command {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdio.MockDiscard(ctx)
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -237,7 +237,7 @@ workspace:
 	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
 	ctx, io := cmdio.SetupTest(ctx, cmdio.TestOptions{PromptSupported: true})
@@ -273,7 +273,7 @@ func TestTargetFlagFull(t *testing.T) {
 	initTargetFlag(cmd)
 	cmd.SetArgs([]string{"version", "--target", "development"})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 
@@ -285,7 +285,7 @@ func TestTargetFlagShort(t *testing.T) {
 	initTargetFlag(cmd)
 	cmd.SetArgs([]string{"version", "-t", "production"})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 
@@ -299,7 +299,7 @@ func TestTargetEnvironmentFlag(t *testing.T) {
 	initEnvironmentFlag(cmd)
 	cmd.SetArgs([]string{"version", "--environment", "development"})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 

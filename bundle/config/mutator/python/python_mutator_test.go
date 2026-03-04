@@ -280,7 +280,7 @@ resources:
 func TestPythonMutator_disabled(t *testing.T) {
 	b := loadYaml("databricks.yml", ``)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 	diag := bundle.Apply(ctx, b, mutator)
 
@@ -298,7 +298,7 @@ experimental:
       - "resources:load_resources"`)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
-	diag := bundle.Apply(context.Background(), b, mutator)
+	diag := bundle.Apply(t.Context(), b, mutator)
 
 	assert.EqualError(t, diag.Error(), expectedError)
 }
@@ -494,7 +494,7 @@ or activate the environment before running CLI commands:
 }
 
 func withProcessStub(t *testing.T, args []string, output, diagnostics, locations string) context.Context {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, stub := process.WithStub(ctx)
 
 	t.Setenv(env.TempDirVariable, t.TempDir())

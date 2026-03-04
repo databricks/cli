@@ -37,7 +37,7 @@ func TestMutator(t *testing.T) {
 	}
 
 	b := &Bundle{}
-	diags := Apply(context.Background(), b, m)
+	diags := Apply(t.Context(), b, m)
 	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, 1, m.applyCalled)

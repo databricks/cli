@@ -42,7 +42,7 @@ func TestCleanSQL(t *testing.T) {
 }
 
 func TestExecuteAndPollImmediateSuccess(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
@@ -61,7 +61,7 @@ func TestExecuteAndPollImmediateSuccess(t *testing.T) {
 }
 
 func TestExecuteAndPollImmediateFailure(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&sql.StatementResponse{
@@ -82,7 +82,7 @@ func TestExecuteAndPollImmediateFailure(t *testing.T) {
 }
 
 func TestExecuteAndPollWithPolling(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&sql.StatementResponse{
@@ -111,7 +111,7 @@ func TestExecuteAndPollWithPolling(t *testing.T) {
 }
 
 func TestExecuteAndPollFailsDuringPolling(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&sql.StatementResponse{
@@ -133,7 +133,7 @@ func TestExecuteAndPollFailsDuringPolling(t *testing.T) {
 }
 
 func TestExecuteAndPollCancelledContextCallsCancelExecution(t *testing.T) {
-	ctx, cancel := context.WithCancel(cmdio.MockDiscard(context.Background()))
+	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&sql.StatementResponse{
@@ -153,7 +153,7 @@ func TestExecuteAndPollCancelledContextCallsCancelExecution(t *testing.T) {
 }
 
 func TestResolveWarehouseIDWithFlag(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	id, err := resolveWarehouseID(ctx, nil, "explicit-id")
 	require.NoError(t, err)
 	assert.Equal(t, "explicit-id", id)
@@ -263,7 +263,7 @@ func TestResolveSQLFromFileFlag(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 1", result)
 }
@@ -275,21 +275,21 @@ func TestResolveSQLFromFileFlagWithComments(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 1", result)
 }
 
 func TestResolveSQLFileFlagConflictsWithArg(t *testing.T) {
 	cmd := newTestCmd()
-	_, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{"SELECT 1"}, "/some/file.sql")
+	_, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 1"}, "/some/file.sql")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot use both --file and a positional SQL argument")
 }
 
 func TestResolveSQLFromPositionalArg(t *testing.T) {
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{"SELECT 42"}, "")
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 42"}, "")
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 42", result)
 }
@@ -301,14 +301,14 @@ func TestResolveSQLAutoDetectsSQLFile(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{path}, "")
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{path}, "")
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT * FROM sales", result)
 }
 
 func TestResolveSQLNonexistentSQLFileTreatedAsString(t *testing.T) {
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{"nonexistent.sql"}, "")
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{"nonexistent.sql"}, "")
 	require.NoError(t, err)
 	assert.Equal(t, "nonexistent.sql", result)
 }
@@ -325,7 +325,7 @@ func TestResolveSQLUnreadableSQLFileReturnsError(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chmod(path, 0o644) })
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{path}, "")
+	_, err = resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{path}, "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "read SQL file")
 }
@@ -334,7 +334,7 @@ func TestResolveSQLFromStdin(t *testing.T) {
 	cmd := newTestCmd()
 	cmd.SetIn(strings.NewReader("SELECT 1 FROM stdin_test"))
 
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, "")
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, "")
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 1 FROM stdin_test", result)
 }
@@ -346,7 +346,7 @@ func TestResolveSQLEmptyFileReturnsError(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
+	_, err = resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty")
 }
@@ -358,14 +358,14 @@ func TestResolveSQLCommentsOnlyFileReturnsError(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
+	_, err = resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty")
 }
 
 func TestResolveSQLMissingFileReturnsError(t *testing.T) {
 	cmd := newTestCmd()
-	_, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, "/nonexistent/path/query.sql")
+	_, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, "/nonexistent/path/query.sql")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "read SQL file")
 }

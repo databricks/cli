@@ -1,7 +1,6 @@
 package generate
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestDownloader_MarkFileReturnsRelativePath(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 
 	dir := "base/dir/doesnt/matter"
@@ -42,7 +41,7 @@ func TestDownloader_MarkFileReturnsRelativePath(t *testing.T) {
 }
 
 func TestDownloader_DoesNotRecurseIntoNodeModules(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 
 	dir := "base/dir"

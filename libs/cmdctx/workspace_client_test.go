@@ -1,7 +1,6 @@
 package cmdctx_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestCommandWorkspaceClient(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	client := &databricks.WorkspaceClient{
 		Config: &config.Config{
 			Host: "https://test.com",
@@ -23,7 +22,7 @@ func TestCommandWorkspaceClient(t *testing.T) {
 		cmdctx.WorkspaceClient(ctx)
 	})
 
-	ctx = cmdctx.SetWorkspaceClient(context.Background(), client)
+	ctx = cmdctx.SetWorkspaceClient(t.Context(), client)
 
 	// Multiple calls should return a pointer to the same client.
 	w := cmdctx.WorkspaceClient(ctx)

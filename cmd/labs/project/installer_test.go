@@ -104,7 +104,7 @@ func copyTestdata(t *testing.T, name string) string {
 }
 
 func installerContext(t *testing.T, server *httptest.Server) context.Context {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = github.WithApiOverride(ctx, server.URL)
 	ctx = github.WithUserContentOverride(ctx, server.URL)
 	ctx = env.WithUserHomeDir(ctx, t.TempDir())

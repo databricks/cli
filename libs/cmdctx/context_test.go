@@ -1,7 +1,6 @@
 package cmdctx
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -9,7 +8,7 @@ import (
 )
 
 func TestCommandGenerateExecIdPanics(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set the execution ID.
 	ctx = GenerateExecId(ctx)
@@ -21,7 +20,7 @@ func TestCommandGenerateExecIdPanics(t *testing.T) {
 }
 
 func TestCommandExecIdPanics(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Expect a panic if the execution ID is not set.
 	assert.Panics(t, func() {
@@ -30,7 +29,7 @@ func TestCommandExecIdPanics(t *testing.T) {
 }
 
 func TestCommandGenerateExecId(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Set the execution ID.
 	ctx = GenerateExecId(ctx)

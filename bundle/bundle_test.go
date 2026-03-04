@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -22,7 +21,7 @@ import (
 
 // mustLoad calls MustLoad and returns the bundle and collected diagnostics
 func mustLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 	b := MustLoad(ctx)
 	diags := logdiag.FlushCollected(ctx)
@@ -31,7 +30,7 @@ func mustLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 
 // tryLoad calls TryLoad and returns the bundle and collected diagnostics
 func tryLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 	b := TryLoad(ctx)
 	diags := logdiag.FlushCollected(ctx)
@@ -39,19 +38,19 @@ func tryLoad(t *testing.T) (*Bundle, []diag.Diagnostic) {
 }
 
 func TestLoadNotExists(t *testing.T) {
-	b, err := Load(context.Background(), "/doesntexist")
+	b, err := Load(t.Context(), "/doesntexist")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 	assert.Nil(t, b)
 }
 
 func TestLoadExists(t *testing.T) {
-	b, err := Load(context.Background(), "./tests/basic")
+	b, err := Load(t.Context(), "./tests/basic")
 	assert.NoError(t, err)
 	assert.NotNil(t, b)
 }
 
 func TestBundleLocalStateDir(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	projectDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	require.NoError(t, err)
@@ -75,7 +74,7 @@ func TestBundleLocalStateDir(t *testing.T) {
 }
 
 func TestBundleLocalStateDirOverride(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	projectDir := t.TempDir()
 	bundleTmpDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))

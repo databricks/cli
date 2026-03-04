@@ -1,7 +1,6 @@
 package apps
 
 import (
-	"context"
 	"net"
 	"os"
 	"testing"
@@ -59,7 +58,7 @@ func TestStartViteDevServerNoNode(t *testing.T) {
 		t.Skip("Skipping node-dependent test in CI")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdio.MockDiscard(ctx)
 
 	// Create a temporary directory to act as project root

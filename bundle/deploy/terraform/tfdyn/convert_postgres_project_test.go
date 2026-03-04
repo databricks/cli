@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -35,7 +34,7 @@ func TestConvertPostgresProject(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = postgresProjectConverter{}.Convert(ctx, "my_postgres_project", vin, out)
 	require.NoError(t, err)
@@ -80,7 +79,7 @@ func TestConvertPostgresProjectWithPermissions(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = postgresProjectConverter{}.Convert(ctx, "my_postgres_project", vin, out)
 	require.NoError(t, err)
@@ -119,7 +118,7 @@ func TestConvertPostgresProjectMinimal(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = postgresProjectConverter{}.Convert(ctx, "minimal_postgres_project", vin, out)
 	require.NoError(t, err)

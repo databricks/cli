@@ -1,7 +1,6 @@
 package vite
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -131,7 +130,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("only returns sql files", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 		w := &databricks.WorkspaceClient{}
 
 		var lastMessage []byte
@@ -196,7 +195,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 	})
 
 	t.Run("returns error for invalid path", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 		w := &databricks.WorkspaceClient{}
 
 		var lastMessage []byte

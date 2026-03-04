@@ -16,7 +16,7 @@ import (
 )
 
 func TestSecretsCreateScopeErrWhenNoArguments(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, err := testcli.RequireErrorRun(t, ctx, "secrets", "create-scope")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }

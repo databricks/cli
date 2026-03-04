@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestConvertReferenceToMetric_Table(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	cfg := config.Root{
 		Resources: config.Resources{
 			Jobs: map[string]*cres.Job{

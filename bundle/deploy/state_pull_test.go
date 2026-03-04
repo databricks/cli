@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"io/fs"
@@ -81,7 +80,7 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, file := range opts.localFiles {
 		testutil.Touch(t, b.SyncRootPath, "bar", file)
@@ -268,7 +267,7 @@ func TestStatePullNoState(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	diags := bundle.Apply(ctx, b, s)
 	require.NoError(t, diags.Error())
@@ -456,7 +455,7 @@ func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	diags := bundle.Apply(ctx, b, s)
 	require.True(t, diags.HasError())

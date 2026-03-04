@@ -34,7 +34,7 @@ func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 		W: w,
 
-		ctx: context.Background(),
+		ctx: t.Context(),
 	}
 
 	return wt.ctx, wt
@@ -62,7 +62,7 @@ func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 		W: w,
 
-		ctx: context.Background(),
+		ctx: t.Context(),
 	}
 
 	return wt.ctx, wt

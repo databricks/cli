@@ -19,7 +19,7 @@ func TestSyncDefaultPath_DefaultIfUnset(t *testing.T) {
 		Config:         config.Root{},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := bundle.Apply(ctx, b, mutator.SyncDefaultPath())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
@@ -55,7 +55,7 @@ func TestSyncDefaultPath_SkipIfSet(t *testing.T) {
 				Config:         config.Root{},
 			}
 
-			ctx := logdiag.InitContext(context.Background())
+			ctx := logdiag.InitContext(t.Context())
 
 			bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 				err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {

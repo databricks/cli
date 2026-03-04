@@ -15,7 +15,7 @@ func TestHasDatabricksSkillsInstalledNoAgents(t *testing.T) {
 	Registry = []Agent{}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled(context.Background()))
+	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
 }
 
 func TestHasDatabricksSkillsInstalledCanonicalOnly(t *testing.T) {
@@ -33,7 +33,7 @@ func TestHasDatabricksSkillsInstalledCanonicalOnly(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled(context.Background()))
+	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
 }
 
 func TestHasDatabricksSkillsInstalledIgnoresAgentDir(t *testing.T) {
@@ -53,7 +53,7 @@ func TestHasDatabricksSkillsInstalledIgnoresAgentDir(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled(context.Background()))
+	assert.False(t, HasDatabricksSkillsInstalled(t.Context()))
 }
 
 func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
@@ -73,7 +73,7 @@ func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled(context.Background()))
+	assert.False(t, HasDatabricksSkillsInstalled(t.Context()))
 }
 
 func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
@@ -90,7 +90,7 @@ func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled(context.Background()))
+	assert.False(t, HasDatabricksSkillsInstalled(t.Context()))
 }
 
 func TestHasDatabricksSkillsInstalledCustomSubdirNotChecked(t *testing.T) {
@@ -110,7 +110,7 @@ func TestHasDatabricksSkillsInstalledCustomSubdirNotChecked(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.False(t, HasDatabricksSkillsInstalled(context.Background()))
+	assert.False(t, HasDatabricksSkillsInstalled(t.Context()))
 }
 
 func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
@@ -132,5 +132,5 @@ func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled(context.Background()))
+	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
 }

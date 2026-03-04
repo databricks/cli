@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -33,7 +32,7 @@ func TestJobClusterKeyDefined(t *testing.T) {
 		},
 	}
 
-	diags := JobClusterKeyDefined().Apply(context.Background(), b)
+	diags := JobClusterKeyDefined().Apply(t.Context(), b)
 	require.Empty(t, diags)
 	require.NoError(t, diags.Error())
 }
@@ -56,7 +55,7 @@ func TestJobClusterKeyNotDefined(t *testing.T) {
 		},
 	}
 
-	diags := JobClusterKeyDefined().Apply(context.Background(), b)
+	diags := JobClusterKeyDefined().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
 	require.NoError(t, diags.Error())
 	require.Equal(t, diag.Warning, diags[0].Severity)
@@ -89,7 +88,7 @@ func TestJobClusterKeyDefinedInDifferentJob(t *testing.T) {
 		},
 	}
 
-	diags := JobClusterKeyDefined().Apply(context.Background(), b)
+	diags := JobClusterKeyDefined().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
 	require.NoError(t, diags.Error())
 	require.Equal(t, diag.Warning, diags[0].Severity)

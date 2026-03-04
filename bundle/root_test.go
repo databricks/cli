@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestRootFromEnv(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	t.Setenv(env.RootVariable, dir)
 
@@ -24,7 +23,7 @@ func TestRootFromEnv(t *testing.T) {
 }
 
 func TestRootFromEnvDoesntExist(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	t.Setenv(env.RootVariable, filepath.Join(dir, "doesntexist"))
 
@@ -34,7 +33,7 @@ func TestRootFromEnvDoesntExist(t *testing.T) {
 }
 
 func TestRootFromEnvIsFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	f, err := os.Create(filepath.Join(dir, "invalid"))
 	require.NoError(t, err)
@@ -47,7 +46,7 @@ func TestRootFromEnvIsFile(t *testing.T) {
 }
 
 func TestRootIfEnvIsEmpty(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := ""
 	t.Setenv(env.RootVariable, dir)
 
@@ -57,7 +56,7 @@ func TestRootIfEnvIsEmpty(t *testing.T) {
 }
 
 func TestRootLookup(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Have to set then unset to allow the testing package to revert it to its original value.
 	t.Setenv(env.RootVariable, "")
@@ -82,7 +81,7 @@ func TestRootLookup(t *testing.T) {
 }
 
 func TestRootLookupError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Have to set then unset to allow the testing package to revert it to its original value.
 	t.Setenv(env.RootVariable, "")

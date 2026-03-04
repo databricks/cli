@@ -2,7 +2,6 @@ package testproxy
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -124,7 +123,7 @@ func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
 		visitors = append(visitors, httpclient.WithResponseHeader(header, responseHeaders[header]))
 	}
 
-	err := s.apiClient.Do(context.Background(), r.Method, r.URL.Path,
+	err := s.apiClient.Do(s.t.Context(), r.Method, r.URL.Path,
 		visitors...,
 	)
 
