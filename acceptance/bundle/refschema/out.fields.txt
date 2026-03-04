@@ -2627,6 +2627,12 @@ resources.postgres_projects.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_projects.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_projects.*.modified_status	string	INPUT
 resources.postgres_projects.*.name	string	REMOTE
+resources.postgres_projects.*.permissions	[]resources.DatabaseProjectPermission	INPUT
+resources.postgres_projects.*.permissions[*]	resources.DatabaseProjectPermission	INPUT
+resources.postgres_projects.*.permissions[*].group_name	string	INPUT
+resources.postgres_projects.*.permissions[*].level	resources.DatabaseProjectPermissionLevel	INPUT
+resources.postgres_projects.*.permissions[*].service_principal_name	string	INPUT
+resources.postgres_projects.*.permissions[*].user_name	string	INPUT
 resources.postgres_projects.*.pg_version	int	INPUT	STATE
 resources.postgres_projects.*.project_id	string	INPUT	STATE
 resources.postgres_projects.*.spec	*postgres.ProjectSpec	REMOTE
@@ -2667,6 +2673,13 @@ resources.postgres_projects.*.status.synthetic_storage_size_bytes	int64	REMOTE
 resources.postgres_projects.*.uid	string	REMOTE
 resources.postgres_projects.*.update_time	*time.Time	REMOTE
 resources.postgres_projects.*.url	string	INPUT
+resources.postgres_projects.*.permissions.object_id	string	ALL
+resources.postgres_projects.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.postgres_projects.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.postgres_projects.*.permissions.permissions[*].group_name	string	ALL
+resources.postgres_projects.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.postgres_projects.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.postgres_projects.*.permissions.permissions[*].user_name	string	ALL
 resources.quality_monitors.*.assets_dir	string	ALL
 resources.quality_monitors.*.baseline_table_name	string	ALL
 resources.quality_monitors.*.custom_metrics	[]catalog.MonitorMetric	ALL

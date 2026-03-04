@@ -67,6 +67,10 @@ var (
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_USE",
 		},
+		"postgres_projects": {
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_USE",
+		},
 		"clusters": {
 			// https://docs.databricks.com/aws/en/security/auth/access-control/#compute-acls
 			permissions.CAN_MANAGE: "CAN_MANAGE",
