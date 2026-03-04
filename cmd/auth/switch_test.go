@@ -123,10 +123,10 @@ func TestSwitchCommand_WritesSettingsSection(t *testing.T) {
 	err := cmd.Execute()
 	require.NoError(t, err)
 
-	// Verify the [databricks-cli-settings] section was written.
+	// Verify the [__databricks-settings__] section was written.
 	contents, err := os.ReadFile(configFile)
 	require.NoError(t, err)
-	assert.Contains(t, string(contents), "[databricks-cli-settings]")
+	assert.Contains(t, string(contents), "[__databricks-settings__]")
 	assert.Contains(t, string(contents), "default_profile = profile-a")
 
 	// Switch to another profile.

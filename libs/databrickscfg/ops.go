@@ -18,7 +18,7 @@ const fileMode = 0o600
 
 const defaultComment = "The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified."
 
-const databricksCliSettingsSection = "databricks-cli-settings"
+const databricksSettingsSection = "__databricks-settings__"
 
 // GetDefaultProfile returns the name of the default profile by loading the
 // config file at configFilePath. Returns "" if the file doesn't exist.
@@ -74,7 +74,7 @@ func resolveConfigFilePath(ctx context.Context, filename string) (string, error)
 //  4. Empty string (no default).
 func GetDefaultProfileFrom(configFile *config.File) string {
 	// 1. Check for explicit default_profile setting.
-	section, err := configFile.GetSection(databricksCliSettingsSection)
+	section, err := configFile.GetSection(databricksSettingsSection)
 	if err == nil {
 		key, err := section.GetKey("default_profile")
 		if err == nil && key.String() != "" {
@@ -87,7 +87,7 @@ func GetDefaultProfileFrom(configFile *config.File) string {
 	var profileNames []string
 	hasDefault := false
 	for _, s := range configFile.Sections() {
-		if s.Name() == databricksCliSettingsSection {
+		if s.Name() == databricksSettingsSection {
 			continue
 		}
 		if !s.HasKey("host") {
@@ -119,12 +119,12 @@ func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) 
 		return err
 	}
 
-	section, err := configFile.GetSection(databricksCliSettingsSection)
+	section, err := configFile.GetSection(databricksSettingsSection)
 	if err != nil {
 		// Section doesn't exist, create it.
-		section, err = configFile.NewSection(databricksCliSettingsSection)
+		section, err = configFile.NewSection(databricksSettingsSection)
 		if err != nil {
-			return fmt.Errorf("cannot create %s section: %w", databricksCliSettingsSection, err)
+			return fmt.Errorf("cannot create %s section: %w", databricksSettingsSection, err)
 		}
 	}
 
