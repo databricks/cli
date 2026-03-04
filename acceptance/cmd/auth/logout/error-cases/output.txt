@@ -1,5 +1,5 @@
 
-=== Logout of non-existent profileError: profile "nonexistent" not found. Available profiles: [dev]
+=== Logout of non-existent profileError: profile "nonexistent" not found. Available profiles: dev
 
 Exit code: 1
 
