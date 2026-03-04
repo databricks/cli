@@ -1,0 +1,41 @@
+# https://github.com/databricks/cli/issues/3821
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  schema_permissions:
+    description: list of permissions to grant users to a schema
+    type: complex
+    default:
+      # Prerequisite
+      # - USE_SCHEMA # Does not give any abilities, but is an additional requirement to perform any action on a schema object
+      # Metadata
+      - APPLY_TAG # Gives ability to apply tags to an object
+      # Read
+      # - EXECUTE # Gives ability to use a function or model
+      # - READ_VOLUME # Gives ability to use a function or model
+      # - SELECT # Gives read access to an object
+      # Edit
+      - MODIFY # Gives ability to add, delete, and modify data to or from an object
+      - REFRESH # Gives ability to refresh a materialized view
+      - WRITE_VOLUME # Gives ability to write to a volume
+      # Create
+      - CREATE_FUNCTION # Gives ability to create a function in a schema
+      - CREATE_MATERIALIZED_VIEW # Gives ability to create a materialized view
+      - CREATE_MODEL # Gives ability to create a new machine learning model
+      - CREATE_MODEL_VERSION # Gives ability to create a model version on an existing machine learning model
+      - CREATE_TABLE # Gives ability to create tables
+      - CREATE_VOLUME # Gives ability to create volumes
+      # Other
+      # - ALL_PRIVILEGES # Gives all privileges (including future ones)
+      # - EXTERNAL_USE_SCHEMA # Gives ability to access objects from external engines
+      - MANAGE # Gives ownership-like ability for the object, such as managing permissions, dropping, or renaming
+
+resources:
+  schemas:
+    bronze_dma_raw:
+      catalog_name: main
+      name: myschema-$UNIQUE_NAME
+      grants:
+       - principal: $CURRENT_USER_NAME
+         privileges: ${var.schema_permissions}

@@ -1,0 +1,4 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle validate
+trace $CLI bundle deploy
+trace $CLI grants get schema main.myschema-$UNIQUE_NAME

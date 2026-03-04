@@ -1,0 +1,45 @@
+
+>>> [CLI] bundle validate
+Warning: invalid value "CREATE_MODEL_VERSION" for enum field. Valid values are [ALL_PRIVILEGES APPLY_TAG CREATE_FUNCTION CREATE_MATERIALIZED_VIEW CREATE_MODEL CREATE_TABLE CREATE_VOLUME EXECUTE EXTERNAL_USE_SCHEMA MANAGE MODIFY READ_VOLUME REFRESH SELECT USE_SCHEMA WRITE_VOLUME]
+  at resources.schemas.bronze_dma_raw.grants[0].privileges[7]
+  in databricks.yml:26:9
+
+Name: test-bundle-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Found 1 warning
+
+>>> [CLI] bundle deploy
+Warning: invalid value "CREATE_MODEL_VERSION" for enum field. Valid values are [ALL_PRIVILEGES APPLY_TAG CREATE_FUNCTION CREATE_MATERIALIZED_VIEW CREATE_MODEL CREATE_TABLE CREATE_VOLUME EXECUTE EXTERNAL_USE_SCHEMA MANAGE MODIFY READ_VOLUME REFRESH SELECT USE_SCHEMA WRITE_VOLUME]
+  at resources.schemas.bronze_dma_raw.grants[0].privileges[7]
+  in databricks.yml:26:9
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] grants get schema main.myschema-[UNIQUE_NAME]
+{
+  "privilege_assignments": [
+    {
+      "principal":"[USERNAME]",
+      "privileges": [
+        "APPLY_TAG",
+        "CREATE_FUNCTION",
+        "CREATE_MATERIALIZED_VIEW",
+        "CREATE_MODEL",
+        "CREATE_MODEL_VERSION",
+        "CREATE_TABLE",
+        "CREATE_VOLUME",
+        "MANAGE",
+        "MODIFY",
+        "REFRESH",
+        "WRITE_VOLUME"
+      ]
+    }
+  ]
+}
