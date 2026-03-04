@@ -377,6 +377,7 @@ func TestImportFileFormatSource(t *testing.T) {
 	assertFilerFileContents(t, ctx, workspaceFiler, "scalaNotebook", "// Databricks notebook source\nprintln(\"scala\")")
 	assertWorkspaceFileType(t, ctx, workspaceFiler, "scalaNotebook", workspace.ObjectTypeNotebook)
 
+	// Upload a non-zip archive without a specifying a format: expect API to throw an error that the uploaded item is not a zip archive
 	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "import", path.Join(targetDir, "scalaNotebook-error"), "--file", "./testdata/import_dir/scalaNotebook.scala")
 	assert.ErrorContains(t, err, "The zip archive contains no items.")
 }
