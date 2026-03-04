@@ -28,7 +28,7 @@ func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return agentDir, nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return agentDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
@@ -59,7 +59,7 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return tmpDir, nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return tmpDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
@@ -79,7 +79,7 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return tmpDir, nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return tmpDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()

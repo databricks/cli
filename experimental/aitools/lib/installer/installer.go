@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/fatih/color"
 )
@@ -124,7 +125,7 @@ func InstallAllSkills(ctx context.Context) error {
 		return err
 	}
 
-	detectedAgents := agents.DetectInstalled()
+	detectedAgents := agents.DetectInstalled(ctx)
 	if len(detectedAgents) == 0 {
 		printNoAgentsDetected(ctx)
 		return nil
@@ -151,7 +152,7 @@ func InstallSkill(ctx context.Context, skillName string) error {
 		return fmt.Errorf("skill %q not found", skillName)
 	}
 
-	detectedAgents := agents.DetectInstalled()
+	detectedAgents := agents.DetectInstalled(ctx)
 	if len(detectedAgents) == 0 {
 		printNoAgentsDetected(ctx)
 		return nil
@@ -178,7 +179,7 @@ func printDetectedAgents(ctx context.Context, detectedAgents []*agents.Agent) {
 }
 
 func installSkillForAgents(ctx context.Context, skillName string, files []string, detectedAgents []*agents.Agent) error {
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
@@ -193,7 +194,7 @@ func installSkillForAgents(ctx context.Context, skillName string, files []string
 
 	// install/symlink to each agent
 	for _, agent := range detectedAgents {
-		agentSkillDir, err := agent.SkillsDir()
+		agentSkillDir, err := agent.SkillsDir(ctx)
 		if err != nil {
 			cmdio.LogString(ctx, color.YellowString("⊘ Skipped %s: %v", agent.DisplayName, err))
 			continue
