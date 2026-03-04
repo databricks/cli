@@ -227,6 +227,16 @@ resources:
       # Routes have custom SuppressDiff (lines 387-388)
       - field: config.traffic_config
         reason: managed
+      - field: budget_policy_id
+        reason: no_update_api
+        # There is PublicPreview endpoints but we're not using it https://docs.databricks.com/api/workspace/servingendpoints/put
+      - field: rate_limits
+        reason: not_implemented
+    ignore_local_changes:
+      - field: budget_policy_id
+        reason: no_update_api
+      - field: rate_limits
+        reason: not_implemented
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
       # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
