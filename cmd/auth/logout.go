@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 )
@@ -207,7 +207,10 @@ func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Pr
 // host/oidc/accounts/<account_id> as the cache key and match on both host and
 // account ID; workspace profiles use just the host.
 func hostCacheKeyAndMatchFn(p profile.Profile) (string, profile.ProfileMatchFunction) {
-	host := strings.TrimRight(p.Host, "/")
+	host := (&config.Config{Host: p.Host}).CanonicalHostName()
+	if host == "" {
+		return "", nil
+	}
 
 	if p.AccountID != "" {
 		return host + "/oidc/accounts/" + p.AccountID, profile.WithHostAndAccountID(host, p.AccountID)
