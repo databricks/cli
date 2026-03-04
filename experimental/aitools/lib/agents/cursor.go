@@ -21,8 +21,8 @@ type mcpServer struct {
 }
 
 // InstallCursor installs the Databricks AI Tools MCP server in Cursor.
-func InstallCursor() error {
-	home, err := env.UserHomeDir(context.TODO())
+func InstallCursor(ctx context.Context) error {
+	home, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to determine Cursor config path: %w", err)
 	}

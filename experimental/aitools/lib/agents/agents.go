@@ -19,7 +19,7 @@ type Agent struct {
 	SkillsSubdir string
 	// InstallMCP installs the Databricks MCP server for this agent.
 	// Nil if agent doesn't support MCP or we haven't implemented it.
-	InstallMCP func() error
+	InstallMCP func(ctx context.Context) error
 }
 
 // Detected returns true if the agent is installed on the system.
