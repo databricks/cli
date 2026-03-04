@@ -1,0 +1,15 @@
+bundle:
+  name: test-ssd-count-0-$UNIQUE_NAME
+
+resources:
+  clusters:
+    test_cluster:
+      cluster_name: test-cluster-$UNIQUE_NAME
+      spark_version: $DEFAULT_SPARK_VERSION
+      node_type_id: $NODE_TYPE_ID
+      num_workers: 1
+      gcp_attributes:
+        # config from https://github.com/databricks/terraform-provider-databricks/issues/4089
+        availability: PREEMPTIBLE_GCP
+        local_ssd_count: 0
+        zone_id: auto

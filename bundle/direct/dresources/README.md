@@ -10,6 +10,7 @@
  - The logic what kind of update it is should be in FieldTriggers / ClassifyChange methods. The methods performing update should not have logic in them on what method to call.
  - Create/Update/Delete methods should not need to read any state. (We can implement support for passing remoteState we already to these methods if such need arises though).
  - Prefer “with refresh” variants of methods if resource API supports that. That avoids explicit DoRead() call.
+ - For update with complex logic, ensure that DoUpdate() does not result in no-op. If certain fields could not be updated, they should be excluded at plan level in resources.yml.
 
 Nice to have
  - Add link to corresponding API documentation before each method.
