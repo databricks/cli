@@ -5,3 +5,6 @@
 host      = [DATABRICKS_URL]
 scopes    = jobs,pipelines,clusters
 auth_type = databricks-cli
+
+[__databricks-settings__]
+default_profile = scoped-test
