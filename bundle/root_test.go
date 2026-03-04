@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -63,7 +62,13 @@ func TestRootLookup(t *testing.T) {
 	t.Setenv(env.RootVariable, "")
 	os.Unsetenv(env.RootVariable)
 
-	testutil.Chdir(t, t.TempDir())
+	t.Chdir(t.TempDir())
+
+	// Resolve symlinks to match the path returned by getRootWithTraversal.
+	root, err := os.Getwd()
+	require.NoError(t, err)
+	root, err = filepath.EvalSymlinks(root)
+	require.NoError(t, err)
 
 	// Create databricks.yml file.
 	f, err := os.Create(config.FileNames[0])
@@ -75,10 +80,10 @@ func TestRootLookup(t *testing.T) {
 	require.NoError(t, err)
 
 	// It should find the project root from $PWD.
-	wd := testutil.Chdir(t, "./a/b/c")
-	root, err := mustGetRoot(ctx)
+	t.Chdir("./a/b/c")
+	foundRoot, err := mustGetRoot(ctx)
 	require.NoError(t, err)
-	require.Equal(t, wd, root)
+	require.Equal(t, root, foundRoot)
 }
 
 func TestRootLookupError(t *testing.T) {
@@ -89,7 +94,7 @@ func TestRootLookupError(t *testing.T) {
 	os.Unsetenv(env.RootVariable)
 
 	// It can't find a project root from a temporary directory.
-	_ = testutil.Chdir(t, t.TempDir())
+	t.Chdir(t.TempDir())
 	_, err := mustGetRoot(ctx)
 	require.ErrorContains(t, err, "unable to locate bundle root")
 }
