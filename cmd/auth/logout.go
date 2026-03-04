@@ -47,16 +47,18 @@ environment (e.g. CI/CD), omitting --profile is an error.
 1. If you specify --profile, the command logs out of that profile. In an
    interactive terminal you'll be asked to confirm unless --force is set.
 
-2. If you omit --profile in an interactive terminal, a searchable picker
-   lists all profiles from the configuration file. You can search by
-   name, host, or account ID.
+2. If you omit --profile in an interactive terminal, you'll be shown
+   an interactive picker listing all profiles from your configuration file.
+   You can search by profile name, host, or account ID. After selecting a
+   profile, you'll be asked to confirm unless --force is specified.
 
-3. If you omit --profile in a non-interactive environment, the command
-   fails with an error asking you to specify --profile.
+3. If you omit --profile in a non-interactive environment (e.g. CI/CD pipeline),
+   the command will fail with an error asking you to specify --profile.
 
-4. Use --force to skip the confirmation prompt.
+4. Use --force to skip the confirmation prompt. This is required when
+   running in non-interactive environments.
 
-5. Use --delete to also remove the profile section from ~/.databrickscfg.`,
+5. Use --delete to also remove the selected profile from ~/.databrickscfg.`,
 	}
 
 	var force bool
