@@ -6,6 +6,9 @@ resources:
   jobs:
     job_one:
       name: job one
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
     job_two:
       name: job two
     job_three:

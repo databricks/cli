@@ -7,8 +7,10 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/jsonsaver"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -33,7 +35,7 @@ func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 	return executionTimes
 }
 
-func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
+func logDeployTelemetry(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 	resourcesCount := int64(0)
 	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		resourcesCount++
@@ -184,7 +186,74 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,
 				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
+				ResourceStateSizeBytes:       computeResourceStateSizes(ctx, b),
+				ResourceActionCounts:         computeActionCounts(plan),
 			},
 		},
 	})
+}
+
+// computeActionCounts computes per-resource-type action counts from the deploy plan.
+func computeActionCounts(plan *deployplan.Plan) []protos.IntMapEntry {
+	if plan == nil {
+		return nil
+	}
+
+	counts := map[string]int64{}
+	for key, entry := range plan.Plan {
+		if entry.Action == deployplan.Skip {
+			continue
+		}
+
+		resourceType := config.GetResourceTypeFromKey(key)
+		if resourceType == "" {
+			continue
+		}
+
+		mapKey := resourceType + "." + string(entry.Action)
+		counts[mapKey]++
+	}
+
+	return sortedIntMapEntries(counts)
+}
+
+// computeResourceStateSizes computes per-resource config sizes in bytes from
+// the bundle's YAML configuration. Returns one entry per resource instance,
+// sorted in ascending order. This is engine-independent since it uses the
+// YAML config directly.
+func computeResourceStateSizes(ctx context.Context, b *bundle.Bundle) []int64 {
+	var sizes []int64
+
+	_, err := dyn.MapByPattern(
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			jsonBytes, err := jsonsaver.Marshal(v)
+			if err != nil {
+				log.Debugf(ctx, "failed to marshal resource %s: %s", p, err)
+				return v, nil
+			}
+			sizes = append(sizes, int64(len(jsonBytes)))
+			return v, nil
+		},
+	)
+	if err != nil {
+		log.Debugf(ctx, "failed to compute resource state sizes: %s", err)
+		return nil
+	}
+
+	slices.Sort(sizes)
+	return sizes
+}
+
+// sortedIntMapEntries converts a map to a sorted slice of IntMapEntry.
+func sortedIntMapEntries(m map[string]int64) []protos.IntMapEntry {
+	entries := make([]protos.IntMapEntry, 0, len(m))
+	for k, v := range m {
+		entries = append(entries, protos.IntMapEntry{Key: k, Value: v})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Key < entries[j].Key
+	})
+	return entries
 }
