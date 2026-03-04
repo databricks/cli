@@ -28,6 +28,8 @@ linters:
           msg: Use cmdio.IsPromptSupported(ctx) to check for a TTY.
         - pattern: 'isatty\.IsCygwinTerminal'
           msg: Use cmdio.IsPromptSupported(ctx) to check for a TTY.
+        - pattern: 'os\.UserHomeDir'
+          msg: Use env.UserHomeDir(ctx) from libs/env instead.
       analyze-types: true
     copyloopvar:
       check-alias: true

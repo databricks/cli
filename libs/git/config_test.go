@@ -75,7 +75,7 @@ func TestConfig(t *testing.T) {
 	err = c.load(bytes.NewBufferString(raw))
 	require.NoError(t, err)
 
-	home, err := os.UserHomeDir()
+	home, err := os.UserHomeDir() //nolint:forbidigo // test for config.go which has no ctx
 	require.NoError(t, err)
 
 	assert.Equal(t, "false", c.variables["core.filemode"])
