@@ -1,6 +1,7 @@
 package agents
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -8,7 +9,7 @@ import (
 )
 
 // InstallClaude installs the Databricks AI Tools MCP server in Claude Code.
-func InstallClaude() error {
+func InstallClaude(_ context.Context) error {
 	// Check if claude CLI is available
 	if _, err := exec.LookPath("claude"); err != nil {
 		return errors.New("'claude' CLI is not installed or not on PATH\n\nPlease install Claude Code and ensure 'claude' is available on your system PATH.\nFor installation instructions, visit: https://docs.anthropic.com/en/docs/claude-code")

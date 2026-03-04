@@ -56,6 +56,59 @@ func TestConvertPostgresProject(t *testing.T) {
 	}, postgresProject)
 }
 
+func TestConvertPostgresProjectWithPermissions(t *testing.T) {
+	src := resources.PostgresProject{
+		PostgresProjectConfig: resources.PostgresProjectConfig{
+			ProjectId: "my-project",
+			ProjectSpec: postgres.ProjectSpec{
+				DisplayName: "My Postgres Project",
+				PgVersion:   17,
+			},
+		},
+		Permissions: []resources.DatabaseProjectPermission{
+			{
+				Level:    "CAN_USE",
+				UserName: "user@example.com",
+			},
+			{
+				Level:                "CAN_MANAGE",
+				ServicePrincipalName: "sp-name",
+			},
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = postgresProjectConverter{}.Convert(ctx, "my_postgres_project", vin, out)
+	require.NoError(t, err)
+
+	postgresProject := out.PostgresProject["my_postgres_project"]
+	assert.Equal(t, map[string]any{
+		"project_id": "my-project",
+		"spec": map[string]any{
+			"display_name": "My Postgres Project",
+			"pg_version":   int64(17),
+		},
+	}, postgresProject)
+
+	assert.Equal(t, &schema.ResourcePermissions{
+		DatabaseProjectName: "${databricks_postgres_project.my_postgres_project.project_id}",
+		AccessControl: []schema.ResourcePermissionsAccessControl{
+			{
+				PermissionLevel: "CAN_USE",
+				UserName:        "user@example.com",
+			},
+			{
+				PermissionLevel:      "CAN_MANAGE",
+				ServicePrincipalName: "sp-name",
+			},
+		},
+	}, out.Permissions["postgres_project_my_postgres_project"])
+}
+
 func TestConvertPostgresProjectMinimal(t *testing.T) {
 	src := resources.PostgresProject{
 		PostgresProjectConfig: resources.PostgresProjectConfig{
