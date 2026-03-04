@@ -23,6 +23,7 @@ func newSwitchCommand() *cobra.Command {
 The selected profile name is stored in a [databricks-cli-settings] section
 in the config file under the default_profile key. Use "databricks auth profiles"
 to see which profile is currently the default.`,
+		Args: cobra.NoArgs,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -44,7 +45,8 @@ to see which profile is currently the default.`,
 				return errors.New("no profiles configured. Run 'databricks auth login' to create a profile")
 			}
 
-			selectedName, err := promptForSwitchProfile(ctx, allProfiles)
+			currentDefault, _ := databrickscfg.GetDefaultProfile(configFile)
+			selectedName, err := promptForSwitchProfile(ctx, allProfiles, currentDefault)
 			if err != nil {
 				return err
 			}
@@ -74,14 +76,19 @@ to see which profile is currently the default.`,
 
 // promptForSwitchProfile shows an interactive profile picker for the switch command.
 // Reuses profileSelectItem from token.go for consistent display.
-func promptForSwitchProfile(ctx context.Context, profiles profile.Profiles) (string, error) {
+func promptForSwitchProfile(ctx context.Context, profiles profile.Profiles, currentDefault string) (string, error) {
 	items := make([]profileSelectItem, 0, len(profiles))
 	for _, p := range profiles {
 		items = append(items, profileSelectItem{Name: p.Name, Host: p.Host})
 	}
 
+	label := "Select a profile to set as default"
+	if currentDefault != "" {
+		label = fmt.Sprintf("Current default: %s. Select a new default", currentDefault)
+	}
+
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             "Select a profile to set as default",
+		Label:             label,
 		Items:             items,
 		StartInSearchMode: len(profiles) > 5,
 		Searcher: func(input string, index int) bool {
