@@ -1381,8 +1381,8 @@ func newUpdateDefaultWarehouseOverride() *cobra.Command {
 				}
 				args = append(args, id)
 			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the type of override behavior")
+			if len(args) < 3 {
+				return fmt.Errorf("expected NAME, UPDATE_MASK, and TYPE arguments")
 			}
 			updateDefaultWarehouseOverrideReq.Name = args[0]
 			if args[1] != "" {
