@@ -59,7 +59,7 @@ logging out.`,
 		}
 
 		tokenCache, err := cache.NewFileTokenCache()
-		if err != nil || tokenCache == nil {
+		if err != nil {
 			return fmt.Errorf("failed to open token cache, please check if the file version is up-to-date and that the file is not corrupted: %w", err)
 		}
 
@@ -125,8 +125,11 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 	// has been deleted. In this scenario, the user would not be able to
 	// correctly delete the tokens in an eventual logout re-try.
 
-	isU2MProfile := matchedProfile.AuthType == "databricks-cli"
-	if isU2MProfile {
+	// To keep the symmetry between the login and logout commands, we only
+	// want to clear the token cache if the profile was created by the login command.
+	// Otherwise, we could be deleting profiles that were created by other means (e.g. manually).
+	isCreatedByLogin := matchedProfile.AuthType == "databricks-cli"
+	if isCreatedByLogin {
 		err = clearTokenCache(ctx, *matchedProfile, args.profiler, args.tokenCache)
 		if err != nil {
 			return fmt.Errorf("failed to clear token cache: %w", err)
@@ -136,19 +139,22 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 	if args.deleteProfile {
 		err = databrickscfg.DeleteProfile(ctx, args.profileName, args.configFilePath)
 		if err != nil {
-			cmdio.LogString(ctx, fmt.Sprintf("Token cache cleared, but failed to remove profile. If this error persists, please check the state of the %s file: %v", args.configFilePath, err))
-			return nil
+			if isCreatedByLogin {
+				return fmt.Errorf("token cache cleared, but failed to delete profile. Re-run with --delete to retry. If this error persists, please check the state of the config file: %v", err)
+			}
+
+			return fmt.Errorf("failed to delete profile. Re-run with --delete to retry. If this error persists, please check the state of the config file: %w", err)
 		}
 	}
 
-	if isU2MProfile && args.deleteProfile {
-		cmdio.LogString(ctx, fmt.Sprintf("Successfully logged out of and deleted profile %q.", args.profileName))
-	} else if isU2MProfile && !args.deleteProfile {
-		cmdio.LogString(ctx, fmt.Sprintf("Successfully logged out of profile %q. To remove the profile from the config file, use --delete.", args.profileName))
-	} else if !isU2MProfile && args.deleteProfile {
-		cmdio.LogString(ctx, fmt.Sprintf("Successfully deleted profile %q.", args.profileName))
+	if isCreatedByLogin && args.deleteProfile {
+		cmdio.LogString(ctx, fmt.Sprintf("Logged out of and deleted profile %q.", args.profileName))
+	} else if isCreatedByLogin && !args.deleteProfile {
+		cmdio.LogString(ctx, fmt.Sprintf("Logged out of profile %q. Use --delete to also remove it from the config file.", args.profileName))
+	} else if !isCreatedByLogin && args.deleteProfile {
+		cmdio.LogString(ctx, fmt.Sprintf("Deleted profile %q with no tokens to clear.", args.profileName))
 	} else {
-		cmdio.LogString(ctx, fmt.Sprintf("No tokens to clear for profile %q. No changes were made. To remove the profile from the config file, use --delete.", args.profileName))
+		cmdio.LogString(ctx, fmt.Sprintf("No tokens to clear for profile %q. Use --delete to remove it from the config file.", args.profileName))
 	}
 	return nil
 }

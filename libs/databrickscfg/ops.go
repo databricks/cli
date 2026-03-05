@@ -171,7 +171,7 @@ func DeleteProfile(ctx context.Context, profileName, configFilePath string) erro
 	// If the profile doesn't exist, return an error to avoid
 	// creating a backup file with the same content as the original file.
 	if _, err := configFile.SectionsByName(profileName); err != nil {
-		return fmt.Errorf("profile %s not found: %w", profileName, err)
+		return fmt.Errorf("profile %q not found: %w", profileName, err)
 	}
 
 	// If trying to delete the default section, clear its keys.

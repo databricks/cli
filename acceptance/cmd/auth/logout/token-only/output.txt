@@ -2,7 +2,7 @@
 === Token cache keys before logout
 [
   "dev",
-  "https://accounts.cloud.databricks.com/"
+  "https://accounts.cloud.databricks.com/oidc/accounts/account-id"
 ]
 
 === Logout without --delete
@@ -19,6 +19,4 @@ account_id = account-id
 auth_type  = databricks-cli
 
 === Token cache keys after logout — both entries should be removed
-[
-  "https://accounts.cloud.databricks.com/"
-]
+[]
