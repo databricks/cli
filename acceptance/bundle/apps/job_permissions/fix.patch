@@ -1,0 +1,11 @@
+--- a/databricks.yml
++++ b/databricks.yml
+@@ -10,6 +10,9 @@
+     my_job:
+       name: my-job
++      permissions:
++        - level: CAN_MANAGE_RUN
++          service_principal_name: ${resources.apps.my_app.service_principal_client_id}
+       tasks:
+         - task_key: hello
+           environment_key: default
