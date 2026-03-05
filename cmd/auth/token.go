@@ -24,7 +24,7 @@ import (
 
 func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthArgument) string {
 	loginMsg := auth.BuildLoginCommand(ctx, profile, persistentAuth)
-	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
+	return fmt.Sprintf("To reauthenticate, run the following command:\n\n  $ %s\n\nIf this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
 }
 
 // profileSelectionResult represents the user's choice from the interactive
@@ -245,7 +245,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
-		return nil, fmt.Errorf("%w. %s", err, helpMsg)
+		return nil, fmt.Errorf("%w.\n\n%s", err, helpMsg)
 	}
 	t, err := persistentAuth.Token()
 	if err != nil {
@@ -265,7 +265,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			return nil, rewrittenErr
 		}
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
-		return nil, fmt.Errorf("%w. %s", err, helpMsg)
+		return nil, fmt.Errorf("%w.\n\n%s", err, helpMsg)
 	}
 	return t, nil
 }
