@@ -26,18 +26,7 @@ const (
 	remotePlatformKey    = "remote.SSH.remotePlatform"
 	defaultExtensionsKey = "remote.SSH.defaultExtensions"
 	listenOnSocketKey    = "remote.SSH.remoteServerListenOnSocket"
-	vscodeIDE            = "vscode"
-	cursorIDE            = "cursor"
-	vscodeName           = "VS Code"
-	cursorName           = "Cursor"
 )
-
-func getIDEName(ide string) string {
-	if ide == cursorIDE {
-		return cursorName
-	}
-	return vscodeName
-}
 
 type missingSettings struct {
 	portRange      bool
@@ -118,7 +107,7 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 		return fmt.Errorf("failed to save settings: %w", err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Updated %s settings for '%s'", getIDEName(ide), connectionName))
+	cmdio.LogString(ctx, fmt.Sprintf("Updated %s settings for '%s'", ideName(ide), connectionName))
 	return nil
 }
 
@@ -129,7 +118,7 @@ func getDefaultSettingsPath(ctx context.Context, ide string) (string, error) {
 	}
 
 	appName := "Code"
-	if ide == cursorIDE {
+	if ide == CursorOption {
 		appName = "Cursor"
 	}
 
@@ -249,7 +238,7 @@ func settingsMessage(connectionName string, missing *missingSettings) string {
 func promptUserForUpdate(ctx context.Context, ide, connectionName string, missing *missingSettings) (bool, error) {
 	question := fmt.Sprintf(
 		"The following settings will be applied to %s for '%s':\n%s\nApply these settings?",
-		getIDEName(ide), connectionName, settingsMessage(connectionName, missing))
+		ideName(ide), connectionName, settingsMessage(connectionName, missing))
 	return cmdio.AskYesOrNo(ctx, question)
 }
 
@@ -286,7 +275,7 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 		return fmt.Errorf("failed to save settings: %w", err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Created %s settings at %s", getIDEName(ide), filepath.ToSlash(settingsPath)))
+	cmdio.LogString(ctx, fmt.Sprintf("Created %s settings at %s", ideName(ide), filepath.ToSlash(settingsPath)))
 	return nil
 }
 
@@ -366,5 +355,5 @@ func GetManualInstructions(ide, connectionName string) string {
 	}
 	return fmt.Sprintf(
 		"To ensure the remote connection works as expected, manually add these settings to your %s settings.json:\n%s",
-		getIDEName(ide), settingsMessage(connectionName, missing))
+		ideName(ide), settingsMessage(connectionName, missing))
 }
