@@ -357,6 +357,10 @@ func variableNamesForResource(r manifest.Resource) []varInfo {
 
 	for _, fieldName := range r.FieldNames() {
 		field := r.Fields[fieldName]
+		if field.BundleIgnore {
+			covered[fieldName] = true
+			continue
+		}
 		desc := field.Description
 		if desc == "" {
 			desc = r.Description
