@@ -43,8 +43,8 @@ func validateClusterAccess(ctx context.Context, client *databricks.WorkspaceClie
 	return nil
 }
 
-func generateHostConfig(opts SetupOptions) (string, error) {
-	identityFilePath, err := keys.GetLocalSSHKeyPath(opts.ClusterID, opts.SSHKeysDir)
+func generateHostConfig(ctx context.Context, opts SetupOptions) (string, error) {
+	identityFilePath, err := keys.GetLocalSSHKeyPath(ctx, opts.ClusterID, opts.SSHKeysDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
@@ -90,22 +90,22 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		return err
 	}
 
-	configPath, err := sshconfig.GetMainConfigPathOrDefault(opts.SSHConfigPath)
+	configPath, err := sshconfig.GetMainConfigPathOrDefault(ctx, opts.SSHConfigPath)
 	if err != nil {
 		return err
 	}
 
-	err = sshconfig.EnsureIncludeDirective(configPath)
+	err = sshconfig.EnsureIncludeDirective(ctx, configPath)
 	if err != nil {
 		return err
 	}
 
-	hostConfig, err := generateHostConfig(opts)
+	hostConfig, err := generateHostConfig(ctx, opts)
 	if err != nil {
 		return err
 	}
 
-	exists, err := sshconfig.HostConfigExists(opts.HostName)
+	exists, err := sshconfig.HostConfigExists(ctx, opts.HostName)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		return err
 	}
 
-	hostConfigPath, err := sshconfig.GetHostConfigPath(opts.HostName)
+	hostConfigPath, err := sshconfig.GetHostConfigPath(ctx, opts.HostName)
 	if err != nil {
 		return err
 	}

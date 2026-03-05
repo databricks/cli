@@ -137,7 +137,7 @@ func TestGenerateHostConfig_Valid(t *testing.T) {
 		ProxyCommand:  proxyCommand,
 	}
 
-	result, err := generateHostConfig(opts)
+	result, err := generateHostConfig(t.Context(), opts)
 	assert.NoError(t, err)
 
 	assert.Contains(t, result, "Host test-host")
@@ -172,7 +172,7 @@ func TestGenerateHostConfig_WithoutProfile(t *testing.T) {
 		ProxyCommand:  proxyCommand,
 	}
 
-	result, err := generateHostConfig(opts)
+	result, err := generateHostConfig(t.Context(), opts)
 	assert.NoError(t, err)
 
 	assert.NotContains(t, result, "--profile=")
@@ -193,7 +193,7 @@ func TestGenerateHostConfig_PathEscaping(t *testing.T) {
 		ShutdownDelay: 30 * time.Second,
 	}
 
-	result, err := generateHostConfig(opts)
+	result, err := generateHostConfig(t.Context(), opts)
 	assert.NoError(t, err)
 
 	// Check that quotes are properly escaped
