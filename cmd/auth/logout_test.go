@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -161,7 +160,7 @@ func TestLogout(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := cmdio.MockDiscard(context.Background())
+			ctx := cmdio.MockDiscard(t.Context())
 			configPath := writeTempConfig(t, logoutTestConfig)
 			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
@@ -204,7 +203,7 @@ func TestLogout(t *testing.T) {
 }
 
 func TestLogoutNoTokens(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	configPath := writeTempConfig(t, logoutTestConfig)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
@@ -228,7 +227,7 @@ func TestLogoutNoTokens(t *testing.T) {
 }
 
 func TestLogoutNoTokensWithDelete(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	configPath := writeTempConfig(t, logoutTestConfig)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 

@@ -341,7 +341,7 @@ host = https://only.cloud.databricks.com
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			path := filepath.Join(t.TempDir(), ".databrickscfg")
 			require.NoError(t, os.WriteFile(path, []byte(tc.seedConfig), fileMode))
 
@@ -367,7 +367,7 @@ host = https://only.cloud.databricks.com
 }
 
 func TestDeleteProfile_NotFound(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), ".databrickscfg")
 	require.NoError(t, os.WriteFile(path, []byte(""), fileMode))
 
