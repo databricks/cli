@@ -174,7 +174,17 @@ func DeleteProfile(ctx context.Context, profileName, configFilePath string) erro
 		return fmt.Errorf("profile %s not found: %w", profileName, err)
 	}
 
-	configFile.DeleteSection(profileName)
+	// If trying to delete the default section, clear its keys.
+	// This ensures that the default section is always present at the top of the file.
+	if profileName == ini.DefaultSection {
+		section := configFile.Section(ini.DefaultSection)
+
+		for _, key := range section.Keys() {
+			section.DeleteKey(key.Name())
+		}
+	} else {
+		configFile.DeleteSection(profileName)
+	}
 
 	section := configFile.Section(ini.DefaultSection)
 	if len(section.Keys()) == 0 && section.Comment == "" {

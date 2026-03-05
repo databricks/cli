@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
@@ -28,27 +27,18 @@ You will need to run {{ "databricks auth login" | bold }} to re-authenticate.
 `
 
 func newLogoutCommand() *cobra.Command {
-	profiler := profile.DefaultProfiler
-
-	configPath, err := profiler.GetPath(context.Background())
-	// If the config path is not found, revert to the default path for the description as a fallback.
-	// During the execution of the command, if this is the case an error will be returned.
-	if err != nil {
-		log.Warnf(context.Background(), "Failed to get config path: %v, using default path ~/.databrickscfg", err)
-		configPath = "~/.databrickscfg"
-	}
-
 	cmd := &cobra.Command{
 		Use:    "logout",
 		Short:  "Log out of a Databricks profile",
 		Hidden: true,
-		Long: fmt.Sprintf(`Log out of a Databricks profile.
+		Long: `Log out of a Databricks profile.
 
 This command deletes any cached OAuth tokens for the specified profile.
-If --delete is specified, the profile is also removed from %s.
+If --delete is specified, the profile is also removed from ~/.databrickscfg
+(or the file specified by the DATABRICKS_CONFIG_FILE environment variable).
 
 You will need to run "databricks auth login" to re-authenticate after
-logging out.`, configPath),
+logging out.`,
 	}
 
 	var force bool
@@ -69,15 +59,15 @@ logging out.`, configPath),
 		}
 
 		tokenCache, err := cache.NewFileTokenCache()
-		if err != nil {
-			log.Warnf(ctx, "Failed to open token cache: %v", err)
+		if err != nil || tokenCache == nil {
+			return fmt.Errorf("failed to open token cache, please check if the file version is up-to-date and that the file is not corrupted: %w", err)
 		}
 
 		return runLogout(ctx, logoutArgs{
 			profileName:    profileName,
 			force:          force,
 			deleteProfile:  deleteProfile,
-			profiler:       profiler,
+			profiler:       profile.DefaultProfiler,
 			tokenCache:     tokenCache,
 			configFilePath: env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		})
@@ -129,20 +119,36 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		}
 	}
 
-	if args.deleteProfile {
-		err = databrickscfg.DeleteProfile(ctx, args.profileName, args.configFilePath)
+	// First try to clear the token cache. If that fails do NOT try to delete
+	// the profile even if --delete is specified. This avoids problems where
+	// tokens are partially or completely present in the cache, but the profile
+	// has been deleted. In this scenario, the user would not be able to
+	// correctly delete the tokens in an eventual logout re-try.
+
+	isU2MProfile := matchedProfile.AuthType == "databricks-cli"
+	if isU2MProfile {
+		err = clearTokenCache(ctx, *matchedProfile, args.profiler, args.tokenCache)
 		if err != nil {
-			return fmt.Errorf("failed to remove profile: %w", err)
+			return fmt.Errorf("failed to clear token cache: %w", err)
 		}
 	}
 
-	// Always clear the token cache to ensure that re-authentication is required.
-	clearTokenCache(ctx, *matchedProfile, args.profiler, args.tokenCache)
-
 	if args.deleteProfile {
+		err = databrickscfg.DeleteProfile(ctx, args.profileName, args.configFilePath)
+		if err != nil {
+			cmdio.LogString(ctx, fmt.Sprintf("Token cache cleared, but failed to remove profile. If this error persists, please check the state of the %s file: %v", args.configFilePath, err))
+			return nil
+		}
+	}
+
+	if isU2MProfile && args.deleteProfile {
 		cmdio.LogString(ctx, fmt.Sprintf("Successfully logged out of and deleted profile %q.", args.profileName))
-	} else {
+	} else if isU2MProfile && !args.deleteProfile {
 		cmdio.LogString(ctx, fmt.Sprintf("Successfully logged out of profile %q. To remove the profile from the config file, use --delete.", args.profileName))
+	} else if !isU2MProfile && args.deleteProfile {
+		cmdio.LogString(ctx, fmt.Sprintf("Successfully deleted profile %q.", args.profileName))
+	} else {
+		cmdio.LogString(ctx, fmt.Sprintf("No tokens to clear for profile %q. No changes were made. To remove the profile from the config file, use --delete.", args.profileName))
 	}
 	return nil
 }
@@ -175,33 +181,29 @@ func getMatchingProfile(ctx context.Context, profileName string, profiler profil
 //     remaining profile references the same key. For account and unified
 //     profiles, the cache key includes the OIDC path
 //     (host/oidc/accounts/<account_id>).
-func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenCache cache.TokenCache) {
-	if tokenCache == nil {
-		return
-	}
-
+func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenCache cache.TokenCache) error {
 	if err := tokenCache.Store(p.Name, nil); err != nil {
-		log.Warnf(ctx, "Failed to delete profile-keyed token for profile %q: %v", p.Name, err)
+		return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
 	}
 
 	hostCacheKey, matchFn := hostCacheKeyAndMatchFn(p)
 	if hostCacheKey == "" {
-		return
+		return fmt.Errorf("failed to get host-based cache key for profile %q", p.Name)
 	}
 
 	otherProfiles, err := profiler.LoadProfiles(ctx, func(candidate profile.Profile) bool {
 		return candidate.Name != p.Name && matchFn(candidate)
 	})
 	if err != nil {
-		log.Warnf(ctx, "Failed to load profiles for host cache key %q: %v", hostCacheKey, err)
-		return
+		return fmt.Errorf("failed to load profiles for host cache key %q: %w", hostCacheKey, err)
 	}
 
 	if len(otherProfiles) == 0 {
 		if err := tokenCache.Store(hostCacheKey, nil); err != nil {
-			log.Warnf(ctx, "Failed to delete host-keyed token for %q: %v", hostCacheKey, err)
+			return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostCacheKey, err)
 		}
 	}
+	return nil
 }
 
 // hostCacheKeyAndMatchFn returns the token cache key and a profile match

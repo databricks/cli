@@ -6,11 +6,11 @@ cat > "./home/.databrickscfg" <<'EOF'
 
 [dev]
 host = https://dev.cloud.databricks.com
-token = dev-token
+auth_type = databricks-cli
 EOF
 
-title "Logout of non-existent profile"
+title "Logout of non-existent profile\n"
 errcode $CLI auth logout --profile nonexistent --force
 
-title "Logout without --profile in non-interactive mode"
+title "Logout without --profile in non-interactive mode\n"
 errcode $CLI auth logout --force

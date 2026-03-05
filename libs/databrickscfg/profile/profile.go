@@ -19,6 +19,7 @@ type Profile struct {
 	ServerlessComputeID  string
 	HasClientCredentials bool
 	Scopes               string
+	AuthType             string
 }
 
 func (p Profile) Cloud() string {

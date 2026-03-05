@@ -1,32 +1,24 @@
 
-=== Token cache before logout
-{
-  "tokens": {
-    "dev": {
-      "access_token": "dev-cached-token",
-      "token_type": "Bearer"
-    },
-    "https://dev.cloud.databricks.com": {
-      "access_token": "dev-host-token",
-      "token_type": "Bearer"
-    }
-  },
-  "version": 1
-}
+=== Token cache keys before logout
+[
+  "dev",
+  "https://accounts.cloud.databricks.com/"
+]
 
 === Logout without --delete
 >>> [CLI] auth logout --profile dev --force
 Successfully logged out of profile "dev". To remove the profile from the config file, use --delete.
 
 === Config after logout — profile should still exist
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
 
 [dev]
-host = https://dev.cloud.databricks.com
-token = dev-token
+host = https://accounts.cloud.databricks.com
+account_id = account-id
+auth_type  = databricks-cli
 
-=== Token cache after logout — both entries should be removed
-{
-  "tokens": {},
-  "version": 1
-}
+=== Token cache keys after logout — both entries should be removed
+[
+  "https://accounts.cloud.databricks.com/"
+]

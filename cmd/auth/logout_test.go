@@ -16,21 +16,30 @@ import (
 const logoutTestConfig = `[DEFAULT]
 [my-workspace]
 host = https://my-workspace.cloud.databricks.com
+auth_type  = databricks-cli
 
 [shared-workspace]
 host = https://my-workspace.cloud.databricks.com
+auth_type  = databricks-cli
 
 [my-unique-workspace]
 host = https://my-unique-workspace.cloud.databricks.com
+auth_type  = databricks-cli
 
 [my-account]
 host = https://accounts.cloud.databricks.com
 account_id = abc123
+auth_type  = databricks-cli
 
 [my-unified]
 host = https://unified.cloud.databricks.com
 account_id = def456
 experimental_is_unified_host = true
+auth_type  = databricks-cli
+
+[my-m2m]
+host = https://my-m2m.cloud.databricks.com
+token = dev-token
 `
 
 var logoutTestTokensCacheConfig = map[string]*oauth2.Token{
@@ -141,6 +150,12 @@ func TestLogout(t *testing.T) {
 			isSharedKey:   false,
 			force:         true,
 			deleteProfile: true,
+		},
+		{
+			name:          "do not delete m2m profile",
+			profileName:   "my-m2m",
+			force:         true,
+			deleteProfile: false,
 		},
 	}
 
