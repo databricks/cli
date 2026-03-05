@@ -11,4 +11,4 @@
 
 ### API Changes
 
-- Bump databricks-sdk-go from v0.112.0 to v0.116.0.
+- Bump databricks-sdk-go from v0.112.0 to v0.117.0.
