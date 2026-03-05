@@ -28,16 +28,16 @@ type ActionType string
 // If case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	Undefined       ActionType = ""
-	Skip            ActionType = "skip"
-	Resize          ActionType = "resize"
-	Update          ActionType = "update"
-	UpdateWithID    ActionType = "update_id"
-	Create          ActionType = "create"
-	Recreate        ActionType = "recreate"
-	Delete          ActionType = "delete"
-	Bind            ActionType = "bind"
-	BindAndUpdate   ActionType = "bind_and_update"
+	Undefined     ActionType = ""
+	Skip          ActionType = "skip"
+	Resize        ActionType = "resize"
+	Update        ActionType = "update"
+	UpdateWithID  ActionType = "update_id"
+	Create        ActionType = "create"
+	Recreate      ActionType = "recreate"
+	Delete        ActionType = "delete"
+	Bind          ActionType = "bind"
+	BindAndUpdate ActionType = "bind_and_update"
 )
 
 var actionOrder = map[ActionType]int{
