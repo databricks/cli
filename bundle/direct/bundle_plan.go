@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
@@ -125,39 +126,55 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	// Validate all bind entries reference resources defined in config.
-	var bindErrors []string
-	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
-		key := "resources." + resourceType + "." + resourceName
-		if _, ok := plan.Plan[key]; !ok {
-			bindErrors = append(bindErrors, fmt.Sprintf("bind block references undefined resource %q; define it in the resources section or remove the bind block", key))
-		}
-	})
+	// Validate bind entries when a bind config is provided.
+	if !bindConfig.IsEmpty() {
+		var hasBindErrors bool
+		targetName := configRoot.Bundle.Target
 
-	// Validate that no bind ID conflicts with a resource being deleted.
-	// This catches the case where a resource was previously deployed and a different
-	// resource name now has a bind block with the same ID.
-	for key, entry := range plan.Plan {
-		if entry.Action != deployplan.Delete {
-			continue
-		}
-		dbEntry, ok := b.StateDB.GetResourceEntry(key)
-		if !ok || dbEntry.ID == "" {
-			continue
-		}
+		// Validate all bind entries reference resources defined in config.
 		bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
-			if bindID == dbEntry.ID {
-				bindKey := "resources." + resourceType + "." + resourceName
-				bindErrors = append(bindErrors, fmt.Sprintf("bind block for %q has the same ID %q as %q which is being deleted; remove the bind block or the delete", bindKey, bindID, key))
+			key := "resources." + resourceType + "." + resourceName
+			if _, ok := plan.Plan[key]; !ok {
+				bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+				logdiag.LogDiag(ctx, diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf("bind block references undefined resource %q; define it in the resources section or remove the bind block", key),
+					Locations: configRoot.GetLocations(bindPath.String()),
+					Paths:     []dyn.Path{bindPath},
+				})
+				hasBindErrors = true
 			}
 		})
-	}
 
-	if len(bindErrors) > 0 {
-		for _, msg := range bindErrors {
-			logdiag.LogError(ctx, errors.New(msg))
+		// Validate that no bind ID conflicts with a resource being deleted.
+		// This catches the case where a resource was previously deployed and a different
+		// resource name now has a bind block with the same ID.
+		for key, entry := range plan.Plan {
+			if entry.Action != deployplan.Delete {
+				continue
+			}
+			dbEntry, ok := b.StateDB.GetResourceEntry(key)
+			if !ok || dbEntry.ID == "" {
+				continue
+			}
+			bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+				if bindID == dbEntry.ID {
+					bindKey := "resources." + resourceType + "." + resourceName
+					bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+					logdiag.LogDiag(ctx, diag.Diagnostic{
+						Severity:  diag.Error,
+						Summary:   fmt.Sprintf("bind block for %q has the same ID %q as %q which is being deleted; remove the bind block or the delete", bindKey, bindID, key),
+						Locations: configRoot.GetLocations(bindPath.String()),
+						Paths:     []dyn.Path{bindPath},
+					})
+					hasBindErrors = true
+				}
+			})
 		}
-		return nil, errors.New("bind validation failed")
+
+		if hasBindErrors {
+			return nil, errors.New("bind validation failed")
+		}
 	}
 
 	b.Plan = plan

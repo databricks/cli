@@ -33,11 +33,11 @@ const (
 	Resize        ActionType = "resize"
 	Update        ActionType = "update"
 	UpdateWithID  ActionType = "update_id"
+	Bind          ActionType = "bind"
+	BindAndUpdate ActionType = "bind_and_update"
 	Create        ActionType = "create"
 	Recreate      ActionType = "recreate"
 	Delete        ActionType = "delete"
-	Bind          ActionType = "bind"
-	BindAndUpdate ActionType = "bind_and_update"
 )
 
 var actionOrder = map[ActionType]int{
