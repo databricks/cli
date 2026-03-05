@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/env"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
@@ -116,7 +115,7 @@ func TestBundleMustLoadFailureWithEnv(t *testing.T) {
 }
 
 func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
-	testutil.Chdir(t, t.TempDir())
+	t.Chdir(t.TempDir())
 	b, diags := mustLoad(t)
 	require.Nil(t, b)
 	require.Len(t, diags, 1, "expected diagnostics")
@@ -142,7 +141,7 @@ func TestBundleTryLoadFailureWithEnv(t *testing.T) {
 }
 
 func TestBundleTryLoadOkIfNotFound(t *testing.T) {
-	testutil.Chdir(t, t.TempDir())
+	t.Chdir(t.TempDir())
 	b, diags := tryLoad(t)
 	assert.Nil(t, b)
 	assert.Empty(t, diags, "expected no diagnostics")

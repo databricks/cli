@@ -563,18 +563,11 @@ func loadYaml(name, content string) *bundle.Bundle {
 }
 
 func withFakeVEnv(t *testing.T, venvPath string) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	if err := os.Chdir(t.TempDir()); err != nil {
-		panic(err)
-	}
+	t.Chdir(t.TempDir())
 
 	interpreterPath := interpreterPath(venvPath)
 
-	err = os.MkdirAll(filepath.Dir(interpreterPath), 0o755)
+	err := os.MkdirAll(filepath.Dir(interpreterPath), 0o755)
 	if err != nil {
 		panic(err)
 	}
@@ -588,12 +581,6 @@ func withFakeVEnv(t *testing.T, venvPath string) {
 	if err != nil {
 		panic(err)
 	}
-
-	t.Cleanup(func() {
-		if err := os.Chdir(cwd); err != nil {
-			panic(err)
-		}
-	})
 }
 
 func interpreterPath(venvPath string) string {

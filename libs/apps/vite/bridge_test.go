@@ -19,17 +19,11 @@ import (
 func TestValidateFilePath(t *testing.T) {
 	// Create a temporary directory structure for testing
 	tmpDir := t.TempDir()
-	oldWd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldWd) }()
-
-	// Change to temp directory
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
+	t.Chdir(tmpDir)
 
 	// Create the allowed directory
 	queriesDir := filepath.Join(tmpDir, "config", "queries")
-	err = os.MkdirAll(queriesDir, 0o755)
+	err := os.MkdirAll(queriesDir, 0o755)
 	require.NoError(t, err)
 
 	// Create a valid test file
@@ -201,15 +195,10 @@ func TestBridgeHandleMessage(t *testing.T) {
 func TestBridgeHandleFileReadRequest(t *testing.T) {
 	// Create a temporary directory structure
 	tmpDir := t.TempDir()
-	oldWd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldWd) }()
-
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
+	t.Chdir(tmpDir)
 
 	queriesDir := filepath.Join(tmpDir, "config", "queries")
-	err = os.MkdirAll(queriesDir, 0o755)
+	err := os.MkdirAll(queriesDir, 0o755)
 	require.NoError(t, err)
 
 	testContent := "SELECT * FROM users WHERE id = 1"

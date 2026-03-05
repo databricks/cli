@@ -47,7 +47,7 @@ func setupWithHost(t *testing.T, cmd *cobra.Command, host string) []diag.Diagnos
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
-	testutil.Chdir(t, rootPath)
+	t.Chdir(rootPath)
 
 	contents := fmt.Sprintf(`
 workspace:
@@ -67,7 +67,7 @@ func setupWithProfile(t *testing.T, cmd *cobra.Command, profile string) []diag.D
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
-	testutil.Chdir(t, rootPath)
+	t.Chdir(rootPath)
 
 	contents := fmt.Sprintf(`
 workspace:
@@ -228,7 +228,7 @@ func TestBundleConfigureMultiMatchInteractivePromptFires(t *testing.T) {
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
-	testutil.Chdir(t, rootPath)
+	t.Chdir(rootPath)
 
 	contents := `
 workspace:
