@@ -98,9 +98,12 @@ func TestNoDetachedAnnotations(t *testing.T) {
 	_, err = jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 			typePath := getPath(typ)
+			// Match by bundle path (for entries using bundle path keys)
 			if bp, ok := m.typeToBundlePath[typePath]; ok {
 				delete(bundlePaths, bp)
 			}
+			// Also match by Go type path (for entries using Go type path keys)
+			delete(bundlePaths, typePath)
 			return s
 		},
 	})
