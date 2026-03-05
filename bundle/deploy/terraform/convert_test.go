@@ -543,9 +543,9 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 			CatalogName: "catalog",
 			SchemaName:  "schema",
 		},
-		Grants: []resources.Grant{
+		Grants: []catalog.PrivilegeAssignment{
 			{
-				Privileges: []string{"EXECUTE"},
+				Privileges: []catalog.Privilege{catalog.PrivilegeExecute},
 				Principal:  "jane@doe.com",
 			},
 		},

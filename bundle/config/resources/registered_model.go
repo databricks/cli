@@ -18,9 +18,8 @@ type RegisteredModel struct {
 	// to a HCL representation for CRUD
 	catalog.CreateRegisteredModelRequest
 
-	// This is a resource agnostic implementation of grants.
-	// Implementation could be different based on the resource type.
-	Grants []Grant `json:"grants,omitempty"`
+	// List of grants to apply on this registered model.
+	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 func (s *RegisteredModel) UnmarshalJSON(b []byte) error {

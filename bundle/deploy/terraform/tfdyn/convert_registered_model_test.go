@@ -20,9 +20,9 @@ func TestConvertRegisteredModel(t *testing.T) {
 			SchemaName:  "schema",
 			Comment:     "comment",
 		},
-		Grants: []resources.Grant{
+		Grants: []catalog.PrivilegeAssignment{
 			{
-				Privileges: []string{"EXECUTE"},
+				Privileges: []catalog.Privilege{catalog.PrivilegeExecute},
 				Principal:  "jane@doe.com",
 			},
 		},

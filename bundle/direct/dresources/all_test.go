@@ -509,7 +509,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "catalog",
 			FullName:      "mycatalog",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
 				Principal:  "user@example.com",
 			}},
@@ -520,7 +520,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "external_location",
 			FullName:      "myexternallocation",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeReadFiles},
 				Principal:  "user@example.com",
 			}},
@@ -531,7 +531,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "schema",
 			FullName:      "main.myschema",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
@@ -542,7 +542,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "volume",
 			FullName:      "main.myschema.myvolume",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
@@ -553,7 +553,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "registered-model",
 			FullName:      "modelid",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
