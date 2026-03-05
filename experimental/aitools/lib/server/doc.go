@@ -6,7 +6,7 @@ It uses the official MCP Go SDK and supports stdio transport.
 
 Usage:
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	cfg := &config.Config{
 		WarehouseID: "abc123",
 	}

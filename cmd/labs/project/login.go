@@ -53,7 +53,7 @@ func (lc *loginConfig) askWorkspaceProfile(ctx context.Context, cfg *config.Conf
 	// Check if authentication is already configured (e.g., via environment variables).
 	// This is consistent with askCluster() and askWarehouse() which check if their
 	// values are already set before prompting.
-	if lc.isAuthConfigured(cfg) {
+	if lc.isAuthConfigured(ctx, cfg) {
 		return err
 	}
 	if !cmdio.IsPromptSupported(ctx) {
