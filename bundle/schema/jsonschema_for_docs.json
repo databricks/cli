@@ -144,6 +144,11 @@
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource",
                     "x-since-version": "v0.290.0"
                   },
+                  "lifecycle": {
+                    "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "x-since-version": "v0.268.0"
+                  },
                   "name": {
                     "description": "The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
                     "$ref": "#/$defs/string",
@@ -172,11 +177,6 @@
                   "usage_policy_id": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.283.0"
-                  },
-                  "lifecycle": {
-                    "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
                   },
                   "user_api_scopes": {
                     "$ref": "#/$defs/slice/string",
@@ -302,36 +302,6 @@
                 "additionalProperties": false,
                 "required": [
                   "name"
-                ]
-              },
-              "resources.CatalogGrantPrivilege": {
-                "type": "string",
-                "enum": [
-                  "ALL_PRIVILEGES",
-                  "APPLY_TAG",
-                  "CREATE_CONNECTION",
-                  "CREATE_EXTERNAL_LOCATION",
-                  "CREATE_EXTERNAL_TABLE",
-                  "CREATE_EXTERNAL_VOLUME",
-                  "CREATE_FOREIGN_CATALOG",
-                  "CREATE_FUNCTION",
-                  "CREATE_MANAGED_STORAGE",
-                  "CREATE_MATERIALIZED_VIEW",
-                  "CREATE_MODEL",
-                  "CREATE_SCHEMA",
-                  "CREATE_STORAGE_CREDENTIAL",
-                  "CREATE_TABLE",
-                  "CREATE_VOLUME",
-                  "EXECUTE",
-                  "MANAGE",
-                  "MODIFY",
-                  "READ_VOLUME",
-                  "REFRESH",
-                  "SELECT",
-                  "USE_CATALOG",
-                  "USE_CONNECTION",
-                  "USE_SCHEMA",
-                  "WRITE_VOLUME"
                 ]
               },
               "resources.Cluster": {
@@ -804,7 +774,6 @@
                   "CAN_MANAGE"
                 ]
               },
-<<<<<<< HEAD
               "resources.DatabaseProjectPermission": {
                 "type": "object",
                 "properties": {
@@ -830,37 +799,13 @@
                   "level"
                 ]
               },
-||||||| parent of 839ba969a (generate)
-=======
-              "resources.DatabaseProjectPermission": {
-                "type": "object",
-                "properties": {
-                  "group_name": {
-                    "$ref": "#/$defs/string"
-                  },
-                  "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermissionLevel"
-                  },
-                  "service_principal_name": {
-                    "$ref": "#/$defs/string"
-                  },
-                  "user_name": {
-                    "$ref": "#/$defs/string"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "level"
+              "resources.DatabaseProjectPermissionLevel": {
+                "type": "string",
+                "enum": [
+                  "CAN_USE",
+                  "CAN_MANAGE"
                 ]
               },
->>>>>>> 839ba969a (generate)
-              "resources.DatabaseProjectPermissionLevel": {
-              "type": "string",
-              "enum": [
-                "CAN_USE",
-                "CAN_MANAGE"
-              ]
-            },
               "resources.ExternalLocation": {
                 "type": "object",
                 "properties": {
@@ -918,21 +863,6 @@
                   "credential_name",
                   "name",
                   "url"
-                ]
-              },
-              "resources.ExternalLocationGrantPrivilege": {
-                "type": "string",
-                "description": "Privilege to grant on an external location",
-                "enum": [
-                  "ALL_PRIVILEGES",
-                  "CREATE_EXTERNAL_TABLE",
-                  "CREATE_EXTERNAL_VOLUME",
-                  "CREATE_MANAGED_STORAGE",
-                  "CREATE_TABLE",
-                  "CREATE_VOLUME",
-                  "MANAGE",
-                  "READ_FILES",
-                  "WRITE_FILES"
                 ]
               },
               "resources.Job": {
@@ -1705,21 +1635,14 @@
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
                     "x-since-version": "v0.287.0"
                   },
-<<<<<<< HEAD
                   "permissions": {
                     "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission",
                     "x-since-version": "v0.292.0"
                   },
-||||||| parent of 839ba969a (generate)
-=======
-                  "permissions": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission"
-                  },
->>>>>>> 839ba969a (generate)
                   "pg_version": {
-                  "$ref": "#/$defs/int",
-                  "x-since-version": "v0.287.0"
-                },
+                    "$ref": "#/$defs/int",
+                    "x-since-version": "v0.287.0"
+                  },
                   "project_id": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
@@ -1942,27 +1865,6 @@
                   "name"
                 ],
                 "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
-              },
-              "resources.SchemaGrantPrivilege": {
-                "type": "string",
-                "enum": [
-                  "ALL_PRIVILEGES",
-                  "APPLY_TAG",
-                  "CREATE_FUNCTION",
-                  "CREATE_MATERIALIZED_VIEW",
-                  "CREATE_MODEL",
-                  "CREATE_TABLE",
-                  "CREATE_VOLUME",
-                  "EXECUTE",
-                  "EXTERNAL_USE_SCHEMA",
-                  "MANAGE",
-                  "MODIFY",
-                  "READ_VOLUME",
-                  "REFRESH",
-                  "SELECT",
-                  "USE_SCHEMA",
-                  "WRITE_VOLUME"
-                ]
               },
               "resources.SecretScope": {
                 "type": "object",
@@ -3739,6 +3641,75 @@
                 "granularities",
                 "timestamp_col"
               ]
+            },
+            "catalog.Privilege": {
+              "type": "string",
+              "enum": [
+                "SELECT",
+                "READ_PRIVATE_FILES",
+                "WRITE_PRIVATE_FILES",
+                "CREATE",
+                "USAGE",
+                "USE_CATALOG",
+                "USE_SCHEMA",
+                "CREATE_SCHEMA",
+                "CREATE_VIEW",
+                "CREATE_EXTERNAL_TABLE",
+                "CREATE_MATERIALIZED_VIEW",
+                "CREATE_FUNCTION",
+                "CREATE_MODEL",
+                "CREATE_CATALOG",
+                "CREATE_MANAGED_STORAGE",
+                "CREATE_EXTERNAL_LOCATION",
+                "CREATE_STORAGE_CREDENTIAL",
+                "CREATE_SERVICE_CREDENTIAL",
+                "ACCESS",
+                "CREATE_SHARE",
+                "CREATE_RECIPIENT",
+                "CREATE_PROVIDER",
+                "USE_SHARE",
+                "USE_RECIPIENT",
+                "USE_PROVIDER",
+                "USE_MARKETPLACE_ASSETS",
+                "SET_SHARE_PERMISSION",
+                "MODIFY",
+                "REFRESH",
+                "EXECUTE",
+                "READ_FILES",
+                "WRITE_FILES",
+                "CREATE_TABLE",
+                "ALL_PRIVILEGES",
+                "CREATE_CONNECTION",
+                "USE_CONNECTION",
+                "APPLY_TAG",
+                "CREATE_FOREIGN_CATALOG",
+                "CREATE_FOREIGN_SECURABLE",
+                "MANAGE_ALLOWLIST",
+                "CREATE_VOLUME",
+                "CREATE_EXTERNAL_VOLUME",
+                "READ_VOLUME",
+                "WRITE_VOLUME",
+                "MANAGE",
+                "BROWSE",
+                "CREATE_CLEAN_ROOM",
+                "MODIFY_CLEAN_ROOM",
+                "EXECUTE_CLEAN_ROOM_TASK",
+                "EXTERNAL_USE_SCHEMA"
+              ]
+            },
+            "catalog.PrivilegeAssignment": {
+              "type": "object",
+              "properties": {
+                "principal": {
+                  "description": "The principal (user email address or group name).\nFor deleted principals, `principal` is empty while `principal_id` is populated.",
+                  "$ref": "#/$defs/string"
+                },
+                "privileges": {
+                  "description": "The privileges assigned to the principal.",
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.Privilege"
+                }
+              },
+              "additionalProperties": false
             },
             "catalog.RegisteredModelAlias": {
               "type": "object",
@@ -8815,75 +8786,6 @@
                 "dns_name",
                 "resource_id"
               ]
-            },
-            "catalog.Privilege": {
-              "type": "string",
-              "enum": [
-                "SELECT",
-                "READ_PRIVATE_FILES",
-                "WRITE_PRIVATE_FILES",
-                "CREATE",
-                "USAGE",
-                "USE_CATALOG",
-                "USE_SCHEMA",
-                "CREATE_SCHEMA",
-                "CREATE_VIEW",
-                "CREATE_EXTERNAL_TABLE",
-                "CREATE_MATERIALIZED_VIEW",
-                "CREATE_FUNCTION",
-                "CREATE_MODEL",
-                "CREATE_CATALOG",
-                "CREATE_MANAGED_STORAGE",
-                "CREATE_EXTERNAL_LOCATION",
-                "CREATE_STORAGE_CREDENTIAL",
-                "CREATE_SERVICE_CREDENTIAL",
-                "ACCESS",
-                "CREATE_SHARE",
-                "CREATE_RECIPIENT",
-                "CREATE_PROVIDER",
-                "USE_SHARE",
-                "USE_RECIPIENT",
-                "USE_PROVIDER",
-                "USE_MARKETPLACE_ASSETS",
-                "SET_SHARE_PERMISSION",
-                "MODIFY",
-                "REFRESH",
-                "EXECUTE",
-                "READ_FILES",
-                "WRITE_FILES",
-                "CREATE_TABLE",
-                "ALL_PRIVILEGES",
-                "CREATE_CONNECTION",
-                "USE_CONNECTION",
-                "APPLY_TAG",
-                "CREATE_FOREIGN_CATALOG",
-                "CREATE_FOREIGN_SECURABLE",
-                "MANAGE_ALLOWLIST",
-                "CREATE_VOLUME",
-                "CREATE_EXTERNAL_VOLUME",
-                "READ_VOLUME",
-                "WRITE_VOLUME",
-                "MANAGE",
-                "BROWSE",
-                "CREATE_CLEAN_ROOM",
-                "MODIFY_CLEAN_ROOM",
-                "EXECUTE_CLEAN_ROOM_TASK",
-                "EXTERNAL_USE_SCHEMA"
-              ]
-            },
-            "catalog.PrivilegeAssignment": {
-              "type": "object",
-              "properties": {
-                "principal": {
-                  "description": "The principal (user email address or group name).\nFor deleted principals, `principal` is empty while `principal_id` is populated.",
-                  "$ref": "#/$defs/string"
-                },
-                "privileges": {
-                  "description": "The privileges assigned to the principal.",
-                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.Privilege"
-                }
-              },
-              "additionalProperties": false
             },
             "workspace.ScopeBackendType": {
               "type": "string",
