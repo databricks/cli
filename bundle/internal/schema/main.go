@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -155,13 +156,8 @@ func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 	var toRemove []string
 	for name, prop := range s.Properties {
 		// Check if this property is marked as output-only via FieldBehaviors
-		if prop.FieldBehaviors != nil {
-			for _, behavior := range prop.FieldBehaviors {
-				if behavior == "OUTPUT_ONLY" {
-					toRemove = append(toRemove, name)
-					break
-				}
-			}
+		if slices.Contains(prop.FieldBehaviors, "OUTPUT_ONLY") {
+			toRemove = append(toRemove, name)
 		}
 	}
 
@@ -202,24 +198,20 @@ func main() {
 
 func generateSchema(workdir, outputFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
-	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
-	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
-	// Input file, the databricks openapi spec.
+	// Parse the OpenAPI spec if available, for reading SDK type descriptions directly.
+	var p *openapiParser
 	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC") //nolint:forbidigo // main() entry point, no ctx
 	if inputFile != "" {
-		p, err := newParser(inputFile)
+		var err error
+		p, err = newParser(inputFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Writing OpenAPI annotations to %s\n", annotationsOpenApiPath)
-		err = p.extractAnnotations(reflect.TypeOf(config.Root{}), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
-		if err != nil {
-			log.Fatal(err)
-		}
+		fmt.Printf("Using OpenAPI spec from %s\n", inputFile)
 	}
 
-	a, err := newAnnotationHandler([]string{annotationsOpenApiPath, annotationsOpenApiOverridesPath, annotationsPath})
+	a, err := newAnnotationHandler(annotationsPath, p)
 	if err != nil {
 		log.Fatal(err)
 	}

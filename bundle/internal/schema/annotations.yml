@@ -1,4 +1,4 @@
-github.com/databricks/cli/bundle/config.Artifact:
+artifacts.*:
   "build":
     "description": |-
       An optional set of build commands to run locally before deployment.
@@ -19,11 +19,11 @@ github.com/databricks/cli/bundle/config.Artifact:
       Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
     "markdown_description": |-
       Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
-github.com/databricks/cli/bundle/config.ArtifactFile:
+artifacts.*.files.*:
   "source":
     "description": |-
       Required. The artifact source file.
-github.com/databricks/cli/bundle/config.Bundle:
+bundle:
   "cluster_id":
     "description": |-
       The ID of a cluster to use to run the bundle.
@@ -53,14 +53,32 @@ github.com/databricks/cli/bundle/config.Bundle:
   "uuid":
     "description": |-
       Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
-github.com/databricks/cli/bundle/config.Deployment:
+bundle.deployment:
   "fail_on_active_runs":
     "description": |-
       Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
   "lock":
     "description": |-
       The deployment lock attributes.
-github.com/databricks/cli/bundle/config.Experimental:
+bundle.deployment.lock:
+  "enabled":
+    "description": |-
+      Whether this lock is enabled.
+  "force":
+    "description": |-
+      Whether to force this lock if it is enabled.
+bundle.git:
+  "branch":
+    "description": |-
+      The Git branch name.
+    "markdown_description": |-
+      The Git branch name. See [\_](/dev-tools/bundles/settings.md#git).
+  "origin_url":
+    "description": |-
+      The origin URL of the repository.
+    "markdown_description": |-
+      The origin URL of the repository. See [\_](/dev-tools/bundles/settings.md#git).
+experimental:
   "pydabs":
     "description": |-
       The PyDABs configuration.
@@ -85,25 +103,35 @@ github.com/databricks/cli/bundle/config.Experimental:
   "use_legacy_run_as":
     "description": |-
       Whether to use the legacy run_as behavior.
-github.com/databricks/cli/bundle/config.Git:
-  "branch":
-    "description": |-
-      The Git branch name.
-    "markdown_description": |-
-      The Git branch name. See [\_](/dev-tools/bundles/settings.md#git).
-  "origin_url":
-    "description": |-
-      The origin URL of the repository.
-    "markdown_description": |-
-      The origin URL of the repository. See [\_](/dev-tools/bundles/settings.md#git).
-github.com/databricks/cli/bundle/config.Lock:
+experimental.pydabs:
   "enabled":
     "description": |-
-      Whether this lock is enabled.
-  "force":
+      Whether or not PyDABs (Private Preview) is enabled
+  "import":
     "description": |-
-      Whether to force this lock if it is enabled.
-github.com/databricks/cli/bundle/config.Presets:
+      The PyDABs project to import to discover resources, resource generator and mutators
+  "venv_path":
+    "description": |-
+      The Python virtual environment path
+permissions.*:
+  "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The name of the service principal that has the permission set in level.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level.
+presets:
   "artifacts_dynamic_version":
     "description": |-
       Whether to enable dynamic_version on all artifacts.
@@ -125,17 +153,7 @@ github.com/databricks/cli/bundle/config.Presets:
   "trigger_pause_status":
     "description": |-
       A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.
-github.com/databricks/cli/bundle/config.PyDABs:
-  "enabled":
-    "description": |-
-      Whether or not PyDABs (Private Preview) is enabled
-  "import":
-    "description": |-
-      The PyDABs project to import to discover resources, resource generator and mutators
-  "venv_path":
-    "description": |-
-      The Python virtual environment path
-github.com/databricks/cli/bundle/config.Python:
+python:
   "mutators":
     "description": |-
       Mutators contains a list of fully qualified function paths to mutator functions.
@@ -153,7 +171,7 @@ github.com/databricks/cli/bundle/config.Python:
 
       If enabled, Python code will execute within this environment. If disabled,
       it defaults to using the Python interpreter available in the current shell.
-github.com/databricks/cli/bundle/config.Resources:
+resources:
   "alerts":
     "description": |-
       PLACEHOLDER
@@ -251,7 +269,757 @@ github.com/databricks/cli/bundle/config.Resources:
       The volume definitions for the bundle, where each key is the name of the volume.
     "markdown_description": |-
       The volume definitions for the bundle, where each key is the name of the volume. See [\_](/dev-tools/bundles/resources.md#volumes).
-github.com/databricks/cli/bundle/config.Root:
+resources.alerts.*:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "custom_description":
+    "description": |-
+      PLACEHOLDER
+  "custom_summary":
+    "description": |-
+      PLACEHOLDER
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_run_as":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
+    "description": |-
+      PLACEHOLDER
+  "id":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle_state":
+    "description": |-
+      PLACEHOLDER
+  "owner_user_name":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "query_text":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
+    "description": |-
+      PLACEHOLDER
+  "run_as_user_name":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_id":
+    "description": |-
+      PLACEHOLDER
+resources.alerts.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.apps.*:
+  "config":
+    "description": |-
+      PLACEHOLDER
+  "git_source":
+    "description": |-
+      Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
+      to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
+      The source_code_path within git_source specifies the relative path to the app code within the repository.
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "source_code_path":
+    "description": |-
+      PLACEHOLDER
+resources.apps.*.config:
+  "command":
+    "description": |-
+      PLACEHOLDER
+  "env":
+    "description": |-
+      PLACEHOLDER
+resources.apps.*.config.env.*:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
+  "value_from":
+    "description": |-
+      PLACEHOLDER
+resources.apps.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.catalogs.*:
+  "comment":
+    "description": |-
+      PLACEHOLDER
+  "connection_name":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "options":
+    "description": |-
+      PLACEHOLDER
+  "properties":
+    "description": |-
+      PLACEHOLDER
+  "provider_name":
+    "description": |-
+      PLACEHOLDER
+  "share_name":
+    "description": |-
+      PLACEHOLDER
+  "storage_root":
+    "description": |-
+      PLACEHOLDER
+resources.catalogs.*.grants.*:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
+resources.catalogs.*.grants.*.privileges.*:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        CREATE_CONNECTION
+      - |-
+        CREATE_EXTERNAL_LOCATION
+      - |-
+        CREATE_EXTERNAL_TABLE
+      - |-
+        CREATE_EXTERNAL_VOLUME
+      - |-
+        CREATE_FOREIGN_CATALOG
+      - |-
+        CREATE_FUNCTION
+      - |-
+        CREATE_MANAGED_STORAGE
+      - |-
+        CREATE_MATERIALIZED_VIEW
+      - |-
+        CREATE_MODEL
+      - |-
+        CREATE_SCHEMA
+      - |-
+        CREATE_STORAGE_CREDENTIAL
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        EXECUTE
+      - |-
+        MANAGE
+      - |-
+        MODIFY
+      - |-
+        READ_VOLUME
+      - |-
+        REFRESH
+      - |-
+        SELECT
+      - |-
+        USE_CATALOG
+      - |-
+        USE_CONNECTION
+      - |-
+        USE_SCHEMA
+      - |-
+        WRITE_VOLUME
+resources.clusters.*:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.clusters.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.dashboards.*:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "dashboard_id":
+    "description": |-
+      PLACEHOLDER
+  "dataset_catalog":
+    "description": |-
+      Sets the default catalog for all datasets in this dashboard. When set, this overrides the catalog specified in individual dataset definitions.
+  "dataset_schema":
+    "description": |-
+      Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "embed_credentials":
+    "description": |-
+      PLACEHOLDER
+  "etag":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle_state":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      PLACEHOLDER
+  "path":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "serialized_dashboard":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_id":
+    "description": |-
+      PLACEHOLDER
+resources.dashboards.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.database_catalogs.*:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+resources.database_instances.*:
+  "effective_capacity":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.database_instances.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.experiments.*:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.experiments.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.external_locations.*:
+  "comment":
+    "description": |-
+      PLACEHOLDER
+  "credential_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_enable_file_events":
+    "description": |-
+      PLACEHOLDER
+  "enable_file_events":
+    "description": |-
+      PLACEHOLDER
+  "encryption_details":
+    "description": |-
+      PLACEHOLDER
+  "fallback":
+    "description": |-
+      PLACEHOLDER
+  "file_event_queue":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "read_only":
+    "description": |-
+      PLACEHOLDER
+  "skip_validation":
+    "description": |-
+      PLACEHOLDER
+  "url":
+    "description": |-
+      PLACEHOLDER
+resources.external_locations.*.grants.*:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
+resources.jobs.*:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.jobs.*.lifecycle:
+  "prevent_destroy":
+    "description": |-
+      Lifecycle setting to prevent the resource from being destroyed.
+resources.jobs.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.model_serving_endpoints.*:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.model_serving_endpoints.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.models.*:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.models.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.pipelines.*:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.pipelines.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.postgres_branches.*:
+  "branch_id":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "expire_time":
+    "description": |-
+      PLACEHOLDER
+  "is_protected":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "no_expiry":
+    "description": |-
+      PLACEHOLDER
+  "parent":
+    "description": |-
+      PLACEHOLDER
+  "source_branch":
+    "description": |-
+      PLACEHOLDER
+  "source_branch_lsn":
+    "description": |-
+      PLACEHOLDER
+  "source_branch_time":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "ttl":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+resources.postgres_endpoints.*:
+  "autoscaling_limit_max_cu":
+    "description": |-
+      PLACEHOLDER
+  "autoscaling_limit_min_cu":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "disabled":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_id":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_type":
+    "description": |-
+      PLACEHOLDER
+  "group":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "no_suspension":
+    "description": |-
+      PLACEHOLDER
+  "parent":
+    "description": |-
+      PLACEHOLDER
+  "settings":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "suspend_timeout_duration":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+resources.postgres_projects.*:
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "custom_tags":
+    "description": |-
+      PLACEHOLDER
+  "default_endpoint_settings":
+    "description": |-
+      PLACEHOLDER
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "history_retention_duration":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "pg_version":
+    "description": |-
+      PLACEHOLDER
+  "project_id":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+resources.postgres_projects.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.quality_monitors.*:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "table_name":
+    "description": |-
+      PLACEHOLDER
+resources.registered_models.*:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+resources.registered_models.*.grants.*:
+  "principal":
+    "description": |-
+      The name of the principal that will be granted privileges
+  "privileges":
+    "description": |-
+      The privileges to grant to the specified entity
+resources.schemas.*:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+resources.schemas.*.grants.*:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
+resources.secret_scopes.*:
+  "backend_type":
+    "description": |-
+      The backend type the scope will be created with. If not specified, will default to `DATABRICKS`
+  "keyvault_metadata":
+    "description": |-
+      The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "name":
+    "description": |-
+      Scope name requested by the user. Scope names are unique.
+  "permissions":
+    "description": |-
+      The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
+resources.secret_scopes.*.permissions.*:
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+resources.sql_warehouses.*:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.sql_warehouses.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.synced_database_tables.*:
+  "data_synchronization_status":
+    "description": |-
+      PLACEHOLDER
+  "database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_logical_database_name":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "logical_database_name":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "unity_catalog_provisioning_state":
+    "description": |-
+      PLACEHOLDER
+resources.volumes.*:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+resources.volumes.*.grants.*:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
+root:
   "artifacts":
     "description": |-
       Defines the attributes to build an artifact
@@ -348,11 +1116,18 @@ github.com/databricks/cli/bundle/config.Root:
       Defines the Databricks workspace for the bundle.
     "markdown_description": |-
       Defines the Databricks workspace for the bundle. See [\_](/dev-tools/bundles/settings.md#workspace).
-github.com/databricks/cli/bundle/config.Script:
+run_as:
+  "service_principal_name":
+    "description": |-
+      The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+  "user_name":
+    "description": |-
+      The email of an active workspace user. Non-admin users can only set this field to their own email.
+scripts.*:
   "content":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config.Sync:
+sync:
   "exclude":
     "description": |-
       A list of files or folders to exclude from the bundle.
@@ -362,7 +1137,7 @@ github.com/databricks/cli/bundle/config.Sync:
   "paths":
     "description": |-
       The local folder paths, which can be outside the bundle root, to synchronize to the workspace when the bundle is deployed.
-github.com/databricks/cli/bundle/config.Target:
+targets.*:
   "artifacts":
     "description": |-
       The artifacts to include in the target deployment.
@@ -411,7 +1186,80 @@ github.com/databricks/cli/bundle/config.Target:
   "workspace":
     "description": |-
       The Databricks workspace for the target.
-github.com/databricks/cli/bundle/config.Workspace:
+targets.*.variables.*:
+  "default":
+    "description": |-
+      The default value for the variable.
+  "description":
+    "description": |-
+      The description of the variable.
+  "lookup":
+    "description": |-
+      The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+  "markdown_description":
+    "description": |-
+      The type of the variable.
+  "type":
+    "description": |-
+      The type of the variable.
+variables.*:
+  "_":
+    "description": |-
+      Defines a custom variable for the bundle.
+    "markdown_description": |-
+      Defines a custom variable for the bundle. See [\_](/dev-tools/bundles/settings.md#variables).
+  "default":
+    "description": |-
+      The default value for the variable.
+  "description":
+    "description": |-
+      The description of the variable
+  "lookup":
+    "description": |-
+      The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+    "markdown_description": |-
+      The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
+  "type":
+    "description": |-
+      The type of the variable.
+variables.*.lookup:
+  "alert":
+    "description": |-
+      The name of the alert for which to retrieve an ID.
+  "cluster":
+    "description": |-
+      The name of the cluster for which to retrieve an ID.
+  "cluster_policy":
+    "description": |-
+      The name of the cluster_policy for which to retrieve an ID.
+  "dashboard":
+    "description": |-
+      The name of the dashboard for which to retrieve an ID.
+  "instance_pool":
+    "description": |-
+      The name of the instance_pool for which to retrieve an ID.
+  "job":
+    "description": |-
+      The name of the job for which to retrieve an ID.
+  "metastore":
+    "description": |-
+      The name of the metastore for which to retrieve an ID.
+  "notification_destination":
+    "description": |-
+      The name of the notification_destination for which to retrieve an ID.
+  "pipeline":
+    "description": |-
+      The name of the pipeline for which to retrieve an ID.
+  "query":
+    "description": |-
+      The name of the query for which to retrieve an ID.
+  "service_principal":
+    "description": |-
+      The name of the service_principal for which to retrieve an ID.
+  "warehouse":
+    "description": |-
+      The name of the warehouse for which to retrieve an ID.
+workspace:
   "artifact_path":
     "description": |-
       The artifact path to use within the workspace for both deployments and workflow runs
@@ -466,552 +1314,3 @@ github.com/databricks/cli/bundle/config.Workspace:
   "workspace_id":
     "description": |-
       The Databricks workspace ID
-github.com/databricks/cli/bundle/config/resources.Alert:
-  "create_time":
-    "description": |-
-      PLACEHOLDER
-  "custom_description":
-    "description": |-
-      PLACEHOLDER
-  "custom_summary":
-    "description": |-
-      PLACEHOLDER
-  "display_name":
-    "description": |-
-      PLACEHOLDER
-  "effective_run_as":
-    "description": |-
-      PLACEHOLDER
-  "id":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle_state":
-    "description": |-
-      PLACEHOLDER
-  "owner_user_name":
-    "description": |-
-      PLACEHOLDER
-  "parent_path":
-    "description": |-
-      PLACEHOLDER
-  "query_text":
-    "description": |-
-      PLACEHOLDER
-  "run_as":
-    "description": |-
-      PLACEHOLDER
-  "run_as_user_name":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-  "warehouse_id":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.App:
-  "git_source":
-    "description": |-
-      Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
-      to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
-      The source_code_path within git_source specifies the relative path to the app code within the repository.
-github.com/databricks/cli/bundle/config/resources.AppConfig:
-  "command":
-    "description": |-
-      PLACEHOLDER
-  "env":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AppEnvVar:
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "value":
-    "description": |-
-      PLACEHOLDER
-  "value_from":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AppPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Catalog:
-  "comment":
-    "description": |-
-      PLACEHOLDER
-  "connection_name":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "options":
-    "description": |-
-      PLACEHOLDER
-  "properties":
-    "description": |-
-      PLACEHOLDER
-  "provider_name":
-    "description": |-
-      PLACEHOLDER
-  "share_name":
-    "description": |-
-      PLACEHOLDER
-  "storage_root":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ClusterPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Dashboard:
-  "dataset_catalog":
-    "description": |-
-      Sets the default catalog for all datasets in this dashboard. When set, this overrides the catalog specified in individual dataset definitions.
-  "dataset_schema":
-    "description": |-
-      Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
-github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
-  "effective_capacity":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ExternalLocation:
-  "comment":
-    "description": |-
-      PLACEHOLDER
-  "credential_name":
-    "description": |-
-      PLACEHOLDER
-  "enable_file_events":
-    "description": |-
-      PLACEHOLDER
-  "encryption_details":
-    "description": |-
-      PLACEHOLDER
-  "fallback":
-    "description": |-
-      PLACEHOLDER
-  "file_event_queue":
-    "description": |-
-      PLACEHOLDER
-  "grants":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "read_only":
-    "description": |-
-      PLACEHOLDER
-  "skip_validation":
-    "description": |-
-      PLACEHOLDER
-  "url":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.JobPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Lifecycle:
-  "prevent_destroy":
-    "description": |-
-      Lifecycle setting to prevent the resource from being destroyed.
-github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.MlflowModelPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Permission:
-  "-":
-    "description": |-
-      Defines a permission for a specific entity.
-    "markdown_description": |-
-      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
-  "group_name":
-    "description": |-
-      The name of the group that has the permission set in level.
-  "level":
-    "description": |-
-      The allowed permission for user, group, service principal defined for this permission.
-  "service_principal_name":
-    "description": |-
-      The name of the service principal that has the permission set in level.
-  "user_name":
-    "description": |-
-      The name of the user that has the permission set in level.
-github.com/databricks/cli/bundle/config/resources.PipelinePermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.PostgresBranch:
-  "branch_id":
-    "description": |-
-      PLACEHOLDER
-  "create_time":
-    "description": |-
-      PLACEHOLDER
-  "expire_time":
-    "description": |-
-      PLACEHOLDER
-  "is_protected":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "no_expiry":
-    "description": |-
-      PLACEHOLDER
-  "parent":
-    "description": |-
-      PLACEHOLDER
-  "source_branch":
-    "description": |-
-      PLACEHOLDER
-  "source_branch_lsn":
-    "description": |-
-      PLACEHOLDER
-  "source_branch_time":
-    "description": |-
-      PLACEHOLDER
-  "spec":
-    "description": |-
-      PLACEHOLDER
-  "status":
-    "description": |-
-      PLACEHOLDER
-  "ttl":
-    "description": |-
-      PLACEHOLDER
-  "uid":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
-  "autoscaling_limit_max_cu":
-    "description": |-
-      PLACEHOLDER
-  "autoscaling_limit_min_cu":
-    "description": |-
-      PLACEHOLDER
-  "create_time":
-    "description": |-
-      PLACEHOLDER
-  "disabled":
-    "description": |-
-      PLACEHOLDER
-  "endpoint_id":
-    "description": |-
-      PLACEHOLDER
-  "endpoint_type":
-    "description": |-
-      PLACEHOLDER
-  "group":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "no_suspension":
-    "description": |-
-      PLACEHOLDER
-  "parent":
-    "description": |-
-      PLACEHOLDER
-  "settings":
-    "description": |-
-      PLACEHOLDER
-  "spec":
-    "description": |-
-      PLACEHOLDER
-  "status":
-    "description": |-
-      PLACEHOLDER
-  "suspend_timeout_duration":
-    "description": |-
-      PLACEHOLDER
-  "uid":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.PostgresProject:
-  "budget_policy_id":
-    "description": |-
-      PLACEHOLDER
-  "create_time":
-    "description": |-
-      PLACEHOLDER
-  "custom_tags":
-    "description": |-
-      PLACEHOLDER
-  "default_endpoint_settings":
-    "description": |-
-      PLACEHOLDER
-  "display_name":
-    "description": |-
-      PLACEHOLDER
-  "enable_pg_native_login":
-    "description": |-
-      PLACEHOLDER
-  "history_retention_duration":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
-  "pg_version":
-    "description": |-
-      PLACEHOLDER
-  "project_id":
-    "description": |-
-      PLACEHOLDER
-  "spec":
-    "description": |-
-      PLACEHOLDER
-  "status":
-    "description": |-
-      PLACEHOLDER
-  "uid":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SecretScope:
-  "backend_type":
-    "description": |-
-      The backend type the scope will be created with. If not specified, will default to `DATABRICKS`
-  "keyvault_metadata":
-    "description": |-
-      The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
-  "lifecycle":
-    "description": |-
-      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-  "name":
-    "description": |-
-      Scope name requested by the user. Scope names are unique.
-  "permissions":
-    "description": |-
-      The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
-github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
-  "group_name":
-    "description": |-
-      The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
-  "level":
-    "description": |-
-      The allowed permission for user, group, service principal defined for this permission.
-  "service_principal_name":
-    "description": |-
-      The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.
-  "user_name":
-    "description": |-
-      The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
-github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
-  "data_synchronization_status":
-    "description": |-
-      PLACEHOLDER
-  "database_instance_name":
-    "description": |-
-      PLACEHOLDER
-  "effective_database_instance_name":
-    "description": |-
-      PLACEHOLDER
-  "effective_logical_database_name":
-    "description": |-
-      PLACEHOLDER
-  "logical_database_name":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "spec":
-    "description": |-
-      PLACEHOLDER
-  "unity_catalog_provisioning_state":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/variable.Lookup:
-  "alert":
-    "description": |-
-      The name of the alert for which to retrieve an ID.
-  "cluster":
-    "description": |-
-      The name of the cluster for which to retrieve an ID.
-  "cluster_policy":
-    "description": |-
-      The name of the cluster_policy for which to retrieve an ID.
-  "dashboard":
-    "description": |-
-      The name of the dashboard for which to retrieve an ID.
-  "instance_pool":
-    "description": |-
-      The name of the instance_pool for which to retrieve an ID.
-  "job":
-    "description": |-
-      The name of the job for which to retrieve an ID.
-  "metastore":
-    "description": |-
-      The name of the metastore for which to retrieve an ID.
-  "notification_destination":
-    "description": |-
-      The name of the notification_destination for which to retrieve an ID.
-  "pipeline":
-    "description": |-
-      The name of the pipeline for which to retrieve an ID.
-  "query":
-    "description": |-
-      The name of the query for which to retrieve an ID.
-  "service_principal":
-    "description": |-
-      The name of the service_principal for which to retrieve an ID.
-  "warehouse":
-    "description": |-
-      The name of the warehouse for which to retrieve an ID.
-github.com/databricks/cli/bundle/config/variable.TargetVariable:
-  "default":
-    "description": |-
-      The default value for the variable.
-  "description":
-    "description": |-
-      The description of the variable.
-  "lookup":
-    "description": |-
-      The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
-  "markdown_description":
-    "description": |-
-      The type of the variable.
-  "type":
-    "description": |-
-      The type of the variable.
-github.com/databricks/cli/bundle/config/variable.Variable:
-  "_":
-    "description": |-
-      Defines a custom variable for the bundle.
-    "markdown_description": |-
-      Defines a custom variable for the bundle. See [\_](/dev-tools/bundles/settings.md#variables).
-  "default":
-    "description": |-
-      The default value for the variable.
-  "description":
-    "description": |-
-      The description of the variable
-  "lookup":
-    "description": |-
-      The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
-    "markdown_description": |-
-      The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
-  "type":
-    "description": |-
-      The type of the variable.
-github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs:
-  "service_principal_name":
-    "description": |-
-      The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
-  "user_name":
-    "description": |-
-      The email of an active workspace user. Non-admin users can only set this field to their own email.
