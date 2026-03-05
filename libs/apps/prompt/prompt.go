@@ -251,10 +251,9 @@ func promptFromListWithLabel(ctx context.Context, title, emptyMessage string, it
 	var selected string
 	err := huh.NewSelect[string]().
 		Title(title).
-		Description(fmt.Sprintf("%d available — type to filter", len(items))).
+		Description(fmt.Sprintf("%d available — press / to filter", len(items))).
 		Options(options...).
 		Value(&selected).
-		Filtering(true).
 		Height(8).
 		WithTheme(theme).
 		Run()
@@ -703,10 +702,9 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 	var selected string
 	err = huh.NewSelect[string]().
 		Title(title).
-		Description(fmt.Sprintf("%d apps found — type to filter", len(existingApps))).
+		Description(fmt.Sprintf("%d apps found — press / to filter", len(existingApps))).
 		Options(options...).
 		Value(&selected).
-		Filtering(true).
 		Height(8).
 		WithTheme(theme).
 		Run()
