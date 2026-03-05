@@ -134,7 +134,7 @@ func TestApplySomeChangeReturnsDiagnostics(t *testing.T) {
 }
 
 func TestApplySomeChangeFixesThings(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b, err := ...some operation...
 	require.NoError(t, err)
 	...
@@ -202,7 +202,7 @@ log.Errorf(ctx, "...")
 ```
 
 Note that the 'ctx' variable here is something that should be passed in as
-an argument by the caller. We should not use context.Background() like we do in tests.
+an argument by the caller. In tests, use `t.Context()` (or `b.Context()` for benchmarks) instead of `context.Background()`. This is enforced by a lint rule.
 
 Use cmdio.LogString to print to stdout:
 

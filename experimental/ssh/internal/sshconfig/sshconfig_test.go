@@ -1,7 +1,6 @@
 package sshconfig
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -155,7 +154,7 @@ func TestHostConfigExists(t *testing.T) {
 }
 
 func TestCreateOrUpdateHostConfig_NewConfig(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
@@ -173,7 +172,7 @@ func TestCreateOrUpdateHostConfig_NewConfig(t *testing.T) {
 }
 
 func TestCreateOrUpdateHostConfig_ExistingConfigNoRecreate(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
@@ -198,7 +197,7 @@ func TestCreateOrUpdateHostConfig_ExistingConfigNoRecreate(t *testing.T) {
 }
 
 func TestCreateOrUpdateHostConfig_ExistingConfigWithRecreate(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)

@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -54,7 +53,7 @@ func TestPrependWorkspacePrefix(t *testing.T) {
 			},
 		}
 
-		diags := bundle.Apply(context.Background(), b, PrependWorkspacePrefix())
+		diags := bundle.Apply(t.Context(), b, PrependWorkspacePrefix())
 		require.Empty(t, diags)
 		require.Equal(t, tc.expected, b.Config.Workspace.RootPath)
 		require.Equal(t, tc.expected, b.Config.Workspace.ArtifactPath)
@@ -80,7 +79,7 @@ func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.ApplySeq(context.Background(), b, DefineDefaultWorkspaceRoot(), ExpandWorkspaceRoot(), DefineDefaultWorkspacePaths(), PrependWorkspacePrefix())
+	diags := bundle.ApplySeq(t.Context(), b, DefineDefaultWorkspaceRoot(), ExpandWorkspaceRoot(), DefineDefaultWorkspacePaths(), PrependWorkspacePrefix())
 	require.Empty(t, diags)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev", b.Config.Workspace.RootPath)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/artifacts", b.Config.Workspace.ArtifactPath)

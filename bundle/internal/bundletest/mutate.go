@@ -10,7 +10,7 @@ import (
 )
 
 func Mutate(t *testing.T, b *bundle.Bundle, f func(v dyn.Value) (dyn.Value, error)) {
-	bundle.ApplyFuncContext(context.Background(), b, func(ctx context.Context, b *bundle.Bundle) {
+	bundle.ApplyFuncContext(t.Context(), b, func(ctx context.Context, b *bundle.Bundle) {
 		err := b.Config.Mutate(f)
 		require.NoError(t, err)
 	})

@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -30,7 +29,7 @@ func TestConvertPostgresBranch(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = postgresBranchConverter{}.Convert(ctx, "my_postgres_branch", vin, out)
 	require.NoError(t, err)
@@ -62,7 +61,7 @@ func TestConvertPostgresBranchWithSourceBranch(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = postgresBranchConverter{}.Convert(ctx, "feature_postgres_branch", vin, out)
 	require.NoError(t, err)
@@ -90,7 +89,7 @@ func TestConvertPostgresBranchMinimal(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = postgresBranchConverter{}.Convert(ctx, "minimal_postgres_branch", vin, out)
 	require.NoError(t, err)

@@ -1,7 +1,6 @@
 package setup
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -18,7 +17,7 @@ import (
 )
 
 func TestValidateClusterAccess_SingleUser(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	m := mocks.NewMockWorkspaceClient(t)
 	clustersAPI := m.GetMockClustersAPI()
 
@@ -31,7 +30,7 @@ func TestValidateClusterAccess_SingleUser(t *testing.T) {
 }
 
 func TestValidateClusterAccess_InvalidAccessMode(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	m := mocks.NewMockWorkspaceClient(t)
 	clustersAPI := m.GetMockClustersAPI()
 
@@ -45,7 +44,7 @@ func TestValidateClusterAccess_InvalidAccessMode(t *testing.T) {
 }
 
 func TestValidateClusterAccess_ClusterNotFound(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	m := mocks.NewMockWorkspaceClient(t)
 	clustersAPI := m.GetMockClustersAPI()
 
@@ -203,7 +202,7 @@ func TestGenerateHostConfig_PathEscaping(t *testing.T) {
 }
 
 func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
@@ -258,7 +257,7 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 }
 
 func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)

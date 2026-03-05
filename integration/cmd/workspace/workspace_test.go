@@ -20,7 +20,7 @@ import (
 )
 
 func TestWorkspaceList(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "workspace", "list", "/")
 	outStr := stdout.String()
 	assert.Contains(t, outStr, "ID")
@@ -31,13 +31,13 @@ func TestWorkspaceList(t *testing.T) {
 }
 
 func TestWorkpaceListErrorWhenNoArguments(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "list")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 
 func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "get-status")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }

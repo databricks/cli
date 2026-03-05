@@ -1,7 +1,6 @@
 package dresources
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -14,7 +13,7 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
 	adapter := (*ResourceSchema)(nil).New(client)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	config := &catalog.CreateSchema{
 		CatalogName:     "main",

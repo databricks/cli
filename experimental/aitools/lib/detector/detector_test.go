@@ -1,7 +1,6 @@
 package detector_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +12,7 @@ import (
 
 func TestDetectorRegistry_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	registry := detector.NewRegistry()
 	detected := registry.Detect(ctx, dir)
@@ -25,7 +24,7 @@ func TestDetectorRegistry_EmptyDir(t *testing.T) {
 
 func TestDetectorRegistry_EmptyBundle(t *testing.T) {
 	dir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bundleYml := `bundle:
   name: empty-project
@@ -42,7 +41,7 @@ func TestDetectorRegistry_EmptyBundle(t *testing.T) {
 
 func TestDetectorRegistry_BundleWithApps(t *testing.T) {
 	dir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bundleYml := `bundle:
   name: my-app
@@ -62,7 +61,7 @@ resources:
 
 func TestDetectorRegistry_BundleWithJobs(t *testing.T) {
 	dir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bundleYml := `bundle:
   name: my-job
@@ -82,7 +81,7 @@ resources:
 
 func TestDetectorRegistry_CombinedBundle(t *testing.T) {
 	dir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	bundleYml := `bundle:
   name: my-project
@@ -105,7 +104,7 @@ resources:
 
 func TestDetectorRegistry_AppkitTemplate(t *testing.T) {
 	dir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// bundle + package.json with appkit marker
 	bundleYml := `bundle:

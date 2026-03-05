@@ -2,7 +2,6 @@ package apps
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"os"
@@ -91,7 +90,7 @@ func testVars() templateVars {
 }
 
 func TestExecuteTemplateBackwardCompat(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	vars := testVars()
 
 	tests := []struct {
@@ -166,7 +165,7 @@ func TestExecuteTemplateBackwardCompat(t *testing.T) {
 }
 
 func TestExecuteTemplateNewKeys(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	vars := testVars()
 
 	tests := []struct {
@@ -241,7 +240,7 @@ func TestExecuteTemplateNewKeys(t *testing.T) {
 }
 
 func TestExecuteTemplateInvalidSyntaxReturnsOriginal(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	vars := templateVars{ProjectName: "my-app"}
 	input := "some content with bad {{ syntax"
 	result, err := executeTemplate(ctx, "test.js", []byte(input), vars)
@@ -539,7 +538,7 @@ func TestRunManifestOnlyFound(t *testing.T) {
 	require.NoError(t, err)
 	os.Stdout = w
 
-	err = runManifestOnly(context.Background(), dir, "", "")
+	err = runManifestOnly(t.Context(), dir, "", "")
 	w.Close()
 	os.Stdout = old
 	require.NoError(t, err)
@@ -559,7 +558,7 @@ func TestRunManifestOnlyNotFound(t *testing.T) {
 	require.NoError(t, err)
 	os.Stdout = w
 
-	err = runManifestOnly(context.Background(), dir, "", "")
+	err = runManifestOnly(t.Context(), dir, "", "")
 	w.Close()
 	os.Stdout = old
 	require.NoError(t, err)

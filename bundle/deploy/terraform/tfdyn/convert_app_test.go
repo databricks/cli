@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -51,7 +50,7 @@ func TestConvertApp(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = appConverter{}.Convert(ctx, "my_app", vin, out)
 	require.NoError(t, err)
@@ -122,7 +121,7 @@ func TestConvertAppWithNoDescription(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = appConverter{}.Convert(ctx, "my_app", vin, out)
 	require.NoError(t, err)

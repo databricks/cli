@@ -1,14 +1,13 @@
 package psql
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAttemptConnection(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test successful execution (exit code 0)
 	args := []string{"echo", "success"}

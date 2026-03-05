@@ -1,7 +1,6 @@
 package generate
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -35,7 +34,7 @@ func TestDashboard_ErrorOnLegacyDashboard(t *testing.T) {
 		Message:    "dbsqlDashboard is not user-facing.",
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = logdiag.InitContext(ctx)
 	logdiag.SetCollect(ctx, true)
 	b := &bundle.Bundle{}

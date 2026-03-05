@@ -1,7 +1,6 @@
 package permissions
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -73,7 +72,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 		WorkspaceObjectType: "directories",
 	}).Return(nil, nil)
 
-	diags := bundle.ApplySeq(context.Background(), b, ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions())
+	diags := bundle.ApplySeq(t.Context(), b, ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions())
 	require.Empty(t, diags)
 }
 
@@ -186,6 +185,6 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 		WorkspaceObjectType: "directories",
 	}).Return(nil, nil)
 
-	diags := bundle.Apply(context.Background(), b, ApplyWorkspaceRootPermissions())
+	diags := bundle.Apply(t.Context(), b, ApplyWorkspaceRootPermissions())
 	require.NoError(t, diags.Error())
 }

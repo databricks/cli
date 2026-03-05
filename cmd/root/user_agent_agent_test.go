@@ -1,7 +1,6 @@
 package root
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/agent"
@@ -20,7 +19,7 @@ func TestAgentInUserAgent(t *testing.T) {
 		agent.OpenCode,
 	} {
 		t.Run(product, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			ctx = agent.Mock(ctx, product)
 
 			ctx = withAgentInUserAgent(ctx)
@@ -30,7 +29,7 @@ func TestAgentInUserAgent(t *testing.T) {
 }
 
 func TestAgentNotSet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = agent.Mock(ctx, "")
 
 	ctx = withAgentInUserAgent(ctx)

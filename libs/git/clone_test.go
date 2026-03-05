@@ -1,7 +1,6 @@
 package git
 
 import (
-	"context"
 	"os/exec"
 	"testing"
 
@@ -39,6 +38,6 @@ func TestGitCloneWithGitNotFound(t *testing.T) {
 	t.Setenv("PATH", "")
 	tmpDir := t.TempDir()
 
-	err := Clone(context.Background(), "abc", "", tmpDir)
+	err := Clone(t.Context(), "abc", "", tmpDir)
 	assert.ErrorIs(t, err, exec.ErrNotFound)
 }

@@ -1,7 +1,6 @@
 package auth_test
 
 import (
-	"context"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -17,7 +16,7 @@ import (
 )
 
 func TestAuthDescribeSuccess(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe")
 	outStr := stdout.String()
 
@@ -29,7 +28,7 @@ func TestAuthDescribeSuccess(t *testing.T) {
 	hostWithoutPrefix := strings.TrimPrefix(w.Config.Host, "https://")
 	require.Regexp(t, "Host: (?:https://)?"+regexp.QuoteMeta(hostWithoutPrefix), outStr)
 
-	me, err := w.CurrentUser.Me(context.Background())
+	me, err := w.CurrentUser.Me(t.Context())
 	require.NoError(t, err)
 	require.Contains(t, outStr, "User: "+me.UserName)
 	require.Contains(t, outStr, "Authenticated with: "+w.Config.AuthType)
@@ -47,12 +46,12 @@ func TestAuthDescribeFailure(t *testing.T) {
 		ConfigFile: filepath.Join(home, "customcfg"),
 		Profile:    "profile1",
 	}
-	err := databrickscfg.SaveToProfile(context.Background(), cfg)
+	err := databrickscfg.SaveToProfile(t.Context(), cfg)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
 
 	// run the command:
-	ctx := context.Background()
+	ctx := t.Context()
 	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", "nonexistent")
 	outStr := stdout.String()
 
