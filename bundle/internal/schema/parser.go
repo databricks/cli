@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,9 +9,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/databricks/cli/bundle/internal/annotation"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -122,153 +118,4 @@ func isOutputOnly(s jsonschema.Schema) *bool {
 	}
 	res := true
 	return &res
-}
-
-// Use the OpenAPI spec to load descriptions for the given type.
-func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overridesPath string) error {
-	annotations := annotation.File{}
-	overrides := annotation.File{}
-
-	b, err := os.ReadFile(overridesPath)
-	if err != nil {
-		return err
-	}
-	overridesDyn, err := yamlloader.LoadYAML(overridesPath, bytes.NewBuffer(b))
-	if err != nil {
-		return err
-	}
-	err = convert.ToTyped(&overrides, overridesDyn)
-	if err != nil {
-		return err
-	}
-	if overrides == nil {
-		overrides = annotation.File{}
-	}
-
-	_, err = jsonschema.FromType(typ, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
-		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-			ref, ok := p.findRef(typ)
-			if !ok {
-				return s
-			}
-
-			basePath := getPath(typ)
-			pkg := map[string]annotation.Descriptor{}
-			annotations[basePath] = pkg
-			preview := ref.Preview
-			if preview == "PUBLIC" {
-				preview = ""
-			}
-			outputOnly := isOutputOnly(ref)
-			if ref.Description != "" || ref.Enum != nil || ref.Deprecated || ref.DeprecationMessage != "" || preview != "" || outputOnly != nil {
-				if ref.Deprecated && ref.DeprecationMessage == "" {
-					ref.DeprecationMessage = "This field is deprecated"
-				}
-
-				pkg[RootTypeKey] = annotation.Descriptor{
-					Description:        ref.Description,
-					Enum:               ref.Enum,
-					DeprecationMessage: ref.DeprecationMessage,
-					Preview:            preview,
-					OutputOnly:         outputOnly,
-				}
-			}
-
-			for k := range s.Properties {
-				if refProp, ok := ref.Properties[k]; ok {
-					preview = refProp.Preview
-					if preview == "PUBLIC" {
-						preview = ""
-					}
-
-					if refProp.Deprecated && refProp.DeprecationMessage == "" {
-						refProp.DeprecationMessage = "This field is deprecated"
-					}
-
-					description := refProp.Description
-
-					// If the field doesn't have a description, try to find the referenced type
-					// and use its description. This handles cases where the field references
-					// a type that has a description but the field itself doesn't.
-					if description == "" && refProp.Reference != nil {
-						refPath := *refProp.Reference
-						refTypeName := strings.TrimPrefix(refPath, "#/components/schemas/")
-						if refType, ok := p.ref[refTypeName]; ok {
-							description = refType.Description
-						}
-					}
-
-					pkg[k] = annotation.Descriptor{
-						Description:        description,
-						Enum:               refProp.Enum,
-						Preview:            preview,
-						DeprecationMessage: refProp.DeprecationMessage,
-						OutputOnly:         isOutputOnly(*refProp),
-					}
-					if description == "" {
-						addEmptyOverride(k, basePath, overrides)
-					}
-				} else {
-					addEmptyOverride(k, basePath, overrides)
-				}
-			}
-			return s
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	err = saveYamlWithStyle(overridesPath, overrides)
-	if err != nil {
-		return err
-	}
-	err = saveYamlWithStyle(outputPath, annotations)
-	if err != nil {
-		return err
-	}
-	err = prependCommentToFile(outputPath, "# This file is auto-generated. DO NOT EDIT.\n")
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func prependCommentToFile(outputPath, comment string) error {
-	b, err := os.ReadFile(outputPath)
-	if err != nil {
-		return err
-	}
-	f, err := os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = f.WriteString(comment)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(b)
-	return err
-}
-
-func addEmptyOverride(key, pkg string, overridesFile annotation.File) {
-	if overridesFile[pkg] == nil {
-		overridesFile[pkg] = map[string]annotation.Descriptor{}
-	}
-
-	overrides := overridesFile[pkg]
-	if overrides[key].Description == "" {
-		overrides[key] = annotation.Descriptor{Description: annotation.Placeholder}
-	}
-
-	a, ok := overrides[key]
-	if !ok {
-		a = annotation.Descriptor{}
-	}
-	if a.Description == "" {
-		a.Description = annotation.Placeholder
-	}
-	overrides[key] = a
 }
