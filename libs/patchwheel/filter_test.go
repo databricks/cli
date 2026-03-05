@@ -1,7 +1,6 @@
 package patchwheel
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -21,7 +20,7 @@ func TestFilterLatestWheels(t *testing.T) {
 		"hello-1.2.3+1741091696780123321-py3-none-any.whl",
 	}
 
-	filtered := FilterLatestWheels(context.Background(), paths)
+	filtered := FilterLatestWheels(t.Context(), paths)
 	require.ElementsMatch(t, []string{
 		"project_name_bvs7tide6bhhpjy4dmcsb2qg44-0.0.1+20250604.74809-py3-none-any.whl",
 		"not-a-wheel.txt",

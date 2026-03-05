@@ -28,7 +28,7 @@ func TestCheckPreventDestroyForAllResources(t *testing.T) {
 				},
 			}
 
-			ctx := context.Background()
+			ctx := t.Context()
 			bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 				// Use Mutate to set the configuration dynamically
 				err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
@@ -103,7 +103,7 @@ func TestCheckForPreventDestroyWhenFirstHasNoPreventDestroy(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		err := checkForPreventDestroy(b, actions)
 		require.Error(t, err)

@@ -1,7 +1,6 @@
 package resources
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"testing"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestSchemaNotFound(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockSchemasAPI().On("GetByFullName", mock.Anything, "non-existent-schema").Return(nil, &apierr.APIError{

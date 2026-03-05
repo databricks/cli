@@ -16,7 +16,7 @@ import (
 )
 
 func TestSecretsCreateScopeErrWhenNoArguments(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, err := testcli.RequireErrorRun(t, ctx, "secrets", "create-scope")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
@@ -30,7 +30,7 @@ func temporarySecretScope(ctx context.Context, t *acc.WorkspaceT) string {
 
 	// Delete the scope after the test.
 	t.Cleanup(func() {
-		err := t.W.Secrets.DeleteScopeByScope(ctx, scope)
+		err := t.W.Secrets.DeleteScopeByScope(context.WithoutCancel(ctx), scope)
 		require.NoError(t, err)
 	})
 

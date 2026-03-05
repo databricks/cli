@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -73,7 +72,7 @@ func TestLoadDBAlertFiles(t *testing.T) {
 
 	// Note: This test only verifies that the mutator doesn't error when a file_path is set.
 	// The full functionality is tested in acceptance tests where the bundle is properly initialized.
-	diags := bundle.Apply(context.Background(), b, mutator.LoadDBAlertFiles())
+	diags := bundle.Apply(t.Context(), b, mutator.LoadDBAlertFiles())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "Test Alert", b.Config.Resources.Alerts["my_alert"].DisplayName)

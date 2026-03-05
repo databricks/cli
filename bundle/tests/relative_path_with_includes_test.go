@@ -1,7 +1,6 @@
 package config_tests
 
 import (
-	"context"
 	"path"
 	"testing"
 
@@ -13,7 +12,7 @@ import (
 func TestRelativePathsWithIncludes(t *testing.T) {
 	b := loadTarget(t, "./relative_path_with_includes", "default")
 
-	diags := bundle.ApplySeq(context.Background(), b,
+	diags := bundle.ApplySeq(t.Context(), b,
 		mutator.NormalizePaths(),
 		mutator.TranslatePaths(),
 	)

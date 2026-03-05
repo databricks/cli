@@ -2,7 +2,6 @@ package root
 
 import (
 	"bytes"
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestExecuteEnrichesAuthErrors(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	stderr := &bytes.Buffer{}
 
 	cmd := &cobra.Command{
@@ -52,7 +51,7 @@ func TestExecuteEnrichesAuthErrors(t *testing.T) {
 }
 
 func TestExecuteNoEnrichmentWithoutConfigUsed(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	stderr := &bytes.Buffer{}
 
 	cmd := &cobra.Command{
@@ -79,7 +78,7 @@ func TestExecuteNoEnrichmentWithoutConfigUsed(t *testing.T) {
 }
 
 func TestExecuteErrAlreadyPrintedNotEnriched(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	stderr := &bytes.Buffer{}
 
 	cmd := &cobra.Command{

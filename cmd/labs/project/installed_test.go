@@ -1,7 +1,6 @@
 package project
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -9,7 +8,7 @@ import (
 )
 
 func TestInstalled(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.WithUserHomeDir(ctx, "testdata/installed-in-home")
 
 	all, err := Installed(ctx)

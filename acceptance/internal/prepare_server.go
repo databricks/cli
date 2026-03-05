@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -86,7 +85,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
 
-		user, err := w.CurrentUser.Me(context.Background())
+		user, err := w.CurrentUser.Me(t.Context())
 		require.NoError(t, err, "Failed to get current user")
 
 		cfg := w.Config

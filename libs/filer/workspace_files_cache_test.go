@@ -80,7 +80,7 @@ func TestWorkspaceFilesCache_ReadDirCache(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cache := newWorkspaceFilesReadaheadCache(f)
 	defer cache.Cleanup()
 
@@ -121,7 +121,7 @@ func TestWorkspaceFilesCache_ReadDirCacheIsolation(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cache := newWorkspaceFilesReadaheadCache(f)
 	defer cache.Cleanup()
 
@@ -152,7 +152,7 @@ func TestWorkspaceFilesCache_StatCache(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cache := newWorkspaceFilesReadaheadCache(f)
 	defer cache.Cleanup()
 
@@ -221,7 +221,7 @@ func TestWorkspaceFilesCache_ReadDirPopulatesStatCache(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cache := newWorkspaceFilesReadaheadCache(f)
 	defer cache.Cleanup()
 
@@ -288,7 +288,7 @@ func TestWorkspaceFilesCache_ReadDirTriggersReadahead(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cache := newWorkspaceFilesReadaheadCache(f)
 	defer cache.Cleanup()
 

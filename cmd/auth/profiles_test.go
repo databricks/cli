@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestProfiles(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
 

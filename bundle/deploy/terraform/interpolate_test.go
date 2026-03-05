@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -61,7 +60,7 @@ func TestInterpolate(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, Interpolate())
+	diags := bundle.Apply(t.Context(), b, Interpolate())
 	require.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Jobs["my_job"]
@@ -103,7 +102,7 @@ func TestInterpolatePostgresResourcesMapIdToName(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, Interpolate())
+	diags := bundle.Apply(t.Context(), b, Interpolate())
 	require.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Jobs["my_job"]
@@ -132,6 +131,6 @@ func TestInterpolateUnknownResourceType(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, Interpolate())
+	diags := bundle.Apply(t.Context(), b, Interpolate())
 	assert.ErrorContains(t, diags.Error(), `reference does not exist: ${resources.unknown.other_unknown.id}`)
 }
