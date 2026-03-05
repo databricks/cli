@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -220,10 +219,6 @@ func promptForLogoutProfile(ctx context.Context, profiler profile.Profiler) (str
 	if len(allProfiles) == 0 {
 		return "", errors.New("no profiles configured. Run 'databricks auth login' to create a profile")
 	}
-
-	slices.SortFunc(allProfiles, func(a, b profile.Profile) int {
-		return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
-	})
 
 	maxNameLen := 0
 	for _, p := range allProfiles {
