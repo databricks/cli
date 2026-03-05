@@ -12,7 +12,7 @@ auth_type = databricks-cli
 
 === Delete the DEFAULT profile
 >>> [CLI] auth logout --profile DEFAULT --force --delete
-Successfully logged out of and deleted profile "DEFAULT".
+Logged out of and deleted profile "DEFAULT".
 
 === Backup file should exist
 OK: Backup file exists
