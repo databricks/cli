@@ -10,7 +10,7 @@ auth_type = databricks-cli
 
 === Delete the only non-default profile
 >>> [CLI] auth logout --profile only-profile --force --delete
-Successfully logged out of and deleted profile "only-profile".
+Logged out of and deleted profile "only-profile".
 
 === Backup file should exist
 OK: Backup file exists
