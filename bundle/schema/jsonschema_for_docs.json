@@ -144,11 +144,6 @@
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource",
                     "x-since-version": "v0.290.0"
                   },
-                  "lifecycle": {
-                    "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
-                  },
                   "name": {
                     "description": "The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
                     "$ref": "#/$defs/string",
@@ -177,6 +172,11 @@
                   "usage_policy_id": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.283.0"
+                  },
+                  "lifecycle": {
+                    "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
+                    "x-since-version": "v0.268.0"
                   },
                   "user_api_scopes": {
                     "$ref": "#/$defs/slice/string",
@@ -267,7 +267,7 @@
                     "x-since-version": "v0.287.0"
                   },
                   "grants": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.CatalogGrant",
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
                     "x-since-version": "v0.287.0"
                   },
                   "lifecycle": {
@@ -302,24 +302,6 @@
                 "additionalProperties": false,
                 "required": [
                   "name"
-                ]
-              },
-              "resources.CatalogGrant": {
-                "type": "object",
-                "properties": {
-                  "principal": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.287.0"
-                  },
-                  "privileges": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege",
-                    "x-since-version": "v0.287.0"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "privileges",
-                  "principal"
                 ]
               },
               "resources.CatalogGrantPrivilege": {
@@ -822,6 +804,7 @@
                   "CAN_MANAGE"
                 ]
               },
+<<<<<<< HEAD
               "resources.DatabaseProjectPermission": {
                 "type": "object",
                 "properties": {
@@ -847,13 +830,37 @@
                   "level"
                 ]
               },
-              "resources.DatabaseProjectPermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_USE",
-                  "CAN_MANAGE"
+||||||| parent of 839ba969a (generate)
+=======
+              "resources.DatabaseProjectPermission": {
+                "type": "object",
+                "properties": {
+                  "group_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "level": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermissionLevel"
+                  },
+                  "service_principal_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "user_name": {
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "level"
                 ]
               },
+>>>>>>> 839ba969a (generate)
+              "resources.DatabaseProjectPermissionLevel": {
+              "type": "string",
+              "enum": [
+                "CAN_USE",
+                "CAN_MANAGE"
+              ]
+            },
               "resources.ExternalLocation": {
                 "type": "object",
                 "properties": {
@@ -882,7 +889,7 @@
                     "x-since-version": "v0.289.0"
                   },
                   "grants": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ExternalLocationGrant",
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
                     "x-since-version": "v0.289.0"
                   },
                   "lifecycle": {
@@ -913,24 +920,6 @@
                   "url"
                 ]
               },
-              "resources.ExternalLocationGrant": {
-                "type": "object",
-                "properties": {
-                  "principal": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.289.0"
-                  },
-                  "privileges": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ExternalLocationGrantPrivilege",
-                    "x-since-version": "v0.289.0"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "privileges",
-                  "principal"
-                ]
-              },
               "resources.ExternalLocationGrantPrivilege": {
                 "type": "string",
                 "description": "Privilege to grant on an external location",
@@ -944,26 +933,6 @@
                   "MANAGE",
                   "READ_FILES",
                   "WRITE_FILES"
-                ]
-              },
-              "resources.Grant": {
-                "type": "object",
-                "properties": {
-                  "principal": {
-                    "description": "The name of the principal that will be granted privileges",
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.229.0"
-                  },
-                  "privileges": {
-                    "description": "The privileges to grant to the specified entity",
-                    "$ref": "#/$defs/slice/string",
-                    "x-since-version": "v0.229.0"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "privileges",
-                  "principal"
                 ]
               },
               "resources.Job": {
@@ -1736,14 +1705,21 @@
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
                     "x-since-version": "v0.287.0"
                   },
+<<<<<<< HEAD
                   "permissions": {
                     "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission",
                     "x-since-version": "v0.292.0"
                   },
-                  "pg_version": {
-                    "$ref": "#/$defs/int",
-                    "x-since-version": "v0.287.0"
+||||||| parent of 839ba969a (generate)
+=======
+                  "permissions": {
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission"
                   },
+>>>>>>> 839ba969a (generate)
+                  "pg_version": {
+                  "$ref": "#/$defs/int",
+                  "x-since-version": "v0.287.0"
+                },
                   "project_id": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
@@ -1880,7 +1856,7 @@
                     "x-since-version": "v0.273.0"
                   },
                   "grants": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Grant",
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
                     "x-since-version": "v0.229.0"
                   },
                   "lifecycle": {
@@ -1937,7 +1913,7 @@
                     "x-since-version": "v0.229.0"
                   },
                   "grants": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrant",
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
                     "x-since-version": "v0.229.0"
                   },
                   "lifecycle": {
@@ -1966,24 +1942,6 @@
                   "name"
                 ],
                 "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
-              },
-              "resources.SchemaGrant": {
-                "type": "object",
-                "properties": {
-                  "principal": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.267.0"
-                  },
-                  "privileges": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege",
-                    "x-since-version": "v0.267.0"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "privileges",
-                  "principal"
-                ]
               },
               "resources.SchemaGrantPrivilege": {
                 "type": "string",
@@ -2236,7 +2194,7 @@
                     "x-since-version": "v0.236.0"
                   },
                   "grants": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VolumeGrant",
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
                     "x-since-version": "v0.236.0"
                   },
                   "lifecycle": {
@@ -2271,34 +2229,6 @@
                   "schema_name"
                 ],
                 "markdownDescription": "The volume resource type allows you to define and create Unity Catalog [volumes](https://docs.databricks.com/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:\n\n- A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Databricks Asset Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.\n\n- Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [custom-presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#custom-presets)."
-              },
-              "resources.VolumeGrant": {
-                "type": "object",
-                "properties": {
-                  "principal": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.264.1"
-                  },
-                  "privileges": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege",
-                    "x-since-version": "v0.264.1"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "privileges",
-                  "principal"
-                ]
-              },
-              "resources.VolumeGrantPrivilege": {
-                "type": "string",
-                "enum": [
-                  "ALL_PRIVILEGES",
-                  "APPLY_TAG",
-                  "MANAGE",
-                  "READ_VOLUME",
-                  "WRITE_VOLUME"
-                ]
               },
               "variable.Lookup": {
                 "type": "object",
@@ -8886,6 +8816,75 @@
                 "resource_id"
               ]
             },
+            "catalog.Privilege": {
+              "type": "string",
+              "enum": [
+                "SELECT",
+                "READ_PRIVATE_FILES",
+                "WRITE_PRIVATE_FILES",
+                "CREATE",
+                "USAGE",
+                "USE_CATALOG",
+                "USE_SCHEMA",
+                "CREATE_SCHEMA",
+                "CREATE_VIEW",
+                "CREATE_EXTERNAL_TABLE",
+                "CREATE_MATERIALIZED_VIEW",
+                "CREATE_FUNCTION",
+                "CREATE_MODEL",
+                "CREATE_CATALOG",
+                "CREATE_MANAGED_STORAGE",
+                "CREATE_EXTERNAL_LOCATION",
+                "CREATE_STORAGE_CREDENTIAL",
+                "CREATE_SERVICE_CREDENTIAL",
+                "ACCESS",
+                "CREATE_SHARE",
+                "CREATE_RECIPIENT",
+                "CREATE_PROVIDER",
+                "USE_SHARE",
+                "USE_RECIPIENT",
+                "USE_PROVIDER",
+                "USE_MARKETPLACE_ASSETS",
+                "SET_SHARE_PERMISSION",
+                "MODIFY",
+                "REFRESH",
+                "EXECUTE",
+                "READ_FILES",
+                "WRITE_FILES",
+                "CREATE_TABLE",
+                "ALL_PRIVILEGES",
+                "CREATE_CONNECTION",
+                "USE_CONNECTION",
+                "APPLY_TAG",
+                "CREATE_FOREIGN_CATALOG",
+                "CREATE_FOREIGN_SECURABLE",
+                "MANAGE_ALLOWLIST",
+                "CREATE_VOLUME",
+                "CREATE_EXTERNAL_VOLUME",
+                "READ_VOLUME",
+                "WRITE_VOLUME",
+                "MANAGE",
+                "BROWSE",
+                "CREATE_CLEAN_ROOM",
+                "MODIFY_CLEAN_ROOM",
+                "EXECUTE_CLEAN_ROOM_TASK",
+                "EXTERNAL_USE_SCHEMA"
+              ]
+            },
+            "catalog.PrivilegeAssignment": {
+              "type": "object",
+              "properties": {
+                "principal": {
+                  "description": "The principal (user email address or group name).\nFor deleted principals, `principal` is empty while `principal_id` is populated.",
+                  "$ref": "#/$defs/string"
+                },
+                "privileges": {
+                  "description": "The privileges assigned to the principal.",
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.Privilege"
+                }
+              },
+              "additionalProperties": false
+            },
             "workspace.ScopeBackendType": {
               "type": "string",
               "description": "The types of secret scope backends in the Secret Manager. Azure KeyVault backed secret scopes\nwill be supported in a later release.",
@@ -9121,18 +9120,6 @@
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppPermission"
                   }
                 },
-                "resources.CatalogGrant": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.CatalogGrant"
-                  }
-                },
-                "resources.CatalogGrantPrivilege": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege"
-                  }
-                },
                 "resources.ClusterPermission": {
                   "type": "array",
                   "items": {
@@ -9155,24 +9142,6 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission"
-                  }
-                },
-                "resources.ExternalLocationGrant": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ExternalLocationGrant"
-                  }
-                },
-                "resources.ExternalLocationGrantPrivilege": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ExternalLocationGrantPrivilege"
-                  }
-                },
-                "resources.Grant": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Grant"
                   }
                 },
                 "resources.JobPermission": {
@@ -9211,18 +9180,6 @@
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelinePermission"
                   }
                 },
-                "resources.SchemaGrant": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SchemaGrant"
-                  }
-                },
-                "resources.SchemaGrantPrivilege": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege"
-                  }
-                },
                 "resources.SecretScopePermission": {
                   "type": "array",
                   "items": {
@@ -9233,18 +9190,6 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
-                  }
-                },
-                "resources.VolumeGrant": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VolumeGrant"
-                  }
-                },
-                "resources.VolumeGrantPrivilege": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege"
                   }
                 }
               },
@@ -9274,6 +9219,18 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetric"
+                }
+              },
+              "catalog.Privilege": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.Privilege"
+                }
+              },
+              "catalog.PrivilegeAssignment": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
                 }
               },
               "catalog.RegisteredModelAlias": {

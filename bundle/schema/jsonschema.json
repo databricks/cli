@@ -4085,7 +4085,67 @@
               ]
             },
             "catalog.Privilege": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "SELECT",
+                    "READ_PRIVATE_FILES",
+                    "WRITE_PRIVATE_FILES",
+                    "CREATE",
+                    "USAGE",
+                    "USE_CATALOG",
+                    "USE_SCHEMA",
+                    "CREATE_SCHEMA",
+                    "CREATE_VIEW",
+                    "CREATE_EXTERNAL_TABLE",
+                    "CREATE_MATERIALIZED_VIEW",
+                    "CREATE_FUNCTION",
+                    "CREATE_MODEL",
+                    "CREATE_CATALOG",
+                    "CREATE_MANAGED_STORAGE",
+                    "CREATE_EXTERNAL_LOCATION",
+                    "CREATE_STORAGE_CREDENTIAL",
+                    "CREATE_SERVICE_CREDENTIAL",
+                    "ACCESS",
+                    "CREATE_SHARE",
+                    "CREATE_RECIPIENT",
+                    "CREATE_PROVIDER",
+                    "USE_SHARE",
+                    "USE_RECIPIENT",
+                    "USE_PROVIDER",
+                    "USE_MARKETPLACE_ASSETS",
+                    "SET_SHARE_PERMISSION",
+                    "MODIFY",
+                    "REFRESH",
+                    "EXECUTE",
+                    "READ_FILES",
+                    "WRITE_FILES",
+                    "CREATE_TABLE",
+                    "ALL_PRIVILEGES",
+                    "CREATE_CONNECTION",
+                    "USE_CONNECTION",
+                    "APPLY_TAG",
+                    "CREATE_FOREIGN_CATALOG",
+                    "CREATE_FOREIGN_SECURABLE",
+                    "MANAGE_ALLOWLIST",
+                    "CREATE_VOLUME",
+                    "CREATE_EXTERNAL_VOLUME",
+                    "READ_VOLUME",
+                    "WRITE_VOLUME",
+                    "MANAGE",
+                    "BROWSE",
+                    "CREATE_CLEAN_ROOM",
+                    "MODIFY_CLEAN_ROOM",
+                    "EXECUTE_CLEAN_ROOM_TASK",
+                    "EXTERNAL_USE_SCHEMA"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "catalog.PrivilegeAssignment": {
               "oneOf": [
@@ -4093,9 +4153,11 @@
                   "type": "object",
                   "properties": {
                     "principal": {
+                      "description": "The principal (user email address or group name).\nFor deleted principals, `principal` is empty while `principal_id` is populated.",
                       "$ref": "#/$defs/string"
                     },
                     "privileges": {
+                      "description": "The privileges assigned to the principal.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.Privilege"
                     }
                   },

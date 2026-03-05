@@ -10,9 +10,9 @@ from databricks.bundles.core._variable import (
     VariableOrOptional,
 )
 from databricks.bundles.volumes._models.lifecycle import Lifecycle, LifecycleParam
-from databricks.bundles.volumes._models.volume_grant import (
-    VolumeGrant,
-    VolumeGrantParam,
+from databricks.bundles.volumes._models.privilege_assignment import (
+    PrivilegeAssignment,
+    PrivilegeAssignmentParam,
 )
 from databricks.bundles.volumes._models.volume_type import VolumeType, VolumeTypeParam
 
@@ -44,7 +44,7 @@ class Volume(Resource):
     The comment attached to the volume
     """
 
-    grants: VariableOrList[VolumeGrant] = field(default_factory=list)
+    grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
 
     lifecycle: VariableOrOptional[Lifecycle] = None
     """
@@ -89,7 +89,7 @@ class VolumeDict(TypedDict, total=False):
     The comment attached to the volume
     """
 
-    grants: VariableOrList[VolumeGrantParam]
+    grants: VariableOrList[PrivilegeAssignmentParam]
 
     lifecycle: VariableOrOptional[LifecycleParam]
     """
