@@ -189,26 +189,17 @@ def _register_formatters():
     html_formatter.for_type(DataFrame, df_html)
 
 
-def _initialize_dbconnect_spark_session():
+def _create_spark_session(builder_fn):
     from databricks.connect import DatabricksSession
     user_ns = get_ipython().user_ns
     existing_session = user_ns.get("spark")
     # Clear the existing local spark session, otherwise DatabricksSession will re-use it.
     user_ns["spark"] = None
     try:
-        # DatabricksSession will use the existing env vars for the connection.
-        return DatabricksSession.builder.serverless(True).getOrCreate()
+        return builder_fn(DatabricksSession.builder).getOrCreate()
     except Exception:
         user_ns["spark"] = existing_session
         raise
-
-
-def _initialize_grpc_spark_session():
-    import os
-    from dbruntime.spark_connection import get_and_configure_uds_spark
-
-    os.environ["SPARK_REMOTE"] = "unix:///databricks/sparkconnect/grpc.sock"
-    return get_and_configure_uds_spark()
 
 
 def _initialize_spark(is_serverless: bool, existing_spark: any):
@@ -216,10 +207,14 @@ def _initialize_spark(is_serverless: bool, existing_spark: any):
 
     # On serverless always initialize a new remote Databricks Connect session.
     if is_serverless:
-        return _initialize_dbconnect_spark_session()
+        return _create_spark_session(lambda b: b.serverless(True))
     # On dedicated or standard initialize a new remote session if the existing spark session is local.
     if existing_spark is None or isinstance(existing_spark, SparkSession):
-        return _initialize_grpc_spark_session()
+        return _create_spark_session(lambda b: b.remote(
+            host=os.environ["DATABRICKS_HOST"],
+            token=os.environ["DATABRICKS_TOKEN"],
+            cluster_id=os.environ["DATABRICKS_CLUSTER_ID"],
+        ))
     # Otherwise re-use the existing remote session.
     return existing_spark
 
