@@ -19,7 +19,7 @@ cat > "./home/.databricks/token-cache.json" <<'EOF'
       "access_token": "dev-cached-token",
       "token_type": "Bearer"
     },
-    "https://accounts.cloud.databricks.com/": {
+    "https://accounts.cloud.databricks.com/oidc/accounts/account-id": {
       "access_token": "dev-host-token",
       "token_type": "Bearer"
     }
