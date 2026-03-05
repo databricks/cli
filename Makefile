@@ -181,6 +181,7 @@ generate:
 	cd $(UNIVERSE_DIR) && bazel build //openapi/genkit
 	@echo "Generating CLI code..."
 	$(GENKIT_BINARY) update-sdk
+	cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes
 	@echo "Updating direct engine config..."
 	make generate-direct
 
