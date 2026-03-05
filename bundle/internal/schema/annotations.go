@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"os"
 	"reflect"
 	"regexp"
@@ -45,12 +46,12 @@ func newAnnotationHandler(annotationsPath string, openapi *openapiParser) (*anno
 	// Convert bundle path keys in annotations to Go type path keys.
 	resolved := annotation.File{}
 	for key, fields := range data {
-		typePath := key
 		// If the key is a bundle path, resolve it to a Go type path.
 		if tp, ok := pathMap.bundlePathToType[key]; ok {
-			typePath = tp
+			resolved[tp] = fields
+		} else {
+			resolved[key] = fields
 		}
-		resolved[typePath] = fields
 	}
 
 	return &annotationHandler{
@@ -79,9 +80,7 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 
 	// Step 3: Merge. Start with OpenAPI base, apply overrides on top.
 	merged := map[string]annotation.Descriptor{}
-	for k, v := range openapiAnnotations {
-		merged[k] = v
-	}
+	maps.Copy(merged, openapiAnnotations)
 	for k, v := range overrideAnnotations {
 		if existing, ok := merged[k]; ok {
 			merged[k] = mergeDescriptor(existing, v)
@@ -130,6 +129,31 @@ func (d *annotationHandler) getOpenApiAnnotations(typ reflect.Type, s jsonschema
 
 	if d.openapi == nil {
 		return result
+	}
+
+	// Also check embedded (anonymous) struct types for promoted field descriptions.
+	// For example, resources.Dashboard embeds dashboards.Dashboard from the SDK,
+	// and promoted fields should get descriptions from the embedded type's OpenAPI entry.
+	derefTyp := typ
+	for derefTyp.Kind() == reflect.Pointer {
+		derefTyp = derefTyp.Elem()
+	}
+	if derefTyp.Kind() == reflect.Struct {
+		for i := range derefTyp.NumField() {
+			field := derefTyp.Field(i)
+			if !field.Anonymous {
+				continue
+			}
+			embeddedResult := d.getOpenApiAnnotations(field.Type, s)
+			for k, v := range embeddedResult {
+				if k == RootTypeKey {
+					continue // Don't inherit root type annotations from embedded types
+				}
+				if _, exists := result[k]; !exists {
+					result[k] = v
+				}
+			}
+		}
 	}
 
 	ref, ok := d.openapi.findRef(typ)
@@ -246,11 +270,11 @@ func (d *annotationHandler) syncWithMissingAnnotations(outputPath string) error 
 			fmt.Printf("Missing annotations for `%s` that are not in CLI package, try to fetch latest OpenAPI spec and regenerate annotations\n", k)
 			continue
 		}
-		key := k
 		if bundlePath, ok := d.pathMap.typeToBundlePath[k]; ok {
-			key = bundlePath
+			converted[bundlePath] = v
+		} else {
+			converted[k] = v
 		}
-		converted[key] = v
 	}
 
 	missingAnnotations, err := convert.FromTyped(converted, dyn.NilValue)

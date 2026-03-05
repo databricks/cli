@@ -50,4 +50,3 @@ func TestPathMappingCoversAllAnnotatedTypes(t *testing.T) {
 	}
 	assert.Empty(t, unmapped, "All annotated types should have a bundle path mapping")
 }
-
