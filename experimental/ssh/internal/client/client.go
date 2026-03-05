@@ -44,6 +44,7 @@ var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 const (
 	sshServerTaskKey         = "start_ssh_server"
 	serverlessEnvironmentKey = "ssh_tunnel_serverless"
+	minEnvironmentVersion    = 4
 
 	VSCodeOption  = "vscode"
 	VSCodeCommand = "code"
@@ -98,6 +99,8 @@ type ClientOptions struct {
 	Liteswap string
 	// If true, skip checking and updating IDE settings.
 	SkipSettingsCheck bool
+	// Environment version for serverless compute.
+	EnvironmentVersion int
 }
 
 func (o *ClientOptions) Validate() error {
@@ -116,6 +119,9 @@ func (o *ClientOptions) Validate() error {
 	}
 	if o.IDE != "" && o.IDE != VSCodeOption && o.IDE != CursorOption {
 		return fmt.Errorf("invalid IDE value: %q, expected %q or %q", o.IDE, VSCodeOption, CursorOption)
+	}
+	if o.EnvironmentVersion > 0 && o.EnvironmentVersion < minEnvironmentVersion {
+		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
 	}
 	return nil
 }
@@ -180,6 +186,10 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 
 	if o.Liteswap != "" {
 		proxyCommand += " --liteswap=" + o.Liteswap
+	}
+
+	if o.EnvironmentVersion > 0 {
+		proxyCommand += " --environment-version=" + strconv.Itoa(o.EnvironmentVersion)
 	}
 
 	return proxyCommand, nil
@@ -508,7 +518,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 			{
 				EnvironmentKey: serverlessEnvironmentKey,
 				Spec: &compute.Environment{
-					EnvironmentVersion: "3",
+					EnvironmentVersion: strconv.Itoa(max(opts.EnvironmentVersion, minEnvironmentVersion)),
 				},
 			},
 		}
