@@ -46,11 +46,11 @@ var actionOrder = map[ActionType]int{
 	Resize:        2,
 	Update:        3,
 	UpdateWithID:  4,
-	Create:        5,
-	Recreate:      6,
-	Delete:        7,
-	Bind:          8,
-	BindAndUpdate: 9,
+	Bind:          5,
+	BindAndUpdate: 6,
+	Create:        7,
+	Recreate:      8,
+	Delete:        9,
 }
 
 func (a ActionType) KeepsID() bool {

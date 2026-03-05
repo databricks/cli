@@ -133,6 +133,26 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			bindErrors = append(bindErrors, fmt.Sprintf("bind block references undefined resource %q; define it in the resources section or remove the bind block", key))
 		}
 	})
+
+	// Validate that no bind ID conflicts with a resource being deleted.
+	// This catches the case where a resource was previously deployed and a different
+	// resource name now has a bind block with the same ID.
+	for key, entry := range plan.Plan {
+		if entry.Action != deployplan.Delete {
+			continue
+		}
+		dbEntry, ok := b.StateDB.GetResourceEntry(key)
+		if !ok || dbEntry.ID == "" {
+			continue
+		}
+		bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+			if bindID == dbEntry.ID {
+				bindKey := "resources." + resourceType + "." + resourceName
+				bindErrors = append(bindErrors, fmt.Sprintf("bind block for %q has the same ID %q as %q which is being deleted; remove the bind block or the delete", bindKey, bindID, key))
+			}
+		})
+	}
+
 	if len(bindErrors) > 0 {
 		for _, msg := range bindErrors {
 			logdiag.LogError(ctx, errors.New(msg))
