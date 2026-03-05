@@ -146,31 +146,25 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		})
 
-		// Validate that no bind ID conflicts with a resource being deleted.
-		// This catches the case where a resource was previously deployed and a different
-		// resource name now has a bind block with the same ID.
-		for key, entry := range plan.Plan {
-			if entry.Action != deployplan.Delete {
-				continue
-			}
-			dbEntry, ok := b.StateDB.GetResourceEntry(key)
-			if !ok || dbEntry.ID == "" {
-				continue
-			}
-			bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
-				if bindID == dbEntry.ID {
-					bindKey := "resources." + resourceType + "." + resourceName
-					bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
-					logdiag.LogDiag(ctx, diag.Diagnostic{
-						Severity:  diag.Error,
-						Summary:   fmt.Sprintf("bind block for %q has the same ID %q as %q which is being deleted; remove the bind block or the delete", bindKey, bindID, key),
-						Locations: configRoot.GetLocations(bindPath.String()),
-						Paths:     []dyn.Path{bindPath},
-					})
-					hasBindErrors = true
+		// Validate that no bind ID conflicts with an existing resource in state.
+		// Deletes, recreates, and update_ids are not allowed when a bind block
+		// references the same resource ID under a different resource key.
+		bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+			bindKey := "resources." + resourceType + "." + resourceName
+			for stateKey, stateEntry := range b.StateDB.Data.State {
+				if stateKey == bindKey || stateEntry.ID != bindID {
+					continue
 				}
-			})
-		}
+				bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+				logdiag.LogDiag(ctx, diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf("bind block for %q has the same ID %q as existing resource %q; remove the bind block or the conflicting resource", bindKey, bindID, stateKey),
+					Locations: configRoot.GetLocations(bindPath.String()),
+					Paths:     []dyn.Path{bindPath},
+				})
+				hasBindErrors = true
+			}
+		})
 
 		if hasBindErrors {
 			return nil, errors.New("bind validation failed")

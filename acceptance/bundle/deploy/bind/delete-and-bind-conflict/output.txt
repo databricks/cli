@@ -6,7 +6,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> musterr [CLI] bundle plan
-Error: bind block for "resources.jobs.bar" has the same ID "[FOO_ID]" as "resources.jobs.foo" which is being deleted; remove the bind block or the delete
+Error: bind block for "resources.jobs.bar" has the same ID "[FOO_ID]" as existing resource "resources.jobs.foo"; remove the bind block or the conflicting resource
   at targets.default.bind.jobs.bar
 
 Error: bind validation failed
