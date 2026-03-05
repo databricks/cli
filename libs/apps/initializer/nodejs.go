@@ -20,12 +20,14 @@ type InitializerNodeJs struct {
 func (i *InitializerNodeJs) Initialize(ctx context.Context, workDir string) *InitResult {
 	i.workDir = workDir
 
-	// Step 1: Run npm install
-	if err := i.runNpmInstall(ctx, workDir); err != nil {
-		return &InitResult{
-			Success: false,
-			Message: "Failed to install dependencies",
-			Error:   err,
+	// Step 1: Run npm install (skip if node_modules already exists, e.g. from async pre-install)
+	if _, err := os.Stat(filepath.Join(workDir, "node_modules")); os.IsNotExist(err) {
+		if err := i.runNpmInstall(ctx, workDir); err != nil {
+			return &InitResult{
+				Success: false,
+				Message: "Failed to install dependencies",
+				Error:   err,
+			}
 		}
 	}
 
@@ -65,6 +67,25 @@ func (i *InitializerNodeJs) SupportsDevRemote() bool {
 		return false
 	}
 	return i.hasAppkit(i.workDir)
+}
+
+// StartNpmInstallAsync starts npm ci in the given directory in a background goroutine.
+// Returns a channel that receives nil on success or an error when complete.
+// If npm is not available, the channel receives nil immediately.
+func StartNpmInstallAsync(ctx context.Context, workDir string) <-chan error {
+	ch := make(chan error, 1)
+	if _, err := exec.LookPath("npm"); err != nil {
+		ch <- nil
+		return ch
+	}
+	go func() {
+		cmd := exec.CommandContext(ctx, "npm", "ci", "--no-audit", "--no-fund", "--prefer-offline")
+		cmd.Dir = workDir
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+		ch <- cmd.Run()
+	}()
+	return ch
 }
 
 // runNpmInstall runs npm install in the project directory.

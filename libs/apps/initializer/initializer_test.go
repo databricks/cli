@@ -1,9 +1,11 @@
 package initializer
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -153,6 +155,47 @@ func TestDetectPythonCommand(t *testing.T) {
 			assert.Equal(t, tt.wantCmd, cmd)
 		})
 	}
+}
+
+func TestStartNpmInstallAsyncReturnsChannel(t *testing.T) {
+	// Cancelled context ensures the process exits quickly regardless of npm availability.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(`{"name":"test"}`), 0o644))
+
+	ch := StartNpmInstallAsync(ctx, tmpDir)
+	require.NotNil(t, ch)
+
+	// Channel must yield exactly one value (nil if npm not found, or error from cancelled ctx).
+	select {
+	case <-ch:
+		// ok – received a value
+	case <-time.After(10 * time.Second):
+		t.Fatal("timed out waiting for StartNpmInstallAsync channel")
+	}
+}
+
+func TestInitializeSkipsNpmInstallWhenNodeModulesExists(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a package.json without appkit so appkit setup is also skipped.
+	require.NoError(t, os.WriteFile(
+		filepath.Join(tmpDir, "package.json"),
+		[]byte(`{"name":"test","dependencies":{"express":"^4.0.0"}}`),
+		0o644,
+	))
+
+	// Pre-create node_modules to simulate a completed async install.
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "node_modules", ".package-lock.json"), 0o755))
+
+	init := &InitializerNodeJs{}
+	result := init.Initialize(context.Background(), tmpDir)
+
+	// Should succeed without actually running npm install.
+	assert.True(t, result.Success)
+	assert.Equal(t, "Node.js project initialized successfully", result.Message)
 }
 
 func getTypeName(i Initializer) string {

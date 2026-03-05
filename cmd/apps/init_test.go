@@ -527,6 +527,42 @@ func TestAppendUniqueNoValues(t *testing.T) {
 	assert.Equal(t, []string{"a", "b"}, result)
 }
 
+func TestFindTemplateProjectDir(t *testing.T) {
+	t.Run("returns project_name subdir when present", func(t *testing.T) {
+		dir := t.TempDir()
+		projDir := filepath.Join(dir, "{{.project_name}}")
+		require.NoError(t, os.Mkdir(projDir, 0o755))
+		// Also add a non-matching directory to ensure we pick the right one
+		require.NoError(t, os.Mkdir(filepath.Join(dir, "other"), 0o755))
+
+		result := findTemplateProjectDir(dir)
+		assert.Equal(t, projDir, result)
+	})
+
+	t.Run("returns input dir when no project_name subdir", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.Mkdir(filepath.Join(dir, "src"), 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0o644))
+
+		result := findTemplateProjectDir(dir)
+		assert.Equal(t, dir, result)
+	})
+
+	t.Run("returns input dir when dir is empty", func(t *testing.T) {
+		dir := t.TempDir()
+
+		result := findTemplateProjectDir(dir)
+		assert.Equal(t, dir, result)
+	})
+
+	t.Run("returns input dir when dir does not exist", func(t *testing.T) {
+		dir := filepath.Join(t.TempDir(), "nonexistent")
+
+		result := findTemplateProjectDir(dir)
+		assert.Equal(t, dir, result)
+	})
+}
+
 func TestRunManifestOnlyFound(t *testing.T) {
 	dir := t.TempDir()
 	manifestPath := filepath.Join(dir, manifest.ManifestFileName)
