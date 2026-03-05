@@ -64,7 +64,9 @@ func TestRootLookup(t *testing.T) {
 
 	t.Chdir(t.TempDir())
 
-	// Resolve symlinks to match the path returned by getRootWithTraversal.
+	// Resolve to canonical path for comparison below. This is needed because
+	// os.Getwd may return a path with symlinks (macOS) or 8.3 short names
+	// (Windows) after a relative chdir.
 	root, err := os.Getwd()
 	require.NoError(t, err)
 	root, err = filepath.EvalSymlinks(root)
@@ -82,6 +84,8 @@ func TestRootLookup(t *testing.T) {
 	// It should find the project root from $PWD.
 	t.Chdir("./a/b/c")
 	foundRoot, err := mustGetRoot(ctx)
+	require.NoError(t, err)
+	foundRoot, err = filepath.EvalSymlinks(foundRoot)
 	require.NoError(t, err)
 	require.Equal(t, root, foundRoot)
 }
