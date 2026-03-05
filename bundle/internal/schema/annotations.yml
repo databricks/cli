@@ -725,9 +725,6 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "file_event_queue":
     "description": |-
       PLACEHOLDER
-  "grants":
-    "description": |-
-      PLACEHOLDER
   "lifecycle":
     "description": |-
       PLACEHOLDER
