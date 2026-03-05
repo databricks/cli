@@ -1,7 +1,6 @@
 package root
 
 import (
-	"context"
 	"io"
 	"strings"
 	"testing"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestInteractiveModeWithCmdIO(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// Initialize cmdio with mock TTY capabilities
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText,
 		io.NopCloser(strings.NewReader("")),
@@ -28,7 +27,7 @@ func TestInteractiveModeWithCmdIO(t *testing.T) {
 }
 
 func TestInteractiveModeNone(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// MockDiscard sets all TTY flags to false, so InteractiveMode returns "none".
 	ctx = cmdio.MockDiscard(ctx)
 

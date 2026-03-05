@@ -1,7 +1,6 @@
 package template
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -17,7 +16,7 @@ import (
 func TestDefaultWriterConfigure(t *testing.T) {
 	// Test on local file system.
 	w := &defaultWriter{}
-	err := w.Configure(context.Background(), "/foo/bar", "/out/abc")
+	err := w.Configure(t.Context(), "/foo/bar", "/out/abc")
 	assert.NoError(t, err)
 
 	assert.Equal(t, "/foo/bar", w.configPath)
@@ -31,7 +30,7 @@ func TestDefaultWriterConfigureOnDBR(t *testing.T) {
 		t.Skip("Skipping test on Windows")
 	}
 
-	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{IsDbr: true, Version: "15.4"})
+	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{IsDbr: true, Version: "15.4"})
 	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
 	})
@@ -46,7 +45,7 @@ func TestDefaultWriterConfigureOnDBR(t *testing.T) {
 func TestMaterializeForNonTemplateDirectory(t *testing.T) {
 	tmpDir1 := t.TempDir()
 	tmpDir2 := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	w := &defaultWriter{}
 	err := w.Configure(ctx, "/foo/bar", tmpDir1)

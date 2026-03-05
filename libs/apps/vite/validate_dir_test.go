@@ -1,7 +1,6 @@
 package vite
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -19,15 +18,10 @@ import (
 
 func TestValidateDirPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldWd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldWd) }()
-
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
+	t.Chdir(tmpDir)
 
 	queriesDir := filepath.Join(tmpDir, "config", "queries")
-	err = os.MkdirAll(queriesDir, 0o755)
+	err := os.MkdirAll(queriesDir, 0o755)
 	require.NoError(t, err)
 
 	hiddenDir := filepath.Join(queriesDir, ".hidden")
@@ -106,15 +100,10 @@ func TestValidateDirPath(t *testing.T) {
 
 func TestBridgeHandleDirListRequest(t *testing.T) {
 	tmpDir := t.TempDir()
-	oldWd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldWd) }()
-
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
+	t.Chdir(tmpDir)
 
 	queriesDir := filepath.Join(tmpDir, "config", "queries")
-	err = os.MkdirAll(queriesDir, 0o755)
+	err := os.MkdirAll(queriesDir, 0o755)
 	require.NoError(t, err)
 
 	err = os.WriteFile(filepath.Join(queriesDir, "query1.sql"), []byte("SELECT 1"), 0o644)
@@ -131,7 +120,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("only returns sql files", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 		w := &databricks.WorkspaceClient{}
 
 		var lastMessage []byte
@@ -196,7 +185,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 	})
 
 	t.Run("returns error for invalid path", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 		w := &databricks.WorkspaceClient{}
 
 		var lastMessage []byte

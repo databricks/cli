@@ -30,7 +30,7 @@ func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 
 	pipelineId, name := gt.createTestPipeline(ctx)
 	t.Cleanup(func() {
-		gt.destroyPipeline(ctx, pipelineId)
+		gt.destroyPipeline(context.WithoutCancel(ctx), pipelineId)
 	})
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)

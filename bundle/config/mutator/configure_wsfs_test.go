@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"reflect"
 	"runtime"
 	"testing"
@@ -37,7 +36,7 @@ func TestConfigureWSFS_SkipsIfNotWorkspacePrefix(t *testing.T) {
 	b := mockBundleForConfigureWSFS(t, "/foo")
 	originalSyncRoot := b.SyncRoot
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := bundle.Apply(ctx, b, mutator.ConfigureWSFS())
 	assert.Empty(t, diags)
 	assert.Equal(t, originalSyncRoot, b.SyncRoot)
@@ -47,7 +46,7 @@ func TestConfigureWSFS_SkipsIfNotRunningOnRuntime(t *testing.T) {
 	b := mockBundleForConfigureWSFS(t, "/Workspace/foo")
 	originalSyncRoot := b.SyncRoot
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{})
 	diags := bundle.Apply(ctx, b, mutator.ConfigureWSFS())
 	assert.Empty(t, diags)
@@ -91,7 +90,7 @@ func TestConfigureWSFS_DBRVersions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			b := mockBundleForConfigureWSFS(t, "/Workspace/foo")
 
-			ctx := context.Background()
+			ctx := t.Context()
 			ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: tt.version})
 			diags := bundle.Apply(ctx, b, mutator.ConfigureWSFS())
 			assert.Empty(t, diags)

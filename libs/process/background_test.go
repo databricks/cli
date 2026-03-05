@@ -24,20 +24,20 @@ func splitLines(b []byte) (lines []string) {
 }
 
 func TestBackgroundUnwrapsNotFound(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := Background(ctx, []string{"meeecho", "1"})
 	assert.ErrorIs(t, err, exec.ErrNotFound)
 }
 
 func TestBackground(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	res, err := Background(ctx, []string{"echo", "1"}, WithDir("/"))
 	assert.NoError(t, err)
 	assert.Equal(t, "1", strings.TrimSpace(res))
 }
 
 func TestBackgroundOnlyStdoutGetsoutOnSuccess(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	res, err := Background(ctx, []string{
 		"python3", "-c", "import sys; sys.stderr.write('1'); sys.stdout.write('2')",
 	})
@@ -46,7 +46,7 @@ func TestBackgroundOnlyStdoutGetsoutOnSuccess(t *testing.T) {
 }
 
 func TestBackgroundCombinedOutput(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	buf := bytes.Buffer{}
 	res, err := Background(ctx, []string{
 		"python3", "-c", "import sys, time; " +
@@ -66,7 +66,7 @@ func TestBackgroundCombinedOutput(t *testing.T) {
 }
 
 func TestBackgroundCombinedOutputFailure(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	buf := bytes.Buffer{}
 	res, err := Background(ctx, []string{
 		"python3", "-c", "import sys, time; " +
@@ -86,20 +86,20 @@ func TestBackgroundCombinedOutputFailure(t *testing.T) {
 }
 
 func TestBackgroundNoStdin(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	res, err := Background(ctx, []string{"cat"})
 	assert.NoError(t, err)
 	assert.Equal(t, "", res)
 }
 
 func TestBackgroundFails(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := Background(ctx, []string{"ls", "/dev/null/x"})
 	assert.Error(t, err)
 }
 
 func TestBackgroundFailsOnOption(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := Background(ctx, []string{"ls", "/dev/null/x"}, func(_ context.Context, c *exec.Cmd) error {
 		return errors.New("nope")
 	})

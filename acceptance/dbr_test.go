@@ -325,7 +325,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 
 // runDbrAcceptanceTests is the main entry point for running DBR acceptance tests.
 func runDbrAcceptanceTests(t *testing.T, config dbrTestConfig) {
-	ctx := context.Background()
+	ctx := t.Context()
 	uniqueID := uuid.New().String()
 
 	w, f, testDir := setupDbrTestDir(ctx, t, uniqueID)

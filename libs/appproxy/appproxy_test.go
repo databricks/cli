@@ -2,7 +2,6 @@ package appproxy
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,7 +34,7 @@ func sendTestRequest(t *testing.T, url, path string) (int, []byte) {
 }
 
 func startProxy(t *testing.T, serverAddr string) (*Proxy, string) {
-	proxy, err := New(context.Background(), "http://"+serverAddr)
+	proxy, err := New(t.Context(), "http://"+serverAddr)
 	require.NoError(t, err)
 
 	ln, err := proxy.listen(fmt.Sprintf("localhost:%d", PROXY_PORT))

@@ -1,7 +1,6 @@
 package session
 
 import (
-	"context"
 	"testing"
 	"time"
 )
@@ -25,7 +24,7 @@ func TestNewSession(t *testing.T) {
 
 func TestSession_SetWorkDir(t *testing.T) {
 	s := NewSession()
-	ctx := WithSession(context.Background(), s)
+	ctx := WithSession(t.Context(), s)
 
 	// First set should succeed
 	err := SetWorkDir(ctx, "/tmp/test")
@@ -52,7 +51,7 @@ func TestSession_SetWorkDir(t *testing.T) {
 
 func TestSession_GetWorkDir_NotSet(t *testing.T) {
 	s := NewSession()
-	ctx := WithSession(context.Background(), s)
+	ctx := WithSession(t.Context(), s)
 
 	_, err := GetWorkDir(ctx)
 	if err == nil {

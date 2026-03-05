@@ -19,7 +19,7 @@ func clearAllAgentEnvVars(ctx context.Context) context.Context {
 func TestDetectEachAgent(t *testing.T) {
 	for _, a := range knownAgents {
 		t.Run(a.product, func(t *testing.T) {
-			ctx := clearAllAgentEnvVars(context.Background())
+			ctx := clearAllAgentEnvVars(t.Context())
 			ctx = env.Set(ctx, a.envVar, "1")
 
 			assert.Equal(t, a.product, detect(ctx))
@@ -28,7 +28,7 @@ func TestDetectEachAgent(t *testing.T) {
 }
 
 func TestDetectViaContext(t *testing.T) {
-	ctx := clearAllAgentEnvVars(context.Background())
+	ctx := clearAllAgentEnvVars(t.Context())
 	ctx = env.Set(ctx, knownAgents[0].envVar, "1")
 
 	ctx = Detect(ctx)
@@ -37,7 +37,7 @@ func TestDetectViaContext(t *testing.T) {
 }
 
 func TestDetectNoAgent(t *testing.T) {
-	ctx := clearAllAgentEnvVars(context.Background())
+	ctx := clearAllAgentEnvVars(t.Context())
 
 	ctx = Detect(ctx)
 
@@ -45,7 +45,7 @@ func TestDetectNoAgent(t *testing.T) {
 }
 
 func TestDetectMultipleAgents(t *testing.T) {
-	ctx := clearAllAgentEnvVars(context.Background())
+	ctx := clearAllAgentEnvVars(t.Context())
 	for _, a := range knownAgents {
 		ctx = env.Set(ctx, a.envVar, "1")
 	}
@@ -54,7 +54,7 @@ func TestDetectMultipleAgents(t *testing.T) {
 }
 
 func TestProductCalledBeforeDetect(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.Panics(t, func() {
 		Product(ctx)
@@ -62,7 +62,7 @@ func TestProductCalledBeforeDetect(t *testing.T) {
 }
 
 func TestMock(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = Mock(ctx, "test-agent")
 
 	assert.Equal(t, "test-agent", Product(ctx))

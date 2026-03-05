@@ -103,7 +103,7 @@ func TestValidateProjectName(t *testing.T) {
 
 func TestRunWithSpinnerCtx(t *testing.T) {
 	t.Run("successful action", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 		executed := false
 
 		err := RunWithSpinnerCtx(ctx, "Testing...", func() error {
@@ -116,7 +116,7 @@ func TestRunWithSpinnerCtx(t *testing.T) {
 	})
 
 	t.Run("action returns error", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 		expectedErr := errors.New("action failed")
 
 		err := RunWithSpinnerCtx(ctx, "Testing...", func() error {
@@ -127,7 +127,7 @@ func TestRunWithSpinnerCtx(t *testing.T) {
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(cmdio.MockDiscard(context.Background()))
+		ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
 		actionStarted := make(chan struct{})
 		actionDone := make(chan struct{})
 
@@ -149,7 +149,7 @@ func TestRunWithSpinnerCtx(t *testing.T) {
 	})
 
 	t.Run("action panics - recovered", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 
 		err := RunWithSpinnerCtx(ctx, "Testing...", func() error {
 			panic("test panic")
