@@ -796,6 +796,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "job":
     "description": |-
       PLACEHOLDER
+  "postgres":
+    "description": |-
+      PLACEHOLDER
   "secret":
     "description": |-
       PLACEHOLDER
@@ -837,6 +840,16 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
   "id":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgres:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "database":
     "description": |-
       PLACEHOLDER
   "permission":

@@ -27,6 +27,7 @@ var EnumFields = map[string][]string{
 	"resources.apps.*.resources[*].experiment.permission":       {"CAN_EDIT", "CAN_MANAGE", "CAN_READ"},
 	"resources.apps.*.resources[*].genie_space.permission":      {"CAN_EDIT", "CAN_MANAGE", "CAN_RUN", "CAN_VIEW"},
 	"resources.apps.*.resources[*].job.permission":              {"CAN_MANAGE", "CAN_MANAGE_RUN", "CAN_VIEW", "IS_OWNER"},
+	"resources.apps.*.resources[*].postgres.permission":         {"CAN_CONNECT_AND_CREATE"},
 	"resources.apps.*.resources[*].secret.permission":           {"MANAGE", "READ", "WRITE"},
 	"resources.apps.*.resources[*].serving_endpoint.permission": {"CAN_MANAGE", "CAN_QUERY", "CAN_VIEW"},
 	"resources.apps.*.resources[*].sql_warehouse.permission":    {"CAN_MANAGE", "CAN_USE", "IS_OWNER"},
