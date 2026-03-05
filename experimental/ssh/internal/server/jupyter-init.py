@@ -191,6 +191,7 @@ def _register_formatters():
 
 def _create_spark_session(builder_fn):
     from databricks.connect import DatabricksSession
+
     user_ns = get_ipython().user_ns
     existing_session = user_ns.get("spark")
     # Clear the existing local spark session, otherwise DatabricksSession will re-use it.
@@ -210,11 +211,13 @@ def _initialize_spark(is_serverless: bool, existing_spark: any):
         return _create_spark_session(lambda b: b.serverless(True))
     # On dedicated or standard initialize a new remote session if the existing spark session is local.
     if existing_spark is None or isinstance(existing_spark, SparkSession):
-        return _create_spark_session(lambda b: b.remote(
-            host=os.environ["DATABRICKS_HOST"],
-            token=os.environ["DATABRICKS_TOKEN"],
-            cluster_id=os.environ["DATABRICKS_CLUSTER_ID"],
-        ))
+        return _create_spark_session(
+            lambda b: b.remote(
+                host=os.environ["DATABRICKS_HOST"],
+                token=os.environ["DATABRICKS_TOKEN"],
+                cluster_id=os.environ["DATABRICKS_CLUSTER_ID"],
+            )
+        )
     # Otherwise re-use the existing remote session.
     return existing_spark
 
