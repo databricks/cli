@@ -373,5 +373,5 @@ func TestDeleteProfile_NotFound(t *testing.T) {
 
 	err := DeleteProfile(ctx, "not-found", path)
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "profile not-found not found")
+	assert.ErrorContains(t, err, `profile "not-found" not found`)
 }

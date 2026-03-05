@@ -140,7 +140,7 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		err = databrickscfg.DeleteProfile(ctx, args.profileName, args.configFilePath)
 		if err != nil {
 			if isCreatedByLogin {
-				return fmt.Errorf("token cache cleared, but failed to delete profile. Re-run with --delete to retry. If this error persists, please check the state of the config file: %v", err)
+				return fmt.Errorf("token cache cleared, but failed to delete profile. Re-run with --delete to retry. If this error persists, please check the state of the config file: %w", err)
 			}
 
 			return fmt.Errorf("failed to delete profile. Re-run with --delete to retry. If this error persists, please check the state of the config file: %w", err)
