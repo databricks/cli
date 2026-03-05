@@ -184,6 +184,7 @@ generate:
 	cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes
 	@echo "Updating direct engine config..."
 	make generate-direct
+	go test ./bundle/internal/schema
 
 .codegen/openapi.json: .codegen/_openapi_sha
 	wget -O $@.tmp "https://openapi.dev.databricks.com/$$(cat $<)/specs/all-internal.json" && mv $@.tmp $@ && touch $@
