@@ -139,6 +139,11 @@
                     "doNotSuggest": true,
                     "x-since-version": "v0.283.0"
                   },
+                  "git_source": {
+                    "description": "Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)\nto use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.\nThe source_code_path within git_source specifies the relative path to the app code within the repository.",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource",
+                    "x-since-version": "v0.290.0"
+                  },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
@@ -166,7 +171,8 @@
                     "description": "Name of the space this app belongs to.",
                     "$ref": "#/$defs/string",
                     "x-databricks-preview": "PRIVATE",
-                    "doNotSuggest": true
+                    "doNotSuggest": true,
+                    "x-since-version": "v0.290.0"
                   },
                   "usage_policy_id": {
                     "$ref": "#/$defs/string",
@@ -179,7 +185,6 @@
                 },
                 "additionalProperties": false,
                 "required": [
-                  "source_code_path",
                   "name"
                 ]
               },
@@ -813,6 +818,34 @@
                 "type": "string",
                 "enum": [
                   "CAN_CREATE",
+                  "CAN_USE",
+                  "CAN_MANAGE"
+                ]
+              },
+              "resources.DatabaseProjectPermission": {
+                "type": "object",
+                "properties": {
+                  "group_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "level": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermissionLevel"
+                  },
+                  "service_principal_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "user_name": {
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "level"
+                ]
+              },
+              "resources.DatabaseProjectPermissionLevel": {
+                "type": "string",
+                "enum": [
                   "CAN_USE",
                   "CAN_MANAGE"
                 ]
@@ -1641,7 +1674,8 @@
                     "x-since-version": "v0.287.0"
                   },
                   "group": {
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec",
+                    "x-since-version": "v0.290.0"
                   },
                   "lifecycle": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
@@ -1675,10 +1709,12 @@
                 "type": "object",
                 "properties": {
                   "budget_policy_id": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v0.290.0"
                   },
                   "custom_tags": {
-                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag"
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag",
+                    "x-since-version": "v0.290.0"
                   },
                   "default_endpoint_settings": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings",
@@ -1695,6 +1731,9 @@
                   "lifecycle": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
                     "x-since-version": "v0.287.0"
+                  },
+                  "permissions": {
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission"
                   },
                   "pg_version": {
                     "$ref": "#/$defs/int",
@@ -3082,7 +3121,8 @@
                 "app": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceApp",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v0.290.0"
                 },
                 "database": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase",
@@ -5290,7 +5330,8 @@
                 "sparse_checkout": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SparseCheckout",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v0.290.0"
                 }
               },
               "additionalProperties": false,
@@ -6009,7 +6050,8 @@
               "properties": {
                 "patterns": {
                   "description": "List of patterns to include for sparse checkout.",
-                  "$ref": "#/$defs/slice/string"
+                  "$ref": "#/$defs/slice/string",
+                  "x-since-version": "v0.290.0"
                 }
               },
               "additionalProperties": false
@@ -7527,15 +7569,18 @@
               "properties": {
                 "enable_readable_secondaries": {
                   "description": "Whether to allow read-only connections to read-write endpoints. Only relevant for read-write endpoints where\nsize.max \u003e 1.",
-                  "$ref": "#/$defs/bool"
+                  "$ref": "#/$defs/bool",
+                  "x-since-version": "v0.290.0"
                 },
                 "max": {
                   "description": "The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single\ncompute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to\ntrue on the EndpointSpec.",
-                  "$ref": "#/$defs/int"
+                  "$ref": "#/$defs/int",
+                  "x-since-version": "v0.290.0"
                 },
                 "min": {
                   "description": "The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater\nthan or equal to 1.",
-                  "$ref": "#/$defs/int"
+                  "$ref": "#/$defs/int",
+                  "x-since-version": "v0.290.0"
                 }
               },
               "additionalProperties": false,
@@ -7569,11 +7614,13 @@
               "properties": {
                 "key": {
                   "description": "The key of the custom tag.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.290.0"
                 },
                 "value": {
                   "description": "The value of the custom tag.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.290.0"
                 }
               },
               "additionalProperties": false
@@ -9097,6 +9144,12 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission"
+                  }
+                },
+                "resources.DatabaseProjectPermission": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission"
                   }
                 },
                 "resources.ExternalLocationGrant": {
