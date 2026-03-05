@@ -1,15 +1,16 @@
 sethome "./home"
 
 cat > "./home/.databrickscfg" <<'EOF'
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
 
 [dev]
 host = https://shared.cloud.databricks.com
-token = dev-token
+auth_type  = databricks-cli
 
 [staging]
 host = https://shared.cloud.databricks.com
-token = staging-token
+auth_type  = databricks-cli
 EOF
 
 mkdir -p "./home/.databricks"
@@ -33,8 +34,8 @@ cat > "./home/.databricks/token-cache.json" <<'EOF'
 }
 EOF
 
-title "Token cache before logout\n"
-jq -S '.' "./home/.databricks/token-cache.json"
+title "Token cache keys before logout\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
 title "Logout dev without --delete"
 trace $CLI auth logout --profile dev --force
@@ -42,5 +43,5 @@ trace $CLI auth logout --profile dev --force
 title "Config after logout — both profiles should still exist\n"
 cat "./home/.databrickscfg"
 
-title "Token cache after logout — dev removed, host preserved (shared with staging)\n"
-jq -S '.' "./home/.databricks/token-cache.json"
+title "Token cache keys after logout — dev removed, host preserved (shared with staging)\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"

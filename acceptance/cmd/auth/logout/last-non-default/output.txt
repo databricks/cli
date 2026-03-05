@@ -6,7 +6,7 @@
 ; The only non-default profile
 [only-profile]
 host = https://only.cloud.databricks.com
-token = only-token
+auth_type = databricks-cli
 
 === Delete the only non-default profile
 >>> [CLI] auth logout --profile only-profile --force --delete

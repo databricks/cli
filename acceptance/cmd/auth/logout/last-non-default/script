@@ -7,7 +7,7 @@ cat > "./home/.databrickscfg" <<'EOF'
 ; The only non-default profile
 [only-profile]
 host = https://only.cloud.databricks.com
-token = only-token
+auth_type = databricks-cli
 EOF
 
 title "Initial config\n"

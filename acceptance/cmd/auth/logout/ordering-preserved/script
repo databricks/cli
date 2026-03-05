@@ -4,23 +4,23 @@ cat > "./home/.databrickscfg" <<'EOF'
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
 host = https://default.cloud.databricks.com
+auth_type = databricks-cli
 
 ; First workspace — alpha
 [alpha]
 host = https://alpha.cloud.databricks.com
-token = alpha-token
-cluster_id = alpha-cluster
+auth_type = databricks-cli
 
 ; Second workspace — beta
 [beta]
 host = https://beta.cloud.databricks.com
-token = beta-token
+auth_type = databricks-cli
 
 ; Third workspace — gamma
 [gamma]
-host = https://gamma.cloud.databricks.com
-token = gamma-token
-warehouse_id = gamma-warehouse
+host = https://accounts.cloud.databricks.com
+account_id = account-id
+auth_type  = databricks-cli
 EOF
 
 title "Initial config\n"

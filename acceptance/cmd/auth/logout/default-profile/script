@@ -4,12 +4,12 @@ cat > "./home/.databrickscfg" <<'EOF'
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
 host = https://default.cloud.databricks.com
-token = default-token
+auth_type = databricks-cli
 
 ; Dev workspace
 [dev]
 host = https://dev.cloud.databricks.com
-token = dev-token
+auth_type = databricks-cli
 EOF
 
 title "Initial config\n"
@@ -21,7 +21,7 @@ trace $CLI auth logout --profile DEFAULT --force --delete
 title "Backup file should exist\n"
 assert_backup_exists
 
-title "Config after logout — empty DEFAULT with comment should remain at top\n"
+title "Config after logout — empty DEFAULT with comment should remain at the top of the file\n"
 cat "./home/.databrickscfg"
 
 cp "./home/.databrickscfg" "./out.databrickscfg"

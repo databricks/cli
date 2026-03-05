@@ -1,11 +1,13 @@
 sethome "./home"
 
 cat > "./home/.databrickscfg" <<'EOF'
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
 
 [dev]
-host = https://dev.cloud.databricks.com
-token = dev-token
+host = https://accounts.cloud.databricks.com
+account_id = account-id
+auth_type  = databricks-cli
 EOF
 
 mkdir -p "./home/.databricks"
@@ -17,7 +19,7 @@ cat > "./home/.databricks/token-cache.json" <<'EOF'
       "access_token": "dev-cached-token",
       "token_type": "Bearer"
     },
-    "https://dev.cloud.databricks.com": {
+    "https://accounts.cloud.databricks.com/": {
       "access_token": "dev-host-token",
       "token_type": "Bearer"
     }
@@ -25,8 +27,8 @@ cat > "./home/.databricks/token-cache.json" <<'EOF'
 }
 EOF
 
-title "Token cache before logout\n"
-jq -S '.' "./home/.databricks/token-cache.json"
+title "Token cache keys before logout\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
 title "Logout without --delete"
 trace $CLI auth logout --profile dev --force
@@ -34,5 +36,5 @@ trace $CLI auth logout --profile dev --force
 title "Config after logout — profile should still exist\n"
 cat "./home/.databrickscfg"
 
-title "Token cache after logout — both entries should be removed\n"
-jq -S '.' "./home/.databricks/token-cache.json"
+title "Token cache keys after logout — both entries should be removed\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
