@@ -826,16 +826,20 @@
                 "type": "object",
                 "properties": {
                   "group_name": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v0.292.0"
                   },
                   "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermissionLevel"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermissionLevel",
+                    "x-since-version": "v0.292.0"
                   },
                   "service_principal_name": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v0.292.0"
                   },
                   "user_name": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-since-version": "v0.292.0"
                   }
                 },
                 "additionalProperties": false,
@@ -1733,7 +1737,8 @@
                     "x-since-version": "v0.287.0"
                   },
                   "permissions": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission"
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission",
+                    "x-since-version": "v0.292.0"
                   },
                   "pg_version": {
                     "$ref": "#/$defs/int",
