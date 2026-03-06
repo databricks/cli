@@ -45,11 +45,6 @@ const (
 	sshServerTaskKey         = "start_ssh_server"
 	serverlessEnvironmentKey = "ssh_tunnel_serverless"
 	minEnvironmentVersion    = 4
-
-	VSCodeOption  = "vscode"
-	VSCodeCommand = "code"
-	CursorOption  = "cursor"
-	CursorCommand = "cursor"
 )
 
 type ClientOptions struct {
@@ -117,8 +112,8 @@ func (o *ClientOptions) Validate() error {
 	if o.ConnectionName != "" && !connectionNameRegex.MatchString(o.ConnectionName) {
 		return fmt.Errorf("connection name %q must consist of letters, numbers, dashes, and underscores", o.ConnectionName)
 	}
-	if o.IDE != "" && o.IDE != VSCodeOption && o.IDE != CursorOption {
-		return fmt.Errorf("invalid IDE value: %q, expected %q or %q", o.IDE, VSCodeOption, CursorOption)
+	if o.IDE != "" && o.IDE != vscode.VSCodeOption && o.IDE != vscode.CursorOption {
+		return fmt.Errorf("invalid IDE value: %q, expected %q or %q", o.IDE, vscode.VSCodeOption, vscode.CursorOption)
 	}
 	if o.EnvironmentVersion > 0 && o.EnvironmentVersion < minEnvironmentVersion {
 		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
@@ -212,6 +207,32 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return errors.New("either --cluster or --name must be provided")
 	}
 
+	if opts.IDE != "" && !opts.ProxyMode {
+		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
+			return err
+		}
+	}
+
+	// Check and update IDE settings for serverless mode, where we must set up
+	// desired server ports (or socket connection mode) for the connection to go through
+	// (as the majority of the localhost ports on the remote side are blocked by iptable rules).
+	// Plus the platform (always linux), and extensions (python and jupyter), to make the initial experience smoother.
+	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck && cmdio.IsPromptSupported(ctx) {
+		err := vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName)
+		if err != nil {
+			cmdio.LogString(ctx, fmt.Sprintf("Failed to update IDE settings: %v", err))
+			cmdio.LogString(ctx, vscode.GetManualInstructions(opts.IDE, opts.ConnectionName))
+			cmdio.LogString(ctx, "Use --skip-settings-check to bypass IDE settings verification.")
+			shouldProceed, promptErr := cmdio.AskYesOrNo(ctx, "Do you want to proceed with the connection?")
+			if promptErr != nil {
+				return fmt.Errorf("failed to prompt user: %w", promptErr)
+			}
+			if !shouldProceed {
+				return errors.New("aborted: IDE settings need to be updated manually, user declined to proceed")
+			}
+		}
+	}
+
 	// Only check cluster state for dedicated clusters
 	if !opts.IsServerlessMode() {
 		err := checkClusterState(ctx, client, opts.ClusterID, opts.AutoStartCluster)
@@ -241,26 +262,6 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	}
 	cmdio.LogString(ctx, "Using SSH key: "+keyPath)
 	cmdio.LogString(ctx, fmt.Sprintf("Secrets scope: %s, key name: %s", secretScopeName, opts.ClientPublicKeyName))
-
-	// Check and update IDE settings for serverless mode, where we must set up
-	// desired server ports (or socket connection mode) for the connection to go through
-	// (as the majority of the localhost ports on the remote side are blocked by iptable rules).
-	// Plus the platform (always linux), and extensions (python and jupyter), to make the initial experience smoother.
-	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck && cmdio.IsPromptSupported(ctx) {
-		err = vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName)
-		if err != nil {
-			cmdio.LogString(ctx, fmt.Sprintf("Failed to update IDE settings: %v", err))
-			cmdio.LogString(ctx, vscode.GetManualInstructions(opts.IDE, opts.ConnectionName))
-			cmdio.LogString(ctx, "Use --skip-settings-check to bypass IDE settings verification.")
-			shouldProceed, promptErr := cmdio.AskYesOrNo(ctx, "Do you want to proceed with the connection?")
-			if promptErr != nil {
-				return fmt.Errorf("failed to prompt user: %w", promptErr)
-			}
-			if !shouldProceed {
-				return errors.New("aborted: IDE settings need to be updated manually, user declined to proceed")
-			}
-		}
-	}
 
 	var userName string
 	var serverPort int
@@ -330,7 +331,6 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 	if err != nil {
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
-	databricksUserName := currentUser.UserName
 
 	// Ensure SSH config entry exists
 	configPath, err := sshconfig.GetMainConfigPath(ctx)
@@ -343,23 +343,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 		return fmt.Errorf("failed to ensure SSH config entry: %w", err)
 	}
 
-	ideCommand := VSCodeCommand
-	if opts.IDE == CursorOption {
-		ideCommand = CursorCommand
-	}
-
-	// Construct the remote SSH URI
-	// Format: ssh-remote+<server_user_name>@<connection_name> /Workspace/Users/<databricks_user_name>/
-	remoteURI := fmt.Sprintf("ssh-remote+%s@%s", userName, connectionName)
-	remotePath := fmt.Sprintf("/Workspace/Users/%s/", databricksUserName)
-
-	cmdio.LogString(ctx, fmt.Sprintf("Launching %s with remote URI: %s and path: %s", opts.IDE, remoteURI, remotePath))
-
-	ideCmd := exec.CommandContext(ctx, ideCommand, "--remote", remoteURI, remotePath)
-	ideCmd.Stdout = os.Stdout
-	ideCmd.Stderr = os.Stderr
-
-	return ideCmd.Run()
+	return vscode.LaunchIDE(ctx, opts.IDE, connectionName, userName, currentUser.UserName)
 }
 
 func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {

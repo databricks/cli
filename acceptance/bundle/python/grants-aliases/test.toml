@@ -1,0 +1,7 @@
+Local = true
+Cloud = false # tests don't interact with APIs
+
+[EnvMatrix]
+UV_ARGS = [
+    "--with-requirements requirements-latest.txt --no-cache",
+]

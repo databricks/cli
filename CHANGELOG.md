@@ -1,5 +1,11 @@
 # Version changelog
 
+## Release v0.293.0 (2026-03-06)
+
+### Bundles
+* direct: fix drift detection for jobs with >100 tasks by paginating all tasks when reading job state ([#4675](https://github.com/databricks/cli/pull/4675))
+
+
 ## Release v0.292.0 (2026-03-05)
 
 ### Bundles

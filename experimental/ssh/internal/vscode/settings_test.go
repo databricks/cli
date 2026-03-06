@@ -55,7 +55,7 @@ func TestGetDefaultSettingsPath_VSCode_Linux(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/home/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
+	path, err := getDefaultSettingsPath(ctx, VSCodeOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/home/testuser/.config/Code/User/settings.json", path)
 }
@@ -68,7 +68,7 @@ func TestGetDefaultSettingsPath_Cursor_Linux(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/home/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, cursorIDE)
+	path, err := getDefaultSettingsPath(ctx, CursorOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/home/testuser/.config/Cursor/User/settings.json", path)
 }
@@ -81,7 +81,7 @@ func TestGetDefaultSettingsPath_VSCode_Darwin(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/Users/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
+	path, err := getDefaultSettingsPath(ctx, VSCodeOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/Users/testuser/Library/Application Support/Code/User/settings.json", path)
 }
@@ -94,7 +94,7 @@ func TestGetDefaultSettingsPath_Cursor_Darwin(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/Users/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, cursorIDE)
+	path, err := getDefaultSettingsPath(ctx, CursorOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/Users/testuser/Library/Application Support/Cursor/User/settings.json", path)
 }
@@ -107,7 +107,7 @@ func TestGetDefaultSettingsPath_VSCode_Windows(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "APPDATA", `C:\Users\testuser\AppData\Roaming`)
 
-	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
+	path, err := getDefaultSettingsPath(ctx, VSCodeOption)
 	require.NoError(t, err)
 	assert.Equal(t, `C:\Users\testuser\AppData\Roaming\Code\User\settings.json`, path)
 }
@@ -120,7 +120,7 @@ func TestGetDefaultSettingsPath_Cursor_Windows(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "APPDATA", `C:\Users\testuser\AppData\Roaming`)
 
-	path, err := getDefaultSettingsPath(ctx, cursorIDE)
+	path, err := getDefaultSettingsPath(ctx, CursorOption)
 	require.NoError(t, err)
 	assert.Equal(t, `C:\Users\testuser\AppData\Roaming\Cursor\User\settings.json`, path)
 }
@@ -536,7 +536,7 @@ func TestMissingSettings_IsEmpty(t *testing.T) {
 }
 
 func TestGetManualInstructions_VSCode(t *testing.T) {
-	instructions := GetManualInstructions(vscodeIDE, "test-conn")
+	instructions := GetManualInstructions(VSCodeOption, "test-conn")
 
 	assert.Contains(t, instructions, "VS Code")
 	assert.Contains(t, instructions, "test-conn")
