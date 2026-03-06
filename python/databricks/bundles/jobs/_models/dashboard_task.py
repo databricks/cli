@@ -17,6 +17,9 @@ class DashboardTask:
     """
 
     dashboard_id: VariableOrOptional[str] = None
+    """
+    The identifier of the dashboard to refresh.
+    """
 
     filters: VariableOrDict[str] = field(default_factory=dict)
     """
@@ -31,6 +34,9 @@ class DashboardTask:
     """
 
     subscription: VariableOrOptional[Subscription] = None
+    """
+    Optional: subscription configuration for sending the dashboard snapshot.
+    """
 
     warehouse_id: VariableOrOptional[str] = None
     """
@@ -50,6 +56,9 @@ class DashboardTaskDict(TypedDict, total=False):
     """"""
 
     dashboard_id: VariableOrOptional[str]
+    """
+    The identifier of the dashboard to refresh.
+    """
 
     filters: VariableOrDict[str]
     """
@@ -64,6 +73,9 @@ class DashboardTaskDict(TypedDict, total=False):
     """
 
     subscription: VariableOrOptional[SubscriptionParam]
+    """
+    Optional: subscription configuration for sending the dashboard snapshot.
+    """
 
     warehouse_id: VariableOrOptional[str]
     """

@@ -499,66 +499,6 @@ resources.catalogs.*:
   "storage_root":
     "description": |-
       PLACEHOLDER
-resources.catalogs.*.grants.*:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
-    "description": |-
-      PLACEHOLDER
-resources.catalogs.*.grants.*.privileges.*:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        CREATE_CONNECTION
-      - |-
-        CREATE_EXTERNAL_LOCATION
-      - |-
-        CREATE_EXTERNAL_TABLE
-      - |-
-        CREATE_EXTERNAL_VOLUME
-      - |-
-        CREATE_FOREIGN_CATALOG
-      - |-
-        CREATE_FUNCTION
-      - |-
-        CREATE_MANAGED_STORAGE
-      - |-
-        CREATE_MATERIALIZED_VIEW
-      - |-
-        CREATE_MODEL
-      - |-
-        CREATE_SCHEMA
-      - |-
-        CREATE_STORAGE_CREDENTIAL
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        EXECUTE
-      - |-
-        MANAGE
-      - |-
-        MODIFY
-      - |-
-        READ_VOLUME
-      - |-
-        REFRESH
-      - |-
-        SELECT
-      - |-
-        USE_CATALOG
-      - |-
-        USE_CONNECTION
-      - |-
-        USE_SCHEMA
-      - |-
-        WRITE_VOLUME
 resources.clusters.*:
   "_":
     "markdown_description": |-
@@ -787,36 +727,6 @@ resources.external_locations.*:
   "url":
     "description": |-
       PLACEHOLDER
-resources.external_locations.*.grants.*:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
-    "description": |-
-      PLACEHOLDER
-resources.external_locations.*.grants.*.privileges.*:
-  "_":
-    "description": |-
-      Privilege to grant on an external location
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        CREATE_EXTERNAL_TABLE
-      - |-
-        CREATE_EXTERNAL_VOLUME
-      - |-
-        CREATE_MANAGED_STORAGE
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        MANAGE
-      - |-
-        READ_FILES
-      - |-
-        WRITE_FILES
 resources.jobs.*:
   "_":
     "markdown_description": |-
@@ -1144,13 +1054,6 @@ resources.registered_models.*:
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-resources.registered_models.*.grants.*:
-  "principal":
-    "description": |-
-      The name of the principal that will be granted privileges
-  "privileges":
-    "description": |-
-      The privileges to grant to the specified entity
 resources.schemas.*:
   "_":
     "markdown_description": |-
@@ -1164,48 +1067,6 @@ resources.schemas.*:
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-resources.schemas.*.grants.*:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
-    "description": |-
-      PLACEHOLDER
-resources.schemas.*.grants.*.privileges.*:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        CREATE_FUNCTION
-      - |-
-        CREATE_MATERIALIZED_VIEW
-      - |-
-        CREATE_MODEL
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        EXECUTE
-      - |-
-        EXTERNAL_USE_SCHEMA
-      - |-
-        MANAGE
-      - |-
-        MODIFY
-      - |-
-        READ_VOLUME
-      - |-
-        REFRESH
-      - |-
-        SELECT
-      - |-
-        USE_SCHEMA
-      - |-
-        WRITE_VOLUME
 resources.secret_scopes.*:
   "backend_type":
     "description": |-
@@ -1340,26 +1201,6 @@ resources.volumes.*:
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-resources.volumes.*.grants.*:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
-    "description": |-
-      PLACEHOLDER
-resources.volumes.*.grants.*.privileges.*:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        MANAGE
-      - |-
-        READ_VOLUME
-      - |-
-        WRITE_VOLUME
 root:
   "artifacts":
     "description": |-
