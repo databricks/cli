@@ -262,7 +262,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			}
 		}
 
-		deploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(true))
+		deploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(true))
 		if logdiag.HasError(ctx) {
 			logdiag.LogError(ctx, errors.New("migration failed; ensure you have done full deploy before the migration"))
 			return root.ErrAlreadyPrinted
