@@ -45,7 +45,7 @@ func TestProfiles(t *testing.T) {
 }
 
 func TestProfilesDefaultMarker(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
 

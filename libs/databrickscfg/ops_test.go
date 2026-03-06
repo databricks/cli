@@ -231,7 +231,7 @@ func TestGetDefaultProfile(t *testing.T) {
 			err := os.WriteFile(path, []byte(tc.content), 0o600)
 			require.NoError(t, err)
 
-			got, err := GetDefaultProfile(context.Background(), path)
+			got, err := GetDefaultProfile(t.Context(), path)
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, got)
 		})
@@ -240,7 +240,57 @@ func TestGetDefaultProfile(t *testing.T) {
 
 func TestGetDefaultProfile_NoFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "databrickscfg")
-	got, err := GetDefaultProfile(context.Background(), path)
+	got, err := GetDefaultProfile(t.Context(), path)
+	require.NoError(t, err)
+	assert.Equal(t, "", got)
+	// Verify the file was NOT created as a side effect.
+	assert.NoFileExists(t, path)
+}
+
+func TestGetConfiguredDefaultProfile(t *testing.T) {
+	testCases := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{
+			name:    "explicit default_profile setting",
+			content: "[__databricks-settings__]\ndefault_profile = my-workspace\n\n[my-workspace]\nhost = https://abc\n",
+			want:    "my-workspace",
+		},
+		{
+			name:    "single profile fallback is ignored",
+			content: "[profile1]\nhost = https://abc\n",
+			want:    "",
+		},
+		{
+			name:    "DEFAULT fallback is ignored",
+			content: "[DEFAULT]\nhost = https://abc\n\n[profile2]\nhost = https://def\n",
+			want:    "",
+		},
+		{
+			name:    "settings section without key",
+			content: "[__databricks-settings__]\n\n[profile1]\nhost = https://abc\n",
+			want:    "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "databrickscfg")
+			err := os.WriteFile(path, []byte(tc.content), 0o600)
+			require.NoError(t, err)
+
+			got, err := GetConfiguredDefaultProfile(t.Context(), path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestGetConfiguredDefaultProfile_NoFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	got, err := GetConfiguredDefaultProfile(t.Context(), path)
 	require.NoError(t, err)
 	assert.Equal(t, "", got)
 	// Verify the file was NOT created as a side effect.
@@ -276,7 +326,7 @@ func TestSetDefaultProfile(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			path := filepath.Join(t.TempDir(), "databrickscfg")
 			err := os.WriteFile(path, []byte(tc.initial), 0o600)
 			require.NoError(t, err)
@@ -292,7 +342,7 @@ func TestSetDefaultProfile(t *testing.T) {
 }
 
 func TestSetDefaultProfile_RoundTrip(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 
 	// Start with a profile.

@@ -183,7 +183,7 @@ func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) 
 		profile := cfg.Profile
 		if profile == "" {
 			profile = "default"
-			if resolved, err := databrickscfg.GetDefaultProfile(cmd.Context(), cfg.ConfigFile); err == nil && resolved != "" {
+			if resolved, err := databrickscfg.GetConfiguredDefaultProfile(cmd.Context(), cfg.ConfigFile); err == nil && resolved != "" {
 				profile = fmt.Sprintf("default (%s)", resolved)
 			}
 		}

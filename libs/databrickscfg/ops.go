@@ -20,6 +20,34 @@ const defaultComment = "The profile defined in the DEFAULT section is to be used
 
 const databricksSettingsSection = "__databricks-settings__"
 
+// GetConfiguredDefaultProfile returns the explicitly configured default profile
+// by loading the config file at configFilePath.
+// Returns "" if the file doesn't exist or default_profile is not set.
+func GetConfiguredDefaultProfile(ctx context.Context, configFilePath string) (string, error) {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		return "", err
+	}
+	if configFile == nil {
+		return "", nil
+	}
+	return GetConfiguredDefaultProfileFrom(configFile), nil
+}
+
+// GetConfiguredDefaultProfileFrom returns the explicit default profile from
+// [__databricks-settings__].default_profile, or "" when it is not set.
+func GetConfiguredDefaultProfileFrom(configFile *config.File) string {
+	section, err := configFile.GetSection(databricksSettingsSection)
+	if err != nil {
+		return ""
+	}
+	key, err := section.GetKey("default_profile")
+	if err != nil {
+		return ""
+	}
+	return key.String()
+}
+
 // GetDefaultProfile returns the name of the default profile by loading the
 // config file at configFilePath. Returns "" if the file doesn't exist.
 // See GetDefaultProfileFrom for resolution order.
@@ -68,18 +96,14 @@ func resolveConfigFilePath(ctx context.Context, filename string) (string, error)
 
 // GetDefaultProfileFrom returns the name of the default profile from an
 // already-loaded config file. It uses the following resolution order:
-//  1. Explicit default_profile key in [databricks-cli-settings].
+//  1. Explicit default_profile key in [__databricks-settings__].
 //  2. If there is exactly one profile in the file, return it.
 //  3. If a profile named DEFAULT exists, return it.
 //  4. Empty string (no default).
 func GetDefaultProfileFrom(configFile *config.File) string {
 	// 1. Check for explicit default_profile setting.
-	section, err := configFile.GetSection(databricksSettingsSection)
-	if err == nil {
-		key, err := section.GetKey("default_profile")
-		if err == nil && key.String() != "" {
-			return key.String()
-		}
+	if profile := GetConfiguredDefaultProfileFrom(configFile); profile != "" {
+		return profile
 	}
 
 	// Collect profile sections (sections that have a "host" key, excluding
@@ -112,7 +136,7 @@ func GetDefaultProfileFrom(configFile *config.File) string {
 	return ""
 }
 
-// SetDefaultProfile writes the default_profile key to the [databricks-cli-settings] section.
+// SetDefaultProfile writes the default_profile key to the [__databricks-settings__] section.
 func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
 	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
 	if err != nil {
