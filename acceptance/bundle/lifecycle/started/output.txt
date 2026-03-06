@@ -1,0 +1,5 @@
+Error: lifecycle.started is not supported for resources.jobs.my_job; it is only supported for apps, clusters, and sql_warehouses
+  in databricks.yml:9:18
+
+
+Exit code: 1

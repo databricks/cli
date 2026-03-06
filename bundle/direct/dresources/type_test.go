@@ -16,8 +16,16 @@ import (
 // These are known issues that should be fixed. If a field listed here is found in RemoteType,
 // the test fails to ensure the entry is removed from this map.
 var knownMissingInRemoteType = map[string][]string{
+	// source_code_path, config, git_source, and started are bundle-specific deployment fields not present in the remote App state.
+	"apps": {
+		"config",
+		"git_source",
+		"source_code_path",
+		"started",
+	},
 	"clusters": {
 		"apply_policy_default_values",
+		"started",
 	},
 	"external_locations": {
 		"skip_validation",
@@ -32,6 +40,9 @@ var knownMissingInRemoteType = map[string][]string{
 		"rate_limits",
 		"route_optimized",
 		"tags",
+	},
+	"sql_warehouses": {
+		"started",
 	},
 	"quality_monitors": {
 		"skip_builtin_dashboard",
@@ -89,11 +100,6 @@ var commonMissingInStateType = []string{
 var knownMissingInStateType = map[string][]string{
 	"alerts": {
 		"file_path",
-	},
-	"apps": {
-		"config",
-		"source_code_path",
-		"git_source",
 	},
 	"dashboards": {
 		"file_path",
