@@ -9,6 +9,11 @@ __all__ = [
     "PrivilegeParam",
     "Schema",
     "SchemaDict",
+    "SchemaGrant",
+    "SchemaGrantDict",
+    "SchemaGrantParam",
+    "SchemaGrantPrivilege",
+    "SchemaGrantPrivilegeParam",
     "SchemaParam",
 ]
 
@@ -25,3 +30,9 @@ from databricks.bundles.schemas._models.privilege_assignment import (
     PrivilegeAssignmentParam,
 )
 from databricks.bundles.schemas._models.schema import Schema, SchemaDict, SchemaParam
+
+SchemaGrant = PrivilegeAssignment
+SchemaGrantDict = PrivilegeAssignmentDict
+SchemaGrantParam = PrivilegeAssignmentParam
+SchemaGrantPrivilege = Privilege
+SchemaGrantPrivilegeParam = PrivilegeParam
