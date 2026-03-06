@@ -128,7 +128,7 @@ tables, and large results open an interactive table browser.`,
 
 			switch selectQueryOutputMode(root.OutputType(cmd), stdoutInteractive, promptSupported, len(rows)) {
 			case queryOutputModeJSON:
-				return renderJSON(cmd.OutOrStdout(), columns, rows)
+				return renderJSON(ctx, cmd.OutOrStdout(), columns, rows)
 			case queryOutputModeStaticTable:
 				return renderStaticTable(cmd.OutOrStdout(), columns, rows)
 			default:

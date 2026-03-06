@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,29 +40,32 @@ func TestExtractColumns(t *testing.T) {
 }
 
 func TestRenderJSON(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
 	var buf bytes.Buffer
 	columns := []string{"id", "name"}
 	rows := [][]string{{"1", "alice"}, {"2", "bob"}}
 
-	err := renderJSON(&buf, columns, rows)
+	err := renderJSON(ctx, &buf, columns, rows)
 	require.NoError(t, err)
 
 	output := buf.String()
 	assert.Contains(t, output, `"alice"`)
 	assert.Contains(t, output, `"bob"`)
-	assert.Contains(t, output, "Row count: 2")
+	// Row count goes to stderr, not stdout. Stdout should be valid JSON.
+	assert.NotContains(t, output, "Row count")
 }
 
 func TestRenderJSONNoRows(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
 	var buf bytes.Buffer
 	columns := []string{"id"}
 	var rows [][]string
 
-	err := renderJSON(&buf, columns, rows)
+	err := renderJSON(ctx, &buf, columns, rows)
 	require.NoError(t, err)
 
 	output := buf.String()
-	assert.Contains(t, output, "Row count: 0")
+	assert.NotContains(t, output, "Row count")
 }
 
 func TestRenderStaticTable(t *testing.T) {
