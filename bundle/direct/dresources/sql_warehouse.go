@@ -54,6 +54,14 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateW
 	if err != nil {
 		return "", nil, err
 	}
+	// With lifecycle.started=true, wait for the warehouse to reach the running state.
+	if lifecycleStartedFromContext(ctx) {
+		warehouse, err := waiter.Get()
+		if err != nil {
+			return "", nil, err
+		}
+		return warehouse.Id, warehouse, nil
+	}
 	return waiter.Id, nil, nil
 }
 

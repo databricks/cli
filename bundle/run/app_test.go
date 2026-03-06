@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -294,11 +295,7 @@ func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 		},
 	}
 
-	runner := &appRunner{
-		app: app,
-	}
-
-	deployment := runner.buildAppDeployment()
+	deployment := appdeploy.BuildDeployment(app.SourceCodePath, app.Config, app.GitSource)
 
 	require.Equal(t, apps.AppDeploymentModeSnapshot, deployment.Mode)
 	require.Equal(t, "/path/to/app", deployment.SourceCodePath)
