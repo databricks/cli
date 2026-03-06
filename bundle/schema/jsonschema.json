@@ -83,6 +83,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "parent_path": {
@@ -159,7 +160,21 @@
                 ]
               },
               "resources.AlertPermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_EDIT",
+                      "CAN_MANAGE",
+                      "CAN_READ",
+                      "CAN_RUN"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.App": {
                 "oneOf": [
@@ -190,6 +205,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -306,7 +322,19 @@
                 ]
               },
               "resources.AppPermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_MANAGE",
+                      "CAN_USE"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.Catalog": {
                 "oneOf": [
@@ -325,6 +353,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.CatalogGrant"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -512,6 +541,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "node_type_id": {
@@ -574,7 +604,8 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The cluster resource defines an [all-purpose cluster](https://docs.databricks.com/api/workspace/clusters/create)."
                   },
                   {
                     "type": "string",
@@ -612,7 +643,20 @@
                 ]
               },
               "resources.ClusterPermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_MANAGE",
+                      "CAN_RESTART",
+                      "CAN_ATTACH_TO"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.Dashboard": {
                 "oneOf": [
@@ -620,9 +664,11 @@
                     "type": "object",
                     "properties": {
                       "create_time": {
+                        "description": "The timestamp of when the dashboard was created.",
                         "$ref": "#/$defs/string"
                       },
                       "dashboard_id": {
+                        "description": "UUID identifying the dashboard.",
                         "$ref": "#/$defs/string"
                       },
                       "dataset_catalog": {
@@ -634,43 +680,53 @@
                         "$ref": "#/$defs/string"
                       },
                       "display_name": {
+                        "description": "The display name of the dashboard.",
                         "$ref": "#/$defs/string"
                       },
                       "embed_credentials": {
                         "$ref": "#/$defs/bool"
                       },
                       "etag": {
+                        "description": "The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard\nhas not been modified since the last read.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "file_path": {
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "lifecycle_state": {
+                        "description": "The state of the dashboard resource. Used for tracking trashed status.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/dashboards.LifecycleState"
                       },
                       "parent_path": {
+                        "description": "The workspace path of the folder containing the dashboard. Includes leading slash and no\ntrailing slash.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "path": {
+                        "description": "The workspace path of the dashboard asset, including the file name.\nExported dashboards always have the file extension `.lvdash.json`.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DashboardPermission"
                       },
                       "serialized_dashboard": {
+                        "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
                         "$ref": "#/$defs/interface"
                       },
                       "update_time": {
+                        "description": "The timestamp of when the dashboard was last updated by the user.\nThis field is excluded in List Dashboards responses.",
                         "$ref": "#/$defs/string"
                       },
                       "warehouse_id": {
+                        "description": "The warehouse ID used to run the dashboard.",
                         "$ref": "#/$defs/string"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The dashboard resource allows you to manage [AI/BI dashboards](https://docs.databricks.com/api/workspace/lakeview/create) in a bundle. For information about AI/BI dashboards, see [link](https://docs.databricks.com/dashboards/index.html)."
                   },
                   {
                     "type": "string",
@@ -708,7 +764,21 @@
                 ]
               },
               "resources.DashboardPermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_READ",
+                      "CAN_RUN",
+                      "CAN_EDIT",
+                      "CAN_MANAGE"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.DatabaseCatalog": {
                 "oneOf": [
@@ -727,6 +797,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -770,6 +841,7 @@
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -841,7 +913,20 @@
                 ]
               },
               "resources.DatabaseInstancePermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_CREATE",
+                      "CAN_USE",
+                      "CAN_MANAGE"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.DatabaseProjectPermission": {
                 "oneOf": [
@@ -873,7 +958,19 @@
                 ]
               },
               "resources.DatabaseProjectPermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_USE",
+                      "CAN_MANAGE"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.ExternalLocation": {
                 "oneOf": [
@@ -911,6 +1008,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ExternalLocationGrant"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -968,7 +1066,27 @@
                 ]
               },
               "resources.ExternalLocationGrantPrivilege": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "description": "Privilege to grant on an external location",
+                    "enum": [
+                      "ALL_PRIVILEGES",
+                      "CREATE_EXTERNAL_TABLE",
+                      "CREATE_EXTERNAL_VOLUME",
+                      "CREATE_MANAGED_STORAGE",
+                      "CREATE_TABLE",
+                      "CREATE_VOLUME",
+                      "MANAGE",
+                      "READ_FILES",
+                      "WRITE_FILES"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.Grant": {
                 "oneOf": [
@@ -1034,6 +1152,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobCluster"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "max_concurrent_runs": {
@@ -1098,7 +1217,8 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The job resource allows you to define [jobs and their corresponding tasks](https://docs.databricks.com/api/workspace/jobs/create) in your bundle. For information about jobs, see [link](https://docs.databricks.com/jobs/index.html). For a tutorial that uses a Databricks Asset Bundles template to create a job, see [link](https://docs.databricks.com/dev-tools/bundles/jobs-tutorial.html)."
                   },
                   {
                     "type": "string",
@@ -1136,7 +1256,21 @@
                 ]
               },
               "resources.JobPermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_MANAGE",
+                      "CAN_MANAGE_RUN",
+                      "CAN_VIEW",
+                      "IS_OWNER"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.Lifecycle": {
                 "oneOf": [
@@ -1166,6 +1300,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1183,7 +1318,8 @@
                     "additionalProperties": false,
                     "required": [
                       "name"
-                    ]
+                    ],
+                    "markdownDescription": "The experiment resource allows you to define [MLflow experiments](https://docs.databricks.com/api/workspace/experiments/createexperiment) in a bundle. For information about MLflow experiments, see [link](https://docs.databricks.com/mlflow/experiments.html)."
                   },
                   {
                     "type": "string",
@@ -1221,7 +1357,20 @@
                 ]
               },
               "resources.MlflowExperimentPermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_MANAGE",
+                      "CAN_EDIT",
+                      "CAN_READ"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.MlflowModel": {
                 "oneOf": [
@@ -1233,6 +1382,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1250,7 +1400,8 @@
                     "additionalProperties": false,
                     "required": [
                       "name"
-                    ]
+                    ],
+                    "markdownDescription": "The model resource allows you to define [legacy models](https://docs.databricks.com/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use Unity Catalog [registered models](https://docs.databricks.com/dev-tools/bundles/reference.html#registered-model) instead."
                   },
                   {
                     "type": "string",
@@ -1288,7 +1439,22 @@
                 ]
               },
               "resources.MlflowModelPermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_EDIT",
+                      "CAN_MANAGE",
+                      "CAN_MANAGE_STAGING_VERSIONS",
+                      "CAN_MANAGE_PRODUCTION_VERSIONS",
+                      "CAN_READ"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.ModelServingEndpoint": {
                 "oneOf": [
@@ -1315,6 +1481,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EmailNotifications"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1342,7 +1509,8 @@
                     "additionalProperties": false,
                     "required": [
                       "name"
-                    ]
+                    ],
+                    "markdownDescription": "The model_serving_endpoint resource allows you to define [model serving endpoints](https://docs.databricks.com/api/workspace/servingendpoints/create). See [link](https://docs.databricks.com/machine-learning/model-serving/manage-serving-endpoints.html)."
                   },
                   {
                     "type": "string",
@@ -1380,7 +1548,20 @@
                 ]
               },
               "resources.ModelServingEndpointPermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_MANAGE",
+                      "CAN_QUERY",
+                      "CAN_VIEW"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.Permission": {
                 "oneOf": [
@@ -1487,6 +1668,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1553,7 +1735,8 @@
                         "doNotSuggest": true
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The pipeline resource allows you to create Delta Live Tables [pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/dlt/index.html). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
                   },
                   {
                     "type": "string",
@@ -1591,7 +1774,21 @@
                 ]
               },
               "resources.PipelinePermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_MANAGE",
+                      "IS_OWNER",
+                      "CAN_RUN",
+                      "CAN_VIEW"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.PostgresBranch": {
                 "oneOf": [
@@ -1602,30 +1799,38 @@
                         "$ref": "#/$defs/string"
                       },
                       "expire_time": {
+                        "description": "Absolute expiration timestamp. When set, the branch will expire at this time.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
                       "is_protected": {
+                        "description": "When set to true, protects the branch from deletion and reset. Associated compute endpoints and the project cannot be deleted while the branch is protected.",
                         "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "no_expiry": {
+                        "description": "Explicitly disable expiration. When set to true, the branch will not expire.\nIf set to false, the request is invalid; provide either ttl or expire_time instead.",
                         "$ref": "#/$defs/bool"
                       },
                       "parent": {
                         "$ref": "#/$defs/string"
                       },
                       "source_branch": {
+                        "description": "The name of the source branch from which this branch was created (data lineage for point-in-time recovery).\nIf not specified, defaults to the project's default branch.\nFormat: projects/{project_id}/branches/{branch_id}",
                         "$ref": "#/$defs/string"
                       },
                       "source_branch_lsn": {
+                        "description": "The Log Sequence Number (LSN) on the source branch from which this branch was created.",
                         "$ref": "#/$defs/string"
                       },
                       "source_branch_time": {
+                        "description": "The point in time on the source branch from which this branch was created.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       },
                       "ttl": {
+                        "description": "Relative time-to-live duration. When set, the branch will expire at creation_time + ttl.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       }
                     },
@@ -1647,36 +1852,47 @@
                     "type": "object",
                     "properties": {
                       "autoscaling_limit_max_cu": {
+                        "description": "The maximum number of Compute Units. Minimum value is 0.5.",
                         "$ref": "#/$defs/float64"
                       },
                       "autoscaling_limit_min_cu": {
+                        "description": "The minimum number of Compute Units. Minimum value is 0.5.",
                         "$ref": "#/$defs/float64"
                       },
                       "disabled": {
+                        "description": "Whether to restrict connections to the compute endpoint.\nEnabling this option schedules a suspend compute operation.\nA disabled compute endpoint cannot be enabled by a connection or\nconsole action.",
                         "$ref": "#/$defs/bool"
                       },
                       "endpoint_id": {
                         "$ref": "#/$defs/string"
                       },
                       "endpoint_type": {
+                        "description": "The endpoint type. A branch can only have one READ_WRITE endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointType"
                       },
                       "group": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec"
+                        "description": "Settings for HA configuration of the endpoint",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "no_suspension": {
+                        "description": "When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.",
                         "$ref": "#/$defs/bool"
                       },
                       "parent": {
                         "$ref": "#/$defs/string"
                       },
                       "settings": {
+                        "description": "A collection of settings for a compute endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings"
                       },
                       "suspend_timeout_duration": {
+                        "description": "Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       }
                     },
@@ -1699,27 +1915,38 @@
                     "type": "object",
                     "properties": {
                       "budget_policy_id": {
-                        "$ref": "#/$defs/string"
+                        "description": "The desired budget policy to associate with the project.\nSee status.budget_policy_id for the policy that is actually applied to the project.",
+                        "$ref": "#/$defs/string",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "custom_tags": {
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag"
+                        "description": "Custom tags associated with the project.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "default_endpoint_settings": {
+                        "description": "A collection of settings for a compute endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
                       },
                       "display_name": {
+                        "description": "Human-readable project name. Length should be between 1 and 256 characters.",
                         "$ref": "#/$defs/string"
                       },
                       "history_retention_duration": {
+                        "description": "The number of seconds to retain the shared history for point in time recovery for all branches in this project. Value should be between 0s and 2592000s (up to 30 days).",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission"
                       },
                       "pg_version": {
+                        "description": "The major Postgres version number. Supported versions are 16 and 17.",
                         "$ref": "#/$defs/int"
                       },
                       "project_id": {
@@ -1768,6 +1995,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "notifications": {
@@ -1811,7 +2039,8 @@
                       "table_name",
                       "assets_dir",
                       "output_schema_name"
-                    ]
+                    ],
+                    "markdownDescription": "The quality_monitor resource allows you to define a Unity Catalog [table monitor](https://docs.databricks.com/api/workspace/qualitymonitors/create). For information about monitors, see [link](https://docs.databricks.com/machine-learning/model-serving/monitor-diagnose-endpoints.html)."
                   },
                   {
                     "type": "string",
@@ -1856,6 +2085,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Grant"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "metastore_id": {
@@ -1887,7 +2117,8 @@
                         "$ref": "#/$defs/string"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "markdownDescription": "The registered model resource allows you to define models in Unity Catalog. For information about Unity Catalog [registered models](https://docs.databricks.com/api/workspace/registeredmodels/create), see [link](https://docs.databricks.com/machine-learning/manage-model-lifecycle/index.html)."
                   },
                   {
                     "type": "string",
@@ -1912,6 +2143,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrant"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -1931,7 +2163,8 @@
                     "required": [
                       "catalog_name",
                       "name"
-                    ]
+                    ],
+                    "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
                   },
                   {
                     "type": "string",
@@ -1964,7 +2197,33 @@
                 ]
               },
               "resources.SchemaGrantPrivilege": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "ALL_PRIVILEGES",
+                      "APPLY_TAG",
+                      "CREATE_FUNCTION",
+                      "CREATE_MATERIALIZED_VIEW",
+                      "CREATE_MODEL",
+                      "CREATE_TABLE",
+                      "CREATE_VOLUME",
+                      "EXECUTE",
+                      "EXTERNAL_USE_SCHEMA",
+                      "MANAGE",
+                      "MODIFY",
+                      "READ_VOLUME",
+                      "REFRESH",
+                      "SELECT",
+                      "USE_SCHEMA",
+                      "WRITE_VOLUME"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.SecretScope": {
                 "oneOf": [
@@ -2037,7 +2296,20 @@
                 ]
               },
               "resources.SecretScopePermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "READ",
+                      "WRITE",
+                      "MANAGE"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.SqlWarehouse": {
                 "oneOf": [
@@ -2054,7 +2326,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Channel"
                       },
                       "cluster_size": {
-                        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large",
+                        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large",
                         "$ref": "#/$defs/string"
                       },
                       "creator_name": {
@@ -2062,7 +2334,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "enable_photon": {
-                        "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to false.",
+                        "description": "Configures whether the warehouse should use Photon optimized clusters.\n\nDefaults to true.",
                         "$ref": "#/$defs/bool"
                       },
                       "enable_serverless_compute": {
@@ -2076,6 +2348,7 @@
                         "deprecated": true
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "max_num_clusters": {
@@ -2144,7 +2417,21 @@
                 ]
               },
               "resources.SqlWarehousePermissionLevel": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "CAN_MANAGE",
+                      "CAN_USE",
+                      "CAN_MONITOR",
+                      "CAN_VIEW"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.SyncedDatabaseTable": {
                 "oneOf": [
@@ -2157,6 +2444,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "logical_database_name": {
@@ -2200,6 +2488,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VolumeGrant"
                       },
                       "lifecycle": {
+                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
@@ -2224,7 +2513,8 @@
                       "catalog_name",
                       "name",
                       "schema_name"
-                    ]
+                    ],
+                    "markdownDescription": "The volume resource type allows you to define and create Unity Catalog [volumes](https://docs.databricks.com/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:\n\n- A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Databricks Asset Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.\n\n- Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [custom-presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#custom-presets)."
                   },
                   {
                     "type": "string",
@@ -2257,7 +2547,22 @@
                 ]
               },
               "resources.VolumeGrantPrivilege": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "ALL_PRIVILEGES",
+                      "APPLY_TAG",
+                      "MANAGE",
+                      "READ_VOLUME",
+                      "WRITE_VOLUME"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "variable.Lookup": {
                 "oneOf": [
@@ -3938,7 +4243,7 @@
                   "type": "object",
                   "properties": {
                     "granularities": {
-                      "description": "List of granularities to use when aggregating data into time windows based on their timestamp.",
+                      "description": "Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "label_col": {
@@ -4099,7 +4404,7 @@
                   "description": "Time series analysis configuration.",
                   "properties": {
                     "granularities": {
-                      "description": "Granularities for aggregating data into time windows based on their timestamp. Currently the following static\ngranularities are supported:\n{``\\\"5 minutes\\\"``, ``\\\"30 minutes\\\"``, ``\\\"1 hour\\\"``, ``\\\"1 day\\\"``, ``\\\"\\u003cn\\u003e week(s)\\\"``, ``\\\"1 month\\\"``, ``\\\"1 year\\\"``}.",
+                      "description": "Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "timestamp_col": {
@@ -4184,9 +4489,10 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "SSE algorithm to use for encrypting S3 objects",
                   "enum": [
-                    "AWS_SSE_S3",
-                    "AWS_SSE_KMS"
+                    "AWS_SSE_KMS",
+                    "AWS_SSE_S3"
                   ]
                 },
                 {
@@ -4687,6 +4993,7 @@
                   "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip dependencies are supported.",
                   "properties": {
                     "base_environment": {
+                      "description": "The `base_environment` key refers to an `env.yaml` file that specifies an environment version and a collection of dependencies required for the environment setup.\nThis `env.yaml` file may itself include a `base_environment` reference pointing to another `env_1.yaml` file. However, when used as a base environment, `env_1.yaml` (or further nested references) will not be processed or included in the final environment, meaning that the resolution of `base_environment` references is not recursive.",
                       "$ref": "#/$defs/string"
                     },
                     "client": {
@@ -4696,7 +5003,7 @@
                       "deprecated": true
                     },
                     "dependencies": {
-                      "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a valid pip requirements file line per https://pip.pypa.io/en/stable/reference/requirements-file-format/.\nAllowed dependencies include a requirement specifier, an archive URL, a local project path (such as WSFS or UC Volumes in Databricks), or a VCS project URL.",
+                      "description": "List of pip dependencies, as supported by the version of pip in this environment.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "environment_version": {
@@ -4823,7 +5130,7 @@
                   "description": "Config for an individual init script\nNext ID: 11",
                   "properties": {
                     "abfss": {
-                      "description": "destination needs to be provided, e.g.\n`abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e`",
+                      "description": "Contains the Azure Data Lake Storage destination path",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Adlsgen2Info"
                     },
                     "dbfs": {
@@ -4862,7 +5169,18 @@
               ]
             },
             "compute.Kind": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CLASSIC_PREVIEW"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "compute.Library": {
               "oneOf": [
@@ -4935,9 +5253,11 @@
                   "type": "object",
                   "properties": {
                     "log_analytics_primary_key": {
+                      "description": "The primary key for the Azure Log Analytics agent configuration",
                       "$ref": "#/$defs/string"
                     },
                     "log_analytics_workspace_id": {
+                      "description": "The workspace ID for the Azure Log Analytics agent configuration",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5750,6 +6070,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "filters": {
+                      "description": "Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.\nThe parameter value format is dependent on the filter type:\n- For text and single-select filters, provide a single value (e.g. `\"value\"`)\n- For date and datetime filters, provide the value in ISO 8601 format (e.g. `\"2000-01-01T00:00:00\"`)\n- For multi-select filters, provide a JSON array of values (e.g. `\"[\\\"value1\\\",\\\"value2\\\"]\"`)\n- For range and date range filters, provide a JSON object with `start` and `end` (e.g. `\"{\\\"start\\\":\\\"1\\\",\\\"end\\\":\\\"10\\\"}\"`)",
                       "$ref": "#/$defs/map/string"
                     },
                     "subscription": {
@@ -6980,6 +7301,7 @@
                   "type": "object",
                   "properties": {
                     "patterns": {
+                      "description": "List of patterns to include for sparse checkout.",
                       "$ref": "#/$defs/slice/string"
                     }
                   },
@@ -8808,9 +9130,11 @@
                       "$ref": "#/$defs/bool"
                     },
                     "max": {
+                      "description": "The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single\ncompute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to\ntrue on the EndpointSpec.",
                       "$ref": "#/$defs/int"
                     },
                     "min": {
+                      "description": "The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater\nthan or equal to 1.",
                       "$ref": "#/$defs/int"
                     }
                   },

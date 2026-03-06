@@ -113,6 +113,74 @@ experimental.pydabs:
   "venv_path":
     "description": |-
       The Python virtual environment path
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
+  "granularities":
+    "description": |-
+      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
+  "granularities":
+    "description": |-
+      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetailsAlgorithm:
+  "_":
+    "description": |-
+      SSE algorithm to use for encrypting S3 objects
+    "enum":
+      - |-
+        AWS_SSE_KMS
+      - |-
+        AWS_SSE_S3
+github.com/databricks/databricks-sdk-go/service/compute.Environment:
+  "base_environment":
+    "description": |-
+      The `base_environment` key refers to an `env.yaml` file that specifies an environment version and a collection of dependencies required for the environment setup.
+      This `env.yaml` file may itself include a `base_environment` reference pointing to another `env_1.yaml` file. However, when used as a base environment, `env_1.yaml` (or further nested references) will not be processed or included in the final environment, meaning that the resolution of `base_environment` references is not recursive.
+  "dependencies":
+    "description": |-
+      List of pip dependencies, as supported by the version of pip in this environment.
+github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
+  "abfss":
+    "description": |-
+      Contains the Azure Data Lake Storage destination path
+github.com/databricks/databricks-sdk-go/service/compute.Kind:
+  "_":
+    "enum":
+      - |-
+        CLASSIC_PREVIEW
+github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
+  "log_analytics_primary_key":
+    "description": |-
+      The primary key for the Azure Log Analytics agent configuration
+  "log_analytics_workspace_id":
+    "description": |-
+      The workspace ID for the Azure Log Analytics agent configuration
+github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
+  "filters":
+    "description": |-
+      Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.
+      The parameter value format is dependent on the filter type:
+      - For text and single-select filters, provide a single value (e.g. `"value"`)
+      - For date and datetime filters, provide the value in ISO 8601 format (e.g. `"2000-01-01T00:00:00"`)
+      - For multi-select filters, provide a JSON array of values (e.g. `"[\"value1\",\"value2\"]"`)
+      - For range and date range filters, provide a JSON object with `start` and `end` (e.g. `"{\"start\":\"1\",\"end\":\"10\"}"`)
+github.com/databricks/databricks-sdk-go/service/jobs.SparseCheckout:
+  "patterns":
+    "description": |-
+      List of patterns to include for sparse checkout.
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
+  "whl":
+    "deprecation_message": |-
+      This field is deprecated
+github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec:
+  "max":
+    "description": |-
+      The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single
+      compute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to
+      true on the EndpointSpec.
+  "min":
+    "description": |-
+      The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater
+      than or equal to 1.
 permissions.*:
   "-":
     "description": |-
@@ -334,6 +402,17 @@ resources.alerts.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.alerts.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_READ
+      - |-
+        CAN_RUN
 resources.apps.*:
   "config":
     "description": |-
@@ -382,6 +461,13 @@ resources.apps.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.apps.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
 resources.catalogs.*:
   "comment":
     "description": |-
@@ -496,16 +582,25 @@ resources.clusters.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.clusters.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_RESTART
+      - |-
+        CAN_ATTACH_TO
 resources.dashboards.*:
   "_":
     "markdown_description": |-
       The dashboard resource allows you to manage [AI/BI dashboards](/api/workspace/lakeview/create) in a bundle. For information about AI/BI dashboards, see [_](/dashboards/index.md).
   "create_time":
     "description": |-
-      PLACEHOLDER
+      The timestamp of when the dashboard was created.
   "dashboard_id":
     "description": |-
-      PLACEHOLDER
+      UUID identifying the dashboard.
   "dataset_catalog":
     "description": |-
       Sets the default catalog for all datasets in this dashboard. When set, this overrides the catalog specified in individual dataset definitions.
@@ -514,13 +609,15 @@ resources.dashboards.*:
       Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
   "display_name":
     "description": |-
-      PLACEHOLDER
+      The display name of the dashboard.
   "embed_credentials":
     "description": |-
       PLACEHOLDER
   "etag":
     "description": |-
-      PLACEHOLDER
+      The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard
+      has not been modified since the last read.
+      This field is excluded in List Dashboards responses.
   "file_path":
     "description": |-
       PLACEHOLDER
@@ -529,25 +626,35 @@ resources.dashboards.*:
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "lifecycle_state":
     "description": |-
-      PLACEHOLDER
+      The state of the dashboard resource. Used for tracking trashed status.
   "parent_path":
     "description": |-
-      PLACEHOLDER
+      The workspace path of the folder containing the dashboard. Includes leading slash and no
+      trailing slash.
+      This field is excluded in List Dashboards responses.
   "path":
     "description": |-
-      PLACEHOLDER
+      The workspace path of the dashboard asset, including the file name.
+      Exported dashboards always have the file extension `.lvdash.json`.
+      This field is excluded in List Dashboards responses.
   "permissions":
     "description": |-
       PLACEHOLDER
   "serialized_dashboard":
     "description": |-
-      PLACEHOLDER
+      The contents of the dashboard in serialized string form.
+      This field is excluded in List Dashboards responses.
+      Use the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)
+      to retrieve an example response, which includes the `serialized_dashboard` field.
+      This field provides the structure of the JSON string that represents the dashboard's
+      layout and components.
   "update_time":
     "description": |-
-      PLACEHOLDER
+      The timestamp of when the dashboard was last updated by the user.
+      This field is excluded in List Dashboards responses.
   "warehouse_id":
     "description": |-
-      PLACEHOLDER
+      The warehouse ID used to run the dashboard.
 resources.dashboards.*.permissions.*:
   "group_name":
     "description": |-
@@ -561,6 +668,17 @@ resources.dashboards.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.dashboards.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_READ
+      - |-
+        CAN_RUN
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_MANAGE
 resources.database_catalogs.*:
   "lifecycle":
     "description": |-
@@ -588,6 +706,15 @@ resources.database_instances.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.database_instances.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_CREATE
+      - |-
+        CAN_USE
+      - |-
+        CAN_MANAGE
 resources.experiments.*:
   "_":
     "markdown_description": |-
@@ -611,6 +738,15 @@ resources.experiments.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.experiments.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_READ
 resources.external_locations.*:
   "comment":
     "description": |-
@@ -658,6 +794,29 @@ resources.external_locations.*.grants.*:
   "privileges":
     "description": |-
       PLACEHOLDER
+resources.external_locations.*.grants.*.privileges.*:
+  "_":
+    "description": |-
+      Privilege to grant on an external location
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        CREATE_EXTERNAL_TABLE
+      - |-
+        CREATE_EXTERNAL_VOLUME
+      - |-
+        CREATE_MANAGED_STORAGE
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        MANAGE
+      - |-
+        READ_FILES
+      - |-
+        WRITE_FILES
 resources.jobs.*:
   "_":
     "markdown_description": |-
@@ -685,6 +844,17 @@ resources.jobs.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.jobs.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_MANAGE_RUN
+      - |-
+        CAN_VIEW
+      - |-
+        IS_OWNER
 resources.model_serving_endpoints.*:
   "_":
     "markdown_description": |-
@@ -708,6 +878,15 @@ resources.model_serving_endpoints.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.model_serving_endpoints.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_QUERY
+      - |-
+        CAN_VIEW
 resources.models.*:
   "_":
     "markdown_description": |-
@@ -731,6 +910,19 @@ resources.models.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.models.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_MANAGE_STAGING_VERSIONS
+      - |-
+        CAN_MANAGE_PRODUCTION_VERSIONS
+      - |-
+        CAN_READ
 resources.pipelines.*:
   "_":
     "markdown_description": |-
@@ -754,6 +946,17 @@ resources.pipelines.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.pipelines.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        IS_OWNER
+      - |-
+        CAN_RUN
+      - |-
+        CAN_VIEW
 resources.postgres_branches.*:
   "branch_id":
     "description": |-
@@ -914,6 +1117,13 @@ resources.postgres_projects.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.postgres_projects.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_USE
+      - |-
+        CAN_MANAGE
 resources.quality_monitors.*:
   "_":
     "markdown_description": |-
@@ -961,6 +1171,41 @@ resources.schemas.*.grants.*:
   "privileges":
     "description": |-
       PLACEHOLDER
+resources.schemas.*.grants.*.privileges.*:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        CREATE_FUNCTION
+      - |-
+        CREATE_MATERIALIZED_VIEW
+      - |-
+        CREATE_MODEL
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        EXECUTE
+      - |-
+        EXTERNAL_USE_SCHEMA
+      - |-
+        MANAGE
+      - |-
+        MODIFY
+      - |-
+        READ_VOLUME
+      - |-
+        REFRESH
+      - |-
+        SELECT
+      - |-
+        USE_SCHEMA
+      - |-
+        WRITE_VOLUME
 resources.secret_scopes.*:
   "backend_type":
     "description": |-
@@ -990,7 +1235,39 @@ resources.secret_scopes.*.permissions.*:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+resources.secret_scopes.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        READ
+      - |-
+        WRITE
+      - |-
+        MANAGE
 resources.sql_warehouses.*:
+  "cluster_size":
+    "description": |-
+      Size of the clusters allocated for this warehouse.
+      Increasing the size of a spark cluster allows you to run larger queries on
+      it. If you want to increase the number of concurrent queries, please tune
+      max_num_clusters.
+
+      Supported values:
+      - 2X-Small
+      - X-Small
+      - Small
+      - Medium
+      - Large
+      - X-Large
+      - 2X-Large
+      - 3X-Large
+      - 4X-Large
+      - 5X-Large
+  "enable_photon":
+    "description": |-
+      Configures whether the warehouse should use Photon optimized clusters.
+
+      Defaults to true.
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -1010,6 +1287,17 @@ resources.sql_warehouses.*.permissions.*:
   "user_name":
     "description": |-
       PLACEHOLDER
+resources.sql_warehouses.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
+      - |-
+        CAN_MONITOR
+      - |-
+        CAN_VIEW
 resources.synced_database_tables.*:
   "data_synchronization_status":
     "description": |-
@@ -1059,6 +1347,19 @@ resources.volumes.*.grants.*:
   "privileges":
     "description": |-
       PLACEHOLDER
+resources.volumes.*.grants.*.privileges.*:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        MANAGE
+      - |-
+        READ_VOLUME
+      - |-
+        WRITE_VOLUME
 root:
   "artifacts":
     "description": |-
@@ -1354,242 +1655,3 @@ workspace:
   "workspace_id":
     "description": |-
       The Databricks workspace ID
-resources.alerts.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_READ
-      - |-
-        CAN_RUN
-resources.apps.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_USE
-resources.clusters.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_RESTART
-      - |-
-        CAN_ATTACH_TO
-resources.dashboards.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_READ
-      - |-
-        CAN_RUN
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_MANAGE
-resources.database_instances.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_CREATE
-      - |-
-        CAN_USE
-      - |-
-        CAN_MANAGE
-resources.postgres_projects.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_USE
-      - |-
-        CAN_MANAGE
-resources.experiments.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_READ
-resources.jobs.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_MANAGE_RUN
-      - |-
-        CAN_VIEW
-      - |-
-        IS_OWNER
-resources.model_serving_endpoints.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_QUERY
-      - |-
-        CAN_VIEW
-resources.models.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_MANAGE_STAGING_VERSIONS
-      - |-
-        CAN_MANAGE_PRODUCTION_VERSIONS
-      - |-
-        CAN_READ
-resources.pipelines.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        IS_OWNER
-      - |-
-        CAN_RUN
-      - |-
-        CAN_VIEW
-resources.secret_scopes.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        READ
-      - |-
-        WRITE
-      - |-
-        MANAGE
-resources.sql_warehouses.*.permissions.*.level:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_USE
-      - |-
-        CAN_MONITOR
-      - |-
-        CAN_VIEW
-resources.external_locations.*.grants.*.privileges.*:
-  "_":
-    "description": |-
-      Privilege to grant on an external location
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        CREATE_EXTERNAL_TABLE
-      - |-
-        CREATE_EXTERNAL_VOLUME
-      - |-
-        CREATE_MANAGED_STORAGE
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        MANAGE
-      - |-
-        READ_FILES
-      - |-
-        WRITE_FILES
-resources.schemas.*.grants.*.privileges.*:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        CREATE_FUNCTION
-      - |-
-        CREATE_MATERIALIZED_VIEW
-      - |-
-        CREATE_MODEL
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        EXECUTE
-      - |-
-        EXTERNAL_USE_SCHEMA
-      - |-
-        MANAGE
-      - |-
-        MODIFY
-      - |-
-        READ_VOLUME
-      - |-
-        REFRESH
-      - |-
-        SELECT
-      - |-
-        USE_SCHEMA
-      - |-
-        WRITE_VOLUME
-resources.volumes.*.grants.*.privileges.*:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        MANAGE
-      - |-
-        READ_VOLUME
-      - |-
-        WRITE_VOLUME
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
-  "granularities":
-    "description": |-
-      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
-  "granularities":
-    "description": |-
-      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
-github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetailsAlgorithm:
-  "_":
-    "description": |-
-      SSE algorithm to use for encrypting S3 objects
-    "enum":
-      - |-
-        AWS_SSE_KMS
-      - |-
-        AWS_SSE_S3
-github.com/databricks/databricks-sdk-go/service/compute.Environment:
-  "dependencies":
-    "description": |-
-      List of pip dependencies, as supported by the version of pip in this environment.
-github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
-  "abfss":
-    "description": |-
-      Contains the Azure Data Lake Storage destination path
-github.com/databricks/databricks-sdk-go/service/compute.Kind:
-  "_":
-    "enum":
-      - |-
-        CLASSIC_PREVIEW
-github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
-  "log_analytics_primary_key":
-    "description": |-
-      The primary key for the Azure Log Analytics agent configuration
-  "log_analytics_workspace_id":
-    "description": |-
-      The workspace ID for the Azure Log Analytics agent configuration
-github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
-  "whl":
-    "deprecation_message": |-
-      This field is deprecated
