@@ -1,4 +1,4 @@
-github.com/databricks/cli/bundle/config.Artifact:
+artifacts.*:
   "build":
     "description": |-
       An optional set of build commands to run locally before deployment.
@@ -19,11 +19,11 @@ github.com/databricks/cli/bundle/config.Artifact:
       Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
     "markdown_description": |-
       Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
-github.com/databricks/cli/bundle/config.ArtifactFile:
+artifacts.*.files.*:
   "source":
     "description": |-
       Required. The artifact source file.
-github.com/databricks/cli/bundle/config.Bundle:
+bundle:
   "cluster_id":
     "description": |-
       The ID of a cluster to use to run the bundle.
@@ -53,14 +53,32 @@ github.com/databricks/cli/bundle/config.Bundle:
   "uuid":
     "description": |-
       Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
-github.com/databricks/cli/bundle/config.Deployment:
+bundle.deployment:
   "fail_on_active_runs":
     "description": |-
       Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
   "lock":
     "description": |-
       The deployment lock attributes.
-github.com/databricks/cli/bundle/config.Experimental:
+bundle.deployment.lock:
+  "enabled":
+    "description": |-
+      Whether this lock is enabled.
+  "force":
+    "description": |-
+      Whether to force this lock if it is enabled.
+bundle.git:
+  "branch":
+    "description": |-
+      The Git branch name.
+    "markdown_description": |-
+      The Git branch name. See [\_](/dev-tools/bundles/settings.md#git).
+  "origin_url":
+    "description": |-
+      The origin URL of the repository.
+    "markdown_description": |-
+      The origin URL of the repository. See [\_](/dev-tools/bundles/settings.md#git).
+experimental:
   "pydabs":
     "description": |-
       The PyDABs configuration.
@@ -85,25 +103,103 @@ github.com/databricks/cli/bundle/config.Experimental:
   "use_legacy_run_as":
     "description": |-
       Whether to use the legacy run_as behavior.
-github.com/databricks/cli/bundle/config.Git:
-  "branch":
-    "description": |-
-      The Git branch name.
-    "markdown_description": |-
-      The Git branch name. See [\_](/dev-tools/bundles/settings.md#git).
-  "origin_url":
-    "description": |-
-      The origin URL of the repository.
-    "markdown_description": |-
-      The origin URL of the repository. See [\_](/dev-tools/bundles/settings.md#git).
-github.com/databricks/cli/bundle/config.Lock:
+experimental.pydabs:
   "enabled":
     "description": |-
-      Whether this lock is enabled.
-  "force":
+      Whether or not PyDABs (Private Preview) is enabled
+  "import":
     "description": |-
-      Whether to force this lock if it is enabled.
-github.com/databricks/cli/bundle/config.Presets:
+      The PyDABs project to import to discover resources, resource generator and mutators
+  "venv_path":
+    "description": |-
+      The Python virtual environment path
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
+  "granularities":
+    "description": |-
+      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
+  "granularities":
+    "description": |-
+      Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetailsAlgorithm:
+  "_":
+    "description": |-
+      SSE algorithm to use for encrypting S3 objects
+    "enum":
+      - |-
+        AWS_SSE_KMS
+      - |-
+        AWS_SSE_S3
+github.com/databricks/databricks-sdk-go/service/compute.Environment:
+  "base_environment":
+    "description": |-
+      The `base_environment` key refers to an `env.yaml` file that specifies an environment version and a collection of dependencies required for the environment setup.
+      This `env.yaml` file may itself include a `base_environment` reference pointing to another `env_1.yaml` file. However, when used as a base environment, `env_1.yaml` (or further nested references) will not be processed or included in the final environment, meaning that the resolution of `base_environment` references is not recursive.
+  "dependencies":
+    "description": |-
+      List of pip dependencies, as supported by the version of pip in this environment.
+github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
+  "abfss":
+    "description": |-
+      Contains the Azure Data Lake Storage destination path
+github.com/databricks/databricks-sdk-go/service/compute.Kind:
+  "_":
+    "enum":
+      - |-
+        CLASSIC_PREVIEW
+github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
+  "log_analytics_primary_key":
+    "description": |-
+      The primary key for the Azure Log Analytics agent configuration
+  "log_analytics_workspace_id":
+    "description": |-
+      The workspace ID for the Azure Log Analytics agent configuration
+github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
+  "filters":
+    "description": |-
+      Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.
+      The parameter value format is dependent on the filter type:
+      - For text and single-select filters, provide a single value (e.g. `"value"`)
+      - For date and datetime filters, provide the value in ISO 8601 format (e.g. `"2000-01-01T00:00:00"`)
+      - For multi-select filters, provide a JSON array of values (e.g. `"[\"value1\",\"value2\"]"`)
+      - For range and date range filters, provide a JSON object with `start` and `end` (e.g. `"{\"start\":\"1\",\"end\":\"10\"}"`)
+github.com/databricks/databricks-sdk-go/service/jobs.SparseCheckout:
+  "patterns":
+    "description": |-
+      List of patterns to include for sparse checkout.
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
+  "whl":
+    "deprecation_message": |-
+      This field is deprecated
+github.com/databricks/databricks-sdk-go/service/postgres.EndpointGroupSpec:
+  "max":
+    "description": |-
+      The maximum number of computes in the endpoint group. Currently, this must be equal to min. Set to 1 for single
+      compute endpoints, to disable HA. To manually suspend all computes in an endpoint group, set disabled to
+      true on the EndpointSpec.
+  "min":
+    "description": |-
+      The minimum number of computes in the endpoint group. Currently, this must be equal to max. This must be greater
+      than or equal to 1.
+permissions.*:
+  "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The name of the service principal that has the permission set in level.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level.
+presets:
   "artifacts_dynamic_version":
     "description": |-
       Whether to enable dynamic_version on all artifacts.
@@ -125,17 +221,7 @@ github.com/databricks/cli/bundle/config.Presets:
   "trigger_pause_status":
     "description": |-
       A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.
-github.com/databricks/cli/bundle/config.PyDABs:
-  "enabled":
-    "description": |-
-      Whether or not PyDABs (Private Preview) is enabled
-  "import":
-    "description": |-
-      The PyDABs project to import to discover resources, resource generator and mutators
-  "venv_path":
-    "description": |-
-      The Python virtual environment path
-github.com/databricks/cli/bundle/config.Python:
+python:
   "mutators":
     "description": |-
       Mutators contains a list of fully qualified function paths to mutator functions.
@@ -153,7 +239,7 @@ github.com/databricks/cli/bundle/config.Python:
 
       If enabled, Python code will execute within this environment. If disabled,
       it defaults to using the Python interpreter available in the current shell.
-github.com/databricks/cli/bundle/config.Resources:
+resources:
   "alerts":
     "description": |-
       PLACEHOLDER
@@ -251,7 +337,871 @@ github.com/databricks/cli/bundle/config.Resources:
       The volume definitions for the bundle, where each key is the name of the volume.
     "markdown_description": |-
       The volume definitions for the bundle, where each key is the name of the volume. See [\_](/dev-tools/bundles/resources.md#volumes).
-github.com/databricks/cli/bundle/config.Root:
+resources.alerts.*:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "custom_description":
+    "description": |-
+      PLACEHOLDER
+  "custom_summary":
+    "description": |-
+      PLACEHOLDER
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_run_as":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
+    "description": |-
+      PLACEHOLDER
+  "id":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "lifecycle_state":
+    "description": |-
+      PLACEHOLDER
+  "owner_user_name":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "query_text":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
+    "description": |-
+      PLACEHOLDER
+  "run_as_user_name":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_id":
+    "description": |-
+      PLACEHOLDER
+resources.alerts.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.alerts.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_READ
+      - |-
+        CAN_RUN
+resources.apps.*:
+  "config":
+    "description": |-
+      PLACEHOLDER
+  "git_source":
+    "description": |-
+      Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
+      to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
+      The source_code_path within git_source specifies the relative path to the app code within the repository.
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "source_code_path":
+    "description": |-
+      PLACEHOLDER
+resources.apps.*.config:
+  "command":
+    "description": |-
+      PLACEHOLDER
+  "env":
+    "description": |-
+      PLACEHOLDER
+resources.apps.*.config.env.*:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
+  "value_from":
+    "description": |-
+      PLACEHOLDER
+resources.apps.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.apps.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
+resources.catalogs.*:
+  "comment":
+    "description": |-
+      PLACEHOLDER
+  "connection_name":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "options":
+    "description": |-
+      PLACEHOLDER
+  "properties":
+    "description": |-
+      PLACEHOLDER
+  "provider_name":
+    "description": |-
+      PLACEHOLDER
+  "share_name":
+    "description": |-
+      PLACEHOLDER
+  "storage_root":
+    "description": |-
+      PLACEHOLDER
+resources.clusters.*:
+  "_":
+    "markdown_description": |-
+      The cluster resource defines an [all-purpose cluster](/api/workspace/clusters/create).
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.clusters.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.clusters.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_RESTART
+      - |-
+        CAN_ATTACH_TO
+resources.dashboards.*:
+  "_":
+    "markdown_description": |-
+      The dashboard resource allows you to manage [AI/BI dashboards](/api/workspace/lakeview/create) in a bundle. For information about AI/BI dashboards, see [_](/dashboards/index.md).
+  "create_time":
+    "description": |-
+      The timestamp of when the dashboard was created.
+  "dashboard_id":
+    "description": |-
+      UUID identifying the dashboard.
+  "dataset_catalog":
+    "description": |-
+      Sets the default catalog for all datasets in this dashboard. When set, this overrides the catalog specified in individual dataset definitions.
+  "dataset_schema":
+    "description": |-
+      Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
+  "display_name":
+    "description": |-
+      The display name of the dashboard.
+  "embed_credentials":
+    "description": |-
+      PLACEHOLDER
+  "etag":
+    "description": |-
+      The etag for the dashboard. Can be optionally provided on updates to ensure that the dashboard
+      has not been modified since the last read.
+      This field is excluded in List Dashboards responses.
+  "file_path":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "lifecycle_state":
+    "description": |-
+      The state of the dashboard resource. Used for tracking trashed status.
+  "parent_path":
+    "description": |-
+      The workspace path of the folder containing the dashboard. Includes leading slash and no
+      trailing slash.
+      This field is excluded in List Dashboards responses.
+  "path":
+    "description": |-
+      The workspace path of the dashboard asset, including the file name.
+      Exported dashboards always have the file extension `.lvdash.json`.
+      This field is excluded in List Dashboards responses.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "serialized_dashboard":
+    "description": |-
+      The contents of the dashboard in serialized string form.
+      This field is excluded in List Dashboards responses.
+      Use the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)
+      to retrieve an example response, which includes the `serialized_dashboard` field.
+      This field provides the structure of the JSON string that represents the dashboard's
+      layout and components.
+  "update_time":
+    "description": |-
+      The timestamp of when the dashboard was last updated by the user.
+      This field is excluded in List Dashboards responses.
+  "warehouse_id":
+    "description": |-
+      The warehouse ID used to run the dashboard.
+resources.dashboards.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.dashboards.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_READ
+      - |-
+        CAN_RUN
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_MANAGE
+resources.database_catalogs.*:
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+resources.database_instances.*:
+  "effective_capacity":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.database_instances.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.database_instances.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_CREATE
+      - |-
+        CAN_USE
+      - |-
+        CAN_MANAGE
+resources.experiments.*:
+  "_":
+    "markdown_description": |-
+      The experiment resource allows you to define [MLflow experiments](/api/workspace/experiments/createexperiment) in a bundle. For information about MLflow experiments, see [_](/mlflow/experiments.md).
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.experiments.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.experiments.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_READ
+resources.external_locations.*:
+  "comment":
+    "description": |-
+      PLACEHOLDER
+  "credential_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_enable_file_events":
+    "description": |-
+      PLACEHOLDER
+  "enable_file_events":
+    "description": |-
+      PLACEHOLDER
+  "encryption_details":
+    "description": |-
+      PLACEHOLDER
+  "fallback":
+    "description": |-
+      PLACEHOLDER
+  "file_event_queue":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "read_only":
+    "description": |-
+      PLACEHOLDER
+  "skip_validation":
+    "description": |-
+      PLACEHOLDER
+  "url":
+    "description": |-
+      PLACEHOLDER
+resources.jobs.*:
+  "_":
+    "markdown_description": |-
+      The job resource allows you to define [jobs and their corresponding tasks](/api/workspace/jobs/create) in your bundle. For information about jobs, see [_](/jobs/index.md). For a tutorial that uses a Databricks Asset Bundles template to create a job, see [_](/dev-tools/bundles/jobs-tutorial.md).
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.jobs.*.lifecycle:
+  "prevent_destroy":
+    "description": |-
+      Lifecycle setting to prevent the resource from being destroyed.
+resources.jobs.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.jobs.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_MANAGE_RUN
+      - |-
+        CAN_VIEW
+      - |-
+        IS_OWNER
+resources.model_serving_endpoints.*:
+  "_":
+    "markdown_description": |-
+      The model_serving_endpoint resource allows you to define [model serving endpoints](/api/workspace/servingendpoints/create). See [_](/machine-learning/model-serving/manage-serving-endpoints.md).
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.model_serving_endpoints.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.model_serving_endpoints.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_QUERY
+      - |-
+        CAN_VIEW
+resources.models.*:
+  "_":
+    "markdown_description": |-
+      The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use Unity Catalog [registered models](#registered-model) instead.
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.models.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.models.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_MANAGE_STAGING_VERSIONS
+      - |-
+        CAN_MANAGE_PRODUCTION_VERSIONS
+      - |-
+        CAN_READ
+resources.pipelines.*:
+  "_":
+    "markdown_description": |-
+      The pipeline resource allows you to create Delta Live Tables [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.pipelines.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.pipelines.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        IS_OWNER
+      - |-
+        CAN_RUN
+      - |-
+        CAN_VIEW
+resources.postgres_branches.*:
+  "branch_id":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "expire_time":
+    "description": |-
+      PLACEHOLDER
+  "is_protected":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "no_expiry":
+    "description": |-
+      PLACEHOLDER
+  "parent":
+    "description": |-
+      PLACEHOLDER
+  "source_branch":
+    "description": |-
+      PLACEHOLDER
+  "source_branch_lsn":
+    "description": |-
+      PLACEHOLDER
+  "source_branch_time":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "ttl":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+resources.postgres_endpoints.*:
+  "autoscaling_limit_max_cu":
+    "description": |-
+      PLACEHOLDER
+  "autoscaling_limit_min_cu":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "disabled":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_id":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_type":
+    "description": |-
+      PLACEHOLDER
+  "group":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "no_suspension":
+    "description": |-
+      PLACEHOLDER
+  "parent":
+    "description": |-
+      PLACEHOLDER
+  "settings":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "suspend_timeout_duration":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+resources.postgres_projects.*:
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "custom_tags":
+    "description": |-
+      PLACEHOLDER
+  "default_endpoint_settings":
+    "description": |-
+      PLACEHOLDER
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "history_retention_duration":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "pg_version":
+    "description": |-
+      PLACEHOLDER
+  "project_id":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+resources.postgres_projects.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.postgres_projects.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_USE
+      - |-
+        CAN_MANAGE
+resources.quality_monitors.*:
+  "_":
+    "markdown_description": |-
+      The quality_monitor resource allows you to define a Unity Catalog [table monitor](/api/workspace/qualitymonitors/create). For information about monitors, see [_](/machine-learning/model-serving/monitor-diagnose-endpoints.md).
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "table_name":
+    "description": |-
+      PLACEHOLDER
+resources.registered_models.*:
+  "_":
+    "markdown_description": |-
+      The registered model resource allows you to define models in Unity Catalog. For information about Unity Catalog [registered models](/api/workspace/registeredmodels/create), see [_](/machine-learning/manage-model-lifecycle/index.md).
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+resources.schemas.*:
+  "_":
+    "markdown_description": |-
+      The schema resource type allows you to define Unity Catalog [schemas](/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:
+
+      - The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.
+      - Only fields supported by the corresponding [Schemas object create API](/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](/api/workspace/schemas/update).
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+resources.secret_scopes.*:
+  "backend_type":
+    "description": |-
+      The backend type the scope will be created with. If not specified, will default to `DATABRICKS`
+  "keyvault_metadata":
+    "description": |-
+      The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "name":
+    "description": |-
+      Scope name requested by the user. Scope names are unique.
+  "permissions":
+    "description": |-
+      The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
+resources.secret_scopes.*.permissions.*:
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+resources.secret_scopes.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        READ
+      - |-
+        WRITE
+      - |-
+        MANAGE
+resources.sql_warehouses.*:
+  "cluster_size":
+    "description": |-
+      Size of the clusters allocated for this warehouse.
+      Increasing the size of a spark cluster allows you to run larger queries on
+      it. If you want to increase the number of concurrent queries, please tune
+      max_num_clusters.
+
+      Supported values:
+      - 2X-Small
+      - X-Small
+      - Small
+      - Medium
+      - Large
+      - X-Large
+      - 2X-Large
+      - 3X-Large
+      - 4X-Large
+      - 5X-Large
+  "enable_photon":
+    "description": |-
+      Configures whether the warehouse should use Photon optimized clusters.
+
+      Defaults to true.
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+resources.sql_warehouses.*.permissions.*:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+resources.sql_warehouses.*.permissions.*.level:
+  "_":
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
+      - |-
+        CAN_MONITOR
+      - |-
+        CAN_VIEW
+resources.synced_database_tables.*:
+  "data_synchronization_status":
+    "description": |-
+      PLACEHOLDER
+  "database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_database_instance_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_logical_database_name":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "logical_database_name":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "unity_catalog_provisioning_state":
+    "description": |-
+      PLACEHOLDER
+resources.volumes.*:
+  "_":
+    "markdown_description": |-
+      The volume resource type allows you to define and create Unity Catalog [volumes](/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:
+
+      - A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Databricks Asset Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.
+
+      - Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [_](/dev-tools/bundles/deployment-modes.md#custom-presets).
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+root:
   "artifacts":
     "description": |-
       Defines the attributes to build an artifact
@@ -348,11 +1298,18 @@ github.com/databricks/cli/bundle/config.Root:
       Defines the Databricks workspace for the bundle.
     "markdown_description": |-
       Defines the Databricks workspace for the bundle. See [\_](/dev-tools/bundles/settings.md#workspace).
-github.com/databricks/cli/bundle/config.Script:
+run_as:
+  "service_principal_name":
+    "description": |-
+      The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+  "user_name":
+    "description": |-
+      The email of an active workspace user. Non-admin users can only set this field to their own email.
+scripts.*:
   "content":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config.Sync:
+sync:
   "exclude":
     "description": |-
       A list of files or folders to exclude from the bundle.
@@ -362,7 +1319,7 @@ github.com/databricks/cli/bundle/config.Sync:
   "paths":
     "description": |-
       The local folder paths, which can be outside the bundle root, to synchronize to the workspace when the bundle is deployed.
-github.com/databricks/cli/bundle/config.Target:
+targets.*:
   "artifacts":
     "description": |-
       The artifacts to include in the target deployment.
@@ -411,7 +1368,80 @@ github.com/databricks/cli/bundle/config.Target:
   "workspace":
     "description": |-
       The Databricks workspace for the target.
-github.com/databricks/cli/bundle/config.Workspace:
+targets.*.variables.*:
+  "default":
+    "description": |-
+      The default value for the variable.
+  "description":
+    "description": |-
+      The description of the variable.
+  "lookup":
+    "description": |-
+      The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+  "markdown_description":
+    "description": |-
+      The type of the variable.
+  "type":
+    "description": |-
+      The type of the variable.
+variables.*:
+  "_":
+    "description": |-
+      Defines a custom variable for the bundle.
+    "markdown_description": |-
+      Defines a custom variable for the bundle. See [\_](/dev-tools/bundles/settings.md#variables).
+  "default":
+    "description": |-
+      The default value for the variable.
+  "description":
+    "description": |-
+      The description of the variable
+  "lookup":
+    "description": |-
+      The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+    "markdown_description": |-
+      The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
+  "type":
+    "description": |-
+      The type of the variable.
+variables.*.lookup:
+  "alert":
+    "description": |-
+      The name of the alert for which to retrieve an ID.
+  "cluster":
+    "description": |-
+      The name of the cluster for which to retrieve an ID.
+  "cluster_policy":
+    "description": |-
+      The name of the cluster_policy for which to retrieve an ID.
+  "dashboard":
+    "description": |-
+      The name of the dashboard for which to retrieve an ID.
+  "instance_pool":
+    "description": |-
+      The name of the instance_pool for which to retrieve an ID.
+  "job":
+    "description": |-
+      The name of the job for which to retrieve an ID.
+  "metastore":
+    "description": |-
+      The name of the metastore for which to retrieve an ID.
+  "notification_destination":
+    "description": |-
+      The name of the notification_destination for which to retrieve an ID.
+  "pipeline":
+    "description": |-
+      The name of the pipeline for which to retrieve an ID.
+  "query":
+    "description": |-
+      The name of the query for which to retrieve an ID.
+  "service_principal":
+    "description": |-
+      The name of the service_principal for which to retrieve an ID.
+  "warehouse":
+    "description": |-
+      The name of the warehouse for which to retrieve an ID.
+workspace:
   "artifact_path":
     "description": |-
       The artifact path to use within the workspace for both deployments and workflow runs
@@ -466,601 +1496,3 @@ github.com/databricks/cli/bundle/config.Workspace:
   "workspace_id":
     "description": |-
       The Databricks workspace ID
-github.com/databricks/cli/bundle/config/resources.Alert:
-  "create_time":
-    "description": |-
-      PLACEHOLDER
-  "custom_description":
-    "description": |-
-      PLACEHOLDER
-  "custom_summary":
-    "description": |-
-      PLACEHOLDER
-  "display_name":
-    "description": |-
-      PLACEHOLDER
-  "effective_run_as":
-    "description": |-
-      PLACEHOLDER
-  "id":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle_state":
-    "description": |-
-      PLACEHOLDER
-  "owner_user_name":
-    "description": |-
-      PLACEHOLDER
-  "parent_path":
-    "description": |-
-      PLACEHOLDER
-  "query_text":
-    "description": |-
-      PLACEHOLDER
-  "run_as":
-    "description": |-
-      PLACEHOLDER
-  "run_as_user_name":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-  "warehouse_id":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AlertPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.App:
-  "git_source":
-    "description": |-
-      Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
-      to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
-      The source_code_path within git_source specifies the relative path to the app code within the repository.
-github.com/databricks/cli/bundle/config/resources.AppConfig:
-  "command":
-    "description": |-
-      PLACEHOLDER
-  "env":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AppEnvVar:
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "value":
-    "description": |-
-      PLACEHOLDER
-  "value_from":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AppPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Catalog:
-  "comment":
-    "description": |-
-      PLACEHOLDER
-  "connection_name":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "options":
-    "description": |-
-      PLACEHOLDER
-  "properties":
-    "description": |-
-      PLACEHOLDER
-  "provider_name":
-    "description": |-
-      PLACEHOLDER
-  "share_name":
-    "description": |-
-      PLACEHOLDER
-  "storage_root":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ClusterPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Dashboard:
-  "dataset_catalog":
-    "description": |-
-      Sets the default catalog for all datasets in this dashboard. When set, this overrides the catalog specified in individual dataset definitions.
-  "dataset_schema":
-    "description": |-
-      Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
-github.com/databricks/cli/bundle/config/resources.DashboardPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
-  "effective_capacity":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ExternalLocation:
-  "comment":
-    "description": |-
-      PLACEHOLDER
-  "credential_name":
-    "description": |-
-      PLACEHOLDER
-  "enable_file_events":
-    "description": |-
-      PLACEHOLDER
-  "encryption_details":
-    "description": |-
-      PLACEHOLDER
-  "fallback":
-    "description": |-
-      PLACEHOLDER
-  "file_event_queue":
-    "description": |-
-      PLACEHOLDER
-  "grants":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "read_only":
-    "description": |-
-      PLACEHOLDER
-  "skip_validation":
-    "description": |-
-      PLACEHOLDER
-  "url":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.JobPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Lifecycle:
-  "prevent_destroy":
-    "description": |-
-      Lifecycle setting to prevent the resource from being destroyed.
-github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.MlflowModelPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Permission:
-  "-":
-    "description": |-
-      Defines a permission for a specific entity.
-    "markdown_description": |-
-      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
-  "group_name":
-    "description": |-
-      The name of the group that has the permission set in level.
-  "level":
-    "description": |-
-      The allowed permission for user, group, service principal defined for this permission.
-  "service_principal_name":
-    "description": |-
-      The name of the service principal that has the permission set in level.
-  "user_name":
-    "description": |-
-      The name of the user that has the permission set in level.
-github.com/databricks/cli/bundle/config/resources.PipelinePermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.PostgresBranch:
-  "branch_id":
-    "description": |-
-      PLACEHOLDER
-  "create_time":
-    "description": |-
-      PLACEHOLDER
-  "expire_time":
-    "description": |-
-      PLACEHOLDER
-  "is_protected":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "no_expiry":
-    "description": |-
-      PLACEHOLDER
-  "parent":
-    "description": |-
-      PLACEHOLDER
-  "source_branch":
-    "description": |-
-      PLACEHOLDER
-  "source_branch_lsn":
-    "description": |-
-      PLACEHOLDER
-  "source_branch_time":
-    "description": |-
-      PLACEHOLDER
-  "spec":
-    "description": |-
-      PLACEHOLDER
-  "status":
-    "description": |-
-      PLACEHOLDER
-  "ttl":
-    "description": |-
-      PLACEHOLDER
-  "uid":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
-  "autoscaling_limit_max_cu":
-    "description": |-
-      PLACEHOLDER
-  "autoscaling_limit_min_cu":
-    "description": |-
-      PLACEHOLDER
-  "create_time":
-    "description": |-
-      PLACEHOLDER
-  "disabled":
-    "description": |-
-      PLACEHOLDER
-  "endpoint_id":
-    "description": |-
-      PLACEHOLDER
-  "endpoint_type":
-    "description": |-
-      PLACEHOLDER
-  "group":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "no_suspension":
-    "description": |-
-      PLACEHOLDER
-  "parent":
-    "description": |-
-      PLACEHOLDER
-  "settings":
-    "description": |-
-      PLACEHOLDER
-  "spec":
-    "description": |-
-      PLACEHOLDER
-  "status":
-    "description": |-
-      PLACEHOLDER
-  "suspend_timeout_duration":
-    "description": |-
-      PLACEHOLDER
-  "uid":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.PostgresProject:
-  "budget_policy_id":
-    "description": |-
-      PLACEHOLDER
-  "create_time":
-    "description": |-
-      PLACEHOLDER
-  "custom_tags":
-    "description": |-
-      PLACEHOLDER
-  "default_endpoint_settings":
-    "description": |-
-      PLACEHOLDER
-  "display_name":
-    "description": |-
-      PLACEHOLDER
-  "history_retention_duration":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
-  "pg_version":
-    "description": |-
-      PLACEHOLDER
-  "project_id":
-    "description": |-
-      PLACEHOLDER
-  "spec":
-    "description": |-
-      PLACEHOLDER
-  "status":
-    "description": |-
-      PLACEHOLDER
-  "uid":
-    "description": |-
-      PLACEHOLDER
-  "update_time":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SecretScope:
-  "backend_type":
-    "description": |-
-      The backend type the scope will be created with. If not specified, will default to `DATABRICKS`
-  "keyvault_metadata":
-    "description": |-
-      The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
-  "lifecycle":
-    "description": |-
-      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
-  "name":
-    "description": |-
-      Scope name requested by the user. Scope names are unique.
-  "permissions":
-    "description": |-
-      The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
-github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
-  "group_name":
-    "description": |-
-      The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
-  "level":
-    "description": |-
-      The allowed permission for user, group, service principal defined for this permission.
-  "service_principal_name":
-    "description": |-
-      The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.
-  "user_name":
-    "description": |-
-      The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
-github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
-  "data_synchronization_status":
-    "description": |-
-      PLACEHOLDER
-  "database_instance_name":
-    "description": |-
-      PLACEHOLDER
-  "effective_database_instance_name":
-    "description": |-
-      PLACEHOLDER
-  "effective_logical_database_name":
-    "description": |-
-      PLACEHOLDER
-  "logical_database_name":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-  "spec":
-    "description": |-
-      PLACEHOLDER
-  "unity_catalog_provisioning_state":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/variable.Lookup:
-  "alert":
-    "description": |-
-      The name of the alert for which to retrieve an ID.
-  "cluster":
-    "description": |-
-      The name of the cluster for which to retrieve an ID.
-  "cluster_policy":
-    "description": |-
-      The name of the cluster_policy for which to retrieve an ID.
-  "dashboard":
-    "description": |-
-      The name of the dashboard for which to retrieve an ID.
-  "instance_pool":
-    "description": |-
-      The name of the instance_pool for which to retrieve an ID.
-  "job":
-    "description": |-
-      The name of the job for which to retrieve an ID.
-  "metastore":
-    "description": |-
-      The name of the metastore for which to retrieve an ID.
-  "notification_destination":
-    "description": |-
-      The name of the notification_destination for which to retrieve an ID.
-  "pipeline":
-    "description": |-
-      The name of the pipeline for which to retrieve an ID.
-  "query":
-    "description": |-
-      The name of the query for which to retrieve an ID.
-  "service_principal":
-    "description": |-
-      The name of the service_principal for which to retrieve an ID.
-  "warehouse":
-    "description": |-
-      The name of the warehouse for which to retrieve an ID.
-github.com/databricks/cli/bundle/config/variable.TargetVariable:
-  "default":
-    "description": |-
-      The default value for the variable.
-  "description":
-    "description": |-
-      The description of the variable.
-  "lookup":
-    "description": |-
-      The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
-  "markdown_description":
-    "description": |-
-      The type of the variable.
-  "type":
-    "description": |-
-      The type of the variable.
-github.com/databricks/cli/bundle/config/variable.Variable:
-  "_":
-    "description": |-
-      Defines a custom variable for the bundle.
-    "markdown_description": |-
-      Defines a custom variable for the bundle. See [\_](/dev-tools/bundles/settings.md#variables).
-  "default":
-    "description": |-
-      The default value for the variable.
-  "description":
-    "description": |-
-      The description of the variable
-  "lookup":
-    "description": |-
-      The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
-    "markdown_description": |-
-      The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
-  "type":
-    "description": |-
-      The type of the variable.
-github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs:
-  "service_principal_name":
-    "description": |-
-      The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
-  "user_name":
-    "description": |-
-      The email of an active workspace user. Non-admin users can only set this field to their own email.

@@ -18,6 +18,9 @@ class DockerImage:
     """"""
 
     basic_auth: VariableOrOptional[DockerBasicAuth] = None
+    """
+    Basic auth with username and password
+    """
 
     url: VariableOrOptional[str] = None
     """
@@ -36,6 +39,9 @@ class DockerImageDict(TypedDict, total=False):
     """"""
 
     basic_auth: VariableOrOptional[DockerBasicAuthParam]
+    """
+    Basic auth with username and password
+    """
 
     url: VariableOrOptional[str]
     """

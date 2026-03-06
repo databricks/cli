@@ -202,24 +202,20 @@ func main() {
 
 func generateSchema(workdir, outputFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
-	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
-	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
-	// Input file, the databricks openapi spec.
+	// Parse the OpenAPI spec if available, for reading SDK type descriptions directly.
+	var p *openapiParser
 	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC")
 	if inputFile != "" {
-		p, err := newParser(inputFile)
+		var err error
+		p, err = newParser(inputFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Writing OpenAPI annotations to %s\n", annotationsOpenApiPath)
-		err = p.extractAnnotations(reflect.TypeOf(config.Root{}), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
-		if err != nil {
-			log.Fatal(err)
-		}
+		fmt.Printf("Using OpenAPI spec from %s\n", inputFile)
 	}
 
-	a, err := newAnnotationHandler([]string{annotationsOpenApiPath, annotationsOpenApiOverridesPath, annotationsPath})
+	a, err := newAnnotationHandler(annotationsPath, p)
 	if err != nil {
 		log.Fatal(err)
 	}

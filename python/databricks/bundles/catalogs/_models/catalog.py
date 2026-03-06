@@ -25,24 +25,53 @@ class Catalog(Resource):
     """"""
 
     name: VariableOr[str]
+    """
+    Name of catalog.
+    """
 
     comment: VariableOrOptional[str] = None
+    """
+    User-provided free-form text description.
+    """
 
     connection_name: VariableOrOptional[str] = None
+    """
+    The name of the connection to an external data source.
+    """
 
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
 
     lifecycle: VariableOrOptional[Lifecycle] = None
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
 
     options: VariableOrDict[str] = field(default_factory=dict)
+    """
+    A map of key-value properties attached to the securable.
+    """
 
     properties: VariableOrDict[str] = field(default_factory=dict)
+    """
+    A map of key-value properties attached to the securable.
+    """
 
     provider_name: VariableOrOptional[str] = None
+    """
+    The name of delta sharing provider.
+    
+    A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
+    """
 
     share_name: VariableOrOptional[str] = None
+    """
+    The name of the share under the share provider.
+    """
 
     storage_root: VariableOrOptional[str] = None
+    """
+    Storage root URL for managed tables within catalog.
+    """
 
     @classmethod
     def from_dict(cls, value: "CatalogDict") -> "Self":
@@ -56,24 +85,53 @@ class CatalogDict(TypedDict, total=False):
     """"""
 
     name: VariableOr[str]
+    """
+    Name of catalog.
+    """
 
     comment: VariableOrOptional[str]
+    """
+    User-provided free-form text description.
+    """
 
     connection_name: VariableOrOptional[str]
+    """
+    The name of the connection to an external data source.
+    """
 
     grants: VariableOrList[PrivilegeAssignmentParam]
 
     lifecycle: VariableOrOptional[LifecycleParam]
+    """
+    Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    """
 
     options: VariableOrDict[str]
+    """
+    A map of key-value properties attached to the securable.
+    """
 
     properties: VariableOrDict[str]
+    """
+    A map of key-value properties attached to the securable.
+    """
 
     provider_name: VariableOrOptional[str]
+    """
+    The name of delta sharing provider.
+    
+    A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
+    """
 
     share_name: VariableOrOptional[str]
+    """
+    The name of the share under the share provider.
+    """
 
     storage_root: VariableOrOptional[str]
+    """
+    Storage root URL for managed tables within catalog.
+    """
 
 
 CatalogParam = CatalogDict | Catalog

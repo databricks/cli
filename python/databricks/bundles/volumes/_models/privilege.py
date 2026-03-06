@@ -53,6 +53,12 @@ class Privilege(Enum):
     MODIFY_CLEAN_ROOM = "MODIFY_CLEAN_ROOM"
     EXECUTE_CLEAN_ROOM_TASK = "EXECUTE_CLEAN_ROOM_TASK"
     EXTERNAL_USE_SCHEMA = "EXTERNAL_USE_SCHEMA"
+    VIEW_OBJECT = "VIEW_OBJECT"
+    MANAGE_GRANTS = "MANAGE_GRANTS"
+    INSERT = "INSERT"
+    UPDATE = "UPDATE"
+    DELETE = "DELETE"
+    VIEW_ADMIN_METADATA = "VIEW_ADMIN_METADATA"
 
 
 PrivilegeParam = (
@@ -107,6 +113,12 @@ PrivilegeParam = (
         "MODIFY_CLEAN_ROOM",
         "EXECUTE_CLEAN_ROOM_TASK",
         "EXTERNAL_USE_SCHEMA",
+        "VIEW_OBJECT",
+        "MANAGE_GRANTS",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "VIEW_ADMIN_METADATA",
     ]
     | Privilege
 )
