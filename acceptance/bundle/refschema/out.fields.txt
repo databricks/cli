@@ -38,10 +38,10 @@ resources.alerts.*.lifecycle_state	sql.AlertLifecycleState	ALL
 resources.alerts.*.modified_status	string	INPUT
 resources.alerts.*.owner_user_name	string	ALL
 resources.alerts.*.parent_path	string	ALL
-resources.alerts.*.permissions	[]resources.AlertPermission	INPUT
-resources.alerts.*.permissions[*]	resources.AlertPermission	INPUT
+resources.alerts.*.permissions	[]resources.Permission	INPUT
+resources.alerts.*.permissions[*]	resources.Permission	INPUT
 resources.alerts.*.permissions[*].group_name	string	INPUT
-resources.alerts.*.permissions[*].level	resources.AlertPermissionLevel	INPUT
+resources.alerts.*.permissions[*].level	string	INPUT
 resources.alerts.*.permissions[*].service_principal_name	string	INPUT
 resources.alerts.*.permissions[*].user_name	string	INPUT
 resources.alerts.*.query_text	string	ALL
@@ -163,10 +163,10 @@ resources.apps.*.pending_deployment.status	*apps.AppDeploymentStatus	ALL
 resources.apps.*.pending_deployment.status.message	string	ALL
 resources.apps.*.pending_deployment.status.state	apps.AppDeploymentState	ALL
 resources.apps.*.pending_deployment.update_time	string	ALL
-resources.apps.*.permissions	[]resources.AppPermission	INPUT
-resources.apps.*.permissions[*]	resources.AppPermission	INPUT
+resources.apps.*.permissions	[]resources.Permission	INPUT
+resources.apps.*.permissions[*]	resources.Permission	INPUT
 resources.apps.*.permissions[*].group_name	string	INPUT
-resources.apps.*.permissions[*].level	resources.AppPermissionLevel	INPUT
+resources.apps.*.permissions[*].level	string	INPUT
 resources.apps.*.permissions[*].service_principal_name	string	INPUT
 resources.apps.*.permissions[*].user_name	string	INPUT
 resources.apps.*.resources	[]apps.AppResource	ALL
@@ -390,10 +390,10 @@ resources.clusters.*.lifecycle.prevent_destroy	bool	INPUT
 resources.clusters.*.modified_status	string	INPUT
 resources.clusters.*.node_type_id	string	ALL
 resources.clusters.*.num_workers	int	ALL
-resources.clusters.*.permissions	[]resources.ClusterPermission	INPUT
-resources.clusters.*.permissions[*]	resources.ClusterPermission	INPUT
+resources.clusters.*.permissions	[]resources.Permission	INPUT
+resources.clusters.*.permissions[*]	resources.Permission	INPUT
 resources.clusters.*.permissions[*].group_name	string	INPUT
-resources.clusters.*.permissions[*].level	resources.ClusterPermissionLevel	INPUT
+resources.clusters.*.permissions[*].level	string	INPUT
 resources.clusters.*.permissions[*].service_principal_name	string	INPUT
 resources.clusters.*.permissions[*].user_name	string	INPUT
 resources.clusters.*.policy_id	string	ALL
@@ -557,10 +557,10 @@ resources.dashboards.*.lifecycle_state	dashboards.LifecycleState	ALL
 resources.dashboards.*.modified_status	string	INPUT
 resources.dashboards.*.parent_path	string	ALL
 resources.dashboards.*.path	string	ALL
-resources.dashboards.*.permissions	[]resources.DashboardPermission	INPUT
-resources.dashboards.*.permissions[*]	resources.DashboardPermission	INPUT
+resources.dashboards.*.permissions	[]resources.Permission	INPUT
+resources.dashboards.*.permissions[*]	resources.Permission	INPUT
 resources.dashboards.*.permissions[*].group_name	string	INPUT
-resources.dashboards.*.permissions[*].level	resources.DashboardPermissionLevel	INPUT
+resources.dashboards.*.permissions[*].level	string	INPUT
 resources.dashboards.*.permissions[*].service_principal_name	string	INPUT
 resources.dashboards.*.permissions[*].user_name	string	INPUT
 resources.dashboards.*.published	bool	REMOTE	STATE
@@ -624,10 +624,10 @@ resources.database_instances.*.parent_instance_ref.effective_lsn	string	ALL
 resources.database_instances.*.parent_instance_ref.lsn	string	ALL
 resources.database_instances.*.parent_instance_ref.name	string	ALL
 resources.database_instances.*.parent_instance_ref.uid	string	ALL
-resources.database_instances.*.permissions	[]resources.DatabaseInstancePermission	INPUT
-resources.database_instances.*.permissions[*]	resources.DatabaseInstancePermission	INPUT
+resources.database_instances.*.permissions	[]resources.Permission	INPUT
+resources.database_instances.*.permissions[*]	resources.Permission	INPUT
 resources.database_instances.*.permissions[*].group_name	string	INPUT
-resources.database_instances.*.permissions[*].level	resources.DatabaseInstancePermissionLevel	INPUT
+resources.database_instances.*.permissions[*].level	string	INPUT
 resources.database_instances.*.permissions[*].service_principal_name	string	INPUT
 resources.database_instances.*.permissions[*].user_name	string	INPUT
 resources.database_instances.*.pg_version	string	ALL
@@ -656,10 +656,10 @@ resources.experiments.*.lifecycle.prevent_destroy	bool	INPUT
 resources.experiments.*.lifecycle_stage	string	REMOTE
 resources.experiments.*.modified_status	string	INPUT
 resources.experiments.*.name	string	ALL
-resources.experiments.*.permissions	[]resources.MlflowExperimentPermission	INPUT
-resources.experiments.*.permissions[*]	resources.MlflowExperimentPermission	INPUT
+resources.experiments.*.permissions	[]resources.Permission	INPUT
+resources.experiments.*.permissions[*]	resources.Permission	INPUT
 resources.experiments.*.permissions[*].group_name	string	INPUT
-resources.experiments.*.permissions[*].level	resources.MlflowExperimentPermissionLevel	INPUT
+resources.experiments.*.permissions[*].level	string	INPUT
 resources.experiments.*.permissions[*].service_principal_name	string	INPUT
 resources.experiments.*.permissions[*].user_name	string	INPUT
 resources.experiments.*.tags	[]ml.ExperimentTag	ALL
@@ -919,10 +919,10 @@ resources.jobs.*.parameters[*]	jobs.JobParameterDefinition	ALL
 resources.jobs.*.parameters[*].default	string	ALL
 resources.jobs.*.parameters[*].name	string	ALL
 resources.jobs.*.performance_target	jobs.PerformanceTarget	ALL
-resources.jobs.*.permissions	[]resources.JobPermission	INPUT
-resources.jobs.*.permissions[*]	resources.JobPermission	INPUT
+resources.jobs.*.permissions	[]resources.Permission	INPUT
+resources.jobs.*.permissions[*]	resources.Permission	INPUT
 resources.jobs.*.permissions[*].group_name	string	INPUT
-resources.jobs.*.permissions[*].level	resources.JobPermissionLevel	INPUT
+resources.jobs.*.permissions[*].level	string	INPUT
 resources.jobs.*.permissions[*].service_principal_name	string	INPUT
 resources.jobs.*.permissions[*].user_name	string	INPUT
 resources.jobs.*.queue	*jobs.QueueSettings	ALL
@@ -2096,10 +2096,10 @@ resources.model_serving_endpoints.*.lifecycle	resources.Lifecycle	INPUT
 resources.model_serving_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
 resources.model_serving_endpoints.*.modified_status	string	INPUT
 resources.model_serving_endpoints.*.name	string	INPUT	STATE
-resources.model_serving_endpoints.*.permissions	[]resources.ModelServingEndpointPermission	INPUT
-resources.model_serving_endpoints.*.permissions[*]	resources.ModelServingEndpointPermission	INPUT
+resources.model_serving_endpoints.*.permissions	[]resources.Permission	INPUT
+resources.model_serving_endpoints.*.permissions[*]	resources.Permission	INPUT
 resources.model_serving_endpoints.*.permissions[*].group_name	string	INPUT
-resources.model_serving_endpoints.*.permissions[*].level	resources.ModelServingEndpointPermissionLevel	INPUT
+resources.model_serving_endpoints.*.permissions[*].level	string	INPUT
 resources.model_serving_endpoints.*.permissions[*].service_principal_name	string	INPUT
 resources.model_serving_endpoints.*.permissions[*].user_name	string	INPUT
 resources.model_serving_endpoints.*.rate_limits	[]serving.RateLimit	INPUT	STATE
@@ -2147,10 +2147,10 @@ resources.models.*.lifecycle.prevent_destroy	bool	INPUT
 resources.models.*.modified_status	string	INPUT
 resources.models.*.name	string	ALL
 resources.models.*.permission_level	ml.PermissionLevel	REMOTE
-resources.models.*.permissions	[]resources.MlflowModelPermission	INPUT
-resources.models.*.permissions[*]	resources.MlflowModelPermission	INPUT
+resources.models.*.permissions	[]resources.Permission	INPUT
+resources.models.*.permissions[*]	resources.Permission	INPUT
 resources.models.*.permissions[*].group_name	string	INPUT
-resources.models.*.permissions[*].level	resources.MlflowModelPermissionLevel	INPUT
+resources.models.*.permissions[*].level	string	INPUT
 resources.models.*.permissions[*].service_principal_name	string	INPUT
 resources.models.*.permissions[*].user_name	string	INPUT
 resources.models.*.tags	[]ml.ModelTag	ALL
@@ -2470,10 +2470,10 @@ resources.pipelines.*.notifications[*].alerts	[]string	ALL
 resources.pipelines.*.notifications[*].alerts[*]	string	ALL
 resources.pipelines.*.notifications[*].email_recipients	[]string	ALL
 resources.pipelines.*.notifications[*].email_recipients[*]	string	ALL
-resources.pipelines.*.permissions	[]resources.PipelinePermission	INPUT
-resources.pipelines.*.permissions[*]	resources.PipelinePermission	INPUT
+resources.pipelines.*.permissions	[]resources.Permission	INPUT
+resources.pipelines.*.permissions[*]	resources.Permission	INPUT
 resources.pipelines.*.permissions[*].group_name	string	INPUT
-resources.pipelines.*.permissions[*].level	resources.PipelinePermissionLevel	INPUT
+resources.pipelines.*.permissions[*].level	string	INPUT
 resources.pipelines.*.permissions[*].service_principal_name	string	INPUT
 resources.pipelines.*.permissions[*].user_name	string	INPUT
 resources.pipelines.*.photon	bool	ALL
@@ -2627,10 +2627,10 @@ resources.postgres_projects.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_projects.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_projects.*.modified_status	string	INPUT
 resources.postgres_projects.*.name	string	REMOTE
-resources.postgres_projects.*.permissions	[]resources.DatabaseProjectPermission	INPUT
-resources.postgres_projects.*.permissions[*]	resources.DatabaseProjectPermission	INPUT
+resources.postgres_projects.*.permissions	[]resources.Permission	INPUT
+resources.postgres_projects.*.permissions[*]	resources.Permission	INPUT
 resources.postgres_projects.*.permissions[*].group_name	string	INPUT
-resources.postgres_projects.*.permissions[*].level	resources.DatabaseProjectPermissionLevel	INPUT
+resources.postgres_projects.*.permissions[*].level	string	INPUT
 resources.postgres_projects.*.permissions[*].service_principal_name	string	INPUT
 resources.postgres_projects.*.permissions[*].user_name	string	INPUT
 resources.postgres_projects.*.pg_version	int	INPUT	STATE
@@ -2872,10 +2872,10 @@ resources.sql_warehouses.*.odbc_params.hostname	string	REMOTE
 resources.sql_warehouses.*.odbc_params.path	string	REMOTE
 resources.sql_warehouses.*.odbc_params.port	int	REMOTE
 resources.sql_warehouses.*.odbc_params.protocol	string	REMOTE
-resources.sql_warehouses.*.permissions	[]resources.SqlWarehousePermission	INPUT
-resources.sql_warehouses.*.permissions[*]	resources.SqlWarehousePermission	INPUT
+resources.sql_warehouses.*.permissions	[]resources.Permission	INPUT
+resources.sql_warehouses.*.permissions[*]	resources.Permission	INPUT
 resources.sql_warehouses.*.permissions[*].group_name	string	INPUT
-resources.sql_warehouses.*.permissions[*].level	resources.SqlWarehousePermissionLevel	INPUT
+resources.sql_warehouses.*.permissions[*].level	string	INPUT
 resources.sql_warehouses.*.permissions[*].service_principal_name	string	INPUT
 resources.sql_warehouses.*.permissions[*].user_name	string	INPUT
 resources.sql_warehouses.*.spot_instance_policy	sql.SpotInstancePolicy	ALL
