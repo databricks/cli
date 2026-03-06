@@ -28,7 +28,7 @@ func TestConvertModel(t *testing.T) {
 				},
 			},
 		},
-		Permissions: []resources.MlflowModelPermission{
+		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_READ",
 				UserName: "jane@doe.com",

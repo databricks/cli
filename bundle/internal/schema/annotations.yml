@@ -509,19 +509,6 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "warehouse_id":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AlertPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.App:
   "git_source":
     "description": |-
@@ -543,19 +530,6 @@ github.com/databricks/cli/bundle/config/resources.AppEnvVar:
     "description": |-
       PLACEHOLDER
   "value_from":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AppPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Catalog:
@@ -583,19 +557,6 @@ github.com/databricks/cli/bundle/config/resources.Catalog:
   "storage_root":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ClusterPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Dashboard:
   "dataset_catalog":
     "description": |-
@@ -603,47 +564,8 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
   "dataset_schema":
     "description": |-
       Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
-github.com/databricks/cli/bundle/config/resources.DashboardPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "effective_capacity":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ExternalLocation:
@@ -683,62 +605,10 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "url":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.JobPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Lifecycle:
   "prevent_destroy":
     "description": |-
       Lifecycle setting to prevent the resource from being destroyed.
-github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.MlflowModelPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Permission:
   "-":
     "description": |-
@@ -757,19 +627,6 @@ github.com/databricks/cli/bundle/config/resources.Permission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level.
-github.com/databricks/cli/bundle/config/resources.PipelinePermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PostgresBranch:
   "branch_id":
     "description": |-
@@ -946,19 +803,6 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
-github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "data_synchronization_status":
     "description": |-

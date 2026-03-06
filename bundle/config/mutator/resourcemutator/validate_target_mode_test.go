@@ -48,37 +48,37 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	diags = validateProductionMode(b, false)
 	require.ErrorContains(t, diags.Error(), "A common practice is to use a username or principal name in this path, i.e. use\n\n  root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
-	jobPermissions := []resources.JobPermission{
+	jobPermissions := []resources.Permission{
 		{
 			Level:    "CAN_MANAGE",
 			UserName: "user@company.com",
 		},
 	}
-	pipelinePermissions := []resources.PipelinePermission{
+	pipelinePermissions := []resources.Permission{
 		{
 			Level:    "CAN_MANAGE",
 			UserName: "user@company.com",
 		},
 	}
-	experimentPermissions := []resources.MlflowExperimentPermission{
+	experimentPermissions := []resources.Permission{
 		{
 			Level:    "CAN_MANAGE",
 			UserName: "user@company.com",
 		},
 	}
-	modelPermissions := []resources.MlflowModelPermission{
+	modelPermissions := []resources.Permission{
 		{
 			Level:    "CAN_MANAGE",
 			UserName: "user@company.com",
 		},
 	}
-	endpointPermissions := []resources.ModelServingEndpointPermission{
+	endpointPermissions := []resources.Permission{
 		{
 			Level:    "CAN_MANAGE",
 			UserName: "user@company.com",
 		},
 	}
-	clusterPermissions := []resources.ClusterPermission{
+	clusterPermissions := []resources.Permission{
 		{
 			Level:    "CAN_MANAGE",
 			UserName: "user@company.com",

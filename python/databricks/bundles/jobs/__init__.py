@@ -120,8 +120,6 @@ __all__ = [
     "JobParameterDefinitionParam",
     "JobPermission",
     "JobPermissionDict",
-    "JobPermissionLevel",
-    "JobPermissionLevelParam",
     "JobPermissionParam",
     "JobRunAs",
     "JobRunAsDict",
@@ -173,6 +171,9 @@ __all__ = [
     "PeriodicTriggerConfigurationParam",
     "PeriodicTriggerConfigurationTimeUnit",
     "PeriodicTriggerConfigurationTimeUnitParam",
+    "Permission",
+    "PermissionDict",
+    "PermissionParam",
     "PipelineParams",
     "PipelineParamsDict",
     "PipelineParamsParam",
@@ -475,15 +476,6 @@ from databricks.bundles.jobs._models.job_parameter_definition import (
     JobParameterDefinitionDict,
     JobParameterDefinitionParam,
 )
-from databricks.bundles.jobs._models.job_permission import (
-    JobPermission,
-    JobPermissionDict,
-    JobPermissionParam,
-)
-from databricks.bundles.jobs._models.job_permission_level import (
-    JobPermissionLevel,
-    JobPermissionLevelParam,
-)
 from databricks.bundles.jobs._models.job_run_as import (
     JobRunAs,
     JobRunAsDict,
@@ -561,6 +553,11 @@ from databricks.bundles.jobs._models.periodic_trigger_configuration import (
 from databricks.bundles.jobs._models.periodic_trigger_configuration_time_unit import (
     PeriodicTriggerConfigurationTimeUnit,
     PeriodicTriggerConfigurationTimeUnitParam,
+)
+from databricks.bundles.jobs._models.permission import (
+    Permission,
+    PermissionDict,
+    PermissionParam,
 )
 from databricks.bundles.jobs._models.pipeline_params import (
     PipelineParams,
@@ -731,6 +728,11 @@ from databricks.bundles.jobs._models.workspace_storage_info import (
     WorkspaceStorageInfoDict,
     WorkspaceStorageInfoParam,
 )
+
+# Backward-compatibility aliases
+JobPermission = Permission
+JobPermissionDict = PermissionDict
+JobPermissionParam = PermissionParam
 
 
 def _resolve_recursive_imports():

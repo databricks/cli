@@ -90,6 +90,9 @@ __all__ = [
     "PathPattern",
     "PathPatternDict",
     "PathPatternParam",
+    "Permission",
+    "PermissionDict",
+    "PermissionParam",
     "Pipeline",
     "PipelineCluster",
     "PipelineClusterAutoscale",
@@ -106,8 +109,6 @@ __all__ = [
     "PipelineParam",
     "PipelinePermission",
     "PipelinePermissionDict",
-    "PipelinePermissionLevel",
-    "PipelinePermissionLevelParam",
     "PipelinePermissionParam",
     "PipelinesEnvironment",
     "PipelinesEnvironmentDict",
@@ -308,6 +309,11 @@ from databricks.bundles.pipelines._models.path_pattern import (
     PathPatternDict,
     PathPatternParam,
 )
+from databricks.bundles.pipelines._models.permission import (
+    Permission,
+    PermissionDict,
+    PermissionParam,
+)
 from databricks.bundles.pipelines._models.pipeline import (
     Pipeline,
     PipelineDict,
@@ -331,15 +337,6 @@ from databricks.bundles.pipelines._models.pipeline_library import (
     PipelineLibrary,
     PipelineLibraryDict,
     PipelineLibraryParam,
-)
-from databricks.bundles.pipelines._models.pipeline_permission import (
-    PipelinePermission,
-    PipelinePermissionDict,
-    PipelinePermissionParam,
-)
-from databricks.bundles.pipelines._models.pipeline_permission_level import (
-    PipelinePermissionLevel,
-    PipelinePermissionLevelParam,
 )
 from databricks.bundles.pipelines._models.pipelines_environment import (
     PipelinesEnvironment,
@@ -411,3 +408,8 @@ from databricks.bundles.pipelines._models.workspace_storage_info import (
     WorkspaceStorageInfoDict,
     WorkspaceStorageInfoParam,
 )
+
+# Backward-compatibility aliases
+PipelinePermission = Permission
+PipelinePermissionDict = PermissionDict
+PipelinePermissionParam = PermissionParam
