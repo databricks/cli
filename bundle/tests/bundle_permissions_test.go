@@ -1,7 +1,6 @@
 package config_tests
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
@@ -19,7 +18,7 @@ func TestBundlePermissions(t *testing.T) {
 	assert.NotContains(t, b.Config.Permissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
 	assert.NotContains(t, b.Config.Permissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.ApplyBundlePermissions())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
 
 	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
@@ -42,7 +41,7 @@ func TestBundlePermissionsDevTarget(t *testing.T) {
 	assert.Contains(t, b.Config.Permissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
 	assert.Contains(t, b.Config.Permissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.ApplyBundlePermissions())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
 
 	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions

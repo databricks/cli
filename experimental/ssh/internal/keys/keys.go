@@ -10,15 +10,16 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"golang.org/x/crypto/ssh"
 )
 
 // We use different client keys for each session as a good practice for better isolation and control.
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
-func GetLocalSSHKeyPath(sessionID, keysDir string) (string, error) {
+func GetLocalSSHKeyPath(ctx context.Context, sessionID, keysDir string) (string, error) {
 	if keysDir == "" {
-		homeDir, err := os.UserHomeDir() //nolint:forbidigo // TODO: thread ctx through public API
+		homeDir, err := env.UserHomeDir(ctx)
 		if err != nil {
 			return "", fmt.Errorf("failed to get home directory: %w", err)
 		}

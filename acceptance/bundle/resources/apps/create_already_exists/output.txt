@@ -11,6 +11,9 @@
   },
   "id":"1000",
   "name":"test-app-already-exists",
+  "service_principal_client_id":"[UUID]",
+  "service_principal_id":[NUMID],
+  "service_principal_name":"app-test-app-already-exists",
   "url":"test-app-already-exists-123.cloud.databricksapps.com"
 }
 

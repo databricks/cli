@@ -33,7 +33,7 @@ func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	err := RecommendSkillsInstall(ctx, noopInstall)
 	assert.NoError(t, err)
 }
@@ -45,7 +45,7 @@ func TestRecommendSkillsInstallSkipsWhenNoAgents(t *testing.T) {
 	Registry = []Agent{}
 	defer func() { Registry = origRegistry }()
 
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	err := RecommendSkillsInstall(ctx, noopInstall)
 	assert.NoError(t, err)
 }
@@ -64,7 +64,7 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	ctx, stderr := cmdio.NewTestContextWithStderr(context.Background())
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	err := RecommendSkillsInstall(ctx, noopInstall)
 	require.NoError(t, err)
 	assert.Contains(t, stderr.String(), "databricks experimental aitools skills install")
@@ -84,7 +84,7 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 	}
 	defer func() { Registry = origRegistry }()
 
-	ctx, testIO := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
+	ctx, testIO := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	defer testIO.Done()
 
 	// Drain stderr so the prompt write doesn't block.

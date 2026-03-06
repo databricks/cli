@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -59,7 +58,7 @@ func TestResolveVariableReferencesWithSourceLinkedDeployment(t *testing.T) {
 			},
 		}
 
-		diags := bundle.Apply(context.Background(), b, ResolveVariableReferencesOnlyResources("workspace"))
+		diags := bundle.Apply(t.Context(), b, ResolveVariableReferencesOnlyResources("workspace"))
 		require.NoError(t, diags.Error())
 		testCase.assert(t, b)
 	}

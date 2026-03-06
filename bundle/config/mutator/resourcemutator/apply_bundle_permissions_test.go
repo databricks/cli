@@ -1,7 +1,6 @@
 package resourcemutator
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"testing"
@@ -83,7 +82,7 @@ func TestApplyBundlePermissions(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
+	diags := bundle.Apply(t.Context(), b, ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
 
 	require.Len(t, b.Config.Resources.Jobs["job_1"].Permissions, 3)
@@ -174,7 +173,7 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
+	diags := bundle.Apply(t.Context(), b, ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
 
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_VIEW", UserName: "TestUser"})

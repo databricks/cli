@@ -131,7 +131,7 @@ func TestFsCpDir(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, ctx, sourceFiler)
@@ -150,7 +150,7 @@ func TestFsCpFileToFile(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceFile(t, ctx, sourceFiler)
@@ -168,7 +168,7 @@ func TestFsCpFileToDir(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceFile(t, ctx, sourceFiler)
@@ -185,7 +185,7 @@ func TestFsCpFileToDirForWindowsPaths(t *testing.T) {
 		t.Skip("Skipping test on non-windows OS")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	sourceFiler, sourceDir := setupLocalFiler(t)
 	targetFiler, targetDir := setupDbfsFiler(t)
 	setupSourceFile(t, ctx, sourceFiler)
@@ -203,7 +203,7 @@ func TestFsCpDirToDirFileNotOverwritten(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, ctx, sourceFiler)
@@ -227,7 +227,7 @@ func TestFsCpFileToDirFileNotOverwritten(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, ctx, sourceFiler)
@@ -249,7 +249,7 @@ func TestFsCpFileToFileFileNotOverwritten(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, ctx, sourceFiler)
@@ -271,7 +271,7 @@ func TestFsCpDirToDirWithOverwriteFlag(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, ctx, sourceFiler)
@@ -293,7 +293,7 @@ func TestFsCpFileToFileWithOverwriteFlag(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, ctx, sourceFiler)
@@ -315,7 +315,7 @@ func TestFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, ctx, sourceFiler)
@@ -337,7 +337,7 @@ func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			_, tmpDir := testCase.setupFiler(t)
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cp", path.Join(tmpDir), path.Join(tmpDir, "foobar"))
@@ -348,7 +348,7 @@ func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 }
 
 func TestFsCpErrorsOnInvalidScheme(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cp", "dbfs:/a", "https:/b")
 	assert.Equal(t, "invalid scheme: https", err.Error())
 }
@@ -360,7 +360,7 @@ func TestFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceDir(t, ctx, sourceFiler)
@@ -382,7 +382,7 @@ func TestFsCpFileToNonExistentDir(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			sourceFiler, sourceDir := testCase.setupSource(t)
 			targetFiler, targetDir := testCase.setupTarget(t)
 			setupSourceFile(t, ctx, sourceFiler)
@@ -411,7 +411,7 @@ func TestFsCpFileToNonExistentDirWindowsPaths(t *testing.T) {
 		t.Skip("Skipping test on non-windows OS")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	sourceFiler, sourceDir := setupLocalFiler(t)
 	targetFiler, targetDir := setupLocalFiler(t)
 	setupSourceFile(t, ctx, sourceFiler)

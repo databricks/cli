@@ -81,7 +81,7 @@ func TestMiddlewareChain(t *testing.T) {
 	chain := mcp.Chain([]mcp.Middleware{mw1, mw2}, sessionData, handler)
 
 	req := &mcp.CallToolRequest{}
-	result, err := chain(context.Background(), req)
+	result, err := chain(t.Context(), req)
 
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -121,7 +121,7 @@ func TestMiddlewareShortCircuit(t *testing.T) {
 	chain := mcp.Chain([]mcp.Middleware{mw1, mw2}, sessionData, handler)
 
 	req := &mcp.CallToolRequest{}
-	result, err := chain(context.Background(), req)
+	result, err := chain(t.Context(), req)
 
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -145,7 +145,7 @@ func TestMiddlewareError(t *testing.T) {
 	chain := mcp.Chain([]mcp.Middleware{mw}, sessionData, handler)
 
 	req := &mcp.CallToolRequest{}
-	result, err := chain(context.Background(), req)
+	result, err := chain(t.Context(), req)
 
 	assert.Nil(t, result)
 	assert.Equal(t, expectedErr, err)
@@ -179,7 +179,7 @@ func TestMiddlewareSession(t *testing.T) {
 	chain := mcp.Chain([]mcp.Middleware{mw1, mw2}, sessionData, handler)
 
 	req := &mcp.CallToolRequest{}
-	_, err := chain(context.Background(), req)
+	_, err := chain(t.Context(), req)
 
 	require.NoError(t, err)
 	require.NotNil(t, capturedData)
@@ -196,7 +196,7 @@ func TestMiddlewareSession(t *testing.T) {
 func TestMiddlewareContextAccess(t *testing.T) {
 	type contextKey string
 	testKey := contextKey("test-key")
-	ctx := context.WithValue(context.Background(), testKey, "test-value")
+	ctx := context.WithValue(t.Context(), testKey, "test-value")
 
 	mw := mcp.NewMiddleware(func(mwCtx *mcp.MiddlewareContext, next mcp.NextFunc) (*mcp.CallToolResult, error) {
 		val := mwCtx.Ctx.Value(testKey)
@@ -319,7 +319,7 @@ func TestServerSessionPersistence(t *testing.T) {
 
 	// Call the tool 3 times
 	for range 3 {
-		_, err := toolHandler(context.Background(), &mcp.CallToolRequest{})
+		_, err := toolHandler(t.Context(), &mcp.CallToolRequest{})
 		require.NoError(t, err)
 	}
 

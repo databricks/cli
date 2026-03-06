@@ -1,7 +1,6 @@
 package config_tests
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
@@ -15,7 +14,7 @@ import (
 )
 
 func load(t *testing.T, path string) *bundle.Bundle {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 	b, err := bundle.Load(ctx, path)
 	require.NoError(t, err)
@@ -26,13 +25,13 @@ func load(t *testing.T, path string) *bundle.Bundle {
 }
 
 func loadTarget(t *testing.T, path, env string) *bundle.Bundle {
-	b, diags := loadTargetWithDiags(path, env)
+	b, diags := loadTargetWithDiags(t, path, env)
 	require.NoError(t, diags.Error())
 	return b
 }
 
-func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
-	ctx := logdiag.InitContext(context.Background())
+func loadTargetWithDiags(t *testing.T, path, env string) (*bundle.Bundle, diag.Diagnostics) {
+	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 	b, err := bundle.Load(ctx, path)
 	if err != nil {

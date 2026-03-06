@@ -1,7 +1,6 @@
 package configure_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -45,7 +44,7 @@ func getTempFileWithContent(t *testing.T, tempHomeDir, content string) *os.File 
 }
 
 func TestDefaultConfigureNoInteractive(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempHomeDir := setup(t)
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
 	oldStdin := os.Stdin
@@ -77,7 +76,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 
 func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	// TODO: Replace with similar test code from go SDK, once we start using it directly
-	ctx := context.Background()
+	ctx := t.Context()
 	tempHomeDir := setup(t)
 	defaultCfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 	cfgPath := filepath.Join(tempHomeDir, "overwrite-databricks-cfg")
@@ -116,7 +115,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 }
 
 func TestEnvVarsConfigureNoInteractive(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempHomeDir := setup(t)
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
@@ -155,7 +154,7 @@ func TestEnvVarsConfigureNoInteractive(t *testing.T) {
 }
 
 func TestEnvVarsConfigureNoArgsNoInteractive(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempHomeDir := setup(t)
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 
@@ -182,7 +181,7 @@ func TestEnvVarsConfigureNoArgsNoInteractive(t *testing.T) {
 }
 
 func TestCustomProfileConfigureNoInteractive(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempHomeDir := setup(t)
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")

@@ -1,7 +1,6 @@
 package process
 
 import (
-	"context"
 	"os/exec"
 	"runtime"
 	"sort"
@@ -18,7 +17,7 @@ func TestWithEnvs(t *testing.T) {
 		// /bin/sh -c echo $FOO $BAR:  exec: "/bin/sh": file does not exist
 		t.SkipNow()
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx2 := env.Set(ctx, "FOO", "foo")
 	res, err := Background(ctx2, []string{"/bin/sh", "-c", "echo $FOO $BAR"}, WithEnvs(map[string]string{
 		"BAR": "delirium",
@@ -29,7 +28,7 @@ func TestWithEnvs(t *testing.T) {
 
 func TestWorksWithLibsEnv(t *testing.T) {
 	testutil.CleanupEnvironment(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cmd := &exec.Cmd{}
 	err := WithEnvs(map[string]string{

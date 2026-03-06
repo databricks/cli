@@ -35,6 +35,44 @@ var requestObjectTypeToObjectType = map[string]string{
 	"alertsv2":                "alertv2",
 }
 
+// aclPrincipalKey returns a unique key identifying the principal in an ACL entry.
+func aclPrincipalKey(acl iam.AccessControlResponse) string {
+	switch {
+	case acl.UserName != "":
+		return "user:" + acl.UserName
+	case acl.GroupName != "":
+		return "group:" + acl.GroupName
+	case acl.ServicePrincipalName != "":
+		return "sp:" + acl.ServicePrincipalName
+	default:
+		return ""
+	}
+}
+
+// upsertACL adds or replaces an ACL entry by principal key.
+// Entries with no principal key are ignored.
+func upsertACL(perms *iam.ObjectPermissions, entry iam.AccessControlResponse) {
+	key := aclPrincipalKey(entry)
+	if key == "" {
+		return
+	}
+	for i, acl := range perms.AccessControlList {
+		if aclPrincipalKey(acl) == key {
+			perms.AccessControlList[i] = entry
+			return
+		}
+	}
+	perms.AccessControlList = append(perms.AccessControlList, entry)
+}
+
+// upsertPermission adds or replaces an ACL entry on the given object.
+// Must be called with s.mu held.
+func (s *FakeWorkspace) upsertPermission(objectKey string, entry iam.AccessControlResponse) {
+	perms := s.Permissions[objectKey]
+	upsertACL(&perms, entry)
+	s.Permissions[objectKey] = perms
+}
+
 // GetPermissions retrieves permissions for a given object type and ID
 func (s *FakeWorkspace) GetPermissions(req Request) any {
 	defer s.LockUnlock()()
@@ -137,26 +175,9 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		}
 	}
 
-	// Convert AccessControlRequest to AccessControlResponse
-	// Use map to track principal indices and slice to preserve order
-	principalIndices := make(map[string]int)
-	var newAccessControlList []iam.AccessControlResponse
-
+	// Convert AccessControlRequest to AccessControlResponse and replace the ACL.
+	existingPermissions.AccessControlList = nil
 	for _, acl := range updateRequest.AccessControlList {
-		// Determine principal key - use the non-empty field as the unique identifier
-		var principalKey string
-		if acl.UserName != "" {
-			principalKey = "user:" + acl.UserName
-		} else if acl.GroupName != "" {
-			principalKey = "group:" + acl.GroupName
-		} else if acl.ServicePrincipalName != "" {
-			principalKey = "sp:" + acl.ServicePrincipalName
-		}
-
-		if principalKey == "" {
-			continue // Skip invalid entries
-		}
-
 		display := acl.UserName
 		if display == "" {
 			display = acl.ServicePrincipalName
@@ -167,31 +188,18 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 			GroupName:            acl.GroupName,
 			ServicePrincipalName: acl.ServicePrincipalName,
 			DisplayName:          display,
-			AllPermissions:       []iam.Permission{},
 		}
 
-		// Convert PermissionLevel to Permission
 		if acl.PermissionLevel != "" {
-			response.AllPermissions = append(response.AllPermissions, iam.Permission{
+			response.AllPermissions = []iam.Permission{{
 				Inherited:       false,
 				PermissionLevel: acl.PermissionLevel,
 				ForceSendFields: []string{"Inherited"},
-			})
+			}}
 		}
 
-		// Check if principal already exists in our list
-		if index, exists := principalIndices[principalKey]; exists {
-			// Update existing entry (last entry for same principal wins)
-			newAccessControlList[index] = response
-		} else {
-			// Add new entry and track its index
-			principalIndices[principalKey] = len(newAccessControlList)
-			newAccessControlList = append(newAccessControlList, response)
-		}
+		upsertACL(&existingPermissions, response)
 	}
-
-	// Update the permissions
-	existingPermissions.AccessControlList = newAccessControlList
 
 	// Apply cloud environment fixups - better match cloud env
 	if requestObjectType == "jobs" {

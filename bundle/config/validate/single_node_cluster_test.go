@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -90,7 +89,7 @@ func failCases() []struct {
 }
 
 func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tc := range failCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -131,7 +130,7 @@ func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 }
 
 func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tc := range failCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -180,7 +179,7 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 }
 
 func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tc := range failCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -229,7 +228,7 @@ func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
 }
 
 func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tc := range failCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -275,7 +274,7 @@ func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
 }
 
 func TestValidateSingleNodeClusterFailForJobForEachTaskCluster(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tc := range failCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -371,7 +370,7 @@ func passCases() []struct {
 }
 
 func TestValidateSingleNodeClusterPassInteractiveClusters(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tc := range passCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -404,7 +403,7 @@ func TestValidateSingleNodeClusterPassInteractiveClusters(t *testing.T) {
 }
 
 func TestValidateSingleNodeClusterPassJobClusters(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tc := range passCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -444,7 +443,7 @@ func TestValidateSingleNodeClusterPassJobClusters(t *testing.T) {
 }
 
 func TestValidateSingleNodeClusterPassJobTaskClusters(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tc := range passCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -484,7 +483,7 @@ func TestValidateSingleNodeClusterPassJobTaskClusters(t *testing.T) {
 }
 
 func TestValidateSingleNodeClusterPassPipelineClusters(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tc := range passCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -521,7 +520,7 @@ func TestValidateSingleNodeClusterPassPipelineClusters(t *testing.T) {
 }
 
 func TestValidateSingleNodeClusterPassJobForEachTaskCluster(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	for _, tc := range passCases() {
 		t.Run(tc.name, func(t *testing.T) {
@@ -565,7 +564,7 @@ func TestValidateSingleNodeClusterPassJobForEachTaskCluster(t *testing.T) {
 }
 
 func TestValidateSingleNodeClusterWithIsSingleNode(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test that when is_single_node is set to true, no warning is shown
 	// even if the manual single-node configuration is not present.

@@ -76,6 +76,15 @@ func TestValidate(t *testing.T) {
 			name: "valid IDE cursor",
 			opts: client.ClientOptions{ClusterID: "abc-123", IDE: "cursor"},
 		},
+		{
+			name:    "environment version too low",
+			opts:    client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 3},
+			wantErr: "environment version must be >= 4, got 3",
+		},
+		{
+			name: "valid environment version",
+			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
+		},
 	}
 
 	for _, tt := range tests {
@@ -139,6 +148,11 @@ func TestToProxyCommand(t *testing.T) {
 			name: "with liteswap",
 			opts: client.ClientOptions{ClusterID: "abc-123", Liteswap: "test-env"},
 			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --liteswap=test-env",
+		},
+		{
+			name: "with environment version",
+			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
+			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --environment-version=4",
 		},
 	}
 

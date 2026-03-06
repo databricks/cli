@@ -1,14 +1,13 @@
 package root
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSkipPrompt(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.False(t, shouldSkipPrompt(ctx))
 
 	ctx = SkipPrompt(ctx)
@@ -16,7 +15,7 @@ func TestSkipPrompt(t *testing.T) {
 }
 
 func TestSkipLoadBundle(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.False(t, shouldSkipLoadBundle(ctx))
 
 	ctx = SkipLoadBundle(ctx)

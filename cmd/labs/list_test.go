@@ -1,7 +1,6 @@
 package labs_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal/testcli"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestListingWorks(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.WithUserHomeDir(ctx, "project/testdata/installed-in-home")
 	c := testcli.NewRunner(t, ctx, "labs", "list")
 	stdout, _, err := c.Run()

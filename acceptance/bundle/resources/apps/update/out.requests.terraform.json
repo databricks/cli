@@ -12,7 +12,10 @@
 {
   "body": {
     "description": "MY_APP_DESCRIPTION",
-    "name": "myappname"
+    "name": "myappname",
+    "service_principal_client_id": "[UUID]",
+    "service_principal_id": [NUMID],
+    "service_principal_name": "app-myappname"
   },
   "method": "PATCH",
   "path": "/api/2.0/apps/myappname"

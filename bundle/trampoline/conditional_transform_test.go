@@ -1,7 +1,6 @@
 package trampoline
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -50,7 +49,7 @@ func TestNoTransformByDefault(t *testing.T) {
 	}
 
 	trampoline := TransformWheelTask()
-	diags := bundle.Apply(context.Background(), b, trampoline)
+	diags := bundle.Apply(t.Context(), b, trampoline)
 	require.NoError(t, diags.Error())
 
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]
@@ -103,7 +102,7 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	}
 
 	trampoline := TransformWheelTask()
-	diags := bundle.Apply(context.Background(), b, trampoline)
+	diags := bundle.Apply(t.Context(), b, trampoline)
 	require.NoError(t, diags.Error())
 
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]

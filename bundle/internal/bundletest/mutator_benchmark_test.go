@@ -16,7 +16,7 @@ func benchmarkRequiredMutator(b *testing.B, numJobs int) {
 
 	var diags diag.Diagnostics
 	for b.Loop() {
-		diags = bundle.Apply(context.Background(), myBundle, validate.Required())
+		diags = bundle.Apply(b.Context(), myBundle, validate.Required())
 	}
 	assert.NotEmpty(b, diags)
 }
@@ -26,7 +26,7 @@ func benchmarkEnumMutator(b *testing.B, numJobs int) {
 
 	var diags diag.Diagnostics
 	for b.Loop() {
-		diags = bundle.Apply(context.Background(), myBundle, validate.Enum())
+		diags = bundle.Apply(b.Context(), myBundle, validate.Enum())
 	}
 	assert.NotEmpty(b, diags)
 }
@@ -36,7 +36,7 @@ func benchmarkWalkReadOnlyBaseline(b *testing.B, numJobs int) {
 
 	for b.Loop() {
 		var paths []dyn.Path
-		bundle.ApplyFuncContext(context.Background(), myBundle, func(ctx context.Context, b *bundle.Bundle) {
+		bundle.ApplyFuncContext(b.Context(), myBundle, func(ctx context.Context, b *bundle.Bundle) {
 			_ = dyn.WalkReadOnly(b.Config.Value(), func(p dyn.Path, v dyn.Value) error {
 				paths = append(paths, p)
 				return nil
@@ -49,7 +49,7 @@ func benchmarkNoopBaseline(b *testing.B, numJobs int) {
 	myBundle := Bundle(b, numJobs)
 
 	for b.Loop() {
-		bundle.ApplyFuncContext(context.Background(), myBundle, func(ctx context.Context, b *bundle.Bundle) {})
+		bundle.ApplyFuncContext(b.Context(), myBundle, func(ctx context.Context, b *bundle.Bundle) {})
 	}
 }
 

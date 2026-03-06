@@ -1,7 +1,6 @@
 package configsync
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,7 +15,7 @@ import (
 )
 
 func TestApplyChangesToYAML_PreserveFormatting(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 
 	tmpDir := t.TempDir()
 
