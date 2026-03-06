@@ -1,7 +1,6 @@
 package vscode
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -53,7 +52,7 @@ func TestGetDefaultSettingsPath_VSCode_Linux(t *testing.T) {
 		t.Skip("Skipping Linux-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/home/testuser")
 
 	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
@@ -66,7 +65,7 @@ func TestGetDefaultSettingsPath_Cursor_Linux(t *testing.T) {
 		t.Skip("Skipping Linux-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/home/testuser")
 
 	path, err := getDefaultSettingsPath(ctx, cursorIDE)
@@ -79,7 +78,7 @@ func TestGetDefaultSettingsPath_VSCode_Darwin(t *testing.T) {
 		t.Skip("Skipping Darwin-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/Users/testuser")
 
 	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
@@ -92,7 +91,7 @@ func TestGetDefaultSettingsPath_Cursor_Darwin(t *testing.T) {
 		t.Skip("Skipping Darwin-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/Users/testuser")
 
 	path, err := getDefaultSettingsPath(ctx, cursorIDE)
@@ -105,7 +104,7 @@ func TestGetDefaultSettingsPath_VSCode_Windows(t *testing.T) {
 		t.Skip("Skipping Windows-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "APPDATA", `C:\Users\testuser\AppData\Roaming`)
 
 	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
@@ -118,7 +117,7 @@ func TestGetDefaultSettingsPath_Cursor_Windows(t *testing.T) {
 		t.Skip("Skipping Windows-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "APPDATA", `C:\Users\testuser\AppData\Roaming`)
 
 	path, err := getDefaultSettingsPath(ctx, cursorIDE)
@@ -437,7 +436,7 @@ func TestBackupSettings(t *testing.T) {
 	err := os.WriteFile(settingsPath, originalContent, 0o600)
 	require.NoError(t, err)
 
-	ctx, _ := cmdio.NewTestContextWithStderr(context.Background())
+	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
 
 	// First backup: should create .original.bak
 	err = backupSettings(ctx, settingsPath)

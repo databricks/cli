@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -29,7 +28,7 @@ func TestConvertGrants(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	resource := convertGrantsResource(ctx, vin)
 	require.NotNil(t, resource)
 	assert.Equal(t, []schema.ResourceGrantsGrant{
@@ -52,7 +51,7 @@ func TestConvertGrantsNil(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	resource := convertGrantsResource(ctx, vin)
 	assert.Nil(t, resource)
 }
@@ -65,7 +64,7 @@ func TestConvertGrantsEmpty(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	resource := convertGrantsResource(ctx, vin)
 	assert.Nil(t, resource)
 }

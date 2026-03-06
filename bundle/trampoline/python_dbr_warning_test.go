@@ -1,7 +1,6 @@
 package trampoline
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -50,7 +49,7 @@ func TestIncompatibleWheelTasksWithNewCluster(t *testing.T) {
 		},
 	}
 
-	diags := hasIncompatibleWheelTasks(context.Background(), b)
+	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.NotEmpty(t, diags)
 }
 
@@ -100,10 +99,10 @@ func TestIncompatibleWheelTasksWithJobClusterKey(t *testing.T) {
 		},
 	}
 
-	diags := hasIncompatibleWheelTasks(context.Background(), b)
+	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.NotEmpty(t, diags)
 
-	diags = bundle.Apply(context.Background(), b, WrapperWarning())
+	diags = bundle.Apply(t.Context(), b, WrapperWarning())
 	require.ErrorContains(t, diags.Error(), "uses incompatible DBR version 12.2.x-scala2.12")
 }
 
@@ -149,7 +148,7 @@ func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
 		SparkVersion: "12.2.x-scala2.12",
 	}, nil)
 
-	diags := hasIncompatibleWheelTasks(context.Background(), b)
+	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.NotEmpty(t, diags)
 	require.ErrorContains(t, diags.Error(), "uses cluster with incompatible DBR version 12.2.x-scala2.12")
 }
@@ -256,7 +255,7 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 		SparkVersion: "13.2.x-scala2.12",
 	}, nil)
 
-	diags := hasIncompatibleWheelTasks(context.Background(), b)
+	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.Empty(t, diags)
 }
 
@@ -297,7 +296,7 @@ func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := hasIncompatibleWheelTasks(context.Background(), b)
+	diags := hasIncompatibleWheelTasks(t.Context(), b)
 	require.Empty(t, diags)
 }
 
@@ -340,7 +339,7 @@ func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, WrapperWarning())
+	diags := bundle.Apply(t.Context(), b, WrapperWarning())
 	require.NoError(t, diags.Error())
 }
 

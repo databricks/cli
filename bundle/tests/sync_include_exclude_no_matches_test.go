@@ -1,7 +1,6 @@
 package config_tests
 
 import (
-	"context"
 	"fmt"
 	"path"
 	"testing"
@@ -16,7 +15,7 @@ import (
 func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 	b := loadTarget(t, "./sync/override", "development")
 
-	diags := bundle.Apply(context.Background(), b, validate.ValidateSyncPatterns())
+	diags := bundle.Apply(t.Context(), b, validate.ValidateSyncPatterns())
 	require.Len(t, diags, 3)
 	require.NoError(t, diags.Error())
 
@@ -46,7 +45,7 @@ func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 func TestSyncIncludeWithNegate(t *testing.T) {
 	b := loadTarget(t, "./sync/negate", "default")
 
-	diags := bundle.Apply(context.Background(), b, validate.ValidateSyncPatterns())
+	diags := bundle.Apply(t.Context(), b, validate.ValidateSyncPatterns())
 	require.Empty(t, diags)
 	require.NoError(t, diags.Error())
 }
@@ -54,7 +53,7 @@ func TestSyncIncludeWithNegate(t *testing.T) {
 func TestSyncIncludeWithNegateNoMatches(t *testing.T) {
 	b := loadTarget(t, "./sync/negate", "dev")
 
-	diags := bundle.Apply(context.Background(), b, validate.ValidateSyncPatterns())
+	diags := bundle.Apply(t.Context(), b, validate.ValidateSyncPatterns())
 	require.Len(t, diags, 1)
 	require.NoError(t, diags.Error())
 

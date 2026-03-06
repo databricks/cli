@@ -182,8 +182,9 @@ type executable interface {
 // cache stores all entries for cacheable Workspace File System calls.
 // We care about caching only [ReadDir] and [Stat] calls.
 type cache struct {
-	f Filer
-	m sync.Mutex
+	f   Filer
+	ctx context.Context
+	m   sync.Mutex
 
 	readDir map[string]*readDirEntry
 	stat    map[string]*statEntry
@@ -195,9 +196,10 @@ type cache struct {
 	wg sync.WaitGroup
 }
 
-func newWorkspaceFilesReadaheadCache(f Filer) *cache {
+func newWorkspaceFilesReadaheadCache(ctx context.Context, f Filer) *cache {
 	c := &cache{
-		f: f,
+		f:   f,
+		ctx: ctx,
 
 		readDir: make(map[string]*readDirEntry),
 		stat:    make(map[string]*statEntry),
@@ -205,7 +207,6 @@ func newWorkspaceFilesReadaheadCache(f Filer) *cache {
 		queue: make(chan executable, kMaxQueueSize),
 	}
 
-	ctx := context.Background()
 	for range kNumCacheWorkers {
 		c.wg.Add(1)
 		go c.work(ctx)
@@ -251,7 +252,7 @@ func (c *cache) completeReadDirForDir(name string, dirEntry fs.DirEntry) {
 	if _, ok := c.readDir[name]; !ok {
 		// Create a new cache entry and queue the operation.
 		e := newReadDirEntry(name)
-		err := c.enqueue(context.Background(), e)
+		err := c.enqueue(c.ctx, e)
 		if err != nil {
 			e.markError(err)
 		}
@@ -278,7 +279,7 @@ func (c *cache) completeReadDirForFile(name string, dirEntry fs.DirEntry) {
 		// This is the only (?) case where this implementation is tied to the workspace filer.
 
 		// Queue a [Stat] call for the file.
-		err := c.enqueue(context.Background(), e)
+		err := c.enqueue(c.ctx, e)
 		if err != nil {
 			e.markError(err)
 		}

@@ -1,7 +1,6 @@
 package root
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/useragent"
@@ -29,7 +28,7 @@ func TestWithCommandInUserAgent(t *testing.T) {
 	assert.Equal(t, "hello", commandString(hello))
 	assert.Equal(t, "hello_world", commandString(world))
 
-	ctx := withCommandInUserAgent(context.Background(), world)
+	ctx := withCommandInUserAgent(t.Context(), world)
 
 	ua := useragent.FromContext(ctx)
 	assert.Contains(t, ua, "cmd/hello_world")

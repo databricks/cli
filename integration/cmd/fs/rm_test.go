@@ -1,7 +1,6 @@
 package fs_test
 
 import (
-	"context"
 	"io/fs"
 	"path"
 	"strings"
@@ -21,13 +20,13 @@ func TestFsRmFile(t *testing.T) {
 			t.Parallel()
 
 			// Create a file
-			ctx := context.Background()
+			ctx := t.Context()
 			f, tmpDir := testCase.setupFiler(t)
-			err := f.Write(context.Background(), "hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
+			err := f.Write(t.Context(), "hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
 			// Check file was created
-			_, err = f.Stat(context.Background(), "hello.txt")
+			_, err = f.Stat(t.Context(), "hello.txt")
 			assert.NoError(t, err)
 
 			// Run rm command
@@ -36,7 +35,7 @@ func TestFsRmFile(t *testing.T) {
 			assert.Equal(t, "", stdout.String())
 
 			// Assert file was deleted
-			_, err = f.Stat(context.Background(), "hello.txt")
+			_, err = f.Stat(t.Context(), "hello.txt")
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}
@@ -50,13 +49,13 @@ func TestFsRmEmptyDir(t *testing.T) {
 			t.Parallel()
 
 			// Create a directory
-			ctx := context.Background()
+			ctx := t.Context()
 			f, tmpDir := testCase.setupFiler(t)
-			err := f.Mkdir(context.Background(), "a")
+			err := f.Mkdir(t.Context(), "a")
 			require.NoError(t, err)
 
 			// Check directory was created
-			_, err = f.Stat(context.Background(), "a")
+			_, err = f.Stat(t.Context(), "a")
 			assert.NoError(t, err)
 
 			// Run rm command
@@ -65,7 +64,7 @@ func TestFsRmEmptyDir(t *testing.T) {
 			assert.Equal(t, "", stdout.String())
 
 			// Assert directory was deleted
-			_, err = f.Stat(context.Background(), "a")
+			_, err = f.Stat(t.Context(), "a")
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}
@@ -79,17 +78,17 @@ func TestFsRmNonEmptyDirectory(t *testing.T) {
 			t.Parallel()
 
 			// Create a directory
-			ctx := context.Background()
+			ctx := t.Context()
 			f, tmpDir := testCase.setupFiler(t)
-			err := f.Mkdir(context.Background(), "a")
+			err := f.Mkdir(t.Context(), "a")
 			require.NoError(t, err)
 
 			// Create a file in the directory
-			err = f.Write(context.Background(), "a/hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
+			err = f.Write(t.Context(), "a/hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
 			// Check file was created
-			_, err = f.Stat(context.Background(), "a/hello.txt")
+			_, err = f.Stat(t.Context(), "a/hello.txt")
 			assert.NoError(t, err)
 
 			// Run rm command
@@ -106,7 +105,7 @@ func TestFsRmForNonExistentFile(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			_, tmpDir := testCase.setupFiler(t)
 
 			// Expect error if file does not exist
@@ -123,19 +122,19 @@ func TestFsRmDirRecursively(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			f, tmpDir := testCase.setupFiler(t)
 
 			// Create a directory
-			err := f.Mkdir(context.Background(), "a")
+			err := f.Mkdir(t.Context(), "a")
 			require.NoError(t, err)
 
 			// Create a file in the directory
-			err = f.Write(context.Background(), "a/hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
+			err = f.Write(t.Context(), "a/hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
 			// Check file was created
-			_, err = f.Stat(context.Background(), "a/hello.txt")
+			_, err = f.Stat(t.Context(), "a/hello.txt")
 			assert.NoError(t, err)
 
 			// Run rm command
@@ -144,7 +143,7 @@ func TestFsRmDirRecursively(t *testing.T) {
 			assert.Equal(t, "", stdout.String())
 
 			// Assert directory was deleted
-			_, err = f.Stat(context.Background(), "a")
+			_, err = f.Stat(t.Context(), "a")
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}

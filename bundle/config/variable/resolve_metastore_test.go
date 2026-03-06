@@ -1,7 +1,6 @@
 package variable
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -21,7 +20,7 @@ func TestResolveMetastore_ResolveSuccess(t *testing.T) {
 			{MetastoreId: "abcd", Name: "metastore"},
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveMetastore{name: "metastore"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
@@ -38,7 +37,7 @@ func TestResolveMetastore_ResolveNotFound(t *testing.T) {
 			{MetastoreId: "abcd", Name: "different"},
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveMetastore{name: "metastore"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorContains(t, err, "metastore named \"metastore\" does not exist")
@@ -55,7 +54,7 @@ func TestResolveMetastore_ResolveMultiple(t *testing.T) {
 			{MetastoreId: "efgh", Name: "metastore"},
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveMetastore{name: "metastore"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.Error(t, err)

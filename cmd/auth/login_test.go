@@ -20,7 +20,7 @@ func loadTestProfile(t *testing.T, ctx context.Context, profileName string) *pro
 }
 
 func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./imaginary-file/databrickscfg")
 
 	existingProfile, err := loadProfileByName(ctx, "foo", profile.DefaultProfiler)
@@ -33,7 +33,7 @@ func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
 func TestSetHost(t *testing.T) {
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 
 	profile1 := loadTestProfile(t, ctx, "profile-1")
 	profile2 := loadTestProfile(t, ctx, "profile-2")
@@ -76,7 +76,7 @@ func TestSetHost(t *testing.T) {
 func TestSetAccountId(t *testing.T) {
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 
 	accountProfile := loadTestProfile(t, ctx, "account-profile")
 
@@ -104,7 +104,7 @@ func TestSetAccountId(t *testing.T) {
 func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 
 	unifiedWorkspaceProfile := loadTestProfile(t, ctx, "unified-workspace")
 	unifiedAccountProfile := loadTestProfile(t, ctx, "unified-account")
@@ -161,7 +161,7 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 
 func TestPromptForWorkspaceIDInNonInteractiveMode(t *testing.T) {
 	// Setup non-interactive context
-	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 
 	// Test that promptForWorkspaceID returns empty string (no error) in non-interactive mode
 	workspaceID, err := promptForWorkspaceID(ctx)
@@ -231,7 +231,7 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			if tc.configFileEnv != "" {
 				t.Setenv("DATABRICKS_CONFIG_FILE", tc.configFileEnv)

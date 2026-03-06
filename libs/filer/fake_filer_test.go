@@ -1,7 +1,6 @@
 package filer
 
 import (
-	"context"
 	"io"
 	"io/fs"
 	"testing"
@@ -16,7 +15,7 @@ func TestFakeFiler_Read(t *testing.T) {
 		"file": {},
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	r, err := f.Read(ctx, "file")
 	require.NoError(t, err)
 	contents, err := io.ReadAll(r)
@@ -31,7 +30,7 @@ func TestFakeFiler_Read_NotFound(t *testing.T) {
 		"foo": {},
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := f.Read(ctx, "bar")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
@@ -41,7 +40,7 @@ func TestFakeFiler_ReadDir_NotFound(t *testing.T) {
 		"dir1": {FakeDir: true},
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := f.ReadDir(ctx, "dir2")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
@@ -51,7 +50,7 @@ func TestFakeFiler_ReadDir_NotADirectory(t *testing.T) {
 		"file": {},
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := f.ReadDir(ctx, "file")
 	assert.ErrorIs(t, err, fs.ErrInvalid)
 }
@@ -63,7 +62,7 @@ func TestFakeFiler_ReadDir(t *testing.T) {
 		"dir1/dir2":  {FakeDir: true},
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	entries, err := f.ReadDir(ctx, "dir1/")
 	require.NoError(t, err)
 	require.Len(t, entries, 2)
@@ -80,7 +79,7 @@ func TestFakeFiler_Stat(t *testing.T) {
 		"file": {},
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	info, err := f.Stat(ctx, "file")
 	require.NoError(t, err)
 
@@ -92,7 +91,7 @@ func TestFakeFiler_Stat_NotFound(t *testing.T) {
 		"foo": {},
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := f.Stat(ctx, "bar")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }

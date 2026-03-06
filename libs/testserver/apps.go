@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
@@ -212,6 +213,29 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 	app.Url = name + "-123.cloud.databricksapps.com"
 	app.Id = strconv.Itoa(len(s.Apps) + 1000)
+
+	// Assign a service principal to the app, mimicking the real platform.
+	if app.ServicePrincipalClientId == "" {
+		app.ServicePrincipalClientId = nextUUID()
+		app.ServicePrincipalId = nextID()
+		app.ServicePrincipalName = "app-" + name
+	}
+
+	// Simulate the apps platform side effect: when an app references a job
+	// with a permission, the platform grants that permission to the app's
+	// service principal on the referenced resource.
+	for _, res := range app.Resources {
+		if res.Job == nil {
+			continue
+		}
+		s.upsertPermission("/jobs/"+res.Job.Id, iam.AccessControlResponse{
+			ServicePrincipalName: app.ServicePrincipalName,
+			AllPermissions: []iam.Permission{{
+				PermissionLevel: iam.PermissionLevel(res.Job.Permission),
+				ForceSendFields: []string{"Inherited"},
+			}},
+		})
+	}
 
 	s.Apps[name] = app
 	return Response{

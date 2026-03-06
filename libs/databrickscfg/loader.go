@@ -75,7 +75,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		return nil
 	}
 
-	ctx := context.Background()
+	ctx := context.Background() //nolint:gocritic // SDK interface does not accept context.
 	configFile, err := config.LoadFile(cfg.ConfigFile)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {

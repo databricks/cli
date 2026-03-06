@@ -58,7 +58,7 @@ func TestSpinnerModelViewQuitting(t *testing.T) {
 }
 
 func TestSpinnerStructUpdateBeforeClose(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, _ = NewTestContextWithStderr(ctx)
 
 	sp := NewSpinner(ctx)
@@ -71,7 +71,7 @@ func TestSpinnerStructUpdateBeforeClose(t *testing.T) {
 }
 
 func TestSpinnerStructCloseIdempotent(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, _ = NewTestContextWithStderr(ctx)
 
 	sp := NewSpinner(ctx)
@@ -82,7 +82,7 @@ func TestSpinnerStructCloseIdempotent(t *testing.T) {
 }
 
 func TestSpinnerStructUpdateAfterClose(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, _ = NewTestContextWithStderr(ctx)
 
 	sp := NewSpinner(ctx)
@@ -92,7 +92,7 @@ func TestSpinnerStructUpdateAfterClose(t *testing.T) {
 }
 
 func TestSpinnerStructNonInteractive(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	// Create context without TTY simulation (non-interactive)
 	ctx, _ = NewTestContextWithStderr(ctx)
 
@@ -104,7 +104,7 @@ func TestSpinnerStructNonInteractive(t *testing.T) {
 }
 
 func TestSpinnerBackwardCompatibility(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, _ = NewTestContextWithStderr(ctx)
 
 	// Old API should still work
@@ -116,7 +116,7 @@ func TestSpinnerBackwardCompatibility(t *testing.T) {
 }
 
 func TestSpinnerStructContextCancellation(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, _ = NewTestContextWithStderr(ctx)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -133,7 +133,7 @@ func TestSpinnerStructContextCancellation(t *testing.T) {
 }
 
 func TestSpinnerStructConcurrentClose(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, _ = NewTestContextWithStderr(ctx)
 
 	ctx, cancel := context.WithCancel(ctx)

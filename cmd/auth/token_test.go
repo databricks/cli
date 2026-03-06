@@ -661,7 +661,7 @@ func TestToken_loadToken(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := cmdio.MockDiscard(context.Background())
+			ctx := cmdio.MockDiscard(t.Context())
 			if c.setupCtx != nil {
 				ctx = c.setupCtx(ctx)
 			}

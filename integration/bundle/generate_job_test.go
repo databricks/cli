@@ -32,7 +32,7 @@ func TestGenerateFromExistingJobAndDeploy(t *testing.T) {
 
 	jobId := gt.createTestJob(ctx)
 	t.Cleanup(func() {
-		gt.destroyJob(ctx, jobId)
+		gt.destroyJob(context.WithoutCancel(ctx), jobId)
 	})
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)

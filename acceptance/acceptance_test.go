@@ -567,7 +567,7 @@ func runTest(t *testing.T,
 		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	ctx, cancelFunc := context.WithTimeout(t.Context(), timeout)
 	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
