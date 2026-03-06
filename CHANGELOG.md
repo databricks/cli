@@ -1,5 +1,11 @@
 # Version changelog
 
+## Release v0.292.0 (2026-03-05)
+
+### Bundles
+* Added permissions support for Lakebase Database projects ([#4626](https://github.com/databricks/cli/pull/4626))
+
+
 ## Release v0.291.0 (2026-03-04)
 
 ### Bundles

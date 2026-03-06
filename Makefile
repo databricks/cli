@@ -176,13 +176,15 @@ GENKIT_BINARY := $(UNIVERSE_DIR)/bazel-bin/openapi/genkit/genkit_/genkit
 
 generate:
 	@echo "Checking out universe at SHA: $$(cat .codegen/_openapi_sha)"
-	cd $(UNIVERSE_DIR) && git fetch origin master && git checkout $$(cat $(PWD)/.codegen/_openapi_sha)
+	cd $(UNIVERSE_DIR) && git cat-file -e $$(cat $(PWD)/.codegen/_openapi_sha) 2>/dev/null || git fetch --filter=blob:none origin master && git checkout $$(cat $(PWD)/.codegen/_openapi_sha)
 	@echo "Building genkit..."
 	cd $(UNIVERSE_DIR) && bazel build //openapi/genkit
 	@echo "Generating CLI code..."
 	$(GENKIT_BINARY) update-sdk
+	cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes
 	@echo "Updating direct engine config..."
 	make generate-direct
+	go test ./bundle/internal/schema
 
 .codegen/openapi.json: .codegen/_openapi_sha
 	wget -O $@.tmp "https://openapi.dev.databricks.com/$$(cat $<)/specs/all-internal.json" && mv $@.tmp $@ && touch $@
