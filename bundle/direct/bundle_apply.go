@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -16,7 +15,7 @@ import (
 
 type MigrateMode bool
 
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, plan *deployplan.Plan, migrateMode MigrateMode) {
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan, migrateMode MigrateMode) {
 	if plan == nil {
 		panic("Planning is not done")
 	}
