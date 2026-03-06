@@ -385,7 +385,7 @@ token = flag-token
 				t.Setenv("DATABRICKS_CONFIG_PROFILE", tc.envProfile)
 			}
 
-			ctx := cmdio.MockDiscard(context.Background())
+			ctx := cmdio.MockDiscard(t.Context())
 			ctx = SkipLoadBundle(ctx)
 			cmd := New(ctx)
 
@@ -422,7 +422,7 @@ token = named-token
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	ctx = SkipLoadBundle(ctx)
 	cmd := New(ctx)
 

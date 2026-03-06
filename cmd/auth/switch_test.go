@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestSwitchCommand_WithProfileFlag(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
 
@@ -45,7 +44,7 @@ func TestSwitchCommand_WithProfileFlag(t *testing.T) {
 }
 
 func TestSwitchCommand_ProfileNotFound(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
 
@@ -71,7 +70,7 @@ func TestSwitchCommand_ProfileNotFound(t *testing.T) {
 }
 
 func TestSwitchCommand_NonInteractiveNoProfile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
 
@@ -97,7 +96,7 @@ func TestSwitchCommand_NonInteractiveNoProfile(t *testing.T) {
 }
 
 func TestSwitchCommand_WritesSettingsSection(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
 
