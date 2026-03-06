@@ -194,6 +194,14 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 			job.HasMore = true
 			job.NextPageToken = strconv.Itoa(end)
 		}
+
+		// On subsequent pages the real API returns empty arrays for properties
+		// that were fully included on the first page.
+		if offset > 0 {
+			job.Settings.JobClusters = nil
+			job.Settings.Environments = nil
+			job.Settings.Parameters = nil
+		}
 	}
 
 	return Response{Body: job}
