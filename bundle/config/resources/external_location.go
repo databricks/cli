@@ -12,43 +12,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type ExternalLocationGrantPrivilege string
-
-const (
-	ExternalLocationGrantPrivilegeAllPrivileges        ExternalLocationGrantPrivilege = "ALL_PRIVILEGES"
-	ExternalLocationGrantPrivilegeCreateExternalTable  ExternalLocationGrantPrivilege = "CREATE_EXTERNAL_TABLE"
-	ExternalLocationGrantPrivilegeCreateExternalVolume ExternalLocationGrantPrivilege = "CREATE_EXTERNAL_VOLUME"
-	ExternalLocationGrantPrivilegeCreateManagedStorage ExternalLocationGrantPrivilege = "CREATE_MANAGED_STORAGE"
-	ExternalLocationGrantPrivilegeCreateTable          ExternalLocationGrantPrivilege = "CREATE_TABLE"
-	ExternalLocationGrantPrivilegeCreateVolume         ExternalLocationGrantPrivilege = "CREATE_VOLUME"
-	ExternalLocationGrantPrivilegeManage               ExternalLocationGrantPrivilege = "MANAGE"
-	ExternalLocationGrantPrivilegeReadFiles            ExternalLocationGrantPrivilege = "READ_FILES"
-	ExternalLocationGrantPrivilegeWriteFiles           ExternalLocationGrantPrivilege = "WRITE_FILES"
-)
-
-// Values returns all valid ExternalLocationGrantPrivilege values
-func (ExternalLocationGrantPrivilege) Values() []ExternalLocationGrantPrivilege {
-	return []ExternalLocationGrantPrivilege{
-		ExternalLocationGrantPrivilegeAllPrivileges,
-		ExternalLocationGrantPrivilegeCreateExternalTable,
-		ExternalLocationGrantPrivilegeCreateExternalVolume,
-		ExternalLocationGrantPrivilegeCreateManagedStorage,
-		ExternalLocationGrantPrivilegeCreateTable,
-		ExternalLocationGrantPrivilegeCreateVolume,
-		ExternalLocationGrantPrivilegeManage,
-		ExternalLocationGrantPrivilegeReadFiles,
-		ExternalLocationGrantPrivilegeWriteFiles,
-	}
-}
-
-// ExternalLocationGrant holds the grant level settings for a single principal in Unity Catalog.
-// Multiple of these can be defined on any external location.
-type ExternalLocationGrant struct {
-	Privileges []ExternalLocationGrantPrivilege `json:"privileges"`
-
-	Principal string `json:"principal"`
-}
-
 type ExternalLocation struct {
 	// Manually include BaseResource fields to avoid URL field conflict
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
@@ -59,7 +22,7 @@ type ExternalLocation struct {
 	catalog.CreateExternalLocation
 
 	// List of grants to apply on this external location.
-	Grants []ExternalLocationGrant `json:"grants,omitempty"`
+	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 func (e *ExternalLocation) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

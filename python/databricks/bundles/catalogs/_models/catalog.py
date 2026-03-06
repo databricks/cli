@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
-from databricks.bundles.catalogs._models.catalog_grant import (
-    CatalogGrant,
-    CatalogGrantParam,
-)
 from databricks.bundles.catalogs._models.lifecycle import Lifecycle, LifecycleParam
+from databricks.bundles.catalogs._models.privilege_assignment import (
+    PrivilegeAssignment,
+    PrivilegeAssignmentParam,
+)
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
@@ -30,7 +30,7 @@ class Catalog(Resource):
 
     connection_name: VariableOrOptional[str] = None
 
-    grants: VariableOrList[CatalogGrant] = field(default_factory=list)
+    grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
 
     lifecycle: VariableOrOptional[Lifecycle] = None
 
@@ -61,7 +61,7 @@ class CatalogDict(TypedDict, total=False):
 
     connection_name: VariableOrOptional[str]
 
-    grants: VariableOrList[CatalogGrantParam]
+    grants: VariableOrList[PrivilegeAssignmentParam]
 
     lifecycle: VariableOrOptional[LifecycleParam]
 
