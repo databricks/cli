@@ -16,6 +16,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+type ClusterState struct {
+	compute.ClusterSpec
+	Started bool `json:"started,omitempty"`
+}
+
 type ResourceCluster struct {
 	client *databricks.WorkspaceClient
 }
@@ -26,11 +31,15 @@ func (r *ResourceCluster) New(client *databricks.WorkspaceClient) any {
 	}
 }
 
-func (r *ResourceCluster) PrepareState(input *resources.Cluster) *compute.ClusterSpec {
-	return &input.ClusterSpec
+func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
+	started := input.Lifecycle.Started != nil && *input.Lifecycle.Started
+	return &ClusterState{
+		ClusterSpec: input.ClusterSpec,
+		Started:     started,
+	}
 }
 
-func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.ClusterSpec {
+func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *ClusterState {
 	spec := &compute.ClusterSpec{
 		ApplyPolicyDefaultValues:   false,
 		Autoscale:                  input.Autoscale,
@@ -71,20 +80,20 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 	if input.Spec != nil {
 		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
 	}
-	return spec
+	return &ClusterState{ClusterSpec: *spec, Started: false}
 }
 
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.ClusterDetails, error) {
 	return r.client.Clusters.GetByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, *compute.ClusterDetails, error) {
-	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(config))
+func (r *ResourceCluster) DoCreate(ctx context.Context, config *ClusterState) (string, *compute.ClusterDetails, error) {
+	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(&config.ClusterSpec))
 	if err != nil {
 		return "", nil, err
 	}
 	// With lifecycle.started=true, wait for the cluster to reach the running state.
-	if lifecycleStartedFromContext(ctx) {
+	if config.Started {
 		details, err := wait.Get()
 		if err != nil {
 			return "", nil, err
@@ -94,12 +103,12 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterS
 	return wait.ClusterId, nil, nil
 }
 
-func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec, _ Changes) (*compute.ClusterDetails, error) {
+func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *ClusterState, _ Changes) (*compute.ClusterDetails, error) {
 	// Same retry as in TF provider logic
 	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 	timeout := 15 * time.Minute
 	_, err := retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
-		wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, config))
+		wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, &config.ClusterSpec))
 		if err == nil {
 			return wait, nil
 		}
@@ -115,7 +124,7 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compu
 	return nil, err
 }
 
-func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *compute.ClusterSpec) error {
+func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *ClusterState) error {
 	_, err := r.client.Clusters.Resize(ctx, compute.ResizeCluster{
 		ClusterId:       id,
 		NumWorkers:      config.NumWorkers,
@@ -137,6 +146,10 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 
 	path := p.Prefix(1).String()
 	switch path {
+	case "started":
+		// started is lifecycle metadata, not an actual cluster property.
+		change.Action = deployplan.Skip
+
 	case "data_security_mode":
 		// We do change skip here in the same way TF provider does suppress diff if the alias is used.
 		// https://github.com/databricks/terraform-provider-databricks/blob/main/clusters/resource_cluster.go#L109-L117

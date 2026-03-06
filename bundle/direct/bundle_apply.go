@@ -5,12 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dresources"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -19,7 +15,7 @@ import (
 
 type MigrateMode bool
 
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, plan *deployplan.Plan, migrateMode MigrateMode) {
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan, migrateMode MigrateMode) {
 	if plan == nil {
 		panic("Planning is not done")
 	}
@@ -99,21 +95,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		// We don't keep NewState around for 'skip' nodes
 
 		if action != deployplan.Skip {
-			// Propagate lifecycle.started into context so resource implementations can use it.
-			deployCtx := ctx
-			if !strings.HasSuffix(resourceKey, ".permissions") && !strings.HasSuffix(resourceKey, ".grants") {
-				nodePath, err := dyn.NewPathFromString(resourceKey)
-				if err == nil {
-					startedV, err := dyn.GetByPath(configRoot.Value(), append(nodePath, dyn.Key("lifecycle"), dyn.Key("started")))
-					if err == nil {
-						if started, ok := startedV.AsBool(); ok && started {
-							deployCtx = dresources.WithLifecycleStarted(deployCtx)
-						}
-					}
-				}
-			}
-
-			if !b.resolveReferences(deployCtx, resourceKey, entry, errorPrefix, false) {
+			if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, false) {
 				return false
 			}
 
@@ -139,7 +121,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				err = b.StateDB.SaveState(resourceKey, dbentry.ID, sv.Value, entry.DependsOn)
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
-				err = d.Deploy(deployCtx, &b.StateDB, sv.Value, action, entry.Changes)
+				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry.Changes)
 			}
 
 			if err != nil {

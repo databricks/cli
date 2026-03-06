@@ -9,6 +9,8 @@ import (
 
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -22,6 +24,7 @@ type AppState struct {
 	SourceCodePath string               `json:"source_code_path,omitempty"`
 	Config         *resources.AppConfig `json:"config,omitempty"`
 	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
+	Started        bool                 `json:"started,omitempty"`
 }
 
 type ResourceApp struct {
@@ -33,11 +36,13 @@ func (*ResourceApp) New(client *databricks.WorkspaceClient) *ResourceApp {
 }
 
 func (*ResourceApp) PrepareState(input *resources.App) *AppState {
+	started := input.Lifecycle.Started != nil && *input.Lifecycle.Started
 	return &AppState{
 		App:            input.App,
 		SourceCodePath: input.SourceCodePath,
 		Config:         input.Config,
 		GitSource:      input.GitSource,
+		Started:        started,
 	}
 }
 
@@ -45,7 +50,13 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 // Deploy-only fields (SourceCodePath, Config, GitSource) are not in remote state,
 // so they default to zero values, which prevents false drift detection.
 func (*ResourceApp) RemapState(remote *apps.App) *AppState {
-	return &AppState{App: *remote}
+	return &AppState{
+		App:            *remote,
+		SourceCodePath: "",
+		Config:         nil,
+		GitSource:      nil,
+		Started:        false,
+	}
 }
 
 func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) {
@@ -55,7 +66,7 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *apps.App, error) {
 	// With lifecycle.started=true, start the app compute (no_compute=false).
 	// Otherwise, skip compute startup during creation.
-	noCompute := !lifecycleStartedFromContext(ctx)
+	noCompute := !config.Started
 	request := apps.CreateAppRequest{
 		App:             config.App,
 		NoCompute:       noCompute,
@@ -116,7 +127,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 	}
 
 	// With lifecycle.started=true, ensure the app compute is running and deploy the latest code.
-	if lifecycleStartedFromContext(ctx) {
+	if config.Started {
 		// Start compute if it is stopped (mirrors bundle run behavior).
 		app, err := r.client.Apps.GetByName(ctx, id)
 		if err != nil {
@@ -142,6 +153,22 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 	}
 
 	return nil, nil
+}
+
+// localOnlyFields are AppState fields that have no counterpart in the remote state.
+// They must not appear in the App update_mask.
+var localOnlyFields = map[string]bool{
+	"source_code_path": true,
+	"config":           true,
+	"git_source":       true,
+	"started":          true,
+}
+
+func (*ResourceApp) OverrideChangeDesc(_ context.Context, p *structpath.PathNode, change *ChangeDesc, _ *apps.App) error {
+	if change.Action == deployplan.Update && localOnlyFields[p.Prefix(1).String()] {
+		change.Action = deployplan.Skip
+	}
+	return nil
 }
 
 func isComputeStopped(app *apps.App) bool {
