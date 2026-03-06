@@ -19,6 +19,9 @@ const (
 	// Human-readable names to show in the output
 	vscodeName = "VS Code"
 	cursorName = "Cursor"
+	// Install URLs
+	vscodeInstallURL = "https://code.visualstudio.com/"
+	cursorInstallURL = "https://cursor.com/"
 )
 
 // CheckIDECommand verifies the IDE CLI command is available on PATH.
@@ -62,7 +65,7 @@ func ideName(ideOption string) string {
 
 func ideInfo(ideOption string) (command, name, installURL string) {
 	if ideOption == CursorOption {
-		return cursorCommand, cursorName, "https://cursor.com/"
+		return cursorCommand, cursorName, cursorInstallURL
 	}
-	return vscodeCommand, vscodeName, "https://code.visualstudio.com/"
+	return vscodeCommand, vscodeName, vscodeInstallURL
 }
