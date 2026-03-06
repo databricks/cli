@@ -24,12 +24,11 @@ Resource: resources.jobs.no_tasks_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -13,13 +13,11 @@
+@@ -13,13 +13,10 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -        - task_key: d_task
 +        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
            notebook_task:
@@ -44,7 +43,7 @@ Resource: resources.jobs.no_tasks_job
 +          task_key: e_task
          - task_key: c_task
            notebook_task:
-@@ -28,7 +26,8 @@
+@@ -28,7 +25,8 @@
              spark_version: 13.3.x-snapshot-scala2.12
              node_type_id: [NODE_TYPE_ID]
 -            num_workers: 2
@@ -55,14 +54,13 @@ Resource: resources.jobs.no_tasks_job
 +          timeout_seconds: 3600
          - task_key: a_task
            notebook_task:
-@@ -41,5 +40,13 @@
+@@ -41,5 +39,12 @@
              - task_key: c_task
 
 -    no_tasks_job: {}
 +    no_tasks_job:
 +      tasks:
 +        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
 +          notebook_task:
@@ -94,12 +92,11 @@ Resource: resources.jobs.rename_task_job
 >>> diff.py databricks.yml.backup2 databricks.yml
 --- databricks.yml.backup2
 +++ databricks.yml
-@@ -52,14 +52,14 @@
+@@ -50,14 +50,13 @@
      rename_task_job:
        tasks:
 -        - task_key: b_task
 +        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
            notebook_task:
@@ -115,14 +112,14 @@ Resource: resources.jobs.rename_task_job
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/d_task
-@@ -70,5 +70,5 @@
+@@ -68,5 +67,5 @@
          - task_key: c_task
            depends_on:
 -            - task_key: b_task
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/c_task
-@@ -79,7 +79,14 @@
+@@ -77,7 +76,13 @@
          - task_key: a_task
            notebook_task:
 -            notebook_path: /Users/{{workspace_user_name}}/a_task
@@ -132,7 +129,6 @@ Resource: resources.jobs.rename_task_job
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 +        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
 +          notebook_task:

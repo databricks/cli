@@ -31,14 +31,13 @@ Resource: resources.jobs.job_two
 >>> diff.py resources/job1.yml.backup resources/job1.yml
 --- resources/job1.yml.backup
 +++ resources/job1.yml
-@@ -4,13 +4,13 @@
+@@ -4,13 +4,12 @@
        max_concurrent_runs: 1
        tasks:
 -        - task_key: c_task
 +        - depends_on:
 +            - task_key: b_task
 +          new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
            notebook_task:
@@ -52,13 +51,12 @@ Resource: resources.jobs.job_two
 +          task_key: c_task_renamed
          - task_key: a_task
            notebook_task:
-@@ -21,3 +21,10 @@
+@@ -21,3 +20,9 @@
              num_workers: 1
            depends_on:
 -            - task_key: c_task
 +            - task_key: c_task_renamed
 +        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
 +          notebook_task:
@@ -70,7 +68,7 @@ Resource: resources.jobs.job_two
 >>> diff.py resources/job2.yml.backup resources/job2.yml
 --- resources/job2.yml.backup
 +++ resources/job2.yml
-@@ -2,13 +2,13 @@
+@@ -2,13 +2,12 @@
    jobs:
      job_two:
 -      max_concurrent_runs: 2
@@ -78,7 +76,6 @@ Resource: resources.jobs.job_two
        tasks:
 -        - task_key: run_pipeline
 +        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
            notebook_task:
@@ -90,12 +87,11 @@ Resource: resources.jobs.job_two
 +          task_key: run_pipeline_renamed
          - task_key: etl_pipeline
            notebook_task:
-@@ -18,5 +18,9 @@
+@@ -18,5 +17,8 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 2
 -        - task_key: extra_task
 +        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
            notebook_task:

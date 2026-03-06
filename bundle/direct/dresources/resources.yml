@@ -17,6 +17,10 @@ resources:
 
   jobs:
     ignore_remote_changes:
+      # edit_mode is set by CLI, not user-configurable
+      - field: edit_mode
+        reason: managed
+
       # Same as clusters.{aws,azure,gcp}_attributes — see clusters/resource_cluster.go#L361-L363
       # s.SchemaPath("aws_attributes").SetSuppressDiff()
       # s.SchemaPath("azure_attributes").SetSuppressDiff()
@@ -35,6 +39,14 @@ resources:
         reason: managed
 
     backend_defaults:
+      # Backend returns PERFORMANCE_OPTIMIZED for serverless jobs when not set
+      - field: performance_target
+        values: ["PERFORMANCE_OPTIMIZED"]
+
+      # Backend sets single_user_name on clusters when not specified
+      # - field: tasks[*].new_cluster.single_user_name
+      # - field: job_clusters[*].new_cluster.single_user_name
+
       # Same as clusters.enable_elastic_disk — see clusters/resource_cluster.go#L331
       # s.SchemaPath("enable_elastic_disk").SetComputed()
       - field: tasks[*].new_cluster.enable_elastic_disk
@@ -463,6 +475,10 @@ resources:
       # common.CustomizeSchemaPath(m, "min_num_clusters").SetSuppressDiff()
       - field: min_num_clusters
         reason: managed
+
+      # creator_name is output-only, not settable by user. When set produces "Error: Value for unconfigurable attribute" error
+      - field: creator_name
+        reason: output_only
 
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L69
