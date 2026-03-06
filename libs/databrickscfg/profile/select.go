@@ -48,7 +48,7 @@ type selectItem struct {
 // selected profile.
 func SelectProfile(ctx context.Context, cfg SelectConfig) (string, error) {
 	if len(cfg.Profiles) == 0 {
-		return "", errors.New("no profiles to select from")
+		return "", errors.New("no profiles configured. Run 'databricks auth login' to create a profile")
 	}
 
 	maxNameLen := 0

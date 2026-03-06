@@ -78,11 +78,12 @@ environment (e.g. CI/CD), omitting --profile is an error.
 				return err
 			}
 			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
-				Label:            "Select a profile to log out of",
-				Profiles:         allProfiles,
-				ActiveTemplate:   `▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}`,
-				InactiveTemplate: `  {{.PaddedName}}{{if .AccountID}} (account: {{.AccountID | faint}}){{else}} ({{.Host | faint}}){{end}}`,
-				SelectedTemplate: `{{ "Selected profile" | faint }}: {{ .Name | bold }}`,
+				Label:             "Select a profile to log out of",
+				Profiles:          allProfiles,
+				StartInSearchMode: len(allProfiles) > 5,
+				ActiveTemplate:    `▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}`,
+				InactiveTemplate:  `  {{.PaddedName}}{{if .AccountID}} (account: {{.AccountID | faint}}){{else}} ({{.Host | faint}}){{end}}`,
+				SelectedTemplate:  `{{ "Selected profile" | faint }}: {{ .Name | bold }}`,
 			})
 			if err != nil {
 				return err
