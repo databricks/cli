@@ -559,4 +559,3 @@ func TestGetManualInstructions_Cursor(t *testing.T) {
 	assert.Contains(t, instructions, "ms-python.python")
 	assert.Contains(t, instructions, "ms-toolsai.jupyter")
 }
-
