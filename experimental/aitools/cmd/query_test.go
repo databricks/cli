@@ -220,7 +220,7 @@ func TestSelectQueryOutputMode(t *testing.T) {
 }
 
 func TestFetchAllRowsSingleChunk(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	resp := &sql.StatementResponse{
@@ -235,7 +235,7 @@ func TestFetchAllRowsSingleChunk(t *testing.T) {
 }
 
 func TestFetchAllRowsMultiChunk(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	resp := &sql.StatementResponse{
@@ -255,7 +255,7 @@ func TestFetchAllRowsMultiChunk(t *testing.T) {
 }
 
 func TestFetchAllRowsNilResult(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	resp := &sql.StatementResponse{StatementId: "stmt-1"}
