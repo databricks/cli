@@ -26,6 +26,10 @@ type Resource struct {
 	Description string                   `json:"description"` // e.g., "SQL Warehouse for executing analytics queries"
 	Permission  string                   `json:"permission"`  // e.g., "CAN_USE"
 	Fields      map[string]ResourceField `json:"fields"`      // field definitions with env var mappings
+
+	// PluginDisplayName is set during resource collection to identify which
+	// plugin requires this resource. Not part of the JSON manifest.
+	PluginDisplayName string `json:"-"`
 }
 
 // Key returns the resource key for machine use (config keys, variable naming).
@@ -181,6 +185,7 @@ func (m *Manifest) ValidatePluginNames(names []string) error {
 }
 
 // CollectResources returns all required resources for the given plugin names.
+// Each returned resource is annotated with PluginDisplayName for UI context.
 func (m *Manifest) CollectResources(pluginNames []string) []Resource {
 	seen := make(map[string]bool)
 	var resources []Resource
@@ -198,6 +203,7 @@ func (m *Manifest) CollectResources(pluginNames []string) []Resource {
 			key := r.Type + ":" + r.Key()
 			if !seen[key] {
 				seen[key] = true
+				r.PluginDisplayName = plugin.DisplayName
 				resources = append(resources, r)
 			}
 		}
@@ -207,6 +213,7 @@ func (m *Manifest) CollectResources(pluginNames []string) []Resource {
 }
 
 // CollectOptionalResources returns all optional resources for the given plugin names.
+// Each returned resource is annotated with PluginDisplayName for UI context.
 func (m *Manifest) CollectOptionalResources(pluginNames []string) []Resource {
 	seen := make(map[string]bool)
 	var resources []Resource
@@ -224,6 +231,7 @@ func (m *Manifest) CollectOptionalResources(pluginNames []string) []Resource {
 			key := r.Type + ":" + r.Key()
 			if !seen[key] {
 				seen[key] = true
+				r.PluginDisplayName = plugin.DisplayName
 				resources = append(resources, r)
 			}
 		}
