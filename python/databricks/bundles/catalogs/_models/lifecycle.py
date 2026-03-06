@@ -18,6 +18,11 @@ class Lifecycle:
     Lifecycle setting to prevent the resource from being destroyed.
     """
 
+    started: VariableOrOptional[bool] = None
+    """
+    Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.
+    """
+
     @classmethod
     def from_dict(cls, value: "LifecycleDict") -> "Self":
         return _transform(cls, value)
@@ -32,6 +37,11 @@ class LifecycleDict(TypedDict, total=False):
     prevent_destroy: VariableOrOptional[bool]
     """
     Lifecycle setting to prevent the resource from being destroyed.
+    """
+
+    started: VariableOrOptional[bool]
+    """
+    Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.
     """
 
 
