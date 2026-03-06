@@ -658,6 +658,9 @@ github.com/databricks/cli/bundle/config/resources.Lifecycle:
   "prevent_destroy":
     "description": |-
       Lifecycle setting to prevent the resource from being destroyed.
+  "started":
+    "description": |-
+      Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.
 github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
   "group_name":
     "description": |-

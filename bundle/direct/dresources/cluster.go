@@ -83,6 +83,14 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterS
 	if err != nil {
 		return "", nil, err
 	}
+	// With lifecycle.started=true, wait for the cluster to reach the running state.
+	if lifecycleStartedFromContext(ctx) {
+		details, err := wait.Get()
+		if err != nil {
+			return "", nil, err
+		}
+		return details.ClusterId, details, nil
+	}
 	return wait.ClusterId, nil, nil
 }
 
