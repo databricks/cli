@@ -6,11 +6,11 @@
       "Bash(make fmtfull:*)",
       "Bash(make codegen:*)",
       "Bash(git:*)",
-      "Bash(GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase:*)",
-      "Read(//Users/denis.bilenko/work/cli/.git/worktrees/cli-main-simpler-grant/rebase-merge/**)",
-      "Read(//Users/denis.bilenko/work/cli/**)",
-      "Bash(GIT_EDITOR=true GIT_PAGER=cat git diff:*)",
-      "Bash(GIT_PAGER=cat git rebase:*)"
+      "Bash(lefthook version:*)",
+      "Read(//Users/denis.bilenko/.config/git/**)",
+      "Bash(git config core.hooksPath)",
+      "Bash(git config --global core.hooksPath)",
+      "Bash(GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git:*)"
     ]
   }
 }

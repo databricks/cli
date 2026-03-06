@@ -409,7 +409,6 @@ from databricks.bundles.pipelines._models.workspace_storage_info import (
     WorkspaceStorageInfoParam,
 )
 
-# Backward-compatibility aliases
 PipelinePermission = Permission
 PipelinePermissionDict = PermissionDict
 PipelinePermissionParam = PermissionParam
