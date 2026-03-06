@@ -70,27 +70,11 @@ func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error)
 	if err != nil {
 		return nil, err
 	}
-	// GetByJobId only fetches the first page (100 tasks). Paginate manually
-	// to collect all tasks, job_clusters, environments and parameters.
+	// GetByJobId only fetches the first page (100 tasks). Jobs.Get handles
+	// pagination and returns the complete job with all tasks merged.
 	job, err := r.client.Jobs.Get(ctx, jobs.GetJobRequest{JobId: idInt})
 	if err != nil {
 		return nil, err
-	}
-	for job.NextPageToken != "" {
-		page, err := r.client.Jobs.Get(ctx, jobs.GetJobRequest{JobId: idInt, PageToken: job.NextPageToken})
-		if err != nil {
-			return nil, err
-		}
-		if page.Settings != nil {
-			if job.Settings == nil {
-				job.Settings = &jobs.JobSettings{}
-			}
-			job.Settings.Tasks = append(job.Settings.Tasks, page.Settings.Tasks...)
-			job.Settings.JobClusters = append(job.Settings.JobClusters, page.Settings.JobClusters...)
-			job.Settings.Environments = append(job.Settings.Environments, page.Settings.Environments...)
-			job.Settings.Parameters = append(job.Settings.Parameters, page.Settings.Parameters...)
-		}
-		job.NextPageToken = page.NextPageToken
 	}
 	return makeJobRemote(job), nil
 }
