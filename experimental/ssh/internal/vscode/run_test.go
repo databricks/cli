@@ -3,6 +3,7 @@ package vscode
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -72,8 +73,13 @@ func TestCheckIDECommand_Found(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a fake executable in the temp directory
-			fakePath := filepath.Join(tmpDir, tt.command)
+			// Create a fake executable in the temp directory.
+			// On Windows, exec.LookPath requires a known extension (e.g. .exe).
+			command := tt.command
+			if runtime.GOOS == "windows" {
+				command += ".exe"
+			}
+			fakePath := filepath.Join(tmpDir, command)
 			err := os.WriteFile(fakePath, []byte("#!/bin/sh\n"), 0o755)
 			require.NoError(t, err)
 
