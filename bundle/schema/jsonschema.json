@@ -1241,6 +1241,10 @@
                       "prevent_destroy": {
                         "description": "Lifecycle setting to prevent the resource from being destroyed.",
                         "$ref": "#/$defs/bool"
+                      },
+                      "started": {
+                        "description": "Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.",
+                        "$ref": "#/$defs/bool"
                       }
                     },
                     "additionalProperties": false
