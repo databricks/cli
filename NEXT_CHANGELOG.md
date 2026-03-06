@@ -5,6 +5,7 @@
 ### CLI
 
 ### Bundles
+* Modify grants to use SDK types ([#4666](https://github.com/databricks/cli/pull/4666))
 
 ### Dependency updates
 

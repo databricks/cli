@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -21,15 +20,10 @@ var grantResourceToSecurableType = map[string]string{
 	"registered_models":  "function",
 }
 
-type GrantAssignment struct {
-	Principal  string              `json:"principal"`
-	Privileges []catalog.Privilege `json:"privileges,omitempty"`
-}
-
 type GrantsState struct {
-	SecurableType string            `json:"securable_type"`
-	FullName      string            `json:"full_name"`
-	Grants        []GrantAssignment `json:"grants,omitempty"`
+	SecurableType string                        `json:"securable_type"`
+	FullName      string                        `json:"full_name"`
+	Grants        []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -48,59 +42,21 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 		return nil, fmt.Errorf("unsupported grants resource type: %s", resourceType)
 	}
 
-	rv := reflect.ValueOf(inputConfig)
-	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-		return nil, fmt.Errorf("inputConfig must be a pointer to a slice, got: %T", inputConfig)
+	grantsPtr, ok := inputConfig.(*[]catalog.PrivilegeAssignment)
+	if !ok {
+		return nil, fmt.Errorf("expected *[]catalog.PrivilegeAssignment, got %T", inputConfig)
 	}
 
-	sliceValue := rv.Elem()
-	grants := make([]GrantAssignment, 0, sliceValue.Len())
-	for i := range sliceValue.Len() {
-		elem := sliceValue.Index(i)
-		if elem.Kind() == reflect.Ptr {
-			elem = elem.Elem()
-		}
-		if elem.Kind() != reflect.Struct {
-			return nil, fmt.Errorf("grant element must be a struct, got %s", elem.Kind())
-		}
-
-		principalField := elem.FieldByName("Principal")
-		if !principalField.IsValid() {
-			return nil, errors.New("grant element missing Principal field")
-		}
-		principal := principalField.String()
-
-		privilegesField := elem.FieldByName("Privileges")
-		if !privilegesField.IsValid() {
-			return nil, errors.New("grant element missing Privileges field")
-		}
-		if privilegesField.Kind() != reflect.Slice {
-			return nil, errors.New("grant Privileges field must be a slice")
-		}
-
-		privileges := make([]catalog.Privilege, 0, privilegesField.Len())
-		for j := range privilegesField.Len() {
-			item := privilegesField.Index(j)
-			if item.Kind() != reflect.String {
-				return nil, fmt.Errorf("privilege must be a string, got %s", item.Kind())
-			}
-			privileges = append(privileges, catalog.Privilege(item.String()))
-		}
-
-		// Backend sorts privileges, so we sort here as well.
-		sortPriviliges(privileges)
-
-		grants = append(grants, GrantAssignment{
-			Principal:  principal,
-			Privileges: privileges,
-		})
+	// Backend sorts privileges, so we sort here as well.
+	for i := range *grantsPtr {
+		sortPriviliges((*grantsPtr)[i].Privileges)
 	}
 
 	return &structvar.StructVar{
 		Value: &GrantsState{
 			SecurableType: securableType,
 			FullName:      "",
-			Grants:        grants,
+			Grants:        *grantsPtr,
 		},
 		Refs: map[string]string{
 			"full_name": "${" + baseNode + ".id}",
@@ -182,8 +138,8 @@ func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) er
 	return err
 }
 
-func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName string) ([]GrantAssignment, error) {
-	var assignments []GrantAssignment
+func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName string) ([]catalog.PrivilegeAssignment, error) {
+	var assignments []catalog.PrivilegeAssignment
 	pageToken := ""
 	for {
 		resp, err := r.client.Grants.Get(ctx, catalog.GetGrantRequest{
@@ -203,9 +159,10 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 			}
 			privs := make([]catalog.Privilege, len(assignment.Privileges))
 			copy(privs, assignment.Privileges)
-			assignments = append(assignments, GrantAssignment{
-				Principal:  assignment.Principal,
-				Privileges: privs,
+			assignments = append(assignments, catalog.PrivilegeAssignment{
+				Principal:       assignment.Principal,
+				Privileges:      privs,
+				ForceSendFields: nil,
 			})
 		}
 		if resp.NextPageToken == "" {

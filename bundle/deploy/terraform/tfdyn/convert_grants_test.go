@@ -7,19 +7,20 @@ import (
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConvertGrants(t *testing.T) {
 	src := resources.RegisteredModel{
-		Grants: []resources.Grant{
+		Grants: []catalog.PrivilegeAssignment{
 			{
-				Privileges: []string{"EXECUTE", "FOO"},
+				Privileges: []catalog.Privilege{"EXECUTE", "FOO"},
 				Principal:  "jane@doe.com",
 			},
 			{
-				Privileges: []string{"EXECUTE", "BAR"},
+				Privileges: []catalog.Privilege{"EXECUTE", "BAR"},
 				Principal:  "spn",
 			},
 		},
@@ -58,7 +59,7 @@ func TestConvertGrantsNil(t *testing.T) {
 
 func TestConvertGrantsEmpty(t *testing.T) {
 	src := resources.RegisteredModel{
-		Grants: []resources.Grant{},
+		Grants: []catalog.PrivilegeAssignment{},
 	}
 
 	vin, err := convert.FromTyped(src, dyn.NilValue)
