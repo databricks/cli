@@ -2427,6 +2427,27 @@
             "config.ArtifactType": {
               "type": "string"
             },
+            "config.BindResource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "description": "The ID of the existing workspace resource to bind.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "id"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "config.Bundle": {
               "oneOf": [
                 {
@@ -2845,6 +2866,10 @@
                     "artifacts": {
                       "description": "The artifacts to include in the target deployment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact"
+                    },
+                    "bind": {
+                      "description": "The existing workspace resources to bind into bundle management for this target.",
+                      "$ref": "#/$defs/map/map/github.com/databricks/cli/bundle/config.BindResource"
                     },
                     "bundle": {
                       "description": "The bundle attributes when deploying to this target.",
@@ -10911,6 +10936,20 @@
                   }
                 ]
               },
+              "config.BindResource": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": {
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.BindResource"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "config.Command": {
                 "oneOf": [
                   {
@@ -10952,6 +10991,30 @@
                     "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                   }
                 ]
+              }
+            }
+          }
+        }
+      },
+      "map": {
+        "github.com": {
+          "databricks": {
+            "cli": {
+              "bundle": {
+                "config.BindResource": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.BindResource"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                }
               }
             }
           }

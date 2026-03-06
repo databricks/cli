@@ -23,6 +23,10 @@ github.com/databricks/cli/bundle/config.ArtifactFile:
   "source":
     "description": |-
       Required. The artifact source file.
+github.com/databricks/cli/bundle/config.BindResource:
+  "id":
+    "description": |-
+      The ID of the existing workspace resource to bind.
 github.com/databricks/cli/bundle/config.Bundle:
   "cluster_id":
     "description": |-
@@ -366,6 +370,9 @@ github.com/databricks/cli/bundle/config.Target:
   "artifacts":
     "description": |-
       The artifacts to include in the target deployment.
+  "bind":
+    "description": |-
+      The existing workspace resources to bind into bundle management for this target.
   "bundle":
     "description": |-
       The bundle attributes when deploying to this target.

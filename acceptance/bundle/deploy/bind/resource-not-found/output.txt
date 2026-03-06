@@ -1,0 +1,6 @@
+
+>>> musterr [CLI] bundle plan
+Error: cannot plan resources.jobs.foo: resource with ID "[NUMID]" does not exist in workspace
+
+Error: planning failed
+
