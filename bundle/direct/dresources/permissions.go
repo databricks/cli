@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -11,6 +10,23 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
+
+// GetAPIRequestObjectType is used by direct to construct a request to permissions API:
+// https://github.com/databricks/terraform-provider-databricks/blob/430902d/permissions/permission_definitions.go#L775C24-L775C32
+var permissionResourceToObjectType = map[string]string{
+	"alerts":                  "/alertsv2/",
+	"apps":                    "/apps/",
+	"clusters":                "/clusters/",
+	"dashboards":              "/dashboards/",
+	"database_instances":      "/database-instances/",
+	"postgres_projects":       "/database-projects/",
+	"jobs":                    "/jobs/",
+	"experiments":             "/experiments/",
+	"models":                  "/registered-models/",
+	"model_serving_endpoints": "/serving-endpoints/",
+	"pipelines":               "/pipelines/",
+	"sql_warehouses":          "/sql/warehouses/",
+}
 
 type ResourcePermissions struct {
 	client *databricks.WorkspaceClient
@@ -27,38 +43,35 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		return nil, fmt.Errorf("internal error: node %q does not end with .permissions", node)
 	}
 
-	// Use reflection to get the slice from the pointer
-	rv := reflect.ValueOf(inputConfig)
-	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-		return nil, fmt.Errorf("inputConfig must be a pointer to a slice, got: %T", inputConfig)
+	parts := strings.Split(baseNode, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("internal error: unexpected node format %q", baseNode)
 	}
+	resourceType := parts[1]
 
-	sliceValue := rv.Elem()
-
-	// Get the element type from the slice type and create zero value to get the object type
-	elemType := sliceValue.Type().Elem()
-	zeroValue := reflect.Zero(elemType)
-	zeroValueInterface, ok := zeroValue.Interface().(resources.IPermission)
+	prefix, ok := permissionResourceToObjectType[resourceType]
 	if !ok {
-		return nil, fmt.Errorf("slice elements do not implement IPermission interface: %v", elemType)
+		return nil, fmt.Errorf("unsupported permissions resource type: %s", resourceType)
 	}
-	prefix := zeroValueInterface.GetAPIRequestObjectType()
 
-	// Convert slice to []resources.IPermission
-	permissions := make([]iam.AccessControlRequest, 0, sliceValue.Len())
-	for i := range sliceValue.Len() {
-		elem := sliceValue.Index(i).Interface().(resources.IPermission)
+	permissionsPtr, ok := inputConfig.(*[]resources.Permission)
+	if !ok {
+		return nil, fmt.Errorf("expected *[]resources.Permission, got %T", inputConfig)
+	}
+
+	permissions := make([]iam.AccessControlRequest, 0, len(*permissionsPtr))
+	for _, p := range *permissionsPtr {
 		permissions = append(permissions, iam.AccessControlRequest{
-			PermissionLevel:      iam.PermissionLevel(elem.GetLevel()),
-			GroupName:            elem.GetGroupName(),
-			ServicePrincipalName: elem.GetServicePrincipalName(),
-			UserName:             elem.GetUserName(),
+			PermissionLevel:      iam.PermissionLevel(p.Level),
+			GroupName:            p.GroupName,
+			ServicePrincipalName: p.ServicePrincipalName,
+			UserName:             p.UserName,
 			ForceSendFields:      nil,
 		})
 	}
 
 	objectIdRef := prefix + "${" + baseNode + ".id}"
-	// For permissions, model serving endpoint uses it's internal ID, which is different
+	// For permissions, model serving endpoint uses its internal ID, which is different
 	// from its CRUD APIs which use the name.
 	// We have a wrapper struct [RefreshOutput] from which we read the internal ID
 	// in order to set the appropriate permissions.

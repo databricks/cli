@@ -91,7 +91,7 @@ func TestBundleToTerraformJob(t *testing.T) {
 
 func TestBundleToTerraformJobPermissions(t *testing.T) {
 	src := resources.Job{
-		Permissions: []resources.JobPermission{
+		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",
@@ -260,7 +260,7 @@ func TestBundleToTerraformPipeline(t *testing.T) {
 
 func TestBundleToTerraformPipelinePermissions(t *testing.T) {
 	src := resources.Pipeline{
-		Permissions: []resources.PipelinePermission{
+		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",
@@ -331,7 +331,7 @@ func TestBundleToTerraformModelPermissions(t *testing.T) {
 		CreateModelRequest: ml.CreateModelRequest{
 			Name: "name",
 		},
-		Permissions: []resources.MlflowModelPermission{
+		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_READ",
 				UserName: "jane@doe.com",
@@ -385,7 +385,7 @@ func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 		CreateExperiment: ml.CreateExperiment{
 			Name: "name",
 		},
-		Permissions: []resources.MlflowExperimentPermission{
+		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_READ",
 				UserName: "jane@doe.com",
@@ -481,7 +481,7 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 				},
 			},
 		},
-		Permissions: []resources.ModelServingEndpointPermission{
+		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",

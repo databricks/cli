@@ -17,7 +17,7 @@ func assertExpected(t *testing.T, p *resources.ModelServingEndpoint) {
 
 	assert.Equal(t, "model-name-1", p.Config.TrafficConfig.Routes[0].ServedModelName)
 	assert.Equal(t, 100, p.Config.TrafficConfig.Routes[0].TrafficPercentage)
-	assert.Equal(t, resources.ModelServingEndpointPermission{
+	assert.Equal(t, resources.Permission{
 		GroupName: "users",
 		Level:     "CAN_QUERY",
 	}, p.Permissions[0])

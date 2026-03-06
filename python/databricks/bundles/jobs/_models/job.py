@@ -35,10 +35,6 @@ from databricks.bundles.jobs._models.job_parameter_definition import (
     JobParameterDefinition,
     JobParameterDefinitionParam,
 )
-from databricks.bundles.jobs._models.job_permission import (
-    JobPermission,
-    JobPermissionParam,
-)
 from databricks.bundles.jobs._models.job_run_as import JobRunAs, JobRunAsParam
 from databricks.bundles.jobs._models.jobs_health_rules import (
     JobsHealthRules,
@@ -49,6 +45,7 @@ from databricks.bundles.jobs._models.performance_target import (
     PerformanceTarget,
     PerformanceTargetParam,
 )
+from databricks.bundles.jobs._models.permission import Permission, PermissionParam
 from databricks.bundles.jobs._models.queue_settings import (
     QueueSettings,
     QueueSettingsParam,
@@ -155,7 +152,7 @@ class Job(Resource):
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
     """
 
-    permissions: VariableOrList[JobPermission] = field(default_factory=list)
+    permissions: VariableOrList[Permission] = field(default_factory=list)
 
     queue: VariableOrOptional[QueueSettings] = None
     """
@@ -300,7 +297,7 @@ class JobDict(TypedDict, total=False):
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
     """
 
-    permissions: VariableOrList[JobPermissionParam]
+    permissions: VariableOrList[PermissionParam]
 
     queue: VariableOrOptional[QueueSettingsParam]
     """

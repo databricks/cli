@@ -33,6 +33,7 @@ from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsParam,
 )
+from databricks.bundles.pipelines._models.permission import Permission, PermissionParam
 from databricks.bundles.pipelines._models.pipeline_cluster import (
     PipelineCluster,
     PipelineClusterParam,
@@ -40,10 +41,6 @@ from databricks.bundles.pipelines._models.pipeline_cluster import (
 from databricks.bundles.pipelines._models.pipeline_library import (
     PipelineLibrary,
     PipelineLibraryParam,
-)
-from databricks.bundles.pipelines._models.pipeline_permission import (
-    PipelinePermission,
-    PipelinePermissionParam,
 )
 from databricks.bundles.pipelines._models.pipelines_environment import (
     PipelinesEnvironment,
@@ -160,7 +157,7 @@ class Pipeline(Resource):
     List of notification settings for this pipeline.
     """
 
-    permissions: VariableOrList[PipelinePermission] = field(default_factory=list)
+    permissions: VariableOrList[Permission] = field(default_factory=list)
 
     photon: VariableOrOptional[bool] = None
     """
@@ -325,7 +322,7 @@ class PipelineDict(TypedDict, total=False):
     List of notification settings for this pipeline.
     """
 
-    permissions: VariableOrList[PipelinePermissionParam]
+    permissions: VariableOrList[PermissionParam]
 
     photon: VariableOrOptional[bool]
     """
