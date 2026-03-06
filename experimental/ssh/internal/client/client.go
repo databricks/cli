@@ -211,6 +211,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
 			return err
 		}
+		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE); err != nil {
+			return err
+		}
 	}
 
 	// Check and update IDE settings for serverless mode, where we must set up
