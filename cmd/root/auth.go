@@ -9,7 +9,9 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -192,6 +194,17 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	profile, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = profile
+	}
+
+	// If --profile and DATABRICKS_CONFIG_PROFILE are both unset, honor the
+	// explicit [__databricks-settings__].default_profile setting before the
+	// SDK falls back to the DEFAULT section.
+	if cfg.Profile == "" && envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") == "" {
+		configFilePath := envlib.Get(ctx, "DATABRICKS_CONFIG_FILE")
+		resolvedProfile, err := databrickscfg.GetConfiguredDefaultProfile(ctx, configFilePath)
+		if err == nil && resolvedProfile != "" {
+			cfg.Profile = resolvedProfile
+		}
 	}
 
 	_, isTargetFlagSet := targetFlagValue(cmd)
