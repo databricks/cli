@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -98,7 +99,7 @@ func ListJobs(ctx context.Context) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(jobList))
+	out := make([]ListItem, 0, min(len(jobList), maxListResults))
 	for _, j := range jobList {
 		label := j.Settings.Name
 		id := strconv.FormatInt(j.JobId, 10)
@@ -107,7 +108,7 @@ func ListJobs(ctx context.Context) ([]ListItem, error) {
 		}
 		out = append(out, ListItem{ID: id, Label: label})
 	}
-	return out, nil
+	return capResults(out), nil
 }
 
 // ListSQLWarehousesItems returns SQL warehouses as ListItems (reuses same API as ListSQLWarehouses).
@@ -121,7 +122,7 @@ func ListSQLWarehousesItems(ctx context.Context) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(whs))
+	out := make([]ListItem, 0, min(len(whs), maxListResults))
 	for _, wh := range whs {
 		label := wh.Name
 		if wh.State != "" {
@@ -129,7 +130,7 @@ func ListSQLWarehousesItems(ctx context.Context) ([]ListItem, error) {
 		}
 		out = append(out, ListItem{ID: wh.Id, Label: label})
 	}
-	return out, nil
+	return capResults(out), nil
 }
 
 // ListServingEndpoints returns serving endpoints as selectable items.
@@ -143,7 +144,7 @@ func ListServingEndpoints(ctx context.Context) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(endpoints))
+	out := make([]ListItem, 0, min(len(endpoints), maxListResults))
 	for _, e := range endpoints {
 		name := e.Name
 		if name == "" {
@@ -151,7 +152,7 @@ func ListServingEndpoints(ctx context.Context) ([]ListItem, error) {
 		}
 		out = append(out, ListItem{ID: e.Id, Label: name})
 	}
-	return out, nil
+	return capResults(out), nil
 }
 
 // ListCatalogs returns UC catalogs as selectable items.
@@ -206,8 +207,8 @@ func ListVolumesInSchema(ctx context.Context, catalogName, schemaName string) ([
 	}
 	out := make([]ListItem, 0, min(len(vols), maxListResults))
 	for _, v := range vols {
-		fullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, v.Name)
-		out = append(out, ListItem{ID: fullName, Label: v.Name})
+		volumePath := fmt.Sprintf("/Volumes/%s/%s/%s", catalogName, schemaName, v.Name)
+		out = append(out, ListItem{ID: volumePath, Label: v.Name})
 	}
 	return capResults(out), nil
 }
@@ -442,6 +443,7 @@ func ListPostgresEndpoints(ctx context.Context, branchName string) ([]postgres.E
 }
 
 // ListGenieSpaces returns Genie spaces as selectable items.
+// Pagination stops early once maxListResults items have been collected.
 func ListGenieSpaces(ctx context.Context) ([]ListItem, error) {
 	w, err := workspaceClient(ctx)
 	if err != nil {
@@ -465,12 +467,12 @@ func ListGenieSpaces(ctx context.Context) ([]ListItem, error) {
 			}
 			out = append(out, ListItem{ID: id, Label: label})
 		}
-		if resp.NextPageToken == "" {
+		if resp.NextPageToken == "" || len(out) >= maxListResults {
 			break
 		}
 		req.PageToken = resp.NextPageToken
 	}
-	return out, nil
+	return capResults(out), nil
 }
 
 // ListExperiments returns MLflow experiments as selectable items.
@@ -484,7 +486,7 @@ func ListExperiments(ctx context.Context) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(exps))
+	out := make([]ListItem, 0, min(len(exps), maxListResults))
 	for _, e := range exps {
 		label := e.Name
 		if label == "" {
@@ -492,7 +494,7 @@ func ListExperiments(ctx context.Context) ([]ListItem, error) {
 		}
 		out = append(out, ListItem{ID: e.ExperimentId, Label: label})
 	}
-	return out, nil
+	return capResults(out), nil
 }
 
 // TODO: uncomment when bundles support app as an app resource type.
@@ -514,3 +516,323 @@ func ListExperiments(ctx context.Context) ([]ListItem, error) {
 // 	}
 // 	return out, nil
 // }
+
+// ---------------------------------------------------------------------------
+// Paged lister constructors — return a PagedFetcher that loads pageSize items
+// at a time, keeping the SDK iterator alive for incremental "Load more".
+// ---------------------------------------------------------------------------
+
+// NewPagedSQLWarehouses creates a PagedFetcher for SQL warehouses.
+func NewPagedSQLWarehouses(ctx context.Context) (*PagedFetcher, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Warehouses.List(ctx, sql.ListWarehousesRequest{PageSize: pageSize})
+	mapFn := func(wh sql.EndpointInfo) ListItem {
+		label := wh.Name
+		if wh.State != "" {
+			label = fmt.Sprintf("%s (%s)", wh.Name, wh.State)
+		}
+		return ListItem{ID: wh.Id, Label: label}
+	}
+	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{
+		Items:   items,
+		HasMore: hasMore,
+		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
+			return collectN(ctx, iter, pageSize, mapFn)
+		},
+	}, nil
+}
+
+// NewPagedJobs creates a PagedFetcher for jobs.
+func NewPagedJobs(ctx context.Context) (*PagedFetcher, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Jobs.List(ctx, jobs.ListJobsRequest{Limit: min(pageSize, 100)})
+	mapFn := func(j jobs.BaseJob) ListItem {
+		label := j.Settings.Name
+		id := strconv.FormatInt(j.JobId, 10)
+		if label == "" {
+			label = id
+		}
+		return ListItem{ID: id, Label: label}
+	}
+	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{
+		Items:   items,
+		HasMore: hasMore,
+		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
+			return collectN(ctx, iter, pageSize, mapFn)
+		},
+	}, nil
+}
+
+// SearchJobs performs a server-side search for jobs by name (exact, case-insensitive).
+func SearchJobs(ctx context.Context, name string) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Jobs.List(ctx, jobs.ListJobsRequest{Name: name})
+	jobList, err := listing.ToSlice(ctx, iter)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, len(jobList))
+	for _, j := range jobList {
+		label := j.Settings.Name
+		id := strconv.FormatInt(j.JobId, 10)
+		if label == "" {
+			label = id
+		}
+		out = append(out, ListItem{ID: id, Label: label})
+	}
+	return out, nil
+}
+
+// NewPagedServingEndpoints creates a PagedFetcher for serving endpoints.
+func NewPagedServingEndpoints(ctx context.Context) (*PagedFetcher, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.ServingEndpoints.List(ctx)
+	mapFn := func(e serving.ServingEndpoint) ListItem {
+		name := e.Name
+		if name == "" {
+			name = e.Id
+		}
+		return ListItem{ID: e.Id, Label: name}
+	}
+	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{
+		Items:   items,
+		HasMore: hasMore,
+		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
+			return collectN(ctx, iter, pageSize, mapFn)
+		},
+	}, nil
+}
+
+// NewPagedExperiments creates a PagedFetcher for MLflow experiments.
+func NewPagedExperiments(ctx context.Context) (*PagedFetcher, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Experiments.ListExperiments(ctx, ml.ListExperimentsRequest{MaxResults: int64(pageSize)})
+	mapFn := func(e ml.Experiment) ListItem {
+		label := e.Name
+		if label == "" {
+			label = e.ExperimentId
+		}
+		return ListItem{ID: e.ExperimentId, Label: label}
+	}
+	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{
+		Items:   items,
+		HasMore: hasMore,
+		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
+			return collectN(ctx, iter, pageSize, mapFn)
+		},
+	}, nil
+}
+
+// NewPagedGenieSpaces creates a PagedFetcher for Genie spaces (manual pagination).
+func NewPagedGenieSpaces(ctx context.Context) (*PagedFetcher, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var nextToken string
+	fetchPage := func(ctx context.Context) ([]ListItem, bool, error) {
+		req := dashboards.GenieListSpacesRequest{PageToken: nextToken, PageSize: pageSize}
+		resp, err := w.Genie.ListSpaces(ctx, req)
+		if err != nil {
+			return nil, false, err
+		}
+		items := make([]ListItem, 0, len(resp.Spaces))
+		for _, s := range resp.Spaces {
+			id := s.SpaceId
+			label := s.Title
+			if label == "" {
+				label = s.Description
+			}
+			if label == "" {
+				label = id
+			}
+			items = append(items, ListItem{ID: id, Label: label})
+		}
+		nextToken = resp.NextPageToken
+		return items, nextToken != "", nil
+	}
+	items, hasMore, err := fetchPage(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{
+		Items:    items,
+		HasMore:  hasMore,
+		loadMore: fetchPage,
+	}, nil
+}
+
+// NewPagedConnections creates a PagedFetcher for UC connections.
+func NewPagedConnections(ctx context.Context) (*PagedFetcher, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Connections.List(ctx, catalog.ListConnectionsRequest{MaxResults: pageSize})
+	mapFn := func(c catalog.ConnectionInfo) ListItem {
+		name := c.Name
+		if name == "" {
+			name = c.FullName
+		}
+		return ListItem{ID: c.FullName, Label: name}
+	}
+	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{
+		Items:   items,
+		HasMore: hasMore,
+		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
+			return collectN(ctx, iter, pageSize, mapFn)
+		},
+	}, nil
+}
+
+// NewPagedVectorSearchIndexes creates a PagedFetcher for vector search indexes.
+func NewPagedVectorSearchIndexes(ctx context.Context) (*PagedFetcher, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var out []ListItem
+	epIter := w.VectorSearchEndpoints.ListEndpoints(ctx, vectorsearch.ListEndpointsRequest{})
+	endpoints, err := listing.ToSlice(ctx, epIter)
+	if err != nil {
+		return nil, err
+	}
+	capped := false
+	for _, ep := range endpoints {
+		indexIter := w.VectorSearchIndexes.ListIndexes(ctx, vectorsearch.ListIndexesRequest{EndpointName: ep.Name})
+		indexes, err := listing.ToSlice(ctx, indexIter)
+		if err != nil {
+			log.Warnf(ctx, "Failed to list indexes for endpoint %q: %v", ep.Name, err)
+			continue
+		}
+		for _, idx := range indexes {
+			label := idx.Name
+			if label == "" {
+				label = ep.Name + "/ (unnamed)"
+			}
+			id := ep.Name + "/" + idx.Name
+			out = append(out, ListItem{ID: id, Label: fmt.Sprintf("%s / %s", ep.Name, label)})
+			if len(out) >= maxTotalResults {
+				capped = true
+				break
+			}
+		}
+		if capped {
+			break
+		}
+	}
+	return &PagedFetcher{Items: out, Capped: capped}, nil
+}
+
+// ---------------------------------------------------------------------------
+// First-step paged constructors — used to prefetch the initial picker of
+// multi-step resource prompts (catalog → schema → resource, etc.).
+// ---------------------------------------------------------------------------
+
+// NewPagedCatalogs creates a PagedFetcher for UC catalogs (first step of volume/function pickers).
+func NewPagedCatalogs(ctx context.Context) (*PagedFetcher, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Catalogs.List(ctx, catalog.ListCatalogsRequest{MaxResults: pageSize})
+	mapFn := func(c catalog.CatalogInfo) ListItem {
+		return ListItem{ID: c.Name, Label: c.Name}
+	}
+	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{
+		Items:   items,
+		HasMore: hasMore,
+		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
+			return collectN(ctx, iter, pageSize, mapFn)
+		},
+	}, nil
+}
+
+// NewPagedDatabaseInstances creates a PagedFetcher for Lakebase database instances.
+func NewPagedDatabaseInstances(ctx context.Context) (*PagedFetcher, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Database.ListDatabaseInstances(ctx, database.ListDatabaseInstancesRequest{PageSize: min(pageSize, 100)})
+	mapFn := func(inst database.DatabaseInstance) ListItem {
+		return ListItem{ID: inst.Name, Label: inst.Name}
+	}
+	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{
+		Items:   items,
+		HasMore: hasMore,
+		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
+			return collectN(ctx, iter, pageSize, mapFn)
+		},
+	}, nil
+}
+
+// NewPagedPostgresProjects creates a PagedFetcher for Lakebase Autoscaling projects.
+func NewPagedPostgresProjects(ctx context.Context) (*PagedFetcher, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Postgres.ListProjects(ctx, postgres.ListProjectsRequest{PageSize: min(pageSize, 100)})
+	mapFn := func(p postgres.Project) ListItem {
+		label := p.Name
+		if p.Status != nil && p.Status.DisplayName != "" {
+			label = p.Status.DisplayName
+		}
+		return ListItem{ID: p.Name, Label: label}
+	}
+	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	if err != nil {
+		return nil, err
+	}
+	return &PagedFetcher{
+		Items:   items,
+		HasMore: hasMore,
+		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
+			return collectN(ctx, iter, pageSize, mapFn)
+		},
+	}, nil
+}
