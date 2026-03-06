@@ -1,0 +1,16 @@
+sethome "./home"
+
+cat > "./home/.databrickscfg" <<'EOF'
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[dev]
+host = https://dev.cloud.databricks.com
+auth_type = databricks-cli
+EOF
+
+title "Logout of non-existent profile\n"
+errcode $CLI auth logout --profile nonexistent --force
+
+title "Logout without --profile in non-interactive mode\n"
+errcode $CLI auth logout --force

@@ -1,0 +1,44 @@
+sethome "./home"
+
+cat > "./home/.databrickscfg" <<'EOF'
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+host = https://default.cloud.databricks.com
+auth_type = databricks-cli
+
+; First workspace — alpha
+[alpha]
+host = https://alpha.cloud.databricks.com
+auth_type = databricks-cli
+
+; Second workspace — beta
+[beta]
+host = https://beta.cloud.databricks.com
+auth_type = databricks-cli
+
+; Third workspace — gamma
+[gamma]
+host = https://accounts.cloud.databricks.com
+account_id = account-id
+auth_type  = databricks-cli
+EOF
+
+title "Initial config\n"
+cat "./home/.databrickscfg"
+
+title "Delete first non-default profile (alpha)"
+trace $CLI auth logout --profile alpha --force --delete
+
+title "Backup file should exist\n"
+assert_backup_exists
+
+title "Config after deleting alpha\n"
+cat "./home/.databrickscfg"
+
+title "Delete last profile (gamma)"
+trace $CLI auth logout --profile gamma --force --delete
+
+title "Config after deleting gamma\n"
+cat "./home/.databrickscfg"
+
+cp "./home/.databrickscfg" "./out.databrickscfg"
