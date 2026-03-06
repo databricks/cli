@@ -1,14 +1,12 @@
 package mcp
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -32,7 +30,7 @@ func extractColumns(manifest *sql.ResultManifest) []string {
 
 // renderJSON writes query results as a parseable JSON array to stdout.
 // Row count is written to stderr so stdout remains valid JSON for piping.
-func renderJSON(ctx context.Context, w io.Writer, columns []string, rows [][]string) error {
+func renderJSON(w io.Writer, columns []string, rows [][]string) error {
 	objects := make([]map[string]any, len(rows))
 	for i, row := range rows {
 		obj := make(map[string]any, len(columns))
@@ -50,7 +48,6 @@ func renderJSON(ctx context.Context, w io.Writer, columns []string, rows [][]str
 	}
 
 	fmt.Fprintf(w, "%s\n", output)
-	cmdio.LogString(ctx, fmt.Sprintf("\nRow count: %d", len(rows)))
 	return nil
 }
 
