@@ -729,11 +729,6 @@ from databricks.bundles.jobs._models.workspace_storage_info import (
     WorkspaceStorageInfoParam,
 )
 
-# Backward-compatibility aliases
-JobPermission = Permission
-JobPermissionDict = PermissionDict
-JobPermissionParam = PermissionParam
-
 
 def _resolve_recursive_imports():
     import typing
@@ -748,3 +743,7 @@ def _resolve_recursive_imports():
 
 
 _resolve_recursive_imports()
+
+JobPermission = Permission
+JobPermissionDict = PermissionDict
+JobPermissionParam = PermissionParam
