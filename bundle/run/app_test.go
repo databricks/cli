@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"

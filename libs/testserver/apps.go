@@ -111,7 +111,7 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 	return Response{Body: deployment}
 }
 
-func (s *FakeWorkspace) AppsGetDeployment(_ Request, name string, deploymentID string) Response {
+func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) Response {
 	defer s.LockUnlock()()
 
 	_, ok := s.Apps[name]

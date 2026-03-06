@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -34,7 +33,7 @@ func TestValidateLifecycleStarted_UnsupportedResource(t *testing.T) {
 		},
 	}
 
-	m := bundle.Apply(context.Background(), b, ValidateLifecycleStarted(engine.EngineDirect))
+	m := bundle.Apply(t.Context(), b, ValidateLifecycleStarted(engine.EngineDirect))
 	require.Error(t, m.Error())
 	assert.Contains(t, m.Error().Error(), "lifecycle.started is not supported for resources.jobs.my_job")
 }
@@ -59,7 +58,7 @@ func TestValidateLifecycleStarted_SupportedResources(t *testing.T) {
 		},
 	}
 
-	m := bundle.Apply(context.Background(), b, ValidateLifecycleStarted(engine.EngineDirect))
+	m := bundle.Apply(t.Context(), b, ValidateLifecycleStarted(engine.EngineDirect))
 	assert.NoError(t, m.Error())
 }
 
@@ -81,7 +80,7 @@ func TestValidateLifecycleStarted_StartedFalse(t *testing.T) {
 		},
 	}
 
-	m := bundle.Apply(context.Background(), b, ValidateLifecycleStarted(engine.EngineDirect))
+	m := bundle.Apply(t.Context(), b, ValidateLifecycleStarted(engine.EngineDirect))
 	assert.NoError(t, m.Error())
 }
 
@@ -104,6 +103,6 @@ func TestValidateLifecycleStarted_TerraformModeIgnored(t *testing.T) {
 	}
 
 	// In TF mode, lifecycle.started is ignored — no error even for unsupported resource types.
-	m := bundle.Apply(context.Background(), b, ValidateLifecycleStarted(engine.EngineTerraform))
+	m := bundle.Apply(t.Context(), b, ValidateLifecycleStarted(engine.EngineTerraform))
 	assert.NoError(t, m.Error())
 }
