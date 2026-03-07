@@ -47,6 +47,36 @@ func profileFlagValue(cmd *cobra.Command) (string, bool) {
 	return value, value != ""
 }
 
+var explicitAuthSelectorNames = map[string]struct{}{
+	"account_id":                     {},
+	"actions_id_token_request_token": {},
+	"actions_id_token_request_url":   {},
+	"audience":                       {},
+	"auth_type":                      {},
+	"azure_environment":              {},
+	"experimental_is_unified_host":   {},
+	"host":                           {},
+	"profile":                        {},
+	"workspace_id":                   {},
+}
+
+func hasExplicitAuthEnvOverride() bool {
+	for i := range config.ConfigAttributes {
+		attr := &config.ConfigAttributes[i]
+		_, isExplicitSelector := explicitAuthSelectorNames[attr.Name]
+		if !attr.HasAuthAttribute() && !isExplicitSelector {
+			continue
+		}
+
+		value, _ := attr.ReadEnv()
+		if value != "" {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Helper function to create an account client or prompt once if the given configuration is not valid.
 func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.AccountClient, error) {
 	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
@@ -195,8 +225,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	}
 
 	_, isTargetFlagSet := targetFlagValue(cmd)
-	// If the profile flag is set but the target flag is not, we should skip loading the bundle configuration.
-	if !isTargetFlagSet && hasProfileFlag {
+	// Keep bundle auth as the default in bundle context.
+	// Explicit auth configuration should override implicit bundle auth only when no target/environment is set.
+	if !isTargetFlagSet && (hasProfileFlag || hasExplicitAuthEnvOverride()) {
 		cmd.SetContext(SkipLoadBundle(cmd.Context()))
 	}
 
