@@ -10,13 +10,16 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type OperationType string
@@ -47,7 +50,17 @@ func normalizeValue(v any) (any, error) {
 	return dynValue.AsAny(), nil
 }
 
-func filterEntityDefaults(basePath string, value any) any {
+// shouldClassifySkip checks if a value should be skipped using ClassifyChange
+// with a synthetic ChangeDesc (Old=nil, New=nil, Remote=value).
+func shouldClassifySkip(ctx context.Context, adapter *dresources.Adapter, path *structpath.PathNode, value, remoteState any) bool {
+	ch := &deployplan.ChangeDesc{Old: nil, New: nil, Remote: value}
+	if err := direct.ClassifyChange(ctx, adapter, path, ch, remoteState); err != nil {
+		return false
+	}
+	return ch.Action == deployplan.Skip
+}
+
+func filterEntityDefaults(ctx context.Context, adapter *dresources.Adapter, basePath *structpath.PathNode, value, remoteState any) any {
 	if value == nil {
 		return nil
 	}
@@ -55,8 +68,8 @@ func filterEntityDefaults(basePath string, value any) any {
 	if arr, ok := value.([]any); ok {
 		result := make([]any, 0, len(arr))
 		for i, elem := range arr {
-			elementPath := fmt.Sprintf("%s[%d]", basePath, i)
-			result = append(result, filterEntityDefaults(elementPath, elem))
+			elemPath := structpath.NewIndex(basePath, i)
+			result = append(result, filterEntityDefaults(ctx, adapter, elemPath, elem, remoteState))
 		}
 		return result
 	}
@@ -68,37 +81,43 @@ func filterEntityDefaults(basePath string, value any) any {
 
 	result := make(map[string]any)
 	for key, val := range m {
-		fieldPath := basePath + "." + key
-
-		if shouldSkipField(fieldPath, val) {
+		fieldPath := structpath.NewDotString(basePath, key)
+		if shouldClassifySkip(ctx, adapter, fieldPath, val, remoteState) {
 			continue
 		}
-
 		if nestedMap, ok := val.(map[string]any); ok {
-			result[key] = filterEntityDefaults(fieldPath, nestedMap)
+			filtered := filterEntityDefaults(ctx, adapter, fieldPath, nestedMap, remoteState)
+			if filtered != nil {
+				result[key] = filtered
+			}
 		} else {
 			result[key] = val
 		}
 	}
 
+	if len(result) == 0 {
+		return nil
+	}
+
 	return result
 }
 
-func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
-	hasConfigValue := cd.Old != nil || cd.New != nil
+func convertChangeDesc(ctx context.Context, adapter *dresources.Adapter, resourceType, fieldPath string, cd *deployplan.ChangeDesc, remoteState any) (*ConfigChangeDesc, error) {
+	pathNode, err := structpath.ParsePath(fieldPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %q: %w", fieldPath, err)
+	}
+
+	hasConfigValue := cd.New != nil
 	normalizedValue, err := normalizeValue(cd.Remote)
 	if err != nil {
 		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
 	}
 
-	if shouldSkipField(path, normalizedValue) {
-		return &ConfigChangeDesc{
-			Operation: OperationSkip,
-		}, nil
-	}
+	// Recursive nested entity filtering using ClassifyChange.
+	normalizedValue = filterEntityDefaults(ctx, adapter, pathNode, normalizedValue, remoteState)
 
-	normalizedValue = filterEntityDefaults(path, normalizedValue)
-	normalizedValue = resetValueIfNeeded(path, normalizedValue)
+	normalizedValue = resetValueIfNeeded(resourceType, pathNode, normalizedValue)
 
 	var op OperationType
 	if normalizedValue == nil && hasConfigValue {
@@ -143,13 +162,20 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 	for resourceKey, entry := range plan.Plan {
 		resourceChanges := make(ResourceChanges)
 
+		resourceType := config.GetResourceTypeFromKey(resourceKey)
+
+		adapter, ok := deployBundle.Adapters[resourceType]
+		if !ok {
+			return nil, fmt.Errorf("no adapter for resource type %q", resourceType)
+		}
+
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
 				if changeDesc.Action == deployplan.Skip {
 					continue
 				}
 
-				change, err := convertChangeDesc(resourceKey+"."+path, changeDesc)
+				change, err := convertChangeDesc(ctx, adapter, resourceType, path, changeDesc, entry.RemoteState)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
