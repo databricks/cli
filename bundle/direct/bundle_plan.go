@@ -398,11 +398,13 @@ func ClassifyChange(ctx context.Context, adapter *dresources.Adapter, path *stru
 		savedAction := ch.Action
 		savedReason := ch.Reason
 
-		if err := adapter.OverrideChangeDesc(ctx, path, ch, remoteState); err != nil {
+		err := adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
+		if err != nil {
 			return fmt.Errorf("internal error: failed to classify change: %w", err)
 		}
 
 		if savedAction != ch.Action && savedReason == ch.Reason {
+			// ch.Action was changed but not Reason field; set it to "custom"
 			ch.Reason = deployplan.ReasonCustom
 		}
 	}
