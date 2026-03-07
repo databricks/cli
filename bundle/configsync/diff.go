@@ -8,9 +8,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -162,9 +162,7 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 	for resourceKey, entry := range plan.Plan {
 		resourceChanges := make(ResourceChanges)
 
-		// resourceKey is "resources.jobs.foo" → parts[1] is "jobs"
-		parts := strings.Split(resourceKey, ".")
-		resourceType := parts[1]
+		resourceType := config.GetResourceTypeFromKey(resourceKey)
 
 		adapter, ok := deployBundle.Adapters[resourceType]
 		if !ok {
