@@ -87,6 +87,10 @@ type translateContext struct {
 
 	// skipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, paths are translated without verifying files exist on the local filesystem.
+	// This is used by config-remote-sync: a user may rename a resource's root folder
+	// in the workspace UI, and the updated path may not exist locally. Path translation
+	// is still needed to produce fully resolved paths for comparison with remote state,
+	// but local file validation would incorrectly fail.
 	skipLocalFileValidation bool
 }
 
@@ -182,13 +186,13 @@ func (t *translateContext) rewritePath(
 }
 
 func (t *translateContext) translateNotebookPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		localRelPathNoExt := strings.TrimSuffix(localRelPath, path.Ext(localRelPath))
+		return path.Join(t.remoteRoot, localRelPathNoExt), nil
+	}
+
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
-		if t.skipLocalFileValidation {
-			localRelPathNoExt := strings.TrimSuffix(localRelPath, path.Ext(localRelPath))
-			return path.Join(t.remoteRoot, localRelPathNoExt), nil
-		}
-
 		if path.Ext(localFullPath) != notebook.ExtensionNone {
 			return "", fmt.Errorf("notebook %s not found", literal)
 		}
@@ -222,11 +226,12 @@ to contain one of the following file extensions: [%s]`, literal, strings.Join(no
 }
 
 func (t *translateContext) translateFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		return path.Join(t.remoteRoot, localRelPath), nil
+	}
+
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
-		if t.skipLocalFileValidation {
-			return path.Join(t.remoteRoot, localRelPath), nil
-		}
 		return "", fmt.Errorf("file %s not found", literal)
 	}
 	if err != nil {
@@ -239,11 +244,12 @@ func (t *translateContext) translateFilePath(ctx context.Context, literal, local
 }
 
 func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		return path.Join(t.remoteRoot, localRelPath), nil
+	}
+
 	info, err := t.b.SyncRoot.Stat(localRelPath)
 	if err != nil {
-		if t.skipLocalFileValidation {
-			return path.Join(t.remoteRoot, localRelPath), nil
-		}
 		return "", err
 	}
 	if !info.IsDir() {
@@ -257,11 +263,12 @@ func (t *translateContext) translateGlobPath(ctx context.Context, literal, local
 }
 
 func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {
+	if t.skipLocalFileValidation {
+		return localFullPath, nil
+	}
+
 	info, err := os.Stat(filepath.FromSlash(localFullPath))
 	if errors.Is(err, fs.ErrNotExist) {
-		if t.skipLocalFileValidation {
-			return localFullPath, nil
-		}
 		return "", fmt.Errorf("directory %s not found", literal)
 	}
 	if err != nil {
