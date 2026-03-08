@@ -1,11 +1,11 @@
 # NEXT CHANGELOG
 
-## Release v0.292.0
+## Release v0.293.0
 
 ### CLI
 
 ### Bundles
-* Added permissions support for Lakebase Database projects ([#4626](https://github.com/databricks/cli/pull/4626))
+* Modify grants to use SDK types ([#4666](https://github.com/databricks/cli/pull/4666))
 
 ### Dependency updates
 

@@ -35,8 +35,7 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*.resources[*].sql_warehouse":                   {"id", "permission"},
 	"resources.apps.*.resources[*].uc_securable":                    {"permission", "securable_full_name", "securable_type"},
 
-	"resources.catalogs.*":           {"name"},
-	"resources.catalogs.*.grants[*]": {"privileges", "principal"},
+	"resources.catalogs.*": {"name"},
 
 	"resources.clusters.*.cluster_log_conf.dbfs":     {"destination"},
 	"resources.clusters.*.cluster_log_conf.s3":       {"destination"},
@@ -61,8 +60,7 @@ var RequiredFields = map[string][]string{
 	"resources.experiments.*":                {"name"},
 	"resources.experiments.*.permissions[*]": {"level"},
 
-	"resources.external_locations.*":           {"credential_name", "name", "url"},
-	"resources.external_locations.*.grants[*]": {"privileges", "principal"},
+	"resources.external_locations.*": {"credential_name", "name", "url"},
 
 	"resources.jobs.*.deployment":                                                                                  {"kind"},
 	"resources.jobs.*.environments[*]":                                                                             {"environment_key"},
@@ -228,10 +226,7 @@ var RequiredFields = map[string][]string{
 	"resources.quality_monitors.*.schedule":          {"quartz_cron_expression", "timezone_id"},
 	"resources.quality_monitors.*.time_series":       {"granularities", "timestamp_col"},
 
-	"resources.registered_models.*.grants[*]": {"privileges", "principal"},
-
-	"resources.schemas.*":           {"catalog_name", "name"},
-	"resources.schemas.*.grants[*]": {"privileges", "principal"},
+	"resources.schemas.*": {"catalog_name", "name"},
 
 	"resources.secret_scopes.*":                   {"name"},
 	"resources.secret_scopes.*.keyvault_metadata": {"dns_name", "resource_id"},
@@ -241,8 +236,7 @@ var RequiredFields = map[string][]string{
 
 	"resources.synced_database_tables.*": {"name"},
 
-	"resources.volumes.*":           {"catalog_name", "name", "schema_name", "volume_type"},
-	"resources.volumes.*.grants[*]": {"privileges", "principal"},
+	"resources.volumes.*": {"catalog_name", "name", "schema_name", "volume_type"},
 
 	"scripts.*": {"content"},
 }

@@ -1,7 +1,6 @@
 package variable
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -22,7 +21,7 @@ func TestResolveServicePrincipal_ResolveSuccess(t *testing.T) {
 			ApplicationId: "5678",
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveServicePrincipal{name: "service-principal"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
@@ -37,7 +36,7 @@ func TestResolveServicePrincipal_ResolveNotFound(t *testing.T) {
 		GetByDisplayName(mock.Anything, "service-principal").
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveServicePrincipal{name: "service-principal"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)

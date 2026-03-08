@@ -2,7 +2,6 @@ package python_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"os"
@@ -139,7 +138,7 @@ func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
 		tasks = append(tasks, GenerateWheelTasks(tw.wheelPath, versions, nodeTypeId)...)
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	run, err := w.Jobs.Submit(ctx, jobs.SubmitRun{
 		RunName: opts.name,
 		Tasks:   tasks,

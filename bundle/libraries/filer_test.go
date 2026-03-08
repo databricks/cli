@@ -1,7 +1,6 @@
 package libraries
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -26,7 +25,7 @@ func TestGetFilerForLibrariesValidWsfs(t *testing.T) {
 	m.WorkspaceClient.Config = &databrickscfg.Config{}
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	client, uploadPath, diags := GetFilerForLibraries(context.Background(), b)
+	client, uploadPath, diags := GetFilerForLibraries(t.Context(), b)
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "/Workspace/foo/bar/artifacts/.internal", uploadPath)
 
@@ -46,7 +45,7 @@ func TestGetFilerForLibrariesCleanupValidWsfs(t *testing.T) {
 	m.WorkspaceClient.Config = &databrickscfg.Config{}
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	client, uploadPath, diags := GetFilerForLibrariesCleanup(context.Background(), b)
+	client, uploadPath, diags := GetFilerForLibrariesCleanup(t.Context(), b)
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "/Workspace/foo/bar/artifacts", uploadPath)
 
@@ -66,7 +65,7 @@ func TestGetFilerForLibrariesValidUcVolume(t *testing.T) {
 	m.WorkspaceClient.Config = &databrickscfg.Config{}
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	client, uploadPath, diags := GetFilerForLibraries(context.Background(), b)
+	client, uploadPath, diags := GetFilerForLibraries(t.Context(), b)
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "/Volumes/main/my_schema/my_volume/.internal", uploadPath)
 
@@ -86,7 +85,7 @@ func TestGetFilerForLibrariesCleanupValidUcVolume(t *testing.T) {
 	m.WorkspaceClient.Config = &databrickscfg.Config{}
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	client, uploadPath, diags := GetFilerForLibrariesCleanup(context.Background(), b)
+	client, uploadPath, diags := GetFilerForLibrariesCleanup(t.Context(), b)
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "/Volumes/main/my_schema/my_volume", uploadPath)
 
@@ -104,6 +103,6 @@ func TestGetFilerForLibrariesRemotePathNotSet(t *testing.T) {
 	m.WorkspaceClient.Config = &databrickscfg.Config{}
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	_, _, diags := GetFilerForLibraries(context.Background(), b)
+	_, _, diags := GetFilerForLibraries(t.Context(), b)
 	require.EqualError(t, diags.Error(), "remote artifact path not configured")
 }

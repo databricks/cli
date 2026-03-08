@@ -1,7 +1,6 @@
 package databrickscfg
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,7 +14,7 @@ func TestLoadOrCreate(t *testing.T) {
 	dir := t.TempDir()
 
 	path := filepath.Join(dir, "databrickscfg")
-	file, err := loadOrCreateConfigFile(context.Background(), path)
+	file, err := loadOrCreateConfigFile(t.Context(), path)
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.FileExists(t, path)
@@ -23,7 +22,7 @@ func TestLoadOrCreate(t *testing.T) {
 
 func TestLoadOrCreate_NotAllowed(t *testing.T) {
 	path := "/dev/databrickscfg"
-	file, err := loadOrCreateConfigFile(context.Background(), path)
+	file, err := loadOrCreateConfigFile(t.Context(), path)
 	assert.Error(t, err)
 	assert.Nil(t, file)
 	assert.NoFileExists(t, path)
@@ -31,7 +30,7 @@ func TestLoadOrCreate_NotAllowed(t *testing.T) {
 
 func TestLoadOrCreate_Bad(t *testing.T) {
 	path := "profile/testdata/badcfg"
-	file, err := loadOrCreateConfigFile(context.Background(), path)
+	file, err := loadOrCreateConfigFile(t.Context(), path)
 	assert.Error(t, err)
 	assert.Nil(t, file)
 }
@@ -40,10 +39,10 @@ func TestMatchOrCreateSection_Direct(t *testing.T) {
 	cfg := &config.Config{
 		Profile: "query",
 	}
-	file, err := loadOrCreateConfigFile(context.Background(), "profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	section, err := matchOrCreateSection(ctx, file, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, section)
@@ -54,10 +53,10 @@ func TestMatchOrCreateSection_AccountID(t *testing.T) {
 	cfg := &config.Config{
 		AccountID: "abc",
 	}
-	file, err := loadOrCreateConfigFile(context.Background(), "profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	section, err := matchOrCreateSection(ctx, file, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, section)
@@ -68,10 +67,10 @@ func TestMatchOrCreateSection_NormalizeHost(t *testing.T) {
 	cfg := &config.Config{
 		Host: "https://query/?o=abracadabra",
 	}
-	file, err := loadOrCreateConfigFile(context.Background(), "profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	section, err := matchOrCreateSection(ctx, file, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, section)
@@ -80,10 +79,10 @@ func TestMatchOrCreateSection_NormalizeHost(t *testing.T) {
 
 func TestMatchOrCreateSection_NoProfileOrHost(t *testing.T) {
 	cfg := &config.Config{}
-	file, err := loadOrCreateConfigFile(context.Background(), "profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err = matchOrCreateSection(ctx, file, cfg)
 	assert.EqualError(t, err, "cannot create new profile: empty section name")
 }
@@ -92,10 +91,10 @@ func TestMatchOrCreateSection_MultipleProfiles(t *testing.T) {
 	cfg := &config.Config{
 		Host: "https://foo",
 	}
-	file, err := loadOrCreateConfigFile(context.Background(), "profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err = matchOrCreateSection(ctx, file, cfg)
 	assert.EqualError(t, err, "multiple profiles matched: foo1, foo2")
 }
@@ -105,10 +104,10 @@ func TestMatchOrCreateSection_NewProfile(t *testing.T) {
 		Host:    "https://bar",
 		Profile: "delirium",
 	}
-	file, err := loadOrCreateConfigFile(context.Background(), "profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	section, err := matchOrCreateSection(ctx, file, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, section)
@@ -116,7 +115,7 @@ func TestMatchOrCreateSection_NewProfile(t *testing.T) {
 }
 
 func TestSaveToProfile_ErrorOnLoad(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	err := SaveToProfile(ctx, &config.Config{
 		ConfigFile: "testdata/badcfg",
 	})
@@ -124,7 +123,7 @@ func TestSaveToProfile_ErrorOnLoad(t *testing.T) {
 }
 
 func TestSaveToProfile_ErrorOnMatch(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	err := SaveToProfile(ctx, &config.Config{
 		Host: "https://foo",
 	})
@@ -132,7 +131,7 @@ func TestSaveToProfile_ErrorOnMatch(t *testing.T) {
 }
 
 func TestSaveToProfile_NewFileWithoutDefault(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 
 	err := SaveToProfile(ctx, &config.Config{
@@ -157,7 +156,7 @@ token = xyz
 }
 
 func TestSaveToProfile_NewFileWithDefault(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 
 	err := SaveToProfile(ctx, &config.Config{
@@ -255,7 +254,7 @@ func TestSaveToProfile_MergeSemantics(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			path := filepath.Join(t.TempDir(), "databrickscfg")
 
 			for _, save := range tc.saves {
@@ -264,7 +263,7 @@ func TestSaveToProfile_MergeSemantics(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			file, err := loadOrCreateConfigFile(context.Background(), path)
+			file, err := loadOrCreateConfigFile(t.Context(), path)
 			require.NoError(t, err)
 
 			section, err := file.GetSection(tc.profile)

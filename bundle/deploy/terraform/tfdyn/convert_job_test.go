@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"reflect"
 	"slices"
 	"strings"
@@ -83,7 +82,7 @@ func TestConvertJob(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = jobConverter{}.Convert(ctx, "my_job", vin, out)
 	require.NoError(t, err)
@@ -215,7 +214,7 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = jobConverter{}.Convert(ctx, "my_job", vin, out)
 	require.NoError(t, err)

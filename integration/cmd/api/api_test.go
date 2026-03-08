@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -17,7 +16,7 @@ import (
 )
 
 func TestApiGet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "api", "get", "/api/2.0/preview/scim/v2/Me")
 
@@ -32,7 +31,7 @@ func TestApiGet(t *testing.T) {
 }
 
 func TestApiPost(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	if testutil.GetCloud(t) == testutil.GCP {
 		t.Skip("DBFS REST API is disabled on gcp")

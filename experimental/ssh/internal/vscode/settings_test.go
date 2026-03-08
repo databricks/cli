@@ -1,7 +1,6 @@
 package vscode
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -53,10 +52,10 @@ func TestGetDefaultSettingsPath_VSCode_Linux(t *testing.T) {
 		t.Skip("Skipping Linux-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/home/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
+	path, err := getDefaultSettingsPath(ctx, VSCodeOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/home/testuser/.config/Code/User/settings.json", path)
 }
@@ -66,10 +65,10 @@ func TestGetDefaultSettingsPath_Cursor_Linux(t *testing.T) {
 		t.Skip("Skipping Linux-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/home/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, cursorIDE)
+	path, err := getDefaultSettingsPath(ctx, CursorOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/home/testuser/.config/Cursor/User/settings.json", path)
 }
@@ -79,10 +78,10 @@ func TestGetDefaultSettingsPath_VSCode_Darwin(t *testing.T) {
 		t.Skip("Skipping Darwin-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/Users/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
+	path, err := getDefaultSettingsPath(ctx, VSCodeOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/Users/testuser/Library/Application Support/Code/User/settings.json", path)
 }
@@ -92,10 +91,10 @@ func TestGetDefaultSettingsPath_Cursor_Darwin(t *testing.T) {
 		t.Skip("Skipping Darwin-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/Users/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, cursorIDE)
+	path, err := getDefaultSettingsPath(ctx, CursorOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/Users/testuser/Library/Application Support/Cursor/User/settings.json", path)
 }
@@ -105,10 +104,10 @@ func TestGetDefaultSettingsPath_VSCode_Windows(t *testing.T) {
 		t.Skip("Skipping Windows-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "APPDATA", `C:\Users\testuser\AppData\Roaming`)
 
-	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
+	path, err := getDefaultSettingsPath(ctx, VSCodeOption)
 	require.NoError(t, err)
 	assert.Equal(t, `C:\Users\testuser\AppData\Roaming\Code\User\settings.json`, path)
 }
@@ -118,10 +117,10 @@ func TestGetDefaultSettingsPath_Cursor_Windows(t *testing.T) {
 		t.Skip("Skipping Windows-specific test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "APPDATA", `C:\Users\testuser\AppData\Roaming`)
 
-	path, err := getDefaultSettingsPath(ctx, cursorIDE)
+	path, err := getDefaultSettingsPath(ctx, CursorOption)
 	require.NoError(t, err)
 	assert.Equal(t, `C:\Users\testuser\AppData\Roaming\Cursor\User\settings.json`, path)
 }
@@ -437,7 +436,7 @@ func TestBackupSettings(t *testing.T) {
 	err := os.WriteFile(settingsPath, originalContent, 0o600)
 	require.NoError(t, err)
 
-	ctx, _ := cmdio.NewTestContextWithStderr(context.Background())
+	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
 
 	// First backup: should create .original.bak
 	err = backupSettings(ctx, settingsPath)
@@ -537,7 +536,7 @@ func TestMissingSettings_IsEmpty(t *testing.T) {
 }
 
 func TestGetManualInstructions_VSCode(t *testing.T) {
-	instructions := GetManualInstructions(vscodeIDE, "test-conn")
+	instructions := GetManualInstructions(VSCodeOption, "test-conn")
 
 	assert.Contains(t, instructions, "VS Code")
 	assert.Contains(t, instructions, "test-conn")

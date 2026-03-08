@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -33,7 +32,7 @@ func TestConvertPermissions(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	resource := convertPermissionsResource(ctx, vin)
 	require.NotNil(t, resource)
 	assert.Equal(t, []schema.ResourcePermissionsAccessControl{
@@ -66,7 +65,7 @@ func TestConvertPermissionsNil(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	resource := convertPermissionsResource(ctx, vin)
 	assert.Nil(t, resource)
 }
@@ -79,7 +78,7 @@ func TestConvertPermissionsEmpty(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	resource := convertPermissionsResource(ctx, vin)
 	assert.Nil(t, resource)
 }

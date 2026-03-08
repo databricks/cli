@@ -34,7 +34,7 @@ func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 		W: w,
 
-		ctx: context.Background(),
+		ctx: t.Context(),
 	}
 
 	return wt.ctx, wt
@@ -62,7 +62,7 @@ func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 		W: w,
 
-		ctx: context.Background(),
+		ctx: t.Context(),
 	}
 
 	return wt.ctx, wt
@@ -86,7 +86,7 @@ func (t *WorkspaceT) RunPython(code string) (string, error) {
 		require.NoError(t, err, "Unexpected error from CommandExecution.Start(clusterID=%v)", t.TestClusterID())
 
 		t.Cleanup(func() {
-			err := t.exec.Destroy(t.ctx)
+			err := t.exec.Destroy(context.WithoutCancel(t.ctx))
 			require.NoError(t, err)
 		})
 	}

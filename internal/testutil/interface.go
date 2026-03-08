@@ -1,5 +1,7 @@
 package testutil
 
+import "context"
+
 // TestingT is an interface wrapper around *testing.T that provides the methods
 // that are used by the test package to convey information about test failures.
 //
@@ -20,6 +22,8 @@ type TestingT interface {
 	FailNow()
 
 	Cleanup(func())
+
+	Context() context.Context
 
 	Setenv(key, value string)
 

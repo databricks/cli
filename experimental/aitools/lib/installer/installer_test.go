@@ -1,7 +1,6 @@
 package installer
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestBackupThirdPartySkillDestDoesNotExist(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	destDir := filepath.Join(t.TempDir(), "nonexistent")
 
 	err := backupThirdPartySkill(ctx, destDir, "/canonical", "databricks", "Test Agent")
@@ -20,7 +19,7 @@ func TestBackupThirdPartySkillDestDoesNotExist(t *testing.T) {
 }
 
 func TestBackupThirdPartySkillSymlinkToCanonical(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmp := t.TempDir()
 
 	canonicalDir := filepath.Join(tmp, "canonical", "databricks")
@@ -41,7 +40,7 @@ func TestBackupThirdPartySkillSymlinkToCanonical(t *testing.T) {
 }
 
 func TestBackupThirdPartySkillRegularDir(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmp := t.TempDir()
 
 	destDir := filepath.Join(tmp, "agent", "skills", "databricks")
@@ -69,7 +68,7 @@ func TestBackupThirdPartySkillRegularDir(t *testing.T) {
 }
 
 func TestBackupThirdPartySkillSymlinkToOtherTarget(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmp := t.TempDir()
 
 	otherDir := filepath.Join(tmp, "other", "databricks")
@@ -96,7 +95,7 @@ func TestBackupThirdPartySkillSymlinkToOtherTarget(t *testing.T) {
 }
 
 func TestBackupThirdPartySkillRegularFile(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmp := t.TempDir()
 
 	// Edge case: destDir is a file, not a directory.

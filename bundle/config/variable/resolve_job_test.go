@@ -1,7 +1,6 @@
 package variable
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -22,7 +21,7 @@ func TestResolveJob_ResolveSuccess(t *testing.T) {
 			JobId: 5678,
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveJob{name: "job"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
@@ -37,7 +36,7 @@ func TestResolveJob_ResolveNotFound(t *testing.T) {
 		GetBySettingsName(mock.Anything, "job").
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveJob{name: "job"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)

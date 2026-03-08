@@ -1,7 +1,6 @@
 package resourcemutator
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -77,7 +76,7 @@ func TestCaptureSchemaDependencyForVolume(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
+	d := bundle.Apply(t.Context(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
 
 	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Volumes["volume1"].SchemaName)
@@ -167,7 +166,7 @@ func TestCaptureSchemaDependencyForPipelinesWithTarget(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
+	d := bundle.Apply(t.Context(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
 
 	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Pipelines["pipeline1"].Schema)
@@ -261,7 +260,7 @@ func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
+	d := bundle.Apply(t.Context(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
 	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Pipelines["pipeline1"].Target)
 	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.Pipelines["pipeline2"].Target)
@@ -326,7 +325,7 @@ func TestCaptureCatalogDependencyForSchema(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
+	d := bundle.Apply(t.Context(), b, CaptureSchemaDependency())
 	require.Nil(t, d)
 
 	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.Schemas["schema1"].CatalogName)

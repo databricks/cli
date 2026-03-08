@@ -29,7 +29,7 @@ func logf(format string, args ...any) {
 // getCacheDir returns the cache directory for downloads.
 // It uses ~/.cache/testarchive by default.
 func getCacheDir() (string, error) {
-	homeDir, err := env.UserHomeDir(context.Background())
+	homeDir, err := env.UserHomeDir(context.Background()) //nolint:gocritic // Test utility without caller context.
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}

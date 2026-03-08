@@ -1,7 +1,6 @@
 package config_tests
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -13,7 +12,7 @@ import (
 func TestInterpolation(t *testing.T) {
 	b := load(t, "./interpolation")
 	diags := bundle.ApplySeq(
-		context.Background(),
+		t.Context(),
 		b,
 		mutator.ResolveVariableReferencesOnlyResources(
 			"bundle",
@@ -31,7 +30,7 @@ func TestInterpolation(t *testing.T) {
 
 func TestInterpolationWithTarget_withoutResources(t *testing.T) {
 	b := loadTarget(t, "./interpolation_target", "development")
-	diags := bundle.Apply(context.Background(), b, mutator.ResolveVariableReferencesOnlyResources(
+	diags := bundle.Apply(t.Context(), b, mutator.ResolveVariableReferencesOnlyResources(
 		"bundle",
 		"workspace",
 	))
@@ -42,7 +41,7 @@ func TestInterpolationWithTarget_withoutResources(t *testing.T) {
 
 func TestInterpolationWithTarget_onlyResources(t *testing.T) {
 	b := loadTarget(t, "./interpolation_target", "development")
-	diags := bundle.Apply(context.Background(), b, mutator.ResolveVariableReferencesWithoutResources(
+	diags := bundle.Apply(t.Context(), b, mutator.ResolveVariableReferencesWithoutResources(
 		"bundle",
 		"workspace",
 	))
