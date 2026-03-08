@@ -1,7 +1,6 @@
 package env
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -12,7 +11,7 @@ func TestContext(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("FOO", "bar")
 
-	ctx0 := context.Background()
+	ctx0 := t.Context()
 
 	// Get
 	assert.Equal(t, "bar", Get(ctx0, "FOO"))
@@ -49,7 +48,7 @@ func TestContext(t *testing.T) {
 }
 
 func TestHome(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithUserHomeDir(ctx, "...")
 	home, err := UserHomeDir(ctx)
 	assert.Equal(t, "...", home)
@@ -58,7 +57,7 @@ func TestHome(t *testing.T) {
 
 func TestGetBool(t *testing.T) {
 	testutil.CleanupEnvironment(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test true values
 	trueValues := []string{"true", "TRUE", "True", "1", "t", "T", "yes", "YES", "Yes", "on", "ON", "On"}
@@ -100,12 +99,12 @@ func TestGetBool(t *testing.T) {
 
 	// Test from actual environment variable
 	t.Setenv("TEST_ENV_BOOL", "true")
-	val, ok = GetBool(context.Background(), "TEST_ENV_BOOL")
+	val, ok = GetBool(t.Context(), "TEST_ENV_BOOL")
 	assert.True(t, ok)
 	assert.True(t, val)
 
 	t.Setenv("TEST_ENV_BOOL_FALSE", "0")
-	val, ok = GetBool(context.Background(), "TEST_ENV_BOOL_FALSE")
+	val, ok = GetBool(t.Context(), "TEST_ENV_BOOL_FALSE")
 	assert.True(t, ok)
 	assert.False(t, val)
 }

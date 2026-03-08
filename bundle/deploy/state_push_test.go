@@ -1,7 +1,6 @@
 package deploy
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -56,7 +55,7 @@ func TestStatePush(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	statePath, err := getPathToStateFile(ctx, b)
 	require.NoError(t, err)

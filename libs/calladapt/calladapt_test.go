@@ -356,7 +356,7 @@ func TestCall(t *testing.T) {
 				DoCreate(ctx context.Context, data *Data) (string, error)
 			}](),
 			method: "DoCreate",
-			args:   []any{context.Background(), &Data{2}},
+			args:   []any{t.Context(), &Data{2}},
 			expect: []any{"123"},
 		},
 	}

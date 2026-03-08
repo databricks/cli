@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -143,7 +142,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, expectedMetadata, b.Metadata)
@@ -164,7 +163,7 @@ func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, syncRootPath, b.Metadata.Config.Workspace.FilePath)
@@ -184,7 +183,7 @@ func TestComputeMetadataMutatorGitFolderPath(t *testing.T) {
 		WorktreeRoot: path,
 	}
 
-	diags := bundle.Apply(context.Background(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, gitFolderPath, b.Metadata.Extra.GitFolderPath)

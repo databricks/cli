@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,13 +22,13 @@ func TestParseResourcesStateWithNoFile(t *testing.T) {
 			},
 		},
 	}
-	state, err := ParseResourcesState(context.Background(), b)
+	state, err := ParseResourcesState(t.Context(), b)
 	assert.NoError(t, err)
 	assert.Equal(t, ExportedResourcesMap(nil), state)
 }
 
 func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := &bundle.Bundle{
 		BundleRootPath: t.TempDir(),
 		Config: config.Root{

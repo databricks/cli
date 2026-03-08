@@ -1,7 +1,6 @@
 package apps
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -50,7 +49,7 @@ func TestAppsValidateSameSourcePath(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
-	diags := bundle.ApplySeq(context.Background(), b, mutator.TranslatePaths(), Validate())
+	diags := bundle.ApplySeq(t.Context(), b, mutator.TranslatePaths(), Validate())
 	require.Len(t, diags, 1)
 	require.Equal(t, "Duplicate app source code path", diags[0].Summary)
 	require.Contains(t, diags[0].Detail, "has the same source code path as app resource")
@@ -86,7 +85,7 @@ func TestAppsValidateBothSourceCodePathAndGitSource(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
-	diags := bundle.ApplySeq(context.Background(), b, mutator.TranslatePaths(), Validate())
+	diags := bundle.ApplySeq(t.Context(), b, mutator.TranslatePaths(), Validate())
 	require.Len(t, diags, 1)
 	require.Equal(t, "Both source_code_path and git_source fields are set", diags[0].Summary)
 	require.Contains(t, diags[0].Detail, "should have either source_code_path or git_source field, not both")

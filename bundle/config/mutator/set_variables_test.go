@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -25,7 +24,7 @@ func TestSetVariableFromProcessEnvVar(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
+	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
 
 	err = convert.ToTyped(&variable, v)
@@ -43,7 +42,7 @@ func TestSetVariableUsingDefaultValue(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
+	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
 
 	err = convert.ToTyped(&variable, v)
@@ -65,7 +64,7 @@ func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
+	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
 
 	err = convert.ToTyped(&variable, v)
@@ -90,7 +89,7 @@ func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
+	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
 
 	err = convert.ToTyped(&variable, v)
@@ -107,7 +106,7 @@ func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	_, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
+	_, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	assert.ErrorContains(t, err, "no value assigned to required variable foo. Variables are usually assigned in databricks.yml, and they can be overridden using \"--var\", the BUNDLE_VAR_foo environment variable, or .databricks/bundle/<target>/variable-overrides.json")
 }
 
@@ -136,7 +135,7 @@ func TestSetVariablesMutator(t *testing.T) {
 
 	t.Setenv("BUNDLE_VAR_b", "env-var-b")
 
-	diags := bundle.Apply(context.Background(), b, SetVariables())
+	diags := bundle.Apply(t.Context(), b, SetVariables())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "default-a", b.Config.Variables["a"].Value)
 	assert.Equal(t, "env-var-b", b.Config.Variables["b"].Value)
@@ -157,6 +156,6 @@ func TestSetComplexVariablesViaEnvVariablesIsNotAllowed(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	_, err = setVariable(context.Background(), v, &variable, "foo", dyn.NilValue)
+	_, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	assert.ErrorContains(t, err, "setting via environment variables (BUNDLE_VAR_foo) is not supported for complex variable foo")
 }

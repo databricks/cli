@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -20,7 +21,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", fmt.Errorf("failed to get client public key: %w", err)
 	}
 
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}

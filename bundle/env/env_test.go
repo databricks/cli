@@ -1,7 +1,6 @@
 package env
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -13,12 +12,12 @@ func TestGetWithRealEnvSingleVariable(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("v1", "foo")
 
-	v, ok := get(context.Background(), []string{"v1"})
+	v, ok := get(t.Context(), []string{"v1"})
 	require.True(t, ok)
 	assert.Equal(t, "foo", v)
 
 	// Not set.
-	v, ok = get(context.Background(), []string{"v2"})
+	v, ok = get(t.Context(), []string{"v2"})
 	require.False(t, ok)
 	assert.Equal(t, "", v)
 }
@@ -32,13 +31,13 @@ func TestGetWithRealEnvMultipleVariables(t *testing.T) {
 		{"v2", "v3", "v1"},
 		{"v3", "v1", "v2"},
 	} {
-		v, ok := get(context.Background(), vars)
+		v, ok := get(t.Context(), vars)
 		require.True(t, ok)
 		assert.Equal(t, "foo", v)
 	}
 
 	// Not set.
-	v, ok := get(context.Background(), []string{"v2", "v3", "v4"})
+	v, ok := get(t.Context(), []string{"v2", "v3", "v4"})
 	require.False(t, ok)
 	assert.Equal(t, "", v)
 }

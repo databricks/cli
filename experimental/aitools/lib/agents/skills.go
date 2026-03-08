@@ -1,9 +1,12 @@
 package agents
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/databricks/cli/libs/env"
 )
 
 const (
@@ -17,13 +20,13 @@ const (
 // HasDatabricksSkillsInstalled checks if Databricks skills are installed in the canonical location.
 // Returns true if no agents are detected (nothing to recommend) or if skills exist in ~/.databricks/agent-skills/.
 // Only the canonical location is checked so that skills installed by other tools are not mistaken for a proper installation.
-func HasDatabricksSkillsInstalled() bool {
-	installed := DetectInstalled()
+func HasDatabricksSkillsInstalled(ctx context.Context) bool {
+	installed := DetectInstalled(ctx)
 	if len(installed) == 0 {
 		return true
 	}
 
-	homeDir, err := getHomeDir()
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return false
 	}

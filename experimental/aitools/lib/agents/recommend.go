@@ -10,7 +10,7 @@ import (
 // RecommendSkillsInstall checks if coding agents are detected but have no skills installed.
 // In interactive mode, prompts the user to install now using installFn. In non-interactive mode, prints a hint.
 func RecommendSkillsInstall(ctx context.Context, installFn func(context.Context) error) error {
-	if HasDatabricksSkillsInstalled() {
+	if HasDatabricksSkillsInstalled(ctx) {
 		return nil
 	}
 

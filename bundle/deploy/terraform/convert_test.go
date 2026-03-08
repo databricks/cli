@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -22,7 +21,7 @@ import (
 func produceTerraformConfiguration(t *testing.T, config config.Root) *schema.Root {
 	vin, err := convert.FromTyped(config, dyn.NilValue)
 	require.NoError(t, err)
-	out, err := BundleToTerraformWithDynValue(context.Background(), vin)
+	out, err := BundleToTerraformWithDynValue(t.Context(), vin)
 	require.NoError(t, err)
 	return out
 }
@@ -544,9 +543,9 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 			CatalogName: "catalog",
 			SchemaName:  "schema",
 		},
-		Grants: []resources.Grant{
+		Grants: []catalog.PrivilegeAssignment{
 			{
-				Privileges: []string{"EXECUTE"},
+				Privileges: []catalog.Privilege{catalog.PrivilegeExecute},
 				Principal:  "jane@doe.com",
 			},
 		},
@@ -589,7 +588,7 @@ func TestBundleToTerraformDeletedResources(t *testing.T) {
 
 	vin, err := convert.FromTyped(config, dyn.NilValue)
 	require.NoError(t, err)
-	out, err := BundleToTerraformWithDynValue(context.Background(), vin)
+	out, err := BundleToTerraformWithDynValue(t.Context(), vin)
 	require.NoError(t, err)
 
 	_, ok := out.Resource.Job["my_job1"]

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 )
 
 const (
@@ -15,27 +16,27 @@ const (
 	configDirName = ".databricks/ssh-tunnel-configs"
 )
 
-func GetConfigDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
+func GetConfigDir(ctx context.Context) (string, error) {
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 	return filepath.Join(homeDir, configDirName), nil
 }
 
-func GetMainConfigPath() (string, error) {
-	homeDir, err := os.UserHomeDir()
+func GetMainConfigPath(ctx context.Context) (string, error) {
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 	return filepath.Join(homeDir, ".ssh", "config"), nil
 }
 
-func GetMainConfigPathOrDefault(configPath string) (string, error) {
+func GetMainConfigPathOrDefault(ctx context.Context, configPath string) (string, error) {
 	if configPath != "" {
 		return configPath, nil
 	}
-	return GetMainConfigPath()
+	return GetMainConfigPath(ctx)
 }
 
 func EnsureMainConfigExists(configPath string) error {
@@ -55,8 +56,8 @@ func EnsureMainConfigExists(configPath string) error {
 	return err
 }
 
-func EnsureIncludeDirective(configPath string) error {
-	configDir, err := GetConfigDir()
+func EnsureIncludeDirective(ctx context.Context, configPath string) error {
+	configDir, err := GetConfigDir(ctx)
 	if err != nil {
 		return err
 	}
@@ -98,16 +99,16 @@ func EnsureIncludeDirective(configPath string) error {
 	return nil
 }
 
-func GetHostConfigPath(hostName string) (string, error) {
-	configDir, err := GetConfigDir()
+func GetHostConfigPath(ctx context.Context, hostName string) (string, error) {
+	configDir, err := GetConfigDir(ctx)
 	if err != nil {
 		return "", err
 	}
 	return filepath.Join(configDir, hostName), nil
 }
 
-func HostConfigExists(hostName string) (bool, error) {
-	configPath, err := GetHostConfigPath(hostName)
+func HostConfigExists(ctx context.Context, hostName string) (bool, error) {
+	configPath, err := GetHostConfigPath(ctx, hostName)
 	if err != nil {
 		return false, err
 	}
@@ -123,12 +124,12 @@ func HostConfigExists(hostName string) (bool, error) {
 
 // Returns true if the config was created/updated, false if it was skipped.
 func CreateOrUpdateHostConfig(ctx context.Context, hostName, hostConfig string, recreate bool) (bool, error) {
-	configPath, err := GetHostConfigPath(hostName)
+	configPath, err := GetHostConfigPath(ctx, hostName)
 	if err != nil {
 		return false, err
 	}
 
-	exists, err := HostConfigExists(hostName)
+	exists, err := HostConfigExists(ctx, hostName)
 	if err != nil {
 		return false, err
 	}

@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -28,7 +27,7 @@ func TestFilesToSync_NoPaths(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := FilesToSync().Apply(ctx, b)
 	assert.Empty(t, diags)
 }
@@ -83,7 +82,7 @@ func TestFilesToSync_EverythingIgnored(t *testing.T) {
 	// Ignore all files.
 	testutil.WriteFile(t, filepath.Join(b.BundleRootPath, ".gitignore"), "*\n.*\n")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := FilesToSync().Apply(ctx, b)
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
@@ -96,7 +95,7 @@ func TestFilesToSync_EverythingExcluded(t *testing.T) {
 	// Exclude all files.
 	b.Config.Sync.Exclude = []string{"*"}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	diags := FilesToSync().Apply(ctx, b)
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)

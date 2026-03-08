@@ -1,7 +1,6 @@
 package apps
 
 import (
-	"context"
 	"net"
 	"os"
 	"testing"
@@ -59,20 +58,15 @@ func TestStartViteDevServerNoNode(t *testing.T) {
 		t.Skip("Skipping node-dependent test in CI")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdio.MockDiscard(ctx)
 
 	// Create a temporary directory to act as project root
 	tmpDir := t.TempDir()
-	oldWd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldWd) }()
-
-	err = os.Chdir(tmpDir)
-	require.NoError(t, err)
+	t.Chdir(tmpDir)
 
 	// Create a client directory
-	err = os.Mkdir("client", 0o755)
+	err := os.Mkdir("client", 0o755)
 	require.NoError(t, err)
 
 	// Try to start Vite server with invalid app URL (will fail fast)

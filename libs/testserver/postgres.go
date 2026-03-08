@@ -443,9 +443,18 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 		}
 	}
 
-	// Generate a fake host
+	// Generate fake hosts
+	host := endpoint.Uid + ".database.us-east-1.cloud.databricks.com"
 	endpoint.Status.Hosts = &postgres.EndpointHosts{
-		Host: endpoint.Uid + ".database.us-east-1.cloud.databricks.com",
+		Host:         host,
+		ReadOnlyHost: host,
+	}
+
+	// Set default group status
+	endpoint.Status.Group = &postgres.EndpointGroupStatus{
+		EnableReadableSecondaries: true,
+		Max:                       1,
+		Min:                       1,
 	}
 
 	// Clear spec - API only returns status

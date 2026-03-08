@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -41,7 +40,7 @@ func TestRewriteSyncPathsRelative(t *testing.T) {
 	bundletest.SetLocation(b, "sync.exclude[0]", []dyn.Location{{File: "./a/b/file.yml"}})
 	bundletest.SetLocation(b, "sync.exclude[1]", []dyn.Location{{File: "./a/b/c/file.yml"}})
 
-	diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
+	diags := bundle.Apply(t.Context(), b, mutator.RewriteSyncPaths())
 	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, filepath.Clean("."), b.Config.Sync.Paths[0])
@@ -80,7 +79,7 @@ func TestRewriteSyncPathsAbsolute(t *testing.T) {
 	bundletest.SetLocation(b, "sync.exclude[0]", []dyn.Location{{File: "/tmp/dir/a/b/file.yml"}})
 	bundletest.SetLocation(b, "sync.exclude[1]", []dyn.Location{{File: "/tmp/dir/a/b/c/file.yml"}})
 
-	diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
+	diags := bundle.Apply(t.Context(), b, mutator.RewriteSyncPaths())
 	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, filepath.Clean("."), b.Config.Sync.Paths[0])
@@ -97,7 +96,7 @@ func TestRewriteSyncPathsErrorPaths(t *testing.T) {
 			BundleRootPath: ".",
 		}
 
-		diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
+		diags := bundle.Apply(t.Context(), b, mutator.RewriteSyncPaths())
 		assert.NoError(t, diags.Error())
 	})
 
@@ -112,7 +111,7 @@ func TestRewriteSyncPathsErrorPaths(t *testing.T) {
 			},
 		}
 
-		diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
+		diags := bundle.Apply(t.Context(), b, mutator.RewriteSyncPaths())
 		assert.NoError(t, diags.Error())
 	})
 }
