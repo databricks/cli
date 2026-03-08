@@ -1067,7 +1067,7 @@ func TestTranslatePathsWithSkipLocalFileValidation(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
 
-	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	// Notebook path should be translated (extension stripped) even though file doesn't exist.
@@ -1107,7 +1107,7 @@ func TestTranslatePathsWithSkipLocalFileValidationDirectory(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "databricks.yml")}})
 
-	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	diags := bundle.ApplySeq(t.Context(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
 	// Directory path should be translated even though directory doesn't exist.
