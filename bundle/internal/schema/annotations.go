@@ -43,18 +43,15 @@ func newAnnotationHandler(annotationsPath string, openapi *openapiParser) (*anno
 	// Convert bundle path keys in annotations to Go type path keys.
 	resolved := annotation.File{}
 	for key, fields := range data {
-		resolvedKey := key
 		// If the key is a bundle path, resolve it to a Go type path.
 		if tp, ok := pathMap.bundlePathToType[key]; ok {
-			resolvedKey = tp
+			key = tp
 		}
-		if existing, ok := resolved[resolvedKey]; ok {
+		if existing, ok := resolved[key]; ok {
 			// Merge fields from both entries (Go path and bundle path).
-			for k, v := range fields {
-				existing[k] = v
-			}
+			maps.Copy(existing, fields)
 		} else {
-			resolved[resolvedKey] = fields
+			resolved[key] = fields
 		}
 	}
 
@@ -269,21 +266,20 @@ func (d *annotationHandler) syncAnnotations(outputPath string) error {
 	// Convert OpenAPI annotations from Go type paths to bundle paths and
 	// merge them into the existing annotations.
 	for goPath, fields := range d.openapiAnnotations {
-		key := goPath
 		if bundlePath, ok := d.pathMap.typeToBundlePath[goPath]; ok {
-			key = bundlePath
+			goPath = bundlePath
 		}
-		if existingData[key] == nil {
-			existingData[key] = map[string]annotation.Descriptor{}
+		if existingData[goPath] == nil {
+			existingData[goPath] = map[string]annotation.Descriptor{}
 		}
 		for fieldName, desc := range fields {
-			existing, exists := existingData[key][fieldName]
+			existing, exists := existingData[goPath][fieldName]
 			if !exists {
-				existingData[key][fieldName] = desc
+				existingData[goPath][fieldName] = desc
 				continue
 			}
 			// Merge OpenAPI data into existing entry, preserving hand-written fields.
-			existingData[key][fieldName] = mergeDescriptor(existing, desc)
+			existingData[goPath][fieldName] = mergeDescriptor(existing, desc)
 		}
 	}
 
@@ -411,4 +407,3 @@ func convertLinksToAbsoluteUrl(s string) string {
 
 	return result
 }
-
