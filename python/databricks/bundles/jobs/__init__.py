@@ -120,6 +120,8 @@ __all__ = [
     "JobParameterDefinitionParam",
     "JobPermission",
     "JobPermissionDict",
+    "JobPermissionLevel",
+    "JobPermissionLevelParam",
     "JobPermissionParam",
     "JobRunAs",
     "JobRunAsDict",
@@ -746,4 +748,6 @@ _resolve_recursive_imports()
 
 JobPermission = Permission
 JobPermissionDict = PermissionDict
+JobPermissionLevel = str
+JobPermissionLevelParam = str
 JobPermissionParam = PermissionParam

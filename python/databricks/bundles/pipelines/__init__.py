@@ -109,6 +109,8 @@ __all__ = [
     "PipelineParam",
     "PipelinePermission",
     "PipelinePermissionDict",
+    "PipelinePermissionLevel",
+    "PipelinePermissionLevelParam",
     "PipelinePermissionParam",
     "PipelinesEnvironment",
     "PipelinesEnvironmentDict",
@@ -411,4 +413,6 @@ from databricks.bundles.pipelines._models.workspace_storage_info import (
 
 PipelinePermission = Permission
 PipelinePermissionDict = PermissionDict
+PipelinePermissionLevel = str
+PipelinePermissionLevelParam = str
 PipelinePermissionParam = PermissionParam
