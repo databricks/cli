@@ -242,8 +242,9 @@ func generateSchema(workdir, outputFile string, docsMode bool) {
 		log.Fatal(err)
 	}
 
-	// Overwrite the input annotation file, adding missing annotations
-	err = a.syncWithMissingAnnotations(annotationsPath)
+	// Persist OpenAPI-derived annotations back to annotations.yml so the
+	// schema is reproducible without the OpenAPI spec.
+	err = a.syncAnnotations(annotationsPath)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -112,10 +112,9 @@ func mapIncorrectTypNames(ref string) string {
 	}
 }
 
-func isOutputOnly(s jsonschema.Schema) *bool {
+func isOutputOnly(s jsonschema.Schema) string {
 	if s.FieldBehaviors == nil || !slices.Contains(s.FieldBehaviors, "OUTPUT_ONLY") {
-		return nil
+		return ""
 	}
-	res := true
-	return &res
+	return "true"
 }

@@ -284,9 +284,6 @@ jobs:
             go.sum
             bundle/internal/schema/*.*
 
-      - name: Download OpenAPI spec
-        run: make .codegen/openapi.json
-
       - name: Verify that the schema is up to date
         run: |
           if ! ( make schema && git diff --exit-code ); then
