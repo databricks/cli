@@ -57,6 +57,11 @@ class Volume(Resource):
     """
 
     volume_type: VariableOrOptional[VolumeType] = None
+    """
+    The type of the volume. An external volume is located in the specified external location.
+    A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.
+    [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
+    """
 
     @classmethod
     def from_dict(cls, value: "VolumeDict") -> "Self":
@@ -102,6 +107,11 @@ class VolumeDict(TypedDict, total=False):
     """
 
     volume_type: VariableOrOptional[VolumeTypeParam]
+    """
+    The type of the volume. An external volume is located in the specified external location.
+    A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.
+    [Learn more](https://docs.databricks.com/aws/en/volumes/managed-vs-external)
+    """
 
 
 VolumeParam = VolumeDict | Volume

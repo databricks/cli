@@ -20,6 +20,10 @@ class GcpAttributes:
     """
 
     availability: VariableOrOptional[GcpAvailability] = None
+    """
+    This field determines whether the spark executors will be scheduled to run on preemptible
+    VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.
+    """
 
     boot_disk_size: VariableOrOptional[int] = None
     """
@@ -82,6 +86,10 @@ class GcpAttributesDict(TypedDict, total=False):
     """"""
 
     availability: VariableOrOptional[GcpAvailabilityParam]
+    """
+    This field determines whether the spark executors will be scheduled to run on preemptible
+    VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.
+    """
 
     boot_disk_size: VariableOrOptional[int]
     """
