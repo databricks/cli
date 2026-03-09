@@ -227,7 +227,7 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 		rv[resourceKey+"."+fieldName] = value
 	}
 
-	// Validate multi-field resources: if any field is set, all fields must be set.
+	// Validate multi-field resources: if any non-bundleIgnore field is set, all non-bundleIgnore fields must be set.
 	for _, p := range m.GetPlugins() {
 		for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
 			if len(r.Fields) <= 1 {
@@ -235,14 +235,22 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 			}
 			names := r.FieldNames()
 			setCount := 0
+			totalCheckable := 0
 			for _, fn := range names {
+				if r.Fields[fn].BundleIgnore {
+					continue
+				}
+				totalCheckable++
 				if rv[r.Key()+"."+fn] != "" {
 					setCount++
 				}
 			}
-			if setCount > 0 && setCount < len(names) {
+			if setCount > 0 && setCount < totalCheckable {
 				var missing []string
 				for _, fn := range names {
+					if r.Fields[fn].BundleIgnore {
+						continue
+					}
 					if rv[r.Key()+"."+fn] == "" {
 						missing = append(missing, r.Key()+"."+fn)
 					}
