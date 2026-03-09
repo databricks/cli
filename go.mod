@@ -10,7 +10,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0 // MIT
 	github.com/charmbracelet/bubbles v1.0.0 // MIT
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
-	github.com/charmbracelet/huh v0.8.0
+	github.com/charmbracelet/huh v1.0.0
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/databricks/databricks-sdk-go v0.112.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
@@ -36,9 +36,9 @@ require (
 	golang.org/x/crypto v0.48.0 // BSD-3-Clause
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
 	golang.org/x/mod v0.33.0
-	golang.org/x/oauth2 v0.35.0
-	golang.org/x/sync v0.19.0
-	golang.org/x/sys v0.41.0
+	golang.org/x/oauth2 v0.36.0
+	golang.org/x/sync v0.20.0
+	golang.org/x/sys v0.42.0
 	golang.org/x/text v0.34.0
 	gopkg.in/ini.v1 v1.67.1 // Apache 2.0
 )
