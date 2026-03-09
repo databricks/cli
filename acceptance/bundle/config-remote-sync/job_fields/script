@@ -1,6 +1,8 @@
 #!/bin/bash
 
 envsubst < databricks.yml.tmpl > databricks.yml
+add_repl.py "$DEFAULT_SPARK_VERSION" "[DEFAULT_SPARK_VERSION]"
+add_repl.py "$NODE_TYPE_ID" "[NODE_TYPE_ID]"
 
 cleanup() {
   trace $CLI bundle destroy --auto-approve
