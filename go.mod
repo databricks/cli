@@ -10,7 +10,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0 // MIT
 	github.com/charmbracelet/bubbles v1.0.0 // MIT
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
-	github.com/charmbracelet/huh v0.8.0
+	github.com/charmbracelet/huh v1.0.0
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/databricks/databricks-sdk-go v0.112.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
