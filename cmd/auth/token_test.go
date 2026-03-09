@@ -76,6 +76,11 @@ func (m *MockApiClient) GetUnifiedOAuthEndpoints(ctx context.Context, host, acco
 	}, nil
 }
 
+// GetEndpointsFromURL implements u2m.OAuthEndpointSupplier.
+func (m *MockApiClient) GetEndpointsFromURL(_ context.Context, _ string) (*u2m.OAuthAuthorizationServer, error) {
+	return nil, u2m.ErrOAuthNotSupported
+}
+
 var _ u2m.OAuthEndpointSupplier = (*MockApiClient)(nil)
 
 func TestToken_loadToken(t *testing.T) {
