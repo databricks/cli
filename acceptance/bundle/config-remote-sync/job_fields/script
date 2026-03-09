@@ -25,7 +25,9 @@ r["trigger"] = {"pause_status": "UNPAUSED", "table_update": {"table_names": ["sa
 for cluster in r.get("job_clusters", []):
     if cluster.get("job_cluster_key") == "test_cluster":
         cluster["job_cluster_key"] = "test_cluster_renamed"
-        cluster["new_cluster"]["num_workers"] = 2
+for task in r.get("tasks", []):
+    if task.get("task_key") == "inline_cluster_task" and "new_cluster" in task:
+        task["new_cluster"]["num_workers"] = 2
 for task in r.get("tasks", []):
     if task.get("job_cluster_key") == "test_cluster":
         task["job_cluster_key"] = "test_cluster_renamed"
