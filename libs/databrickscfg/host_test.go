@@ -7,20 +7,65 @@ import (
 )
 
 func TestNormalizeHost(t *testing.T) {
-	assert.Equal(t, "invalid", normalizeHost("invalid"))
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		// Empty and whitespace.
+		{"", ""},
+		{"  ", ""},
 
-	// With port.
-	assert.Equal(t, "http://foo:123", normalizeHost("http://foo:123"))
+		// Bare hostnames (no scheme).
+		{"foo.com", "https://foo.com"},
+		{"foo.com:8080", "https://foo.com:8080"},
+		{"e2-dogfood.staging.cloud.databricks.com", "https://e2-dogfood.staging.cloud.databricks.com"},
 
-	// With trailing slash.
-	assert.Equal(t, "http://foo", normalizeHost("http://foo/"))
+		// With https:// scheme.
+		{"https://foo.com", "https://foo.com"},
+		{"https://foo.com/", "https://foo.com"},
+		{"https://foo.com/path", "https://foo.com"},
+		{"https://foo.com?q=1", "https://foo.com"},
+		{"https://foo.com#frag", "https://foo.com"},
+		{"https://foo.com:443", "https://foo.com:443"},
 
-	// With path.
-	assert.Equal(t, "http://foo", normalizeHost("http://foo/bar"))
+		// With http:// scheme (preserved for local dev).
+		{"http://foo.com", "http://foo.com"},
+		{"http://localhost:8080", "http://localhost:8080"},
+		{"http://foo.com/path", "http://foo.com"},
 
-	// With query string.
-	assert.Equal(t, "http://foo", normalizeHost("http://foo?bar"))
+		// Port preserved.
+		{"http://foo:123", "http://foo:123"},
 
-	// With anchor.
-	assert.Equal(t, "http://foo", normalizeHost("http://foo#bar"))
+		// Whitespace trimmed.
+		{"  https://foo.com  ", "https://foo.com"},
+		{"  foo.com  ", "https://foo.com"},
+
+		// Scheme is lowercased; host case is preserved (Go's url package behavior).
+		{"HTTPS://FOO.COM", "https://FOO.COM"},
+
+		// Idempotent.
+		{"https://foo.com", "https://foo.com"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.input, func(t *testing.T) {
+			result := NormalizeHost(test.input)
+			assert.Equal(t, test.expected, result)
+		})
+	}
+}
+
+func TestNormalizeHostIdempotent(t *testing.T) {
+	inputs := []string{
+		"foo.com",
+		"https://foo.com/path?q=1#frag",
+		"http://localhost:8080",
+		"  HTTPS://FOO.COM  ",
+	}
+
+	for _, input := range inputs {
+		first := NormalizeHost(input)
+		second := NormalizeHost(first)
+		assert.Equal(t, first, second, "NormalizeHost should be idempotent for input: %s", input)
+	}
 }

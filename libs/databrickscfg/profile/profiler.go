@@ -3,7 +3,7 @@ package profile
 import (
 	"context"
 
-	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/cli/libs/databrickscfg"
 )
 
 type ProfileMatchFunction func(Profile) bool
@@ -47,24 +47,19 @@ func WithName(name string) ProfileMatchFunction {
 // WithHost returns a ProfileMatchFunction that matches profiles whose
 // canonical host equals the given host.
 func WithHost(host string) ProfileMatchFunction {
-	target := canonicalizeHost(host)
+	target := databrickscfg.NormalizeHost(host)
 	return func(p Profile) bool {
-		return p.Host != "" && canonicalizeHost(p.Host) == target
+		return p.Host != "" && databrickscfg.NormalizeHost(p.Host) == target
 	}
 }
 
 // WithHostAndAccountID returns a ProfileMatchFunction that matches profiles
 // by both canonical host and account ID.
 func WithHostAndAccountID(host, accountID string) ProfileMatchFunction {
-	target := canonicalizeHost(host)
+	target := databrickscfg.NormalizeHost(host)
 	return func(p Profile) bool {
-		return p.Host != "" && canonicalizeHost(p.Host) == target && p.AccountID == accountID
+		return p.Host != "" && databrickscfg.NormalizeHost(p.Host) == target && p.AccountID == accountID
 	}
-}
-
-// canonicalizeHost normalizes a host using the SDK's canonical host logic.
-func canonicalizeHost(host string) string {
-	return (&config.Config{Host: host}).CanonicalHostName()
 }
 
 type Profiler interface {

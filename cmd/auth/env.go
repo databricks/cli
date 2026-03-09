@@ -7,35 +7,20 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"strings"
 
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
 
-func canonicalHost(host string) (string, error) {
-	parsedHost, err := url.Parse(host)
-	if err != nil {
-		return "", err
-	}
-	// If the host is empty, assume the scheme wasn't included.
-	if parsedHost.Host == "" {
-		return "https://" + host, nil
-	}
-	return "https://" + parsedHost.Host, nil
-}
-
 var ErrNoMatchingProfiles = errors.New("no matching profiles found")
 
 func resolveSection(cfg *config.Config, iniFile *config.File) (*ini.Section, error) {
 	var candidates []*ini.Section
-	configuredHost, err := canonicalHost(cfg.Host)
-	if err != nil {
-		return nil, err
-	}
+	configuredHost := databrickscfg.NormalizeHost(cfg.Host)
 	for _, section := range iniFile.Sections() {
 		hash := section.KeysHash()
 		host, ok := hash["host"]
@@ -43,12 +28,7 @@ func resolveSection(cfg *config.Config, iniFile *config.File) (*ini.Section, err
 			// if host is not set
 			continue
 		}
-		canonical, err := canonicalHost(host)
-		if err != nil {
-			// we're fine with other corrupt profiles
-			continue
-		}
-		if canonical != configuredHost {
+		if databrickscfg.NormalizeHost(host) != configuredHost {
 			continue
 		}
 		candidates = append(candidates, section)
