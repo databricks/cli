@@ -392,7 +392,40 @@ func ListPostgresBranches(ctx context.Context, projectName string) ([]ListItem, 
 	out := make([]ListItem, 0, len(branches))
 	for _, b := range branches {
 		label := extractIDFromName(b.Name, "branches")
+		if b.Status != nil {
+			if b.Status.Default {
+				label += " (default)"
+			}
+			if b.Status.IsProtected {
+				label += " (protected)"
+			}
+			if b.Status.CurrentState == postgres.BranchStatusStateArchived {
+				label += " (archived)"
+			}
+		}
 		out = append(out, ListItem{ID: b.Name, Label: label})
+	}
+	return out, nil
+}
+
+// ListPostgresDatabases returns databases within a Lakebase Autoscaling branch as selectable items.
+func ListPostgresDatabases(ctx context.Context, branchName string) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Postgres.ListDatabases(ctx, postgres.ListDatabasesRequest{Parent: branchName})
+	databases, err := listing.ToSlice(ctx, iter)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, len(databases))
+	for _, db := range databases {
+		label := extractIDFromName(db.Name, "databases")
+		if db.Status != nil && db.Status.PostgresDatabase != "" {
+			label = db.Status.PostgresDatabase
+		}
+		out = append(out, ListItem{ID: db.Name, Label: label})
 	}
 	return out, nil
 }
