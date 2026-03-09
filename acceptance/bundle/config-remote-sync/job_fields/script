@@ -20,6 +20,13 @@ r["email_notifications"]["no_alert_for_skipped_runs"] = True
 r["parameters"].append({"name": "region", "default": "us-east-1"})
 r["trigger"] = {"pause_status": "UNPAUSED", "table_update": {"table_names": ["samples.nyctaxi.trips"]}}
 
+for cluster in r.get("job_clusters", []):
+    if cluster.get("job_cluster_key") == "test_cluster":
+        cluster["job_cluster_key"] = "test_cluster_renamed"
+for task in r.get("tasks", []):
+    if task.get("job_cluster_key") == "test_cluster":
+        task["job_cluster_key"] = "test_cluster_renamed"
+
 if "tags" not in r:
     r["tags"] = {}
 r["tags"]["team"] = "data"

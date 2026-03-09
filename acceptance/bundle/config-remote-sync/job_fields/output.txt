@@ -12,8 +12,10 @@ Detected changes in 1 resource(s):
 Resource: resources.jobs.my_job
   email_notifications.no_alert_for_skipped_runs: add
   email_notifications.on_failure: add
+  job_clusters[0].job_cluster_key: add
   parameters: replace
   tags['team']: add
+  tasks[task_key='main'].job_cluster_key: replace
   trigger.pause_status: add
   trigger.periodic: remove
   trigger.table_update: add
@@ -52,15 +54,29 @@ Resource: resources.jobs.my_job
 +            - samples.nyctaxi.trips
        environments:
          - environment_key: default
-@@ -31,4 +37,6 @@
-             node_type_id: [NODE_TYPE_ID]
-             num_workers: 1
+@@ -33,7 +39,15 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+-          job_cluster_key: test_cluster
++          job_cluster_key: test_cluster_renamed
 +      tags:
 +        team: data
 
  targets:
+   default:
+     mode: development
++    resources:
++      jobs:
++        my_job:
++          job_clusters:
++            "0":
++              job_cluster_key: test_cluster_renamed
 
 >>> [CLI] bundle destroy --auto-approve
+Warning: expected sequence, found map
+  at targets.default.resources.jobs.my_job.job_clusters
+  in databricks.yml:52:13
+
 The following resources will be deleted:
   delete resources.jobs.my_job
 
