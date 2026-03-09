@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -73,7 +74,7 @@ func TestConvertDatabaseInstanceWithPermissions(t *testing.T) {
 			Name:     "db-instance-with-permissions",
 			Capacity: "CU_2",
 		},
-		Permissions: []resources.Permission{
+		Permissions: resources.Permissions[iam.PermissionLevel]{
 			{
 				Level:    "CAN_USE",
 				UserName: "user@example.com",

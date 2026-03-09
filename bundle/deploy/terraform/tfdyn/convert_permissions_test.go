@@ -7,13 +7,14 @@ import (
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConvertPermissions(t *testing.T) {
 	src := resources.Job{
-		Permissions: []resources.Permission{
+		Permissions: resources.Permissions[jobs.JobPermissionLevel]{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",
@@ -72,7 +73,7 @@ func TestConvertPermissionsNil(t *testing.T) {
 
 func TestConvertPermissionsEmpty(t *testing.T) {
 	src := resources.Job{
-		Permissions: []resources.Permission{},
+		Permissions: resources.Permissions[jobs.JobPermissionLevel]{},
 	}
 
 	vin, err := convert.FromTyped(src, dyn.NilValue)

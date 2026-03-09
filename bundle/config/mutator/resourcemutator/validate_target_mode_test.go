@@ -4,13 +4,16 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,41 +51,23 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	diags = validateProductionMode(b, false)
 	require.ErrorContains(t, diags.Error(), "A common practice is to use a username or principal name in this path, i.e. use\n\n  root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
-	jobPermissions := []resources.Permission{
-		{
-			Level:    "CAN_MANAGE",
-			UserName: "user@company.com",
-		},
+	jobPermissions := resources.Permissions[jobs.JobPermissionLevel]{
+		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
-	pipelinePermissions := []resources.Permission{
-		{
-			Level:    "CAN_MANAGE",
-			UserName: "user@company.com",
-		},
+	pipelinePermissions := resources.Permissions[pipelines.PipelinePermissionLevel]{
+		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
-	experimentPermissions := []resources.Permission{
-		{
-			Level:    "CAN_MANAGE",
-			UserName: "user@company.com",
-		},
+	experimentPermissions := resources.Permissions[ml.ExperimentPermissionLevel]{
+		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
-	modelPermissions := []resources.Permission{
-		{
-			Level:    "CAN_MANAGE",
-			UserName: "user@company.com",
-		},
+	modelPermissions := resources.Permissions[ml.RegisteredModelPermissionLevel]{
+		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
-	endpointPermissions := []resources.Permission{
-		{
-			Level:    "CAN_MANAGE",
-			UserName: "user@company.com",
-		},
+	endpointPermissions := resources.Permissions[serving.ServingEndpointPermissionLevel]{
+		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
-	clusterPermissions := []resources.Permission{
-		{
-			Level:    "CAN_MANAGE",
-			UserName: "user@company.com",
-		},
+	clusterPermissions := resources.Permissions[compute.ClusterPermissionLevel]{
+		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
 	b.Config.Resources.Jobs["job1"].Permissions = jobPermissions
 	b.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}

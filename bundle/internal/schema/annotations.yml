@@ -609,8 +609,152 @@ github.com/databricks/cli/bundle/config/resources.Lifecycle:
   "prevent_destroy":
     "description": |-
       Lifecycle setting to prevent the resource from being destroyed.
-github.com/databricks/cli/bundle/config/resources.Permission:
-  "-":
+? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/apps.AppPermissionLevel]
+: "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The name of the service principal that has the permission set in level.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level.
+? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/compute.ClusterPermissionLevel]
+: "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The name of the service principal that has the permission set in level.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level.
+? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel]
+: "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The name of the service principal that has the permission set in level.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level.
+? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/jobs.JobPermissionLevel]
+: "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The name of the service principal that has the permission set in level.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level.
+? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/ml.ExperimentPermissionLevel]
+: "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The name of the service principal that has the permission set in level.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level.
+? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/ml.RegisteredModelPermissionLevel]
+: "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The name of the service principal that has the permission set in level.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level.
+? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/pipelines.PipelinePermissionLevel]
+: "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The name of the service principal that has the permission set in level.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level.
+? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/serving.ServingEndpointPermissionLevel]
+: "-":
+    "description": |-
+      Defines a permission for a specific entity.
+    "markdown_description": |-
+      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+  "group_name":
+    "description": |-
+      The name of the group that has the permission set in level.
+  "level":
+    "description": |-
+      The allowed permission for user, group, service principal defined for this permission.
+  "service_principal_name":
+    "description": |-
+      The name of the service principal that has the permission set in level.
+  "user_name":
+    "description": |-
+      The name of the user that has the permission set in level.
+? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel]
+: "-":
     "description": |-
       Defines a permission for a specific entity.
     "markdown_description": |-

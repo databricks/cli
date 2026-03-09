@@ -3,18 +3,48 @@ package resources
 import (
 	"fmt"
 	"strings"
+
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 // Permission holds the permission level setting for a single principal.
-type Permission struct {
-	Level string `json:"level"`
+type Permission[L ~string] struct {
+	Level L `json:"level"`
 
 	UserName             string `json:"user_name,omitempty"`
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-func (p Permission) String() string {
+// ToAccessControlRequest converts to the SDK type used by the permissions API.
+func (p Permission[L]) ToAccessControlRequest() iam.AccessControlRequest {
+	return iam.AccessControlRequest{
+		PermissionLevel:      iam.PermissionLevel(p.Level),
+		UserName:             p.UserName,
+		ServicePrincipalName: p.ServicePrincipalName,
+		GroupName:            p.GroupName,
+	}
+}
+
+// Permissions is a named slice of Permission[L] that implements PermissionsSlice,
+// allowing generic code to work with any instantiation via the interface.
+type Permissions[L ~string] []Permission[L]
+
+// PermissionsSlice is implemented by any Permissions[L], enabling type-agnostic
+// conversion to iam.AccessControlRequest without reflection or type switches.
+type PermissionsSlice interface {
+	ToAccessControlRequests() []iam.AccessControlRequest
+}
+
+func (ps Permissions[L]) ToAccessControlRequests() []iam.AccessControlRequest {
+	result := make([]iam.AccessControlRequest, len(ps))
+	for i, p := range ps {
+		result[i] = p.ToAccessControlRequest()
+	}
+	return result
+}
+
+func (p Permission[L]) String() string {
 	if p.UserName != "" {
 		return fmt.Sprintf("level: %s, user_name: %s", p.Level, p.UserName)
 	}
@@ -27,7 +57,7 @@ func (p Permission) String() string {
 		return fmt.Sprintf("level: %s, group_name: %s", p.Level, p.GroupName)
 	}
 
-	return "level: " + p.Level
+	return "level: " + string(p.Level)
 }
 
 // PermissionOrder defines the hierarchy of permission levels.

@@ -5,18 +5,19 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWorkspacePathPermissionsCompare(t *testing.T) {
 	testCases := []struct {
-		perms    []resources.Permission
+		perms    []resources.Permission[iam.PermissionLevel]
 		acl      []workspace.WorkspaceObjectAccessControlResponse
 		expected diag.Diagnostics
 	}{
 		{
-			perms: []resources.Permission{
+			perms: []resources.Permission[iam.PermissionLevel]{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -30,7 +31,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			expected: nil,
 		},
 		{
-			perms: []resources.Permission{
+			perms: []resources.Permission[iam.PermissionLevel]{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -50,7 +51,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			expected: nil,
 		},
 		{
-			perms: []resources.Permission{
+			perms: []resources.Permission[iam.PermissionLevel]{
 				{Level: CAN_VIEW, UserName: "foo@bar.com"},
 				{Level: CAN_MANAGE, ServicePrincipalName: "sp.com"},
 			},
@@ -65,7 +66,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			expected: nil,
 		},
 		{
-			perms: []resources.Permission{
+			perms: []resources.Permission[iam.PermissionLevel]{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -94,7 +95,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			},
 		},
 		{
-			perms: []resources.Permission{
+			perms: []resources.Permission[iam.PermissionLevel]{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -128,13 +129,13 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 	testCases := []struct {
 		name     string
-		perms    []resources.Permission
+		perms    []resources.Permission[iam.PermissionLevel]
 		acl      []workspace.WorkspaceObjectAccessControlResponse
 		expected diag.Diagnostics
 	}{
 		{
 			name: "bundle grants higher permission than workspace - no warning",
-			perms: []resources.Permission{
+			perms: []resources.Permission[iam.PermissionLevel]{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -149,7 +150,7 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 		},
 		{
 			name: "bundle grants lower permission than workspace - warning",
-			perms: []resources.Permission{
+			perms: []resources.Permission[iam.PermissionLevel]{
 				{Level: CAN_VIEW, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -173,7 +174,7 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 		},
 		{
 			name: "bundle grants same permission as workspace - no warning",
-			perms: []resources.Permission{
+			perms: []resources.Permission[iam.PermissionLevel]{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -213,6 +214,6 @@ func TestWorkspacePathPermissionsDeduplication(t *testing.T) {
 
 	// Should only have one permission entry with the highest level
 	require.Len(t, wp.Permissions, 1)
-	require.Equal(t, CAN_MANAGE, wp.Permissions[0].Level)
+	require.Equal(t, iam.PermissionLevel(CAN_MANAGE), wp.Permissions[0].Level)
 	require.Equal(t, "foo@bar.com", wp.Permissions[0].UserName)
 }

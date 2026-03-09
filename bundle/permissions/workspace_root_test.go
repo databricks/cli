@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -26,7 +27,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 				StatePath:    "/Users/foo@bar.com/state",
 				ResourcePath: "/Users/foo@bar.com/resources",
 			},
-			Permissions: []resources.Permission{
+			Permissions: []resources.Permission[iam.PermissionLevel]{
 				{Level: CAN_MANAGE, UserName: "TestUser"},
 				{Level: CAN_VIEW, GroupName: "TestGroup"},
 				{Level: CAN_RUN, ServicePrincipalName: "TestServicePrincipal"},
@@ -86,7 +87,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 				StatePath:    "/Users/foo@bar.com/state",
 				ResourcePath: "/Users/foo@bar.com/resources",
 			},
-			Permissions: []resources.Permission{
+			Permissions: []resources.Permission[iam.PermissionLevel]{
 				{Level: CAN_MANAGE, UserName: "TestUser"},
 				{Level: CAN_VIEW, GroupName: "TestGroup"},
 				{Level: CAN_RUN, ServicePrincipalName: "TestServicePrincipal"},

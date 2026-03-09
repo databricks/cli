@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
@@ -14,7 +15,7 @@ type Alert struct {
 	BaseResource
 	sql.AlertV2 //nolint AlertV2 also defines Id and URL field with the same json tag "id" and "url"
 
-	Permissions []Permission `json:"permissions,omitempty"`
+	Permissions Permissions[iam.PermissionLevel] `json:"permissions,omitempty"`
 
 	// Filepath points to the local .dbalert.json file containing the alert definition.
 	// If specified, any fields that are part of the .dbalert.json file schema will not be allowed in

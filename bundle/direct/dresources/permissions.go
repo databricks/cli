@@ -54,21 +54,12 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		return nil, fmt.Errorf("unsupported permissions resource type: %s", resourceType)
 	}
 
-	permissionsPtr, ok := inputConfig.(*[]resources.Permission)
+	permsSlice, ok := inputConfig.(resources.PermissionsSlice)
 	if !ok {
-		return nil, fmt.Errorf("expected *[]resources.Permission, got %T", inputConfig)
+		return nil, fmt.Errorf("expected resources.PermissionsSlice, got %T", inputConfig)
 	}
 
-	permissions := make([]iam.AccessControlRequest, 0, len(*permissionsPtr))
-	for _, p := range *permissionsPtr {
-		permissions = append(permissions, iam.AccessControlRequest{
-			PermissionLevel:      iam.PermissionLevel(p.Level),
-			GroupName:            p.GroupName,
-			ServicePrincipalName: p.ServicePrincipalName,
-			UserName:             p.UserName,
-			ForceSendFields:      nil,
-		})
-	}
+	permissions := permsSlice.ToAccessControlRequests()
 
 	objectIdRef := prefix + "${" + baseNode + ".id}"
 	// For permissions, model serving endpoint uses its internal ID, which is different

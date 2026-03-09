@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +18,7 @@ func assertExpected(t *testing.T, p *resources.ModelServingEndpoint) {
 
 	assert.Equal(t, "model-name-1", p.Config.TrafficConfig.Routes[0].ServedModelName)
 	assert.Equal(t, 100, p.Config.TrafficConfig.Routes[0].TrafficPercentage)
-	assert.Equal(t, resources.Permission{
+	assert.Equal(t, resources.Permission[serving.ServingEndpointPermissionLevel]{
 		GroupName: "users",
 		Level:     "CAN_QUERY",
 	}, p.Permissions[0])

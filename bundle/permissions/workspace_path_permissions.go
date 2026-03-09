@@ -6,16 +6,17 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 type WorkspacePathPermissions struct {
 	Path        string
-	Permissions []resources.Permission
+	Permissions []resources.Permission[iam.PermissionLevel]
 }
 
 func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObjectAccessControlResponse) *WorkspacePathPermissions {
-	var permissions []resources.Permission
+	var permissions []resources.Permission[iam.PermissionLevel]
 	for _, a := range acl {
 		// Skip the admin group because it's added to all resources by default.
 		if a.GroupName == "admins" {
@@ -23,16 +24,16 @@ func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObject
 		}
 
 		// Find the highest permission level for this principal (handles inherited + explicit permissions)
-		var highestLevel string
+		var highestLevel iam.PermissionLevel
 		for _, pl := range a.AllPermissions {
-			level := convertWorkspaceObjectPermissionLevel(pl.PermissionLevel)
-			if resources.GetLevelScore(level) > resources.GetLevelScore(highestLevel) {
+			level := iam.PermissionLevel(convertWorkspaceObjectPermissionLevel(pl.PermissionLevel))
+			if resources.GetLevelScore(string(level)) > resources.GetLevelScore(string(highestLevel)) {
 				highestLevel = level
 			}
 		}
 
 		if highestLevel != "" {
-			permissions = append(permissions, resources.Permission{
+			permissions = append(permissions, resources.Permission[iam.PermissionLevel]{
 				Level:                highestLevel,
 				GroupName:            a.GroupName,
 				UserName:             a.UserName,
@@ -44,7 +45,7 @@ func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObject
 	return &WorkspacePathPermissions{Permissions: permissions, Path: path}
 }
 
-func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Diagnostics {
+func (p WorkspacePathPermissions) Compare(perms []resources.Permission[iam.PermissionLevel]) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Check the permissions in the workspace and see if they are all set in the bundle.
@@ -66,7 +67,7 @@ func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Dia
 }
 
 // samePrincipal checks if two permissions refer to the same user/group/service principal.
-func samePrincipal(a, b resources.Permission) bool {
+func samePrincipal(a, b resources.Permission[iam.PermissionLevel]) bool {
 	return a.UserName == b.UserName &&
 		a.GroupName == b.GroupName &&
 		a.ServicePrincipalName == b.ServicePrincipalName
@@ -75,12 +76,12 @@ func samePrincipal(a, b resources.Permission) bool {
 // containsAll checks if all permissions in permA (workspace) are accounted for in permB (bundle).
 // A workspace permission is considered accounted for if the bundle has the same principal
 // with an equal or higher permission level.
-func containsAll(permA, permB []resources.Permission) (bool, []resources.Permission) {
-	var missing []resources.Permission
+func containsAll(permA, permB []resources.Permission[iam.PermissionLevel]) (bool, []resources.Permission[iam.PermissionLevel]) {
+	var missing []resources.Permission[iam.PermissionLevel]
 	for _, a := range permA {
 		found := false
 		for _, b := range permB {
-			if samePrincipal(a, b) && resources.GetLevelScore(b.Level) >= resources.GetLevelScore(a.Level) {
+			if samePrincipal(a, b) && resources.GetLevelScore(string(b.Level)) >= resources.GetLevelScore(string(a.Level)) {
 				found = true
 				break
 			}
@@ -103,7 +104,7 @@ func convertWorkspaceObjectPermissionLevel(level workspace.WorkspaceObjectPermis
 	}
 }
 
-func toString(p []resources.Permission) string {
+func toString(p []resources.Permission[iam.PermissionLevel]) string {
 	var sb strings.Builder
 	for _, perm := range p {
 		sb.WriteString(fmt.Sprintf("- %s\n", perm.String()))

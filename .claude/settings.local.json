@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(perl:*)",
+      "Bash(do:*)",
+      "Bash(sed:*)",
+      "Bash(python3:*)"
+    ]
+  }
+}

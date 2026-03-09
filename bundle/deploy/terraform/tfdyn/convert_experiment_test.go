@@ -17,7 +17,7 @@ func TestConvertExperiment(t *testing.T) {
 		CreateExperiment: ml.CreateExperiment{
 			Name: "name",
 		},
-		Permissions: []resources.Permission{
+		Permissions: resources.Permissions[ml.ExperimentPermissionLevel]{
 			{
 				Level:    "CAN_READ",
 				UserName: "jane@doe.com",

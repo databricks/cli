@@ -86,7 +86,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel]"
                       },
                       "query_text": {
                         "$ref": "#/$defs/string"
@@ -158,7 +158,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/apps.AppPermissionLevel]"
                       },
                       "resources": {
                         "description": "Resources for the app.",
@@ -380,7 +380,7 @@
                         "$ref": "#/$defs/int"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/compute.ClusterPermissionLevel]"
                       },
                       "policy_id": {
                         "description": "The ID of the cluster policy used to create the cluster if applicable.",
@@ -490,7 +490,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel]"
                       },
                       "serialized_dashboard": {
                         "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
@@ -591,7 +591,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel]"
                       },
                       "retention_window_in_days": {
                         "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
@@ -733,7 +733,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/jobs.JobPermissionLevel]"
                       },
                       "queue": {
                         "description": "The queue settings of the job.",
@@ -818,7 +818,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/ml.ExperimentPermissionLevel]"
                       },
                       "tags": {
                         "description": "A collection of tags to set on the experiment. Maximum tag size and number of tags per request\ndepends on the storage backend. All storage backends are guaranteed to support tag keys up\nto 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also\nguaranteed to support up to 20 tags per request.",
@@ -855,7 +855,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/ml.RegisteredModelPermissionLevel]"
                       },
                       "tags": {
                         "description": "Additional metadata for registered model.",
@@ -907,7 +907,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/serving.ServingEndpointPermissionLevel]"
                       },
                       "rate_limits": {
                         "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
@@ -936,38 +936,310 @@
                   }
                 ]
               },
-              "resources.Permission": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "group_name": {
-                        "description": "The name of the group that has the permission set in level.",
-                        "$ref": "#/$defs/string"
+              "resources.Permission[github.com": {
+                "databricks": {
+                  "databricks-sdk-go": {
+                    "service": {
+                      "apps.AppPermissionLevel]": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "group_name": {
+                                "description": "The name of the group that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "level": {
+                                "description": "The allowed permission for user, group, service principal defined for this permission.",
+                                "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppPermissionLevel"
+                              },
+                              "service_principal_name": {
+                                "description": "The name of the service principal that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "user_name": {
+                                "description": "The name of the user that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "level"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                          }
+                        ]
                       },
-                      "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
-                        "$ref": "#/$defs/string"
+                      "compute.ClusterPermissionLevel]": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "group_name": {
+                                "description": "The name of the group that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "level": {
+                                "description": "The allowed permission for user, group, service principal defined for this permission.",
+                                "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterPermissionLevel"
+                              },
+                              "service_principal_name": {
+                                "description": "The name of the service principal that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "user_name": {
+                                "description": "The name of the user that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "level"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                          }
+                        ]
                       },
-                      "service_principal_name": {
-                        "description": "The name of the service principal that has the permission set in level.",
-                        "$ref": "#/$defs/string"
+                      "iam.PermissionLevel]": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "group_name": {
+                                "description": "The name of the group that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "level": {
+                                "description": "The allowed permission for user, group, service principal defined for this permission.",
+                                "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel"
+                              },
+                              "service_principal_name": {
+                                "description": "The name of the service principal that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "user_name": {
+                                "description": "The name of the user that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "level"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                          }
+                        ]
                       },
-                      "user_name": {
-                        "description": "The name of the user that has the permission set in level.",
-                        "$ref": "#/$defs/string"
+                      "jobs.JobPermissionLevel]": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "group_name": {
+                                "description": "The name of the group that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "level": {
+                                "description": "The allowed permission for user, group, service principal defined for this permission.",
+                                "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobPermissionLevel"
+                              },
+                              "service_principal_name": {
+                                "description": "The name of the service principal that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "user_name": {
+                                "description": "The name of the user that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "level"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                          }
+                        ]
+                      },
+                      "ml.ExperimentPermissionLevel]": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "group_name": {
+                                "description": "The name of the group that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "level": {
+                                "description": "The allowed permission for user, group, service principal defined for this permission.",
+                                "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ExperimentPermissionLevel"
+                              },
+                              "service_principal_name": {
+                                "description": "The name of the service principal that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "user_name": {
+                                "description": "The name of the user that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "level"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                          }
+                        ]
+                      },
+                      "ml.RegisteredModelPermissionLevel]": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "group_name": {
+                                "description": "The name of the group that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "level": {
+                                "description": "The allowed permission for user, group, service principal defined for this permission.",
+                                "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RegisteredModelPermissionLevel"
+                              },
+                              "service_principal_name": {
+                                "description": "The name of the service principal that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "user_name": {
+                                "description": "The name of the user that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "level"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                          }
+                        ]
+                      },
+                      "pipelines.PipelinePermissionLevel]": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "group_name": {
+                                "description": "The name of the group that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "level": {
+                                "description": "The allowed permission for user, group, service principal defined for this permission.",
+                                "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelinePermissionLevel"
+                              },
+                              "service_principal_name": {
+                                "description": "The name of the service principal that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "user_name": {
+                                "description": "The name of the user that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "level"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                          }
+                        ]
+                      },
+                      "serving.ServingEndpointPermissionLevel]": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "group_name": {
+                                "description": "The name of the group that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "level": {
+                                "description": "The allowed permission for user, group, service principal defined for this permission.",
+                                "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServingEndpointPermissionLevel"
+                              },
+                              "service_principal_name": {
+                                "description": "The name of the service principal that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "user_name": {
+                                "description": "The name of the user that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "level"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                          }
+                        ]
+                      },
+                      "sql.WarehousePermissionLevel]": {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "group_name": {
+                                "description": "The name of the group that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "level": {
+                                "description": "The allowed permission for user, group, service principal defined for this permission.",
+                                "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel"
+                              },
+                              "service_principal_name": {
+                                "description": "The name of the service principal that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              },
+                              "user_name": {
+                                "description": "The name of the user that has the permission set in level.",
+                                "$ref": "#/$defs/string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "level"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                          }
+                        ]
                       }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "level"
-                    ]
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
                   }
-                ]
+                }
               },
               "resources.Pipeline": {
                 "oneOf": [
@@ -1053,7 +1325,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Notifications"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/pipelines.PipelinePermissionLevel]"
                       },
                       "photon": {
                         "description": "Whether Photon is enabled for this pipeline.",
@@ -1243,7 +1515,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel]"
                       },
                       "pg_version": {
                         "$ref": "#/$defs/int"
@@ -1600,7 +1872,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
-                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel]"
                       },
                       "spot_instance_policy": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy"
@@ -2333,7 +2605,7 @@
                     },
                     "permissions": {
                       "description": "The permissions for deploying and running the bundle in the target.",
-                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel]"
                     },
                     "presets": {
                       "description": "The deployment presets for the target.",
@@ -2580,6 +2852,9 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "apps.AppPermissionLevel": {
+              "type": "string"
             },
             "apps.AppResource": {
               "oneOf": [
@@ -3971,6 +4246,9 @@
                 }
               ]
             },
+            "compute.ClusterPermissionLevel": {
+              "type": "string"
+            },
             "compute.ClusterSpec": {
               "oneOf": [
                 {
@@ -5078,6 +5356,9 @@
                 }
               ]
             },
+            "iam.PermissionLevel": {
+              "type": "string"
+            },
             "jobs.AuthenticationMethod": {
               "oneOf": [
                 {
@@ -5814,6 +6095,9 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "jobs.JobPermissionLevel": {
+              "type": "string"
             },
             "jobs.JobRunAs": {
               "oneOf": [
@@ -7180,6 +7464,9 @@
                 }
               ]
             },
+            "ml.ExperimentPermissionLevel": {
+              "type": "string"
+            },
             "ml.ExperimentTag": {
               "oneOf": [
                 {
@@ -7225,6 +7512,9 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "ml.RegisteredModelPermissionLevel": {
+              "type": "string"
             },
             "pipelines.AutoFullRefreshPolicy": {
               "oneOf": [
@@ -7934,6 +8224,9 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "pipelines.PipelinePermissionLevel": {
+              "type": "string"
             },
             "pipelines.PipelineTrigger": {
               "oneOf": [
@@ -9509,6 +9802,9 @@
                 }
               ]
             },
+            "serving.ServingEndpointPermissionLevel": {
+              "type": "string"
+            },
             "serving.ServingModelWorkloadType": {
               "oneOf": [
                 {
@@ -9947,6 +10243,9 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "sql.WarehousePermissionLevel": {
+              "type": "string"
             },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "oneOf": [
@@ -10502,19 +10801,139 @@
                     }
                   ]
                 },
-                "resources.Permission": {
-                  "oneOf": [
-                    {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Permission"
+                "resources.Permission[github.com": {
+                  "databricks": {
+                    "databricks-sdk-go": {
+                      "service": {
+                        "apps.AppPermissionLevel]": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/apps.AppPermissionLevel]"
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                            }
+                          ]
+                        },
+                        "compute.ClusterPermissionLevel]": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/compute.ClusterPermissionLevel]"
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                            }
+                          ]
+                        },
+                        "iam.PermissionLevel]": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel]"
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                            }
+                          ]
+                        },
+                        "jobs.JobPermissionLevel]": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/jobs.JobPermissionLevel]"
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                            }
+                          ]
+                        },
+                        "ml.ExperimentPermissionLevel]": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/ml.ExperimentPermissionLevel]"
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                            }
+                          ]
+                        },
+                        "ml.RegisteredModelPermissionLevel]": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/ml.RegisteredModelPermissionLevel]"
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                            }
+                          ]
+                        },
+                        "pipelines.PipelinePermissionLevel]": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/pipelines.PipelinePermissionLevel]"
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                            }
+                          ]
+                        },
+                        "serving.ServingEndpointPermissionLevel]": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/serving.ServingEndpointPermissionLevel]"
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                            }
+                          ]
+                        },
+                        "sql.WarehousePermissionLevel]": {
+                          "oneOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel]"
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                            }
+                          ]
+                        }
                       }
-                    },
-                    {
-                      "type": "string",
-                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                     }
-                  ]
+                  }
                 },
                 "resources.SecretScopePermission": {
                   "oneOf": [
@@ -11132,7 +11551,7 @@
     },
     "permissions": {
       "description": "Defines a permission for a specific entity.",
-      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel]",
       "markdownDescription": "A Sequence that defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
     },
     "presets": {

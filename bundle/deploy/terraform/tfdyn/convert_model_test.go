@@ -28,7 +28,7 @@ func TestConvertModel(t *testing.T) {
 				},
 			},
 		},
-		Permissions: []resources.Permission{
+		Permissions: resources.Permissions[ml.RegisteredModelPermissionLevel]{
 			{
 				Level:    "CAN_READ",
 				UserName: "jane@doe.com",
