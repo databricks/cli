@@ -329,7 +329,7 @@ func TestMustWorkspaceClientDefaultProfilePrecedence(t *testing.T) {
 
 	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
 	err := os.WriteFile(configFile, []byte(`
-[__databricks-settings__]
+[__settings__]
 default_profile = settings-profile
 
 [DEFAULT]

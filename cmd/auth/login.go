@@ -244,9 +244,10 @@ depends on the existing profiles you have set in your configuration file
 		if profileName != "" {
 			configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
 
-			// Check if this is a brand new profile with no other profiles in the file.
+			// Check if this will be the only profile in the file.
 			// If so, we'll auto-set it as the default after saving.
-			isFirstProfile := existingProfile == nil && hasNoProfiles(ctx, profile.DefaultProfiler)
+			allProfiles, loadErr := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			isOnlyProfile := existingProfile == nil && (errors.Is(loadErr, profile.ErrNoConfiguration) || (loadErr == nil && len(allProfiles) == 0))
 
 			err := databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:                    profileName,
@@ -264,7 +265,7 @@ depends on the existing profiles you have set in your configuration file
 				return err
 			}
 
-			if isFirstProfile {
+			if isOnlyProfile {
 				if err := databrickscfg.SetDefaultProfile(ctx, profileName, configFile); err != nil {
 					log.Debugf(ctx, "Failed to auto-set default profile: %v", err)
 				}
@@ -426,17 +427,6 @@ func openURLSuppressingStderr(url string) error {
 
 	// Call the browser open function
 	return browserpkg.OpenURL(url)
-}
-
-// hasNoProfiles returns true if the config file has no existing profiles.
-// Used to detect first-profile creation so we can auto-set it as default.
-// Returns true when the config file doesn't exist yet (ErrNoConfiguration).
-func hasNoProfiles(ctx context.Context, profiler profile.Profiler) bool {
-	profiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
-	if err != nil {
-		return errors.Is(err, profile.ErrNoConfiguration)
-	}
-	return len(profiles) == 0
 }
 
 // oauthLoginClearKeys returns profile keys that should be explicitly removed

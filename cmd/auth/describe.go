@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -183,7 +184,10 @@ func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) 
 		profile := cfg.Profile
 		if profile == "" {
 			profile = "default"
-			if resolved, err := databrickscfg.GetConfiguredDefaultProfile(cmd.Context(), cfg.ConfigFile); err == nil && resolved != "" {
+			resolved, err := databrickscfg.GetConfiguredDefaultProfile(cmd.Context(), cfg.ConfigFile)
+			if err != nil {
+				log.Warnf(cmd.Context(), "Failed to read default profile setting: %v", err)
+			} else if resolved != "" {
 				profile = fmt.Sprintf("default (%s)", resolved)
 			}
 		}

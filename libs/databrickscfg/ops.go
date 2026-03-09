@@ -18,7 +18,7 @@ const fileMode = 0o600
 
 const defaultComment = "The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified."
 
-const databricksSettingsSection = "__databricks-settings__"
+const databricksSettingsSection = "__settings__"
 
 // GetConfiguredDefaultProfile returns the explicitly configured default profile
 // by loading the config file at configFilePath.
@@ -35,7 +35,7 @@ func GetConfiguredDefaultProfile(ctx context.Context, configFilePath string) (st
 }
 
 // GetConfiguredDefaultProfileFrom returns the explicit default profile from
-// [__databricks-settings__].default_profile, or "" when it is not set.
+// [__settings__].default_profile, or "" when it is not set.
 func GetConfiguredDefaultProfileFrom(configFile *config.File) string {
 	section, err := configFile.GetSection(databricksSettingsSection)
 	if err != nil {
@@ -96,7 +96,7 @@ func resolveConfigFilePath(ctx context.Context, filename string) (string, error)
 
 // GetDefaultProfileFrom returns the name of the default profile from an
 // already-loaded config file. It uses the following resolution order:
-//  1. Explicit default_profile key in [__databricks-settings__].
+//  1. Explicit default_profile key in [__settings__].
 //  2. If there is exactly one profile in the file, return it.
 //  3. If a profile named DEFAULT exists, return it.
 //  4. Empty string (no default).
@@ -136,7 +136,7 @@ func GetDefaultProfileFrom(configFile *config.File) string {
 	return ""
 }
 
-// SetDefaultProfile writes the default_profile key to the [__databricks-settings__] section.
+// SetDefaultProfile writes the default_profile key to the [__settings__] section.
 func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
 	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
 	if err != nil {

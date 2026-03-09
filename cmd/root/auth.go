@@ -197,7 +197,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	}
 
 	// If --profile and DATABRICKS_CONFIG_PROFILE are both unset, honor the
-	// explicit [__databricks-settings__].default_profile setting before the
+	// explicit [__settings__].default_profile setting before the
 	// SDK falls back to the DEFAULT section.
 	if cfg.Profile == "" && envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") == "" {
 		configFilePath := envlib.Get(ctx, "DATABRICKS_CONFIG_FILE")

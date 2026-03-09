@@ -470,7 +470,8 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 	}
 
 	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
-	firstProfile := hasNoProfiles(ctx, profiler)
+	allProfiles, loadErr := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+	isOnlyProfile := errors.Is(loadErr, profile.ErrNoConfiguration) || (loadErr == nil && len(allProfiles) == 0)
 
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:                    profileName,
@@ -486,7 +487,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		return "", nil, err
 	}
 
-	if firstProfile {
+	if isOnlyProfile {
 		if err := databrickscfg.SetDefaultProfile(ctx, profileName, configFile); err != nil {
 			log.Debugf(ctx, "Failed to auto-set default profile: %v", err)
 		}

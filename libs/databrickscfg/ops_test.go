@@ -185,7 +185,7 @@ func TestGetDefaultProfile(t *testing.T) {
 	}{
 		{
 			name:    "explicit default_profile setting",
-			content: "[__databricks-settings__]\ndefault_profile = my-workspace\n\n[my-workspace]\nhost = https://abc\n",
+			content: "[__settings__]\ndefault_profile = my-workspace\n\n[my-workspace]\nhost = https://abc\n",
 			want:    "my-workspace",
 		},
 		{
@@ -205,7 +205,7 @@ func TestGetDefaultProfile(t *testing.T) {
 		},
 		{
 			name:    "settings section without key single profile",
-			content: "[__databricks-settings__]\n\n[profile1]\nhost = https://abc\n",
+			content: "[__settings__]\n\n[profile1]\nhost = https://abc\n",
 			want:    "profile1",
 		},
 		{
@@ -215,7 +215,7 @@ func TestGetDefaultProfile(t *testing.T) {
 		},
 		{
 			name:    "settings section is not counted as a profile",
-			content: "[__databricks-settings__]\nsome_key = value\n\n[profile1]\nhost = https://abc\n",
+			content: "[__settings__]\nsome_key = value\n\n[profile1]\nhost = https://abc\n",
 			want:    "profile1",
 		},
 		{
@@ -255,7 +255,7 @@ func TestGetConfiguredDefaultProfile(t *testing.T) {
 	}{
 		{
 			name:    "explicit default_profile setting",
-			content: "[__databricks-settings__]\ndefault_profile = my-workspace\n\n[my-workspace]\nhost = https://abc\n",
+			content: "[__settings__]\ndefault_profile = my-workspace\n\n[my-workspace]\nhost = https://abc\n",
 			want:    "my-workspace",
 		},
 		{
@@ -270,7 +270,7 @@ func TestGetConfiguredDefaultProfile(t *testing.T) {
 		},
 		{
 			name:    "settings section without key",
-			content: "[__databricks-settings__]\n\n[profile1]\nhost = https://abc\n",
+			content: "[__settings__]\n\n[profile1]\nhost = https://abc\n",
 			want:    "",
 		},
 	}
@@ -312,7 +312,7 @@ func TestSetDefaultProfile(t *testing.T) {
 		},
 		{
 			name:    "updates existing key",
-			initial: "[__databricks-settings__]\ndefault_profile = old-profile\n\n[profile1]\nhost = https://abc\n",
+			initial: "[__settings__]\ndefault_profile = old-profile\n\n[profile1]\nhost = https://abc\n",
 			profile: "new-profile",
 			wantKey: "new-profile",
 		},

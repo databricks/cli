@@ -20,7 +20,7 @@ func newSwitchCommand() *cobra.Command {
 		Short: "Set the default profile",
 		Long: `Set a named profile as the default in ~/.databrickscfg.
 
-The selected profile name is stored in a [__databricks-settings__] section
+The selected profile name is stored in a [__settings__] section
 in the config file under the default_profile key. Use "databricks auth profiles"
 to see which profile is currently the default.`,
 		Args: cobra.NoArgs,
