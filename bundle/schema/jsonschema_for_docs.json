@@ -1627,6 +1627,9 @@
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
                   },
+                  "enable_pg_native_login": {
+                    "$ref": "#/$defs/bool"
+                  },
                   "history_retention_duration": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
                     "x-since-version": "v0.287.0"
@@ -2987,6 +2990,11 @@
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.239.0"
                 },
+                "postgres": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgres",
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
+                },
                 "secret": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret",
                   "x-since-version": "v0.239.0"
@@ -3125,6 +3133,33 @@
                 "IS_OWNER",
                 "CAN_MANAGE_RUN",
                 "CAN_VIEW"
+              ]
+            },
+            "apps.AppResourcePostgres": {
+              "type": "object",
+              "properties": {
+                "branch": {
+                  "$ref": "#/$defs/string",
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
+                },
+                "database": {
+                  "$ref": "#/$defs/string",
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
+                },
+                "permission": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgresPostgresPermission",
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
+                }
+              },
+              "additionalProperties": false
+            },
+            "apps.AppResourcePostgresPostgresPermission": {
+              "type": "string",
+              "enum": [
+                "CAN_CONNECT_AND_CREATE"
               ]
             },
             "apps.AppResourceSecret": {
@@ -7176,6 +7211,12 @@
                   "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e",
                   "$ref": "#/$defs/slice/string",
                   "x-since-version": "v0.257.0"
+                },
+                "environment_version": {
+                  "description": "The environment version of the serverless Python environment used to execute\ncustomer Python code. Each environment version includes a specific Python\nversion and a curated set of pre-installed libraries with defined versions,\nproviding a stable and reproducible execution environment.\n\nDatabricks supports a three-year lifecycle for each environment version.\nFor available versions and their included packages, see\nhttps://docs.databricks.com/aws/en/release-notes/serverless/environment-version/\n\nThe value should be a string representing the environment version number, for example: `\"4\"`.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-preview": "PRIVATE",
+                  "doNotSuggest": true
                 }
               },
               "additionalProperties": false

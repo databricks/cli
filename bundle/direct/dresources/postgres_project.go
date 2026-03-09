@@ -42,6 +42,7 @@ func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresPr
 			CustomTags:               nil,
 			DefaultEndpointSettings:  nil,
 			DisplayName:              "",
+			EnablePgNativeLogin:      false,
 			HistoryRetentionDuration: nil,
 			PgVersion:                0,
 			ForceSendFields:          nil,
