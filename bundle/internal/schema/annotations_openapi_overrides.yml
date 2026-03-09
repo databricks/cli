@@ -267,13 +267,6 @@ github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermissionLevel
         CAN_USE
       - |-
         CAN_MANAGE
-github.com/databricks/cli/bundle/config/resources.ExternalLocationGrantPrivilege:
-  "_":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Job:
   "_":
     "markdown_description": |-
