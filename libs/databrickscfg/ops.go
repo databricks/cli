@@ -20,7 +20,7 @@ const defaultComment = "The profile defined in the DEFAULT section is to be used
 
 const (
 	databricksSettingsSection = "__settings__"
-	defaultProfileKey        = "default_profile"
+	defaultProfileKey         = "default_profile"
 )
 
 // GetConfiguredDefaultProfile returns the explicitly configured default profile
