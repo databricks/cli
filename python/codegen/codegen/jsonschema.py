@@ -162,19 +162,13 @@ def get_schemas():
     return output
 
 
-def _is_schema(d: dict) -> bool:
-    """Check if a dict is a JSON schema definition (object or string type)."""
-    test = _unwrap_variable(d) or d
-    return test.get("type") in ("object", "string")
-
-
 def _flatten_spec(nested: dict, prefix: str = "") -> dict:
-    """Recursively flatten nested schema defs."""
     result = {}
     for k, v in nested.items():
         path = f"{prefix}/{k}" if prefix else k
         if isinstance(v, dict):
-            if _is_schema(v):
+            test = _unwrap_variable(v) or v
+            if test.get("type") in ("object", "string"):
                 result[path] = v
             else:
                 result.update(_flatten_spec(v, path))

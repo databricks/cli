@@ -90,9 +90,6 @@ __all__ = [
     "PathPattern",
     "PathPatternDict",
     "PathPatternParam",
-    "Permission",
-    "PermissionDict",
-    "PermissionParam",
     "Pipeline",
     "PipelineCluster",
     "PipelineClusterAutoscale",
@@ -414,7 +411,3 @@ from databricks.bundles.pipelines._models.workspace_storage_info import (
     WorkspaceStorageInfoDict,
     WorkspaceStorageInfoParam,
 )
-
-Permission = PipelinePermission
-PermissionDict = PipelinePermissionDict
-PermissionParam = PipelinePermissionParam

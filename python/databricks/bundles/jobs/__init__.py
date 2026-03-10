@@ -173,9 +173,6 @@ __all__ = [
     "PeriodicTriggerConfigurationParam",
     "PeriodicTriggerConfigurationTimeUnit",
     "PeriodicTriggerConfigurationTimeUnitParam",
-    "Permission",
-    "PermissionDict",
-    "PermissionParam",
     "PipelineParams",
     "PipelineParamsDict",
     "PipelineParamsParam",
@@ -749,7 +746,3 @@ def _resolve_recursive_imports():
 
 
 _resolve_recursive_imports()
-
-Permission = JobPermission
-PermissionDict = JobPermissionDict
-PermissionParam = JobPermissionParam

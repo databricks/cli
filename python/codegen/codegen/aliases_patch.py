@@ -22,14 +22,4 @@ ALIASES: dict[str, dict[str, str]] = {
         "VolumeGrantPrivilege": "Privilege",
         "VolumeGrantPrivilegeParam": "PrivilegeParam",
     },
-    "jobs": {
-        "Permission": "JobPermission",
-        "PermissionDict": "JobPermissionDict",
-        "PermissionParam": "JobPermissionParam",
-    },
-    "pipelines": {
-        "Permission": "PipelinePermission",
-        "PermissionDict": "PipelinePermissionDict",
-        "PermissionParam": "PipelinePermissionParam",
-    },
 }
