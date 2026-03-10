@@ -34,22 +34,12 @@ func (m *validateLifecycleStarted) Name() string {
 
 func (m *validateLifecycleStarted) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
-	// lifecycle.started is a direct-mode-only feature; ignore it in other modes.
-	if !m.engine.IsDirect() {
-		return diags.Append(diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "lifecycle.started is only supported in direct deployment mode",
-		})
-	}
 
 	_, err := dyn.MapByPattern(
 		b.Config.Value(),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(path dyn.Path, v dyn.Value) (dyn.Value, error) {
 			resourceType := path[1].Key()
-			if supportedForLifecycleStarted[resourceType] {
-				return v, nil
-			}
 
 			startedV, err := dyn.GetByPath(v, dyn.NewPath(dyn.Key("lifecycle"), dyn.Key("started")))
 			if err != nil {
@@ -58,6 +48,20 @@ func (m *validateLifecycleStarted) Apply(_ context.Context, b *bundle.Bundle) di
 
 			started, ok := startedV.AsBool()
 			if !ok || !started {
+				return v, nil
+			}
+
+			// lifecycle.started is a direct-mode-only feature;
+			if !m.engine.IsDirect() {
+				diags = diags.Append(diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "lifecycle.started is only supported in direct deployment mode",
+					Locations: []dyn.Location{startedV.Location()},
+				})
+				return v, nil
+			}
+
+			if supportedForLifecycleStarted[resourceType] {
 				return v, nil
 			}
 
