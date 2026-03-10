@@ -69,7 +69,7 @@ func newCreateTagAssignment() *cobra.Command {
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, geniespaces
+      dashboards, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
@@ -157,7 +157,7 @@ func newDeleteTagAssignment() *cobra.Command {
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, geniespaces
+      dashboards, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
@@ -220,7 +220,7 @@ func newGetTagAssignment() *cobra.Command {
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, geniespaces
+      dashboards, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
@@ -286,7 +286,7 @@ func newListTagAssignments() *cobra.Command {
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, geniespaces
+      dashboards, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name`
 
@@ -349,7 +349,7 @@ func newUpdateTagAssignment() *cobra.Command {
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, geniespaces
+      dashboards, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
