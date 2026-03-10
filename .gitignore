@@ -57,3 +57,5 @@ go.work.sum
 
 # Fetched based on recorded hash
 .codegen/openapi.json
+
+.claude/settings.local.json

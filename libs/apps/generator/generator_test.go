@@ -863,3 +863,43 @@ func TestGenerateDotEnvSanitizesNewlines(t *testing.T) {
 	assert.Equal(t, "WH_ID=safeEVIL_VAR=injected", result)
 	assert.NotContains(t, result, "\n")
 }
+
+func TestBundleIgnoreFieldSkippedInVariablesAndTargets(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "test",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type: "database", Alias: "Database", ResourceKey: "database",
+						Fields: map[string]manifest.ResourceField{
+							"instance_name": {Env: "DB_INSTANCE", Description: "Lakebase instance"},
+							"database_name": {Env: "DB_NAME", Description: "Database name", BundleIgnore: true},
+						},
+					},
+				},
+			},
+		},
+	}
+	cfg := generator.Config{ResourceValues: map[string]string{
+		"database.instance_name": "my-inst",
+		"database.database_name": "my-db",
+	}}
+
+	vars := generator.GenerateBundleVariables(plugins, cfg)
+	assert.Contains(t, vars, "database_instance_name:")
+	assert.Contains(t, vars, "    description: Lakebase instance")
+	assert.NotContains(t, vars, "database_database_name:")
+
+	target := generator.GenerateTargetVariables(plugins, cfg)
+	assert.Contains(t, target, "database_instance_name: my-inst")
+	assert.NotContains(t, target, "database_database_name")
+
+	env := generator.GenerateDotEnv(plugins, cfg)
+	assert.Contains(t, env, "DB_INSTANCE=my-inst")
+	assert.Contains(t, env, "DB_NAME=my-db")
+
+	example := generator.GenerateDotEnvExample(plugins)
+	assert.Contains(t, example, "DB_INSTANCE=your_database_instance_name")
+	assert.Contains(t, example, "DB_NAME=your_database_database_name")
+}

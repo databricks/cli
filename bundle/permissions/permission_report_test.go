@@ -1,7 +1,6 @@
 package permissions_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -14,7 +13,7 @@ func TestPermissionsReportPermissionDeniedWithGroup(t *testing.T) {
 		{Level: "CAN_MANAGE", GroupName: "testgroup"},
 	})
 
-	diags := permissions.ReportPossiblePermissionDenied(context.Background(), b, "testpath")
+	diags := permissions.ReportPossiblePermissionDenied(t.Context(), b, "testpath")
 	expected := "EPERM3: unable to deploy to testpath as testuser@databricks.com. Cannot apply local deployment permissions.\n" +
 		"For assistance, contact the owners of this project.\n" +
 		"They can redeploy the project to apply the latest set of permissions.\n" +
@@ -27,7 +26,7 @@ func TestPermissionsReportPermissionDeniedWithOtherGroup(t *testing.T) {
 		{Level: "CAN_MANAGE", GroupName: "othergroup"},
 	})
 
-	diags := permissions.ReportPossiblePermissionDenied(context.Background(), b, "testpath")
+	diags := permissions.ReportPossiblePermissionDenied(t.Context(), b, "testpath")
 	expected := "EPERM1: unable to deploy to testpath as testuser@databricks.com.\n" +
 		"Please make sure the current user or one of their groups is listed under the permissions of this bundle.\n" +
 		"For assistance, users or groups with appropriate permissions may include: othergroup.\n" +
@@ -41,7 +40,7 @@ func TestPermissionsReportPermissionDeniedWithoutPermission(t *testing.T) {
 		{Level: "CAN_VIEW", UserName: "testuser@databricks.com"},
 	})
 
-	diags := permissions.ReportPossiblePermissionDenied(context.Background(), b, "testpath")
+	diags := permissions.ReportPossiblePermissionDenied(t.Context(), b, "testpath")
 	expected := "EPERM1: unable to deploy to testpath as testuser@databricks.com.\n" +
 		"Please make sure the current user or one of their groups is listed under the permissions of this bundle.\n" +
 		"For assistance, contact the owners of this project.\n" +
@@ -53,7 +52,7 @@ func TestPermissionsReportPermissionDeniedWithoutPermission(t *testing.T) {
 func TestPermissionsReportPermissionDeniedNilPermission(t *testing.T) {
 	b := mockBundle(nil)
 
-	diags := permissions.ReportPossiblePermissionDenied(context.Background(), b, "testpath")
+	diags := permissions.ReportPossiblePermissionDenied(t.Context(), b, "testpath")
 	expected := "EPERM1: unable to deploy to testpath as testuser@databricks.com.\n" +
 		"Please make sure the current user or one of their groups is listed under the permissions of this bundle.\n" +
 		"For assistance, contact the owners of this project.\n" +
@@ -68,7 +67,7 @@ func TestPermissionsReportFindOtherOwners(t *testing.T) {
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 	})
 
-	diags := permissions.ReportPossiblePermissionDenied(context.Background(), b, "testpath")
+	diags := permissions.ReportPossiblePermissionDenied(t.Context(), b, "testpath")
 	require.ErrorContains(t, diags.Error(), "EPERM3: unable to deploy to testpath as testuser@databricks.com. Cannot apply local deployment permissions.\n"+
 		"For assistance, users or groups with appropriate permissions may include: alice@databricks.com.\n"+
 		"They can redeploy the project to apply the latest set of permissions.\n"+

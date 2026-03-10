@@ -3,10 +3,11 @@ package ssh
 import "time"
 
 const (
-	defaultServerPort      = 7772
-	defaultMaxClients      = 10
-	defaultShutdownDelay   = 10 * time.Minute
-	defaultHandoverTimeout = 30 * time.Minute
+	defaultServerPort         = 7772
+	defaultMaxClients         = 10
+	defaultShutdownDelay      = 10 * time.Minute
+	defaultHandoverTimeout    = 30 * time.Minute
+	defaultEnvironmentVersion = 4
 
 	serverTimeout        = 24 * time.Hour
 	taskStartupTimeout   = 10 * time.Minute

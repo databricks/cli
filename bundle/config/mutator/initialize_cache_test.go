@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestInitializeCache(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b := &bundle.Bundle{}
 
 	// Cache should be nil initially

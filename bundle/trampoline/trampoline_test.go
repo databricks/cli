@@ -1,7 +1,6 @@
 package trampoline
 
 import (
-	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -77,7 +76,7 @@ func TestGenerateTrampoline(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	funcs := functions{}
 	trampoline := NewTrampoline("test_trampoline", &funcs, "Hello from {{.MyName}}")

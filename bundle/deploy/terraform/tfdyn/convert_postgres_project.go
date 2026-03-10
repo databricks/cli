@@ -2,6 +2,7 @@ package tfdyn
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
@@ -51,6 +52,12 @@ func (c postgresProjectConverter) Convert(ctx context.Context, key string, vin d
 	}
 
 	out.PostgresProject[key] = vout.AsAny()
+
+	// Configure permissions for this resource.
+	if permissions := convertPermissionsResource(ctx, vin); permissions != nil {
+		permissions.DatabaseProjectName = fmt.Sprintf("${databricks_postgres_project.%s.project_id}", key)
+		out.Permissions["postgres_project_"+key] = permissions
+	}
 
 	return nil
 }

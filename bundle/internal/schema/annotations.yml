@@ -583,66 +583,6 @@ github.com/databricks/cli/bundle/config/resources.Catalog:
   "storage_root":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.CatalogGrant:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        CREATE_CONNECTION
-      - |-
-        CREATE_EXTERNAL_LOCATION
-      - |-
-        CREATE_EXTERNAL_TABLE
-      - |-
-        CREATE_EXTERNAL_VOLUME
-      - |-
-        CREATE_FOREIGN_CATALOG
-      - |-
-        CREATE_FUNCTION
-      - |-
-        CREATE_MANAGED_STORAGE
-      - |-
-        CREATE_MATERIALIZED_VIEW
-      - |-
-        CREATE_MODEL
-      - |-
-        CREATE_SCHEMA
-      - |-
-        CREATE_STORAGE_CREDENTIAL
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        EXECUTE
-      - |-
-        MANAGE
-      - |-
-        MODIFY
-      - |-
-        READ_VOLUME
-      - |-
-        REFRESH
-      - |-
-        SELECT
-      - |-
-        USE_CATALOG
-      - |-
-        USE_CONNECTION
-      - |-
-        USE_SCHEMA
-      - |-
-        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.ClusterPermission:
   "group_name":
     "description": |-
@@ -693,6 +633,19 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "comment":
     "description": |-
@@ -730,20 +683,6 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "url":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ExternalLocationGrant:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Grant:
-  "principal":
-    "description": |-
-      The name of the principal that will be granted privileges
-  "privileges":
-    "description": |-
-      The privileges to grant to the specified entity
 github.com/databricks/cli/bundle/config/resources.JobPermission:
   "group_name":
     "description": |-
@@ -948,6 +887,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
   "display_name":
     "description": |-
       PLACEHOLDER
+  "enable_pg_native_login":
+    "description": |-
+      PLACEHOLDER
   "history_retention_duration":
     "description": |-
       PLACEHOLDER
@@ -955,6 +897,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
     "description": |-
       PLACEHOLDER
   "pg_version":
@@ -973,13 +918,6 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "update_time":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SchemaGrant:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SecretScope:
@@ -1047,13 +985,6 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
     "description": |-
       PLACEHOLDER
   "unity_catalog_provisioning_state":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.VolumeGrant:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:

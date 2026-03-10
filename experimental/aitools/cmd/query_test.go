@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -42,7 +43,7 @@ func TestCleanSQL(t *testing.T) {
 }
 
 func TestExecuteAndPollImmediateSuccess(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
@@ -61,7 +62,7 @@ func TestExecuteAndPollImmediateSuccess(t *testing.T) {
 }
 
 func TestExecuteAndPollImmediateFailure(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&sql.StatementResponse{
@@ -82,7 +83,7 @@ func TestExecuteAndPollImmediateFailure(t *testing.T) {
 }
 
 func TestExecuteAndPollWithPolling(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&sql.StatementResponse{
@@ -111,7 +112,7 @@ func TestExecuteAndPollWithPolling(t *testing.T) {
 }
 
 func TestExecuteAndPollFailsDuringPolling(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&sql.StatementResponse{
@@ -133,7 +134,7 @@ func TestExecuteAndPollFailsDuringPolling(t *testing.T) {
 }
 
 func TestExecuteAndPollCancelledContextCallsCancelExecution(t *testing.T) {
-	ctx, cancel := context.WithCancel(cmdio.MockDiscard(context.Background()))
+	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.Anything).Return(&sql.StatementResponse{
@@ -153,38 +154,115 @@ func TestExecuteAndPollCancelledContextCallsCancelExecution(t *testing.T) {
 }
 
 func TestResolveWarehouseIDWithFlag(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	id, err := resolveWarehouseID(ctx, nil, "explicit-id")
 	require.NoError(t, err)
 	assert.Equal(t, "explicit-id", id)
 }
 
-func TestFormatQueryResultNoResults(t *testing.T) {
-	resp := &sql.StatementResponse{
-		Status: &sql.StatementStatus{State: sql.StatementStateSucceeded},
+func TestSelectQueryOutputMode(t *testing.T) {
+	tests := []struct {
+		name              string
+		outputType        flags.Output
+		stdoutInteractive bool
+		promptSupported   bool
+		rowCount          int
+		want              queryOutputMode
+	}{
+		{
+			name:              "json flag always returns json",
+			outputType:        flags.OutputJSON,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			rowCount:          999,
+			want:              queryOutputModeJSON,
+		},
+		{
+			name:              "non interactive stdout returns json",
+			outputType:        flags.OutputText,
+			stdoutInteractive: false,
+			promptSupported:   true,
+			rowCount:          5,
+			want:              queryOutputModeJSON,
+		},
+		{
+			name:              "missing stdin interactivity falls back to static table",
+			outputType:        flags.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   false,
+			rowCount:          staticTableThreshold + 10,
+			want:              queryOutputModeStaticTable,
+		},
+		{
+			name:              "small results use static table",
+			outputType:        flags.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			rowCount:          staticTableThreshold,
+			want:              queryOutputModeStaticTable,
+		},
+		{
+			name:              "large results use interactive table",
+			outputType:        flags.OutputText,
+			stdoutInteractive: true,
+			promptSupported:   true,
+			rowCount:          staticTableThreshold + 1,
+			want:              queryOutputModeInteractiveTable,
+		},
 	}
-	output, err := formatQueryResult(resp)
-	require.NoError(t, err)
-	assert.Contains(t, output, "no results")
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := selectQueryOutputMode(tc.outputType, tc.stdoutInteractive, tc.promptSupported, tc.rowCount)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }
 
-func TestFormatQueryResultWithData(t *testing.T) {
+func TestFetchAllRowsSingleChunk(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
 	resp := &sql.StatementResponse{
-		Status: &sql.StatementStatus{State: sql.StatementStateSucceeded},
-		Manifest: &sql.ResultManifest{
-			Schema: &sql.ResultSchema{
-				Columns: []sql.ColumnInfo{{Name: "id"}, {Name: "name"}},
-			},
-		},
-		Result: &sql.ResultData{
-			DataArray: [][]string{{"1", "alice"}, {"2", "bob"}},
-		},
+		StatementId: "stmt-1",
+		Manifest:    &sql.ResultManifest{TotalChunkCount: 1},
+		Result:      &sql.ResultData{DataArray: [][]string{{"1", "alice"}, {"2", "bob"}}},
 	}
-	output, err := formatQueryResult(resp)
+
+	rows, err := fetchAllRows(ctx, mockAPI, resp)
 	require.NoError(t, err)
-	assert.Contains(t, output, "alice")
-	assert.Contains(t, output, "bob")
-	assert.Contains(t, output, "Row count: 2")
+	assert.Equal(t, [][]string{{"1", "alice"}, {"2", "bob"}}, rows)
+}
+
+func TestFetchAllRowsMultiChunk(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	resp := &sql.StatementResponse{
+		StatementId: "stmt-1",
+		Manifest:    &sql.ResultManifest{TotalChunkCount: 3},
+		Result:      &sql.ResultData{DataArray: [][]string{{"1", "a"}}},
+	}
+
+	mockAPI.EXPECT().GetStatementResultChunkNByStatementIdAndChunkIndex(mock.Anything, "stmt-1", 1).
+		Return(&sql.ResultData{DataArray: [][]string{{"2", "b"}}}, nil).Once()
+	mockAPI.EXPECT().GetStatementResultChunkNByStatementIdAndChunkIndex(mock.Anything, "stmt-1", 2).
+		Return(&sql.ResultData{DataArray: [][]string{{"3", "c"}}}, nil).Once()
+
+	rows, err := fetchAllRows(ctx, mockAPI, resp)
+	require.NoError(t, err)
+	assert.Equal(t, [][]string{{"1", "a"}, {"2", "b"}, {"3", "c"}}, rows)
+}
+
+func TestFetchAllRowsNilResult(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	resp := &sql.StatementResponse{StatementId: "stmt-1"}
+
+	rows, err := fetchAllRows(ctx, mockAPI, resp)
+	require.NoError(t, err)
+	assert.Nil(t, rows)
 }
 
 func TestIsTerminalState(t *testing.T) {
@@ -263,7 +341,7 @@ func TestResolveSQLFromFileFlag(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 1", result)
 }
@@ -275,21 +353,21 @@ func TestResolveSQLFromFileFlagWithComments(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 1", result)
 }
 
 func TestResolveSQLFileFlagConflictsWithArg(t *testing.T) {
 	cmd := newTestCmd()
-	_, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{"SELECT 1"}, "/some/file.sql")
+	_, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 1"}, "/some/file.sql")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot use both --file and a positional SQL argument")
 }
 
 func TestResolveSQLFromPositionalArg(t *testing.T) {
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{"SELECT 42"}, "")
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 42"}, "")
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 42", result)
 }
@@ -301,14 +379,14 @@ func TestResolveSQLAutoDetectsSQLFile(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{path}, "")
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{path}, "")
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT * FROM sales", result)
 }
 
 func TestResolveSQLNonexistentSQLFileTreatedAsString(t *testing.T) {
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{"nonexistent.sql"}, "")
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{"nonexistent.sql"}, "")
 	require.NoError(t, err)
 	assert.Equal(t, "nonexistent.sql", result)
 }
@@ -325,7 +403,7 @@ func TestResolveSQLUnreadableSQLFileReturnsError(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chmod(path, 0o644) })
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(cmdio.MockDiscard(context.Background()), cmd, []string{path}, "")
+	_, err = resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{path}, "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "read SQL file")
 }
@@ -334,7 +412,7 @@ func TestResolveSQLFromStdin(t *testing.T) {
 	cmd := newTestCmd()
 	cmd.SetIn(strings.NewReader("SELECT 1 FROM stdin_test"))
 
-	result, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, "")
+	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, "")
 	require.NoError(t, err)
 	assert.Equal(t, "SELECT 1 FROM stdin_test", result)
 }
@@ -346,7 +424,7 @@ func TestResolveSQLEmptyFileReturnsError(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
+	_, err = resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty")
 }
@@ -358,14 +436,14 @@ func TestResolveSQLCommentsOnlyFileReturnsError(t *testing.T) {
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, path)
+	_, err = resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty")
 }
 
 func TestResolveSQLMissingFileReturnsError(t *testing.T) {
 	cmd := newTestCmd()
-	_, err := resolveSQL(cmdio.MockDiscard(context.Background()), cmd, nil, "/nonexistent/path/query.sql")
+	_, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, "/nonexistent/path/query.sql")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "read SQL file")
 }

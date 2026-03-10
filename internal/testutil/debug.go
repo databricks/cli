@@ -19,7 +19,7 @@ func LoadDebugEnvIfRunFromIDE(t TestingT, key string) {
 	if !isInDebug() {
 		return
 	}
-	home, err := os.UserHomeDir()
+	home, err := os.UserHomeDir() //nolint:forbidigo // import cycle: libs/env tests import internal/testutil
 	if err != nil {
 		t.Fatalf("cannot find user home: %s", err)
 	}

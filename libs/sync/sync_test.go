@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -33,7 +32,7 @@ func setupFiles(t *testing.T) string {
 }
 
 func TestGetFileSet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
@@ -96,7 +95,7 @@ func TestGetFileSet(t *testing.T) {
 }
 
 func TestRecursiveExclude(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
@@ -123,7 +122,7 @@ func TestRecursiveExclude(t *testing.T) {
 }
 
 func TestNegateExclude(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)

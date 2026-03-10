@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	mcp "github.com/databricks/cli/experimental/aitools/lib"
 	mcpsdk "github.com/databricks/cli/experimental/aitools/lib/mcp"
 	"github.com/databricks/cli/experimental/aitools/lib/session"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -21,7 +21,7 @@ type Tracker struct {
 }
 
 func NewTracker(ctx context.Context, sess *session.Session, cfg *mcp.Config) (*Tracker, error) {
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}

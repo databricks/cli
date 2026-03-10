@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -46,7 +45,7 @@ func TestNormalizePaths(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	diags := bundle.Apply(context.Background(), b, m)
+	diags := bundle.Apply(t.Context(), b, m)
 	require.NoError(t, diags.Error())
 
 	newValue, err := dyn.GetByPath(b.Config.Value(), path)

@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -47,7 +46,7 @@ func TestConvertModelServingEndpoint(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = modelServingEndpointConverter{}.Convert(ctx, "my_model_serving_endpoint", vin, out)
 	require.NoError(t, err)

@@ -134,7 +134,7 @@ func TestApplySomeChangeReturnsDiagnostics(t *testing.T) {
 }
 
 func TestApplySomeChangeFixesThings(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	b, err := ...some operation...
 	require.NoError(t, err)
 	...
@@ -188,6 +188,10 @@ Use table-driven tests when testing multiple similar cases (e.g., different inpu
 
 **Template tests**: Tests in `acceptance/bundle/templates` include materialized templates in output directories. These directories follow the same `out` convention — everything starting with `out` is generated output. Sources are in `libs/template/templates/`. Use `make test-update-templates` to regenerate. If linters or formatters find issues in materialized templates, do not fix the output files — fix the source in `libs/template/templates/`, then regenerate.
 
+# Context
+
+Always pass `context.Context` as a function argument; never store it in a struct. Storing context in a struct obscures the lifecycle and prevents callers from setting per-call deadlines, cancellation, and metadata (see https://go.dev/blog/context-and-structs). Do not use `context.Background()` outside of `main.go` files. In tests, use `t.Context()` (or `b.Context()` for benchmarks).
+
 # Logging
 
 Use the following for logging:
@@ -202,7 +206,7 @@ log.Errorf(ctx, "...")
 ```
 
 Note that the 'ctx' variable here is something that should be passed in as
-an argument by the caller. We should not use context.Background() like we do in tests.
+an argument by the caller.
 
 Use cmdio.LogString to print to stdout:
 

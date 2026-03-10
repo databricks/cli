@@ -39,7 +39,7 @@ func runInstall(ctx context.Context) error {
 		}
 
 		if targetAgent != nil && targetAgent.InstallMCP != nil {
-			if err := targetAgent.InstallMCP(); err != nil {
+			if err := targetAgent.InstallMCP(ctx); err != nil {
 				return err
 			}
 			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for %s", targetAgent.DisplayName))
@@ -81,7 +81,7 @@ func runInstall(ctx context.Context) error {
 		}
 		if ans == "yes" {
 			fmt.Fprintf(os.Stderr, "Installing MCP server for %s...", a.DisplayName)
-			if err := a.InstallMCP(); err != nil {
+			if err := a.InstallMCP(ctx); err != nil {
 				fmt.Fprint(os.Stderr, "\r"+color.YellowString("⊘ Skipped %s: %s", a.DisplayName, err.Error())+"\n")
 			} else {
 				// Brief delay so users see the "Installing..." message before it's replaced

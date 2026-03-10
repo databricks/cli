@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -37,14 +36,14 @@ func TestAuthTypeDisplayName(t *testing.T) {
 func TestEnrichAuthError_NonAPIError(t *testing.T) {
 	cfg := &config.Config{Profile: "test", Host: "https://example.com"}
 	original := errors.New("some random error")
-	result := EnrichAuthError(context.Background(), cfg, original)
+	result := EnrichAuthError(t.Context(), cfg, original)
 	assert.Equal(t, original, result)
 }
 
 func TestEnrichAuthError_NonAuthStatusCode(t *testing.T) {
 	cfg := &config.Config{Profile: "test", Host: "https://example.com"}
 	original := &apierr.APIError{StatusCode: 404, Message: "not found"}
-	result := EnrichAuthError(context.Background(), cfg, original)
+	result := EnrichAuthError(t.Context(), cfg, original)
 	assert.Equal(t, original, result)
 }
 
@@ -55,7 +54,7 @@ func TestEnrichAuthError_PreservesOriginalError(t *testing.T) {
 		ErrorCode:  "PERMISSION_DENIED",
 		Message:    "User does not have permission",
 	}
-	result := EnrichAuthError(context.Background(), cfg, original)
+	result := EnrichAuthError(t.Context(), cfg, original)
 
 	var unwrapped *apierr.APIError
 	require.ErrorAs(t, result, &unwrapped)
@@ -256,7 +255,7 @@ func TestEnrichAuthError(t *testing.T) {
 				Message:    "test error message",
 			}
 
-			result := EnrichAuthError(context.Background(), tt.cfg, original)
+			result := EnrichAuthError(t.Context(), tt.cfg, original)
 			assert.Equal(t, tt.wantMsg, result.Error())
 		})
 	}

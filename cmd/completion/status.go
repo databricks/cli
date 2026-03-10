@@ -2,11 +2,11 @@ package completion
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/cmdio"
 	libcompletion "github.com/databricks/cli/libs/completion"
+	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +26,7 @@ func newStatusCmd() *cobra.Command {
 				return err
 			}
 
-			home, err := os.UserHomeDir()
+			home, err := env.UserHomeDir(ctx)
 			if err != nil {
 				return err
 			}

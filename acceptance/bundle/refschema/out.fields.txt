@@ -188,6 +188,10 @@ resources.apps.*.resources[*].job	*apps.AppResourceJob	ALL
 resources.apps.*.resources[*].job.id	string	ALL
 resources.apps.*.resources[*].job.permission	apps.AppResourceJobJobPermission	ALL
 resources.apps.*.resources[*].name	string	ALL
+resources.apps.*.resources[*].postgres	*apps.AppResourcePostgres	ALL
+resources.apps.*.resources[*].postgres.branch	string	ALL
+resources.apps.*.resources[*].postgres.database	string	ALL
+resources.apps.*.resources[*].postgres.permission	apps.AppResourcePostgresPostgresPermission	ALL
 resources.apps.*.resources[*].secret	*apps.AppResourceSecret	ALL
 resources.apps.*.resources[*].secret.key	string	ALL
 resources.apps.*.resources[*].secret.permission	apps.AppResourceSecretSecretPermission	ALL
@@ -233,11 +237,11 @@ resources.catalogs.*.effective_predictive_optimization_flag.inherited_from_type	
 resources.catalogs.*.effective_predictive_optimization_flag.value	catalog.EnablePredictiveOptimization	REMOTE
 resources.catalogs.*.enable_predictive_optimization	catalog.EnablePredictiveOptimization	REMOTE
 resources.catalogs.*.full_name	string	REMOTE
-resources.catalogs.*.grants	[]resources.CatalogGrant	INPUT
-resources.catalogs.*.grants[*]	resources.CatalogGrant	INPUT
+resources.catalogs.*.grants	[]catalog.PrivilegeAssignment	INPUT
+resources.catalogs.*.grants[*]	catalog.PrivilegeAssignment	INPUT
 resources.catalogs.*.grants[*].principal	string	INPUT
-resources.catalogs.*.grants[*].privileges	[]resources.CatalogGrantPrivilege	INPUT
-resources.catalogs.*.grants[*].privileges[*]	resources.CatalogGrantPrivilege	INPUT
+resources.catalogs.*.grants[*].privileges	[]catalog.Privilege	INPUT
+resources.catalogs.*.grants[*].privileges[*]	catalog.Privilege	INPUT
 resources.catalogs.*.id	string	INPUT
 resources.catalogs.*.isolation_mode	catalog.CatalogIsolationMode	REMOTE
 resources.catalogs.*.lifecycle	resources.Lifecycle	INPUT
@@ -261,8 +265,8 @@ resources.catalogs.*.updated_at	int64	REMOTE
 resources.catalogs.*.updated_by	string	REMOTE
 resources.catalogs.*.url	string	INPUT
 resources.catalogs.*.grants.full_name	string	ALL
-resources.catalogs.*.grants.grants	[]dresources.GrantAssignment	ALL
-resources.catalogs.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.catalogs.*.grants.grants	[]catalog.PrivilegeAssignment	ALL
+resources.catalogs.*.grants.grants[*]	catalog.PrivilegeAssignment	ALL
 resources.catalogs.*.grants.grants[*].principal	string	ALL
 resources.catalogs.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
 resources.catalogs.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
@@ -710,11 +714,11 @@ resources.external_locations.*.file_event_queue.provided_pubsub.subscription_nam
 resources.external_locations.*.file_event_queue.provided_sqs	*catalog.AwsSqsQueue	ALL
 resources.external_locations.*.file_event_queue.provided_sqs.managed_resource_id	string	ALL
 resources.external_locations.*.file_event_queue.provided_sqs.queue_url	string	ALL
-resources.external_locations.*.grants	[]resources.ExternalLocationGrant	INPUT
-resources.external_locations.*.grants[*]	resources.ExternalLocationGrant	INPUT
+resources.external_locations.*.grants	[]catalog.PrivilegeAssignment	INPUT
+resources.external_locations.*.grants[*]	catalog.PrivilegeAssignment	INPUT
 resources.external_locations.*.grants[*].principal	string	INPUT
-resources.external_locations.*.grants[*].privileges	[]resources.ExternalLocationGrantPrivilege	INPUT
-resources.external_locations.*.grants[*].privileges[*]	resources.ExternalLocationGrantPrivilege	INPUT
+resources.external_locations.*.grants[*].privileges	[]catalog.Privilege	INPUT
+resources.external_locations.*.grants[*].privileges[*]	catalog.Privilege	INPUT
 resources.external_locations.*.id	string	INPUT
 resources.external_locations.*.isolation_mode	catalog.IsolationMode	REMOTE
 resources.external_locations.*.lifecycle	resources.Lifecycle	INPUT
@@ -729,8 +733,8 @@ resources.external_locations.*.updated_at	int64	REMOTE
 resources.external_locations.*.updated_by	string	REMOTE
 resources.external_locations.*.url	string	ALL
 resources.external_locations.*.grants.full_name	string	ALL
-resources.external_locations.*.grants.grants	[]dresources.GrantAssignment	ALL
-resources.external_locations.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.external_locations.*.grants.grants	[]catalog.PrivilegeAssignment	ALL
+resources.external_locations.*.grants.grants[*]	catalog.PrivilegeAssignment	ALL
 resources.external_locations.*.grants.grants[*].principal	string	ALL
 resources.external_locations.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
 resources.external_locations.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
@@ -2267,9 +2271,11 @@ resources.pipelines.*.development	bool	ALL
 resources.pipelines.*.dry_run	bool	ALL
 resources.pipelines.*.edition	string	ALL
 resources.pipelines.*.effective_budget_policy_id	string	REMOTE
+resources.pipelines.*.effective_publishing_mode	pipelines.PublishingMode	REMOTE
 resources.pipelines.*.environment	*pipelines.PipelinesEnvironment	ALL
 resources.pipelines.*.environment.dependencies	[]string	ALL
 resources.pipelines.*.environment.dependencies[*]	string	ALL
+resources.pipelines.*.environment.environment_version	string	ALL
 resources.pipelines.*.event_log	*pipelines.EventLogSpec	ALL
 resources.pipelines.*.event_log.catalog	string	ALL
 resources.pipelines.*.event_log.name	string	ALL
@@ -2616,6 +2622,7 @@ resources.postgres_projects.*.default_endpoint_settings.pg_settings	map[string]s
 resources.postgres_projects.*.default_endpoint_settings.pg_settings.*	string	INPUT	STATE
 resources.postgres_projects.*.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	INPUT	STATE
 resources.postgres_projects.*.display_name	string	INPUT	STATE
+resources.postgres_projects.*.enable_pg_native_login	bool	INPUT	STATE
 resources.postgres_projects.*.history_retention_duration	*duration.Duration	INPUT	STATE
 resources.postgres_projects.*.id	string	INPUT
 resources.postgres_projects.*.initial_endpoint_spec	*postgres.InitialEndpointSpec	REMOTE
@@ -2627,6 +2634,12 @@ resources.postgres_projects.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_projects.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_projects.*.modified_status	string	INPUT
 resources.postgres_projects.*.name	string	REMOTE
+resources.postgres_projects.*.permissions	[]resources.DatabaseProjectPermission	INPUT
+resources.postgres_projects.*.permissions[*]	resources.DatabaseProjectPermission	INPUT
+resources.postgres_projects.*.permissions[*].group_name	string	INPUT
+resources.postgres_projects.*.permissions[*].level	resources.DatabaseProjectPermissionLevel	INPUT
+resources.postgres_projects.*.permissions[*].service_principal_name	string	INPUT
+resources.postgres_projects.*.permissions[*].user_name	string	INPUT
 resources.postgres_projects.*.pg_version	int	INPUT	STATE
 resources.postgres_projects.*.project_id	string	INPUT	STATE
 resources.postgres_projects.*.spec	*postgres.ProjectSpec	REMOTE
@@ -2643,6 +2656,7 @@ resources.postgres_projects.*.spec.default_endpoint_settings.pg_settings	map[str
 resources.postgres_projects.*.spec.default_endpoint_settings.pg_settings.*	string	REMOTE
 resources.postgres_projects.*.spec.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.spec.display_name	string	REMOTE
+resources.postgres_projects.*.spec.enable_pg_native_login	bool	REMOTE
 resources.postgres_projects.*.spec.history_retention_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.spec.pg_version	int	REMOTE
 resources.postgres_projects.*.status	*postgres.ProjectStatus	REMOTE
@@ -2660,6 +2674,7 @@ resources.postgres_projects.*.status.default_endpoint_settings.pg_settings	map[s
 resources.postgres_projects.*.status.default_endpoint_settings.pg_settings.*	string	REMOTE
 resources.postgres_projects.*.status.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.status.display_name	string	REMOTE
+resources.postgres_projects.*.status.enable_pg_native_login	bool	REMOTE
 resources.postgres_projects.*.status.history_retention_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.status.owner	string	REMOTE
 resources.postgres_projects.*.status.pg_version	int	REMOTE
@@ -2667,6 +2682,13 @@ resources.postgres_projects.*.status.synthetic_storage_size_bytes	int64	REMOTE
 resources.postgres_projects.*.uid	string	REMOTE
 resources.postgres_projects.*.update_time	*time.Time	REMOTE
 resources.postgres_projects.*.url	string	INPUT
+resources.postgres_projects.*.permissions.object_id	string	ALL
+resources.postgres_projects.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.postgres_projects.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.postgres_projects.*.permissions.permissions[*].group_name	string	ALL
+resources.postgres_projects.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.postgres_projects.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.postgres_projects.*.permissions.permissions[*].user_name	string	ALL
 resources.quality_monitors.*.assets_dir	string	ALL
 resources.quality_monitors.*.baseline_table_name	string	ALL
 resources.quality_monitors.*.custom_metrics	[]catalog.MonitorMetric	ALL
@@ -2735,11 +2757,11 @@ resources.registered_models.*.comment	string	ALL
 resources.registered_models.*.created_at	int64	ALL
 resources.registered_models.*.created_by	string	ALL
 resources.registered_models.*.full_name	string	ALL
-resources.registered_models.*.grants	[]resources.Grant	INPUT
-resources.registered_models.*.grants[*]	resources.Grant	INPUT
+resources.registered_models.*.grants	[]catalog.PrivilegeAssignment	INPUT
+resources.registered_models.*.grants[*]	catalog.PrivilegeAssignment	INPUT
 resources.registered_models.*.grants[*].principal	string	INPUT
-resources.registered_models.*.grants[*].privileges	[]string	INPUT
-resources.registered_models.*.grants[*].privileges[*]	string	INPUT
+resources.registered_models.*.grants[*].privileges	[]catalog.Privilege	INPUT
+resources.registered_models.*.grants[*].privileges[*]	catalog.Privilege	INPUT
 resources.registered_models.*.id	string	INPUT
 resources.registered_models.*.lifecycle	resources.Lifecycle	INPUT
 resources.registered_models.*.lifecycle.prevent_destroy	bool	INPUT
@@ -2753,8 +2775,8 @@ resources.registered_models.*.updated_at	int64	ALL
 resources.registered_models.*.updated_by	string	ALL
 resources.registered_models.*.url	string	INPUT
 resources.registered_models.*.grants.full_name	string	ALL
-resources.registered_models.*.grants.grants	[]dresources.GrantAssignment	ALL
-resources.registered_models.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.registered_models.*.grants.grants	[]catalog.PrivilegeAssignment	ALL
+resources.registered_models.*.grants.grants[*]	catalog.PrivilegeAssignment	ALL
 resources.registered_models.*.grants.grants[*].principal	string	ALL
 resources.registered_models.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
 resources.registered_models.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
@@ -2771,11 +2793,11 @@ resources.schemas.*.effective_predictive_optimization_flag.inherited_from_type	c
 resources.schemas.*.effective_predictive_optimization_flag.value	catalog.EnablePredictiveOptimization	REMOTE
 resources.schemas.*.enable_predictive_optimization	catalog.EnablePredictiveOptimization	REMOTE
 resources.schemas.*.full_name	string	REMOTE
-resources.schemas.*.grants	[]resources.SchemaGrant	INPUT
-resources.schemas.*.grants[*]	resources.SchemaGrant	INPUT
+resources.schemas.*.grants	[]catalog.PrivilegeAssignment	INPUT
+resources.schemas.*.grants[*]	catalog.PrivilegeAssignment	INPUT
 resources.schemas.*.grants[*].principal	string	INPUT
-resources.schemas.*.grants[*].privileges	[]resources.SchemaGrantPrivilege	INPUT
-resources.schemas.*.grants[*].privileges[*]	resources.SchemaGrantPrivilege	INPUT
+resources.schemas.*.grants[*].privileges	[]catalog.Privilege	INPUT
+resources.schemas.*.grants[*].privileges[*]	catalog.Privilege	INPUT
 resources.schemas.*.id	string	INPUT
 resources.schemas.*.lifecycle	resources.Lifecycle	INPUT
 resources.schemas.*.lifecycle.prevent_destroy	bool	INPUT
@@ -2792,8 +2814,8 @@ resources.schemas.*.updated_at	int64	REMOTE
 resources.schemas.*.updated_by	string	REMOTE
 resources.schemas.*.url	string	INPUT
 resources.schemas.*.grants.full_name	string	ALL
-resources.schemas.*.grants.grants	[]dresources.GrantAssignment	ALL
-resources.schemas.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.schemas.*.grants.grants	[]catalog.PrivilegeAssignment	ALL
+resources.schemas.*.grants.grants[*]	catalog.PrivilegeAssignment	ALL
 resources.schemas.*.grants.grants[*].principal	string	ALL
 resources.schemas.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
 resources.schemas.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
@@ -2957,11 +2979,11 @@ resources.volumes.*.encryption_details.sse_encryption_details	*catalog.SseEncryp
 resources.volumes.*.encryption_details.sse_encryption_details.algorithm	catalog.SseEncryptionDetailsAlgorithm	REMOTE
 resources.volumes.*.encryption_details.sse_encryption_details.aws_kms_key_arn	string	REMOTE
 resources.volumes.*.full_name	string	REMOTE
-resources.volumes.*.grants	[]resources.VolumeGrant	INPUT
-resources.volumes.*.grants[*]	resources.VolumeGrant	INPUT
+resources.volumes.*.grants	[]catalog.PrivilegeAssignment	INPUT
+resources.volumes.*.grants[*]	catalog.PrivilegeAssignment	INPUT
 resources.volumes.*.grants[*].principal	string	INPUT
-resources.volumes.*.grants[*].privileges	[]resources.VolumeGrantPrivilege	INPUT
-resources.volumes.*.grants[*].privileges[*]	resources.VolumeGrantPrivilege	INPUT
+resources.volumes.*.grants[*].privileges	[]catalog.Privilege	INPUT
+resources.volumes.*.grants[*].privileges[*]	catalog.Privilege	INPUT
 resources.volumes.*.id	string	INPUT
 resources.volumes.*.lifecycle	resources.Lifecycle	INPUT
 resources.volumes.*.lifecycle.prevent_destroy	bool	INPUT
@@ -2977,8 +2999,8 @@ resources.volumes.*.url	string	INPUT
 resources.volumes.*.volume_id	string	REMOTE
 resources.volumes.*.volume_type	catalog.VolumeType	ALL
 resources.volumes.*.grants.full_name	string	ALL
-resources.volumes.*.grants.grants	[]dresources.GrantAssignment	ALL
-resources.volumes.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.volumes.*.grants.grants	[]catalog.PrivilegeAssignment	ALL
+resources.volumes.*.grants.grants[*]	catalog.PrivilegeAssignment	ALL
 resources.volumes.*.grants.grants[*].principal	string	ALL
 resources.volumes.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
 resources.volumes.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL

@@ -1,7 +1,6 @@
 package configsync
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestSaveFiles_Success(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tmpDir := t.TempDir()
 
@@ -47,7 +46,7 @@ func TestSaveFiles_Success(t *testing.T) {
 }
 
 func TestSaveFiles_MultipleFiles(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tmpDir := t.TempDir()
 
@@ -82,7 +81,7 @@ func TestSaveFiles_MultipleFiles(t *testing.T) {
 }
 
 func TestSaveFiles_EmptyList(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err := SaveFiles(ctx, &bundle.Bundle{}, []FileChange{})
 	require.NoError(t, err)
