@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 
-	"github.com/databricks/cli/experimental/aitools/lib/mcp"
 	"github.com/databricks/cli/experimental/aitools/lib/prompts"
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -19,28 +17,6 @@ const (
 	DatabricksClientKey  = "databricks_client"
 	DatabricksProfileKey = "databricks_profile"
 )
-
-func NewDatabricksClientMiddleware(unauthorizedToolNames []string) mcp.Middleware {
-	return mcp.NewMiddleware(func(ctx *mcp.MiddlewareContext, next mcp.NextFunc) (*mcp.CallToolResult, error) {
-		if slices.Contains(unauthorizedToolNames, ctx.Request.Tool.Name) {
-			return next()
-		}
-
-		_, ok := ctx.Session.Get(DatabricksClientKey)
-		if !ok {
-			w, err := checkAuth(ctx.Ctx)
-			if err != nil {
-				return mcp.CreateNewTextContentResultError(err), nil
-			}
-			ctx.Session.Set(DatabricksClientKey, w)
-
-			// Start background warehouse loading once client is initialized
-			go loadWarehouseInBackground(ctx.Ctx)
-		}
-
-		return next()
-	})
-}
 
 func GetDatabricksProfile(ctx context.Context) string {
 	sess, err := session.GetSession(ctx)
@@ -102,20 +78,6 @@ func GetDatabricksClient(ctx context.Context) (*databricks.WorkspaceClient, erro
 		return nil, newAuthError(ctx)
 	}
 	return w.(*databricks.WorkspaceClient), nil
-}
-
-func checkAuth(ctx context.Context) (*databricks.WorkspaceClient, error) {
-	w, err := databricks.NewWorkspaceClient()
-	if err != nil {
-		return nil, WrapAuthError(ctx, err)
-	}
-
-	_, err = w.CurrentUser.Me(ctx)
-	if err != nil {
-		return nil, WrapAuthError(ctx, err)
-	}
-
-	return w, nil
 }
 
 func WrapAuthError(ctx context.Context, err error) error {

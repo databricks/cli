@@ -43,9 +43,6 @@ require (
 	gopkg.in/ini.v1 v1.67.1 // Apache 2.0
 )
 
-// Dependencies for experimental MCP commands
-require github.com/google/jsonschema-go v0.4.2 // MIT
-
 require gopkg.in/yaml.v3 v3.0.1 // indirect
 
 // Dependencies for experimental SSH commands
