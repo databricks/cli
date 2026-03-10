@@ -372,6 +372,31 @@ func TestSetDefaultProfile_RoundTrip(t *testing.T) {
 	assert.Equal(t, "xyz", section.Key("token").String())
 }
 
+func TestSaveToProfile_RejectsReservedProfileName(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+
+	err := SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "__settings__",
+		Host:       "https://abc.cloud.databricks.com",
+		Token:      "token",
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "reserved for internal use")
+}
+
+func TestSetDefaultProfile_RejectsReservedProfileName(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	err := os.WriteFile(path, []byte("[profile1]\nhost = https://abc\n"), 0o600)
+	require.NoError(t, err)
+
+	err = SetDefaultProfile(ctx, "__settings__", path)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "reserved for internal use")
+}
+
 func TestSaveToProfile_MergeSemantics(t *testing.T) {
 	type saveOp struct {
 		cfg       *config.Config

@@ -114,7 +114,7 @@ func newProfilesCommand() *cobra.Command {
 			return fmt.Errorf("cannot parse config file: %w", err)
 		}
 
-		defaultProfile := databrickscfg.GetDefaultProfileFrom(iniFile)
+		defaultProfile := databrickscfg.GetConfiguredDefaultProfileFrom(iniFile)
 
 		var wg sync.WaitGroup
 		for _, v := range iniFile.Sections() {

@@ -138,6 +138,10 @@ func GetDefaultProfileFrom(configFile *config.File) string {
 
 // SetDefaultProfile writes the default_profile key to the [__settings__] section.
 func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
+	if profileName == databricksSettingsSection {
+		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
+	}
+
 	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
 	if err != nil {
 		return err
@@ -258,6 +262,10 @@ func AuthCredentialKeys() []string {
 // removed (use this for mutually exclusive fields like cluster_id vs
 // serverless_compute_id, or to drop stale auth credentials on auth-type switch).
 func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string) error {
+	if cfg.Profile == databricksSettingsSection {
+		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
+	}
+
 	configFile, err := loadOrCreateConfigFile(ctx, cfg.ConfigFile)
 	if err != nil {
 		return err

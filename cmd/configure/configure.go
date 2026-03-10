@@ -3,10 +3,13 @@ package configure
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -165,13 +168,30 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		// and leaving it can change HostType() routing.
 		clearKeys = append(clearKeys, "experimental_is_unified_host")
 
-		return databrickscfg.SaveToProfile(ctx, &config.Config{
+		configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+
+		// Check if this will be the only profile in the file.
+		allProfiles, loadErr := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+		isOnlyProfile := errors.Is(loadErr, profile.ErrNoConfiguration) || (loadErr == nil && len(allProfiles) == 0)
+
+		err = databrickscfg.SaveToProfile(ctx, &config.Config{
 			Profile:    cfg.Profile,
 			Host:       cfg.Host,
 			Token:      cfg.Token,
 			ClusterID:  cfg.ClusterID,
-			ConfigFile: cfg.ConfigFile,
+			ConfigFile: configFile,
 		}, clearKeys...)
+		if err != nil {
+			return err
+		}
+
+		if isOnlyProfile && cfg.Profile != "" {
+			if err := databrickscfg.SetDefaultProfile(ctx, cfg.Profile, configFile); err != nil {
+				log.Debugf(ctx, "Failed to auto-set default profile: %v", err)
+			}
+		}
+
+		return nil
 	}
 
 	return cmd
