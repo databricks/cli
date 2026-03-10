@@ -75,7 +75,7 @@ type Root struct {
 
 	// Permissions section allows to define permissions which will be
 	// applied to all resources defined in bundle
-	Permissions []resources.IamPermission `json:"permissions,omitempty"`
+	Permissions []resources.Permission `json:"permissions,omitempty"`
 
 	// Locations is an output-only field that holds configuration location
 	// information for every path in the configuration tree.

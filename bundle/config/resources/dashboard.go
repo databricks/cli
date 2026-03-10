@@ -80,7 +80,7 @@ type Dashboard struct {
 	BaseResource
 	DashboardConfig
 
-	Permissions []IamPermission `json:"permissions,omitempty"`
+	Permissions []Permission `json:"permissions,omitempty"`
 
 	// FilePath points to the local `.lvdash.json` file containing the dashboard definition.
 	// This is inlined into serialized_dashboard during deployment. The file_path is kept around

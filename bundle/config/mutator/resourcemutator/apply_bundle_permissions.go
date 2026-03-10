@@ -105,7 +105,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		for key, pattern := range patterns {
 			v, err = dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				var permissions []resources.IamPermission
+				var permissions []resources.Permission
 				pv, err := dyn.Get(v, "permissions")
 				// If the permissions field is not found, we set to an empty array
 				if err != nil {
@@ -166,12 +166,12 @@ func (m *bundlePermissions) Name() string {
 
 func convertPermissions(
 	ctx context.Context,
-	bundlePermissions []resources.IamPermission,
-	resourcePermissions []resources.IamPermission,
+	bundlePermissions []resources.Permission,
+	resourcePermissions []resources.Permission,
 	resourceName string,
 	lm map[string]string,
-) []resources.IamPermission {
-	var permissions []resources.IamPermission
+) []resources.Permission {
+	var permissions []resources.Permission
 	for _, p := range bundlePermissions {
 		level, ok := lm[string(p.Level)]
 		// If there is no bundle permission level defined in the map, it means
@@ -184,7 +184,7 @@ func convertPermissions(
 			continue
 		}
 
-		permissions = append(permissions, resources.IamPermission{
+		permissions = append(permissions, resources.Permission{
 			Level:                iam.PermissionLevel(level),
 			UserName:             p.UserName,
 			GroupName:            p.GroupName,
@@ -196,8 +196,8 @@ func convertPermissions(
 }
 
 func isPermissionOverlap(
-	permission resources.IamPermission,
-	resourcePermissions []resources.IamPermission,
+	permission resources.Permission,
+	resourcePermissions []resources.Permission,
 	resourceName string,
 ) (bool, diag.Diagnostics) {
 	var diagnostics diag.Diagnostics
@@ -226,8 +226,8 @@ func isPermissionOverlap(
 
 func notifyForPermissionOverlap(
 	ctx context.Context,
-	permission resources.IamPermission,
-	resourcePermissions []resources.IamPermission,
+	permission resources.Permission,
+	resourcePermissions []resources.Permission,
 	resourceName string,
 ) bool {
 	isOverlap, _ := isPermissionOverlap(permission, resourcePermissions, resourceName)

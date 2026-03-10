@@ -12,12 +12,12 @@ import (
 
 func TestWorkspacePathPermissionsCompare(t *testing.T) {
 	testCases := []struct {
-		perms    []resources.IamPermission
+		perms    []resources.Permission
 		acl      []workspace.WorkspaceObjectAccessControlResponse
 		expected diag.Diagnostics
 	}{
 		{
-			perms: []resources.IamPermission{
+			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -31,7 +31,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			expected: nil,
 		},
 		{
-			perms: []resources.IamPermission{
+			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -51,7 +51,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			expected: nil,
 		},
 		{
-			perms: []resources.IamPermission{
+			perms: []resources.Permission{
 				{Level: CAN_VIEW, UserName: "foo@bar.com"},
 				{Level: CAN_MANAGE, ServicePrincipalName: "sp.com"},
 			},
@@ -66,7 +66,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			expected: nil,
 		},
 		{
-			perms: []resources.IamPermission{
+			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -95,7 +95,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			},
 		},
 		{
-			perms: []resources.IamPermission{
+			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -129,13 +129,13 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 	testCases := []struct {
 		name     string
-		perms    []resources.IamPermission
+		perms    []resources.Permission
 		acl      []workspace.WorkspaceObjectAccessControlResponse
 		expected diag.Diagnostics
 	}{
 		{
 			name: "bundle grants higher permission than workspace - no warning",
-			perms: []resources.IamPermission{
+			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -150,7 +150,7 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 		},
 		{
 			name: "bundle grants lower permission than workspace - warning",
-			perms: []resources.IamPermission{
+			perms: []resources.Permission{
 				{Level: CAN_VIEW, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{
@@ -174,7 +174,7 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 		},
 		{
 			name: "bundle grants same permission as workspace - no warning",
-			perms: []resources.IamPermission{
+			perms: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			acl: []workspace.WorkspaceObjectAccessControlResponse{

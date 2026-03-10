@@ -12,11 +12,11 @@ import (
 
 type WorkspacePathPermissions struct {
 	Path        string
-	Permissions []resources.IamPermission
+	Permissions []resources.Permission
 }
 
 func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObjectAccessControlResponse) *WorkspacePathPermissions {
-	var permissions []resources.IamPermission
+	var permissions []resources.Permission
 	for _, a := range acl {
 		// Skip the admin group because it's added to all resources by default.
 		if a.GroupName == "admins" {
@@ -33,7 +33,7 @@ func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObject
 		}
 
 		if highestLevel != "" {
-			permissions = append(permissions, resources.IamPermission{
+			permissions = append(permissions, resources.Permission{
 				Level:                highestLevel,
 				GroupName:            a.GroupName,
 				UserName:             a.UserName,
@@ -45,7 +45,7 @@ func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObject
 	return &WorkspacePathPermissions{Permissions: permissions, Path: path}
 }
 
-func (p WorkspacePathPermissions) Compare(perms []resources.IamPermission) diag.Diagnostics {
+func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Check the permissions in the workspace and see if they are all set in the bundle.
@@ -67,7 +67,7 @@ func (p WorkspacePathPermissions) Compare(perms []resources.IamPermission) diag.
 }
 
 // samePrincipal checks if two permissions refer to the same user/group/service principal.
-func samePrincipal(a, b resources.IamPermission) bool {
+func samePrincipal(a, b resources.Permission) bool {
 	return a.UserName == b.UserName &&
 		a.GroupName == b.GroupName &&
 		a.ServicePrincipalName == b.ServicePrincipalName
@@ -76,8 +76,8 @@ func samePrincipal(a, b resources.IamPermission) bool {
 // containsAll checks if all permissions in permA (workspace) are accounted for in permB (bundle).
 // A workspace permission is considered accounted for if the bundle has the same principal
 // with an equal or higher permission level.
-func containsAll(permA, permB []resources.IamPermission) (bool, []resources.IamPermission) {
-	var missing []resources.IamPermission
+func containsAll(permA, permB []resources.Permission) (bool, []resources.Permission) {
+	var missing []resources.Permission
 	for _, a := range permA {
 		found := false
 		for _, b := range permB {
@@ -104,7 +104,7 @@ func convertWorkspaceObjectPermissionLevel(level workspace.WorkspaceObjectPermis
 	}
 }
 
-func toString(p []resources.IamPermission) string {
+func toString(p []resources.Permission) string {
 	var sb strings.Builder
 	for _, perm := range p {
 		sb.WriteString(fmt.Sprintf("- %s\n", perm.String()))

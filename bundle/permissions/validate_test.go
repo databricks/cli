@@ -18,7 +18,7 @@ func TestValidateSharedRootPermissionsForShared(t *testing.T) {
 			Workspace: config.Workspace{
 				RootPath: "/Workspace/Shared/foo/bar",
 			},
-			Permissions: []resources.IamPermission{
+			Permissions: []resources.Permission{
 				{Level: CAN_MANAGE, GroupName: "users"},
 			},
 			Resources: config.Resources{
@@ -43,7 +43,7 @@ func TestValidateSharedRootPermissionsForSharedError(t *testing.T) {
 			Workspace: config.Workspace{
 				RootPath: "/Workspace/Shared/foo/bar",
 			},
-			Permissions: []resources.IamPermission{
+			Permissions: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			Resources: config.Resources{

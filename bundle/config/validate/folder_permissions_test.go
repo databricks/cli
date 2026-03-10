@@ -25,7 +25,7 @@ func TestFolderPermissionsInheritedWhenRootPathDoesNotExist(t *testing.T) {
 				StatePath:    "/Workspace/Users/foo@bar.com/state",
 				ResourcePath: "/Workspace/Users/foo@bar.com/resources",
 			},
-			Permissions: []resources.IamPermission{
+			Permissions: []resources.Permission{
 				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 		},
@@ -82,7 +82,7 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 				StatePath:    "/Workspace/Users/foo@bar.com/state",
 				ResourcePath: "/Workspace/Users/foo@bar.com/resources",
 			},
-			Permissions: []resources.IamPermission{
+			Permissions: []resources.Permission{
 				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 		},
@@ -136,7 +136,7 @@ func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 				StatePath:    "/Workspace/Users/foo@bar.com/state",
 				ResourcePath: "/Workspace/Users/foo@bar.com/resources",
 			},
-			Permissions: []resources.IamPermission{
+			Permissions: []resources.Permission{
 				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 		},
@@ -179,7 +179,7 @@ func TestValidateFolderPermissionsFailsOnNoRootFolder(t *testing.T) {
 				StatePath:    "/NotExisting/state",
 				ResourcePath: "/NotExisting/resources",
 			},
-			Permissions: []resources.IamPermission{
+			Permissions: []resources.Permission{
 				{Level: permissions.CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 		},

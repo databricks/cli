@@ -26,7 +26,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 				StatePath:    "/Users/foo@bar.com/state",
 				ResourcePath: "/Users/foo@bar.com/resources",
 			},
-			Permissions: []resources.IamPermission{
+			Permissions: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "TestUser"},
 				{Level: CAN_VIEW, GroupName: "TestGroup"},
 				{Level: CAN_RUN, ServicePrincipalName: "TestServicePrincipal"},
@@ -86,7 +86,7 @@ func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 				StatePath:    "/Users/foo@bar.com/state",
 				ResourcePath: "/Users/foo@bar.com/resources",
 			},
-			Permissions: []resources.IamPermission{
+			Permissions: []resources.Permission{
 				{Level: CAN_MANAGE, UserName: "TestUser"},
 				{Level: CAN_VIEW, GroupName: "TestGroup"},
 				{Level: CAN_RUN, ServicePrincipalName: "TestServicePrincipal"},

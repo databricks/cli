@@ -13,7 +13,7 @@ import (
 )
 
 func TestPermissionDiagnosticsApplySuccess(t *testing.T) {
-	b := mockBundle([]resources.IamPermission{
+	b := mockBundle([]resources.Permission{
 		{Level: "CAN_MANAGE", UserName: "testuser@databricks.com"},
 	})
 
@@ -29,7 +29,7 @@ func TestPermissionDiagnosticsEmpty(t *testing.T) {
 }
 
 func TestPermissionDiagnosticsApplyFail(t *testing.T) {
-	b := mockBundle([]resources.IamPermission{
+	b := mockBundle([]resources.Permission{
 		{Level: "CAN_VIEW", UserName: "testuser@databricks.com"},
 	})
 
@@ -48,7 +48,7 @@ func TestPermissionDiagnosticsApplyFail(t *testing.T) {
 	require.Contains(t, diags[0].Summary, expectedMsg)
 }
 
-func mockBundle(permissions []resources.IamPermission) *bundle.Bundle {
+func mockBundle(permissions []resources.Permission) *bundle.Bundle {
 	return &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{

@@ -68,7 +68,7 @@ type Target struct {
 
 	Sync *Sync `json:"sync,omitempty"`
 
-	Permissions []resources.IamPermission `json:"permissions,omitempty"`
+	Permissions []resources.Permission `json:"permissions,omitempty"`
 }
 
 const (

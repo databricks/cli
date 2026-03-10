@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
-// Permission holds the permission level setting for a single principal.
-type Permission[L ~string] struct {
+// PermissionT holds the permission level setting for a single principal.
+// It is a generic type parameterized by the permission level type L.
+// Use the named types (e.g. JobPermission, Permission) instead of this type directly.
+type PermissionT[L ~string] struct {
 	Level L `json:"level"`
 
 	UserName             string `json:"user_name,omitempty"`
@@ -14,7 +16,7 @@ type Permission[L ~string] struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-func (p Permission[L]) String() string {
+func (p PermissionT[L]) String() string {
 	if p.UserName != "" {
 		return fmt.Sprintf("level: %s, user_name: %s", p.Level, p.UserName)
 	}
