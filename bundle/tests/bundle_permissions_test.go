@@ -7,17 +7,16 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBundlePermissions(t *testing.T) {
 	b := load(t, "./bundle_permissions")
-	assert.Contains(t, b.Config.Permissions, resources.Permission[iam.PermissionLevel]{Level: "CAN_RUN", UserName: "test@company.com"})
-	assert.NotContains(t, b.Config.Permissions, resources.Permission[iam.PermissionLevel]{Level: "CAN_MANAGE", GroupName: "devs"})
-	assert.NotContains(t, b.Config.Permissions, resources.Permission[iam.PermissionLevel]{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
-	assert.NotContains(t, b.Config.Permissions, resources.Permission[iam.PermissionLevel]{Level: "CAN_RUN", UserName: "bot@company.com"})
+	assert.Contains(t, b.Config.Permissions, resources.IamPermission{Level: "CAN_RUN", UserName: "test@company.com"})
+	assert.NotContains(t, b.Config.Permissions, resources.IamPermission{Level: "CAN_MANAGE", GroupName: "devs"})
+	assert.NotContains(t, b.Config.Permissions, resources.IamPermission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
+	assert.NotContains(t, b.Config.Permissions, resources.IamPermission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
 	diags := bundle.Apply(t.Context(), b, resourcemutator.ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
@@ -37,10 +36,10 @@ func TestBundlePermissions(t *testing.T) {
 
 func TestBundlePermissionsDevTarget(t *testing.T) {
 	b := loadTarget(t, "./bundle_permissions", "development")
-	assert.Contains(t, b.Config.Permissions, resources.Permission[iam.PermissionLevel]{Level: "CAN_RUN", UserName: "test@company.com"})
-	assert.Contains(t, b.Config.Permissions, resources.Permission[iam.PermissionLevel]{Level: "CAN_MANAGE", GroupName: "devs"})
-	assert.Contains(t, b.Config.Permissions, resources.Permission[iam.PermissionLevel]{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
-	assert.Contains(t, b.Config.Permissions, resources.Permission[iam.PermissionLevel]{Level: "CAN_RUN", UserName: "bot@company.com"})
+	assert.Contains(t, b.Config.Permissions, resources.IamPermission{Level: "CAN_RUN", UserName: "test@company.com"})
+	assert.Contains(t, b.Config.Permissions, resources.IamPermission{Level: "CAN_MANAGE", GroupName: "devs"})
+	assert.Contains(t, b.Config.Permissions, resources.IamPermission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
+	assert.Contains(t, b.Config.Permissions, resources.IamPermission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
 	diags := bundle.Apply(t.Context(), b, resourcemutator.ApplyBundlePermissions())
 	require.NoError(t, diags.Error())

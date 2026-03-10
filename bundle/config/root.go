@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -76,7 +75,7 @@ type Root struct {
 
 	// Permissions section allows to define permissions which will be
 	// applied to all resources defined in bundle
-	Permissions []resources.Permission[iam.PermissionLevel] `json:"permissions,omitempty"`
+	Permissions []resources.IamPermission `json:"permissions,omitempty"`
 
 	// Locations is an output-only field that holds configuration location
 	// information for every path in the configuration tree.

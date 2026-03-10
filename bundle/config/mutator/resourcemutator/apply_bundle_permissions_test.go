@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +36,7 @@ func TestApplyBundlePermissions(t *testing.T) {
 			Workspace: config.Workspace{
 				RootPath: "/Users/foo@bar.com",
 			},
-			Permissions: []resources.Permission[iam.PermissionLevel]{
+			Permissions: []resources.IamPermission{
 				{Level: permissions.CAN_MANAGE, UserName: "TestUser"},
 				{Level: permissions.CAN_VIEW, GroupName: "TestGroup"},
 				{Level: permissions.CAN_RUN, ServicePrincipalName: "TestServicePrincipal"},
@@ -147,7 +146,7 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 			Workspace: config.Workspace{
 				RootPath: "/Users/foo@bar.com",
 			},
-			Permissions: []resources.Permission[iam.PermissionLevel]{
+			Permissions: []resources.IamPermission{
 				{Level: permissions.CAN_MANAGE, UserName: "TestUser"},
 				{Level: permissions.CAN_VIEW, GroupName: "TestGroup"},
 			},

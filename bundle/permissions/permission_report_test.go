@@ -5,12 +5,11 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/permissions"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPermissionsReportPermissionDeniedWithGroup(t *testing.T) {
-	b := mockBundle([]resources.Permission[iam.PermissionLevel]{
+	b := mockBundle([]resources.IamPermission{
 		{Level: "CAN_MANAGE", GroupName: "testgroup"},
 	})
 
@@ -23,7 +22,7 @@ func TestPermissionsReportPermissionDeniedWithGroup(t *testing.T) {
 }
 
 func TestPermissionsReportPermissionDeniedWithOtherGroup(t *testing.T) {
-	b := mockBundle([]resources.Permission[iam.PermissionLevel]{
+	b := mockBundle([]resources.IamPermission{
 		{Level: "CAN_MANAGE", GroupName: "othergroup"},
 	})
 
@@ -37,7 +36,7 @@ func TestPermissionsReportPermissionDeniedWithOtherGroup(t *testing.T) {
 }
 
 func TestPermissionsReportPermissionDeniedWithoutPermission(t *testing.T) {
-	b := mockBundle([]resources.Permission[iam.PermissionLevel]{
+	b := mockBundle([]resources.IamPermission{
 		{Level: "CAN_VIEW", UserName: "testuser@databricks.com"},
 	})
 
@@ -63,7 +62,7 @@ func TestPermissionsReportPermissionDeniedNilPermission(t *testing.T) {
 }
 
 func TestPermissionsReportFindOtherOwners(t *testing.T) {
-	b := mockBundle([]resources.Permission[iam.PermissionLevel]{
+	b := mockBundle([]resources.IamPermission{
 		{Level: "CAN_MANAGE", GroupName: "testgroup"},
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 	})

@@ -509,19 +509,6 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "warehouse_id":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AlertPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.App:
   "git_source":
     "description": |-
@@ -603,47 +590,8 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
   "dataset_schema":
     "description": |-
       Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
-github.com/databricks/cli/bundle/config/resources.DashboardPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "effective_capacity":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ExternalLocation:
@@ -681,6 +629,19 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
     "description": |-
       PLACEHOLDER
   "url":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.IamPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.JobPermission:
@@ -739,24 +700,6 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission
   "user_name":
     "description": |-
       PLACEHOLDER
-? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel]
-: "-":
-    "description": |-
-      Defines a permission for a specific entity.
-    "markdown_description": |-
-      Defines a permission for a specific entity. See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
-  "group_name":
-    "description": |-
-      The name of the group that has the permission set in level.
-  "level":
-    "description": |-
-      The allowed permission for user, group, service principal defined for this permission.
-  "service_principal_name":
-    "description": |-
-      The name of the service principal that has the permission set in level.
-  "user_name":
-    "description": |-
-      The name of the user that has the permission set in level.
 github.com/databricks/cli/bundle/config/resources.PipelinePermission:
   "group_name":
     "description": |-

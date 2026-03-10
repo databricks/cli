@@ -6,14 +6,13 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/permissions"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
 func TestTryExtendTerraformPermissionError1(t *testing.T) {
 	ctx := t.Context()
-	b := mockBundle([]resources.Permission[iam.PermissionLevel]{
+	b := mockBundle([]resources.IamPermission{
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 	})
 	err := permissions.TryExtendTerraformPermissionError(ctx, b, errors.New("Error: terraform apply: exit status 1\n"+
@@ -34,7 +33,7 @@ func TestTryExtendTerraformPermissionError1(t *testing.T) {
 
 func TestTryExtendTerraformPermissionError2(t *testing.T) {
 	ctx := t.Context()
-	b := mockBundle([]resources.Permission[iam.PermissionLevel]{
+	b := mockBundle([]resources.IamPermission{
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 		{Level: "CAN_MANAGE", UserName: "bob@databricks.com"},
 	})
@@ -55,7 +54,7 @@ func TestTryExtendTerraformPermissionError2(t *testing.T) {
 
 func TestTryExtendTerraformPermissionError3(t *testing.T) {
 	ctx := t.Context()
-	b := mockBundle([]resources.Permission[iam.PermissionLevel]{
+	b := mockBundle([]resources.IamPermission{
 		{Level: "CAN_MANAGE", UserName: "testuser@databricks.com"},
 	})
 	err := permissions.TryExtendTerraformPermissionError(ctx, b, errors.New("Error: terraform apply: exit status 1\n"+
@@ -75,7 +74,7 @@ func TestTryExtendTerraformPermissionError3(t *testing.T) {
 
 func TestTryExtendTerraformPermissionErrorNotOwner(t *testing.T) {
 	ctx := t.Context()
-	b := mockBundle([]resources.Permission[iam.PermissionLevel]{
+	b := mockBundle([]resources.IamPermission{
 		{Level: "CAN_MANAGE", GroupName: "data_team@databricks.com"},
 	})
 	b.Config.RunAs = &jobs.JobRunAs{

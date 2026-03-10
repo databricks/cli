@@ -3,7 +3,6 @@ package config
 import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -69,7 +68,7 @@ type Target struct {
 
 	Sync *Sync `json:"sync,omitempty"`
 
-	Permissions []resources.Permission[iam.PermissionLevel] `json:"permissions,omitempty"`
+	Permissions []resources.IamPermission `json:"permissions,omitempty"`
 }
 
 const (

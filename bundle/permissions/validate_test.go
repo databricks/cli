@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +18,7 @@ func TestValidateSharedRootPermissionsForShared(t *testing.T) {
 			Workspace: config.Workspace{
 				RootPath: "/Workspace/Shared/foo/bar",
 			},
-			Permissions: []resources.Permission[iam.PermissionLevel]{
+			Permissions: []resources.IamPermission{
 				{Level: CAN_MANAGE, GroupName: "users"},
 			},
 			Resources: config.Resources{
@@ -44,7 +43,7 @@ func TestValidateSharedRootPermissionsForSharedError(t *testing.T) {
 			Workspace: config.Workspace{
 				RootPath: "/Workspace/Shared/foo/bar",
 			},
-			Permissions: []resources.Permission[iam.PermissionLevel]{
+			Permissions: []resources.IamPermission{
 				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
 			},
 			Resources: config.Resources{

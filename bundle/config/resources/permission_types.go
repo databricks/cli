@@ -22,6 +22,10 @@ func (p IamPermission) ToAccessControlRequest() iam.AccessControlRequest {
 	return Permission[iam.PermissionLevel](p).ToAccessControlRequest()
 }
 
+func (p IamPermission) String() string {
+	return Permission[iam.PermissionLevel](p).String()
+}
+
 type AppPermission Permission[apps.AppPermissionLevel]
 
 func (p AppPermission) ToAccessControlRequest() iam.AccessControlRequest {
