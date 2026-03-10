@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
@@ -28,7 +28,7 @@ to see which profile is currently the default.`,
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+		configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
 		profileName := cmd.Flag("profile").Value.String()
 

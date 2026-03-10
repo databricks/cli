@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -242,12 +241,12 @@ depends on the existing profiles you have set in your configuration file
 		}
 
 		if profileName != "" {
-			configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+			configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
 			// Check if this will be the only profile in the file.
 			// If so, we'll auto-set it as the default after saving.
 			allProfiles, loadErr := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
-			isOnlyProfile := existingProfile == nil && (errors.Is(loadErr, profile.ErrNoConfiguration) || (loadErr == nil && len(allProfiles) == 0))
+			isOnlyProfile := errors.Is(loadErr, profile.ErrNoConfiguration) || (loadErr == nil && len(allProfiles) == 0)
 
 			err := databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:                    profileName,

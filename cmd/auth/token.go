@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -469,7 +468,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		clearKeys = append(clearKeys, "experimental_is_unified_host")
 	}
 
-	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	allProfiles, loadErr := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
 	isOnlyProfile := errors.Is(loadErr, profile.ErrNoConfiguration) || (loadErr == nil && len(allProfiles) == 0)
 

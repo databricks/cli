@@ -122,6 +122,16 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 
 	profiler := profile.GetProfiler(ctx)
 
+	// If --profile and DATABRICKS_CONFIG_PROFILE are both unset, honor the
+	// explicit [__settings__].default_profile setting.
+	if cfg.Profile == "" && envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") == "" {
+		configFilePath := envlib.Get(ctx, "DATABRICKS_CONFIG_FILE")
+		resolvedProfile, err := databrickscfg.GetConfiguredDefaultProfile(ctx, configFilePath)
+		if err == nil && resolvedProfile != "" {
+			cfg.Profile = resolvedProfile
+		}
+	}
+
 	if cfg.Profile == "" {
 		// account-level CLI was not really done before, so here are the assumptions:
 		// 1. only admins will have account configured

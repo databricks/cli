@@ -3,12 +3,12 @@ package configure
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -168,7 +168,7 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		// and leaving it can change HostType() routing.
 		clearKeys = append(clearKeys, "experimental_is_unified_host")
 
-		configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+		configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
 		// Check if this will be the only profile in the file.
 		allProfiles, loadErr := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
