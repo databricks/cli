@@ -1,8 +1,15 @@
 package mcp
 
 import (
+	"context"
+
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/spf13/cobra"
+)
+
+var (
+	installAllSkills = installer.InstallAllSkills
+	installSkill     = installer.InstallSkill
 )
 
 func newSkillsCmd() *cobra.Command {
@@ -40,10 +47,15 @@ and symlinked to each agent to avoid duplication.
 
 Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				return installer.InstallSkill(cmd.Context(), args[0])
-			}
-			return installer.InstallAllSkills(cmd.Context())
+			return runSkillsInstall(cmd.Context(), args)
 		},
 	}
+}
+
+func runSkillsInstall(ctx context.Context, args []string) error {
+	if len(args) > 0 {
+		return installSkill(ctx, args[0])
+	}
+
+	return installAllSkills(ctx)
 }
