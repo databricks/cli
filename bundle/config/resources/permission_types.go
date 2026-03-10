@@ -15,158 +15,57 @@ import (
 // Using non-alias type definitions (not =) makes them appear as named types in the schema.
 // The underlying struct is identical to Permission[L], enabling conversion to use generic methods.
 
-type (
-	AlertPermission  Permission[iam.PermissionLevel]
-	AlertPermissions []AlertPermission
-)
+// IamPermission is used for resources that use the generic iam.PermissionLevel (Alert, Dashboard, DatabaseInstance, PostgresProject).
+type IamPermission Permission[iam.PermissionLevel]
 
-func (ps AlertPermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[iam.PermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
+func (p IamPermission) ToAccessControlRequest() iam.AccessControlRequest {
+	return Permission[iam.PermissionLevel](p).ToAccessControlRequest()
 }
 
-type (
-	AppPermission  Permission[apps.AppPermissionLevel]
-	AppPermissions []AppPermission
-)
+type AppPermission Permission[apps.AppPermissionLevel]
 
-func (ps AppPermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[apps.AppPermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
+func (p AppPermission) ToAccessControlRequest() iam.AccessControlRequest {
+	return Permission[apps.AppPermissionLevel](p).ToAccessControlRequest()
 }
 
-type (
-	ClusterPermission  Permission[compute.ClusterPermissionLevel]
-	ClusterPermissions []ClusterPermission
-)
+type ClusterPermission Permission[compute.ClusterPermissionLevel]
 
-func (ps ClusterPermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[compute.ClusterPermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
+func (p ClusterPermission) ToAccessControlRequest() iam.AccessControlRequest {
+	return Permission[compute.ClusterPermissionLevel](p).ToAccessControlRequest()
 }
 
-type (
-	DashboardPermission  Permission[iam.PermissionLevel]
-	DashboardPermissions []DashboardPermission
-)
+type JobPermission Permission[jobs.JobPermissionLevel]
 
-func (ps DashboardPermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[iam.PermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
+func (p JobPermission) ToAccessControlRequest() iam.AccessControlRequest {
+	return Permission[jobs.JobPermissionLevel](p).ToAccessControlRequest()
 }
 
-type (
-	DatabaseInstancePermission  Permission[iam.PermissionLevel]
-	DatabaseInstancePermissions []DatabaseInstancePermission
-)
+type MlflowExperimentPermission Permission[ml.ExperimentPermissionLevel]
 
-func (ps DatabaseInstancePermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[iam.PermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
+func (p MlflowExperimentPermission) ToAccessControlRequest() iam.AccessControlRequest {
+	return Permission[ml.ExperimentPermissionLevel](p).ToAccessControlRequest()
 }
 
-type (
-	DatabaseProjectPermission  Permission[iam.PermissionLevel]
-	DatabaseProjectPermissions []DatabaseProjectPermission
-)
+type MlflowModelPermission Permission[ml.RegisteredModelPermissionLevel]
 
-func (ps DatabaseProjectPermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[iam.PermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
+func (p MlflowModelPermission) ToAccessControlRequest() iam.AccessControlRequest {
+	return Permission[ml.RegisteredModelPermissionLevel](p).ToAccessControlRequest()
 }
 
-type (
-	JobPermission  Permission[jobs.JobPermissionLevel]
-	JobPermissions []JobPermission
-)
+type ModelServingEndpointPermission Permission[serving.ServingEndpointPermissionLevel]
 
-func (ps JobPermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[jobs.JobPermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
+func (p ModelServingEndpointPermission) ToAccessControlRequest() iam.AccessControlRequest {
+	return Permission[serving.ServingEndpointPermissionLevel](p).ToAccessControlRequest()
 }
 
-type (
-	MlflowExperimentPermission  Permission[ml.ExperimentPermissionLevel]
-	MlflowExperimentPermissions []MlflowExperimentPermission
-)
+type PipelinePermission Permission[pipelines.PipelinePermissionLevel]
 
-func (ps MlflowExperimentPermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[ml.ExperimentPermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
+func (p PipelinePermission) ToAccessControlRequest() iam.AccessControlRequest {
+	return Permission[pipelines.PipelinePermissionLevel](p).ToAccessControlRequest()
 }
 
-type (
-	MlflowModelPermission  Permission[ml.RegisteredModelPermissionLevel]
-	MlflowModelPermissions []MlflowModelPermission
-)
+type SqlWarehousePermission Permission[sql.WarehousePermissionLevel]
 
-func (ps MlflowModelPermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[ml.RegisteredModelPermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
-}
-
-type (
-	ModelServingEndpointPermission  Permission[serving.ServingEndpointPermissionLevel]
-	ModelServingEndpointPermissions []ModelServingEndpointPermission
-)
-
-func (ps ModelServingEndpointPermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[serving.ServingEndpointPermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
-}
-
-type (
-	PipelinePermission  Permission[pipelines.PipelinePermissionLevel]
-	PipelinePermissions []PipelinePermission
-)
-
-func (ps PipelinePermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[pipelines.PipelinePermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
-}
-
-type (
-	SqlWarehousePermission  Permission[sql.WarehousePermissionLevel]
-	SqlWarehousePermissions []SqlWarehousePermission
-)
-
-func (ps SqlWarehousePermissions) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = Permission[sql.WarehousePermissionLevel](p).ToAccessControlRequest()
-	}
-	return result
+func (p SqlWarehousePermission) ToAccessControlRequest() iam.AccessControlRequest {
+	return Permission[sql.WarehousePermissionLevel](p).ToAccessControlRequest()
 }

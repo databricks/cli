@@ -19,7 +19,7 @@ type ModelServingEndpoint struct {
 
 	// This is a resource agnostic implementation of permissions for ACLs.
 	// Implementation could be different based on the resource type.
-	Permissions ModelServingEndpointPermissions `json:"permissions,omitempty"`
+	Permissions []ModelServingEndpointPermission `json:"permissions,omitempty"`
 }
 
 func (s *ModelServingEndpoint) UnmarshalJSON(b []byte) error {

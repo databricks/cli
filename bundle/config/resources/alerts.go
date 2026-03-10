@@ -14,7 +14,7 @@ type Alert struct {
 	BaseResource
 	sql.AlertV2 //nolint AlertV2 also defines Id and URL field with the same json tag "id" and "url"
 
-	Permissions AlertPermissions `json:"permissions,omitempty"`
+	Permissions []IamPermission `json:"permissions,omitempty"`
 
 	// Filepath points to the local .dbalert.json file containing the alert definition.
 	// If specified, any fields that are part of the .dbalert.json file schema will not be allowed in

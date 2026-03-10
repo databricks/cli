@@ -3,9 +3,9 @@ package dresources
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -54,12 +54,10 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		return nil, fmt.Errorf("unsupported permissions resource type: %s", resourceType)
 	}
 
-	permsSlice, ok := inputConfig.(resources.PermissionsSlice)
-	if !ok {
-		return nil, fmt.Errorf("expected resources.PermissionsSlice, got %T", inputConfig)
+	permissions, err := toAccessControlRequests(inputConfig)
+	if err != nil {
+		return nil, err
 	}
-
-	permissions := permsSlice.ToAccessControlRequests()
 
 	objectIdRef := prefix + "${" + baseNode + ".id}"
 	// For permissions, model serving endpoint uses its internal ID, which is different
@@ -93,6 +91,26 @@ func (*ResourcePermissions) New(client *databricks.WorkspaceClient) *ResourcePer
 
 func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState {
 	return s
+}
+
+// toAccessControlRequests converts any slice of permission structs to []iam.AccessControlRequest.
+// All permission types share the same underlying struct layout (Level, UserName, ServicePrincipalName, GroupName).
+func toAccessControlRequests(ps any) ([]iam.AccessControlRequest, error) {
+	v := reflect.ValueOf(ps)
+	if v.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("expected permissions slice, got %T", ps)
+	}
+	result := make([]iam.AccessControlRequest, v.Len())
+	for i := range v.Len() {
+		elem := v.Index(i)
+		result[i] = iam.AccessControlRequest{
+			PermissionLevel:      iam.PermissionLevel(elem.FieldByName("Level").String()),
+			UserName:             elem.FieldByName("UserName").String(),
+			ServicePrincipalName: elem.FieldByName("ServicePrincipalName").String(),
+			GroupName:            elem.FieldByName("GroupName").String(),
+		}
+	}
+	return result, nil
 }
 
 func accessControlRequestKey(x iam.AccessControlRequest) (string, string) {

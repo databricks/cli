@@ -14,7 +14,7 @@ type DatabaseInstance struct {
 	BaseResource
 	database.DatabaseInstance
 
-	Permissions DatabaseInstancePermissions `json:"permissions,omitempty"`
+	Permissions []IamPermission `json:"permissions,omitempty"`
 }
 
 func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

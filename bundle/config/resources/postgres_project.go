@@ -30,7 +30,7 @@ type PostgresProject struct {
 	BaseResource
 	PostgresProjectConfig
 
-	Permissions DatabaseProjectPermissions `json:"permissions,omitempty"`
+	Permissions []IamPermission `json:"permissions,omitempty"`
 }
 
 func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

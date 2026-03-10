@@ -14,7 +14,7 @@ type SqlWarehouse struct {
 	BaseResource
 	sql.CreateWarehouseRequest
 
-	Permissions SqlWarehousePermissions `json:"permissions,omitempty"`
+	Permissions []SqlWarehousePermission `json:"permissions,omitempty"`
 }
 
 func (sw *SqlWarehouse) UnmarshalJSON(b []byte) error {

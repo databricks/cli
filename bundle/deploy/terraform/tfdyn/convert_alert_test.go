@@ -21,7 +21,7 @@ func TestConvertAlert(t *testing.T) {
 			CustomSummary:     "Test alert summary",
 			CustomDescription: "Test alert description",
 		},
-		Permissions: resources.AlertPermissions{
+		Permissions: []resources.IamPermission{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",

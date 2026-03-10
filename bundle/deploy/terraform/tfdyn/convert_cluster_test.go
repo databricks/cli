@@ -35,7 +35,7 @@ func TestConvertCluster(t *testing.T) {
 			},
 		},
 
-		Permissions: resources.ClusterPermissions{
+		Permissions: []resources.ClusterPermission{
 			{
 				Level:    "CAN_RUN",
 				UserName: "jack@gmail.com",

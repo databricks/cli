@@ -64,7 +64,7 @@ func TestConvertPostgresProjectWithPermissions(t *testing.T) {
 				PgVersion:   17,
 			},
 		},
-		Permissions: resources.DatabaseProjectPermissions{
+		Permissions: []resources.IamPermission{
 			{
 				Level:    "CAN_USE",
 				UserName: "user@example.com",

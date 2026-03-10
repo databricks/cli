@@ -26,24 +26,6 @@ func (p Permission[L]) ToAccessControlRequest() iam.AccessControlRequest {
 	}
 }
 
-// Permissions is a named slice of Permission[L] that implements PermissionsSlice,
-// allowing generic code to work with any instantiation via the interface.
-type Permissions[L ~string] []Permission[L]
-
-// PermissionsSlice is implemented by any Permissions[L], enabling type-agnostic
-// conversion to iam.AccessControlRequest without reflection or type switches.
-type PermissionsSlice interface {
-	ToAccessControlRequests() []iam.AccessControlRequest
-}
-
-func (ps Permissions[L]) ToAccessControlRequests() []iam.AccessControlRequest {
-	result := make([]iam.AccessControlRequest, len(ps))
-	for i, p := range ps {
-		result[i] = p.ToAccessControlRequest()
-	}
-	return result
-}
-
 func (p Permission[L]) String() string {
 	if p.UserName != "" {
 		return fmt.Sprintf("level: %s, user_name: %s", p.Level, p.UserName)

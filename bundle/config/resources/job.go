@@ -15,7 +15,7 @@ type Job struct {
 	BaseResource
 	jobs.JobSettings
 
-	Permissions JobPermissions `json:"permissions,omitempty"`
+	Permissions []JobPermission `json:"permissions,omitempty"`
 }
 
 func (j *Job) UnmarshalJSON(b []byte) error {

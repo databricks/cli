@@ -20,7 +20,7 @@ func TestConvertDashboard(t *testing.T) {
 			EmbedCredentials: true,
 		},
 
-		Permissions: resources.DashboardPermissions{
+		Permissions: []resources.IamPermission{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",

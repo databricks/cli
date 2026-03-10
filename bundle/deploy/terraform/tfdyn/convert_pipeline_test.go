@@ -64,7 +64,7 @@ func TestConvertPipeline(t *testing.T) {
 				},
 			},
 		},
-		Permissions: resources.PipelinePermissions{
+		Permissions: []resources.PipelinePermission{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",

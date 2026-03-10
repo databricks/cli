@@ -73,7 +73,7 @@ func TestConvertDatabaseInstanceWithPermissions(t *testing.T) {
 			Name:     "db-instance-with-permissions",
 			Capacity: "CU_2",
 		},
-		Permissions: resources.DatabaseInstancePermissions{
+		Permissions: []resources.IamPermission{
 			{
 				Level:    "CAN_USE",
 				UserName: "user@example.com",
