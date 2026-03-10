@@ -216,6 +216,42 @@ func TestEmbeddedStructWithPointer(t *testing.T) {
 	}, flatten(t, parent))
 }
 
+func TestEmbedTagWalk(t *testing.T) {
+	type Item struct {
+		Name string `json:"name"`
+	}
+
+	type Container struct {
+		ObjectID string `json:"object_id"`
+		Items    []Item `json:"__EMBED__,omitempty"`
+	}
+
+	c := Container{
+		ObjectID: "abc",
+		Items:    []Item{{Name: "first"}, {Name: "second"}},
+	}
+
+	result := flatten(t, c)
+
+	// __EMBED__ field contents appear at parent level without the field name.
+	assert.Equal(t, map[string]any{
+		"object_id": "abc",
+		"[0].name":  "first",
+		"[1].name":  "second",
+	}, result)
+}
+
+func TestEmbedTagWalkEmpty(t *testing.T) {
+	type Container struct {
+		ObjectID string `json:"object_id"`
+		Items    []int  `json:"__EMBED__,omitempty"`
+	}
+
+	// Empty slice with omitempty should be skipped.
+	result := flatten(t, Container{ObjectID: "abc"})
+	assert.Equal(t, map[string]any{"object_id": "abc"}, result)
+}
+
 func TestEmbeddedStructWithJSONTagDash(t *testing.T) {
 	type Embedded struct {
 		SkipField    string `json:"-"`
