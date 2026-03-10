@@ -99,6 +99,11 @@ func (e *ExternalLocation) GetName() string {
 	return e.Name
 }
 
+// GetLifecycle returns the lifecycle settings for the resource.
+func (e *ExternalLocation) GetLifecycle() ILifecycle {
+	return e.Lifecycle
+}
+
 func (e *ExternalLocation) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, e)
 }
