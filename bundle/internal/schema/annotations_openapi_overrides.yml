@@ -74,6 +74,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "source_code_path":
     "description": |-
       PLACEHOLDER
+  "telemetry_export_destinations":
+    "description": |-
+      PLACEHOLDER
   "usage_policy_id":
     "description": |-
       PLACEHOLDER

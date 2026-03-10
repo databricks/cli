@@ -219,6 +219,9 @@
                         "x-databricks-preview": "PRIVATE",
                         "doNotSuggest": true
                       },
+                      "telemetry_export_destinations": {
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination"
+                      },
                       "usage_policy_id": {
                         "$ref": "#/$defs/string"
                       },
@@ -2170,7 +2173,6 @@
                 "oneOf": [
                   {
                     "type": "object",
-                    "description": "Next field marker: 18",
                     "properties": {
                       "database_instance_name": {
                         "$ref": "#/$defs/string"
@@ -3748,6 +3750,57 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.TelemetryExportDestination": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A single telemetry export destination with its configuration and status.",
+                  "properties": {
+                    "unity_catalog": {
+                      "description": "Unity Catalog Destinations for OTEL telemetry export.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.UnityCatalog"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.UnityCatalog": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Unity Catalog Destinations for OTEL telemetry export.",
+                  "properties": {
+                    "logs_table": {
+                      "description": "Unity Catalog table for OTEL logs.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "metrics_table": {
+                      "description": "Unity Catalog table for OTEL metrics.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "traces_table": {
+                      "description": "Unity Catalog table for OTEL traces (spans).",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "logs_table",
+                    "metrics_table",
+                    "traces_table"
+                  ]
                 },
                 {
                   "type": "string",
@@ -11282,6 +11335,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.EnvVar"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "apps.TelemetryExportDestination": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination"
                     }
                   },
                   {

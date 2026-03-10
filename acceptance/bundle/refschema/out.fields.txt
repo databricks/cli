@@ -212,6 +212,12 @@ resources.apps.*.service_principal_id	int64	ALL
 resources.apps.*.service_principal_name	string	ALL
 resources.apps.*.source_code_path	string	INPUT
 resources.apps.*.space	string	ALL
+resources.apps.*.telemetry_export_destinations	[]apps.TelemetryExportDestination	ALL
+resources.apps.*.telemetry_export_destinations[*]	apps.TelemetryExportDestination	ALL
+resources.apps.*.telemetry_export_destinations[*].unity_catalog	*apps.UnityCatalog	ALL
+resources.apps.*.telemetry_export_destinations[*].unity_catalog.logs_table	string	ALL
+resources.apps.*.telemetry_export_destinations[*].unity_catalog.metrics_table	string	ALL
+resources.apps.*.telemetry_export_destinations[*].unity_catalog.traces_table	string	ALL
 resources.apps.*.update_time	string	ALL
 resources.apps.*.updater	string	ALL
 resources.apps.*.url	string	ALL

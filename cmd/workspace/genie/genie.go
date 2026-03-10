@@ -39,6 +39,11 @@ func New() *cobra.Command {
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
 	cmd.AddCommand(newExecuteMessageQuery())
 	cmd.AddCommand(newGenerateDownloadFullQueryResult())
+	cmd.AddCommand(newGenieCreateEvalRun())
+	cmd.AddCommand(newGenieGetEvalResultDetails())
+	cmd.AddCommand(newGenieGetEvalRun())
+	cmd.AddCommand(newGenieListEvalResults())
+	cmd.AddCommand(newGenieListEvalRuns())
 	cmd.AddCommand(newGetDownloadFullQueryResult())
 	cmd.AddCommand(newGetMessage())
 	cmd.AddCommand(newGetMessageAttachmentQueryResult())
@@ -582,6 +587,337 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range generateDownloadFullQueryResultOverrides {
 		fn(cmd, &generateDownloadFullQueryResultReq)
+	}
+
+	return cmd
+}
+
+// start genie-create-eval-run command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieCreateEvalRunOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieCreateEvalRunRequest,
+)
+
+func newGenieCreateEvalRun() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieCreateEvalRunReq dashboards.GenieCreateEvalRunRequest
+	var genieCreateEvalRunJson flags.JsonFlag
+
+	cmd.Flags().Var(&genieCreateEvalRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: benchmark_question_ids
+
+	cmd.Use = "genie-create-eval-run SPACE_ID"
+	cmd.Short = `Create eval run for benchmarks.`
+	cmd.Long = `Create eval run for benchmarks.
+
+  Create and run evaluations for multiple benchmark questions in a Genie space.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the evaluations will be
+      executed.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := genieCreateEvalRunJson.Unmarshal(&genieCreateEvalRunReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		genieCreateEvalRunReq.SpaceId = args[0]
+
+		response, err := w.Genie.GenieCreateEvalRun(ctx, genieCreateEvalRunReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieCreateEvalRunOverrides {
+		fn(cmd, &genieCreateEvalRunReq)
+	}
+
+	return cmd
+}
+
+// start genie-get-eval-result-details command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieGetEvalResultDetailsOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGetEvalResultDetailsRequest,
+)
+
+func newGenieGetEvalResultDetails() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieGetEvalResultDetailsReq dashboards.GenieGetEvalResultDetailsRequest
+
+	cmd.Use = "genie-get-eval-result-details SPACE_ID EVAL_RUN_ID RESULT_ID"
+	cmd.Short = `Get benchmark evaluation result details.`
+	cmd.Long = `Get benchmark evaluation result details.
+
+  Get details for evaluation results.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the evaluation run is
+      located.
+    EVAL_RUN_ID: The unique identifier for the evaluation run.
+    RESULT_ID: The unique identifier for the evaluation result.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		genieGetEvalResultDetailsReq.SpaceId = args[0]
+		genieGetEvalResultDetailsReq.EvalRunId = args[1]
+		genieGetEvalResultDetailsReq.ResultId = args[2]
+
+		response, err := w.Genie.GenieGetEvalResultDetails(ctx, genieGetEvalResultDetailsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieGetEvalResultDetailsOverrides {
+		fn(cmd, &genieGetEvalResultDetailsReq)
+	}
+
+	return cmd
+}
+
+// start genie-get-eval-run command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieGetEvalRunOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGetEvalRunRequest,
+)
+
+func newGenieGetEvalRun() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieGetEvalRunReq dashboards.GenieGetEvalRunRequest
+
+	cmd.Use = "genie-get-eval-run SPACE_ID EVAL_RUN_ID"
+	cmd.Short = `Get benchmark evaluation run.`
+	cmd.Long = `Get benchmark evaluation run.
+
+  Get evaluation run details.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the evaluation run is
+      located.
+    EVAL_RUN_ID: `
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		genieGetEvalRunReq.SpaceId = args[0]
+		genieGetEvalRunReq.EvalRunId = args[1]
+
+		response, err := w.Genie.GenieGetEvalRun(ctx, genieGetEvalRunReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieGetEvalRunOverrides {
+		fn(cmd, &genieGetEvalRunReq)
+	}
+
+	return cmd
+}
+
+// start genie-list-eval-results command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieListEvalResultsOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieListEvalResultsRequest,
+)
+
+func newGenieListEvalResults() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieListEvalResultsReq dashboards.GenieListEvalResultsRequest
+
+	cmd.Flags().IntVar(&genieListEvalResultsReq.PageSize, "page-size", genieListEvalResultsReq.PageSize, `Maximum number of eval results to return per page.`)
+	cmd.Flags().StringVar(&genieListEvalResultsReq.PageToken, "page-token", genieListEvalResultsReq.PageToken, `Opaque token to retrieve the next page of results.`)
+
+	cmd.Use = "genie-list-eval-results SPACE_ID EVAL_RUN_ID"
+	cmd.Short = `List benchmark evaluation results.`
+	cmd.Long = `List benchmark evaluation results.
+
+  List evaluation results for a specific evaluation run.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the evaluation run is
+      located.
+    EVAL_RUN_ID: The unique identifier for the evaluation run.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		genieListEvalResultsReq.SpaceId = args[0]
+		genieListEvalResultsReq.EvalRunId = args[1]
+
+		response, err := w.Genie.GenieListEvalResults(ctx, genieListEvalResultsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieListEvalResultsOverrides {
+		fn(cmd, &genieListEvalResultsReq)
+	}
+
+	return cmd
+}
+
+// start genie-list-eval-runs command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieListEvalRunsOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieListEvalRunsRequest,
+)
+
+func newGenieListEvalRuns() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieListEvalRunsReq dashboards.GenieListEvalRunsRequest
+
+	cmd.Flags().IntVar(&genieListEvalRunsReq.PageSize, "page-size", genieListEvalRunsReq.PageSize, `Maximum number of evaluation runs to return per page.`)
+	cmd.Flags().StringVar(&genieListEvalRunsReq.PageToken, "page-token", genieListEvalRunsReq.PageToken, `Token to get the next page of results.`)
+
+	cmd.Use = "genie-list-eval-runs SPACE_ID"
+	cmd.Short = `List all evaluation runs in the space.`
+	cmd.Long = `List all evaluation runs in the space.
+
+  Lists all evaluation runs in a space.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the evaluation run is
+      located.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		genieListEvalRunsReq.SpaceId = args[0]
+
+		response, err := w.Genie.GenieListEvalRuns(ctx, genieListEvalRunsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieListEvalRunsOverrides {
+		fn(cmd, &genieListEvalRunsReq)
 	}
 
 	return cmd
