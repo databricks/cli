@@ -57,6 +57,12 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 		}
 
 		if idx, isIndex := node.Index(); isIndex {
+			// If cur is a struct with an __EMBED__ slice field, navigate through it.
+			if cur.Kind() == reflect.Struct {
+				if embed := findEmbedField(cur); embed.IsValid() {
+					cur = embed
+				}
+			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
 				return reflect.Value{}, fmt.Errorf("%s: cannot index %s", node.String(), kind)
@@ -69,6 +75,12 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 		}
 
 		if key, value, ok := node.KeyValue(); ok {
+			// If cur is a struct with an __EMBED__ slice field, navigate through it.
+			if cur.Kind() == reflect.Struct {
+				if embed := findEmbedField(cur); embed.IsValid() {
+					cur = embed
+				}
+			}
 			nv, err := accessKeyValue(cur, key, value, node)
 			if err != nil {
 				return reflect.Value{}, err
@@ -234,6 +246,9 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 			name = ""
 		}
 
+		if name == structtag.EmbedTagName {
+			continue // __EMBED__ fields are not accessible by name
+		}
 		if name != "" && name == key {
 			// Skip fields marked as internal or readonly via bundle tag
 			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
