@@ -108,6 +108,7 @@ func toAccessControlRequests(ps any) ([]iam.AccessControlRequest, error) {
 			UserName:             elem.FieldByName("UserName").String(),
 			ServicePrincipalName: elem.FieldByName("ServicePrincipalName").String(),
 			GroupName:            elem.FieldByName("GroupName").String(),
+			ForceSendFields:      nil,
 		}
 	}
 	return result, nil
