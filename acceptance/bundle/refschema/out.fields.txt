@@ -38,8 +38,8 @@ resources.alerts.*.lifecycle_state	sql.AlertLifecycleState	ALL
 resources.alerts.*.modified_status	string	INPUT
 resources.alerts.*.owner_user_name	string	ALL
 resources.alerts.*.parent_path	string	ALL
-resources.alerts.*.permissions	[]resources.IamPermission	INPUT
-resources.alerts.*.permissions[*]	resources.IamPermission	INPUT
+resources.alerts.*.permissions	[]resources.Permission	INPUT
+resources.alerts.*.permissions[*]	resources.Permission	INPUT
 resources.alerts.*.permissions[*].group_name	string	INPUT
 resources.alerts.*.permissions[*].level	iam.PermissionLevel	INPUT
 resources.alerts.*.permissions[*].service_principal_name	string	INPUT
@@ -561,8 +561,8 @@ resources.dashboards.*.lifecycle_state	dashboards.LifecycleState	ALL
 resources.dashboards.*.modified_status	string	INPUT
 resources.dashboards.*.parent_path	string	ALL
 resources.dashboards.*.path	string	ALL
-resources.dashboards.*.permissions	[]resources.IamPermission	INPUT
-resources.dashboards.*.permissions[*]	resources.IamPermission	INPUT
+resources.dashboards.*.permissions	[]resources.Permission	INPUT
+resources.dashboards.*.permissions[*]	resources.Permission	INPUT
 resources.dashboards.*.permissions[*].group_name	string	INPUT
 resources.dashboards.*.permissions[*].level	iam.PermissionLevel	INPUT
 resources.dashboards.*.permissions[*].service_principal_name	string	INPUT
@@ -628,8 +628,8 @@ resources.database_instances.*.parent_instance_ref.effective_lsn	string	ALL
 resources.database_instances.*.parent_instance_ref.lsn	string	ALL
 resources.database_instances.*.parent_instance_ref.name	string	ALL
 resources.database_instances.*.parent_instance_ref.uid	string	ALL
-resources.database_instances.*.permissions	[]resources.IamPermission	INPUT
-resources.database_instances.*.permissions[*]	resources.IamPermission	INPUT
+resources.database_instances.*.permissions	[]resources.Permission	INPUT
+resources.database_instances.*.permissions[*]	resources.Permission	INPUT
 resources.database_instances.*.permissions[*].group_name	string	INPUT
 resources.database_instances.*.permissions[*].level	iam.PermissionLevel	INPUT
 resources.database_instances.*.permissions[*].service_principal_name	string	INPUT
@@ -2634,8 +2634,8 @@ resources.postgres_projects.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_projects.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_projects.*.modified_status	string	INPUT
 resources.postgres_projects.*.name	string	REMOTE
-resources.postgres_projects.*.permissions	[]resources.IamPermission	INPUT
-resources.postgres_projects.*.permissions[*]	resources.IamPermission	INPUT
+resources.postgres_projects.*.permissions	[]resources.Permission	INPUT
+resources.postgres_projects.*.permissions[*]	resources.Permission	INPUT
 resources.postgres_projects.*.permissions[*].group_name	string	INPUT
 resources.postgres_projects.*.permissions[*].level	iam.PermissionLevel	INPUT
 resources.postgres_projects.*.permissions[*].service_principal_name	string	INPUT
