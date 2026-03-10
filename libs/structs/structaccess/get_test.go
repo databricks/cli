@@ -739,6 +739,58 @@ func TestPipeline(t *testing.T) {
 	require.Nil(t, v)
 }
 
+func TestGet_EmbedTag(t *testing.T) {
+	type Item struct {
+		Name  string `json:"name"`
+		Level string `json:"level,omitempty"`
+	}
+
+	type Container struct {
+		ObjectID string `json:"object_id"`
+		Items    []Item `json:"__EMBED__,omitempty"`
+	}
+
+	c := Container{
+		ObjectID: "abc",
+		Items: []Item{
+			{Name: "alice", Level: "admin"},
+			{Name: "bob", Level: "reader"},
+		},
+	}
+
+	// Access non-embed field normally.
+	testGet(t, c, "object_id", "abc")
+
+	// Access __EMBED__ slice elements via index.
+	testGet(t, c, "[0].name", "alice")
+	testGet(t, c, "[1].level", "reader")
+
+	// Access via key-value selector.
+	testGet(t, c, "[name='bob'].level", "reader")
+
+	// Out of range.
+	_, err := GetByString(c, "[5].name")
+	require.Error(t, err)
+	var notFound *NotFoundError
+	require.ErrorAs(t, err, &notFound)
+
+	// __EMBED__ field is not accessible by name.
+	_, err = GetByString(c, "__EMBED__")
+	require.Error(t, err)
+	require.NotErrorAs(t, err, &notFound)
+}
+
+func TestGet_EmbedTagEmpty(t *testing.T) {
+	type Container struct {
+		ObjectID string `json:"object_id"`
+		Items    []int  `json:"__EMBED__,omitempty"`
+	}
+
+	// Empty embed slice with omitempty: index should fail.
+	_, err := GetByString(Container{ObjectID: "abc"}, "[0]")
+	require.Error(t, err)
+}
+
 func TestGetKeyValue_NestedMultiple(t *testing.T) {
 	type Item struct {
 		ID   string `json:"id"`
