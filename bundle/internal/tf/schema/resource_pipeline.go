@@ -410,6 +410,10 @@ type ResourcePipelineNotification struct {
 	EmailRecipients []string `json:"email_recipients,omitempty"`
 }
 
+type ResourcePipelineProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourcePipelineRestartWindow struct {
 	DaysOfWeek []string `json:"days_of_week,omitempty"`
 	StartHour  int      `json:"start_hour"`
@@ -472,6 +476,7 @@ type ResourcePipeline struct {
 	LatestUpdates        []ResourcePipelineLatestUpdates      `json:"latest_updates,omitempty"`
 	Library              []ResourcePipelineLibrary            `json:"library,omitempty"`
 	Notification         []ResourcePipelineNotification       `json:"notification,omitempty"`
+	ProviderConfig       *ResourcePipelineProviderConfig      `json:"provider_config,omitempty"`
 	RestartWindow        *ResourcePipelineRestartWindow       `json:"restart_window,omitempty"`
 	RunAs                *ResourcePipelineRunAs               `json:"run_as,omitempty"`
 	Trigger              *ResourcePipelineTrigger             `json:"trigger,omitempty"`

@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
@@ -33,7 +32,7 @@ func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 		return nil
 	})
 
-	ctx := WithNewLogger(context.Background())
+	ctx := WithNewLogger(t.Context())
 
 	Log(ctx, protos.DatabricksCliLog{
 		CliTestEvent: &protos.CliTestEvent{
@@ -83,7 +82,7 @@ func uploadRetriesFor(t *testing.T, statusCode int) {
 	t.Setenv("DATABRICKS_HOST", server.URL)
 	t.Setenv("DATABRICKS_TOKEN", "token")
 
-	ctx := WithNewLogger(context.Background())
+	ctx := WithNewLogger(t.Context())
 
 	Log(ctx, protos.DatabricksCliLog{
 		CliTestEvent: &protos.CliTestEvent{
@@ -131,7 +130,7 @@ func TestTelemetryUploadMaxRetries(t *testing.T) {
 
 	t.Setenv("DATABRICKS_HOST", server.URL)
 	t.Setenv("DATABRICKS_TOKEN", "token")
-	ctx := WithNewLogger(context.Background())
+	ctx := WithNewLogger(t.Context())
 
 	Log(ctx, protos.DatabricksCliLog{
 		CliTestEvent: &protos.CliTestEvent{

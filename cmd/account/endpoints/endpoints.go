@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `These APIs manage endpoint configurations for this account.`,
 		Long:    `These APIs manage endpoint configurations for this account.`,
 		GroupID: "provisioning",
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -77,7 +74,8 @@ func newCreateEndpoint() *cobra.Command {
   An endpoint can be used only after it reaches the APPROVED state.
 
   Arguments:
-    PARENT:
+    PARENT: The parent resource name of the account under which the endpoint is
+      created. Format: accounts/{account_id}.
     DISPLAY_NAME: The human-readable display name of this endpoint. The input should conform
       to RFC-1034, which restricts to letters, numbers, and hyphens, with the
       first character a letter, the last a letter or a number, and a 63
@@ -271,7 +269,11 @@ func newListEndpoints() *cobra.Command {
 	cmd.Short = `List network endpoints.`
 	cmd.Long = `List network endpoints.
 
-  Lists all network connectivity endpoints for the account.`
+  Lists all network connectivity endpoints for the account.
+
+  Arguments:
+    PARENT: The parent resource name of the account to list endpoints for. Format:
+      accounts/{account_id}.`
 
 	cmd.Annotations = make(map[string]string)
 

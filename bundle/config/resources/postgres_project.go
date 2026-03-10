@@ -29,6 +29,8 @@ func (c *PostgresProjectConfig) MarshalJSON() ([]byte, error) {
 type PostgresProject struct {
 	BaseResource
 	PostgresProjectConfig
+
+	Permissions []DatabaseProjectPermission `json:"permissions,omitempty"`
 }
 
 func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

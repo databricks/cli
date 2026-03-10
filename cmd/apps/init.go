@@ -5,9 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -28,15 +31,18 @@ import (
 )
 
 const (
-	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
-	appkitRepoURL       = "https://github.com/databricks/appkit"
-	appkitTemplateDir   = "template"
-	appkitDefaultBranch = "main"
-	defaultProfile      = "DEFAULT"
+	templatePathEnvVar   = "DATABRICKS_APPKIT_TEMPLATE_PATH"
+	appkitRepoURL        = "https://github.com/databricks/appkit"
+	appkitTemplateDir    = "template"
+	appkitDefaultBranch  = "main"
+	appkitTemplateTagPfx = "template-v"
+	appkitDefaultVersion = "template-v0.11.0"
+	defaultProfile       = "DEFAULT"
 )
 
-// normalizeVersion ensures the version string has a "v" prefix if it looks like a semver.
-// Examples: "0.3.0" -> "v0.3.0", "v0.3.0" -> "v0.3.0", "latest" -> "main"
+// normalizeVersion converts a version string to the template tag format "template-vX.X.X".
+// Examples: "0.3.0" -> "template-v0.3.0", "v0.3.0" -> "template-v0.3.0",
+// "template-v0.3.0" -> "template-v0.3.0", "latest" -> "main"
 func normalizeVersion(version string) string {
 	if version == "" {
 		return version
@@ -44,9 +50,14 @@ func normalizeVersion(version string) string {
 	if version == "latest" {
 		return appkitDefaultBranch
 	}
-	// If it starts with a digit, prepend "v"
-	if len(version) > 0 && version[0] >= '0' && version[0] <= '9' {
-		return "v" + version
+	if strings.HasPrefix(version, appkitTemplateTagPfx) {
+		return version
+	}
+	if strings.HasPrefix(version, "v") {
+		return appkitTemplateTagPfx + version[1:]
+	}
+	if version[0] >= '0' && version[0] <= '9' {
+		return appkitTemplateTagPfx + version
 	}
 	return version
 }
@@ -154,7 +165,7 @@ Environment variables:
 
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
-	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: latest release, use 'latest' for main branch)")
+	cmd.Flags().StringVar(&version, "version", "", fmt.Sprintf("AppKit version to use (default: %s, use 'latest' for main branch)", appkitDefaultVersion))
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	_ = cmd.Flags().MarkDeprecated("warehouse-id", "use --set <plugin>.sql-warehouse.id=<value> instead")
@@ -216,7 +227,7 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 		rv[resourceKey+"."+fieldName] = value
 	}
 
-	// Validate multi-field resources: if any field is set, all fields must be set.
+	// Validate multi-field resources: if any non-bundleIgnore field is set, all non-bundleIgnore fields must be set.
 	for _, p := range m.GetPlugins() {
 		for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
 			if len(r.Fields) <= 1 {
@@ -224,14 +235,22 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 			}
 			names := r.FieldNames()
 			setCount := 0
+			totalCheckable := 0
 			for _, fn := range names {
+				if r.Fields[fn].BundleIgnore {
+					continue
+				}
+				totalCheckable++
 				if rv[r.Key()+"."+fn] != "" {
 					setCount++
 				}
 			}
-			if setCount > 0 && setCount < len(names) {
+			if setCount > 0 && setCount < totalCheckable {
 				var missing []string
 				for _, fn := range names {
+					if r.Fields[fn].BundleIgnore {
+						continue
+					}
 					if rv[r.Key()+"."+fn] == "" {
 						missing = append(missing, r.Key()+"."+fn)
 					}
@@ -256,20 +275,35 @@ func pluginHasResourceField(p *manifest.Plugin, resourceKey, fieldName string) b
 	return false
 }
 
+// tmplBundle holds the generated bundle configuration strings.
+type tmplBundle struct {
+	Variables       string
+	Resources       string
+	TargetVariables string
+}
+
+// dotEnvVars holds the generated .env file content.
+type dotEnvVars struct {
+	Content string
+	Example string
+}
+
+// pluginVar represents a selected plugin. Currently empty, but extensible
+// with properties as the plugin model evolves.
+type pluginVar struct{}
+
 // templateVars holds the variables for template substitution.
 type templateVars struct {
 	ProjectName    string
 	AppDescription string
 	Profile        string
 	WorkspaceHost  string
-	PluginImports  string
-	PluginUsages   string
-	// Generated resource configuration from selected plugins.
-	BundleVariables string
-	BundleResources string
-	TargetVariables string
-	DotEnv          string
-	DotEnvExample   string
+	Bundle         tmplBundle
+	DotEnv         dotEnvVars
+	AppEnv         string
+	// Plugins maps plugin name to its metadata
+	// Missing keys return nil, enabling {{if .plugins.analytics}} conditionals.
+	Plugins map[string]*pluginVar
 }
 
 // parseDeployAndRunFlags parses the deploy and run flag values into typed values.
@@ -532,8 +566,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		case opts.version != "":
 			gitRef = normalizeVersion(opts.version)
 		default:
-			// Default: use main branch
-			gitRef = appkitDefaultBranch
+			// Default: use pinned version
+			gitRef = appkitDefaultVersion
 		}
 		templateSrc = appkitRepoURL
 	}
@@ -749,9 +783,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		ResourceValues: resourceValues,
 	}
 
-	// Build plugin import/usage strings from selected plugins
-	pluginImport, pluginUsage := buildPluginStrings(selectedPlugins)
-
 	// Generate configurations from selected plugins
 	bundleVars := generator.GenerateBundleVariables(selectedPluginList, genConfig)
 	bundleRes := generator.GenerateBundleResources(selectedPluginList, genConfig)
@@ -761,19 +792,28 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	log.Debugf(ctx, "Generated bundle resources:\n%s", bundleRes)
 	log.Debugf(ctx, "Generated target variables:\n%s", targetVars)
 
+	plugins := make(map[string]*pluginVar, len(selectedPlugins))
+	for _, name := range selectedPlugins {
+		plugins[name] = &pluginVar{}
+	}
+
 	// Template variables with generated content
 	vars := templateVars{
-		ProjectName:     opts.name,
-		AppDescription:  opts.description,
-		Profile:         profile,
-		WorkspaceHost:   workspaceHost,
-		PluginImports:   pluginImport,
-		PluginUsages:    pluginUsage,
-		BundleVariables: bundleVars,
-		BundleResources: bundleRes,
-		TargetVariables: targetVars,
-		DotEnv:          generator.GenerateDotEnv(selectedPluginList, genConfig),
-		DotEnvExample:   generator.GenerateDotEnvExample(selectedPluginList),
+		ProjectName:    opts.name,
+		AppDescription: opts.description,
+		Profile:        profile,
+		WorkspaceHost:  workspaceHost,
+		Bundle: tmplBundle{
+			Variables:       bundleVars,
+			Resources:       bundleRes,
+			TargetVariables: targetVars,
+		},
+		DotEnv: dotEnvVars{
+			Content: generator.GenerateDotEnv(selectedPluginList, genConfig),
+			Example: generator.GenerateDotEnvExample(selectedPluginList),
+		},
+		AppEnv:  generator.GenerateAppEnv(selectedPluginList, genConfig),
+		Plugins: plugins,
 	}
 
 	// Copy template with variable substitution
@@ -792,14 +832,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	absOutputDir, err := filepath.Abs(destDir)
 	if err != nil {
 		absOutputDir = destDir
-	}
-
-	// Apply plugin-specific post-processing (e.g., remove config/queries if analytics not selected)
-	runErr = prompt.RunWithSpinnerCtx(ctx, "Configuring plugins...", func() error {
-		return applyPlugins(absOutputDir, selectedPlugins)
-	})
-	if runErr != nil {
-		return runErr
 	}
 
 	// Initialize project based on type (Node.js, Python, etc.)
@@ -831,10 +863,23 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
 	}
 
+	// Print any onSetupMessage declared by selected plugins in the template manifest.
+	var notes []prompt.SetupNote
+	for _, name := range selectedPlugins {
+		p, ok := m.Plugins[name]
+		if !ok || p.OnSetupMessage == "" {
+			continue
+		}
+		notes = append(notes, prompt.SetupNote{Name: p.DisplayName, Message: p.OnSetupMessage})
+	}
+	if len(notes) > 0 {
+		prompt.PrintSetupNotes(ctx, notes)
+	}
+
 	// Recommend skills installation if coding agents are detected without skills.
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
-		if !agents.HasDatabricksSkillsInstalled() {
+		if !agents.HasDatabricksSkillsInstalled(ctx) {
 			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
 		}
 	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
@@ -956,34 +1001,6 @@ func buildPluginStrings(pluginNames []string) (pluginImport, pluginUsage string)
 	pluginUsage = strings.Join(usages, ",\n    ")
 
 	return pluginImport, pluginUsage
-}
-
-// pluginOwnedPaths maps plugin names to directories they own.
-// When a plugin is not selected, its owned paths are removed from the project.
-var pluginOwnedPaths = map[string][]string{
-	"analytics": {"config/queries"},
-}
-
-// applyPlugins removes directories owned by unselected plugins.
-func applyPlugins(projectDir string, pluginNames []string) error {
-	selectedSet := make(map[string]bool)
-	for _, name := range pluginNames {
-		selectedSet[name] = true
-	}
-
-	for plugin, paths := range pluginOwnedPaths {
-		if selectedSet[plugin] {
-			continue
-		}
-		for _, p := range paths {
-			target := filepath.Join(projectDir, p)
-			if err := os.RemoveAll(target); err != nil && !os.IsNotExist(err) {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 // renameFiles maps source file names to destination names (for files that can't use special chars).
@@ -1121,6 +1138,15 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			}
 		}
 
+		// Skip files whose template rendered to only whitespace.
+		// This enables conditional file creation: plugin-specific files wrap
+		// their entire content in {{if .plugins.<name>}}...{{end}}, rendering
+		// to empty when the plugin is not selected.
+		if len(bytes.TrimSpace(content)) == 0 {
+			log.Debugf(ctx, "Skipping conditionally empty file: %s", relPath)
+			return nil
+		}
+
 		// Create parent directory
 		if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
 			return err
@@ -1144,23 +1170,73 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 	}
 	log.Debugf(ctx, "Copied %d files", fileCount)
 
+	if err == nil {
+		err = removeEmptyDirs(dest)
+	}
+
 	return fileCount, err
 }
 
+// removeEmptyDirs removes empty directories under root, deepest-first.
+// It is used to clean up directories that were created eagerly but ended up
+// with no files after conditional template rendering skipped their contents.
+func removeEmptyDirs(root string) error {
+	var dirs []string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() && path != root {
+			dirs = append(dirs, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	for i := len(dirs) - 1; i >= 0; i-- {
+		_ = os.Remove(dirs[i])
+	}
+	return nil
+}
+
 // templateData builds the data map for Go template execution.
-func templateData(vars templateVars) map[string]string {
-	return map[string]string{
+func templateData(vars templateVars) map[string]any {
+	// Sort plugin names for deterministic deprecated compat output.
+	pluginNames := slices.Sorted(maps.Keys(vars.Plugins))
+
+	// Only computed for deprecated backward compat keys.
+	pluginImports, pluginUsages := buildPluginStrings(pluginNames)
+
+	return map[string]any{
+		"profile":        vars.Profile,
+		"plugins":        vars.Plugins,
+		"projectName":    vars.ProjectName,
+		"appDescription": vars.AppDescription,
+		"workspaceHost":  vars.WorkspaceHost,
+		"bundle": map[string]any{
+			"variables":       vars.Bundle.Variables,
+			"resources":       vars.Bundle.Resources,
+			"targetVariables": vars.Bundle.TargetVariables,
+		},
+		"dotEnv": map[string]any{
+			"content": vars.DotEnv.Content,
+			"example": vars.DotEnv.Example,
+		},
+		"appEnv": vars.AppEnv,
+
+		// backward compatibility (deprecated)
+		"variables":        vars.Bundle.Variables,
+		"resources":        vars.Bundle.Resources,
+		"dotenv":           vars.DotEnv.Content,
+		"target_variables": vars.Bundle.TargetVariables,
 		"project_name":     vars.ProjectName,
 		"app_description":  vars.AppDescription,
-		"profile":          vars.Profile,
+		"dotenv_example":   vars.DotEnv.Example,
 		"workspace_host":   vars.WorkspaceHost,
-		"plugin_imports":   vars.PluginImports,
-		"plugin_usages":    vars.PluginUsages,
-		"variables":        vars.BundleVariables,
-		"resources":        vars.BundleResources,
-		"target_variables": vars.TargetVariables,
-		"dotenv":           vars.DotEnv,
-		"dotenv_example":   vars.DotEnvExample,
+		"plugin_imports":   pluginImports,
+		"plugin_usages":    pluginUsages,
+		"app_env":          vars.AppEnv,
 	}
 }
 

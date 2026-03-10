@@ -33,9 +33,9 @@ type ResourceAlertV2EvaluationThresholdColumn struct {
 }
 
 type ResourceAlertV2EvaluationThresholdValue struct {
-	BoolValue   bool   `json:"bool_value,omitempty"`
-	DoubleValue int    `json:"double_value,omitempty"`
-	StringValue string `json:"string_value,omitempty"`
+	BoolValue   bool    `json:"bool_value,omitempty"`
+	DoubleValue float64 `json:"double_value,omitempty"`
+	StringValue string  `json:"string_value,omitempty"`
 }
 
 type ResourceAlertV2EvaluationThreshold struct {

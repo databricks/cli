@@ -104,7 +104,7 @@ func copyTestdata(t *testing.T, name string) string {
 }
 
 func installerContext(t *testing.T, server *httptest.Server) context.Context {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = github.WithApiOverride(ctx, server.URL)
 	ctx = github.WithUserContentOverride(ctx, server.URL)
 	ctx = env.WithUserHomeDir(ctx, t.TempDir())
@@ -355,15 +355,8 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	}))
 	defer server.Close()
 
-	wd, _ := os.Getwd()
-	defer func() {
-		err := os.Chdir(wd)
-		require.NoError(t, err)
-	}()
-
 	devDir := copyTestdata(t, "testdata/installed-in-home/.databricks/labs/blueprint/lib")
-	err := os.Chdir(devDir)
-	require.NoError(t, err)
+	t.Chdir(devDir)
 
 	ctx := installerContext(t, server)
 	py, _ := python.DetectExecutable(ctx)
@@ -379,7 +372,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_WAREHOUSE_ID", "efg-id")
 
 	home, _ := env.UserHomeDir(ctx)
-	err = os.WriteFile(filepath.Join(home, ".databrickscfg"), []byte(fmt.Sprintf(`
+	err := os.WriteFile(filepath.Join(home, ".databrickscfg"), []byte(fmt.Sprintf(`
 [profile-one]
 host = %s
 token = ...

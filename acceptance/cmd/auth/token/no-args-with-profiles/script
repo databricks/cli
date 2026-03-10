@@ -1,0 +1,15 @@
+sethome "./home"
+
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+
+# Create a .databrickscfg with a profile
+cat > "./home/.databrickscfg" <<'ENDCFG'
+[myprofile]
+host = https://myworkspace.cloud.databricks.com
+auth_type = databricks-cli
+ENDCFG
+
+# No arguments, non-interactive: should error with profile hint
+errcode $CLI auth token

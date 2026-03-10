@@ -338,7 +338,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install uv
-        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+        uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b # v7.3.0
         with:
           version: "0.6.5"
 
@@ -399,7 +399,7 @@ jobs:
 
       # Trigger integration tests if the primary "test" target is triggered by this change.
       - name: Trigger integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' && contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
+        if: ${{ github.event_name == 'pull_request' && (contains(fromJSON(needs.testmask.outputs.targets), 'test') || contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh')) }}
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |-
@@ -411,7 +411,7 @@ jobs:
       # Skip integration tests if the primary "test" target is not triggered by this change.
       # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
       - name: Skip integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
+        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ steps.generate-check-token.outputs.token }}

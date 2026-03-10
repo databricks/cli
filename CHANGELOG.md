@@ -1,5 +1,57 @@
 # Version changelog
 
+## Release v0.293.0 (2026-03-06)
+
+### Bundles
+* direct: fix drift detection for jobs with >100 tasks by paginating all tasks when reading job state ([#4675](https://github.com/databricks/cli/pull/4675))
+
+
+## Release v0.292.0 (2026-03-05)
+
+### Bundles
+* Added permissions support for Lakebase Database projects ([#4626](https://github.com/databricks/cli/pull/4626))
+
+
+## Release v0.291.0 (2026-03-04)
+
+### Bundles
+* Validate that either source_code_path or git_source is set for apps ([#4632](https://github.com/databricks/cli/pull/4632))
+* direct: model_serving_endpoints: ignore budget_policy_id, rate_limits changes in the plan. Previously they were ignored as well but action as "update". ([#4638](https://github.com/databricks/cli/pull/4638))
+
+
+## Release v0.290.1 (2026-02-26)
+
+### CLI
+* Return clear error when `auth token` is used with M2M profile ([#4594](https://github.com/databricks/cli/pull/4594))
+* Pin `apps init` to Appkit `template-v0.11.0` by default ([#4585](https://github.com/databricks/cli/pull/4585))
+* Pin Agent Skills installer to v0.1.1 ([#4609](https://github.com/databricks/cli/pull/4609))
+
+### Bundles
+* direct: Use async Update API for Apps update ([#4607](https://github.com/databricks/cli/pull/4607))
+* Proactively create the resource path for dashboards ([#4608](https://github.com/databricks/cli/pull/4608))
+
+
+## Release v0.290.0 (2026-02-26)
+
+### CLI
+* Add `completion install`, `uninstall`, and `status` subcommands ([#4581](https://github.com/databricks/cli/pull/4581))
+* Wire profile name through CLI ToOAuthArgument for profile-based cache keys ([#4562](https://github.com/databricks/cli/pull/4562))
+* Add host disambiguation and positional profile support to auth token ([#4574](https://github.com/databricks/cli/pull/4574))
+* Update error messages to suggest 'databricks auth login' ([#4587](https://github.com/databricks/cli/pull/4587))
+* Resolve --host to matching profile for token cache lookup ([#4591](https://github.com/databricks/cli/pull/4591))
+* Improve auth token UX: profile selection and better empty-state handling ([#4584(https://github.com/databricks/cli/pull/4584)
+
+### Bundles
+* Added support for git_source and git_repository for Apps ([#4538](https://github.com/databricks/cli/pull/4538))
+
+### Dependency updates
+* Upgrade TF provider to 1.109.0 ([#4561](https://github.com/databricks/cli/pull/4561))
+* Upgrade Go SDK to v0.110.0 ([#4552](https://github.com/databricks/cli/pull/4552))
+
+### API Changes
+* Bump databricks-sdk-go from v0.111.0 to v0.112.0.
+
+
 ## Release v0.289.1 (2026-02-19)
 
 ### Internal:

@@ -601,9 +601,7 @@ func newGetDownloadFullQueryResult() *cobra.Command {
 
 	var getDownloadFullQueryResultReq dashboards.GenieGetDownloadFullQueryResultRequest
 
-	cmd.Flags().StringVar(&getDownloadFullQueryResultReq.DownloadIdSignature, "download-id-signature", getDownloadFullQueryResultReq.DownloadIdSignature, `JWT signature for the download_id to ensure secure access to query results.`)
-
-	cmd.Use = "get-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID DOWNLOAD_ID"
+	cmd.Use = "get-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID DOWNLOAD_ID DOWNLOAD_ID_SIGNATURE"
 	cmd.Short = `Get download full query result.`
 	cmd.Long = `Get download full query result.
 
@@ -638,12 +636,13 @@ func newGetDownloadFullQueryResult() *cobra.Command {
     MESSAGE_ID: Message ID
     ATTACHMENT_ID: Attachment ID
     DOWNLOAD_ID: Download ID. This ID is provided by the [Generate Download
-      endpoint](:method:genie/generateDownloadFullQueryResult)`
+      endpoint](:method:genie/generateDownloadFullQueryResult)
+    DOWNLOAD_ID_SIGNATURE: JWT signature for the download_id to ensure secure access to query results`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(5)
+		check := root.ExactArgs(6)
 		return check(cmd, args)
 	}
 
@@ -657,6 +656,7 @@ func newGetDownloadFullQueryResult() *cobra.Command {
 		getDownloadFullQueryResultReq.MessageId = args[2]
 		getDownloadFullQueryResultReq.AttachmentId = args[3]
 		getDownloadFullQueryResultReq.DownloadId = args[4]
+		getDownloadFullQueryResultReq.DownloadIdSignature = args[5]
 
 		response, err := w.Genie.GetDownloadFullQueryResult(ctx, getDownloadFullQueryResultReq)
 		if err != nil {

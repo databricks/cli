@@ -1,7 +1,6 @@
 package run
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -95,7 +94,7 @@ func TestJobRunnerCancel(t *testing.T) {
 		RunId: 2,
 	}).Return(mockWait, nil)
 
-	err := runner.Cancel(context.Background())
+	err := runner.Cancel(t.Context())
 	require.NoError(t, err)
 }
 
@@ -126,7 +125,7 @@ func TestJobRunnerCancelWithNoActiveRuns(t *testing.T) {
 
 	jobApi.AssertNotCalled(t, "CancelRun")
 
-	err := runner.Cancel(context.Background())
+	err := runner.Cancel(t.Context())
 	require.NoError(t, err)
 }
 
@@ -158,7 +157,7 @@ func TestJobRunnerRestart(t *testing.T) {
 		m := mocks.NewMockWorkspaceClient(t)
 		b.SetWorkpaceClient(m.WorkspaceClient)
 
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 
 		jobApi := m.GetMockJobsAPI()
 		jobApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
@@ -228,7 +227,7 @@ func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 
 	jobApi := m.GetMockJobsAPI()
 

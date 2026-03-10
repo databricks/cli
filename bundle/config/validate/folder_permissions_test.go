@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -69,7 +68,7 @@ func TestFolderPermissionsInheritedWhenRootPathDoesNotExist(t *testing.T) {
 	}, nil)
 
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	diags := ValidateFolderPermissions().Apply(context.Background(), b)
+	diags := ValidateFolderPermissions().Apply(t.Context(), b)
 	require.Empty(t, diags)
 }
 
@@ -116,7 +115,7 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 	}, nil)
 
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	diags := ValidateFolderPermissions().Apply(context.Background(), b)
+	diags := ValidateFolderPermissions().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
 	require.Equal(t, "workspace folder has permissions not configured in bundle", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
@@ -164,7 +163,7 @@ func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 	}, nil)
 
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	diags := ValidateFolderPermissions().Apply(context.Background(), b)
+	diags := ValidateFolderPermissions().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
 	require.Equal(t, "workspace folder has permissions not configured in bundle", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
@@ -197,7 +196,7 @@ func TestValidateFolderPermissionsFailsOnNoRootFolder(t *testing.T) {
 	})
 
 	b.SetWorkpaceClient(m.WorkspaceClient)
-	diags := ValidateFolderPermissions().Apply(context.Background(), b)
+	diags := ValidateFolderPermissions().Apply(t.Context(), b)
 	require.Len(t, diags, 1)
 	require.Equal(t, "folder / and its parent folders do not exist", diags[0].Summary)
 	require.Equal(t, diag.Error, diags[0].Severity)

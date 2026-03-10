@@ -2,7 +2,8 @@
   "method": "PATCH",
   "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]",
   "body": {
-    "serialized_dashboard": "{}"
+    "serialized_dashboard": "{}",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }
 {

@@ -1,7 +1,6 @@
 package sshconfig
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,23 +11,23 @@ import (
 )
 
 func TestGetConfigDir(t *testing.T) {
-	dir, err := GetConfigDir()
+	dir, err := GetConfigDir(t.Context())
 	assert.NoError(t, err)
 	assert.Contains(t, dir, filepath.Join(".databricks", "ssh-tunnel-configs"))
 }
 
 func TestGetMainConfigPath(t *testing.T) {
-	path, err := GetMainConfigPath()
+	path, err := GetMainConfigPath(t.Context())
 	assert.NoError(t, err)
 	assert.Contains(t, path, filepath.Join(".ssh", "config"))
 }
 
 func TestGetMainConfigPathOrDefault(t *testing.T) {
-	path, err := GetMainConfigPathOrDefault("/custom/path")
+	path, err := GetMainConfigPathOrDefault(t.Context(), "/custom/path")
 	assert.NoError(t, err)
 	assert.Equal(t, "/custom/path", path)
 
-	path, err = GetMainConfigPathOrDefault("")
+	path, err = GetMainConfigPathOrDefault(t.Context(), "")
 	assert.NoError(t, err)
 	assert.Contains(t, path, filepath.Join(".ssh", "config"))
 }
@@ -59,7 +58,7 @@ func TestEnsureIncludeDirective_NewConfig(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
 
-	err := EnsureIncludeDirective(configPath)
+	err := EnsureIncludeDirective(t.Context(), configPath)
 	assert.NoError(t, err)
 
 	content, err := os.ReadFile(configPath)
@@ -78,7 +77,7 @@ func TestEnsureIncludeDirective_AlreadyExists(t *testing.T) {
 
 	configPath := filepath.Join(tmpDir, ".ssh", "config")
 
-	configDir, err := GetConfigDir()
+	configDir, err := GetConfigDir(t.Context())
 	require.NoError(t, err)
 
 	// Use forward slashes as that's what SSH config uses
@@ -89,7 +88,7 @@ func TestEnsureIncludeDirective_AlreadyExists(t *testing.T) {
 	err = os.WriteFile(configPath, []byte(existingContent), 0o600)
 	require.NoError(t, err)
 
-	err = EnsureIncludeDirective(configPath)
+	err = EnsureIncludeDirective(t.Context(), configPath)
 	assert.NoError(t, err)
 
 	content, err := os.ReadFile(configPath)
@@ -111,7 +110,7 @@ func TestEnsureIncludeDirective_PrependsToExisting(t *testing.T) {
 	err = os.WriteFile(configPath, []byte(existingContent), 0o600)
 	require.NoError(t, err)
 
-	err = EnsureIncludeDirective(configPath)
+	err = EnsureIncludeDirective(t.Context(), configPath)
 	assert.NoError(t, err)
 
 	content, err := os.ReadFile(configPath)
@@ -129,7 +128,7 @@ func TestEnsureIncludeDirective_PrependsToExisting(t *testing.T) {
 }
 
 func TestGetHostConfigPath(t *testing.T) {
-	path, err := GetHostConfigPath("test-host")
+	path, err := GetHostConfigPath(t.Context(), "test-host")
 	assert.NoError(t, err)
 	assert.Contains(t, path, filepath.Join(".databricks", "ssh-tunnel-configs", "test-host"))
 }
@@ -139,7 +138,7 @@ func TestHostConfigExists(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
 
-	exists, err := HostConfigExists("nonexistent")
+	exists, err := HostConfigExists(t.Context(), "nonexistent")
 	assert.NoError(t, err)
 	assert.False(t, exists)
 
@@ -149,13 +148,13 @@ func TestHostConfigExists(t *testing.T) {
 	err = os.WriteFile(filepath.Join(configDir, "existing-host"), []byte("config"), 0o600)
 	require.NoError(t, err)
 
-	exists, err = HostConfigExists("existing-host")
+	exists, err = HostConfigExists(t.Context(), "existing-host")
 	assert.NoError(t, err)
 	assert.True(t, exists)
 }
 
 func TestCreateOrUpdateHostConfig_NewConfig(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
@@ -165,7 +164,7 @@ func TestCreateOrUpdateHostConfig_NewConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, created)
 
-	configPath, err := GetHostConfigPath("test-host")
+	configPath, err := GetHostConfigPath(ctx, "test-host")
 	require.NoError(t, err)
 	content, err := os.ReadFile(configPath)
 	assert.NoError(t, err)
@@ -173,7 +172,7 @@ func TestCreateOrUpdateHostConfig_NewConfig(t *testing.T) {
 }
 
 func TestCreateOrUpdateHostConfig_ExistingConfigNoRecreate(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
@@ -190,7 +189,7 @@ func TestCreateOrUpdateHostConfig_ExistingConfigNoRecreate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, created)
 
-	configPath, err := GetHostConfigPath("test-host")
+	configPath, err := GetHostConfigPath(ctx, "test-host")
 	require.NoError(t, err)
 	content, err := os.ReadFile(configPath)
 	assert.NoError(t, err)
@@ -198,7 +197,7 @@ func TestCreateOrUpdateHostConfig_ExistingConfigNoRecreate(t *testing.T) {
 }
 
 func TestCreateOrUpdateHostConfig_ExistingConfigWithRecreate(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
@@ -215,7 +214,7 @@ func TestCreateOrUpdateHostConfig_ExistingConfigWithRecreate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, created)
 
-	configPath, err := GetHostConfigPath("test-host")
+	configPath, err := GetHostConfigPath(ctx, "test-host")
 	require.NoError(t, err)
 	content, err := os.ReadFile(configPath)
 	assert.NoError(t, err)

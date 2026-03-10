@@ -1,7 +1,6 @@
 package env
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
@@ -9,7 +8,7 @@ import (
 )
 
 func TestLoader(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = Set(ctx, "DATABRICKS_WAREHOUSE_ID", "...")
 	ctx = Set(ctx, "DATABRICKS_CONFIG_PROFILE", "...")
 	loader := NewConfigLoader(ctx)

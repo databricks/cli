@@ -42,6 +42,7 @@ func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresPr
 			CustomTags:               nil,
 			DefaultEndpointSettings:  nil,
 			DisplayName:              "",
+			EnablePgNativeLogin:      false,
 			HistoryRetentionDuration: nil,
 			PgVersion:                0,
 			ForceSendFields:          nil,
@@ -57,7 +58,8 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
-			Spec: &config.ProjectSpec,
+			Spec:                &config.ProjectSpec,
+			InitialEndpointSpec: nil,
 
 			// Output-only fields.
 			CreateTime:      nil,
@@ -90,7 +92,8 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
 		Project: postgres.Project{
-			Spec: &config.ProjectSpec,
+			Spec:                &config.ProjectSpec,
+			InitialEndpointSpec: nil,
 
 			// Output-only fields.
 			CreateTime:      nil,

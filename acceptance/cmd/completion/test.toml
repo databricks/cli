@@ -1,0 +1,10 @@
+Ignore = [
+    "home",
+]
+
+Local = true
+Cloud = false
+
+# Completion tests don't involve bundles, skip the engine matrix.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["terraform"]

@@ -443,9 +443,18 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 		}
 	}
 
-	// Generate a fake host
+	// Generate fake hosts
+	host := endpoint.Uid + ".database.us-east-1.cloud.databricks.com"
 	endpoint.Status.Hosts = &postgres.EndpointHosts{
-		Host: endpoint.Uid + ".database.us-east-1.cloud.databricks.com",
+		Host:         host,
+		ReadOnlyHost: host,
+	}
+
+	// Set default group status
+	endpoint.Status.Group = &postgres.EndpointGroupStatus{
+		EnableReadableSecondaries: true,
+		Max:                       1,
+		Min:                       1,
 	}
 
 	// Clear spec - API only returns status
@@ -618,10 +627,11 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 }
 
 // createDefaultBranchLocked creates a default branch for a project (caller must hold lock).
+// The default branch is named "production" to match cloud API behavior.
 func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 	now := nowTime()
 	branchUID := "br-" + nextUUID()[:20]
-	branchName := projectName + "/branches/" + branchUID
+	branchName := projectName + "/branches/production"
 
 	defaultBranch := postgres.Branch{
 		Name:       branchName,

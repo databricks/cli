@@ -1,7 +1,6 @@
 package ssh
 
 import (
-	"errors"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
@@ -35,6 +34,8 @@ the SSH server and handling the connection proxy.
 	var autoStartCluster bool
 	var userKnownHostsFile string
 	var liteswap string
+	var skipSettingsCheck bool
+	var environmentVersion int
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (for dedicated clusters)")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
@@ -64,6 +65,12 @@ the SSH server and handling the connection proxy.
 	cmd.Flags().StringVar(&liteswap, "liteswap", "", "Liteswap header value for traffic routing (dev/test only)")
 	cmd.Flags().MarkHidden("liteswap")
 
+	cmd.Flags().BoolVar(&skipSettingsCheck, "skip-settings-check", false, "Skip checking and updating IDE settings")
+	cmd.Flags().MarkHidden("skip-settings-check")
+
+	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for serverless compute")
+	cmd.Flags().MarkHidden("environment-version")
+
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// CLI in the proxy mode is executed by the ssh client and can't prompt for input
 		if proxyMode {
@@ -78,22 +85,6 @@ the SSH server and handling the connection proxy.
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		wsClient := cmdctx.WorkspaceClient(ctx)
-
-		if !proxyMode && clusterID == "" && connectionName == "" {
-			return errors.New("please provide --cluster flag with the cluster ID, or --name flag with the connection name (for serverless compute)")
-		}
-
-		if accelerator != "" && connectionName == "" {
-			return errors.New("--accelerator flag can only be used with serverless compute (--name flag)")
-		}
-
-		// Remove when we add support for serverless CPU
-		if connectionName != "" && accelerator == "" {
-			return errors.New("--name flag requires --accelerator to be set (for now we only support serverless GPU compute)")
-		}
-
-		// TODO: validate connectionName if provided
-
 		opts := client.ClientOptions{
 			Profile:              wsClient.Config.Profile,
 			ClusterID:            clusterID,
@@ -113,7 +104,12 @@ the SSH server and handling the connection proxy.
 			ClientPrivateKeyName: clientPrivateKeyName,
 			UserKnownHostsFile:   userKnownHostsFile,
 			Liteswap:             liteswap,
+			SkipSettingsCheck:    skipSettingsCheck,
+			EnvironmentVersion:   environmentVersion,
 			AdditionalArgs:       args,
+		}
+		if err := opts.Validate(); err != nil {
+			return err
 		}
 		return client.Run(ctx, wsClient, opts)
 	}

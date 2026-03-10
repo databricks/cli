@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -32,7 +31,7 @@ func TestConvertPostgresEndpoint(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = postgresEndpointConverter{}.Convert(ctx, "my_postgres_endpoint", vin, out)
 	require.NoError(t, err)
@@ -65,7 +64,7 @@ func TestConvertPostgresEndpointReadOnly(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = postgresEndpointConverter{}.Convert(ctx, "readonly_postgres_endpoint", vin, out)
 	require.NoError(t, err)
@@ -107,7 +106,7 @@ func TestConvertPostgresEndpointWithSettings(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = postgresEndpointConverter{}.Convert(ctx, "settings_postgres_endpoint", vin, out)
 	require.NoError(t, err)

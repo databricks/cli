@@ -1,7 +1,6 @@
 package resourcemutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
@@ -58,7 +57,7 @@ func TestMergeApps(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, resourcemutator.MergeApps())
+	diags := bundle.Apply(t.Context(), b, resourcemutator.MergeApps())
 	assert.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Apps["foo"]

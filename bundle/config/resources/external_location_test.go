@@ -1,7 +1,6 @@
 package resources
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestExternalLocationExists(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	api := m.GetMockExternalLocationsAPI()
 

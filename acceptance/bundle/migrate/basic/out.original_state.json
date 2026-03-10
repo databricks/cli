@@ -207,6 +207,7 @@
             "name": "Test Migration Pipeline",
             "notification": [],
             "photon": false,
+            "provider_config": [],
             "restart_window": [],
             "root_path": null,
             "run_as": [],

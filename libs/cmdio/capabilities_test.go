@@ -1,7 +1,6 @@
 package cmdio
 
 import (
-	"context"
 	"io"
 	"testing"
 
@@ -137,7 +136,7 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 }
 
 func TestDetectGitBash(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.False(t, detectGitBash(ctx))
 
 	ctx = env.Set(ctx, "MSYSTEM", "MINGW64")

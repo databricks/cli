@@ -2,7 +2,6 @@ package apps
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"os"
@@ -70,16 +69,29 @@ func TestIsTextFile(t *testing.T) {
 	}
 }
 
-func TestExecuteTemplate(t *testing.T) {
-	ctx := context.Background()
-	vars := templateVars{
+func testVars() templateVars {
+	return templateVars{
 		ProjectName:    "my-app",
 		AppDescription: "My awesome app",
 		Profile:        "default",
 		WorkspaceHost:  "https://dbc-123.cloud.databricks.com",
-		PluginImports:  "analytics",
-		PluginUsages:   "analytics()",
+		Bundle: tmplBundle{
+			Variables:       "sql_warehouse_id:",
+			Resources:       "- name: sql-warehouse",
+			TargetVariables: "sql_warehouse_id: abc123",
+		},
+		DotEnv: dotEnvVars{
+			Content: "WH_ID=abc123",
+			Example: "WH_ID=your_sql_warehouse_id",
+		},
+		AppEnv:  "- name: SQL_WAREHOUSE_ID\n  valueFrom: sql_warehouse",
+		Plugins: map[string]*pluginVar{"analytics": {}},
 	}
+}
+
+func TestExecuteTemplateBackwardCompat(t *testing.T) {
+	ctx := t.Context()
+	vars := testVars()
 
 	tests := []struct {
 		name     string
@@ -87,44 +99,59 @@ func TestExecuteTemplate(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "project name substitution",
-			input:    "name: {{.project_name}}",
-			expected: "name: my-app",
+			name:     "project_name",
+			input:    "{{.project_name}}",
+			expected: "my-app",
 		},
 		{
-			name:     "description substitution",
-			input:    "description: {{.app_description}}",
-			expected: "description: My awesome app",
+			name:     "app_description",
+			input:    "{{.app_description}}",
+			expected: "My awesome app",
 		},
 		{
-			name:     "profile substitution",
-			input:    "profile: {{.profile}}",
-			expected: "profile: default",
+			name:     "workspace_host",
+			input:    "{{.workspace_host}}",
+			expected: "https://dbc-123.cloud.databricks.com",
 		},
 		{
-			name:     "workspace host substitution",
-			input:    "host: {{.workspace_host}}",
-			expected: "host: https://dbc-123.cloud.databricks.com",
+			name:     "dotenv",
+			input:    "{{.dotenv}}",
+			expected: "WH_ID=abc123",
 		},
 		{
-			name:     "plugin import substitution",
-			input:    "import { {{.plugin_imports}} } from 'appkit'",
-			expected: "import { analytics } from 'appkit'",
+			name:     "dotenv_example",
+			input:    "{{.dotenv_example}}",
+			expected: "WH_ID=your_sql_warehouse_id",
 		},
 		{
-			name:     "plugin usage substitution",
-			input:    "plugins: [{{.plugin_usages}}]",
-			expected: "plugins: [analytics()]",
+			name:     "variables",
+			input:    "{{.variables}}",
+			expected: "sql_warehouse_id:",
 		},
 		{
-			name:     "multiple substitutions",
-			input:    "{{.project_name}} - {{.app_description}}",
-			expected: "my-app - My awesome app",
+			name:     "resources",
+			input:    "{{.resources}}",
+			expected: "- name: sql-warehouse",
 		},
 		{
-			name:     "no substitutions needed",
-			input:    "plain text without variables",
-			expected: "plain text without variables",
+			name:     "target_variables",
+			input:    "{{.target_variables}}",
+			expected: "sql_warehouse_id: abc123",
+		},
+		{
+			name:     "plugin_imports",
+			input:    "{{.plugin_imports}}",
+			expected: "analytics",
+		},
+		{
+			name:     "plugin_usages",
+			input:    "{{.plugin_usages}}",
+			expected: "analytics()",
+		},
+		{
+			name:     "app_env",
+			input:    "{{.app_env}}",
+			expected: "- name: SQL_WAREHOUSE_ID\n  valueFrom: sql_warehouse",
 		},
 	}
 
@@ -137,14 +164,9 @@ func TestExecuteTemplate(t *testing.T) {
 	}
 }
 
-func TestExecuteTemplateEmptyPlugins(t *testing.T) {
-	ctx := context.Background()
-	vars := templateVars{
-		ProjectName:    "my-app",
-		AppDescription: "My app",
-		PluginImports:  "",
-		PluginUsages:   "",
-	}
+func TestExecuteTemplateNewKeys(t *testing.T) {
+	ctx := t.Context()
+	vars := testVars()
 
 	tests := []struct {
 		name     string
@@ -152,14 +174,59 @@ func TestExecuteTemplateEmptyPlugins(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "empty plugin imports render as empty",
-			input:    "import { core{{if .plugin_imports}}, {{.plugin_imports}}{{end}} } from 'appkit'",
-			expected: "import { core } from 'appkit'",
+			name:     "projectName",
+			input:    "{{.projectName}}",
+			expected: "my-app",
 		},
 		{
-			name:     "empty plugin usages render as empty",
-			input:    "plugins: [{{if .plugin_usages}}\n    {{.plugin_usages}},\n{{end}}]",
-			expected: "plugins: []",
+			name:     "appDescription",
+			input:    "{{.appDescription}}",
+			expected: "My awesome app",
+		},
+		{
+			name:     "workspaceHost",
+			input:    "{{.workspaceHost}}",
+			expected: "https://dbc-123.cloud.databricks.com",
+		},
+		{
+			name:     "bundle.variables",
+			input:    "{{.bundle.variables}}",
+			expected: "sql_warehouse_id:",
+		},
+		{
+			name:     "bundle.resources",
+			input:    "{{.bundle.resources}}",
+			expected: "- name: sql-warehouse",
+		},
+		{
+			name:     "bundle.targetVariables",
+			input:    "{{.bundle.targetVariables}}",
+			expected: "sql_warehouse_id: abc123",
+		},
+		{
+			name:     "dotEnv.content",
+			input:    "{{.dotEnv.content}}",
+			expected: "WH_ID=abc123",
+		},
+		{
+			name:     "dotEnv.example",
+			input:    "{{.dotEnv.example}}",
+			expected: "WH_ID=your_sql_warehouse_id",
+		},
+		{
+			name:     "plugins selected",
+			input:    `{{if .plugins.analytics}}yes{{end}}`,
+			expected: "yes",
+		},
+		{
+			name:     "plugins not selected",
+			input:    `{{if .plugins.nonexistent}}yes{{end}}`,
+			expected: "",
+		},
+		{
+			name:     "appEnv",
+			input:    "{{.appEnv}}",
+			expected: "- name: SQL_WAREHOUSE_ID\n  valueFrom: sql_warehouse",
 		},
 	}
 
@@ -173,7 +240,7 @@ func TestExecuteTemplateEmptyPlugins(t *testing.T) {
 }
 
 func TestExecuteTemplateInvalidSyntaxReturnsOriginal(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	vars := templateVars{ProjectName: "my-app"}
 	input := "some content with bad {{ syntax"
 	result, err := executeTemplate(ctx, "test.js", []byte(input), vars)
@@ -202,14 +269,16 @@ func TestNormalizeVersion(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"0.3.0", "v0.3.0"},
-		{"1.0.0", "v1.0.0"},
-		{"v0.3.0", "v0.3.0"},
-		{"v1.0.0", "v1.0.0"},
+		{"0.3.0", "template-v0.3.0"},
+		{"1.0.0", "template-v1.0.0"},
+		{"v0.3.0", "template-v0.3.0"},
+		{"v1.0.0", "template-v1.0.0"},
+		{"template-v0.3.0", "template-v0.3.0"},
 		{"latest", "main"},
 		{"", ""},
 		{"main", "main"},
 		{"feat/something", "feat/something"},
+		{appkitDefaultVersion, appkitDefaultVersion},
 	}
 
 	for _, tt := range tests {
@@ -431,6 +500,58 @@ func TestParseSetValues(t *testing.T) {
 	}
 }
 
+func TestParseSetValuesBundleIgnoreSkipped(t *testing.T) {
+	m := &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"lakebase": {
+				Name: "lakebase",
+				Resources: manifest.Resources{
+					Required: []manifest.Resource{
+						{
+							Type:        "postgres",
+							Alias:       "Postgres",
+							ResourceKey: "postgres",
+							Fields: map[string]manifest.ResourceField{
+								"branch":   {Description: "branch path"},
+								"database": {Description: "database name"},
+								"endpoint": {Env: "LAKEBASE_ENDPOINT", BundleIgnore: true},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	rv, err := parseSetValues([]string{
+		"lakebase.postgres.branch=projects/p1/branches/main",
+		"lakebase.postgres.database=mydb",
+	}, m)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"postgres.branch":   "projects/p1/branches/main",
+		"postgres.database": "mydb",
+	}, rv)
+
+	// Setting only one non-bundleIgnore field should still fail.
+	_, err = parseSetValues([]string{"lakebase.postgres.branch=br"}, m)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `incomplete resource "postgres"`)
+
+	// bundleIgnore field can still be set explicitly via --set.
+	rv, err = parseSetValues([]string{
+		"lakebase.postgres.branch=br",
+		"lakebase.postgres.database=db",
+		"lakebase.postgres.endpoint=ep",
+	}, m)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"postgres.branch":   "br",
+		"postgres.database": "db",
+		"postgres.endpoint": "ep",
+	}, rv)
+}
+
 func TestPluginHasResourceField(t *testing.T) {
 	m := testManifest()
 	p := m.GetPluginByName("analytics")
@@ -469,7 +590,7 @@ func TestRunManifestOnlyFound(t *testing.T) {
 	require.NoError(t, err)
 	os.Stdout = w
 
-	err = runManifestOnly(context.Background(), dir, "", "")
+	err = runManifestOnly(t.Context(), dir, "", "")
 	w.Close()
 	os.Stdout = old
 	require.NoError(t, err)
@@ -489,7 +610,7 @@ func TestRunManifestOnlyNotFound(t *testing.T) {
 	require.NoError(t, err)
 	os.Stdout = w
 
-	err = runManifestOnly(context.Background(), dir, "", "")
+	err = runManifestOnly(t.Context(), dir, "", "")
 	w.Close()
 	os.Stdout = old
 	require.NoError(t, err)

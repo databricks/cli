@@ -74,10 +74,8 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create a credential entry.`
 	cmd.Long = `Create a credential entry.
 
-  Creates a Git credential entry for the user. Only one Git credential per user
-  is supported, so any attempts to create credentials if an entry already exists
-  will fail. Use the PATCH endpoint to update existing credentials, or the
-  DELETE endpoint to delete existing credentials.
+  Creates a Git credential entry for the user. Use the PATCH endpoint to update
+  existing credentials, or the DELETE endpoint to delete existing credentials.
 
   Arguments:
     GIT_PROVIDER: Git provider. This field is case-insensitive. The available Git providers

@@ -1,7 +1,6 @@
 package databrickscfg
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,7 +14,7 @@ func TestLoadOrCreate(t *testing.T) {
 	dir := t.TempDir()
 
 	path := filepath.Join(dir, "databrickscfg")
-	file, err := loadOrCreateConfigFile(path)
+	file, err := loadOrCreateConfigFile(t.Context(), path)
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
 	assert.FileExists(t, path)
@@ -23,7 +22,7 @@ func TestLoadOrCreate(t *testing.T) {
 
 func TestLoadOrCreate_NotAllowed(t *testing.T) {
 	path := "/dev/databrickscfg"
-	file, err := loadOrCreateConfigFile(path)
+	file, err := loadOrCreateConfigFile(t.Context(), path)
 	assert.Error(t, err)
 	assert.Nil(t, file)
 	assert.NoFileExists(t, path)
@@ -31,7 +30,7 @@ func TestLoadOrCreate_NotAllowed(t *testing.T) {
 
 func TestLoadOrCreate_Bad(t *testing.T) {
 	path := "profile/testdata/badcfg"
-	file, err := loadOrCreateConfigFile(path)
+	file, err := loadOrCreateConfigFile(t.Context(), path)
 	assert.Error(t, err)
 	assert.Nil(t, file)
 }
@@ -40,10 +39,10 @@ func TestMatchOrCreateSection_Direct(t *testing.T) {
 	cfg := &config.Config{
 		Profile: "query",
 	}
-	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	section, err := matchOrCreateSection(ctx, file, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, section)
@@ -54,10 +53,10 @@ func TestMatchOrCreateSection_AccountID(t *testing.T) {
 	cfg := &config.Config{
 		AccountID: "abc",
 	}
-	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	section, err := matchOrCreateSection(ctx, file, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, section)
@@ -68,10 +67,10 @@ func TestMatchOrCreateSection_NormalizeHost(t *testing.T) {
 	cfg := &config.Config{
 		Host: "https://query/?o=abracadabra",
 	}
-	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	section, err := matchOrCreateSection(ctx, file, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, section)
@@ -80,10 +79,10 @@ func TestMatchOrCreateSection_NormalizeHost(t *testing.T) {
 
 func TestMatchOrCreateSection_NoProfileOrHost(t *testing.T) {
 	cfg := &config.Config{}
-	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err = matchOrCreateSection(ctx, file, cfg)
 	assert.EqualError(t, err, "cannot create new profile: empty section name")
 }
@@ -92,10 +91,10 @@ func TestMatchOrCreateSection_MultipleProfiles(t *testing.T) {
 	cfg := &config.Config{
 		Host: "https://foo",
 	}
-	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err = matchOrCreateSection(ctx, file, cfg)
 	assert.EqualError(t, err, "multiple profiles matched: foo1, foo2")
 }
@@ -105,10 +104,10 @@ func TestMatchOrCreateSection_NewProfile(t *testing.T) {
 		Host:    "https://bar",
 		Profile: "delirium",
 	}
-	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile(t.Context(), "profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	section, err := matchOrCreateSection(ctx, file, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, section)
@@ -116,7 +115,7 @@ func TestMatchOrCreateSection_NewProfile(t *testing.T) {
 }
 
 func TestSaveToProfile_ErrorOnLoad(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	err := SaveToProfile(ctx, &config.Config{
 		ConfigFile: "testdata/badcfg",
 	})
@@ -124,7 +123,7 @@ func TestSaveToProfile_ErrorOnLoad(t *testing.T) {
 }
 
 func TestSaveToProfile_ErrorOnMatch(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	err := SaveToProfile(ctx, &config.Config{
 		Host: "https://foo",
 	})
@@ -132,7 +131,7 @@ func TestSaveToProfile_ErrorOnMatch(t *testing.T) {
 }
 
 func TestSaveToProfile_NewFileWithoutDefault(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 
 	err := SaveToProfile(ctx, &config.Config{
@@ -157,7 +156,7 @@ token = xyz
 }
 
 func TestSaveToProfile_NewFileWithDefault(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 
 	err := SaveToProfile(ctx, &config.Config{
@@ -178,74 +177,103 @@ token = xyz
 `, string(contents))
 }
 
-func TestSaveToProfile_ClearingPreviousProfile(t *testing.T) {
-	ctx := context.Background()
-	path := filepath.Join(t.TempDir(), "databrickscfg")
+func TestSaveToProfile_MergeSemantics(t *testing.T) {
+	type saveOp struct {
+		cfg       *config.Config
+		clearKeys []string
+	}
 
-	err := SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Profile:    "abc",
-		Host:       "https://foo",
-		Token:      "xyz",
-	})
-	assert.NoError(t, err)
+	testCases := []struct {
+		name     string
+		profile  string
+		saves    []saveOp
+		wantKeys map[string]string
+	}{
+		{
+			name:    "preserves existing keys on merge",
+			profile: "abc",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "abc", Host: "https://foo", Token: "xyz"}},
+				{cfg: &config.Config{Host: "https://foo", AuthType: "databricks-cli"}},
+			},
+			wantKeys: map[string]string{
+				"host":      "https://foo",
+				"auth_type": "databricks-cli",
+				"token":     "xyz",
+			},
+		},
+		{
+			name:    "clear keys removes specified keys",
+			profile: "abc",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "abc", Host: "https://foo", Token: "xyz", ClusterID: "cluster-123"}},
+				{cfg: &config.Config{Host: "https://foo", AuthType: "databricks-cli", ServerlessComputeID: "auto"}, clearKeys: []string{"token", "cluster_id"}},
+			},
+			wantKeys: map[string]string{
+				"host":                  "https://foo",
+				"auth_type":             "databricks-cli",
+				"serverless_compute_id": "auto",
+			},
+		},
+		{
+			name:    "overwrites existing values",
+			profile: "abc",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "abc", Host: "https://old-host"}},
+				{cfg: &config.Config{Profile: "abc", Host: "https://new-host"}},
+			},
+			wantKeys: map[string]string{
+				"host": "https://new-host",
+			},
+		},
+		{
+			name:    "clear nonexistent key is noop",
+			profile: "abc",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "abc", Host: "https://foo"}},
+				{cfg: &config.Config{Profile: "abc", Host: "https://foo", AuthType: "databricks-cli"}, clearKeys: []string{"token", "nonexistent_key"}},
+			},
+			wantKeys: map[string]string{
+				"host":      "https://foo",
+				"auth_type": "databricks-cli",
+			},
+		},
+		{
+			name:    "writes scopes as comma-separated",
+			profile: "scoped",
+			saves: []saveOp{
+				{cfg: &config.Config{Profile: "scoped", Host: "https://myworkspace.cloud.databricks.com", AuthType: "databricks-cli", Scopes: []string{"jobs", "pipelines", "clusters"}}},
+			},
+			wantKeys: map[string]string{
+				"host":      "https://myworkspace.cloud.databricks.com",
+				"auth_type": "databricks-cli",
+				"scopes":    "jobs,pipelines,clusters",
+			},
+		},
+	}
 
-	err = SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Profile:    "bcd",
-		Host:       "https://bar",
-		Token:      "zyx",
-	})
-	assert.NoError(t, err)
-	assert.FileExists(t, path+".bak")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			path := filepath.Join(t.TempDir(), "databrickscfg")
 
-	err = SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Host:       "https://foo",
-		AuthType:   "databricks-cli",
-	})
-	assert.NoError(t, err)
+			for _, save := range tc.saves {
+				save.cfg.ConfigFile = path
+				err := SaveToProfile(ctx, save.cfg, save.clearKeys...)
+				require.NoError(t, err)
+			}
 
-	file, err := loadOrCreateConfigFile(path)
-	assert.NoError(t, err)
+			file, err := loadOrCreateConfigFile(t.Context(), path)
+			require.NoError(t, err)
 
-	assert.Len(t, file.Sections(), 3)
-	assert.True(t, file.HasSection("DEFAULT"))
-	assert.True(t, file.HasSection("bcd"))
-	assert.True(t, file.HasSection("bcd"))
+			section, err := file.GetSection(tc.profile)
+			require.NoError(t, err)
 
-	dlft, err := file.GetSection("DEFAULT")
-	assert.NoError(t, err)
-	assert.Empty(t, dlft.KeysHash())
-
-	abc, err := file.GetSection("abc")
-	assert.NoError(t, err)
-	raw := abc.KeysHash()
-	assert.Len(t, raw, 2)
-	assert.Equal(t, "https://foo", raw["host"])
-	assert.Equal(t, "databricks-cli", raw["auth_type"])
-}
-
-func TestSaveToProfile_WithScopes(t *testing.T) {
-	ctx := context.Background()
-	path := filepath.Join(t.TempDir(), "databrickscfg")
-
-	err := SaveToProfile(ctx, &config.Config{
-		ConfigFile: path,
-		Profile:    "scoped",
-		Host:       "https://myworkspace.cloud.databricks.com",
-		AuthType:   "databricks-cli",
-		Scopes:     []string{"jobs", "pipelines", "clusters"},
-	})
-	require.NoError(t, err)
-
-	file, err := loadOrCreateConfigFile(path)
-	require.NoError(t, err)
-	section, err := file.GetSection("scoped")
-	require.NoError(t, err)
-	raw := section.KeysHash()
-	assert.Len(t, raw, 3)
-	assert.Equal(t, "https://myworkspace.cloud.databricks.com", raw["host"])
-	assert.Equal(t, "databricks-cli", raw["auth_type"])
-	assert.Equal(t, "jobs,pipelines,clusters", raw["scopes"])
+			raw := section.KeysHash()
+			assert.Len(t, raw, len(tc.wantKeys))
+			for k, v := range tc.wantKeys {
+				assert.Equal(t, v, raw[k], "key %s", k)
+			}
+		})
+	}
 }

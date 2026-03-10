@@ -1,0 +1,31 @@
+sethome "./home"
+
+# Track the home path for stable output across platforms.
+add_repl.py "$HOME" HOME
+
+# Prevent Homebrew detection from affecting status output.
+export HOMEBREW_PREFIX=/nonexistent
+
+# Test install (use zsh to avoid OS-dependent bash RC file path)
+trace $CLI completion install --shell zsh --auto-approve
+
+# Test status shows installed
+trace $CLI completion status --shell zsh
+
+# Test idempotent install (--auto-approve is harmless when already installed)
+trace $CLI completion install --shell zsh --auto-approve
+
+# Test uninstall
+trace $CLI completion uninstall --shell zsh --auto-approve
+
+# Test status after uninstall
+trace $CLI completion status --shell zsh
+
+# Test shell subcommands produce output
+$CLI completion bash 2>&1 | head -1
+$CLI completion zsh 2>&1 | head -1
+$CLI completion fish 2>&1 | head -1
+$CLI completion powershell 2>&1 | head -1
+
+# Test bash --no-descriptions
+$CLI completion bash --no-descriptions 2>&1 | head -1

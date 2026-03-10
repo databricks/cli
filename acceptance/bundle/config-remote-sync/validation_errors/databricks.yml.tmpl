@@ -1,0 +1,26 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-$UNIQUE_NAME
+      root_path: ./pipeline_root
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook
+
+  jobs:
+    my_job:
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: ./src/notebook.py
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+
+targets:
+  default:
+    mode: development

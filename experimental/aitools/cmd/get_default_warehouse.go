@@ -43,7 +43,7 @@ Returns warehouse ID of the default warehouse. Use --output json to get the full
 			sess.Set(middlewares.DatabricksClientKey, w)
 			ctx = session.WithSession(ctx, sess)
 
-			warehouse, err := middlewares.GetWarehouseEndpoint(ctx)
+			warehouse, err := middlewares.GetWarehouseEndpoint(ctx, false)
 			if err != nil {
 				return err
 			}

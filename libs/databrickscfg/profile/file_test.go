@@ -1,7 +1,6 @@
 package profile
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -29,7 +28,7 @@ func TestProfilesSearchCaseInsensitive(t *testing.T) {
 }
 
 func TestLoadProfilesReturnsHomedirAsTilde(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.WithUserHomeDir(ctx, "testdata")
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
 	profiler := FileProfilerImpl{}
@@ -39,7 +38,7 @@ func TestLoadProfilesReturnsHomedirAsTilde(t *testing.T) {
 }
 
 func TestLoadProfilesReturnsHomedirAsTildeExoticFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.WithUserHomeDir(ctx, "testdata")
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "~/databrickscfg")
 	profiler := FileProfilerImpl{}
@@ -49,7 +48,7 @@ func TestLoadProfilesReturnsHomedirAsTildeExoticFile(t *testing.T) {
 }
 
 func TestLoadProfilesReturnsHomedirAsTildeDefaultFile(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.WithUserHomeDir(ctx, "testdata/sample-home")
 	profiler := FileProfilerImpl{}
 	file, err := profiler.GetPath(ctx)
@@ -58,7 +57,7 @@ func TestLoadProfilesReturnsHomedirAsTildeDefaultFile(t *testing.T) {
 }
 
 func TestLoadProfilesNoConfiguration(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.WithUserHomeDir(ctx, "testdata")
 	profiler := FileProfilerImpl{}
 	_, err := profiler.LoadProfiles(ctx, MatchAllProfiles)
@@ -66,7 +65,7 @@ func TestLoadProfilesNoConfiguration(t *testing.T) {
 }
 
 func TestLoadProfilesMatchWorkspace(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
 	profiler := FileProfilerImpl{}
 	profiles, err := profiler.LoadProfiles(ctx, MatchWorkspaceProfiles)
@@ -75,7 +74,7 @@ func TestLoadProfilesMatchWorkspace(t *testing.T) {
 }
 
 func TestLoadProfilesMatchAccount(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
 	profiler := FileProfilerImpl{}
 	profiles, err := profiler.LoadProfiles(ctx, MatchAccountProfiles)

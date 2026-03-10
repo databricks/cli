@@ -1,7 +1,6 @@
 package jobs_test
 
 import (
-	"context"
 	"encoding/json"
 	"strconv"
 	"testing"
@@ -14,7 +13,7 @@ import (
 
 func TestCreateJob(t *testing.T) {
 	testutil.Require(t, testutil.Azure)
-	ctx := context.Background()
+	ctx := t.Context()
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "jobs", "create", "--json", "@testdata/create_job_without_workers.json", "--log-level=debug")
 	assert.Empty(t, stderr.String())
 	var output map[string]int

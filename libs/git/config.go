@@ -30,7 +30,7 @@ type config struct {
 }
 
 func newConfig() (*config, error) {
-	home, err := os.UserHomeDir()
+	home, err := os.UserHomeDir() //nolint:forbidigo // no ctx available in git config loading
 	if err != nil {
 		return nil, err
 	}

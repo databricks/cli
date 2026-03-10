@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Generate databricks.yml from template
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Set up cleanup trap to ensure resources are destroyed even on failure
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy bundle"
+trace $CLI bundle deploy
+
+title "Update compute size and redeploy"
+sed -i.bak 's/compute_size: LARGE/compute_size: MEDIUM/' databricks.yml
+{
+  trace errcode $CLI bundle deploy
+  trace $CLI apps get "app-$UNIQUE_NAME" | jq '{compute_size: .compute_size}'
+} &> out.update.$DATABRICKS_BUNDLE_ENGINE.txt

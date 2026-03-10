@@ -13,81 +13,12 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type CatalogGrantPrivilege string
-
-const (
-	CatalogGrantPrivilegeAllPrivileges           CatalogGrantPrivilege = "ALL_PRIVILEGES"
-	CatalogGrantPrivilegeApplyTag                CatalogGrantPrivilege = "APPLY_TAG"
-	CatalogGrantPrivilegeCreateConnection        CatalogGrantPrivilege = "CREATE_CONNECTION"
-	CatalogGrantPrivilegeCreateExternalLocation  CatalogGrantPrivilege = "CREATE_EXTERNAL_LOCATION"
-	CatalogGrantPrivilegeCreateExternalTable     CatalogGrantPrivilege = "CREATE_EXTERNAL_TABLE"
-	CatalogGrantPrivilegeCreateExternalVolume    CatalogGrantPrivilege = "CREATE_EXTERNAL_VOLUME"
-	CatalogGrantPrivilegeCreateForeignCatalog    CatalogGrantPrivilege = "CREATE_FOREIGN_CATALOG"
-	CatalogGrantPrivilegeCreateFunction          CatalogGrantPrivilege = "CREATE_FUNCTION"
-	CatalogGrantPrivilegeCreateManagedStorage    CatalogGrantPrivilege = "CREATE_MANAGED_STORAGE"
-	CatalogGrantPrivilegeCreateMaterializedView  CatalogGrantPrivilege = "CREATE_MATERIALIZED_VIEW"
-	CatalogGrantPrivilegeCreateModel             CatalogGrantPrivilege = "CREATE_MODEL"
-	CatalogGrantPrivilegeCreateSchema            CatalogGrantPrivilege = "CREATE_SCHEMA"
-	CatalogGrantPrivilegeCreateStorageCredential CatalogGrantPrivilege = "CREATE_STORAGE_CREDENTIAL"
-	CatalogGrantPrivilegeCreateTable             CatalogGrantPrivilege = "CREATE_TABLE"
-	CatalogGrantPrivilegeCreateVolume            CatalogGrantPrivilege = "CREATE_VOLUME"
-	CatalogGrantPrivilegeExecute                 CatalogGrantPrivilege = "EXECUTE"
-	CatalogGrantPrivilegeManage                  CatalogGrantPrivilege = "MANAGE"
-	CatalogGrantPrivilegeModify                  CatalogGrantPrivilege = "MODIFY"
-	CatalogGrantPrivilegeReadVolume              CatalogGrantPrivilege = "READ_VOLUME"
-	CatalogGrantPrivilegeRefresh                 CatalogGrantPrivilege = "REFRESH"
-	CatalogGrantPrivilegeSelect                  CatalogGrantPrivilege = "SELECT"
-	CatalogGrantPrivilegeUseCatalog              CatalogGrantPrivilege = "USE_CATALOG"
-	CatalogGrantPrivilegeUseConnection           CatalogGrantPrivilege = "USE_CONNECTION"
-	CatalogGrantPrivilegeUseSchema               CatalogGrantPrivilege = "USE_SCHEMA"
-	CatalogGrantPrivilegeWriteVolume             CatalogGrantPrivilege = "WRITE_VOLUME"
-)
-
-// Values returns all valid CatalogGrantPrivilege values
-func (CatalogGrantPrivilege) Values() []CatalogGrantPrivilege {
-	return []CatalogGrantPrivilege{
-		CatalogGrantPrivilegeAllPrivileges,
-		CatalogGrantPrivilegeApplyTag,
-		CatalogGrantPrivilegeCreateConnection,
-		CatalogGrantPrivilegeCreateExternalLocation,
-		CatalogGrantPrivilegeCreateExternalTable,
-		CatalogGrantPrivilegeCreateExternalVolume,
-		CatalogGrantPrivilegeCreateForeignCatalog,
-		CatalogGrantPrivilegeCreateFunction,
-		CatalogGrantPrivilegeCreateManagedStorage,
-		CatalogGrantPrivilegeCreateMaterializedView,
-		CatalogGrantPrivilegeCreateModel,
-		CatalogGrantPrivilegeCreateSchema,
-		CatalogGrantPrivilegeCreateStorageCredential,
-		CatalogGrantPrivilegeCreateTable,
-		CatalogGrantPrivilegeCreateVolume,
-		CatalogGrantPrivilegeExecute,
-		CatalogGrantPrivilegeManage,
-		CatalogGrantPrivilegeModify,
-		CatalogGrantPrivilegeReadVolume,
-		CatalogGrantPrivilegeRefresh,
-		CatalogGrantPrivilegeSelect,
-		CatalogGrantPrivilegeUseCatalog,
-		CatalogGrantPrivilegeUseConnection,
-		CatalogGrantPrivilegeUseSchema,
-		CatalogGrantPrivilegeWriteVolume,
-	}
-}
-
-// CatalogGrant holds the grant level settings for a single principal in Unity Catalog.
-// Multiple of these can be defined on any catalog.
-type CatalogGrant struct {
-	Privileges []CatalogGrantPrivilege `json:"privileges"`
-
-	Principal string `json:"principal"`
-}
-
 type Catalog struct {
 	BaseResource
 	catalog.CreateCatalog
 
 	// List of grants to apply on this catalog.
-	Grants []CatalogGrant `json:"grants,omitempty"`
+	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 func (c *Catalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

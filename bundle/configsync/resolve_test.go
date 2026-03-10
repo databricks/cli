@@ -1,7 +1,6 @@
 package configsync
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,7 +15,7 @@ import (
 )
 
 func TestResolveSelectors_NoSelectors(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -39,7 +38,7 @@ func TestResolveSelectors_NoSelectors(t *testing.T) {
 }
 
 func TestResolveSelectors_NumericIndices(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -68,7 +67,7 @@ func TestResolveSelectors_NumericIndices(t *testing.T) {
 }
 
 func TestResolveSelectors_KeyValueSelector(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -101,7 +100,7 @@ func TestResolveSelectors_KeyValueSelector(t *testing.T) {
 }
 
 func TestResolveSelectors_SelectorNotFound(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -127,7 +126,7 @@ func TestResolveSelectors_SelectorNotFound(t *testing.T) {
 }
 
 func TestResolveSelectors_SelectorOnNonArray(t *testing.T) {
-	ctx := cmdio.MockDiscard(logdiag.InitContext(context.Background()))
+	ctx := cmdio.MockDiscard(logdiag.InitContext(t.Context()))
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -150,7 +149,7 @@ func TestResolveSelectors_SelectorOnNonArray(t *testing.T) {
 }
 
 func TestResolveSelectors_NestedSelectors(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
@@ -181,7 +180,7 @@ func TestResolveSelectors_NestedSelectors(t *testing.T) {
 }
 
 func TestResolveSelectors_WildcardNotSupported(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:

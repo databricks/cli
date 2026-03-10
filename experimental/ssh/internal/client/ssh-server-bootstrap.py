@@ -17,7 +17,8 @@ dbutils.widgets.text("secretScopeName", "")
 dbutils.widgets.text("authorizedKeySecretName", "")
 dbutils.widgets.text("maxClients", "10")
 dbutils.widgets.text("shutdownDelay", "10m")
-dbutils.widgets.text("sessionId", "")  # Required: unique identifier for the session
+dbutils.widgets.text("sessionId", "")
+dbutils.widgets.text("serverless", "false")
 
 
 def cleanup():
@@ -115,6 +116,7 @@ def run_ssh_server():
     session_id = dbutils.widgets.get("sessionId")
     if not session_id:
         raise RuntimeError("Session ID is required. Please provide it using the 'sessionId' widget.")
+    serverless = dbutils.widgets.get("serverless")
 
     arch = platform.machine()
     if arch == "x86_64":
@@ -137,6 +139,7 @@ def run_ssh_server():
         "server",
         f"--cluster={ctx.clusterId}",
         f"--session-id={session_id}",
+        f"--serverless={serverless}",
         f"--secret-scope-name={secrets_scope}",
         f"--authorized-key-secret-name={public_key_secret_name}",
         f"--max-clients={max_clients}",
