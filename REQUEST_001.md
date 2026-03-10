@@ -1,0 +1,51 @@
+Permissions schema in direct engine.
+
+We have this state type in bundle/direct/dresources/permissions.go
+
+type PermissionsState struct {
+        ObjectID    string                     `json:"object_id"`
+        Permissions []iam.AccessControlRequest `json:"permissions,omitempty"`
+}
+
+
+however, in bundle config there is schema:
+
+bundle/config/resources/job.go-type Job struct {
+bundle/config/resources/job.go- BaseResource
+bundle/config/resources/job.go- jobs.JobSettings
+bundle/config/resources/job.go-
+bundle/config/resources/job.go: Permissions []JobPermission `json:"permissions,omitempty"`
+bundle/config/resources/job.go-}
+
+
+There is a mismatch, you access permission in input schema as resources.jobs.foo.permissions[0] but you access
+state via resources.jobs.foo.permissions.permissions[0] due to extra struct wrapping the slice.
+
+
+This mismatch is problematic and it means we cannot declare dependencies based on input schema.
+
+What we need to achieve is to have permissions slice in state available directly as resources.jobs.foo.permissions[0]
+
+For that I propose to introduce a new convention: if json tag name is __EMBED__ then this is a sign for all struct walkers in libs/struct to not add this to path
+but to consider it directly added. We only need to support single __EMBED__ per struct and it may only work on slices.
+
+Make sure to commit early and often on this branch. You should probably have commits for each item in libs/structs/
+
+Investigate how tests are done there and prefer to extend existing table tests rather than creating new one.
+
+For each change follow style of the surrounding package religiously, unless you can do things simpler, than do simpler.
+
+After __EMBED__ is supported, you will use it on PermissionState. 
+
+Note, we new a few kinds of acceptance tests: one where were reference a permission and another where we reference from permission.
+
+We also need tests for cases where slice index is coming from remote backend rather than from local, e.g. resources.jobs.foo.permissions[2] but [2] is not in the config but it is in the remote.
+
+
+Once everything is done, validate your work by enabling this test on direct engine: acceptance/bundle/apps/job_permissions/test.toml 
+
+Do necessary fixes.
+
+Make sure "make generate" runs clean. Make sure make && make test-update succeeds cleanly. Run integration tests last, after everything else appears in order, since they are the slowest. Use make test-update-aws for those.
+
+As a first step, validate the above problem description and write detailed implementation PLAN.md. Commit that first.
