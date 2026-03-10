@@ -864,6 +864,143 @@ func TestGenerateDotEnvSanitizesNewlines(t *testing.T) {
 	assert.NotContains(t, result, "\n")
 }
 
+func TestLocalOnlyFieldSkippedInAppEnvAndVariables(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "test",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type: "postgres", Alias: "Postgres", ResourceKey: "postgres",
+						Fields: map[string]manifest.ResourceField{
+							"branch":       {Description: "Branch"},
+							"database":     {Description: "Database"},
+							"host":         {Env: "PGHOST", LocalOnly: true, Resolve: "postgres:host", Description: "Postgres host"},
+							"databaseName": {Env: "PGDATABASE", LocalOnly: true, Resolve: "postgres:databaseName", Description: "Postgres db name"},
+							"endpointPath": {Env: "LAKEBASE_ENDPOINT", BundleIgnore: true, Resolve: "postgres:endpointPath", Description: "Endpoint"},
+							"port":         {Env: "PGPORT", LocalOnly: true, Value: "5432", Description: "Postgres port"},
+							"sslmode":      {Env: "PGSSLMODE", LocalOnly: true, Value: "require", Description: "SSL mode"},
+						},
+					},
+				},
+			},
+		},
+	}
+	cfg := generator.Config{ResourceValues: map[string]string{
+		"postgres.branch":       "projects/p1/branches/br-1",
+		"postgres.database":     "projects/p1/branches/br-1/databases/db-1",
+		"postgres.host":         "ep-test.database.cloud.databricks.com",
+		"postgres.databaseName": "mydb",
+		"postgres.endpointPath": "projects/p1/branches/br-1/endpoints/primary",
+	}}
+
+	// localOnly fields should be in .env with resolved values
+	env := generator.GenerateDotEnv(plugins, cfg)
+	assert.Contains(t, env, "PGHOST=ep-test.database.cloud.databricks.com")
+	assert.Contains(t, env, "PGDATABASE=mydb")
+	assert.Contains(t, env, "LAKEBASE_ENDPOINT=projects/p1/branches/br-1/endpoints/primary")
+	assert.Contains(t, env, "PGPORT=5432")
+	assert.Contains(t, env, "PGSSLMODE=require")
+
+	// localOnly fields should be in .env.example
+	example := generator.GenerateDotEnvExample(plugins)
+	assert.Contains(t, example, "PGHOST=your_postgres_host")
+	assert.Contains(t, example, "PGDATABASE=your_postgres_databaseName")
+	assert.Contains(t, example, "LAKEBASE_ENDPOINT=your_postgres_endpointPath")
+	assert.Contains(t, example, "PGPORT=5432")
+	assert.Contains(t, example, "PGSSLMODE=require")
+
+	// localOnly fields should NOT be in app.yaml (appEnv)
+	appEnv := generator.GenerateAppEnv(plugins, cfg)
+	assert.NotContains(t, appEnv, "PGHOST")
+	assert.NotContains(t, appEnv, "PGDATABASE")
+	assert.NotContains(t, appEnv, "PGPORT")
+	assert.NotContains(t, appEnv, "PGSSLMODE")
+	// bundleIgnore fields without localOnly SHOULD be in app.yaml
+	assert.Contains(t, appEnv, "LAKEBASE_ENDPOINT")
+	assert.Contains(t, appEnv, "valueFrom: postgres")
+
+	// localOnly fields should NOT be in bundle variables
+	vars := generator.GenerateBundleVariables(plugins, cfg)
+	assert.Contains(t, vars, "postgres_branch:")
+	assert.Contains(t, vars, "postgres_database:")
+	assert.NotContains(t, vars, "postgres_host:")
+	assert.NotContains(t, vars, "postgres_dbname:")
+	assert.NotContains(t, vars, "postgres_endpoint:")
+	assert.NotContains(t, vars, "postgres_port:")
+	assert.NotContains(t, vars, "postgres_sslmode:")
+
+	// localOnly fields should NOT be in target variables
+	target := generator.GenerateTargetVariables(plugins, cfg)
+	assert.Contains(t, target, "postgres_branch: projects/p1/branches/br-1")
+	assert.Contains(t, target, "postgres_database: projects/p1/branches/br-1/databases/db-1")
+	assert.NotContains(t, target, "postgres_host")
+	assert.NotContains(t, target, "postgres_databaseName")
+	assert.NotContains(t, target, "postgres_endpointPath")
+	assert.NotContains(t, target, "postgres_port")
+	assert.NotContains(t, target, "postgres_sslmode")
+}
+
+func TestValueFieldFallback(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "test",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type: "postgres", Alias: "Postgres", ResourceKey: "postgres",
+						Fields: map[string]manifest.ResourceField{
+							"port":    {Env: "PGPORT", LocalOnly: true, Value: "5432", Description: "Postgres port"},
+							"sslmode": {Env: "PGSSLMODE", LocalOnly: true, Value: "require", Description: "SSL mode"},
+							"host":    {Env: "PGHOST", LocalOnly: true, Resolve: "postgres:host", Description: "Postgres host"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// No ResourceValues provided — value fields should use static fallback, resolve fields should be empty
+	cfg := generator.Config{ResourceValues: map[string]string{}}
+
+	env := generator.GenerateDotEnv(plugins, cfg)
+	assert.Contains(t, env, "PGPORT=5432")
+	assert.Contains(t, env, "PGSSLMODE=require")
+	assert.Contains(t, env, "PGHOST=")
+
+	// value fields should show static value in example too
+	example := generator.GenerateDotEnvExample(plugins)
+	assert.Contains(t, example, "PGPORT=5432")
+	assert.Contains(t, example, "PGSSLMODE=require")
+	assert.Contains(t, example, "PGHOST=your_postgres_host")
+}
+
+func TestValueFieldNotOverriddenByResourceValues(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "test",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type: "postgres", Alias: "Postgres", ResourceKey: "postgres",
+						Fields: map[string]manifest.ResourceField{
+							"port": {Env: "PGPORT", LocalOnly: true, Value: "5432", Description: "Postgres port"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Explicit ResourceValues should take precedence over static value
+	cfg := generator.Config{ResourceValues: map[string]string{
+		"postgres.port": "5433",
+	}}
+
+	env := generator.GenerateDotEnv(plugins, cfg)
+	assert.Contains(t, env, "PGPORT=5433")
+}
+
 func TestBundleIgnoreFieldSkippedInVariablesAndTargets(t *testing.T) {
 	plugins := []manifest.Plugin{
 		{
