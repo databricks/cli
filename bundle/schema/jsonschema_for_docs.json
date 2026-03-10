@@ -2960,8 +2960,6 @@
               "properties": {
                 "app": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceApp",
-                  "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
                   "x-since-version": "v0.290.0"
                 },
                 "database": {
