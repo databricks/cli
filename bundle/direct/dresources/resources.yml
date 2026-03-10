@@ -17,9 +17,9 @@ resources:
 
   jobs:
     ignore_remote_changes:
-      # edit_mode is set by CLI, not user-configurable
+      # edit_mode is set by CLI, cannot be specified in databricks.yml
       - field: edit_mode
-        reason: managed
+        reason: cli_managed
 
       # Same as clusters.{aws,azure,gcp}_attributes — see clusters/resource_cluster.go#L361-L363
       # s.SchemaPath("aws_attributes").SetSuppressDiff()
