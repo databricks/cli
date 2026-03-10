@@ -522,21 +522,21 @@ func TestSet_EmbedTag(t *testing.T) {
 
 	type Container struct {
 		ObjectID string `json:"object_id"`
-		Items    []Item `json:"__EMBED__,omitempty"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
 	}
 
 	c := &Container{
 		ObjectID: "abc",
-		Items: []Item{
+		EmbeddedSlice: []Item{
 			{Name: "alice", Level: "admin"},
 			{Name: "bob", Level: "reader"},
 		},
 	}
 
-	// Set a field via __EMBED__ index.
+	// Set a field via EmbeddedSlice index.
 	err := structaccess.SetByString(c, "[0].level", "writer")
 	require.NoError(t, err)
-	assert.Equal(t, "writer", c.Items[0].Level)
+	assert.Equal(t, "writer", c.EmbeddedSlice[0].Level)
 
 	// Set non-embed field normally.
 	err = structaccess.SetByString(c, "object_id", "def")
@@ -546,7 +546,7 @@ func TestSet_EmbedTag(t *testing.T) {
 	// Set via key-value path traversal.
 	err = structaccess.SetByString(c, "[name='bob'].level", "admin")
 	require.NoError(t, err)
-	assert.Equal(t, "admin", c.Items[1].Level)
+	assert.Equal(t, "admin", c.EmbeddedSlice[1].Level)
 }
 
 func TestSetJobSettings(t *testing.T) {

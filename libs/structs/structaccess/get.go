@@ -57,7 +57,7 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 		}
 
 		if idx, isIndex := node.Index(); isIndex {
-			// If cur is a struct with an __EMBED__ slice field, navigate through it.
+			// If cur is a struct with an EmbeddedSlice field, navigate through it.
 			if cur.Kind() == reflect.Struct {
 				if embed := findEmbedField(cur); embed.IsValid() {
 					cur = embed
@@ -75,7 +75,7 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 		}
 
 		if key, value, ok := node.KeyValue(); ok {
-			// If cur is a struct with an __EMBED__ slice field, navigate through it.
+			// If cur is a struct with an EmbeddedSlice field, navigate through it.
 			if cur.Kind() == reflect.Struct {
 				if embed := findEmbedField(cur); embed.IsValid() {
 					cur = embed

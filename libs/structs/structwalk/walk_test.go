@@ -223,17 +223,17 @@ func TestEmbedTagWalk(t *testing.T) {
 
 	type Container struct {
 		ObjectID string `json:"object_id"`
-		Items    []Item `json:"__EMBED__,omitempty"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
 	}
 
 	c := Container{
 		ObjectID: "abc",
-		Items:    []Item{{Name: "first"}, {Name: "second"}},
+		EmbeddedSlice: []Item{{Name: "first"}, {Name: "second"}},
 	}
 
 	result := flatten(t, c)
 
-	// __EMBED__ field contents appear at parent level without the field name.
+	// EmbeddedSlice field contents appear at parent level without the field name.
 	assert.Equal(t, map[string]any{
 		"object_id": "abc",
 		"[0].name":  "first",
@@ -244,7 +244,7 @@ func TestEmbedTagWalk(t *testing.T) {
 func TestEmbedTagWalkEmpty(t *testing.T) {
 	type Container struct {
 		ObjectID string `json:"object_id"`
-		Items    []int  `json:"__EMBED__,omitempty"`
+		EmbeddedSlice []int `json:"items,omitempty"`
 	}
 
 	// Empty slice with omitempty should be skipped.

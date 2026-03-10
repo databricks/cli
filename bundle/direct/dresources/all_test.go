@@ -279,7 +279,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "IS_OWNER",
 				UserName:        "user@example.com",
 			}},
@@ -296,7 +296,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/pipelines/" + resp.PipelineId,
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},
@@ -314,7 +314,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/registered-models/" + resp.RegisteredModel.Name,
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},
@@ -331,7 +331,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/experiments/" + resp.ExperimentId,
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},
@@ -341,7 +341,7 @@ var testDeps = map[string]prepareWorkspace{
 	"clusters.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},
@@ -360,7 +360,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/apps/" + waiter.Response.Name,
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},
@@ -370,7 +370,7 @@ var testDeps = map[string]prepareWorkspace{
 	"sql_warehouses.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/sql/warehouses/warehouse-permissions",
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},
@@ -389,7 +389,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/database-instances/" + waiter.Response.Name,
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},
@@ -411,7 +411,7 @@ var testDeps = map[string]prepareWorkspace{
 		components, _ := ParsePostgresName(result.Name)
 		return &PermissionsState{
 			ObjectID: "/database-projects/" + components.ProjectID,
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},
@@ -440,7 +440,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/dashboards/" + resp.DashboardId,
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},
@@ -467,7 +467,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},
@@ -498,7 +498,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/alertsv2/" + resp.Id,
-			Permissions: []iam.AccessControlRequest{{
+			EmbeddedSlice: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
 			}},

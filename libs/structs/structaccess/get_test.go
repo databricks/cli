@@ -747,12 +747,12 @@ func TestGet_EmbedTag(t *testing.T) {
 
 	type Container struct {
 		ObjectID string `json:"object_id"`
-		Items    []Item `json:"__EMBED__,omitempty"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
 	}
 
 	c := Container{
 		ObjectID: "abc",
-		Items: []Item{
+		EmbeddedSlice: []Item{
 			{Name: "alice", Level: "admin"},
 			{Name: "bob", Level: "reader"},
 		},
@@ -761,7 +761,7 @@ func TestGet_EmbedTag(t *testing.T) {
 	// Access non-embed field normally.
 	testGet(t, c, "object_id", "abc")
 
-	// Access __EMBED__ slice elements via index.
+	// Access EmbeddedSlice elements via index.
 	testGet(t, c, "[0].name", "alice")
 	testGet(t, c, "[1].level", "reader")
 
@@ -774,8 +774,8 @@ func TestGet_EmbedTag(t *testing.T) {
 	var notFound *NotFoundError
 	require.ErrorAs(t, err, &notFound)
 
-	// __EMBED__ field is not accessible by name.
-	_, err = GetByString(c, "__EMBED__")
+	// EmbeddedSlice field is not accessible by json tag name.
+	_, err = GetByString(c, "items")
 	require.Error(t, err)
 	require.NotErrorAs(t, err, &notFound)
 }
@@ -788,26 +788,26 @@ func TestValidate_EmbedTag(t *testing.T) {
 
 	type Container struct {
 		ObjectID string `json:"object_id"`
-		Items    []Item `json:"__EMBED__,omitempty"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
 	}
 
 	typ := reflect.TypeOf(Container{})
 
-	// Valid paths through __EMBED__.
+	// Valid paths through EmbeddedSlice.
 	require.NoError(t, ValidateByString(typ, "[0].name"))
 	require.NoError(t, ValidateByString(typ, "[*].level"))
 	require.NoError(t, ValidateByString(typ, "[name='alice'].level"))
 	require.NoError(t, ValidateByString(typ, "object_id"))
 
-	// __EMBED__ itself is not accessible.
-	require.Error(t, ValidateByString(typ, "__EMBED__"))
-	require.Error(t, ValidateByString(typ, "__EMBED__[0].name"))
+	// EmbeddedSlice itself is not accessible by json tag name.
+	require.Error(t, ValidateByString(typ, "items"))
+	require.Error(t, ValidateByString(typ, "items[0].name"))
 }
 
 func TestGet_EmbedTagEmpty(t *testing.T) {
 	type Container struct {
 		ObjectID string `json:"object_id"`
-		Items    []int  `json:"__EMBED__,omitempty"`
+		EmbeddedSlice []int `json:"items,omitempty"`
 	}
 
 	// Empty embed slice with omitempty: index should fail.

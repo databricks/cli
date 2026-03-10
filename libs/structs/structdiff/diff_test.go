@@ -456,8 +456,8 @@ type EmbedItem struct {
 }
 
 type EmbedContainer struct {
-	ObjectID string      `json:"object_id"`
-	Items    []EmbedItem `json:"__EMBED__,omitempty"`
+	ObjectID      string      `json:"object_id"`
+	EmbeddedSlice []EmbedItem `json:"items,omitempty"`
 }
 
 func embedItemKey(item EmbedItem) (string, string) {
@@ -472,20 +472,20 @@ func TestGetStructDiffEmbedTag(t *testing.T) {
 	}{
 		{
 			name: "no changes",
-			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}}},
-			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}}},
+			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}}},
+			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}}},
 			want: nil,
 		},
 		{
 			name: "embed field change without keys",
-			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}}},
-			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "reader"}}},
+			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}}},
+			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "reader"}}},
 			want: []ResolvedChange{{Field: "[0].level", Old: "admin", New: "reader"}},
 		},
 		{
 			name: "embed element added",
-			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice"}}},
-			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice"}, {Name: "bob"}}},
+			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice"}}},
+			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice"}, {Name: "bob"}}},
 			// Different lengths without key func → whole-slice change
 			want: []ResolvedChange{{Field: "", Old: []EmbedItem{{Name: "alice"}}, New: []EmbedItem{{Name: "alice"}, {Name: "bob"}}}},
 		},
@@ -498,7 +498,7 @@ func TestGetStructDiffEmbedTag(t *testing.T) {
 		{
 			name: "embed slice empty vs non-empty",
 			a:    EmbedContainer{ObjectID: "abc"},
-			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice"}}},
+			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice"}}},
 			want: []ResolvedChange{{Field: "", Old: nil, New: []EmbedItem{{Name: "alice"}}}},
 		},
 	}
@@ -513,7 +513,7 @@ func TestGetStructDiffEmbedTag(t *testing.T) {
 }
 
 func TestGetStructDiffEmbedTagWithKeyFunc(t *testing.T) {
-	// The __EMBED__ field appears at root path, so key pattern is "".
+	// The EmbeddedSlice field appears at root path, so key pattern is "".
 	sliceKeys := map[string]KeyFunc{
 		"": embedItemKey,
 	}
@@ -525,26 +525,26 @@ func TestGetStructDiffEmbedTagWithKeyFunc(t *testing.T) {
 	}{
 		{
 			name: "reorder with key func",
-			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}, {Name: "bob", Level: "reader"}}},
-			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "bob", Level: "reader"}, {Name: "alice", Level: "admin"}}},
+			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}, {Name: "bob", Level: "reader"}}},
+			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "bob", Level: "reader"}, {Name: "alice", Level: "admin"}}},
 			want: nil,
 		},
 		{
 			name: "field change with key func",
-			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}}},
-			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "reader"}}},
+			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}}},
+			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "reader"}}},
 			want: []ResolvedChange{{Field: "[name='alice'].level", Old: "admin", New: "reader"}},
 		},
 		{
 			name: "element added with key func",
-			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice"}}},
-			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice"}, {Name: "bob", Level: "reader"}}},
+			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice"}}},
+			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice"}, {Name: "bob", Level: "reader"}}},
 			want: []ResolvedChange{{Field: "[name='bob']", Old: nil, New: EmbedItem{Name: "bob", Level: "reader"}}},
 		},
 		{
 			name: "element removed with key func",
-			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}, {Name: "bob"}}},
-			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}}},
+			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}, {Name: "bob"}}},
+			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}}},
 			want: []ResolvedChange{{Field: "[name='bob']", Old: EmbedItem{Name: "bob"}, New: nil}},
 		},
 	}
