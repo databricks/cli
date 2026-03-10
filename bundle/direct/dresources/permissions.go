@@ -34,7 +34,7 @@ type ResourcePermissions struct {
 
 type PermissionsState struct {
 	ObjectID    string                     `json:"object_id"`
-	Permissions []iam.AccessControlRequest `json:"permissions,omitempty"`
+	Permissions []iam.AccessControlRequest `json:"__EMBED__,omitempty"`
 }
 
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -131,8 +131,10 @@ func accessControlRequestKey(x iam.AccessControlRequest) (string, string) {
 }
 
 func (*ResourcePermissions) KeyedSlices() map[string]any {
+	// Empty key because Permissions uses __EMBED__ tag, so the slice
+	// appears at the root path of PermissionsState (no "permissions" prefix).
 	return map[string]any{
-		"permissions": accessControlRequestKey,
+		"": accessControlRequestKey,
 	}
 }
 
