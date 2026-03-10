@@ -780,6 +780,30 @@ func TestGet_EmbedTag(t *testing.T) {
 	require.NotErrorAs(t, err, &notFound)
 }
 
+func TestValidate_EmbedTag(t *testing.T) {
+	type Item struct {
+		Name  string `json:"name"`
+		Level string `json:"level,omitempty"`
+	}
+
+	type Container struct {
+		ObjectID string `json:"object_id"`
+		Items    []Item `json:"__EMBED__,omitempty"`
+	}
+
+	typ := reflect.TypeOf(Container{})
+
+	// Valid paths through __EMBED__.
+	require.NoError(t, ValidateByString(typ, "[0].name"))
+	require.NoError(t, ValidateByString(typ, "[*].level"))
+	require.NoError(t, ValidateByString(typ, "[name='alice'].level"))
+	require.NoError(t, ValidateByString(typ, "object_id"))
+
+	// __EMBED__ itself is not accessible.
+	require.Error(t, ValidateByString(typ, "__EMBED__"))
+	require.Error(t, ValidateByString(typ, "__EMBED__[0].name"))
+}
+
 func TestGet_EmbedTagEmpty(t *testing.T) {
 	type Container struct {
 		ObjectID string `json:"object_id"`
