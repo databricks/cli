@@ -222,12 +222,12 @@ func TestEmbedTagWalk(t *testing.T) {
 	}
 
 	type Container struct {
-		ObjectID string `json:"object_id"`
+		ObjectID      string `json:"object_id"`
 		EmbeddedSlice []Item `json:"items,omitempty"`
 	}
 
 	c := Container{
-		ObjectID: "abc",
+		ObjectID:      "abc",
 		EmbeddedSlice: []Item{{Name: "first"}, {Name: "second"}},
 	}
 
@@ -243,8 +243,8 @@ func TestEmbedTagWalk(t *testing.T) {
 
 func TestEmbedTagWalkEmpty(t *testing.T) {
 	type Container struct {
-		ObjectID string `json:"object_id"`
-		EmbeddedSlice []int `json:"items,omitempty"`
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []int  `json:"items,omitempty"`
 	}
 
 	// Empty slice with omitempty should be skipped.

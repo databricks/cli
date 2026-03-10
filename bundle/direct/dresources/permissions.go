@@ -76,7 +76,7 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 
 	return &structvar.StructVar{
 		Value: &PermissionsState{
-			ObjectID:    "", // Always a reference, defined in Refs below
+			ObjectID:      "", // Always a reference, defined in Refs below
 			EmbeddedSlice: permissions,
 		},
 		Refs: map[string]string{
