@@ -5,12 +5,12 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,22 +49,40 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	require.ErrorContains(t, diags.Error(), "A common practice is to use a username or principal name in this path, i.e. use\n\n  root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
 	jobPermissions := []resources.JobPermission{
-		{Level: "CAN_MANAGE", UserName: "user@company.com"},
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
 	}
 	pipelinePermissions := []resources.PipelinePermission{
-		{Level: "CAN_MANAGE", UserName: "user@company.com"},
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
 	}
 	experimentPermissions := []resources.MlflowExperimentPermission{
-		{Level: "CAN_MANAGE", UserName: "user@company.com"},
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
 	}
 	modelPermissions := []resources.MlflowModelPermission{
-		{Level: "CAN_MANAGE", UserName: "user@company.com"},
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
 	}
 	endpointPermissions := []resources.ModelServingEndpointPermission{
-		{Level: "CAN_MANAGE", UserName: "user@company.com"},
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
 	}
 	clusterPermissions := []resources.ClusterPermission{
-		{Level: "CAN_MANAGE", UserName: "user@company.com"},
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
 	}
 	b.Config.Resources.Jobs["job1"].Permissions = jobPermissions
 	b.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}

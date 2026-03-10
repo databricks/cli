@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
-	appssdk "github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,20 +15,20 @@ import (
 func TestConvertApp(t *testing.T) {
 	src := resources.App{
 		SourceCodePath: "./app",
-		App: appssdk.App{
+		App: apps.App{
 			Name:        "app_id",
 			Description: "app description",
-			Resources: []appssdk.AppResource{
+			Resources: []apps.AppResource{
 				{
 					Name: "job1",
-					Job: &appssdk.AppResourceJob{
+					Job: &apps.AppResourceJob{
 						Id:         "1234",
 						Permission: "CAN_MANAGE_RUN",
 					},
 				},
 				{
 					Name: "sql1",
-					SqlWarehouse: &appssdk.AppResourceSqlWarehouse{
+					SqlWarehouse: &apps.AppResourceSqlWarehouse{
 						Id:         "5678",
 						Permission: "CAN_USE",
 					},
@@ -97,19 +97,19 @@ func TestConvertApp(t *testing.T) {
 func TestConvertAppWithNoDescription(t *testing.T) {
 	src := resources.App{
 		SourceCodePath: "./app",
-		App: appssdk.App{
+		App: apps.App{
 			Name: "app_id",
-			Resources: []appssdk.AppResource{
+			Resources: []apps.AppResource{
 				{
 					Name: "job1",
-					Job: &appssdk.AppResourceJob{
+					Job: &apps.AppResourceJob{
 						Id:         "1234",
 						Permission: "CAN_MANAGE_RUN",
 					},
 				},
 				{
 					Name: "sql1",
-					SqlWarehouse: &appssdk.AppResourceSqlWarehouse{
+					SqlWarehouse: &apps.AppResourceSqlWarehouse{
 						Id:         "5678",
 						Permission: "CAN_USE",
 					},
