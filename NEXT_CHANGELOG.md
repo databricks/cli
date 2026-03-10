@@ -8,6 +8,6 @@
 * Modify grants to use SDK types ([#4666](https://github.com/databricks/cli/pull/4666))
 
 ### Dependency updates
-- Bump databricks-sdk-go from v0.112.0 to v0.119.0. ([#4631](https://github.com/databricks/cli/pull/4631))
+* Bump databricks-sdk-go from v0.112.0 to v0.119.0 ([#4631](https://github.com/databricks/cli/pull/4631), [#4695](https://github.com/databricks/cli/pull/4695))
 
 ### API Changes

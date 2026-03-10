@@ -72,9 +72,9 @@ func newCreateCatalogConfig() *cobra.Command {
 	cmd.Use = "create-catalog-config PARENT"
 	cmd.Short = `Create config for a catalog.`
 	cmd.Long = `Create config for a catalog.
-  
+
   Create Data Classification configuration for a catalog.
-  
+
   Creates a new config resource, which enables Data Classification for the
   specified catalog. - The config must not already exist for the catalog.
 
@@ -143,7 +143,7 @@ func newDeleteCatalogConfig() *cobra.Command {
 	cmd.Use = "delete-catalog-config NAME"
 	cmd.Short = `Delete config for a catalog.`
 	cmd.Long = `Delete config for a catalog.
-  
+
   Delete Data Classification configuration for a catalog.
 
   Arguments:
@@ -199,7 +199,7 @@ func newGetCatalogConfig() *cobra.Command {
 	cmd.Use = "get-catalog-config NAME"
 	cmd.Short = `Get config for a catalog.`
 	cmd.Long = `Get config for a catalog.
-  
+
   Get the Data Classification configuration for a catalog.
 
   Arguments:
@@ -263,7 +263,7 @@ func newUpdateCatalogConfig() *cobra.Command {
 	cmd.Use = "update-catalog-config NAME UPDATE_MASK"
 	cmd.Short = `Update config for a catalog.`
 	cmd.Long = `Update config for a catalog.
-  
+
   Update the Data Classification configuration for a catalog. - The config must
   already exist for the catalog. - Updates fields specified in the update_mask.
   Use update_mask field to perform partial updates of the configuration.

@@ -145,6 +145,9 @@ Database Instances
   database                               Database Instances provide access to a database via REST API or direct SQL.
   psql                                   Connect to a Lakebase Postgres database
 
+Agent Bricks
+  knowledge-assistants                   Manage Knowledge Assistants and related resources.
+
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.
   workspace-entity-tag-assignments       Manage tag assignments on workspace-scoped objects.

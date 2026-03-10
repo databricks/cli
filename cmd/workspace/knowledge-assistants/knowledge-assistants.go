@@ -73,7 +73,7 @@ func newCreateKnowledgeAssistant() *cobra.Command {
 	cmd.Use = "create-knowledge-assistant DISPLAY_NAME DESCRIPTION"
 	cmd.Short = `Create a Knowledge Assistant.`
 	cmd.Long = `Create a Knowledge Assistant.
-  
+
   Creates a Knowledge Assistant.
 
   Arguments:
@@ -167,7 +167,7 @@ func newCreateKnowledgeSource() *cobra.Command {
 	cmd.Use = "create-knowledge-source PARENT DISPLAY_NAME DESCRIPTION SOURCE_TYPE"
 	cmd.Short = `Create a Knowledge Source.`
 	cmd.Long = `Create a Knowledge Source.
-  
+
   Creates a Knowledge Source under a Knowledge Assistant.
 
   Arguments:
@@ -261,7 +261,7 @@ func newDeleteKnowledgeAssistant() *cobra.Command {
 	cmd.Use = "delete-knowledge-assistant NAME"
 	cmd.Short = `Delete a Knowledge Assistant.`
 	cmd.Long = `Delete a Knowledge Assistant.
-  
+
   Deletes a Knowledge Assistant.
 
   Arguments:
@@ -318,7 +318,7 @@ func newDeleteKnowledgeSource() *cobra.Command {
 	cmd.Use = "delete-knowledge-source NAME"
 	cmd.Short = `Delete a Knowledge Source.`
 	cmd.Long = `Delete a Knowledge Source.
-  
+
   Deletes a Knowledge Source.
 
   Arguments:
@@ -375,7 +375,7 @@ func newGetKnowledgeAssistant() *cobra.Command {
 	cmd.Use = "get-knowledge-assistant NAME"
 	cmd.Short = `Get a Knowledge Assistant.`
 	cmd.Long = `Get a Knowledge Assistant.
-  
+
   Gets a Knowledge Assistant.
 
   Arguments:
@@ -432,7 +432,7 @@ func newGetKnowledgeSource() *cobra.Command {
 	cmd.Use = "get-knowledge-source NAME"
 	cmd.Short = `Get a Knowledge Source.`
 	cmd.Long = `Get a Knowledge Source.
-  
+
   Gets a Knowledge Source.
 
   Arguments:
@@ -492,7 +492,7 @@ func newListKnowledgeAssistants() *cobra.Command {
 	cmd.Use = "list-knowledge-assistants"
 	cmd.Short = `List Knowledge Assistants.`
 	cmd.Long = `List Knowledge Assistants.
-  
+
   List Knowledge Assistants`
 
 	cmd.Annotations = make(map[string]string)
@@ -543,7 +543,7 @@ func newListKnowledgeSources() *cobra.Command {
 	cmd.Use = "list-knowledge-sources PARENT"
 	cmd.Short = `List Knowledge Sources.`
 	cmd.Long = `List Knowledge Sources.
-  
+
   Lists Knowledge Sources under a Knowledge Assistant.
 
   Arguments:
@@ -597,7 +597,7 @@ func newSyncKnowledgeSources() *cobra.Command {
 	cmd.Use = "sync-knowledge-sources NAME"
 	cmd.Short = `Syncs all Knowledge Sources for a Knowledge Assistant.`
 	cmd.Long = `Syncs all Knowledge Sources for a Knowledge Assistant.
-  
+
   Sync all non-index Knowledge Sources for a Knowledge Assistant (index sources
   do not require sync)
 
@@ -662,7 +662,7 @@ func newUpdateKnowledgeAssistant() *cobra.Command {
 	cmd.Use = "update-knowledge-assistant NAME UPDATE_MASK DISPLAY_NAME DESCRIPTION"
 	cmd.Short = `Update a Knowledge Assistant.`
 	cmd.Long = `Update a Knowledge Assistant.
-  
+
   Updates a Knowledge Assistant.
 
   Arguments:
@@ -766,7 +766,7 @@ func newUpdateKnowledgeSource() *cobra.Command {
 	cmd.Use = "update-knowledge-source NAME UPDATE_MASK DISPLAY_NAME DESCRIPTION SOURCE_TYPE"
 	cmd.Short = `Update a Knowledge Source.`
 	cmd.Long = `Update a Knowledge Source.
-  
+
   Updates a Knowledge Source.
 
   Arguments:
