@@ -631,19 +631,6 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "url":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Permission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.JobPermission:
   "group_name":
     "description": |-
@@ -688,6 +675,19 @@ github.com/databricks/cli/bundle/config/resources.MlflowModelPermission:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Permission:
   "group_name":
     "description": |-
       PLACEHOLDER
