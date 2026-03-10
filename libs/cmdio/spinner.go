@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -12,15 +13,17 @@ import (
 
 // spinnerModel is the Bubble Tea model for the spinner.
 type spinnerModel struct {
-	spinner  bubblespinner.Model
-	suffix   string
-	quitting bool
+	spinner   bubblespinner.Model
+	suffix    string
+	quitting  bool
+	startTime time.Time // non-zero when elapsed time display is enabled
 }
 
 // Message types for spinner updates.
 type (
-	suffixMsg string
-	quitMsg   struct{}
+	suffixMsg      string
+	quitMsg        struct{}
+	elapsedTimeMsg struct{ startTime time.Time }
 )
 
 // newSpinnerModel creates a new spinner model.
@@ -50,6 +53,10 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.suffix = string(msg)
 		return m, nil
 
+	case elapsedTimeMsg:
+		m.startTime = msg.startTime
+		return m, nil
+
 	case quitMsg:
 		m.quitting = true
 		return m, tea.Quit
@@ -69,11 +76,15 @@ func (m spinnerModel) View() string {
 		return ""
 	}
 
+	result := m.spinner.View()
 	if m.suffix != "" {
-		return m.spinner.View() + " " + m.suffix
+		result += " " + m.suffix
 	}
-
-	return m.spinner.View()
+	if !m.startTime.IsZero() {
+		elapsed := time.Since(m.startTime)
+		result += fmt.Sprintf(" %02d:%02d", int(elapsed.Minutes()), int(elapsed.Seconds())%60)
+	}
+	return result
 }
 
 // spinner provides a structured interface for displaying progress indicators.
@@ -88,6 +99,13 @@ type spinner struct {
 	ctx  context.Context
 	once sync.Once
 	done chan struct{} // Closed when tea.Program finishes
+}
+
+// TrackElapsedTime enables an elapsed time display (MM:SS) next to the spinner message.
+func (sp *spinner) TrackElapsedTime() {
+	if sp.p != nil {
+		sp.p.Send(elapsedTimeMsg{startTime: time.Now()})
+	}
 }
 
 // Update sends a status message to the spinner.
