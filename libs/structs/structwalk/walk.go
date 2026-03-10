@@ -131,7 +131,6 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 		if fieldName == "" {
 			fieldName = sf.Name
 		}
-		node := structpath.NewDotString(path, fieldName)
 
 		fieldVal := s.Field(i)
 		// Skip zero values with omitempty unless field is explicitly forced.
@@ -139,6 +138,13 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 			continue
 		}
 
+		// __EMBED__: walk directly without adding the field name to the path.
+		if jsonTag.IsEmbed() {
+			walkValue(path, fieldVal, &sf, visit)
+			continue
+		}
+
+		node := structpath.NewDotString(path, fieldName)
 		walkValue(node, fieldVal, &sf, visit)
 	}
 }
