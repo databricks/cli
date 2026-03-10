@@ -43,24 +43,29 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreateBranch())
+	cmd.AddCommand(newCreateDatabase())
 	cmd.AddCommand(newCreateEndpoint())
 	cmd.AddCommand(newCreateProject())
 	cmd.AddCommand(newCreateRole())
 	cmd.AddCommand(newDeleteBranch())
+	cmd.AddCommand(newDeleteDatabase())
 	cmd.AddCommand(newDeleteEndpoint())
 	cmd.AddCommand(newDeleteProject())
 	cmd.AddCommand(newDeleteRole())
 	cmd.AddCommand(newGenerateDatabaseCredential())
 	cmd.AddCommand(newGetBranch())
+	cmd.AddCommand(newGetDatabase())
 	cmd.AddCommand(newGetEndpoint())
 	cmd.AddCommand(newGetOperation())
 	cmd.AddCommand(newGetProject())
 	cmd.AddCommand(newGetRole())
 	cmd.AddCommand(newListBranches())
+	cmd.AddCommand(newListDatabases())
 	cmd.AddCommand(newListEndpoints())
 	cmd.AddCommand(newListProjects())
 	cmd.AddCommand(newListRoles())
 	cmd.AddCommand(newUpdateBranch())
+	cmd.AddCommand(newUpdateDatabase())
 	cmd.AddCommand(newUpdateEndpoint())
 	cmd.AddCommand(newUpdateProject())
 
@@ -192,6 +197,132 @@ func newCreateBranch() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createBranchOverrides {
 		fn(cmd, &createBranchReq)
+	}
+
+	return cmd
+}
+
+// start create-database command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createDatabaseOverrides []func(
+	*cobra.Command,
+	*postgres.CreateDatabaseRequest,
+)
+
+func newCreateDatabase() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createDatabaseReq postgres.CreateDatabaseRequest
+	createDatabaseReq.Database = postgres.Database{}
+	var createDatabaseJson flags.JsonFlag
+
+	var createDatabaseSkipWait bool
+	var createDatabaseTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createDatabaseSkipWait, "no-wait", createDatabaseSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&createDatabaseTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&createDatabaseJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createDatabaseReq.DatabaseId, "database-id", createDatabaseReq.DatabaseId, `The ID to use for the Database, which will become the final component of the database's resource name.`)
+	cmd.Flags().StringVar(&createDatabaseReq.Database.Name, "name", createDatabaseReq.Database.Name, `The resource name of the database.`)
+	// TODO: complex arg: spec
+	// TODO: complex arg: status
+
+	cmd.Use = "create-database PARENT"
+	cmd.Short = `Create a Database.`
+	cmd.Long = `Create a Database.
+
+  Create a Database.
+
+  Creates a database in the specified branch. A branch can have multiple
+  databases.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    PARENT: The Branch where this Database will be created. Format:
+      projects/{project_id}/branches/{branch_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createDatabaseJson.Unmarshal(&createDatabaseReq.Database)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createDatabaseReq.Parent = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case createDatabaseSkipWait:
+			wait, err := w.Postgres.CreateDatabase(ctx, createDatabaseReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.CreateDatabase(ctx, createDatabaseReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for create-database to complete..."
+
+			// Wait for completion.
+			opts := api.WithTimeout(createDatabaseTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			close(spinner)
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createDatabaseOverrides {
+		fn(cmd, &createDatabaseReq)
 	}
 
 	return cmd
@@ -668,6 +799,107 @@ func newDeleteBranch() *cobra.Command {
 	return cmd
 }
 
+// start delete-database command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteDatabaseOverrides []func(
+	*cobra.Command,
+	*postgres.DeleteDatabaseRequest,
+)
+
+func newDeleteDatabase() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteDatabaseReq postgres.DeleteDatabaseRequest
+
+	var deleteDatabaseSkipWait bool
+	var deleteDatabaseTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deleteDatabaseSkipWait, "no-wait", deleteDatabaseSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&deleteDatabaseTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "delete-database NAME"
+	cmd.Short = `Delete a Database.`
+	cmd.Long = `Delete a Database.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: The resource name of the postgres database. Format:
+      projects/{project_id}/branches/{branch_id}/databases/{database_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteDatabaseReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case deleteDatabaseSkipWait:
+			wait, err := w.Postgres.DeleteDatabase(ctx, deleteDatabaseReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.DeleteDatabase(ctx, deleteDatabaseReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for delete-database to complete..."
+
+			// Wait for completion.
+			opts := api.WithTimeout(deleteDatabaseTimeout)
+
+			err = wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			close(spinner)
+			return nil
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteDatabaseOverrides {
+		fn(cmd, &deleteDatabaseReq)
+	}
+
+	return cmd
+}
+
 // start delete-endpoint command
 
 // Slice with functions to override default command behavior.
@@ -1112,6 +1344,64 @@ func newGetBranch() *cobra.Command {
 	return cmd
 }
 
+// start get-database command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getDatabaseOverrides []func(
+	*cobra.Command,
+	*postgres.GetDatabaseRequest,
+)
+
+func newGetDatabase() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getDatabaseReq postgres.GetDatabaseRequest
+
+	cmd.Use = "get-database NAME"
+	cmd.Short = `Get a Database.`
+	cmd.Long = `Get a Database.
+
+  Arguments:
+    NAME: The name of the Database to retrieve. Format:
+      projects/{project_id}/branches/{branch_id}/databases/{database_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getDatabaseReq.Name = args[0]
+
+		response, err := w.Postgres.GetDatabase(ctx, getDatabaseReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getDatabaseOverrides {
+		fn(cmd, &getDatabaseReq)
+	}
+
+	return cmd
+}
+
 // start get-endpoint command
 
 // Slice with functions to override default command behavior.
@@ -1396,6 +1686,66 @@ func newListBranches() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listBranchesOverrides {
 		fn(cmd, &listBranchesReq)
+	}
+
+	return cmd
+}
+
+// start list-databases command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listDatabasesOverrides []func(
+	*cobra.Command,
+	*postgres.ListDatabasesRequest,
+)
+
+func newListDatabases() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listDatabasesReq postgres.ListDatabasesRequest
+
+	cmd.Flags().IntVar(&listDatabasesReq.PageSize, "page-size", listDatabasesReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().StringVar(&listDatabasesReq.PageToken, "page-token", listDatabasesReq.PageToken, `Pagination token to go to the next page of Databases.`)
+
+	cmd.Use = "list-databases PARENT"
+	cmd.Short = `List postgres databases in a branch.`
+	cmd.Long = `List postgres databases in a branch.
+
+  List Databases.
+
+  Arguments:
+    PARENT: The Branch that owns this collection of databases. Format:
+      projects/{project_id}/branches/{branch_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listDatabasesReq.Parent = args[0]
+
+		response := w.Postgres.ListDatabases(ctx, listDatabasesReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listDatabasesOverrides {
+		fn(cmd, &listDatabasesReq)
 	}
 
 	return cmd
@@ -1691,6 +2041,132 @@ func newUpdateBranch() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateBranchOverrides {
 		fn(cmd, &updateBranchReq)
+	}
+
+	return cmd
+}
+
+// start update-database command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateDatabaseOverrides []func(
+	*cobra.Command,
+	*postgres.UpdateDatabaseRequest,
+)
+
+func newUpdateDatabase() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateDatabaseReq postgres.UpdateDatabaseRequest
+	updateDatabaseReq.Database = postgres.Database{}
+	var updateDatabaseJson flags.JsonFlag
+
+	var updateDatabaseSkipWait bool
+	var updateDatabaseTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateDatabaseSkipWait, "no-wait", updateDatabaseSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&updateDatabaseTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&updateDatabaseJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateDatabaseReq.Database.Name, "name", updateDatabaseReq.Database.Name, `The resource name of the database.`)
+	// TODO: complex arg: spec
+	// TODO: complex arg: status
+
+	cmd.Use = "update-database NAME UPDATE_MASK"
+	cmd.Short = `Update a Database.`
+	cmd.Long = `Update a Database.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: The resource name of the database. Format:
+      projects/{project_id}/branches/{branch_id}/databases/{database_id}
+    UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
+      when possible.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateDatabaseJson.Unmarshal(&updateDatabaseReq.Database)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateDatabaseReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateDatabaseReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case updateDatabaseSkipWait:
+			wait, err := w.Postgres.UpdateDatabase(ctx, updateDatabaseReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.UpdateDatabase(ctx, updateDatabaseReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for update-database to complete..."
+
+			// Wait for completion.
+			opts := api.WithTimeout(updateDatabaseTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			close(spinner)
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateDatabaseOverrides {
+		fn(cmd, &updateDatabaseReq)
 	}
 
 	return cmd

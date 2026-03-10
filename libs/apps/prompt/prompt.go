@@ -562,22 +562,23 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 		return nil, nil
 	}
 
-	// Step 3: enter a database name (pre-filled with default)
-	dbName := "databricks_postgres"
-	theme := AppkitTheme()
-	err = huh.NewInput().
-		Title("Database name").
-		Description("Enter the database name to connect to").
-		Value(&dbName).
-		WithTheme(theme).
-		Run()
+	// Step 3: pick a database within the branch
+	var databases []ListItem
+	err = RunWithSpinnerCtx(ctx, "Fetching databases...", func() error {
+		var fetchErr error
+		databases, fetchErr = ListPostgresDatabases(ctx, branchName)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	dbName, err := PromptFromList(ctx, "Select Database", "no databases found in branch "+branchName, databases, required)
 	if err != nil {
 		return nil, err
 	}
 	if dbName == "" {
 		return nil, nil
 	}
-	printAnswered(ctx, "Database", dbName)
 
 	return map[string]string{
 		r.Key() + ".branch":   branchName,

@@ -308,6 +308,51 @@ func TestResourceFields(t *testing.T) {
 	assert.Equal(t, []string{"database_name", "instance_name"}, r.FieldNames())
 }
 
+func TestResourceFieldBundleIgnore(t *testing.T) {
+	dir := t.TempDir()
+	manifestPath := filepath.Join(dir, manifest.ManifestFileName)
+
+	content := `{
+		"version": "1.0",
+		"plugins": {
+			"caching": {
+				"name": "caching",
+				"displayName": "Caching",
+				"description": "DB caching",
+				"package": "@databricks/appkit",
+				"resources": {
+					"required": [
+						{
+							"type": "database",
+							"alias": "Database",
+							"resourceKey": "database",
+							"description": "Cache database",
+							"fields": {
+								"instance_name": {"env": "DB_INSTANCE", "bundleIgnore": true},
+								"database_name": {"env": "DB_NAME"}
+							}
+						}
+					],
+					"optional": []
+				}
+			}
+		}
+	}`
+
+	err := os.WriteFile(manifestPath, []byte(content), 0o644)
+	require.NoError(t, err)
+
+	m, err := manifest.Load(dir)
+	require.NoError(t, err)
+
+	p := m.GetPluginByName("caching")
+	require.NotNil(t, p)
+
+	r := p.Resources.Required[0]
+	assert.True(t, r.Fields["instance_name"].BundleIgnore)
+	assert.False(t, r.Fields["database_name"].BundleIgnore)
+}
+
 func TestResourceHasFieldsFalse(t *testing.T) {
 	r := manifest.Resource{Type: "sql_warehouse", Alias: "SQL Warehouse", ResourceKey: "sql-warehouse"}
 	assert.False(t, r.HasFields())

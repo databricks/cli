@@ -1222,9 +1222,7 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
     "x-databricks-field-behaviors_output_only": |-
       true
 github.com/databricks/databricks-sdk-go/service/apps.AppResource:
-  "app":
-    "x-databricks-preview": |-
-      PRIVATE
+  "app": {}
   "database": {}
   "description":
     "description": |-
@@ -1235,6 +1233,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "name":
     "description": |-
       Name of the App Resource.
+  "postgres":
+    "x-databricks-preview": |-
+      PRIVATE
   "secret": {}
   "serving_endpoint": {}
   "sql_warehouse": {}
@@ -1294,6 +1295,21 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceJobJobPermission
         CAN_MANAGE_RUN
       - |-
         CAN_VIEW
+github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgres:
+  "branch":
+    "x-databricks-preview": |-
+      PRIVATE
+  "database":
+    "x-databricks-preview": |-
+      PRIVATE
+  "permission":
+    "x-databricks-preview": |-
+      PRIVATE
+github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgresPostgresPermission:
+  "_":
+    "enum":
+      - |-
+        CAN_CONNECT_AND_CREATE
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret:
   "key":
     "description": |-
@@ -1356,8 +1372,6 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurable:
       See https://docs.databricks.com/api/workspace/tables/get#securable_kind_manifest-securable_kind.
     "x-databricks-field-behaviors_output_only": |-
       true
-    "x-databricks-preview": |-
-      PRIVATE
   "securable_type": {}
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurablePermission:
   "_":
@@ -4602,6 +4616,20 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelinesEnvironment:
       List of pip dependencies, as supported by the version of pip in this environment.
       Each dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/
       Allowed dependency could be <requirement specifier>, <archive url/path>, <local project path>(WSFS or Volumes in Databricks), <vcs project url>
+  "environment_version":
+    "description": |-
+      The environment version of the serverless Python environment used to execute
+      customer Python code. Each environment version includes a specific Python
+      version and a curated set of pre-installed libraries with defined versions,
+      providing a stable and reproducible execution environment.
+
+      Databricks supports a three-year lifecycle for each environment version.
+      For available versions and their included packages, see
+      https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/
+
+      The value should be a string representing the environment version number, for example: `"4"`.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.PostgresCatalogConfig:
   "_":
     "description": |-
