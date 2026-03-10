@@ -18,8 +18,10 @@ const fileMode = 0o600
 
 const defaultComment = "The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified."
 
-const databricksSettingsSection = "__settings__"
-const defaultProfileKey = "default_profile"
+const (
+	databricksSettingsSection = "__settings__"
+	defaultProfileKey        = "default_profile"
+)
 
 // GetConfiguredDefaultProfile returns the explicitly configured default profile
 // by loading the config file at configFilePath.
