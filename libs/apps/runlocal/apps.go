@@ -8,7 +8,7 @@ import (
 
 type App interface {
 	PrepareEnvironment(ctx context.Context) error
-	GetCommand(ctx context.Context, debug bool) (cmd []string, env []string, err error)
+	GetCommand(ctx context.Context, debug bool) (cmd, env []string, err error)
 }
 
 func NewApp(config *Config, spec *AppSpec) (App, error) {
