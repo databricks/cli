@@ -1,4 +1,4 @@
-package mcp
+package aitools
 
 import (
 	"github.com/databricks/cli/cmd/root"
