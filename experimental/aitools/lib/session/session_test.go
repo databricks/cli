@@ -2,7 +2,6 @@ package session
 
 import (
 	"testing"
-	"time"
 )
 
 func TestNewSession(t *testing.T) {
@@ -15,10 +14,6 @@ func TestNewSession(t *testing.T) {
 	// Check data fields using Get
 	if workDir, ok := s.Get(WorkDirDataKey); ok && workDir != nil && workDir != "" {
 		t.Error("workDir should be empty initially")
-	}
-
-	if s.GetToolCalls() != 0 {
-		t.Error("toolCalls should be 0 initially")
 	}
 }
 
@@ -56,44 +51,6 @@ func TestSession_GetWorkDir_NotSet(t *testing.T) {
 	_, err := GetWorkDir(ctx)
 	if err == nil {
 		t.Error("GetWorkDir should fail when work dir is not set")
-	}
-}
-
-func TestSession_ToolCalls(t *testing.T) {
-	s := NewSession()
-
-	if s.GetToolCalls() != 0 {
-		t.Error("Initial tool calls should be 0")
-	}
-
-	count := s.IncrementToolCalls()
-	if count != 1 {
-		t.Errorf("Expected count 1, got %d", count)
-	}
-
-	if s.GetToolCalls() != 1 {
-		t.Errorf("Expected tool calls 1, got %d", s.GetToolCalls())
-	}
-
-	count = s.IncrementToolCalls()
-	if count != 2 {
-		t.Errorf("Expected count 2, got %d", count)
-	}
-
-	if s.GetToolCalls() != 2 {
-		t.Errorf("Expected tool calls 2, got %d", s.GetToolCalls())
-	}
-}
-
-func TestSession_GetUptime(t *testing.T) {
-	s := NewSession()
-
-	// Sleep a bit to ensure uptime is measurable
-	time.Sleep(10 * time.Millisecond)
-
-	uptime := s.GetUptime()
-	if uptime < 10*time.Millisecond {
-		t.Errorf("Expected uptime >= 10ms, got %v", uptime)
 	}
 }
 
