@@ -44,12 +44,10 @@ PRIMITIVES = [
 ]
 
 
-def get_schema_key(ref: str) -> str:
-    return ref.split("/")[-1]
-
-
 def get_class_name(ref: str) -> str:
-    name = ref.split("/")[-1].split(".")[-1]
+    name = ref.split("/")[-1]
+    name = name.split(".")[-1]
+
     return RENAMES.get(name, name)
 
 
@@ -76,6 +74,7 @@ def get_package(namespace: str, ref: str) -> Optional[str]:
     Returns Python package for a given OpenAPI ref.
     Returns None for builtin types.
     """
+
     full_name = ref.split("/")[-1]
 
     if full_name in PRIMITIVES:

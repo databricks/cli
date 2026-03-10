@@ -148,7 +148,7 @@ def get_schemas():
     )
 
     # we don't need all spec, only get supported types
-    flat_spec = {**_flatten_spec(sdk_types_spec), **_flatten_spec(resource_types_spec)}
+    flat_spec = {**sdk_types_spec, **resource_types_spec}
     flat_spec = {
         key: value for key, value in flat_spec.items() if packages.should_load_ref(key)
     }
@@ -160,19 +160,6 @@ def get_schemas():
             raise ValueError(f"Failed to parse schema for {name}") from e
 
     return output
-
-
-def _flatten_spec(nested: dict, prefix: str = "") -> dict:
-    result = {}
-    for k, v in nested.items():
-        path = f"{prefix}/{k}" if prefix else k
-        if isinstance(v, dict):
-            test = _unwrap_variable(v) or v
-            if test.get("type") in ("object", "string"):
-                result[path] = v
-            else:
-                result.update(_flatten_spec(v, path))
-    return result
 
 
 def _get_spec_path(spec: dict, path: list[str]) -> dict:

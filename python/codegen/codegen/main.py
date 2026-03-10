@@ -252,7 +252,7 @@ def _collect_reachable_schemas(
         if schema.type == openapi.SchemaType.OBJECT:
             for field in schema.properties.values():
                 if field.ref:
-                    name = packages.get_schema_key(field.ref)
+                    name = field.ref.split("/")[-1]
 
                     if not include_private and field.stage == openapi.Stage.PRIVATE:
                         continue
