@@ -1,52 +1,32 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
+    trace $CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
     rm -f out.requests.txt
 }
 trap cleanup EXIT
 
-title "Deploy app with lifecycle.started=true"
-trace $CLI bundle deploy
-
-title "Verify create request: no_compute must not be set"
-trace jq 'select(.method == "POST" and .path == "/api/2.0/apps")' out.requests.txt
+{ trace errcode $CLI bundle deploy; } &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+{ trace jq 'select(.method == "POST" and .path == "/api/2.0/apps")' out.requests.txt; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 rm -f out.requests.txt
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
 
-title "Check app compute state: must be ACTIVE"
-trace $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'
-
-title "Update description and re-deploy"
 trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
-trace $CLI bundle deploy
-
-title "Verify POST /deployments was called after update"
-trace jq 'select(.method == "POST" and (.path | endswith("/deployments")))' out.requests.txt
+{ trace errcode $CLI bundle deploy; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+{ trace jq 'select(.method == "POST" and (.path | endswith("/deployments")))' out.requests.txt; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 rm -f out.requests.txt
+{ trace errcode $CLI apps stop $UNIQUE_NAME | jq '.compute_status.state'; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
 
-title "Stop the app"
-trace $CLI apps stop $UNIQUE_NAME | jq '.compute_status.state'
-
-title "Change lifecycle.started to false and update"
 trace update_file.py databricks.yml "started: true" "started: false"
 trace update_file.py databricks.yml MY_APP_DESCRIPTION MY_APP_DESCRIPTION_2
-trace $CLI bundle deploy
-
-title "Verify POST /deployments is NOT called (lifecycle.started=false)"
-trace jq 'select(.method == "POST" and (.path | endswith("/deployments")))' out.requests.txt
+{ trace errcode $CLI bundle deploy; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+{ trace jq 'select(.method == "POST" and (.path | endswith("/deployments")))' out.requests.txt; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 rm -f out.requests.txt
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
 
-title "Check app compute state: must still be STOPPED"
-trace $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'
-
-title "Switch lifecycle.started back to true and update"
 trace update_file.py databricks.yml "started: false" "started: true"
 trace update_file.py databricks.yml MY_APP_DESCRIPTION_2 MY_APP_DESCRIPTION_3
-trace $CLI bundle deploy
-
-title "Verify POST /start and POST /deployments were called"
-trace jq 'select(.method == "POST" and (.path | (endswith("/start") or endswith("/deployments"))))' out.requests.txt
+{ trace errcode $CLI bundle deploy; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+{ trace jq 'select(.method == "POST" and (.path | (endswith("/start") or endswith("/deployments"))))' out.requests.txt; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 rm -f out.requests.txt
-
-title "Check app compute state: must be ACTIVE again"
-trace $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true

@@ -33,12 +33,14 @@ func (m *validateLifecycleStarted) Name() string {
 }
 
 func (m *validateLifecycleStarted) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
 	// lifecycle.started is a direct-mode-only feature; ignore it in other modes.
 	if !m.engine.IsDirect() {
-		return nil
+		return diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "lifecycle.started is only supported in direct deployment mode",
+		})
 	}
-
-	var diags diag.Diagnostics
 
 	_, err := dyn.MapByPattern(
 		b.Config.Value(),
