@@ -450,6 +450,114 @@ func TestGetStructDiff(t *testing.T) {
 	}
 }
 
+type EmbedItem struct {
+	Name  string `json:"name,omitempty"`
+	Level string `json:"level,omitempty"`
+}
+
+type EmbedContainer struct {
+	ObjectID string      `json:"object_id"`
+	Items    []EmbedItem `json:"__EMBED__,omitempty"`
+}
+
+func embedItemKey(item EmbedItem) (string, string) {
+	return "name", item.Name
+}
+
+func TestGetStructDiffEmbedTag(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b EmbedContainer
+		want []ResolvedChange
+	}{
+		{
+			name: "no changes",
+			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}}},
+			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}}},
+			want: nil,
+		},
+		{
+			name: "embed field change without keys",
+			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}}},
+			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "reader"}}},
+			want: []ResolvedChange{{Field: "[0].level", Old: "admin", New: "reader"}},
+		},
+		{
+			name: "embed element added",
+			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice"}}},
+			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice"}, {Name: "bob"}}},
+			// Different lengths without key func → whole-slice change
+			want: []ResolvedChange{{Field: "", Old: []EmbedItem{{Name: "alice"}}, New: []EmbedItem{{Name: "alice"}, {Name: "bob"}}}},
+		},
+		{
+			name: "non-embed field change",
+			a:    EmbedContainer{ObjectID: "abc"},
+			b:    EmbedContainer{ObjectID: "def"},
+			want: []ResolvedChange{{Field: "object_id", Old: "abc", New: "def"}},
+		},
+		{
+			name: "embed slice empty vs non-empty",
+			a:    EmbedContainer{ObjectID: "abc"},
+			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice"}}},
+			want: []ResolvedChange{{Field: "", Old: nil, New: []EmbedItem{{Name: "alice"}}}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetStructDiff(tt.a, tt.b, nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, resolveChanges(got))
+		})
+	}
+}
+
+func TestGetStructDiffEmbedTagWithKeyFunc(t *testing.T) {
+	// The __EMBED__ field appears at root path, so key pattern is "".
+	sliceKeys := map[string]KeyFunc{
+		"": embedItemKey,
+	}
+
+	tests := []struct {
+		name string
+		a, b EmbedContainer
+		want []ResolvedChange
+	}{
+		{
+			name: "reorder with key func",
+			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}, {Name: "bob", Level: "reader"}}},
+			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "bob", Level: "reader"}, {Name: "alice", Level: "admin"}}},
+			want: nil,
+		},
+		{
+			name: "field change with key func",
+			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}}},
+			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "reader"}}},
+			want: []ResolvedChange{{Field: "[name='alice'].level", Old: "admin", New: "reader"}},
+		},
+		{
+			name: "element added with key func",
+			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice"}}},
+			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice"}, {Name: "bob", Level: "reader"}}},
+			want: []ResolvedChange{{Field: "[name='bob']", Old: nil, New: EmbedItem{Name: "bob", Level: "reader"}}},
+		},
+		{
+			name: "element removed with key func",
+			a:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}, {Name: "bob"}}},
+			b:    EmbedContainer{ObjectID: "abc", Items: []EmbedItem{{Name: "alice", Level: "admin"}}},
+			want: []ResolvedChange{{Field: "[name='bob']", Old: EmbedItem{Name: "bob"}, New: nil}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, resolveChanges(got))
+		})
+	}
+}
+
 type Task struct {
 	TaskKey     string `json:"task_key,omitempty"`
 	Description string `json:"description,omitempty"`
