@@ -148,7 +148,7 @@ def get_schemas():
     )
 
     # we don't need all spec, only get supported types
-    flat_spec = {**sdk_types_spec, **resource_types_spec}
+    flat_spec = {**_flatten_spec(sdk_types_spec), **_flatten_spec(resource_types_spec)}
     flat_spec = {
         key: value for key, value in flat_spec.items() if packages.should_load_ref(key)
     }
@@ -160,6 +160,52 @@ def get_schemas():
             raise ValueError(f"Failed to parse schema for {name}") from e
 
     return output
+
+
+def _is_schema(d: dict) -> bool:
+    """Check if a dict is a JSON schema definition (object or string type)."""
+    test = _unwrap_variable(d) or d
+    return test.get("type") in ("object", "string")
+
+
+def _normalize_generic_key(path: str) -> str:
+    """
+    Normalize a generic type path to a short schema key.
+    E.g., 'resources.Permission[github.com/.../jobs.JobPermissionLevel]' -> 'resources.JobPermission'
+    """
+    if "[" not in path or not path.endswith("]"):
+        return path
+
+    bracket_pos = path.index("[")
+    before = path[:bracket_pos]  # e.g., 'resources.Permission'
+    type_param = path[
+        bracket_pos + 1 : -1
+    ]  # e.g., 'github.com/.../jobs.JobPermissionLevel'
+
+    type_ns = before.split(".")[0]  # 'resources'
+    param_class = type_param.split("/")[-1].split(".")[-1]  # 'JobPermissionLevel'
+
+    if param_class.endswith("PermissionLevel"):
+        class_name = param_class[: -len("Level")]  # 'JobPermission'
+        return f"{type_ns}.{class_name}"
+
+    return path
+
+
+def _flatten_spec(nested: dict, prefix: str = "") -> dict:
+    """
+    Recursively flatten nested schema defs, normalizing generic type names.
+    Generic types like 'resources.Permission[.../jobs.JobPermissionLevel]' become 'resources.JobPermission'.
+    """
+    result = {}
+    for k, v in nested.items():
+        path = f"{prefix}/{k}" if prefix else k
+        if isinstance(v, dict):
+            if _is_schema(v):
+                result[_normalize_generic_key(path)] = v
+            else:
+                result.update(_flatten_spec(v, path))
+    return result
 
 
 def _get_spec_path(spec: dict, path: list[str]) -> dict:

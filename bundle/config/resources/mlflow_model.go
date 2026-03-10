@@ -14,7 +14,7 @@ type MlflowModel struct {
 	BaseResource
 	ml.CreateModelRequest
 
-	Permissions Permissions[ml.RegisteredModelPermissionLevel] `json:"permissions,omitempty"`
+	Permissions MlflowModelPermissions `json:"permissions,omitempty"`
 }
 
 func (s *MlflowModel) UnmarshalJSON(b []byte) error {

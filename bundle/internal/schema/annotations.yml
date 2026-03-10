@@ -739,8 +739,8 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission
   "user_name":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Permission:
-  "-":
+? github.com/databricks/cli/bundle/config/resources.Permission[github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel]
+: "-":
     "description": |-
       Defines a permission for a specific entity.
     "markdown_description": |-

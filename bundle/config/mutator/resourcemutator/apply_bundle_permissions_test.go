@@ -10,12 +10,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	appssdk "github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -91,58 +87,58 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	require.Len(t, b.Config.Resources.Jobs["job_1"].Permissions, 3)
-	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_VIEW", GroupName: "TestGroup"})
-	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_MANAGE_RUN", ServicePrincipalName: "TestServicePrincipal"})
+	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_MANAGE_RUN", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.Jobs["job_2"].Permissions, 3)
-	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_VIEW", GroupName: "TestGroup"})
-	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_MANAGE_RUN", ServicePrincipalName: "TestServicePrincipal"})
+	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.JobPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.JobPermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.JobPermission{Level: "CAN_MANAGE_RUN", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.Pipelines["pipeline_1"].Permissions, 3)
-	require.Contains(t, b.Config.Resources.Pipelines["pipeline_1"].Permissions, resources.Permission[pipelines.PipelinePermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Pipelines["pipeline_1"].Permissions, resources.Permission[pipelines.PipelinePermissionLevel]{Level: "CAN_VIEW", GroupName: "TestGroup"})
-	require.Contains(t, b.Config.Resources.Pipelines["pipeline_1"].Permissions, resources.Permission[pipelines.PipelinePermissionLevel]{Level: "CAN_RUN", ServicePrincipalName: "TestServicePrincipal"})
+	require.Contains(t, b.Config.Resources.Pipelines["pipeline_1"].Permissions, resources.PipelinePermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Pipelines["pipeline_1"].Permissions, resources.PipelinePermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Pipelines["pipeline_1"].Permissions, resources.PipelinePermission{Level: "CAN_RUN", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.Pipelines["pipeline_2"].Permissions, 3)
-	require.Contains(t, b.Config.Resources.Pipelines["pipeline_2"].Permissions, resources.Permission[pipelines.PipelinePermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Pipelines["pipeline_2"].Permissions, resources.Permission[pipelines.PipelinePermissionLevel]{Level: "CAN_VIEW", GroupName: "TestGroup"})
-	require.Contains(t, b.Config.Resources.Pipelines["pipeline_2"].Permissions, resources.Permission[pipelines.PipelinePermissionLevel]{Level: "CAN_RUN", ServicePrincipalName: "TestServicePrincipal"})
+	require.Contains(t, b.Config.Resources.Pipelines["pipeline_2"].Permissions, resources.PipelinePermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Pipelines["pipeline_2"].Permissions, resources.PipelinePermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Pipelines["pipeline_2"].Permissions, resources.PipelinePermission{Level: "CAN_RUN", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.Models["model_1"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.Models["model_1"].Permissions, resources.Permission[ml.RegisteredModelPermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Models["model_1"].Permissions, resources.Permission[ml.RegisteredModelPermissionLevel]{Level: "CAN_READ", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Models["model_1"].Permissions, resources.MlflowModelPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Models["model_1"].Permissions, resources.MlflowModelPermission{Level: "CAN_READ", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.Models["model_2"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.Models["model_2"].Permissions, resources.Permission[ml.RegisteredModelPermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Models["model_2"].Permissions, resources.Permission[ml.RegisteredModelPermissionLevel]{Level: "CAN_READ", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Models["model_2"].Permissions, resources.MlflowModelPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Models["model_2"].Permissions, resources.MlflowModelPermission{Level: "CAN_READ", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.Experiments["experiment_1"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.Experiments["experiment_1"].Permissions, resources.Permission[ml.ExperimentPermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Experiments["experiment_1"].Permissions, resources.Permission[ml.ExperimentPermissionLevel]{Level: "CAN_READ", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Experiments["experiment_1"].Permissions, resources.MlflowExperimentPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Experiments["experiment_1"].Permissions, resources.MlflowExperimentPermission{Level: "CAN_READ", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.Experiments["experiment_2"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.Experiments["experiment_2"].Permissions, resources.Permission[ml.ExperimentPermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Experiments["experiment_2"].Permissions, resources.Permission[ml.ExperimentPermissionLevel]{Level: "CAN_READ", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Experiments["experiment_2"].Permissions, resources.MlflowExperimentPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Experiments["experiment_2"].Permissions, resources.MlflowExperimentPermission{Level: "CAN_READ", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.ModelServingEndpoints["endpoint_1"].Permissions, 3)
-	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_1"].Permissions, resources.Permission[serving.ServingEndpointPermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_1"].Permissions, resources.Permission[serving.ServingEndpointPermissionLevel]{Level: "CAN_VIEW", GroupName: "TestGroup"})
-	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_1"].Permissions, resources.Permission[serving.ServingEndpointPermissionLevel]{Level: "CAN_QUERY", ServicePrincipalName: "TestServicePrincipal"})
+	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_1"].Permissions, resources.ModelServingEndpointPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_1"].Permissions, resources.ModelServingEndpointPermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_1"].Permissions, resources.ModelServingEndpointPermission{Level: "CAN_QUERY", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, 3)
-	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.Permission[serving.ServingEndpointPermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.Permission[serving.ServingEndpointPermissionLevel]{Level: "CAN_VIEW", GroupName: "TestGroup"})
-	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.Permission[serving.ServingEndpointPermissionLevel]{Level: "CAN_QUERY", ServicePrincipalName: "TestServicePrincipal"})
+	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.ModelServingEndpointPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.ModelServingEndpointPermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.ModelServingEndpointPermission{Level: "CAN_QUERY", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission[iam.PermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission[iam.PermissionLevel]{Level: "CAN_READ", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.DashboardPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.DashboardPermission{Level: "CAN_READ", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.Apps["app_1"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.Permission[appssdk.AppPermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.Permission[appssdk.AppPermissionLevel]{Level: "CAN_USE", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_USE", GroupName: "TestGroup"})
 }
 
 func TestWarningOnOverlapPermission(t *testing.T) {
@@ -161,7 +157,7 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							Name: "job_1",
 						},
-						Permissions: resources.Permissions[jobs.JobPermissionLevel]{
+						Permissions: resources.JobPermissions{
 							{Level: "CAN_VIEW", UserName: "TestUser"},
 						},
 					},
@@ -169,7 +165,7 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							Name: "job_2",
 						},
-						Permissions: resources.Permissions[jobs.JobPermissionLevel]{
+						Permissions: resources.JobPermissions{
 							{Level: "CAN_VIEW", UserName: "TestUser2"},
 						},
 					},
@@ -181,11 +177,11 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
 
-	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_VIEW", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_VIEW", GroupName: "TestGroup"})
-	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_VIEW", UserName: "TestUser2"})
-	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission[jobs.JobPermissionLevel]{Level: "CAN_VIEW", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_VIEW", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.JobPermission{Level: "CAN_VIEW", UserName: "TestUser2"})
+	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.JobPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.JobPermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
 }
 
 func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {

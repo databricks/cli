@@ -8,14 +8,13 @@ import (
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type DatabaseInstance struct {
 	BaseResource
 	database.DatabaseInstance
 
-	Permissions Permissions[iam.PermissionLevel] `json:"permissions,omitempty"`
+	Permissions DatabaseInstancePermissions `json:"permissions,omitempty"`
 }
 
 func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

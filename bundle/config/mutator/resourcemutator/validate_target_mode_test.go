@@ -4,11 +4,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/databricks/cli/bundle"
@@ -51,22 +48,22 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	diags = validateProductionMode(b, false)
 	require.ErrorContains(t, diags.Error(), "A common practice is to use a username or principal name in this path, i.e. use\n\n  root_path: /Workspace/Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
-	jobPermissions := resources.Permissions[jobs.JobPermissionLevel]{
+	jobPermissions := resources.JobPermissions{
 		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
-	pipelinePermissions := resources.Permissions[pipelines.PipelinePermissionLevel]{
+	pipelinePermissions := resources.PipelinePermissions{
 		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
-	experimentPermissions := resources.Permissions[ml.ExperimentPermissionLevel]{
+	experimentPermissions := resources.MlflowExperimentPermissions{
 		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
-	modelPermissions := resources.Permissions[ml.RegisteredModelPermissionLevel]{
+	modelPermissions := resources.MlflowModelPermissions{
 		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
-	endpointPermissions := resources.Permissions[serving.ServingEndpointPermissionLevel]{
+	endpointPermissions := resources.ModelServingEndpointPermissions{
 		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
-	clusterPermissions := resources.Permissions[compute.ClusterPermissionLevel]{
+	clusterPermissions := resources.ClusterPermissions{
 		{Level: "CAN_MANAGE", UserName: "user@company.com"},
 	}
 	b.Config.Resources.Jobs["job1"].Permissions = jobPermissions

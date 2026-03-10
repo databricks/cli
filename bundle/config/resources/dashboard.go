@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type DashboardConfig struct {
@@ -81,7 +80,7 @@ type Dashboard struct {
 	BaseResource
 	DashboardConfig
 
-	Permissions Permissions[iam.PermissionLevel] `json:"permissions,omitempty"`
+	Permissions DashboardPermissions `json:"permissions,omitempty"`
 
 	// FilePath points to the local `.lvdash.json` file containing the dashboard definition.
 	// This is inlined into serialized_dashboard during deployment. The file_path is kept around

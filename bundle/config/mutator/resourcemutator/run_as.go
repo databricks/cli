@@ -196,11 +196,11 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 
 	for i := range b.Config.Resources.Pipelines {
 		pipeline := b.Config.Resources.Pipelines[i]
-		pipeline.Permissions = slices.DeleteFunc([]resources.Permission[pipelines.PipelinePermissionLevel](pipeline.Permissions), func(p resources.Permission[pipelines.PipelinePermissionLevel]) bool {
+		pipeline.Permissions = slices.DeleteFunc(pipeline.Permissions, func(p resources.PipelinePermission) bool {
 			return (runAs.ServicePrincipalName != "" && p.ServicePrincipalName == runAs.ServicePrincipalName) ||
 				(runAs.UserName != "" && p.UserName == runAs.UserName)
 		})
-		pipeline.Permissions = append(pipeline.Permissions, resources.Permission[pipelines.PipelinePermissionLevel]{
+		pipeline.Permissions = append(pipeline.Permissions, resources.PipelinePermission{
 			Level:                pipelines.PipelinePermissionLevelIsOwner,
 			ServicePrincipalName: runAs.ServicePrincipalName,
 			UserName:             runAs.UserName,

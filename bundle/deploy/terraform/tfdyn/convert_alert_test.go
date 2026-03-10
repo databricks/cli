@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +21,7 @@ func TestConvertAlert(t *testing.T) {
 			CustomSummary:     "Test alert summary",
 			CustomDescription: "Test alert description",
 		},
-		Permissions: resources.Permissions[iam.PermissionLevel]{
+		Permissions: resources.AlertPermissions{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",

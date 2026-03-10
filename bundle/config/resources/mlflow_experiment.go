@@ -14,7 +14,7 @@ type MlflowExperiment struct {
 	BaseResource
 	ml.CreateExperiment
 
-	Permissions Permissions[ml.ExperimentPermissionLevel] `json:"permissions,omitempty"`
+	Permissions MlflowExperimentPermissions `json:"permissions,omitempty"`
 }
 
 func (s *MlflowExperiment) UnmarshalJSON(b []byte) error {

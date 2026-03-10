@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
@@ -31,7 +30,7 @@ type PostgresProject struct {
 	BaseResource
 	PostgresProjectConfig
 
-	Permissions Permissions[iam.PermissionLevel] `json:"permissions,omitempty"`
+	Permissions DatabaseProjectPermissions `json:"permissions,omitempty"`
 }
 
 func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

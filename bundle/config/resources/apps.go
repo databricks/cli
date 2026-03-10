@@ -50,7 +50,7 @@ type App struct {
 	// This is used in conjunction with GitRepository (from apps.App) and is passed to the Deploy API.
 	GitSource *apps.GitSource `json:"git_source,omitempty"`
 
-	Permissions Permissions[apps.AppPermissionLevel] `json:"permissions,omitempty"`
+	Permissions AppPermissions `json:"permissions,omitempty"`
 }
 
 func (a *App) UnmarshalJSON(b []byte) error {

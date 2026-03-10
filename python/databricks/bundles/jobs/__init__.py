@@ -478,6 +478,15 @@ from databricks.bundles.jobs._models.job_parameter_definition import (
     JobParameterDefinitionDict,
     JobParameterDefinitionParam,
 )
+from databricks.bundles.jobs._models.job_permission import (
+    JobPermission,
+    JobPermissionDict,
+    JobPermissionParam,
+)
+from databricks.bundles.jobs._models.job_permission_level import (
+    JobPermissionLevel,
+    JobPermissionLevelParam,
+)
 from databricks.bundles.jobs._models.job_run_as import (
     JobRunAs,
     JobRunAsDict,
@@ -555,11 +564,6 @@ from databricks.bundles.jobs._models.periodic_trigger_configuration import (
 from databricks.bundles.jobs._models.periodic_trigger_configuration_time_unit import (
     PeriodicTriggerConfigurationTimeUnit,
     PeriodicTriggerConfigurationTimeUnitParam,
-)
-from databricks.bundles.jobs._models.permission import (
-    Permission,
-    PermissionDict,
-    PermissionParam,
 )
 from databricks.bundles.jobs._models.pipeline_params import (
     PipelineParams,
@@ -746,8 +750,6 @@ def _resolve_recursive_imports():
 
 _resolve_recursive_imports()
 
-JobPermission = Permission
-JobPermissionDict = PermissionDict
-JobPermissionLevel = str
-JobPermissionLevelParam = str
-JobPermissionParam = PermissionParam
+Permission = JobPermission
+PermissionDict = JobPermissionDict
+PermissionParam = JobPermissionParam
