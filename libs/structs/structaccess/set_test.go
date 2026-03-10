@@ -514,6 +514,41 @@ func testSetGet(t *testing.T, obj any, path string, setValue, expectedGetValue a
 	require.Equal(t, expectedGetValue, got, "SetByString(%#v, %q, %#v) then GetByString should return %#v", obj, path, setValue, expectedGetValue)
 }
 
+func TestSet_EmbedTag(t *testing.T) {
+	type Item struct {
+		Name  string `json:"name"`
+		Level string `json:"level,omitempty"`
+	}
+
+	type Container struct {
+		ObjectID string `json:"object_id"`
+		Items    []Item `json:"__EMBED__,omitempty"`
+	}
+
+	c := &Container{
+		ObjectID: "abc",
+		Items: []Item{
+			{Name: "alice", Level: "admin"},
+			{Name: "bob", Level: "reader"},
+		},
+	}
+
+	// Set a field via __EMBED__ index.
+	err := structaccess.SetByString(c, "[0].level", "writer")
+	require.NoError(t, err)
+	assert.Equal(t, "writer", c.Items[0].Level)
+
+	// Set non-embed field normally.
+	err = structaccess.SetByString(c, "object_id", "def")
+	require.NoError(t, err)
+	assert.Equal(t, "def", c.ObjectID)
+
+	// Set via key-value path traversal.
+	err = structaccess.SetByString(c, "[name='bob'].level", "admin")
+	require.NoError(t, err)
+	assert.Equal(t, "admin", c.Items[1].Level)
+}
+
 func TestSetJobSettings(t *testing.T) {
 	jobSettings := jobs.JobSettings{
 		Name: "job foo",
