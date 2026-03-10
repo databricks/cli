@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -34,30 +33,8 @@ type ResourcePermissions struct {
 }
 
 type PermissionsState struct {
-	ObjectID    string                     `json:"object_id"`
-	Permissions []iam.AccessControlRequest `json:"__EMBED__,omitempty"`
-}
-
-// permissionsStateJSON is the JSON representation of PermissionsState.
-// The __EMBED__ tag is a convention for struct walkers, but JSON serialization
-// uses "permissions" as the field name.
-type permissionsStateJSON struct {
-	ObjectID    string                     `json:"object_id"`
-	Permissions []iam.AccessControlRequest `json:"permissions,omitempty"`
-}
-
-func (s PermissionsState) MarshalJSON() ([]byte, error) {
-	return json.Marshal(permissionsStateJSON(s))
-}
-
-func (s *PermissionsState) UnmarshalJSON(data []byte) error {
-	var raw permissionsStateJSON
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
-	}
-	s.ObjectID = raw.ObjectID
-	s.Permissions = raw.Permissions
-	return nil
+	ObjectID      string                     `json:"object_id"`
+	EmbeddedSlice []iam.AccessControlRequest `json:"permissions,omitempty"`
 }
 
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -100,7 +77,7 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 	return &structvar.StructVar{
 		Value: &PermissionsState{
 			ObjectID:    "", // Always a reference, defined in Refs below
-			Permissions: permissions,
+			EmbeddedSlice: permissions,
 		},
 		Refs: map[string]string{
 			"object_id": objectIdRef,
@@ -154,8 +131,8 @@ func accessControlRequestKey(x iam.AccessControlRequest) (string, string) {
 }
 
 func (*ResourcePermissions) KeyedSlices() map[string]any {
-	// Empty key because Permissions uses __EMBED__ tag, so the slice
-	// appears at the root path of PermissionsState (no "permissions" prefix).
+	// Empty key because EmbeddedSlice appears at the root path of
+	// PermissionsState (no "permissions" prefix in struct walker paths).
 	return map[string]any{
 		"": accessControlRequestKey,
 	}
@@ -197,8 +174,8 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 	}
 
 	result := PermissionsState{
-		ObjectID:    id,
-		Permissions: nil,
+		ObjectID:      id,
+		EmbeddedSlice: nil,
 	}
 
 	for _, accessControl := range acl.AccessControlList {
@@ -207,7 +184,7 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 			if permission.Inherited {
 				continue
 			}
-			result.Permissions = append(result.Permissions, iam.AccessControlRequest{
+			result.EmbeddedSlice = append(result.EmbeddedSlice, iam.AccessControlRequest{
 				GroupName:            accessControl.GroupName,
 				UserName:             accessControl.UserName,
 				ServicePrincipalName: accessControl.ServicePrincipalName,
@@ -241,7 +218,7 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 	_, err = r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
 		RequestObjectId:   extractedID,
 		RequestObjectType: extractedType,
-		AccessControlList: newState.Permissions,
+		AccessControlList: newState.EmbeddedSlice,
 	})
 
 	return nil, err

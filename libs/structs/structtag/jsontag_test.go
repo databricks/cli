@@ -8,56 +8,43 @@ func TestJSONTagMethods(t *testing.T) {
 		wantName      string
 		wantOmitempty bool
 		wantOmitzero  bool
-		wantIsEmbed   bool
 	}{
 		// empty / degenerate cases
-		{"", "", false, false, false},
-		{"-", "-", false, false, false},
+		{"", "", false, false},
+		{"-", "-", false, false},
 
 		// name only
-		{"id", "id", false, false, false},
+		{"id", "id", false, false},
 
 		// leading comma (implicit name = "")
-		{",omitempty", "", true, false, false},
+		{",omitempty", "", true, false},
 
 		// single known options
-		{"foo,omitzero", "foo", false, true, false},
-		{"bar,omitempty", "bar", true, false, false},
+		{"foo,omitzero", "foo", false, true},
+		{"bar,omitempty", "bar", true, false},
 
 		// both known options in any order
-		{"baz,omitzero,omitempty", "baz", true, true, false},
-		{"baz,omitempty,omitzero", "baz", true, true, false},
+		{"baz,omitzero,omitempty", "baz", true, true},
+		{"baz,omitempty,omitzero", "baz", true, true},
 
 		// unknown options must be ignored
-		{"name,string", "name", false, false, false},
-		{"weird,whatever,omitzero,foo", "weird", false, true, false},
-
-		// __EMBED__ convention
-		{EmbedTagName, EmbedTagName, false, false, true},
-		{EmbedTagName + ",omitempty", EmbedTagName, true, false, true},
+		{"name,string", "name", false, false},
+		{"weird,whatever,omitzero,foo", "weird", false, true},
 	}
 
 	for _, tt := range tests {
 		tag := JSONTag(tt.tag)
 
-		// Test Name method
 		if gotName := tag.Name(); gotName != tt.wantName {
 			t.Errorf("JSONTag(%q).Name() = %q; want %q", tt.tag, gotName, tt.wantName)
 		}
 
-		// Test OmitEmpty method
 		if gotOmitEmpty := tag.OmitEmpty(); gotOmitEmpty != tt.wantOmitempty {
 			t.Errorf("JSONTag(%q).OmitEmpty() = %v; want %v", tt.tag, gotOmitEmpty, tt.wantOmitempty)
 		}
 
-		// Test OmitZero method
 		if gotOmitZero := tag.OmitZero(); gotOmitZero != tt.wantOmitzero {
 			t.Errorf("JSONTag(%q).OmitZero() = %v; want %v", tt.tag, gotOmitZero, tt.wantOmitzero)
-		}
-
-		// Test IsEmbed method
-		if gotIsEmbed := tag.IsEmbed(); gotIsEmbed != tt.wantIsEmbed {
-			t.Errorf("JSONTag(%q).IsEmbed() = %v; want %v", tt.tag, gotIsEmbed, tt.wantIsEmbed)
 		}
 	}
 }

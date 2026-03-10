@@ -100,7 +100,11 @@ func dumpRemoteSchemas(out io.Writer) error {
 			byType := pathTypes[p]
 			for _, t := range utils.SortedKeys(byType) {
 				info := formatTags(byType[t])
-				lines = append(lines, fmt.Sprintf("%s.%s\t%s\t%s\n", resourcePrefix, p, t, info))
+				sep := "."
+			if strings.HasPrefix(p, "[") {
+				sep = ""
+			}
+			lines = append(lines, fmt.Sprintf("%s%s%s\t%s\t%s\n", resourcePrefix, sep, p, t, info))
 			}
 		}
 

@@ -232,7 +232,7 @@ func TestWalkTypeEmbedTag(t *testing.T) {
 
 	type Container struct {
 		ObjectID string `json:"object_id"`
-		Items    []Item `json:"__EMBED__,omitempty"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
 	}
 
 	var visited []string
@@ -245,7 +245,7 @@ func TestWalkTypeEmbedTag(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// __EMBED__ field should not appear as "Items" but its contents should be at parent level.
+	// EmbeddedSlice field should not appear as "items" but its contents should be at parent level.
 	assert.Equal(t, []string{
 		"object_id",
 		"[*]",
