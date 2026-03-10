@@ -112,7 +112,7 @@
         ]
       },
       "changes": {
-        "permissions[group_name='admin-team']": {
+        "[group_name='admin-team']": {
           "action": "update",
           "remote": {
             "group_name": "admin-team",
