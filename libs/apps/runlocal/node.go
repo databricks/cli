@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+
+	"github.com/databricks/cli/libs/env"
 )
 
 const NODE_DEBUG_PORT = "9229"
@@ -66,11 +68,11 @@ func (n *NodeApp) GetCommand(debug bool) ([]string, error) {
 func (n *NodeApp) enableDebugging() {
 	// Set NODE_OPTIONS environment variable to enable debugging
 	// This will make Node.js listen for debugger connections on the debug port
-	if os.Getenv("NODE_OPTIONS") == "" {
+	if env.Get(n.ctx, "NODE_OPTIONS") == "" {
 		os.Setenv("NODE_OPTIONS", "--inspect="+n.config.DebugPort)
 	} else {
 		// If NODE_OPTIONS already exists, append the inspect flag
-		os.Setenv("NODE_OPTIONS", os.Getenv("NODE_OPTIONS")+" --inspect="+n.config.DebugPort)
+		os.Setenv("NODE_OPTIONS", env.Get(n.ctx, "NODE_OPTIONS")+" --inspect="+n.config.DebugPort)
 	}
 }
 

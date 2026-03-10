@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	ignore "github.com/sabhiram/go-gitignore"
@@ -552,7 +553,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Resolve template path (supports local paths and GitHub URLs)
 	templateSrc := opts.templatePath
 	if templateSrc == "" {
-		templateSrc = os.Getenv(templatePathEnvVar)
+		templateSrc = env.Get(ctx, templatePathEnvVar)
 	}
 
 	// Resolve the git reference (branch/tag) to use for default appkit template
