@@ -8,28 +8,33 @@ func TestJSONTagMethods(t *testing.T) {
 		wantName      string
 		wantOmitempty bool
 		wantOmitzero  bool
+		wantIsEmbed   bool
 	}{
 		// empty / degenerate cases
-		{"", "", false, false},
-		{"-", "-", false, false},
+		{"", "", false, false, false},
+		{"-", "-", false, false, false},
 
 		// name only
-		{"id", "id", false, false},
+		{"id", "id", false, false, false},
 
 		// leading comma (implicit name = "")
-		{",omitempty", "", true, false},
+		{",omitempty", "", true, false, false},
 
 		// single known options
-		{"foo,omitzero", "foo", false, true},
-		{"bar,omitempty", "bar", true, false},
+		{"foo,omitzero", "foo", false, true, false},
+		{"bar,omitempty", "bar", true, false, false},
 
 		// both known options in any order
-		{"baz,omitzero,omitempty", "baz", true, true},
-		{"baz,omitempty,omitzero", "baz", true, true},
+		{"baz,omitzero,omitempty", "baz", true, true, false},
+		{"baz,omitempty,omitzero", "baz", true, true, false},
 
 		// unknown options must be ignored
-		{"name,string", "name", false, false},
-		{"weird,whatever,omitzero,foo", "weird", false, true},
+		{"name,string", "name", false, false, false},
+		{"weird,whatever,omitzero,foo", "weird", false, true, false},
+
+		// __EMBED__ convention
+		{EmbedTagName, EmbedTagName, false, false, true},
+		{EmbedTagName + ",omitempty", EmbedTagName, true, false, true},
 	}
 
 	for _, tt := range tests {
@@ -48,6 +53,11 @@ func TestJSONTagMethods(t *testing.T) {
 		// Test OmitZero method
 		if gotOmitZero := tag.OmitZero(); gotOmitZero != tt.wantOmitzero {
 			t.Errorf("JSONTag(%q).OmitZero() = %v; want %v", tt.tag, gotOmitZero, tt.wantOmitzero)
+		}
+
+		// Test IsEmbed method
+		if gotIsEmbed := tag.IsEmbed(); gotIsEmbed != tt.wantIsEmbed {
+			t.Errorf("JSONTag(%q).IsEmbed() = %v; want %v", tt.tag, gotIsEmbed, tt.wantIsEmbed)
 		}
 	}
 }
