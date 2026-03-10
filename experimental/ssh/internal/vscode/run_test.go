@@ -160,6 +160,15 @@ func TestParseExtensionVersion(t *testing.T) {
 			minVersion:  "0.120.0",
 			wantAtLeast: true,
 		},
+		{
+			name:        "windows CRLF line endings",
+			output:      "ms-python.python@2024.1.1\r\nms-vscode-remote.remote-ssh@0.123.0\r\n",
+			extensionID: "ms-vscode-remote.remote-ssh",
+			wantVersion: "0.123.0",
+			wantFound:   true,
+			minVersion:  "0.120.0",
+			wantAtLeast: true,
+		},
 	}
 
 	for _, tt := range tests {
