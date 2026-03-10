@@ -125,8 +125,8 @@ func walkTypeStruct(path *structpath.PatternNode, st reflect.Type, visit VisitTy
 			continue
 		}
 
-		// __EMBED__: walk at parent path level without adding field name.
-		if jsonTagParsed.IsEmbed() {
+		// EmbeddedSlice: walk at parent path level without adding field name.
+		if sf.Name == structtag.EmbeddedSliceFieldName {
 			walkTypeValue(path, sf.Type, &sf, visit, visitedCount)
 			continue
 		}

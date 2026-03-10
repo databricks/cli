@@ -246,8 +246,8 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 			name = ""
 		}
 
-		if name == structtag.EmbedTagName {
-			continue // __EMBED__ fields are not accessible by name
+		if sf.Name == structtag.EmbeddedSliceFieldName {
+			continue // EmbeddedSlice fields are not accessible by name
 		}
 		if name != "" && name == key {
 			// Skip fields marked as internal or readonly via bundle tag

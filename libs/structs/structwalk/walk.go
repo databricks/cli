@@ -138,8 +138,8 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 			continue
 		}
 
-		// __EMBED__: walk directly without adding the field name to the path.
-		if jsonTag.IsEmbed() {
+		// EmbeddedSlice: walk directly without adding the field name to the path.
+		if sf.Name == structtag.EmbeddedSliceFieldName {
 			walkValue(path, fieldVal, &sf, visit)
 			continue
 		}
