@@ -2,11 +2,11 @@ package structtag
 
 import "strings"
 
-// EmbedTagName is the JSON tag name that signals struct walkers to treat the field
-// as transparent — its contents appear directly at the parent path level without
-// adding the field name to the path. Only supported on slice fields with one
-// __EMBED__ field per struct.
-const EmbedTagName = "__EMBED__"
+// EmbeddedSliceFieldName is the Go field name that signals struct walkers to treat
+// the field as transparent — its contents appear directly at the parent path level
+// without adding the field name to the path. Only supported on slice fields with
+// one EmbeddedSlice field per struct.
+const EmbeddedSliceFieldName = "EmbeddedSlice"
 
 // JSONTag represents a struct field's `json` tag as a string.
 // It provides methods to lazily extract information from the tag.
@@ -35,11 +35,6 @@ func (tag JSONTag) OmitEmpty() bool {
 
 func (tag JSONTag) OmitZero() bool {
 	return tag.hasOption("omitzero")
-}
-
-// IsEmbed reports whether this field uses the __EMBED__ convention.
-func (tag JSONTag) IsEmbed() bool {
-	return tag.Name() == EmbedTagName
 }
 
 func (tag JSONTag) hasOption(option string) bool {

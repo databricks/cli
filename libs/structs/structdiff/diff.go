@@ -213,7 +213,7 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			continue
 		}
 
-		isEmbed := jsonTag.IsEmbed()
+		isEmbed := sf.Name == structtag.EmbeddedSliceFieldName
 
 		if fieldName == "" || isEmbed {
 			fieldName = sf.Name
@@ -240,7 +240,7 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			}
 		}
 
-		// __EMBED__: diff at parent path level without adding field name.
+		// EmbeddedSlice: diff at parent path level without adding field name.
 		var node *structpath.PathNode
 		if isEmbed {
 			node = path
