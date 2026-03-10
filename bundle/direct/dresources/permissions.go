@@ -97,6 +97,9 @@ func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState 
 // All permission types share the same underlying struct layout (Level, UserName, ServicePrincipalName, GroupName).
 func toAccessControlRequests(ps any) ([]iam.AccessControlRequest, error) {
 	v := reflect.ValueOf(ps)
+	if v.Kind() == reflect.Pointer {
+		v = v.Elem()
+	}
 	if v.Kind() != reflect.Slice {
 		return nil, fmt.Errorf("expected permissions slice, got %T", ps)
 	}
