@@ -3,8 +3,6 @@ package resources
 import (
 	"fmt"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 // Permission holds the permission level setting for a single principal.
@@ -14,16 +12,6 @@ type Permission[L ~string] struct {
 	UserName             string `json:"user_name,omitempty"`
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 	GroupName            string `json:"group_name,omitempty"`
-}
-
-// ToAccessControlRequest converts to the SDK type used by the permissions API.
-func (p Permission[L]) ToAccessControlRequest() iam.AccessControlRequest {
-	return iam.AccessControlRequest{
-		PermissionLevel:      iam.PermissionLevel(p.Level),
-		UserName:             p.UserName,
-		ServicePrincipalName: p.ServicePrincipalName,
-		GroupName:            p.GroupName,
-	}
 }
 
 func (p Permission[L]) String() string {
