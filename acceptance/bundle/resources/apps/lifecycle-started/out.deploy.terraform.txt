@@ -1,0 +1,52 @@
+
+>>> errcode [CLI] bundle deploy
+Error: lifecycle.started is only supported in direct deployment mode
+
+
+Exit code: 1
+
+>>> jq select(.method == "POST" and .path == "/api/2.0/apps") out.requests.txt
+
+>>> errcode [CLI] apps get [UNIQUE_NAME]
+Error: Resource apps.App not found: [UNIQUE_NAME]
+
+Exit code: 1
+
+>>> errcode [CLI] bundle deploy
+Error: lifecycle.started is only supported in direct deployment mode
+
+
+Exit code: 1
+
+>>> jq select(.method == "POST" and (.path | endswith("/deployments"))) out.requests.txt
+
+>>> errcode [CLI] apps stop [UNIQUE_NAME]
+Error: Not Found
+
+Exit code: 1
+
+>>> errcode [CLI] bundle deploy
+Error: lifecycle.started is only supported in direct deployment mode
+
+
+Exit code: 1
+
+>>> jq select(.method == "POST" and (.path | endswith("/deployments"))) out.requests.txt
+
+>>> errcode [CLI] apps get [UNIQUE_NAME]
+Error: Resource apps.App not found: [UNIQUE_NAME]
+
+Exit code: 1
+
+>>> errcode [CLI] bundle deploy
+Error: lifecycle.started is only supported in direct deployment mode
+
+
+Exit code: 1
+
+>>> jq select(.method == "POST" and (.path | (endswith("/start") or endswith("/deployments")))) out.requests.txt
+
+>>> errcode [CLI] apps get [UNIQUE_NAME]
+Error: Resource apps.App not found: [UNIQUE_NAME]
+
+Exit code: 1

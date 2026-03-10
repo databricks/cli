@@ -1,0 +1,3 @@
+
+>>> [CLI] bundle destroy --auto-approve
+No active deployment found to destroy!

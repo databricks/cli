@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
