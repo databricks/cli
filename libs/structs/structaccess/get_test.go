@@ -746,7 +746,7 @@ func TestGet_EmbedTag(t *testing.T) {
 	}
 
 	type Container struct {
-		ObjectID string `json:"object_id"`
+		ObjectID      string `json:"object_id"`
 		EmbeddedSlice []Item `json:"items,omitempty"`
 	}
 
@@ -787,7 +787,7 @@ func TestValidate_EmbedTag(t *testing.T) {
 	}
 
 	type Container struct {
-		ObjectID string `json:"object_id"`
+		ObjectID      string `json:"object_id"`
 		EmbeddedSlice []Item `json:"items,omitempty"`
 	}
 
@@ -806,8 +806,8 @@ func TestValidate_EmbedTag(t *testing.T) {
 
 func TestGet_EmbedTagEmpty(t *testing.T) {
 	type Container struct {
-		ObjectID string `json:"object_id"`
-		EmbeddedSlice []int `json:"items,omitempty"`
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []int  `json:"items,omitempty"`
 	}
 
 	// Empty embed slice with omitempty: index should fail.

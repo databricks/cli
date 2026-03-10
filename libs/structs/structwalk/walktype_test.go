@@ -231,7 +231,7 @@ func TestWalkTypeEmbedTag(t *testing.T) {
 	}
 
 	type Container struct {
-		ObjectID string `json:"object_id"`
+		ObjectID      string `json:"object_id"`
 		EmbeddedSlice []Item `json:"items,omitempty"`
 	}
 
