@@ -207,6 +207,10 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return errors.New("either --cluster or --name must be provided")
 	}
 
+	if !opts.ProxyMode {
+		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
+	}
+
 	if opts.IDE != "" && !opts.ProxyMode {
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
 			return err
@@ -238,6 +242,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	// Only check cluster state for dedicated clusters
 	if !opts.IsServerlessMode() {
+		cmdio.LogString(ctx, "Checking cluster state...")
 		err := checkClusterState(ctx, client, opts.ClusterID, opts.AutoStartCluster)
 		if err != nil {
 			return err
@@ -263,8 +268,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	if err != nil {
 		return fmt.Errorf("failed to save SSH key pair locally: %w", err)
 	}
-	cmdio.LogString(ctx, "Using SSH key: "+keyPath)
-	cmdio.LogString(ctx, fmt.Sprintf("Secrets scope: %s, key name: %s", secretScopeName, opts.ClientPublicKeyName))
+	log.Infof(ctx, "Using SSH key: %s", keyPath)
+	log.Infof(ctx, "Secrets scope: %s, key name: %s", secretScopeName, opts.ClientPublicKeyName)
 
 	var userName string
 	var serverPort int
@@ -273,10 +278,14 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	version := build.GetInfo().Version
 
 	if opts.ServerMetadata == "" {
-		cmdio.LogString(ctx, "Checking for ssh-tunnel binaries to upload...")
+		cmdio.LogString(ctx, "Uploading binaries...")
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("Uploading binaries...")
 		if err := UploadTunnelReleases(ctx, client, version, opts.ReleasesDir); err != nil {
+			sp.Close()
 			return fmt.Errorf("failed to upload ssh-tunnel binaries: %w", err)
 		}
+		sp.Close()
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
@@ -307,10 +316,14 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		return errors.New("cluster ID is required for serverless connections but was not found in metadata")
 	}
 
-	cmdio.LogString(ctx, "Remote user name: "+userName)
-	cmdio.LogString(ctx, fmt.Sprintf("Server port: %d", serverPort))
+	log.Infof(ctx, "Remote user name: %s", userName)
+	log.Infof(ctx, "Server port: %d", serverPort)
 	if opts.IsServerlessMode() {
-		cmdio.LogString(ctx, "Cluster ID (from serverless job): "+clusterID)
+		log.Infof(ctx, "Cluster ID (from serverless job): %s", clusterID)
+	}
+
+	if !opts.ProxyMode {
+		cmdio.LogString(ctx, "Connected!")
 	}
 
 	if opts.ProxyMode {
@@ -318,7 +331,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	} else if opts.IDE != "" {
 		return runIDE(ctx, client, userName, keyPath, serverPort, clusterID, opts)
 	} else {
-		cmdio.LogString(ctx, fmt.Sprintf("Additional SSH arguments: %v", opts.AdditionalArgs))
+		log.Infof(ctx, "Additional SSH arguments: %v", opts.AdditionalArgs)
 		return spawnSSHClient(ctx, userName, keyPath, serverPort, clusterID, opts)
 	}
 }
@@ -372,7 +385,7 @@ func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, k
 		return err
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Updated SSH config entry for '%s'", hostName))
+	log.Infof(ctx, "Updated SSH config entry for '%s'", hostName)
 	return nil
 }
 
@@ -471,7 +484,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		"serverless":              strconv.FormatBool(opts.IsServerlessMode()),
 	}
 
-	cmdio.LogString(ctx, "Submitting a job to start the ssh server...")
+	log.Infof(ctx, "Submitting a job to start the ssh server...")
 
 	task := jobs.SubmitTask{
 		TaskKey: sshServerTaskKey,
@@ -485,7 +498,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	if opts.IsServerlessMode() {
 		task.EnvironmentKey = serverlessEnvironmentKey
 		if opts.Accelerator != "" {
-			cmdio.LogString(ctx, "Using accelerator: "+opts.Accelerator)
+			log.Infof(ctx, "Using accelerator: %s", opts.Accelerator)
 			task.Compute = &jobs.Compute{
 				HardwareAccelerator: compute.HardwareAcceleratorType(opts.Accelerator),
 			}
@@ -516,7 +529,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return fmt.Errorf("failed to submit job: %w", err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Job submitted successfully with run ID: %d", waiter.RunId))
+	log.Infof(ctx, "Job submitted successfully with run ID: %d", waiter.RunId)
 
 	return waitForJobToStart(ctx, client, waiter.RunId, opts.TaskStartupTimeout)
 }
@@ -568,14 +581,16 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 }
 
 func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, autoStart bool) error {
+	sp := cmdio.NewSpinner(ctx)
+	defer sp.Close()
 	if autoStart {
-		cmdio.LogString(ctx, "Ensuring the cluster is running: "+clusterID)
+		sp.Update("Ensuring the cluster is running...")
 		err := client.Clusters.EnsureClusterIsRunning(ctx, clusterID)
 		if err != nil {
 			return fmt.Errorf("failed to ensure that the cluster is running: %w", err)
 		}
 	} else {
-		cmdio.LogString(ctx, "Checking cluster state: "+clusterID)
+		sp.Update("Checking cluster state...")
 		cluster, err := client.Clusters.GetByClusterId(ctx, clusterID)
 		if err != nil {
 			return fmt.Errorf("failed to get cluster info: %w", err)
@@ -590,7 +605,9 @@ func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, 
 // waitForJobToStart polls the task status until the SSH server task is in RUNNING state or terminates.
 // Returns an error if the task fails to start or if polling times out.
 func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, runID int64, taskStartupTimeout time.Duration) error {
-	cmdio.LogString(ctx, "Waiting for the SSH server task to start...")
+	sp := cmdio.NewSpinner(ctx)
+	defer sp.Close()
+	sp.Update("Starting SSH server...")
 	var prevState jobs.RunLifecycleStateV2State
 
 	_, err := retries.Poll(ctx, taskStartupTimeout, func() (*jobs.RunTask, *retries.Err) {
@@ -620,15 +637,14 @@ func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, 
 
 		currentState := sshTask.Status.State
 
-		// Print status if it changed
+		// Update spinner if state changed
 		if currentState != prevState {
-			cmdio.LogString(ctx, fmt.Sprintf("Task status: %s", currentState))
+			sp.Update(fmt.Sprintf("Starting SSH server... (task: %s)", currentState))
 			prevState = currentState
 		}
 
 		// Check if task is running
 		if currentState == jobs.RunLifecycleStateV2StateRunning {
-			cmdio.LogString(ctx, "SSH server task is now running, proceeding to connect...")
 			return sshTask, nil
 		}
 
@@ -651,26 +667,29 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 
 	serverPort, userName, effectiveClusterID, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
 	if errors.Is(err, errServerMetadata) {
-		cmdio.LogString(ctx, "SSH server is not running, starting it now...")
+		cmdio.LogString(ctx, "Starting SSH server...")
 
 		err := submitSSHTunnelJob(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			return "", 0, "", fmt.Errorf("failed to submit and start ssh server job: %w", err)
 		}
 
-		cmdio.LogString(ctx, "Waiting for the ssh server to start...")
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("Waiting for the SSH server to start...")
 		maxRetries := 30
 		for retries := range maxRetries {
 			if ctx.Err() != nil {
+				sp.Close()
 				return "", 0, "", ctx.Err()
 			}
 			serverPort, userName, effectiveClusterID, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
 			if err == nil {
-				cmdio.LogString(ctx, "Health check successful, starting ssh WebSocket connection...")
+				sp.Close()
 				break
 			} else if retries < maxRetries-1 {
 				time.Sleep(2 * time.Second)
 			} else {
+				sp.Close()
 				return "", 0, "", fmt.Errorf("failed to start the ssh server: %w", err)
 			}
 		}

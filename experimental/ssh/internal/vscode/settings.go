@@ -289,11 +289,11 @@ func backupSettings(ctx context.Context, path string) error {
 	latestBak := path + ".latest.bak"
 
 	if _, err := os.Stat(originalBak); os.IsNotExist(err) {
-		cmdio.LogString(ctx, "Backing up settings to "+filepath.ToSlash(originalBak))
+		log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(originalBak))
 		return os.WriteFile(originalBak, data, 0o600)
 	}
 
-	cmdio.LogString(ctx, "Backing up settings to "+filepath.ToSlash(latestBak))
+	log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(latestBak))
 	return os.WriteFile(latestBak, data, 0o600)
 }
 
