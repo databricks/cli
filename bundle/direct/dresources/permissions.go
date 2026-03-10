@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -35,6 +36,28 @@ type ResourcePermissions struct {
 type PermissionsState struct {
 	ObjectID    string                     `json:"object_id"`
 	Permissions []iam.AccessControlRequest `json:"__EMBED__,omitempty"`
+}
+
+// permissionsStateJSON is the JSON representation of PermissionsState.
+// The __EMBED__ tag is a convention for struct walkers, but JSON serialization
+// uses "permissions" as the field name.
+type permissionsStateJSON struct {
+	ObjectID    string                     `json:"object_id"`
+	Permissions []iam.AccessControlRequest `json:"permissions,omitempty"`
+}
+
+func (s PermissionsState) MarshalJSON() ([]byte, error) {
+	return json.Marshal(permissionsStateJSON(s))
+}
+
+func (s *PermissionsState) UnmarshalJSON(data []byte) error {
+	var raw permissionsStateJSON
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	s.ObjectID = raw.ObjectID
+	s.Permissions = raw.Permissions
+	return nil
 }
 
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {

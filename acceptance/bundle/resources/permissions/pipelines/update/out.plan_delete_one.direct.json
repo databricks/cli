@@ -71,7 +71,7 @@
         ]
       },
       "changes": {
-        "permissions[group_name='data-team']": {
+        "[group_name='data-team']": {
           "action": "update",
           "old": {
             "group_name": "data-team",
