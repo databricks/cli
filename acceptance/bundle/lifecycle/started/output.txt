@@ -1,5 +1,7 @@
-Error: lifecycle.started is not supported for resources.jobs.my_job; it is only supported for apps, clusters, and sql_warehouses
-  in databricks.yml:9:18
+Warning: unknown field: started
+  at resources.jobs.my_job.lifecycle
+  in databricks.yml:9:9
 
+create jobs.my_job
 
-Exit code: 1
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
