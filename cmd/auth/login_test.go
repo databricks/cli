@@ -422,7 +422,7 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	assert.Empty(t, savedProfile.WorkspaceID)
 }
 
-func TestDiscoveryLogin_IntrospectionSuccessExtractsMetadata(t *testing.T) {
+func TestIntrospectToken_SuccessExtractsMetadata(t *testing.T) {
 	introspectServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
 		w.Header().Set("Content-Type", "application/json")

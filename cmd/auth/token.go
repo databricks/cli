@@ -434,9 +434,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 	// uses the same scopes the user previously configured.
 	var scopesList []string
 	if existingProfile != nil && existingProfile.Scopes != "" {
-		for _, s := range strings.Split(existingProfile.Scopes, ",") {
-			scopesList = append(scopesList, strings.TrimSpace(s))
-		}
+		scopesList = splitScopes(existingProfile.Scopes)
 	}
 
 	oauthArgument, err := loginArgs.ToOAuthArgument()

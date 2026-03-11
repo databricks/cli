@@ -48,6 +48,7 @@ const (
 	minimalDbConnectVersion = "13.1"
 	defaultTimeout          = 1 * time.Hour
 	authTypeDatabricksCLI   = "databricks-cli"
+	discoveryFallbackTip    = "\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>"
 )
 
 type discoveryPersistentAuth interface {
