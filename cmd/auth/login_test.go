@@ -403,7 +403,7 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 		}, nil
 	}
 
-	introspectToken = func(ctx context.Context, host string, accessToken string) (*auth.IntrospectionResult, error) {
+	introspectToken = func(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
 		assert.Equal(t, "https://workspace.example.com", host)
 		assert.Equal(t, "test-token", accessToken)
 		return nil, errors.New("introspection failed")

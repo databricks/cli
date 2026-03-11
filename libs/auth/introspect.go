@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -30,7 +31,7 @@ type IntrospectionResult struct {
 // account_id and workspace_id for the given access token. Returns an error
 // if the request fails or the response cannot be parsed. Callers should treat
 // errors as non-fatal (best-effort metadata enrichment).
-func IntrospectToken(ctx context.Context, host string, accessToken string) (*IntrospectionResult, error) {
+func IntrospectToken(ctx context.Context, host, accessToken string) (*IntrospectionResult, error) {
 	endpoint := strings.TrimSuffix(host, "/") + "/api/2.0/tokens/introspect"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -59,7 +60,7 @@ func IntrospectToken(ctx context.Context, host string, accessToken string) (*Int
 		AccountID: introspection.PrincipalContext.AuthenticationScope.AccountID,
 	}
 	if introspection.PrincipalContext.AuthenticationScope.WorkspaceID != 0 {
-		result.WorkspaceID = fmt.Sprintf("%d", introspection.PrincipalContext.AuthenticationScope.WorkspaceID)
+		result.WorkspaceID = strconv.FormatInt(introspection.PrincipalContext.AuthenticationScope.WorkspaceID, 10)
 	}
 	return result, nil
 }
