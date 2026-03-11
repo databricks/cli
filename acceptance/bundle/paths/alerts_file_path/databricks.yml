@@ -1,0 +1,13 @@
+bundle:
+  name: alerts_file_path
+
+resources:
+  alerts:
+    my_alert:
+      display_name: "My Alert"
+      file_path: ./src/my_alert.dbalert.json
+      warehouse_id: cafef00d
+
+targets:
+  development:
+    default: true

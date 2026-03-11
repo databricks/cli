@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle validate -t development -o json
+Warning: required field "schedule" is not set
+  at resources.alerts.my_alert
+  in databricks.yml:7:7
+
+Warning: required field "source" is not set
+  at resources.alerts.my_alert.evaluation
+

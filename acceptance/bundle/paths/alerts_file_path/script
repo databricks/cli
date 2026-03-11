@@ -1,0 +1,6 @@
+errcode trace $CLI bundle validate -t development -o json > tmp.json
+
+# Capture the file_path for the alert after translation
+jq '.resources.alerts.my_alert.file_path' tmp.json > output.alert.txt
+
+rm -f tmp.json

@@ -13,6 +13,6 @@ func VisitAlertPaths(value dyn.Value, fn VisitFunc) (dyn.Value, error) {
 	)
 
 	return dyn.MapByPattern(value, pattern, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
-		return fn(path, TranslateModeLocalRelative, value)
+		return fn(path, TranslateModeFile, value)
 	})
 }

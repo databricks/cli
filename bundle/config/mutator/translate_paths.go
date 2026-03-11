@@ -348,6 +348,7 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		t.applyPipelineTranslations(paths.VisitPipelineLibrariesPaths, true),
 		t.applyArtifactTranslations,
 		t.applyAppsTranslations,
+		t.applyAlertTranslations,
 	})
 }
 
