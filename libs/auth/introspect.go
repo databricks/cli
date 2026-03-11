@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -31,7 +32,7 @@ type IntrospectionResult struct {
 // errors as non-fatal (best-effort metadata enrichment).
 func IntrospectToken(ctx context.Context, host string, accessToken string) (*IntrospectionResult, error) {
 	endpoint := strings.TrimSuffix(host, "/") + "/api/2.0/tokens/introspect"
-	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating introspection request: %w", err)
 	}
@@ -44,6 +45,8 @@ func IntrospectToken(ctx context.Context, host string, accessToken string) (*Int
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		// Drain the body so the underlying TCP connection can be reused.
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return nil, fmt.Errorf("introspection endpoint returned status %d", resp.StatusCode)
 	}
 

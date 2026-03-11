@@ -15,7 +15,7 @@ func TestIntrospectToken_Success(t *testing.T) {
 		_, _ = w.Write([]byte(`{
 			"principal_context": {
 				"authentication_scope": {
-					"account_id": "a]b1c234-5678-90ab-cdef-1234567890ab",
+					"account_id": "a1b1c234-5678-90ab-cdef-1234567890ab",
 					"workspace_id": 2548836972759138
 				}
 			}
@@ -25,7 +25,7 @@ func TestIntrospectToken_Success(t *testing.T) {
 
 	result, err := IntrospectToken(t.Context(), server.URL, "test-token")
 	require.NoError(t, err)
-	assert.Equal(t, "a]b1c234-5678-90ab-cdef-1234567890ab", result.AccountID)
+	assert.Equal(t, "a1b1c234-5678-90ab-cdef-1234567890ab", result.AccountID)
 	assert.Equal(t, "2548836972759138", result.WorkspaceID)
 }
 

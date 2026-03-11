@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
 )
 
 func promptForProfile(ctx context.Context, defaultValue string) (string, error) {
@@ -48,6 +49,20 @@ const (
 	defaultTimeout          = 1 * time.Hour
 	authTypeDatabricksCLI   = "databricks-cli"
 )
+
+type discoveryPersistentAuth interface {
+	Challenge() error
+	Token() (*oauth2.Token, error)
+	Close() error
+}
+
+var newDiscoveryOAuthArgument = u2m.NewBasicDiscoveryOAuthArgument
+
+var newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+	return u2m.NewPersistentAuth(ctx, opts...)
+}
+
+var introspectToken = auth.IntrospectToken
 
 func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
@@ -167,15 +182,11 @@ depends on the existing profiles you have set in your configuration file
 		switch {
 		case scopes != "":
 			// Explicit --scopes flag takes precedence.
-			for _, s := range strings.Split(scopes, ",") {
-				scopesList = append(scopesList, strings.TrimSpace(s))
-			}
+			scopesList = splitScopes(scopes)
 		case existingProfile != nil && existingProfile.Scopes != "":
 			// Preserve scopes from the existing profile so re-login
 			// uses the same scopes the user previously configured.
-			for _, s := range strings.Split(existingProfile.Scopes, ",") {
-				scopesList = append(scopesList, strings.TrimSpace(s))
-			}
+			scopesList = splitScopes(existingProfile.Scopes)
 		}
 
 		oauthArgument, err := authArguments.ToOAuthArgument()
@@ -443,17 +454,12 @@ func openURLSuppressingStderr(url string) error {
 // authenticates in the browser, selects a workspace, and the CLI receives
 // the workspace host from the OAuth callback's iss parameter.
 func discoveryLogin(ctx context.Context, profileName string, timeout time.Duration, scopes string, browserFunc func(string) error) error {
-	arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+	arg, err := newDiscoveryOAuthArgument(profileName)
 	if err != nil {
-		return err
+		return fmt.Errorf("setting up login.databricks.com: %w\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>", err)
 	}
 
-	var scopesList []string
-	if scopes != "" {
-		for _, s := range strings.Split(scopes, ",") {
-			scopesList = append(scopesList, strings.TrimSpace(s))
-		}
-	}
+	scopesList := splitScopes(scopes)
 
 	opts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(arg),
@@ -468,9 +474,9 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	persistentAuth, err := u2m.NewPersistentAuth(ctx, opts...)
+	persistentAuth, err := newDiscoveryPersistentAuth(ctx, opts...)
 	if err != nil {
-		return err
+		return fmt.Errorf("setting up login.databricks.com: %w\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>", err)
 	}
 	defer persistentAuth.Close()
 
@@ -489,7 +495,7 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 
 	// Best-effort introspection for metadata
 	var accountID, workspaceID string
-	introspection, err := auth.IntrospectToken(ctx, discoveredHost, tok.AccessToken)
+	introspection, err := introspectToken(ctx, discoveredHost, tok.AccessToken)
 	if err != nil {
 		log.Debugf(ctx, "token introspection failed (non-fatal): %v", err)
 	} else {
@@ -497,20 +503,44 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 		workspaceID = introspection.WorkspaceID
 	}
 
+	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     profileName,
 		Host:        discoveredHost,
 		AuthType:    authTypeDatabricksCLI,
 		AccountID:   accountID,
 		WorkspaceID: workspaceID,
-		ConfigFile:  os.Getenv("DATABRICKS_CONFIG_FILE"),
+		Scopes:      scopesList,
+		ConfigFile:  configFile,
 	}, oauthLoginClearKeys()...)
 	if err != nil {
-		return err
+		if configFile != "" {
+			return fmt.Errorf("saving profile %q to %s: %w", profileName, configFile, err)
+		}
+		return fmt.Errorf("saving profile %q: %w", profileName, err)
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
 	return nil
+}
+
+// splitScopes splits a comma-separated scopes string into a trimmed slice.
+func splitScopes(scopes string) []string {
+	if scopes == "" {
+		return nil
+	}
+	var result []string
+	for _, s := range strings.Split(scopes, ",") {
+		scope := strings.TrimSpace(s)
+		if scope == "" {
+			continue
+		}
+		result = append(result, scope)
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }
 
 // oauthLoginClearKeys returns profile keys that should be explicitly removed

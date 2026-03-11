@@ -3,19 +3,22 @@ package auth
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 func loadTestProfile(t *testing.T, ctx context.Context, profileName string) *profile.Profile {
@@ -23,6 +26,27 @@ func loadTestProfile(t *testing.T, ctx context.Context, profileName string) *pro
 	require.NoError(t, err)
 	require.NotNil(t, profile)
 	return profile
+}
+
+type fakeDiscoveryPersistentAuth struct {
+	token        *oauth2.Token
+	challengeErr error
+	tokenErr     error
+}
+
+func (f *fakeDiscoveryPersistentAuth) Challenge() error {
+	return f.challengeErr
+}
+
+func (f *fakeDiscoveryPersistentAuth) Token() (*oauth2.Token, error) {
+	if f.tokenErr != nil {
+		return nil, f.tokenErr
+	}
+	return f.token, nil
+}
+
+func (f *fakeDiscoveryPersistentAuth) Close() error {
+	return nil
 }
 
 func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
@@ -308,29 +332,94 @@ func TestShouldUseDiscovery(t *testing.T) {
 	}
 }
 
+func TestSplitScopes(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		output []string
+	}{
+		{
+			name:   "empty input",
+			input:  "",
+			output: nil,
+		},
+		{
+			name:   "single scope",
+			input:  "all-apis",
+			output: []string{"all-apis"},
+		},
+		{
+			name:   "trims whitespace",
+			input:  " all-apis , sql ",
+			output: []string{"all-apis", "sql"},
+		},
+		{
+			name:   "drops empty entries",
+			input:  "all-apis, ,sql,,",
+			output: []string{"all-apis", "sql"},
+		},
+		{
+			name:   "only empty entries",
+			input:  " , , ",
+			output: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.output, splitScopes(tt.input))
+		})
+	}
+}
+
 func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
-	// Create a temporary config file for this test
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
 	err := os.WriteFile(configPath, []byte(""), 0o600)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	// Create a mock introspection server that returns an error
-	introspectServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusForbidden)
-	}))
-	defer introspectServer.Close()
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	originalIntrospectToken := introspectToken
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+		introspectToken = originalIntrospectToken
+	})
 
-	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+		if err != nil {
+			return nil, err
+		}
+		arg.SetDiscoveredHost("https://workspace.example.com")
+		return arg, nil
+	}
 
-	// Test the discoveryLogin function's introspection error handling by
-	// calling IntrospectToken directly (since discoveryLogin requires a
-	// real PersistentAuth flow we can't easily mock).
-	result, err := auth.IntrospectToken(ctx, introspectServer.URL, "test-token")
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "403")
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	introspectToken = func(ctx context.Context, host string, accessToken string) (*auth.IntrospectionResult, error) {
+		assert.Equal(t, "https://workspace.example.com", host)
+		assert.Equal(t, "test-token", accessToken)
+		return nil, errors.New("introspection failed")
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "all-apis, ,sql,", func(string) error { return nil })
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "https://workspace.example.com", savedProfile.Host)
+	assert.Equal(t, "all-apis,sql", savedProfile.Scopes)
+	assert.Empty(t, savedProfile.AccountID)
+	assert.Empty(t, savedProfile.WorkspaceID)
 }
 
 func TestDiscoveryLogin_IntrospectionSuccessExtractsMetadata(t *testing.T) {
@@ -353,5 +442,5 @@ func TestDiscoveryLogin_IntrospectionSuccessExtractsMetadata(t *testing.T) {
 	result, err := auth.IntrospectToken(ctx, introspectServer.URL, "test-token")
 	require.NoError(t, err)
 	assert.Equal(t, "acc-12345", result.AccountID)
-	assert.Equal(t, fmt.Sprintf("%d", int64(2548836972759138)), result.WorkspaceID)
+	assert.Equal(t, "2548836972759138", result.WorkspaceID)
 }
