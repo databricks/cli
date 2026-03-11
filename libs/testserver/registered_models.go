@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -30,13 +29,13 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 		SchemaName:      createRequest.SchemaName,
 		StorageLocation: createRequest.StorageLocation,
 		FullName:        fullName,
-		CreatedAt:       time.Now().UnixMilli(),
+		CreatedAt:       nowMilli(),
 		CreatedBy:       s.CurrentUser().UserName,
-		UpdatedAt:       time.Now().UnixMilli(),
 		UpdatedBy:       s.CurrentUser().UserName,
 		MetastoreId:     nextUUID(),
 		Owner:           s.CurrentUser().UserName,
 	}
+	registeredModel.UpdatedAt = registeredModel.CreatedAt
 
 	s.RegisteredModels[fullName] = registeredModel
 	return Response{
@@ -78,7 +77,7 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		fullName = existing.CatalogName + "." + existing.SchemaName + "." + updateRequest.NewName
 	}
 
-	existing.UpdatedAt = time.Now().UnixMilli()
+	existing.UpdatedAt = nowMilli()
 	s.RegisteredModels[fullName] = existing
 	return Response{
 		Body: existing,

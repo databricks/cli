@@ -17,6 +17,9 @@ type ResourceField struct {
 	Env          string `json:"env"`
 	Description  string `json:"description"`
 	BundleIgnore bool   `json:"bundleIgnore,omitempty"`
+	LocalOnly    bool   `json:"localOnly,omitempty"`
+	Value        string `json:"value,omitempty"`
+	Resolve      string `json:"resolve,omitempty"`
 }
 
 // Resource defines a Databricks resource required or optional for a plugin.

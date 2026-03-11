@@ -21,7 +21,7 @@ func newStatusCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			shell, err := libcompletion.DetectShell(shellFlag)
+			shell, err := libcompletion.DetectShell(ctx, shellFlag)
 			if err != nil {
 				return err
 			}
@@ -31,7 +31,7 @@ func newStatusCmd() *cobra.Command {
 				return err
 			}
 
-			result, err := libcompletion.Status(shell, home)
+			result, err := libcompletion.Status(ctx, shell, home)
 			if err != nil {
 				return err
 			}

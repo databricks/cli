@@ -140,6 +140,9 @@
                     "doNotSuggest": true,
                     "x-since-version": "v0.290.0"
                   },
+                  "telemetry_export_destinations": {
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination"
+                  },
                   "usage_policy_id": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.283.0"
@@ -1852,7 +1855,6 @@
               },
               "resources.SyncedDatabaseTable": {
                 "type": "object",
-                "description": "Next field marker: 18",
                 "properties": {
                   "database_instance_name": {
                     "$ref": "#/$defs/string",
@@ -3194,6 +3196,41 @@
                 }
               },
               "additionalProperties": false
+            },
+            "apps.TelemetryExportDestination": {
+              "type": "object",
+              "description": "A single telemetry export destination with its configuration and status.",
+              "properties": {
+                "unity_catalog": {
+                  "description": "Unity Catalog Destinations for OTEL telemetry export.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.UnityCatalog"
+                }
+              },
+              "additionalProperties": false
+            },
+            "apps.UnityCatalog": {
+              "type": "object",
+              "description": "Unity Catalog Destinations for OTEL telemetry export.",
+              "properties": {
+                "logs_table": {
+                  "description": "Unity Catalog table for OTEL logs.",
+                  "$ref": "#/$defs/string"
+                },
+                "metrics_table": {
+                  "description": "Unity Catalog table for OTEL metrics.",
+                  "$ref": "#/$defs/string"
+                },
+                "traces_table": {
+                  "description": "Unity Catalog table for OTEL traces (spans).",
+                  "$ref": "#/$defs/string"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "logs_table",
+                "metrics_table",
+                "traces_table"
+              ]
             },
             "catalog.AwsSqsQueue": {
               "type": "object",
@@ -9027,6 +9064,12 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.EnvVar"
+                }
+              },
+              "apps.TelemetryExportDestination": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination"
                 }
               },
               "catalog.MonitorMetric": {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -70,7 +71,7 @@ func (i *InitializerPythonPip) RunDev(ctx context.Context, workDir string) error
 	execCmd.Stderr = os.Stderr
 	execCmd.Stdin = os.Stdin
 	// Also set PATH for any child processes the command might spawn
-	execCmd.Env = append(os.Environ(), "PATH="+venvBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	execCmd.Env = append(os.Environ(), "PATH="+venvBin+string(os.PathListSeparator)+env.Get(ctx, "PATH"))
 
 	return execCmd.Run()
 }

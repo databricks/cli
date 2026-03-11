@@ -9,6 +9,6 @@
 * Modify permissions to use SDK types where available. This makes DABs validate permission levels, producing a warning on the unknown ones ([#4686](https://github.com/databricks/cli/pull/4686))
 
 ### Dependency updates
-- Bump databricks-sdk-go from v0.112.0 to v0.117.0.
+* Bump databricks-sdk-go from v0.112.0 to v0.119.0 ([#4631](https://github.com/databricks/cli/pull/4631), [#4695](https://github.com/databricks/cli/pull/4695))
 
 ### API Changes
