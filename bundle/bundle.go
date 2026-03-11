@@ -149,6 +149,14 @@ type Bundle struct {
 	// files
 	AutoApprove bool
 
+	// SkipLocalFileValidation makes path translation tolerant of missing local files.
+	// When set, TranslatePaths computes workspace paths without verifying files exist.
+	// Used by config-remote-sync: a user may modify resource paths remotely (e.g.,
+	// rename a pipeline root folder in the UI), and the updated paths may not exist
+	// locally. Path translation is still needed to produce fully resolved paths for
+	// comparison with remote state, but local file validation would incorrectly fail.
+	SkipLocalFileValidation bool
+
 	// Tagging is used to normalize tag keys and values.
 	// The implementation depends on the cloud being targeted.
 	Tagging tags.Cloud

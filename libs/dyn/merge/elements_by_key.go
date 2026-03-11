@@ -54,7 +54,10 @@ func (e elementsByKey) doMap(_ dyn.Path, v dyn.Value, mergeFunc func(a, b dyn.Va
 	// Gather resulting elements in natural order.
 	out := make([]dyn.Value, 0, len(keys))
 	for _, key := range keys {
-		nv, err := dyn.Set(seen[key], e.key, dyn.V(key))
+		// Preserve the location from the original key value so that
+		// downstream code can tell this field was defined in the YAML.
+		keyLoc := seen[key].Get(e.key).Locations()
+		nv, err := dyn.Set(seen[key], e.key, dyn.NewValue(key, keyLoc))
 		if err != nil {
 			return dyn.InvalidValue, err
 		}

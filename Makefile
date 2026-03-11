@@ -182,6 +182,7 @@ generate:
 	@echo "Generating CLI code..."
 	$(GENKIT_BINARY) update-sdk
 	cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes
+	-go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null
 	@echo "Updating direct engine config..."
 	make generate-direct
 	go test ./bundle/internal/schema

@@ -188,6 +188,10 @@ resources.apps.*.resources[*].job	*apps.AppResourceJob	ALL
 resources.apps.*.resources[*].job.id	string	ALL
 resources.apps.*.resources[*].job.permission	apps.AppResourceJobJobPermission	ALL
 resources.apps.*.resources[*].name	string	ALL
+resources.apps.*.resources[*].postgres	*apps.AppResourcePostgres	ALL
+resources.apps.*.resources[*].postgres.branch	string	ALL
+resources.apps.*.resources[*].postgres.database	string	ALL
+resources.apps.*.resources[*].postgres.permission	apps.AppResourcePostgresPostgresPermission	ALL
 resources.apps.*.resources[*].secret	*apps.AppResourceSecret	ALL
 resources.apps.*.resources[*].secret.key	string	ALL
 resources.apps.*.resources[*].secret.permission	apps.AppResourceSecretSecretPermission	ALL
@@ -208,6 +212,12 @@ resources.apps.*.service_principal_id	int64	ALL
 resources.apps.*.service_principal_name	string	ALL
 resources.apps.*.source_code_path	string	INPUT
 resources.apps.*.space	string	ALL
+resources.apps.*.telemetry_export_destinations	[]apps.TelemetryExportDestination	ALL
+resources.apps.*.telemetry_export_destinations[*]	apps.TelemetryExportDestination	ALL
+resources.apps.*.telemetry_export_destinations[*].unity_catalog	*apps.UnityCatalog	ALL
+resources.apps.*.telemetry_export_destinations[*].unity_catalog.logs_table	string	ALL
+resources.apps.*.telemetry_export_destinations[*].unity_catalog.metrics_table	string	ALL
+resources.apps.*.telemetry_export_destinations[*].unity_catalog.traces_table	string	ALL
 resources.apps.*.update_time	string	ALL
 resources.apps.*.updater	string	ALL
 resources.apps.*.url	string	ALL
@@ -2267,9 +2277,11 @@ resources.pipelines.*.development	bool	ALL
 resources.pipelines.*.dry_run	bool	ALL
 resources.pipelines.*.edition	string	ALL
 resources.pipelines.*.effective_budget_policy_id	string	REMOTE
+resources.pipelines.*.effective_publishing_mode	pipelines.PublishingMode	REMOTE
 resources.pipelines.*.environment	*pipelines.PipelinesEnvironment	ALL
 resources.pipelines.*.environment.dependencies	[]string	ALL
 resources.pipelines.*.environment.dependencies[*]	string	ALL
+resources.pipelines.*.environment.environment_version	string	ALL
 resources.pipelines.*.event_log	*pipelines.EventLogSpec	ALL
 resources.pipelines.*.event_log.catalog	string	ALL
 resources.pipelines.*.event_log.name	string	ALL
@@ -2616,6 +2628,7 @@ resources.postgres_projects.*.default_endpoint_settings.pg_settings	map[string]s
 resources.postgres_projects.*.default_endpoint_settings.pg_settings.*	string	INPUT	STATE
 resources.postgres_projects.*.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	INPUT	STATE
 resources.postgres_projects.*.display_name	string	INPUT	STATE
+resources.postgres_projects.*.enable_pg_native_login	bool	INPUT	STATE
 resources.postgres_projects.*.history_retention_duration	*duration.Duration	INPUT	STATE
 resources.postgres_projects.*.id	string	INPUT
 resources.postgres_projects.*.initial_endpoint_spec	*postgres.InitialEndpointSpec	REMOTE
@@ -2649,6 +2662,7 @@ resources.postgres_projects.*.spec.default_endpoint_settings.pg_settings	map[str
 resources.postgres_projects.*.spec.default_endpoint_settings.pg_settings.*	string	REMOTE
 resources.postgres_projects.*.spec.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.spec.display_name	string	REMOTE
+resources.postgres_projects.*.spec.enable_pg_native_login	bool	REMOTE
 resources.postgres_projects.*.spec.history_retention_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.spec.pg_version	int	REMOTE
 resources.postgres_projects.*.status	*postgres.ProjectStatus	REMOTE
@@ -2666,6 +2680,7 @@ resources.postgres_projects.*.status.default_endpoint_settings.pg_settings	map[s
 resources.postgres_projects.*.status.default_endpoint_settings.pg_settings.*	string	REMOTE
 resources.postgres_projects.*.status.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.status.display_name	string	REMOTE
+resources.postgres_projects.*.status.enable_pg_native_login	bool	REMOTE
 resources.postgres_projects.*.status.history_retention_duration	*duration.Duration	REMOTE
 resources.postgres_projects.*.status.owner	string	REMOTE
 resources.postgres_projects.*.status.pg_version	int	REMOTE
