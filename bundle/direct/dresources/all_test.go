@@ -21,7 +21,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
-"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -279,8 +279,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
 			EmbeddedSlice: []resources.Permission{{
-				Level: "IS_OWNER",
-				UserName:        "user@example.com",
+				Level:    "IS_OWNER",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -296,8 +296,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/pipelines/" + resp.PipelineId,
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -314,8 +314,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/registered-models/" + resp.RegisteredModel.Name,
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -331,8 +331,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/experiments/" + resp.ExperimentId,
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -341,8 +341,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -360,8 +360,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/apps/" + waiter.Response.Name,
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -370,8 +370,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/sql/warehouses/warehouse-permissions",
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -389,8 +389,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/database-instances/" + waiter.Response.Name,
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -411,8 +411,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/database-projects/" + components.ProjectID,
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -440,8 +440,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/dashboards/" + resp.DashboardId,
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -467,8 +467,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -498,8 +498,8 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/alertsv2/" + resp.Id,
 			EmbeddedSlice: []resources.Permission{{
-				Level: "CAN_MANAGE",
-				UserName:        "user@example.com",
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
