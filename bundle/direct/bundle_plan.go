@@ -569,11 +569,22 @@ func isEmptyStruct(rv reflect.Value) bool {
 	return true
 }
 
-func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
-	targetResourceKey := path.Prefix(3).String()
+// splitResourcePath splits a reference path into resource key and field path.
+// For regular resources like "resources.jobs.foo.name", returns ("resources.jobs.foo", "name").
+// For sub-resources like "resources.jobs.foo.permissions[0].level", returns ("resources.jobs.foo.permissions", "[0].level").
+func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode) {
+	// Check if the 4th component is "permissions" or "grants" (sub-resource)
+	if path.Len() > 4 {
+		first := path.SkipPrefix(3).Prefix(1)
+		if key, ok := first.StringKey(); ok && (key == "permissions" || key == "grants") {
+			return path.Prefix(4).String(), path.SkipPrefix(4)
+		}
+	}
+	return path.Prefix(3).String(), path.SkipPrefix(3)
+}
 
-	fieldPath := path.SkipPrefix(3)
+func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	targetResourceKey, fieldPath := splitResourcePath(path)
 	fieldPathS := fieldPath.String()
 
 	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)
