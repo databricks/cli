@@ -583,7 +583,7 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 		return nil
 	})
 	if endpointErr != nil {
-		log.Warnf(ctx, "Could not resolve endpoint details: %v", err)
+		log.Warnf(ctx, "Could not resolve endpoint details: %v", endpointErr)
 		// non-fatal: user can fill values manually
 	}
 

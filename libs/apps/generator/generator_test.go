@@ -925,8 +925,8 @@ func TestLocalOnlyFieldSkippedInAppEnvAndVariables(t *testing.T) {
 	assert.Contains(t, vars, "postgres_branch:")
 	assert.Contains(t, vars, "postgres_database:")
 	assert.NotContains(t, vars, "postgres_host:")
-	assert.NotContains(t, vars, "postgres_dbname:")
-	assert.NotContains(t, vars, "postgres_endpoint:")
+	assert.NotContains(t, vars, "postgres_databaseName:")
+	assert.NotContains(t, vars, "postgres_endpointPath:")
 	assert.NotContains(t, vars, "postgres_port:")
 	assert.NotContains(t, vars, "postgres_sslmode:")
 
