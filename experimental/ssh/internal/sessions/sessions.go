@@ -1,0 +1,147 @@
+package sessions
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/databricks/cli/libs/env"
+)
+
+const (
+	stateFileName = "ssh-tunnel-sessions.json"
+
+	// Sessions older than this are considered expired and cleaned up automatically.
+	sessionMaxAge = 24 * time.Hour
+)
+
+// Session represents a tracked SSH tunnel session.
+type Session struct {
+	Name          string    `json:"name"`
+	Accelerator   string    `json:"accelerator"`
+	WorkspaceHost string    `json:"workspace_host"`
+	CreatedAt     time.Time `json:"created_at"`
+	ClusterID     string    `json:"cluster_id,omitempty"`
+}
+
+// SessionStore holds all tracked sessions.
+type SessionStore struct {
+	Sessions []Session `json:"sessions"`
+}
+
+func getStateFilePath(ctx context.Context) (string, error) {
+	homeDir, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+	return filepath.Join(homeDir, ".databricks", stateFileName), nil
+}
+
+// Load reads the session store from disk. Returns an empty store if the file does not exist.
+func Load(ctx context.Context) (*SessionStore, error) {
+	path, err := getStateFilePath(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return &SessionStore{}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to read session state file: %w", err)
+	}
+
+	var store SessionStore
+	if err := json.Unmarshal(data, &store); err != nil {
+		return nil, fmt.Errorf("failed to parse session state file: %w", err)
+	}
+	return &store, nil
+}
+
+// Save writes the session store to disk atomically.
+func Save(ctx context.Context, store *SessionStore) error {
+	path, err := getStateFilePath(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return fmt.Errorf("failed to create state directory: %w", err)
+	}
+
+	data, err := json.MarshalIndent(store, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal session state: %w", err)
+	}
+
+	// Atomic write: write to temp file, then rename.
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0o600); err != nil {
+		return fmt.Errorf("failed to write session state file: %w", err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		return fmt.Errorf("failed to rename session state file: %w", err)
+	}
+	return nil
+}
+
+// Add persists a new session to the store, replacing any existing session with the same name.
+func Add(ctx context.Context, s Session) error {
+	store, err := Load(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Replace existing session with the same name.
+	found := false
+	for i, existing := range store.Sessions {
+		if existing.Name == s.Name {
+			store.Sessions[i] = s
+			found = true
+			break
+		}
+	}
+	if !found {
+		store.Sessions = append(store.Sessions, s)
+	}
+
+	return Save(ctx, store)
+}
+
+// Remove deletes a session by name.
+func Remove(ctx context.Context, name string) error {
+	store, err := Load(ctx)
+	if err != nil {
+		return err
+	}
+
+	filtered := store.Sessions[:0]
+	for _, s := range store.Sessions {
+		if s.Name != name {
+			filtered = append(filtered, s)
+		}
+	}
+	store.Sessions = filtered
+	return Save(ctx, store)
+}
+
+// FindMatching returns non-expired sessions that match the given workspace host and accelerator.
+func FindMatching(ctx context.Context, workspaceHost, accelerator string) ([]Session, error) {
+	store, err := Load(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cutoff := time.Now().Add(-sessionMaxAge)
+	var result []Session
+	for _, s := range store.Sessions {
+		if s.WorkspaceHost == workspaceHost && s.Accelerator == accelerator && s.CreatedAt.After(cutoff) {
+			result = append(result, s)
+		}
+	}
+	return result, nil
+}
