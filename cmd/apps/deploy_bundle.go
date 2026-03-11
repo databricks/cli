@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -39,12 +40,10 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 		var (
 			force          bool
 			skipValidation bool
-			skipTests      bool
 		)
 
 		deployCmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation")
-		deployCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")
-		deployCmd.Flags().BoolVar(&skipTests, "skip-tests", true, "Skip running tests during validation")
+		deployCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "Skip project validation entirely")
 
 		makeArgsOptionalWithBundle(deployCmd, "deploy [APP_NAME]")
 
@@ -53,7 +52,7 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 			if len(args) == 0 {
 				b := root.TryConfigureBundle(cmd)
 				if b != nil {
-					return runBundleDeploy(cmd, force, skipValidation, skipTests)
+					return runBundleDeploy(cmd, b, force, skipValidation)
 				}
 			}
 
@@ -65,9 +64,13 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 
 When run from a Databricks Apps project directory (containing databricks.yml)
 without an APP_NAME argument, this command runs an enhanced deployment pipeline:
-1. Validates the project (build, typecheck, lint for Node.js projects)
+1. Validates the project if needed (code changed or never validated)
 2. Deploys the project to the workspace
 3. Runs the app
+
+Validation is automatically run when:
+- No previous validation state exists
+- Code has changed since last validation (checksum mismatch)
 
 When an APP_NAME argument is provided (or when not in a project directory),
 creates an app deployment using the API directly.
@@ -77,7 +80,7 @@ Arguments:
             When provided in a project directory, uses API deploy instead of project deploy.
 
 Examples:
-  # Deploy from a project directory (enhanced flow with validation)
+  # Deploy from a project directory (auto-validates if needed)
   databricks apps deploy
 
   # Deploy from a specific target
@@ -86,7 +89,7 @@ Examples:
   # Deploy a specific app using the API (even from a project directory)
   databricks apps deploy my-app
 
-  # Deploy from project with validation skip
+  # Skip validation entirely
   databricks apps deploy --skip-validation
 
   # Force deploy (override git branch validation)
@@ -95,7 +98,7 @@ Examples:
 }
 
 // runBundleDeploy executes the enhanced deployment flow for project directories.
-func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) error {
+func runBundleDeploy(cmd *cobra.Command, initialBundle *bundle.Bundle, force, skipValidation bool) error {
 	ctx := cmd.Context()
 
 	workDir, err := os.Getwd()
@@ -103,28 +106,16 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) 
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
-	// Step 1: Validate project (unless skipped)
-	if !skipValidation {
-		validator := validation.GetProjectValidator(workDir)
-		if validator != nil {
-			opts := validation.ValidateOptions{
-				SkipTests: skipTests,
-			}
-			result, err := validator.Validate(ctx, workDir, opts)
-			if err != nil {
-				return fmt.Errorf("validation error: %w", err)
-			}
+	// Get state directory from the initial bundle (before ProcessBundle reinitializes it)
+	stateDir := initialBundle.GetLocalStateDir(ctx, "apps")
 
-			if !result.Success {
-				if result.Details != nil {
-					cmdio.LogString(ctx, result.Details.Error())
-				}
-				return errors.New("validation failed - fix errors before deploying")
-			}
-			cmdio.LogString(ctx, "✅ "+result.Message)
-		} else {
-			log.Debugf(ctx, "No validator found for project type, skipping validation")
+	// Step 1: Validate if needed (unless --skip-validation)
+	if !skipValidation {
+		if err := validateIfNeeded(cmd, workDir, stateDir); err != nil {
+			return err
 		}
+	} else {
+		log.Debugf(ctx, "Skipping validation (--skip-validation)")
 	}
 
 	// Step 2: Deploy project
@@ -155,6 +146,11 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) 
 	if err := runBundleApp(ctx, b, appKey); err != nil {
 		cmdio.LogString(ctx, "✔ Deployment succeeded, but failed to start app")
 		return fmt.Errorf("failed to run app: %w. Run `databricks apps logs` to view logs", err)
+	}
+
+	// Step 4: Update state to deployed
+	if err := updateStateToDeployed(stateDir); err != nil {
+		log.Warnf(ctx, "Failed to update state file: %v", err)
 	}
 
 	cmdio.LogString(ctx, "✔ Deployment complete!")
@@ -206,4 +202,82 @@ func runBundleApp(ctx context.Context, b *bundle.Bundle, appKey string) error {
 	}
 
 	return nil
+}
+
+// validateIfNeeded checks validation state and runs validation if needed.
+// stateDir is the bundle's local state directory for storing validation state.
+func validateIfNeeded(cmd *cobra.Command, workDir, stateDir string) error {
+	ctx := cmd.Context()
+
+	state, err := validation.LoadState(stateDir)
+	if err != nil {
+		return fmt.Errorf("failed to load validation state: %w", err)
+	}
+
+	currentChecksum, err := validation.ComputeChecksum(workDir)
+	if err != nil {
+		return fmt.Errorf("failed to compute checksum: %w", err)
+	}
+
+	// Check if validation is needed
+	needsValidation := state == nil || currentChecksum != state.Checksum
+	if !needsValidation {
+		log.Debugf(ctx, "Validation state up-to-date (checksum: %s...)", state.Checksum[:12])
+		return nil
+	}
+
+	if state == nil {
+		log.Infof(ctx, "No previous validation state, running validation...")
+	} else {
+		log.Infof(ctx, "Code changed since last validation, re-validating...")
+	}
+
+	// Run validation
+	opts := validation.ValidateOptions{}
+	validator := validation.GetProjectValidator(workDir)
+	if validator != nil {
+		result, err := validator.Validate(ctx, workDir, opts)
+		if err != nil {
+			return fmt.Errorf("validation error: %w", err)
+		}
+
+		if !result.Success {
+			if result.Details != nil {
+				cmdio.LogString(ctx, result.Details.Error())
+			}
+			return errors.New("validation failed - fix errors before deploying")
+		}
+		cmdio.LogString(ctx, "✅ "+result.Message)
+	} else {
+		log.Debugf(ctx, "No validator found for project type, skipping validation checks")
+	}
+
+	// Save state
+	newState := &validation.State{
+		State:       validation.StateValidated,
+		ValidatedAt: time.Now().UTC(),
+		Checksum:    currentChecksum,
+	}
+	if err := validation.SaveState(stateDir, newState); err != nil {
+		return fmt.Errorf("failed to save state: %w", err)
+	}
+
+	return nil
+}
+
+// updateStateToDeployed updates the state file to mark the project as deployed.
+// stateDir is the bundle's local state directory.
+func updateStateToDeployed(stateDir string) error {
+	state, err := validation.LoadState(stateDir)
+	if err != nil {
+		return err
+	}
+
+	if state == nil {
+		// No state file, nothing to update
+		return nil
+	}
+
+	state.State = validation.StateDeployed
+	return validation.SaveState(stateDir, state)
 }
