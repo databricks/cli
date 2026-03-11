@@ -1,1 +1,1 @@
-Use EmbeddedSlice field name convention for transparent struct embedding
+direct: Fix permissions state path to match input config schema
