@@ -19,4 +19,5 @@ type DatabricksCliLog struct {
 	CliTestEvent      *CliTestEvent      `json:"cli_test_event,omitempty"`
 	BundleInitEvent   *BundleInitEvent   `json:"bundle_init_event,omitempty"`
 	BundleDeployEvent *BundleDeployEvent `json:"bundle_deploy_event,omitempty"`
+	SshTunnelEvent    *SshTunnelEvent    `json:"ssh_tunnel_event,omitempty"`
 }

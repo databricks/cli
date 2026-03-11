@@ -27,6 +27,8 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -203,6 +205,52 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		cancel()
 	}()
 
+	event := BuildTelemetryEvent(opts)
+
+	runErr := runConnect(ctx, client, opts, event)
+	if runErr != nil {
+		event.IsSuccess = false
+	} else {
+		event.IsSuccess = true
+	}
+
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshTunnelEvent: event,
+	})
+
+	return runErr
+}
+
+// BuildTelemetryEvent creates an SshTunnelEvent pre-populated with data from client options.
+func BuildTelemetryEvent(opts ClientOptions) *protos.SshTunnelEvent {
+	event := &protos.SshTunnelEvent{
+		AcceleratorType:  opts.Accelerator,
+		IdeType:          opts.IDE,
+		AutoStartCluster: opts.AutoStartCluster,
+	}
+
+	if opts.IsServerlessMode() {
+		event.ComputeType = protos.SshTunnelComputeTypeServerless
+	} else {
+		event.ComputeType = protos.SshTunnelComputeTypeDedicated
+	}
+
+	switch {
+	case opts.ProxyMode:
+		event.ClientMode = protos.SshTunnelClientModeProxy
+	case opts.IDE != "":
+		event.ClientMode = protos.SshTunnelClientModeIDE
+	default:
+		event.ClientMode = protos.SshTunnelClientModeSSH
+	}
+
+	// If metadata is provided, the server is already running — this is a reconnect from ProxyCommand.
+	event.IsReconnect = opts.ServerMetadata != ""
+
+	return event
+}
+
+func runConnect(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions, event *protos.SshTunnelEvent) error {
 	// For serverless without explicit --name: auto-generate or reconnect to existing session.
 	if opts.IsServerlessMode() && opts.ConnectionName == "" && !opts.ProxyMode {
 		err := resolveServerlessSession(ctx, client, &opts)
@@ -296,10 +344,13 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 			return fmt.Errorf("failed to upload ssh-tunnel binaries: %w", err)
 		}
 		sp.Close()
+
+		serverStartTime := time.Now()
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
+		event.ServerStartTimeMs = time.Since(serverStartTime).Milliseconds()
 	} else {
 		// Metadata format: "<user_name>,<port>,<cluster_id>"
 		metadata := strings.Split(opts.ServerMetadata, ",")
