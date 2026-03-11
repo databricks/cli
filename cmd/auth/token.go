@@ -65,6 +65,10 @@ using a client ID and secret is not supported.`,
 	cmd.Flags().DurationVar(&tokenTimeout, "timeout", defaultTimeout,
 		"Timeout for acquiring a token.")
 
+	var refreshBefore time.Duration
+	cmd.Flags().DurationVar(&refreshBefore, "refresh-before", 0,
+		"Refresh the token if it expires within this duration (e.g., 5m, 30s).")
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profileName := ""
@@ -78,6 +82,7 @@ using a client ID and secret is not supported.`,
 			profileName:        profileName,
 			args:               args,
 			tokenTimeout:       tokenTimeout,
+			refreshBefore:      refreshBefore,
 			profiler:           profile.DefaultProfiler,
 			persistentAuthOpts: nil,
 		})
@@ -107,6 +112,9 @@ type loadTokenArgs struct {
 
 	// tokenTimeout is the timeout for retrieving (and potentially refreshing) an OAuth token.
 	tokenTimeout time.Duration
+
+	// refreshBefore triggers a token refresh if the token expires within this duration.
+	refreshBefore time.Duration
 
 	// profiler is the profiler to use for reading the host and account ID from the .databrickscfg file.
 	profiler profile.Profiler
@@ -242,6 +250,9 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 	allArgs := append(args.persistentAuthOpts, u2m.WithOAuthArgument(oauthArgument))
+	if args.refreshBefore > 0 {
+		allArgs = append(allArgs, u2m.WithExpiryDelta(args.refreshBefore))
+	}
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
