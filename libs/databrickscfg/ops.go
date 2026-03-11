@@ -68,7 +68,7 @@ func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *con
 			return false
 		}
 		// Check if this section matches the normalized host
-		return normalizeHost(host) == normalizeHost(cfg.Host)
+		return NormalizeHost(host) == NormalizeHost(cfg.Host)
 	})
 	if err == errNoMatchingProfiles {
 		section, err = configFile.NewSection(cfg.Profile)
@@ -160,7 +160,7 @@ func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 	}
 
 	// Normalized version of the configured host.
-	host := normalizeHost(cfg.Host)
+	host := NormalizeHost(cfg.Host)
 	match, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
 		return profile == s.Name()
 	})
@@ -168,11 +168,11 @@ func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 		return err
 	}
 
-	hostFromProfile := normalizeHost(match.Key("host").Value())
+	hostFromProfile := NormalizeHost(match.Key("host").Value())
 	if hostFromProfile != "" && host != "" && hostFromProfile != host {
 		// Try to find if there's a profile which uses the same host as the bundle and suggest in error message
 		match, err = findMatchingProfile(configFile, func(s *ini.Section) bool {
-			return normalizeHost(s.Key("host").Value()) == host
+			return NormalizeHost(s.Key("host").Value()) == host
 		})
 		if err == nil && match != nil {
 			profileName := match.Name()

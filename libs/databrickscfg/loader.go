@@ -84,7 +84,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		return fmt.Errorf("cannot parse config file: %w", err)
 	}
 	// Normalized version of the configured host.
-	host := normalizeHost(cfg.Host)
+	host := NormalizeHost(cfg.Host)
 	match, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
 		key, err := s.GetKey("host")
 		if err != nil {
@@ -93,7 +93,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		}
 
 		// Check if this section matches the normalized host
-		return normalizeHost(key.Value()) == host
+		return NormalizeHost(key.Value()) == host
 	})
 	if err == errNoMatchingProfiles {
 		return nil

@@ -243,7 +243,7 @@ depends on the existing profiles you have set in your configuration file
 		if profileName != "" {
 			err := databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:                    profileName,
-				Host:                       authArguments.Host,
+				Host:                       databrickscfg.NormalizeHost(authArguments.Host),
 				AuthType:                   authTypeDatabricksCLI,
 				AccountID:                  authArguments.AccountID,
 				WorkspaceID:                authArguments.WorkspaceID,
