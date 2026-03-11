@@ -34,7 +34,7 @@ type ResourcePermissions struct {
 
 type PermissionsState struct {
 	ObjectID      string                     `json:"object_id"`
-	EmbeddedSlice []iam.AccessControlRequest `json:"permissions,omitempty"`
+	EmbeddedSlice []iam.AccessControlRequest `json:"_,omitempty"`
 }
 
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
