@@ -98,6 +98,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[FOO_ID]",
         "last_modified": [UNIX_TIME_MILLIS][1],
         "name": "pipeline foo",

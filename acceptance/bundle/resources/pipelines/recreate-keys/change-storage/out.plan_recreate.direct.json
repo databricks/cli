@@ -33,6 +33,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[MY_ID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "libraries": [
