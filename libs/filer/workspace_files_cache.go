@@ -182,9 +182,8 @@ type executable interface {
 // cache stores all entries for cacheable Workspace File System calls.
 // We care about caching only [ReadDir] and [Stat] calls.
 type cache struct {
-	f   Filer
-	ctx context.Context
-	m   sync.Mutex
+	f Filer
+	m sync.Mutex
 
 	readDir map[string]*readDirEntry
 	stat    map[string]*statEntry
@@ -198,8 +197,7 @@ type cache struct {
 
 func newWorkspaceFilesReadaheadCache(ctx context.Context, f Filer) *cache {
 	c := &cache{
-		f:   f,
-		ctx: ctx,
+		f: f,
 
 		readDir: make(map[string]*readDirEntry),
 		stat:    make(map[string]*statEntry),
@@ -224,15 +222,28 @@ func (c *cache) work(ctx context.Context) {
 	}
 }
 
-// enqueue adds an operation to the queue.
-// If the context is canceled, an error is returned.
-// If the queue is full, an error is returned.
-//
+// enqueue adds a caller-initiated operation to the queue.
+// It respects the caller's context to allow cancellation of individual requests.
+// It returns an error if the caller's context is canceled or the queue is full.
 // Its caller is holding the lock so it cannot block.
 func (c *cache) enqueue(ctx context.Context, e executable) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
+	case c.queue <- e:
+		return nil
+	default:
+		return queueFullError{e.String()}
+	}
+}
+
+// enqueueReadahead adds a background readahead operation to the queue.
+// It does not take a context because readahead is tied to the cache's lifetime,
+// not any individual caller's request.
+// It returns an error if the queue is full.
+// Its caller is holding the lock so it cannot block.
+func (c *cache) enqueueReadahead(e executable) error {
+	select {
 	case c.queue <- e:
 		return nil
 	default:
@@ -252,7 +263,7 @@ func (c *cache) completeReadDirForDir(name string, dirEntry fs.DirEntry) {
 	if _, ok := c.readDir[name]; !ok {
 		// Create a new cache entry and queue the operation.
 		e := newReadDirEntry(name)
-		err := c.enqueue(c.ctx, e)
+		err := c.enqueueReadahead(e)
 		if err != nil {
 			e.markError(err)
 		}
@@ -279,7 +290,7 @@ func (c *cache) completeReadDirForFile(name string, dirEntry fs.DirEntry) {
 		// This is the only (?) case where this implementation is tied to the workspace filer.
 
 		// Queue a [Stat] call for the file.
-		err := c.enqueue(c.ctx, e)
+		err := c.enqueueReadahead(e)
 		if err != nil {
 			e.markError(err)
 		}

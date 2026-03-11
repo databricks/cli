@@ -30,6 +30,7 @@ import (
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
+	data_classification "github.com/databricks/cli/cmd/workspace/data-classification"
 	data_quality "github.com/databricks/cli/cmd/workspace/data-quality"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
@@ -51,6 +52,7 @@ import (
 	instance_profiles "github.com/databricks/cli/cmd/workspace/instance-profiles"
 	ip_access_lists "github.com/databricks/cli/cmd/workspace/ip-access-lists"
 	jobs "github.com/databricks/cli/cmd/workspace/jobs"
+	knowledge_assistants "github.com/databricks/cli/cmd/workspace/knowledge-assistants"
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
@@ -155,6 +157,7 @@ func All() []*cobra.Command {
 	out = append(out, current_user.New())
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
+	out = append(out, data_classification.New())
 	out = append(out, data_quality.New())
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
@@ -176,6 +179,7 @@ func All() []*cobra.Command {
 	out = append(out, instance_profiles.New())
 	out = append(out, ip_access_lists.New())
 	out = append(out, jobs.New())
+	out = append(out, knowledge_assistants.New())
 	out = append(out, lakeview.New())
 	out = append(out, lakeview_embedded.New())
 	out = append(out, libraries.New())
