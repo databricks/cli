@@ -571,16 +571,40 @@ func isEmptyStruct(rv reflect.Value) bool {
 
 // splitResourcePath splits a reference path into resource key and field path.
 // For regular resources like "resources.jobs.foo.name", returns ("resources.jobs.foo", "name").
-// For sub-resources like "resources.jobs.foo.permissions[0].level", returns ("resources.jobs.foo.permissions", "[0].level").
+// For sub-resources like "resources.jobs.foo.permissions[0].level", returns ("resources.jobs.foo.permissions", "[0].permission_level").
+// The level→permission_level remapping is needed because input config uses "level" but the state struct
+// (iam.AccessControlRequest) uses "permission_level".
 func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode) {
 	// Check if the 4th component is "permissions" or "grants" (sub-resource)
 	if path.Len() > 4 {
 		first := path.SkipPrefix(3).Prefix(1)
 		if key, ok := first.StringKey(); ok && (key == "permissions" || key == "grants") {
-			return path.Prefix(4).String(), path.SkipPrefix(4)
+			fieldPath := path.SkipPrefix(4)
+			if key == "permissions" {
+				fieldPath = remapPermissionFieldPath(fieldPath)
+			}
+			return path.Prefix(4).String(), fieldPath
 		}
 	}
 	return path.Prefix(3).String(), path.SkipPrefix(3)
+}
+
+// remapPermissionFieldPath remaps "level" to "permission_level" in field paths.
+// Input config uses "level" but iam.AccessControlRequest uses "permission_level".
+func remapPermissionFieldPath(path *structpath.PathNode) *structpath.PathNode {
+	if path == nil {
+		return nil
+	}
+	fieldPathS := path.String()
+	remapped := strings.ReplaceAll(fieldPathS, ".level", ".permission_level")
+	if remapped == fieldPathS {
+		return path
+	}
+	result, err := structpath.ParsePath(remapped)
+	if err != nil {
+		return path
+	}
+	return result
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
@@ -857,6 +881,16 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		refs, err := extractReferences(configRoot.Value(), node)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
+		}
+
+		// For permissions, input config uses "level" but state uses "permission_level".
+		// Remap ref paths so they match the state struct.
+		if strings.HasSuffix(node, ".permissions") {
+			remapped := make(map[string]string, len(refs))
+			for k, v := range refs {
+				remapped[strings.ReplaceAll(k, ".level", ".permission_level")] = v
+			}
+			refs = remapped
 		}
 
 		maps.Copy(refs, baseRefs)
