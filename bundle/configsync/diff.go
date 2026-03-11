@@ -108,6 +108,10 @@ func convertChangeDesc(ctx context.Context, adapter *dresources.Adapter, resourc
 		return nil, fmt.Errorf("failed to parse path %q: %w", fieldPath, err)
 	}
 
+	if isIgnoredForSync(resourceType, pathNode) {
+		return &ConfigChangeDesc{Operation: OperationSkip}, nil
+	}
+
 	hasConfigValue := cd.New != nil
 	normalizedValue, err := normalizeValue(cd.Remote)
 	if err != nil {

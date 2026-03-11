@@ -25,3 +25,20 @@ func resetValueIfNeeded(resourceType string, path *structpath.PathNode, value an
 	}
 	return value
 }
+
+// fieldsIgnoredForSync defines fields set by CLI that cannot be specified
+// in databricks.yml and should be excluded from config-remote-sync results.
+var fieldsIgnoredForSync = map[string][]*structpath.PatternNode{
+	"jobs": {
+		structpath.MustParsePattern("edit_mode"),
+	},
+}
+
+func isIgnoredForSync(resourceType string, path *structpath.PathNode) bool {
+	for _, pattern := range fieldsIgnoredForSync[resourceType] {
+		if path.HasPatternPrefix(pattern) {
+			return true
+		}
+	}
+	return false
+}
