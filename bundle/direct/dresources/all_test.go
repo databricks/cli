@@ -278,7 +278,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "IS_OWNER",
 				UserName: "user@example.com",
 			}},
@@ -295,7 +295,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/pipelines/" + resp.PipelineId,
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
@@ -313,7 +313,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/registered-models/" + resp.RegisteredModel.Name,
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
@@ -330,7 +330,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/experiments/" + resp.ExperimentId,
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
@@ -340,7 +340,7 @@ var testDeps = map[string]prepareWorkspace{
 	"clusters.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
@@ -359,7 +359,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/apps/" + waiter.Response.Name,
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
@@ -369,7 +369,7 @@ var testDeps = map[string]prepareWorkspace{
 	"sql_warehouses.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/sql/warehouses/warehouse-permissions",
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
@@ -388,7 +388,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/database-instances/" + waiter.Response.Name,
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
@@ -410,7 +410,7 @@ var testDeps = map[string]prepareWorkspace{
 		components, _ := ParsePostgresName(result.Name)
 		return &PermissionsState{
 			ObjectID: "/database-projects/" + components.ProjectID,
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
@@ -439,7 +439,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/dashboards/" + resp.DashboardId,
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
@@ -466,7 +466,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
@@ -497,7 +497,7 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/alertsv2/" + resp.Id,
-			EmbeddedSlice: []resources.Permission{{
+			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
 			}},
