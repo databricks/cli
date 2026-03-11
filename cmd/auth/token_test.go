@@ -131,6 +131,11 @@ func TestToken_loadToken(t *testing.T) {
 				Host: "https://legacy-ws.cloud.databricks.com",
 			},
 			{
+				Name:      "valid-token",
+				Host:      "https://accounts.cloud.databricks.com",
+				AccountID: "valid-token",
+			},
+			{
 				Name:                 "m2m-profile",
 				Host:                 "https://m2m.cloud.databricks.com",
 				HasClientCredentials: true,
@@ -636,6 +641,65 @@ func TestToken_loadToken(t *testing.T) {
 				profiler:      profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "refreshBefore skips refresh when token has enough time",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "valid-token",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				refreshBefore: 5 * time.Minute,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(&inMemoryTokenCache{Tokens: map[string]*oauth2.Token{
+						"valid-token": {AccessToken: "still-valid", RefreshToken: "valid-token", Expiry: time.Now().Add(1 * time.Hour)},
+					}}),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+				},
+			},
+			validateToken: func(resp *oauth2.Token) {
+				assert.Equal(t, "still-valid", resp.AccessToken)
+			},
+		},
+		{
+			name: "refreshBefore zero preserves default behavior",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "valid-token",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				refreshBefore: 0,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(&inMemoryTokenCache{Tokens: map[string]*oauth2.Token{
+						"valid-token": {AccessToken: "still-valid", RefreshToken: "valid-token", Expiry: time.Now().Add(1 * time.Hour)},
+					}}),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+				},
+			},
+			validateToken: func(resp *oauth2.Token) {
+				assert.Equal(t, "still-valid", resp.AccessToken)
+			},
+		},
+		{
+			name: "refreshBefore forces refresh when token expires within window",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "valid-token",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				refreshBefore: 2 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(&inMemoryTokenCache{Tokens: map[string]*oauth2.Token{
+						"valid-token": {AccessToken: "still-valid", RefreshToken: "valid-token", Expiry: time.Now().Add(1 * time.Hour)},
+					}}),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
 				},
