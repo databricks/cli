@@ -6,6 +6,12 @@ type ResourcePostgresEndpointProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type ResourcePostgresEndpointSpecGroup struct {
+	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
+	Max                       int  `json:"max"`
+	Min                       int  `json:"min"`
+}
+
 type ResourcePostgresEndpointSpecSettings struct {
 	PgSettings map[string]string `json:"pg_settings,omitempty"`
 }
@@ -15,13 +21,21 @@ type ResourcePostgresEndpointSpec struct {
 	AutoscalingLimitMinCu  float64                               `json:"autoscaling_limit_min_cu,omitempty"`
 	Disabled               bool                                  `json:"disabled,omitempty"`
 	EndpointType           string                                `json:"endpoint_type"`
+	Group                  *ResourcePostgresEndpointSpecGroup    `json:"group,omitempty"`
 	NoSuspension           bool                                  `json:"no_suspension,omitempty"`
 	Settings               *ResourcePostgresEndpointSpecSettings `json:"settings,omitempty"`
 	SuspendTimeoutDuration string                                `json:"suspend_timeout_duration,omitempty"`
 }
 
+type ResourcePostgresEndpointStatusGroup struct {
+	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
+	Max                       int  `json:"max"`
+	Min                       int  `json:"min"`
+}
+
 type ResourcePostgresEndpointStatusHosts struct {
-	Host string `json:"host,omitempty"`
+	Host         string `json:"host,omitempty"`
+	ReadOnlyHost string `json:"read_only_host,omitempty"`
 }
 
 type ResourcePostgresEndpointStatusSettings struct {
@@ -34,6 +48,7 @@ type ResourcePostgresEndpointStatus struct {
 	CurrentState           string                                  `json:"current_state,omitempty"`
 	Disabled               bool                                    `json:"disabled,omitempty"`
 	EndpointType           string                                  `json:"endpoint_type,omitempty"`
+	Group                  *ResourcePostgresEndpointStatusGroup    `json:"group,omitempty"`
 	Hosts                  *ResourcePostgresEndpointStatusHosts    `json:"hosts,omitempty"`
 	PendingState           string                                  `json:"pending_state,omitempty"`
 	Settings               *ResourcePostgresEndpointStatusSettings `json:"settings,omitempty"`

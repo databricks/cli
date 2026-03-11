@@ -2,6 +2,16 @@
 
 package schema
 
+type DataSourcePostgresProjectsProjectsInitialEndpointSpecGroup struct {
+	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
+	Max                       int  `json:"max"`
+	Min                       int  `json:"min"`
+}
+
+type DataSourcePostgresProjectsProjectsInitialEndpointSpec struct {
+	Group *DataSourcePostgresProjectsProjectsInitialEndpointSpecGroup `json:"group,omitempty"`
+}
+
 type DataSourcePostgresProjectsProjectsProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
@@ -24,6 +34,7 @@ type DataSourcePostgresProjectsProjectsSpec struct {
 	CustomTags               []DataSourcePostgresProjectsProjectsSpecCustomTags             `json:"custom_tags,omitempty"`
 	DefaultEndpointSettings  *DataSourcePostgresProjectsProjectsSpecDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	DisplayName              string                                                         `json:"display_name,omitempty"`
+	EnablePgNativeLogin      bool                                                           `json:"enable_pg_native_login,omitempty"`
 	HistoryRetentionDuration string                                                         `json:"history_retention_duration,omitempty"`
 	PgVersion                int                                                            `json:"pg_version,omitempty"`
 }
@@ -47,6 +58,7 @@ type DataSourcePostgresProjectsProjectsStatus struct {
 	CustomTags                  []DataSourcePostgresProjectsProjectsStatusCustomTags             `json:"custom_tags,omitempty"`
 	DefaultEndpointSettings     *DataSourcePostgresProjectsProjectsStatusDefaultEndpointSettings `json:"default_endpoint_settings,omitempty"`
 	DisplayName                 string                                                           `json:"display_name,omitempty"`
+	EnablePgNativeLogin         bool                                                             `json:"enable_pg_native_login,omitempty"`
 	HistoryRetentionDuration    string                                                           `json:"history_retention_duration,omitempty"`
 	Owner                       string                                                           `json:"owner,omitempty"`
 	PgVersion                   int                                                              `json:"pg_version,omitempty"`
@@ -54,13 +66,14 @@ type DataSourcePostgresProjectsProjectsStatus struct {
 }
 
 type DataSourcePostgresProjectsProjects struct {
-	CreateTime     string                                            `json:"create_time,omitempty"`
-	Name           string                                            `json:"name"`
-	ProviderConfig *DataSourcePostgresProjectsProjectsProviderConfig `json:"provider_config,omitempty"`
-	Spec           *DataSourcePostgresProjectsProjectsSpec           `json:"spec,omitempty"`
-	Status         *DataSourcePostgresProjectsProjectsStatus         `json:"status,omitempty"`
-	Uid            string                                            `json:"uid,omitempty"`
-	UpdateTime     string                                            `json:"update_time,omitempty"`
+	CreateTime          string                                                 `json:"create_time,omitempty"`
+	InitialEndpointSpec *DataSourcePostgresProjectsProjectsInitialEndpointSpec `json:"initial_endpoint_spec,omitempty"`
+	Name                string                                                 `json:"name"`
+	ProviderConfig      *DataSourcePostgresProjectsProjectsProviderConfig      `json:"provider_config,omitempty"`
+	Spec                *DataSourcePostgresProjectsProjectsSpec                `json:"spec,omitempty"`
+	Status              *DataSourcePostgresProjectsProjectsStatus              `json:"status,omitempty"`
+	Uid                 string                                                 `json:"uid,omitempty"`
+	UpdateTime          string                                                 `json:"update_time,omitempty"`
 }
 
 type DataSourcePostgresProjectsProviderConfig struct {

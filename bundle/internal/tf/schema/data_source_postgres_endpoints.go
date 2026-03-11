@@ -6,6 +6,12 @@ type DataSourcePostgresEndpointsEndpointsProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type DataSourcePostgresEndpointsEndpointsSpecGroup struct {
+	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
+	Max                       int  `json:"max"`
+	Min                       int  `json:"min"`
+}
+
 type DataSourcePostgresEndpointsEndpointsSpecSettings struct {
 	PgSettings map[string]string `json:"pg_settings,omitempty"`
 }
@@ -15,13 +21,21 @@ type DataSourcePostgresEndpointsEndpointsSpec struct {
 	AutoscalingLimitMinCu  float64                                           `json:"autoscaling_limit_min_cu,omitempty"`
 	Disabled               bool                                              `json:"disabled,omitempty"`
 	EndpointType           string                                            `json:"endpoint_type"`
+	Group                  *DataSourcePostgresEndpointsEndpointsSpecGroup    `json:"group,omitempty"`
 	NoSuspension           bool                                              `json:"no_suspension,omitempty"`
 	Settings               *DataSourcePostgresEndpointsEndpointsSpecSettings `json:"settings,omitempty"`
 	SuspendTimeoutDuration string                                            `json:"suspend_timeout_duration,omitempty"`
 }
 
+type DataSourcePostgresEndpointsEndpointsStatusGroup struct {
+	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
+	Max                       int  `json:"max"`
+	Min                       int  `json:"min"`
+}
+
 type DataSourcePostgresEndpointsEndpointsStatusHosts struct {
-	Host string `json:"host,omitempty"`
+	Host         string `json:"host,omitempty"`
+	ReadOnlyHost string `json:"read_only_host,omitempty"`
 }
 
 type DataSourcePostgresEndpointsEndpointsStatusSettings struct {
@@ -34,6 +48,7 @@ type DataSourcePostgresEndpointsEndpointsStatus struct {
 	CurrentState           string                                              `json:"current_state,omitempty"`
 	Disabled               bool                                                `json:"disabled,omitempty"`
 	EndpointType           string                                              `json:"endpoint_type,omitempty"`
+	Group                  *DataSourcePostgresEndpointsEndpointsStatusGroup    `json:"group,omitempty"`
 	Hosts                  *DataSourcePostgresEndpointsEndpointsStatusHosts    `json:"hosts,omitempty"`
 	PendingState           string                                              `json:"pending_state,omitempty"`
 	Settings               *DataSourcePostgresEndpointsEndpointsStatusSettings `json:"settings,omitempty"`
