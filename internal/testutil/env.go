@@ -10,8 +10,8 @@ import (
 // The original environment is restored upon test completion.
 // Note: use of this function is incompatible with parallel execution.
 func CleanupEnvironment(t TestingT) {
-	path := os.Getenv("PATH")
-	pwd := os.Getenv("PWD")
+	path := os.Getenv("PATH") //nolint:forbidigo // import cycle: libs/env tests import internal/testutil
+	pwd := os.Getenv("PWD")   //nolint:forbidigo // import cycle: libs/env tests import internal/testutil
 
 	// Clear all environment variables.
 	NullEnvironment(t)
