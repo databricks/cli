@@ -2,38 +2,37 @@
 
 package schema
 
-
 type DataSourcePostgresDatabasesDatabasesProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourcePostgresDatabasesDatabasesSpec struct {
-    PostgresDatabase string `json:"postgres_database,omitempty"`
-    Role string `json:"role,omitempty"`
+	PostgresDatabase string `json:"postgres_database,omitempty"`
+	Role             string `json:"role,omitempty"`
 }
 
 type DataSourcePostgresDatabasesDatabasesStatus struct {
-    PostgresDatabase string `json:"postgres_database,omitempty"`
-    Role string `json:"role,omitempty"`
+	PostgresDatabase string `json:"postgres_database,omitempty"`
+	Role             string `json:"role,omitempty"`
 }
 
 type DataSourcePostgresDatabasesDatabases struct {
-    CreateTime string `json:"create_time,omitempty"`
-    Name string `json:"name"`
-    Parent string `json:"parent,omitempty"`
-    ProviderConfig *DataSourcePostgresDatabasesDatabasesProviderConfig `json:"provider_config,omitempty"`
-    Spec *DataSourcePostgresDatabasesDatabasesSpec `json:"spec,omitempty"`
-    Status *DataSourcePostgresDatabasesDatabasesStatus `json:"status,omitempty"`
-    UpdateTime string `json:"update_time,omitempty"`
+	CreateTime     string                                              `json:"create_time,omitempty"`
+	Name           string                                              `json:"name"`
+	Parent         string                                              `json:"parent,omitempty"`
+	ProviderConfig *DataSourcePostgresDatabasesDatabasesProviderConfig `json:"provider_config,omitempty"`
+	Spec           *DataSourcePostgresDatabasesDatabasesSpec           `json:"spec,omitempty"`
+	Status         *DataSourcePostgresDatabasesDatabasesStatus         `json:"status,omitempty"`
+	UpdateTime     string                                              `json:"update_time,omitempty"`
 }
 
 type DataSourcePostgresDatabasesProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourcePostgresDatabases struct {
-    Databases []DataSourcePostgresDatabasesDatabases `json:"databases,omitempty"`
-    PageSize int `json:"page_size,omitempty"`
-    Parent string `json:"parent"`
-    ProviderConfig *DataSourcePostgresDatabasesProviderConfig `json:"provider_config,omitempty"`
+	Databases      []DataSourcePostgresDatabasesDatabases     `json:"databases,omitempty"`
+	PageSize       int                                        `json:"page_size,omitempty"`
+	Parent         string                                     `json:"parent"`
+	ProviderConfig *DataSourcePostgresDatabasesProviderConfig `json:"provider_config,omitempty"`
 }

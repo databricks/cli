@@ -2,9 +2,8 @@
 
 package schema
 
-
 type ResourceServicePrincipalRole struct {
-    Id string `json:"id,omitempty"`
-    Role string `json:"role"`
-    ServicePrincipalId string `json:"service_principal_id"`
+	Id                 string `json:"id,omitempty"`
+	Role               string `json:"role"`
+	ServicePrincipalId string `json:"service_principal_id"`
 }

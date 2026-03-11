@@ -2,9 +2,8 @@
 
 package schema
 
-
 type DataSourceMwsNetworkConnectivityConfigs struct {
-    Id string `json:"id,omitempty"`
-    Names []string `json:"names,omitempty"`
-    Region string `json:"region,omitempty"`
+	Id     string   `json:"id,omitempty"`
+	Names  []string `json:"names,omitempty"`
+	Region string   `json:"region,omitempty"`
 }

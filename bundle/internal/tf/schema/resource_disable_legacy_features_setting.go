@@ -2,19 +2,18 @@
 
 package schema
 
-
 type ResourceDisableLegacyFeaturesSettingDisableLegacyFeatures struct {
-    Value bool `json:"value"`
+	Value bool `json:"value"`
 }
 
 type ResourceDisableLegacyFeaturesSettingProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceDisableLegacyFeaturesSetting struct {
-    Etag string `json:"etag,omitempty"`
-    Id string `json:"id,omitempty"`
-    SettingName string `json:"setting_name,omitempty"`
-    DisableLegacyFeatures *ResourceDisableLegacyFeaturesSettingDisableLegacyFeatures `json:"disable_legacy_features,omitempty"`
-    ProviderConfig *ResourceDisableLegacyFeaturesSettingProviderConfig `json:"provider_config,omitempty"`
+	Etag                  string                                                     `json:"etag,omitempty"`
+	Id                    string                                                     `json:"id,omitempty"`
+	SettingName           string                                                     `json:"setting_name,omitempty"`
+	DisableLegacyFeatures *ResourceDisableLegacyFeaturesSettingDisableLegacyFeatures `json:"disable_legacy_features,omitempty"`
+	ProviderConfig        *ResourceDisableLegacyFeaturesSettingProviderConfig        `json:"provider_config,omitempty"`
 }

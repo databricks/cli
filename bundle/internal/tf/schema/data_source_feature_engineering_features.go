@@ -2,97 +2,96 @@
 
 package schema
 
-
 type DataSourceFeatureEngineeringFeaturesFeaturesFunctionExtraParameters struct {
-    Key string `json:"key"`
-    Value string `json:"value"`
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesFunction struct {
-    ExtraParameters []DataSourceFeatureEngineeringFeaturesFeaturesFunctionExtraParameters `json:"extra_parameters,omitempty"`
-    FunctionType string `json:"function_type"`
+	ExtraParameters []DataSourceFeatureEngineeringFeaturesFeaturesFunctionExtraParameters `json:"extra_parameters,omitempty"`
+	FunctionType    string                                                                `json:"function_type"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesLineageContextJobContext struct {
-    JobId int `json:"job_id,omitempty"`
-    JobRunId int `json:"job_run_id,omitempty"`
+	JobId    int `json:"job_id,omitempty"`
+	JobRunId int `json:"job_run_id,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesLineageContext struct {
-    JobContext *DataSourceFeatureEngineeringFeaturesFeaturesLineageContextJobContext `json:"job_context,omitempty"`
-    NotebookId int `json:"notebook_id,omitempty"`
+	JobContext *DataSourceFeatureEngineeringFeaturesFeaturesLineageContextJobContext `json:"job_context,omitempty"`
+	NotebookId int                                                                   `json:"notebook_id,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource struct {
-    DataframeSchema string `json:"dataframe_schema,omitempty"`
-    EntityColumns []string `json:"entity_columns"`
-    FilterCondition string `json:"filter_condition,omitempty"`
-    FullName string `json:"full_name"`
-    TimeseriesColumn string `json:"timeseries_column"`
-    TransformationSql string `json:"transformation_sql,omitempty"`
+	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
+	EntityColumns     []string `json:"entity_columns"`
+	FilterCondition   string   `json:"filter_condition,omitempty"`
+	FullName          string   `json:"full_name"`
+	TimeseriesColumn  string   `json:"timeseries_column"`
+	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceEntityColumnIdentifiers struct {
-    VariantExprPath string `json:"variant_expr_path"`
+	VariantExprPath string `json:"variant_expr_path"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceTimeseriesColumnIdentifier struct {
-    VariantExprPath string `json:"variant_expr_path"`
+	VariantExprPath string `json:"variant_expr_path"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSource struct {
-    EntityColumnIdentifiers []DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceEntityColumnIdentifiers `json:"entity_column_identifiers,omitempty"`
-    Name string `json:"name"`
-    TimeseriesColumnIdentifier *DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceTimeseriesColumnIdentifier `json:"timeseries_column_identifier,omitempty"`
+	EntityColumnIdentifiers    []DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceEntityColumnIdentifiers   `json:"entity_column_identifiers,omitempty"`
+	Name                       string                                                                                   `json:"name"`
+	TimeseriesColumnIdentifier *DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceTimeseriesColumnIdentifier `json:"timeseries_column_identifier,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSource struct {
-    DeltaTableSource *DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource `json:"delta_table_source,omitempty"`
-    KafkaSource *DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSource `json:"kafka_source,omitempty"`
+	DeltaTableSource *DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource `json:"delta_table_source,omitempty"`
+	KafkaSource      *DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSource      `json:"kafka_source,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowContinuous struct {
-    Offset string `json:"offset,omitempty"`
-    WindowDuration string `json:"window_duration"`
+	Offset         string `json:"offset,omitempty"`
+	WindowDuration string `json:"window_duration"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowSliding struct {
-    SlideDuration string `json:"slide_duration"`
-    WindowDuration string `json:"window_duration"`
+	SlideDuration  string `json:"slide_duration"`
+	WindowDuration string `json:"window_duration"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowTumbling struct {
-    WindowDuration string `json:"window_duration"`
+	WindowDuration string `json:"window_duration"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindow struct {
-    Continuous *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowContinuous `json:"continuous,omitempty"`
-    Sliding *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowSliding `json:"sliding,omitempty"`
-    Tumbling *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowTumbling `json:"tumbling,omitempty"`
+	Continuous *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowContinuous `json:"continuous,omitempty"`
+	Sliding    *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowSliding    `json:"sliding,omitempty"`
+	Tumbling   *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowTumbling   `json:"tumbling,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeatures struct {
-    Description string `json:"description,omitempty"`
-    FilterCondition string `json:"filter_condition,omitempty"`
-    FullName string `json:"full_name"`
-    Function *DataSourceFeatureEngineeringFeaturesFeaturesFunction `json:"function,omitempty"`
-    Inputs []string `json:"inputs,omitempty"`
-    LineageContext *DataSourceFeatureEngineeringFeaturesFeaturesLineageContext `json:"lineage_context,omitempty"`
-    ProviderConfig *DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig `json:"provider_config,omitempty"`
-    Source *DataSourceFeatureEngineeringFeaturesFeaturesSource `json:"source,omitempty"`
-    TimeWindow *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindow `json:"time_window,omitempty"`
+	Description     string                                                      `json:"description,omitempty"`
+	FilterCondition string                                                      `json:"filter_condition,omitempty"`
+	FullName        string                                                      `json:"full_name"`
+	Function        *DataSourceFeatureEngineeringFeaturesFeaturesFunction       `json:"function,omitempty"`
+	Inputs          []string                                                    `json:"inputs,omitempty"`
+	LineageContext  *DataSourceFeatureEngineeringFeaturesFeaturesLineageContext `json:"lineage_context,omitempty"`
+	ProviderConfig  *DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig `json:"provider_config,omitempty"`
+	Source          *DataSourceFeatureEngineeringFeaturesFeaturesSource         `json:"source,omitempty"`
+	TimeWindow      *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindow     `json:"time_window,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceFeatureEngineeringFeatures struct {
-    Features []DataSourceFeatureEngineeringFeaturesFeatures `json:"features,omitempty"`
-    PageSize int `json:"page_size,omitempty"`
-    ProviderConfig *DataSourceFeatureEngineeringFeaturesProviderConfig `json:"provider_config,omitempty"`
+	Features       []DataSourceFeatureEngineeringFeaturesFeatures      `json:"features,omitempty"`
+	PageSize       int                                                 `json:"page_size,omitempty"`
+	ProviderConfig *DataSourceFeatureEngineeringFeaturesProviderConfig `json:"provider_config,omitempty"`
 }

@@ -2,51 +2,50 @@
 
 package schema
 
-
 type ResourceClusterPolicyLibrariesCran struct {
-    Package string `json:"package"`
-    Repo string `json:"repo,omitempty"`
+	Package string `json:"package"`
+	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceClusterPolicyLibrariesMaven struct {
-    Coordinates string `json:"coordinates"`
-    Exclusions []string `json:"exclusions,omitempty"`
-    Repo string `json:"repo,omitempty"`
+	Coordinates string   `json:"coordinates"`
+	Exclusions  []string `json:"exclusions,omitempty"`
+	Repo        string   `json:"repo,omitempty"`
 }
 
 type ResourceClusterPolicyLibrariesProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceClusterPolicyLibrariesPypi struct {
-    Package string `json:"package"`
-    Repo string `json:"repo,omitempty"`
+	Package string `json:"package"`
+	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceClusterPolicyLibraries struct {
-    Egg string `json:"egg,omitempty"`
-    Jar string `json:"jar,omitempty"`
-    Requirements string `json:"requirements,omitempty"`
-    Whl string `json:"whl,omitempty"`
-    Cran *ResourceClusterPolicyLibrariesCran `json:"cran,omitempty"`
-    Maven *ResourceClusterPolicyLibrariesMaven `json:"maven,omitempty"`
-    ProviderConfig *ResourceClusterPolicyLibrariesProviderConfig `json:"provider_config,omitempty"`
-    Pypi *ResourceClusterPolicyLibrariesPypi `json:"pypi,omitempty"`
+	Egg            string                                        `json:"egg,omitempty"`
+	Jar            string                                        `json:"jar,omitempty"`
+	Requirements   string                                        `json:"requirements,omitempty"`
+	Whl            string                                        `json:"whl,omitempty"`
+	Cran           *ResourceClusterPolicyLibrariesCran           `json:"cran,omitempty"`
+	Maven          *ResourceClusterPolicyLibrariesMaven          `json:"maven,omitempty"`
+	ProviderConfig *ResourceClusterPolicyLibrariesProviderConfig `json:"provider_config,omitempty"`
+	Pypi           *ResourceClusterPolicyLibrariesPypi           `json:"pypi,omitempty"`
 }
 
 type ResourceClusterPolicyProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceClusterPolicy struct {
-    Definition string `json:"definition,omitempty"`
-    Description string `json:"description,omitempty"`
-    Id string `json:"id,omitempty"`
-    MaxClustersPerUser int `json:"max_clusters_per_user,omitempty"`
-    Name string `json:"name,omitempty"`
-    PolicyFamilyDefinitionOverrides string `json:"policy_family_definition_overrides,omitempty"`
-    PolicyFamilyId string `json:"policy_family_id,omitempty"`
-    PolicyId string `json:"policy_id,omitempty"`
-    Libraries []ResourceClusterPolicyLibraries `json:"libraries,omitempty"`
-    ProviderConfig *ResourceClusterPolicyProviderConfig `json:"provider_config,omitempty"`
+	Definition                      string                               `json:"definition,omitempty"`
+	Description                     string                               `json:"description,omitempty"`
+	Id                              string                               `json:"id,omitempty"`
+	MaxClustersPerUser              int                                  `json:"max_clusters_per_user,omitempty"`
+	Name                            string                               `json:"name,omitempty"`
+	PolicyFamilyDefinitionOverrides string                               `json:"policy_family_definition_overrides,omitempty"`
+	PolicyFamilyId                  string                               `json:"policy_family_id,omitempty"`
+	PolicyId                        string                               `json:"policy_id,omitempty"`
+	Libraries                       []ResourceClusterPolicyLibraries     `json:"libraries,omitempty"`
+	ProviderConfig                  *ResourceClusterPolicyProviderConfig `json:"provider_config,omitempty"`
 }

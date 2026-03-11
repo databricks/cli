@@ -2,43 +2,42 @@
 
 package schema
 
-
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOfflineStoreConfig struct {
-    CatalogName string `json:"catalog_name"`
-    SchemaName string `json:"schema_name"`
-    TableNamePrefix string `json:"table_name_prefix"`
+	CatalogName     string `json:"catalog_name"`
+	SchemaName      string `json:"schema_name"`
+	TableNamePrefix string `json:"table_name_prefix"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOnlineStoreConfig struct {
-    CatalogName string `json:"catalog_name"`
-    OnlineStoreName string `json:"online_store_name"`
-    SchemaName string `json:"schema_name"`
-    TableNamePrefix string `json:"table_name_prefix"`
+	CatalogName     string `json:"catalog_name"`
+	OnlineStoreName string `json:"online_store_name"`
+	SchemaName      string `json:"schema_name"`
+	TableNamePrefix string `json:"table_name_prefix"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures struct {
-    CronSchedule string `json:"cron_schedule,omitempty"`
-    FeatureName string `json:"feature_name,omitempty"`
-    LastMaterializationTime string `json:"last_materialization_time,omitempty"`
-    MaterializedFeatureId string `json:"materialized_feature_id"`
-    OfflineStoreConfig *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOfflineStoreConfig `json:"offline_store_config,omitempty"`
-    OnlineStoreConfig *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOnlineStoreConfig `json:"online_store_config,omitempty"`
-    PipelineScheduleState string `json:"pipeline_schedule_state,omitempty"`
-    ProviderConfig *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesProviderConfig `json:"provider_config,omitempty"`
-    TableName string `json:"table_name,omitempty"`
+	CronSchedule            string                                                                                  `json:"cron_schedule,omitempty"`
+	FeatureName             string                                                                                  `json:"feature_name,omitempty"`
+	LastMaterializationTime string                                                                                  `json:"last_materialization_time,omitempty"`
+	MaterializedFeatureId   string                                                                                  `json:"materialized_feature_id"`
+	OfflineStoreConfig      *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOfflineStoreConfig `json:"offline_store_config,omitempty"`
+	OnlineStoreConfig       *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOnlineStoreConfig  `json:"online_store_config,omitempty"`
+	PipelineScheduleState   string                                                                                  `json:"pipeline_schedule_state,omitempty"`
+	ProviderConfig          *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesProviderConfig     `json:"provider_config,omitempty"`
+	TableName               string                                                                                  `json:"table_name,omitempty"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeatures struct {
-    FeatureName string `json:"feature_name,omitempty"`
-    MaterializedFeatures []DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures `json:"materialized_features,omitempty"`
-    PageSize int `json:"page_size,omitempty"`
-    ProviderConfig *DataSourceFeatureEngineeringMaterializedFeaturesProviderConfig `json:"provider_config,omitempty"`
+	FeatureName          string                                                                 `json:"feature_name,omitempty"`
+	MaterializedFeatures []DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures `json:"materialized_features,omitempty"`
+	PageSize             int                                                                    `json:"page_size,omitempty"`
+	ProviderConfig       *DataSourceFeatureEngineeringMaterializedFeaturesProviderConfig        `json:"provider_config,omitempty"`
 }

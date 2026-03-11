@@ -2,15 +2,14 @@
 
 package schema
 
-
 type ResourceSecretAclProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceSecretAcl struct {
-    Id string `json:"id,omitempty"`
-    Permission string `json:"permission"`
-    Principal string `json:"principal"`
-    Scope string `json:"scope"`
-    ProviderConfig *ResourceSecretAclProviderConfig `json:"provider_config,omitempty"`
+	Id             string                           `json:"id,omitempty"`
+	Permission     string                           `json:"permission"`
+	Principal      string                           `json:"principal"`
+	Scope          string                           `json:"scope"`
+	ProviderConfig *ResourceSecretAclProviderConfig `json:"provider_config,omitempty"`
 }

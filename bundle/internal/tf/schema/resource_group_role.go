@@ -2,9 +2,8 @@
 
 package schema
 
-
 type ResourceGroupRole struct {
-    GroupId string `json:"group_id"`
-    Id string `json:"id,omitempty"`
-    Role string `json:"role"`
+	GroupId string `json:"group_id"`
+	Id      string `json:"id,omitempty"`
+	Role    string `json:"role"`
 }

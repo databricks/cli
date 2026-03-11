@@ -28,7 +28,7 @@ func NewRoot() *Root {
 		Terraform: map[string]any{
 			"required_providers": map[string]any{
 				"databricks": map[string]any{
-					"source": ProviderSource,
+					"source":  ProviderSource,
 					"version": ProviderVersion,
 				},
 			},

@@ -2,67 +2,66 @@
 
 package schema
 
-
 type DataSourcePostgresEndpointProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourcePostgresEndpointSpecGroup struct {
-    EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
-    Max int `json:"max"`
-    Min int `json:"min"`
+	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
+	Max                       int  `json:"max"`
+	Min                       int  `json:"min"`
 }
 
 type DataSourcePostgresEndpointSpecSettings struct {
-    PgSettings map[string]string `json:"pg_settings,omitempty"`
+	PgSettings map[string]string `json:"pg_settings,omitempty"`
 }
 
 type DataSourcePostgresEndpointSpec struct {
-    AutoscalingLimitMaxCu float64 `json:"autoscaling_limit_max_cu,omitempty"`
-    AutoscalingLimitMinCu float64 `json:"autoscaling_limit_min_cu,omitempty"`
-    Disabled bool `json:"disabled,omitempty"`
-    EndpointType string `json:"endpoint_type"`
-    Group *DataSourcePostgresEndpointSpecGroup `json:"group,omitempty"`
-    NoSuspension bool `json:"no_suspension,omitempty"`
-    Settings *DataSourcePostgresEndpointSpecSettings `json:"settings,omitempty"`
-    SuspendTimeoutDuration string `json:"suspend_timeout_duration,omitempty"`
+	AutoscalingLimitMaxCu  float64                                 `json:"autoscaling_limit_max_cu,omitempty"`
+	AutoscalingLimitMinCu  float64                                 `json:"autoscaling_limit_min_cu,omitempty"`
+	Disabled               bool                                    `json:"disabled,omitempty"`
+	EndpointType           string                                  `json:"endpoint_type"`
+	Group                  *DataSourcePostgresEndpointSpecGroup    `json:"group,omitempty"`
+	NoSuspension           bool                                    `json:"no_suspension,omitempty"`
+	Settings               *DataSourcePostgresEndpointSpecSettings `json:"settings,omitempty"`
+	SuspendTimeoutDuration string                                  `json:"suspend_timeout_duration,omitempty"`
 }
 
 type DataSourcePostgresEndpointStatusGroup struct {
-    EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
-    Max int `json:"max"`
-    Min int `json:"min"`
+	EnableReadableSecondaries bool `json:"enable_readable_secondaries,omitempty"`
+	Max                       int  `json:"max"`
+	Min                       int  `json:"min"`
 }
 
 type DataSourcePostgresEndpointStatusHosts struct {
-    Host string `json:"host,omitempty"`
-    ReadOnlyHost string `json:"read_only_host,omitempty"`
+	Host         string `json:"host,omitempty"`
+	ReadOnlyHost string `json:"read_only_host,omitempty"`
 }
 
 type DataSourcePostgresEndpointStatusSettings struct {
-    PgSettings map[string]string `json:"pg_settings,omitempty"`
+	PgSettings map[string]string `json:"pg_settings,omitempty"`
 }
 
 type DataSourcePostgresEndpointStatus struct {
-    AutoscalingLimitMaxCu float64 `json:"autoscaling_limit_max_cu,omitempty"`
-    AutoscalingLimitMinCu float64 `json:"autoscaling_limit_min_cu,omitempty"`
-    CurrentState string `json:"current_state,omitempty"`
-    Disabled bool `json:"disabled,omitempty"`
-    EndpointType string `json:"endpoint_type,omitempty"`
-    Group *DataSourcePostgresEndpointStatusGroup `json:"group,omitempty"`
-    Hosts *DataSourcePostgresEndpointStatusHosts `json:"hosts,omitempty"`
-    PendingState string `json:"pending_state,omitempty"`
-    Settings *DataSourcePostgresEndpointStatusSettings `json:"settings,omitempty"`
-    SuspendTimeoutDuration string `json:"suspend_timeout_duration,omitempty"`
+	AutoscalingLimitMaxCu  float64                                   `json:"autoscaling_limit_max_cu,omitempty"`
+	AutoscalingLimitMinCu  float64                                   `json:"autoscaling_limit_min_cu,omitempty"`
+	CurrentState           string                                    `json:"current_state,omitempty"`
+	Disabled               bool                                      `json:"disabled,omitempty"`
+	EndpointType           string                                    `json:"endpoint_type,omitempty"`
+	Group                  *DataSourcePostgresEndpointStatusGroup    `json:"group,omitempty"`
+	Hosts                  *DataSourcePostgresEndpointStatusHosts    `json:"hosts,omitempty"`
+	PendingState           string                                    `json:"pending_state,omitempty"`
+	Settings               *DataSourcePostgresEndpointStatusSettings `json:"settings,omitempty"`
+	SuspendTimeoutDuration string                                    `json:"suspend_timeout_duration,omitempty"`
 }
 
 type DataSourcePostgresEndpoint struct {
-    CreateTime string `json:"create_time,omitempty"`
-    Name string `json:"name"`
-    Parent string `json:"parent,omitempty"`
-    ProviderConfig *DataSourcePostgresEndpointProviderConfig `json:"provider_config,omitempty"`
-    Spec *DataSourcePostgresEndpointSpec `json:"spec,omitempty"`
-    Status *DataSourcePostgresEndpointStatus `json:"status,omitempty"`
-    Uid string `json:"uid,omitempty"`
-    UpdateTime string `json:"update_time,omitempty"`
+	CreateTime     string                                    `json:"create_time,omitempty"`
+	Name           string                                    `json:"name"`
+	Parent         string                                    `json:"parent,omitempty"`
+	ProviderConfig *DataSourcePostgresEndpointProviderConfig `json:"provider_config,omitempty"`
+	Spec           *DataSourcePostgresEndpointSpec           `json:"spec,omitempty"`
+	Status         *DataSourcePostgresEndpointStatus         `json:"status,omitempty"`
+	Uid            string                                    `json:"uid,omitempty"`
+	UpdateTime     string                                    `json:"update_time,omitempty"`
 }

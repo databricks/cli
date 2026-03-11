@@ -2,13 +2,12 @@
 
 package schema
 
-
 type DataSourceMwsWorkspacesProviderConfig struct {
-    WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceMwsWorkspaces struct {
-    Id string `json:"id,omitempty"`
-    Ids map[string]int `json:"ids,omitempty"`
-    ProviderConfig *DataSourceMwsWorkspacesProviderConfig `json:"provider_config,omitempty"`
+	Id             string                                 `json:"id,omitempty"`
+	Ids            map[string]int                         `json:"ids,omitempty"`
+	ProviderConfig *DataSourceMwsWorkspacesProviderConfig `json:"provider_config,omitempty"`
 }

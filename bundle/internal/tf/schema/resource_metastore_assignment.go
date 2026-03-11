@@ -2,10 +2,9 @@
 
 package schema
 
-
 type ResourceMetastoreAssignment struct {
-    DefaultCatalogName string `json:"default_catalog_name,omitempty"`
-    Id string `json:"id,omitempty"`
-    MetastoreId string `json:"metastore_id"`
-    WorkspaceId int `json:"workspace_id"`
+	DefaultCatalogName string `json:"default_catalog_name,omitempty"`
+	Id                 string `json:"id,omitempty"`
+	MetastoreId        string `json:"metastore_id"`
+	WorkspaceId        int    `json:"workspace_id"`
 }
