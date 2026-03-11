@@ -1,0 +1,37 @@
+bundle:
+  name: {{.project_name}}
+
+resources:
+  # MLflow experiment for agent tracing - automatically created by bundle
+  experiments:
+    {{.project_name}}_experiment:
+      name: {{if .mlflow_experiment_name}}{{.mlflow_experiment_name}}{{else}}/Users/${workspace.current_user.userName}/${bundle.name}-${bundle.target}{{end}}
+
+  apps:
+    {{.project_name}}:
+      name: "${bundle.target}-{{.project_name}}"
+      description: "OpenAI Agents SDK agent application"
+      source_code_path: ./
+
+      # Resources which this app has access to
+      resources:
+        - name: 'experiment'
+          experiment:
+            experiment_id: "${resources.experiments.{{.project_name}}_experiment.id}"
+            permission: 'CAN_MANAGE'
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: {{workspace_host}}
+
+  prod:
+    mode: production
+    # workspace:
+    #   host: https://...
+    resources:
+      apps:
+        {{.project_name}}:
+          name: {{.project_name}}
