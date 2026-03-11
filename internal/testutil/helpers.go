@@ -1,15 +1,15 @@
 package testutil
 
 import (
-	"os"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/google/uuid"
 )
 
 // GetEnvOrSkipTest proceeds with test only with that env variable.
 func GetEnvOrSkipTest(t TestingT, name string) string {
-	value := os.Getenv(name) //nolint:forbidigo // import cycle: libs/env tests import internal/testutil
+	value := env.Get(t.Context(), name)
 	if value == "" {
 		t.Skipf("Environment variable %s is missing", name)
 	}
