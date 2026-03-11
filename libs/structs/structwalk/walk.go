@@ -6,6 +6,7 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -139,7 +140,7 @@ func walkStruct(path *structpath.PathNode, s reflect.Value, visit VisitFunc) {
 		}
 
 		// EmbeddedSlice: walk directly without adding the field name to the path.
-		if sf.Name == structtag.EmbeddedSliceFieldName {
+		if sf.Name == structaccess.EmbeddedSliceFieldName {
 			walkValue(path, fieldVal, &sf, visit)
 			continue
 		}

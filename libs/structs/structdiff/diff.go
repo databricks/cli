@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -206,7 +207,7 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			continue
 		}
 
-		isEmbed := sf.Name == structtag.EmbeddedSliceFieldName
+		isEmbed := sf.Name == structaccess.EmbeddedSliceFieldName
 
 		if fieldName == "" || isEmbed {
 			fieldName = sf.Name

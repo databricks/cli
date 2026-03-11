@@ -148,7 +148,7 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 			continue
 		}
 		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" || sf.Name == structtag.EmbeddedSliceFieldName {
+		if name == "-" || sf.Name == EmbeddedSliceFieldName {
 			name = ""
 		}
 		if name != "" && name == key {
