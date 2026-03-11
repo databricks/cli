@@ -34,11 +34,11 @@
     "object_id": "/jobs/[NUMID]",
     "_": [
      {
-      "permission_level": "CAN_VIEW",
+      "level": "CAN_VIEW",
       "user_name": "viewer@databricks.com"
      },
      {
-      "permission_level": "IS_OWNER",
+      "level": "IS_OWNER",
       "user_name": "[USERNAME]"
      }
     ]
@@ -75,11 +75,11 @@
     "object_id": "/pipelines/[UUID]",
     "_": [
      {
-      "permission_level": "CAN_MANAGE",
+      "level": "CAN_MANAGE",
       "user_name": "manager@databricks.com"
      },
      {
-      "permission_level": "IS_OWNER",
+      "level": "IS_OWNER",
       "user_name": "[USERNAME]"
      }
     ]

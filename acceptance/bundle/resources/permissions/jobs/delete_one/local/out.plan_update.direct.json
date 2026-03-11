@@ -84,15 +84,15 @@
           "object_id": "/jobs/[NUMID]",
           "_": [
             {
-              "group_name": "test-dabs-group-1",
-              "permission_level": "CAN_MANAGE"
+              "level": "CAN_MANAGE",
+              "group_name": "test-dabs-group-1"
             },
             {
-              "permission_level": "CAN_VIEW",
+              "level": "CAN_VIEW",
               "user_name": "test-dabs-2@databricks.com"
             },
             {
-              "permission_level": "IS_OWNER",
+              "level": "IS_OWNER",
               "service_principal_name": "[USERNAME]"
             }
           ]
@@ -102,19 +102,19 @@
         "object_id": "/jobs/[NUMID]",
         "_": [
           {
-            "permission_level": "CAN_MANAGE_RUN",
+            "level": "CAN_MANAGE_RUN",
             "user_name": "test-dabs-1@databricks.com"
           },
           {
-            "group_name": "test-dabs-group-1",
-            "permission_level": "CAN_MANAGE"
+            "level": "CAN_MANAGE",
+            "group_name": "test-dabs-group-1"
           },
           {
-            "permission_level": "CAN_VIEW",
+            "level": "CAN_VIEW",
             "user_name": "test-dabs-2@databricks.com"
           },
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "service_principal_name": "[USERNAME]"
           }
         ]
@@ -123,11 +123,11 @@
         "[user_name='test-dabs-1@databricks.com']": {
           "action": "update",
           "old": {
-            "permission_level": "CAN_MANAGE_RUN",
+            "level": "CAN_MANAGE_RUN",
             "user_name": "test-dabs-1@databricks.com"
           },
           "remote": {
-            "permission_level": "CAN_MANAGE_RUN",
+            "level": "CAN_MANAGE_RUN",
             "user_name": "test-dabs-1@databricks.com"
           }
         }

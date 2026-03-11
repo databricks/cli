@@ -24,19 +24,19 @@
           "object_id": "/database-projects/test-project",
           "_": [
             {
-              "permission_level": "CAN_USE",
+              "level": "CAN_USE",
               "user_name": "viewer@example.com"
             },
             {
-              "group_name": "data-team",
-              "permission_level": "CAN_MANAGE"
+              "level": "CAN_MANAGE",
+              "group_name": "data-team"
             },
             {
-              "permission_level": "CAN_MANAGE",
+              "level": "CAN_MANAGE",
               "service_principal_name": "[UUID]"
             },
             {
-              "permission_level": "CAN_MANAGE",
+              "level": "CAN_MANAGE",
               "user_name": "[USERNAME]"
             }
           ]

@@ -84,11 +84,11 @@
           "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
           "_": [
             {
-              "permission_level": "CAN_VIEW",
+              "level": "CAN_VIEW",
               "user_name": "viewer@example.com"
             },
             {
-              "permission_level": "IS_OWNER",
+              "level": "IS_OWNER",
               "user_name": "[USERNAME]"
             }
           ]
@@ -98,16 +98,16 @@
         "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
         "_": [
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           },
           {
-            "permission_level": "CAN_VIEW",
+            "level": "CAN_VIEW",
             "user_name": "viewer@example.com"
           },
           {
-            "group_name": "admin-team",
-            "permission_level": "CAN_MANAGE"
+            "level": "CAN_MANAGE",
+            "group_name": "admin-team"
           }
         ]
       },
@@ -115,8 +115,8 @@
         "[group_name='admin-team']": {
           "action": "update",
           "remote": {
-            "group_name": "admin-team",
-            "permission_level": "CAN_MANAGE"
+            "level": "CAN_MANAGE",
+            "group_name": "admin-team"
           }
         }
       }

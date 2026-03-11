@@ -39,15 +39,15 @@
           "object_id": "",
           "_": [
             {
-              "permission_level": "CAN_VIEW",
+              "level": "CAN_VIEW",
               "service_principal_name": "my_service_principal"
             },
             {
-              "permission_level": "CAN_VIEW",
+              "level": "CAN_VIEW",
               "user_name": "different@databricks.com"
             },
             {
-              "permission_level": "IS_OWNER",
+              "level": "IS_OWNER",
               "service_principal_name": "[USERNAME]"
             }
           ]
