@@ -14,7 +14,7 @@ import (
 func TestInstallFreshZsh(t *testing.T) {
 	home := t.TempDir()
 
-	filePath, alreadyInstalled, err := Install(Zsh, home)
+	filePath, alreadyInstalled, err := Install(t.Context(), Zsh, home)
 	require.NoError(t, err)
 	assert.False(t, alreadyInstalled)
 	assert.Equal(t, filepath.Join(home, ".zshrc"), filePath)
@@ -29,10 +29,10 @@ func TestInstallFreshZsh(t *testing.T) {
 func TestInstallIdempotent(t *testing.T) {
 	home := t.TempDir()
 
-	_, _, err := Install(Zsh, home)
+	_, _, err := Install(t.Context(), Zsh, home)
 	require.NoError(t, err)
 
-	filePath, alreadyInstalled, err := Install(Zsh, home)
+	filePath, alreadyInstalled, err := Install(t.Context(), Zsh, home)
 	require.NoError(t, err)
 	assert.True(t, alreadyInstalled)
 
@@ -46,7 +46,7 @@ func TestInstallAppendsToExistingFile(t *testing.T) {
 	rcPath := filepath.Join(home, ".zshrc")
 	require.NoError(t, os.WriteFile(rcPath, []byte("# existing config\n"), 0o644))
 
-	_, _, err := Install(Zsh, home)
+	_, _, err := Install(t.Context(), Zsh, home)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(rcPath)
@@ -60,7 +60,7 @@ func TestInstallAddsNewlineIfMissing(t *testing.T) {
 	rcPath := filepath.Join(home, ".zshrc")
 	require.NoError(t, os.WriteFile(rcPath, []byte("# no trailing newline"), 0o644))
 
-	_, _, err := Install(Zsh, home)
+	_, _, err := Install(t.Context(), Zsh, home)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(rcPath)
@@ -73,7 +73,7 @@ func TestInstallPreservesPermissions(t *testing.T) {
 	rcPath := filepath.Join(home, ".zshrc")
 	require.NoError(t, os.WriteFile(rcPath, []byte(""), 0o600))
 
-	_, _, err := Install(Zsh, home)
+	_, _, err := Install(t.Context(), Zsh, home)
 	require.NoError(t, err)
 
 	info, err := os.Stat(rcPath)
@@ -91,7 +91,7 @@ func TestInstallPreservesPermissions(t *testing.T) {
 func TestInstallFish(t *testing.T) {
 	home := t.TempDir()
 
-	filePath, alreadyInstalled, err := Install(Fish, home)
+	filePath, alreadyInstalled, err := Install(t.Context(), Fish, home)
 	require.NoError(t, err)
 	assert.False(t, alreadyInstalled)
 	assert.Equal(t, filepath.Join(home, ".config", "fish", "completions", "databricks.fish"), filePath)
@@ -109,7 +109,7 @@ func TestInstallFishForeignFilePreserved(t *testing.T) {
 	original := "# fish completion from package manager\n"
 	require.NoError(t, os.WriteFile(filePath, []byte(original), 0o644))
 
-	gotPath, alreadyInstalled, err := Install(Fish, home)
+	gotPath, alreadyInstalled, err := Install(t.Context(), Fish, home)
 	require.NoError(t, err)
 	assert.True(t, alreadyInstalled)
 	assert.Equal(t, filePath, gotPath)
@@ -122,10 +122,10 @@ func TestInstallFishForeignFilePreserved(t *testing.T) {
 func TestInstallFishIdempotent(t *testing.T) {
 	home := t.TempDir()
 
-	_, _, err := Install(Fish, home)
+	_, _, err := Install(t.Context(), Fish, home)
 	require.NoError(t, err)
 
-	_, alreadyInstalled, err := Install(Fish, home)
+	_, alreadyInstalled, err := Install(t.Context(), Fish, home)
 	require.NoError(t, err)
 	assert.True(t, alreadyInstalled)
 }
@@ -137,7 +137,7 @@ func TestInstallFishCreatesDirectory(t *testing.T) {
 	_, err := os.Stat(fishDir)
 	assert.True(t, os.IsNotExist(err))
 
-	_, _, err = Install(Fish, home)
+	_, _, err = Install(t.Context(), Fish, home)
 	require.NoError(t, err)
 
 	_, err = os.Stat(fishDir)
@@ -147,7 +147,7 @@ func TestInstallFishCreatesDirectory(t *testing.T) {
 func TestInstallPowerShellCreatesDirectory(t *testing.T) {
 	home := t.TempDir()
 
-	filePath, _, err := Install(PowerShell, home)
+	filePath, _, err := Install(t.Context(), PowerShell, home)
 	require.NoError(t, err)
 
 	_, err = os.Stat(filepath.Dir(filePath))
@@ -161,7 +161,7 @@ func TestInstallPowerShellCreatesDirectory(t *testing.T) {
 func TestInstallBashShimContent(t *testing.T) {
 	home := t.TempDir()
 
-	_, _, err := Install(Bash, home)
+	_, _, err := Install(t.Context(), Bash, home)
 	require.NoError(t, err)
 
 	filePath := TargetFilePath(Bash, home)
@@ -175,7 +175,7 @@ func TestInstallEmptyFile(t *testing.T) {
 	rcPath := filepath.Join(home, ".zshrc")
 	require.NoError(t, os.WriteFile(rcPath, []byte(""), 0o644))
 
-	_, _, err := Install(Zsh, home)
+	_, _, err := Install(t.Context(), Zsh, home)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(rcPath)

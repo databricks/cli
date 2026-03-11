@@ -14,17 +14,6 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "schedule":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AlertPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_READ
-      - |-
-        CAN_RUN
 github.com/databricks/cli/bundle/config/resources.App:
   "app_status":
     "description": |-
@@ -83,13 +72,6 @@ github.com/databricks/cli/bundle/config/resources.App:
   "user_api_scopes":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AppPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_USE
 github.com/databricks/cli/bundle/config/resources.Catalog:
   "grants":
     "description": |-
@@ -148,15 +130,6 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "workload_type":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ClusterPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_RESTART
-      - |-
-        CAN_ATTACH_TO
 github.com/databricks/cli/bundle/config/resources.Dashboard:
   "_":
     "markdown_description": |-
@@ -229,17 +202,6 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
   "warehouse_id":
     "description": |-
       The warehouse ID used to run the dashboard.
-github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_READ
-      - |-
-        CAN_RUN
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_MANAGE
 github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
   "create_database_if_not_exists":
     "description": |-
@@ -257,22 +219,6 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "permissions":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_CREATE
-      - |-
-        CAN_USE
-      - |-
-        CAN_MANAGE
-github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_USE
-      - |-
-        CAN_MANAGE
 github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "grants":
     "description": |-
@@ -311,17 +257,6 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "run_as":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.JobPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_MANAGE_RUN
-      - |-
-        CAN_VIEW
-      - |-
-        IS_OWNER
 github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
   "_":
     "markdown_description": |-
@@ -345,15 +280,6 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
   "permissions":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_READ
 github.com/databricks/cli/bundle/config/resources.MlflowModel:
   "_":
     "markdown_description": |-
@@ -364,19 +290,6 @@ github.com/databricks/cli/bundle/config/resources.MlflowModel:
   "permissions":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.MlflowModelPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_MANAGE_STAGING_VERSIONS
-      - |-
-        CAN_MANAGE_PRODUCTION_VERSIONS
-      - |-
-        CAN_READ
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "_":
     "markdown_description": |-
@@ -412,15 +325,6 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "permissions":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_QUERY
-      - |-
-        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.Pipeline:
   "_":
     "markdown_description": |-
@@ -460,17 +364,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "trigger":
     "deprecation_message": |-
       Use continuous instead
-github.com/databricks/cli/bundle/config/resources.PipelinePermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        IS_OWNER
-      - |-
-        CAN_RUN
-      - |-
-        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "_":
     "markdown_description": |-
@@ -641,17 +534,6 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
   "warehouse_type":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_USE
-      - |-
-        CAN_MONITOR
-      - |-
-        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "lifecycle":
     "description": |-

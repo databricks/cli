@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
 )
@@ -213,6 +214,6 @@ func TestWorkspacePathPermissionsDeduplication(t *testing.T) {
 
 	// Should only have one permission entry with the highest level
 	require.Len(t, wp.Permissions, 1)
-	require.Equal(t, CAN_MANAGE, wp.Permissions[0].Level)
+	require.Equal(t, iam.PermissionLevel(CAN_MANAGE), wp.Permissions[0].Level)
 	require.Equal(t, "foo@bar.com", wp.Permissions[0].UserName)
 }

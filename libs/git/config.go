@@ -112,7 +112,7 @@ func (c config) loadFile(root vfs.Path, path string) error {
 
 func (c config) defaultCoreExcludesFile() string {
 	// Defaults to $XDG_CONFIG_HOME/git/ignore.
-	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
+	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME") //nolint:forbidigo // no ctx; plumbing it requires changing NewRepository and all callers
 	if xdgConfigHome == "" {
 		// If $XDG_CONFIG_HOME is either not set or empty,
 		// $HOME/.config/git/ignore is used instead.
@@ -144,7 +144,7 @@ func globalGitConfig() (*config, error) {
 	if err != nil {
 		return nil, err
 	}
-	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
+	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME") //nolint:forbidigo // no ctx; plumbing it requires changing NewRepository and all callers
 	if xdgConfigHome == "" {
 		xdgConfigHome = filepath.Join(config.home, ".config")
 	}
