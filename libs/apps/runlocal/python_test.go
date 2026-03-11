@@ -88,8 +88,8 @@ func TestPythonAppGetCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config, spec := tt.setup()
-			app := NewPythonApp(t.Context(), config, spec)
-			cmd, err := app.GetCommand(tt.debug)
+			app := NewPythonApp(config, spec)
+			cmd, _, err := app.GetCommand(t.Context(), tt.debug)
 
 			if !tt.wantErr {
 				tt.checkResult(t, cmd)

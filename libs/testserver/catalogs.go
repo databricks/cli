@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -29,14 +28,14 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		Options:      createRequest.Options,
 		Properties:   createRequest.Properties,
 		FullName:     createRequest.Name,
-		CreatedAt:    time.Now().UnixMilli(),
+		CreatedAt:    nowMilli(),
 		CreatedBy:    s.CurrentUser().UserName,
-		UpdatedAt:    time.Now().UnixMilli(),
 		UpdatedBy:    s.CurrentUser().UserName,
 		MetastoreId:  nextUUID(),
 		Owner:        s.CurrentUser().UserName,
 		CatalogType:  catalog.CatalogTypeManagedCatalog,
 	}
+	catalogInfo.UpdatedAt = catalogInfo.CreatedAt
 
 	s.Catalogs[createRequest.Name] = catalogInfo
 	return Response{
@@ -79,7 +78,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		name = updateRequest.NewName
 	}
 
-	existing.UpdatedAt = time.Now().UnixMilli()
+	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName
 
 	s.Catalogs[name] = existing
