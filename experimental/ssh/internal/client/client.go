@@ -209,7 +209,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	runErr := runConnect(ctx, client, opts, event)
 	if runErr != nil {
-		event.ErrorMessage = runErr.Error()
+		event.IsSuccess = false
+	} else {
+		event.IsSuccess = true
 	}
 
 	telemetry.Log(ctx, protos.DatabricksCliLog{
@@ -374,8 +376,6 @@ func runConnect(ctx context.Context, client *databricks.WorkspaceClient, opts Cl
 	if opts.IsServerlessMode() && clusterID == "" {
 		return errors.New("cluster ID is required for serverless connections but was not found in metadata")
 	}
-
-	event.ClusterID = clusterID
 
 	log.Infof(ctx, "Remote user name: %s", userName)
 	log.Infof(ctx, "Server port: %d", serverPort)

@@ -33,10 +33,6 @@ type SshTunnelEvent struct {
 	// How the client is used: SSH client, proxy mode, or IDE mode.
 	ClientMode SshTunnelClientMode `json:"client_mode,omitempty"`
 
-	// Cluster ID of the compute resource (for dedicated clusters this is the input,
-	// for serverless it is discovered from the server metadata via Driver Proxy).
-	ClusterID string `json:"cluster_id,omitempty"`
-
 	// Whether this is a reconnection to an existing session.
 	IsReconnect bool `json:"is_reconnect,omitempty"`
 
@@ -47,6 +43,6 @@ type SshTunnelEvent struct {
 	// and waiting for the server to become ready). Zero if server was already running.
 	ServerStartTimeMs int64 `json:"server_start_time_ms"`
 
-	// Error message if the connection failed. Empty on success.
-	ErrorMessage string `json:"error_message,omitempty"`
+	// Flag to indicate if the connection was successful
+	IsSuccess bool `json:"is_success,omitempty"`
 }
