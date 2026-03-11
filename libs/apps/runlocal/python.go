@@ -37,33 +37,32 @@ var defaultLibraries = []string{
 }
 
 type PythonApp struct {
-	ctx    context.Context
 	config *Config
 	spec   *AppSpec
 	uvArgs []string
 }
 
-func NewPythonApp(ctx context.Context, config *Config, spec *AppSpec) *PythonApp {
+func NewPythonApp(config *Config, spec *AppSpec) *PythonApp {
 	if config.DebugPort == "" {
 		config.DebugPort = DEBUG_PORT
 	}
-	return &PythonApp{ctx: ctx, config: config, spec: spec}
+	return &PythonApp{config: config, spec: spec}
 }
 
 // PrepareEnvironment creates a Python virtual environment using uv and installs required dependencies.
 // It first creates a virtual environment, then installs default libraries specified in defaultLibraries,
 // and finally installs any additional requirements from requirements.txt if it exists.
 // Returns an error if any step fails.
-func (p *PythonApp) PrepareEnvironment() error {
+func (p *PythonApp) PrepareEnvironment(ctx context.Context) error {
 	// Create venv first
 	venvArgs := []string{"uv", "venv"}
-	if err := runCommand(p.ctx, p.config.AppPath, venvArgs); err != nil {
+	if err := runCommand(ctx, p.config.AppPath, venvArgs); err != nil {
 		return err
 	}
 
 	// Install default libraries
 	installArgs := append([]string{"uv", "pip", "install"}, defaultLibraries...)
-	if err := runCommand(p.ctx, p.config.AppPath, installArgs); err != nil {
+	if err := runCommand(ctx, p.config.AppPath, installArgs); err != nil {
 		return err
 	}
 
@@ -72,7 +71,7 @@ func (p *PythonApp) PrepareEnvironment() error {
 		// We also execute command with CWD set at p.config.AppPath
 		// so we can just path local path to requirements.txt here
 		reqArgs := []string{"uv", "pip", "install", "-r", "requirements.txt"}
-		if err := runCommand(p.ctx, p.config.AppPath, reqArgs); err != nil {
+		if err := runCommand(ctx, p.config.AppPath, reqArgs); err != nil {
 			return err
 		}
 	}
@@ -86,13 +85,13 @@ func (p *PythonApp) PrepareEnvironment() error {
 // If not, the function looks for a python file in the app directory and returns a command
 // to run that file. If the app is in a virtual environment, the command is modified to point
 // to the python binary in the virtual environment.
-func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
+func (p *PythonApp) GetCommand(_ context.Context, debug bool) ([]string, []string, error) {
 	spec := p.spec
 	// if no spec, find python file and use it to run app
 	if len(spec.Command) == 0 {
 		files, err := filepath.Glob(filepath.Join(spec.config.AppPath, "*.py"))
 		if err != nil {
-			return nil, fmt.Errorf("error reading source code directory: %w", err)
+			return nil, nil, fmt.Errorf("error reading source code directory: %w", err)
 		}
 
 		if len(files) > 0 {
@@ -100,7 +99,7 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 		}
 
 		if len(spec.Command) == 0 {
-			return nil, errors.New("no python file found")
+			return nil, nil, errors.New("no python file found")
 		}
 
 	} else {
@@ -121,7 +120,7 @@ func (p *PythonApp) GetCommand(debug bool) ([]string, error) {
 		spec.Command = append(p.uvArgs, spec.Command...)
 	}
 
-	return spec.Command, nil
+	return spec.Command, nil, nil
 }
 
 // enableDebugging enables debugging for the app by starting the app with debugpy
