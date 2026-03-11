@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -33,8 +34,8 @@ type ResourcePermissions struct {
 }
 
 type PermissionsState struct {
-	ObjectID      string                     `json:"object_id"`
-	EmbeddedSlice []iam.AccessControlRequest `json:"_,omitempty"`
+	ObjectID      string                `json:"object_id"`
+	EmbeddedSlice []resources.Permission `json:"_,omitempty"`
 }
 
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -54,7 +55,7 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		return nil, fmt.Errorf("unsupported permissions resource type: %s", resourceType)
 	}
 
-	permissions, err := toAccessControlRequests(inputConfig)
+	permissions, err := toPermissions(inputConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -93,9 +94,9 @@ func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState 
 	return s
 }
 
-// toAccessControlRequests converts any slice of permission structs to []iam.AccessControlRequest.
-// All permission types share the same underlying struct layout (Level, UserName, ServicePrincipalName, GroupName).
-func toAccessControlRequests(ps any) ([]iam.AccessControlRequest, error) {
+// toPermissions converts any slice of typed permission structs (e.g. []JobPermission)
+// to []resources.Permission. All permission types share the same underlying struct layout.
+func toPermissions(ps any) ([]resources.Permission, error) {
 	v := reflect.ValueOf(ps)
 	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
@@ -103,21 +104,20 @@ func toAccessControlRequests(ps any) ([]iam.AccessControlRequest, error) {
 	if v.Kind() != reflect.Slice {
 		return nil, fmt.Errorf("expected permissions slice, got %T", ps)
 	}
-	result := make([]iam.AccessControlRequest, v.Len())
+	result := make([]resources.Permission, v.Len())
 	for i := range v.Len() {
 		elem := v.Index(i)
-		result[i] = iam.AccessControlRequest{
-			PermissionLevel:      iam.PermissionLevel(elem.FieldByName("Level").String()),
+		result[i] = resources.Permission{
+			Level:                iam.PermissionLevel(elem.FieldByName("Level").String()),
 			UserName:             elem.FieldByName("UserName").String(),
 			ServicePrincipalName: elem.FieldByName("ServicePrincipalName").String(),
 			GroupName:            elem.FieldByName("GroupName").String(),
-			ForceSendFields:      nil,
 		}
 	}
 	return result, nil
 }
 
-func accessControlRequestKey(x iam.AccessControlRequest) (string, string) {
+func permissionKey(x resources.Permission) (string, string) {
 	if x.UserName != "" {
 		return "user_name", x.UserName
 	}
@@ -134,7 +134,7 @@ func (*ResourcePermissions) KeyedSlices() map[string]any {
 	// Empty key because EmbeddedSlice appears at the root path of
 	// PermissionsState (no "permissions" prefix in struct walker paths).
 	return map[string]any{
-		"": accessControlRequestKey,
+		"": permissionKey,
 	}
 }
 
@@ -184,12 +184,11 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 			if permission.Inherited {
 				continue
 			}
-			result.EmbeddedSlice = append(result.EmbeddedSlice, iam.AccessControlRequest{
+			result.EmbeddedSlice = append(result.EmbeddedSlice, resources.Permission{
+				Level:                permission.PermissionLevel,
 				GroupName:            accessControl.GroupName,
 				UserName:             accessControl.UserName,
 				ServicePrincipalName: accessControl.ServicePrincipalName,
-				PermissionLevel:      permission.PermissionLevel,
-				ForceSendFields:      nil,
 			})
 		}
 	}
@@ -215,10 +214,20 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 		return nil, err
 	}
 
+	acl := make([]iam.AccessControlRequest, len(newState.EmbeddedSlice))
+	for i, p := range newState.EmbeddedSlice {
+		acl[i] = iam.AccessControlRequest{
+			PermissionLevel:      p.Level,
+			UserName:             p.UserName,
+			ServicePrincipalName: p.ServicePrincipalName,
+			GroupName:            p.GroupName,
+		}
+	}
+
 	_, err = r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
 		RequestObjectId:   extractedID,
 		RequestObjectType: extractedType,
-		AccessControlList: newState.EmbeddedSlice,
+		AccessControlList: acl,
 	})
 
 	return nil, err
