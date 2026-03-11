@@ -1,16 +1,15 @@
-## Summary
+## Changes
+- Add `EmbeddedSlice` field name convention to struct walkers in `libs/structs/` — when a struct field is named `EmbeddedSlice`, walkers treat it as transparent (no path segment added), so its elements appear directly at the parent path
+- Apply this to `PermissionsState`: rename `Permissions` field to `EmbeddedSlice`, making state paths like `resources.jobs.foo.permissions[0]` match input config paths (previously `resources.jobs.foo.permissions.permissions[0]`)
+- Fix refschema output: `permissions.[*]` → `permissions[*]` (remove spurious dot before bracket)
+- Enable `job_permissions` acceptance test for direct engine
 
-Struct walkers in `libs/structs/` now detect embedded slices by the Go field name `EmbeddedSlice` instead of the `__EMBED__` json tag convention. This simplifies PermissionsState by removing custom JSON marshaling and the dual-type workaround.
+## Why
 
-Key changes:
-- Replace `__EMBED__` json tag with `EmbeddedSlice` field name as the embed signal
-- Remove `permissionsStateJSON`, `MarshalJSON()`, `UnmarshalJSON()` from PermissionsState
-- Fix refschema output: `permissions.[*]` → `permissions[*]` (no dot before brackets)
-- Fix refschema output: `permissions.permissions[*]` → `permissions[*]` (no duplicate prefix)
-- Enable direct engine for `job_permissions` acceptance test (previously broken)
+The direct deployment engine's permissions state used a wrapper struct that added an extra `permissions` segment to paths. This caused a mismatch with input config paths, preventing dependency tracking between permissions and their parent resources. With this fix, state and config paths are consistent.
 
-## Test plan
-- [x] All 4579 unit tests pass
-- [x] Acceptance tests pass for both terraform and direct engines
-- [x] `job_permissions` test now passes on direct engine
-- [x] `make checks fmt lint` clean
+## Tests
+- Extended existing table-driven unit tests in `structwalk/`, `structaccess/`, and `structdiff/` with EmbeddedSlice cases
+- Updated `acceptance/bundle/apps/job_permissions` to run on both terraform and direct engines
+- Updated `acceptance/bundle/refschema` output to reflect corrected paths
+- Updated direct engine plan output files for permissions path changes
