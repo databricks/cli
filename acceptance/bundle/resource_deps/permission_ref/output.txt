@@ -1,0 +1,110 @@
+
+>>> [CLI] bundle plan
+Warning: invalid value "${resources.jobs.job_b.permissions[0].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
+  at resources.jobs.job_a.permissions[0].level
+
+Warning: invalid value "${resources.jobs.job_b.permissions[1].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
+  at resources.jobs.job_a.permissions[1].level
+
+create jobs.job_a
+create jobs.job_a.permissions
+create jobs.job_b
+create jobs.job_b.permissions
+
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+Warning: invalid value "${resources.jobs.job_b.permissions[0].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
+  at resources.jobs.job_a.permissions[0].level
+
+Warning: invalid value "${resources.jobs.job_b.permissions[1].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
+  at resources.jobs.job_a.permissions[1].level
+
+
+>>> [CLI] bundle deploy
+Warning: invalid value "${resources.jobs.job_b.permissions[0].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
+  at resources.jobs.job_a.permissions[0].level
+
+Warning: invalid value "${resources.jobs.job_b.permissions[1].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
+  at resources.jobs.job_a.permissions[1].level
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //jobs //permissions --sort
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job A",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job B",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[NUMID]",
+  "body": {
+    "access_control_list": [
+      {
+        "group_name": "viewers",
+        "permission_level": "CAN_VIEW"
+      },
+      {
+        "group_name": "admins",
+        "permission_level": "CAN_MANAGE"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[NUMID]",
+  "body": {
+    "access_control_list": [
+      {
+        "group_name": "team-alpha",
+        "permission_level": "CAN_VIEW"
+      },
+      {
+        "group_name": "team-beta",
+        "permission_level": "CAN_MANAGE"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
