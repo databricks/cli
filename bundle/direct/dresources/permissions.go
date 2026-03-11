@@ -34,7 +34,7 @@ type ResourcePermissions struct {
 }
 
 type PermissionsState struct {
-	ObjectID      string                `json:"object_id"`
+	ObjectID      string                 `json:"object_id"`
 	EmbeddedSlice []resources.Permission `json:"_,omitempty"`
 }
 
@@ -221,6 +221,7 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 			UserName:             p.UserName,
 			ServicePrincipalName: p.ServicePrincipalName,
 			GroupName:            p.GroupName,
+			ForceSendFields:      nil,
 		}
 	}
 
