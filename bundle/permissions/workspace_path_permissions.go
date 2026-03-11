@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -23,10 +24,10 @@ func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObject
 		}
 
 		// Find the highest permission level for this principal (handles inherited + explicit permissions)
-		var highestLevel string
+		var highestLevel iam.PermissionLevel
 		for _, pl := range a.AllPermissions {
-			level := convertWorkspaceObjectPermissionLevel(pl.PermissionLevel)
-			if resources.GetLevelScore(level) > resources.GetLevelScore(highestLevel) {
+			level := iam.PermissionLevel(convertWorkspaceObjectPermissionLevel(pl.PermissionLevel))
+			if resources.GetLevelScore(string(level)) > resources.GetLevelScore(string(highestLevel)) {
 				highestLevel = level
 			}
 		}
@@ -80,7 +81,7 @@ func containsAll(permA, permB []resources.Permission) (bool, []resources.Permiss
 	for _, a := range permA {
 		found := false
 		for _, b := range permB {
-			if samePrincipal(a, b) && resources.GetLevelScore(b.Level) >= resources.GetLevelScore(a.Level) {
+			if samePrincipal(a, b) && resources.GetLevelScore(string(b.Level)) >= resources.GetLevelScore(string(a.Level)) {
 				found = true
 				break
 			}

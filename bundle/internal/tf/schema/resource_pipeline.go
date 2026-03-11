@@ -137,7 +137,8 @@ type ResourcePipelineDeployment struct {
 }
 
 type ResourcePipelineEnvironment struct {
-	Dependencies []string `json:"dependencies,omitempty"`
+	Dependencies       []string `json:"dependencies,omitempty"`
+	EnvironmentVersion string   `json:"environment_version,omitempty"`
 }
 
 type ResourcePipelineEventLog struct {
