@@ -33,7 +33,7 @@
    "__id__": "/pipelines/[UUID]",
    "state": {
     "object_id": "/pipelines/[UUID]",
-    "permissions": [
+    "_": [
      {
       "group_name": "users",
       "permission_level": "CAN_VIEW"

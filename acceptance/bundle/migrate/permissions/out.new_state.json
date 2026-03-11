@@ -32,7 +32,7 @@
    "__id__": "/jobs/[NUMID]",
    "state": {
     "object_id": "/jobs/[NUMID]",
-    "permissions": [
+    "_": [
      {
       "permission_level": "CAN_VIEW",
       "user_name": "viewer@databricks.com"
@@ -73,7 +73,7 @@
    "__id__": "/pipelines/[UUID]",
    "state": {
     "object_id": "/pipelines/[UUID]",
-    "permissions": [
+    "_": [
      {
       "permission_level": "CAN_MANAGE",
       "user_name": "manager@databricks.com"

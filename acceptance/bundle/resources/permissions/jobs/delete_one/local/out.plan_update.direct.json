@@ -82,7 +82,7 @@
       "new_state": {
         "value": {
           "object_id": "/jobs/[NUMID]",
-          "permissions": [
+          "_": [
             {
               "group_name": "test-dabs-group-1",
               "permission_level": "CAN_MANAGE"
@@ -100,7 +100,7 @@
       },
       "remote_state": {
         "object_id": "/jobs/[NUMID]",
-        "permissions": [
+        "_": [
           {
             "permission_level": "CAN_MANAGE_RUN",
             "user_name": "test-dabs-1@databricks.com"

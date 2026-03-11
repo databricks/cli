@@ -37,7 +37,7 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "permissions": [
+          "_": [
             {
               "permission_level": "CAN_VIEW",
               "service_principal_name": "my_service_principal"

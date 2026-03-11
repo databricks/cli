@@ -40,7 +40,7 @@
       "action": "delete",
       "remote_state": {
         "object_id": "/pipelines/[FOO_ID]",
-        "permissions": [
+        "_": [
           {
             "permission_level": "CAN_MANAGE",
             "user_name": "viewer@example.com"

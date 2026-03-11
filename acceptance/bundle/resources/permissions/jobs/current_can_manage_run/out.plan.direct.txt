@@ -54,7 +54,7 @@
       "action": "skip",
       "remote_state": {
         "object_id": "/jobs/[NUMID]",
-        "permissions": [
+        "_": [
           {
             "permission_level": "IS_OWNER",
             "service_principal_name": "[USERNAME]"

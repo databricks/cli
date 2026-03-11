@@ -22,7 +22,7 @@
       "new_state": {
         "value": {
           "object_id": "/database-projects/test-project",
-          "permissions": [
+          "_": [
             {
               "permission_level": "CAN_USE",
               "user_name": "viewer@example.com"

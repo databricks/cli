@@ -21,7 +21,7 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "permissions": [
+          "_": [
             {
               "permission_level": "CAN_READ",
               "user_name": "viewer@example.com"
