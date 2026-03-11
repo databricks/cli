@@ -164,7 +164,7 @@ func TestGenerateSessionName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.accelerator, func(t *testing.T) {
 			name := GenerateSessionName(tt.accelerator)
-			assert.True(t, len(name) > len(tt.wantPrefix), "name should be longer than prefix")
+			assert.Greater(t, len(name), len(tt.wantPrefix), "name should be longer than prefix")
 			assert.Equal(t, tt.wantPrefix, name[:len(tt.wantPrefix)])
 			// Verify date component is present (starts with "20" for 2000s dates).
 			assert.Equal(t, tt.wantDatePrefix, name[:len(tt.wantDatePrefix)])

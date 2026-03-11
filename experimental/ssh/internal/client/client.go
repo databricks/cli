@@ -783,7 +783,7 @@ func resolveServerlessSession(ctx context.Context, client *databricks.WorkspaceC
 		for i, s := range alive {
 			if choice == choices[i] {
 				opts.ConnectionName = s.Name
-				cmdio.LogString(ctx, fmt.Sprintf("Reconnecting to session: %s", s.Name))
+				cmdio.LogString(ctx, "Reconnecting to session: "+s.Name)
 				return nil
 			}
 		}
@@ -791,7 +791,7 @@ func resolveServerlessSession(ctx context.Context, client *databricks.WorkspaceC
 
 	// No alive session selected — generate a new name.
 	opts.ConnectionName = sessions.GenerateSessionName(opts.Accelerator)
-	cmdio.LogString(ctx, fmt.Sprintf("Creating new session: %s", opts.ConnectionName))
+	cmdio.LogString(ctx, "Creating new session: "+opts.ConnectionName)
 	return nil
 }
 
