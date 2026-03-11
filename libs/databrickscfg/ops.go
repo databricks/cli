@@ -131,6 +131,34 @@ func GetDefaultProfileFrom(configFile *config.File) string {
 	return ""
 }
 
+// IsFirstProfile returns true if the config file has no profiles yet.
+// Call before SaveToProfile to check whether the profile being saved
+// will be the first one.
+func IsFirstProfile(ctx context.Context, configFilePath string) bool {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil || configFile == nil {
+		return true
+	}
+	for _, s := range configFile.Sections() {
+		if s.Name() == databricksSettingsSection {
+			continue
+		}
+		if s.HasKey("host") {
+			return false
+		}
+	}
+	return true
+}
+
+// SetDefaultProfileQuietly sets profileName as the default, logging errors
+// at debug level instead of returning them. Use after saving a new profile
+// to auto-configure the default.
+func SetDefaultProfileQuietly(ctx context.Context, profileName, configFilePath string) {
+	if err := SetDefaultProfile(ctx, profileName, configFilePath); err != nil {
+		log.Debugf(ctx, "Failed to auto-set default profile: %v", err)
+	}
+}
+
 // SetDefaultProfile writes the default_profile key to the [__settings__] section.
 func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
 	if profileName == databricksSettingsSection {

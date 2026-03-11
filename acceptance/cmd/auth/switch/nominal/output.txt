@@ -18,20 +18,7 @@ auth_type = pat
 >>> [CLI] auth switch --profile profile-a
 Default profile set to "profile-a".
 
-=== Config after first switch
-; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
-[DEFAULT]
-
-[profile-a]
-host      = https://profile-a.cloud.databricks.com
-token     = token-a
-auth_type = pat
-
-[profile-b]
-host      = https://profile-b.cloud.databricks.com
-token     = token-b
-auth_type = pat
-
+=== Settings after first switch
 [__settings__]
 default_profile = profile-a
 
@@ -47,20 +34,7 @@ profile-b            https://profile-b.cloud.databricks.com  NO
 >>> [CLI] auth switch --profile profile-b
 Default profile set to "profile-b".
 
-=== Config after second switch
-; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
-[DEFAULT]
-
-[profile-a]
-host      = https://profile-a.cloud.databricks.com
-token     = token-a
-auth_type = pat
-
-[profile-b]
-host      = https://profile-b.cloud.databricks.com
-token     = token-b
-auth_type = pat
-
+=== Settings after second switch
 [__settings__]
 default_profile = profile-b
 

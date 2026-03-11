@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/exec"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
@@ -242,11 +241,7 @@ depends on the existing profiles you have set in your configuration file
 
 		if profileName != "" {
 			configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-
-			// Check if this will be the only profile in the file.
-			// If so, we'll auto-set it as the default after saving.
-			allProfiles, loadErr := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
-			isOnlyProfile := errors.Is(loadErr, profile.ErrNoConfiguration) || (loadErr == nil && len(allProfiles) == 0)
+			isFirst := databrickscfg.IsFirstProfile(ctx, configFile)
 
 			err := databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:                    profileName,
@@ -264,12 +259,9 @@ depends on the existing profiles you have set in your configuration file
 				return err
 			}
 
-			if isOnlyProfile {
-				if err := databrickscfg.SetDefaultProfile(ctx, profileName, configFile); err != nil {
-					log.Debugf(ctx, "Failed to auto-set default profile: %v", err)
-				}
+			if isFirst {
+				databrickscfg.SetDefaultProfileQuietly(ctx, profileName, configFile)
 			}
-
 			cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
 		}
 

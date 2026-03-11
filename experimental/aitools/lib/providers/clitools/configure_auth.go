@@ -3,11 +3,11 @@ package clitools
 import (
 	"context"
 	"errors"
-	"os"
 
 	"github.com/databricks/cli/experimental/aitools/lib/middlewares"
 	"github.com/databricks/cli/experimental/aitools/lib/prompts"
 	"github.com/databricks/cli/experimental/aitools/lib/session"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -15,7 +15,7 @@ import (
 // The authenticated client is stored in the session data for reuse across tool calls.
 func ConfigureAuth(ctx context.Context, sess *session.Session, host, profile *string) (*databricks.WorkspaceClient, error) {
 	// Skip auth check if testing
-	if os.Getenv("DATABRICKS_MCP_SKIP_AUTH_CHECK") == "1" {
+	if env.Get(ctx, "DATABRICKS_MCP_SKIP_AUTH_CHECK") == "1" {
 		return nil, nil
 	}
 

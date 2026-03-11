@@ -1,6 +1,7 @@
 package completion
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/databricks/cli/libs/env"
 )
 
 // Shell represents a supported shell type.
@@ -42,12 +45,12 @@ func (s Shell) DisplayName() string {
 
 // DetectShell returns the shell to use. If flagValue is non-empty, it validates
 // and returns it. Otherwise it auto-detects from the environment.
-func DetectShell(flagValue string) (Shell, error) {
+func DetectShell(ctx context.Context, flagValue string) (Shell, error) {
 	if flagValue != "" {
 		return validateShellFlag(flagValue)
 	}
 
-	shellEnv := os.Getenv("SHELL")
+	shellEnv := env.Get(ctx, "SHELL")
 	if shellEnv != "" {
 		return shellFromPath(shellEnv)
 	}
@@ -187,8 +190,8 @@ func ShimContent(shell Shell) string {
 
 // homebrewCompletionPath returns the path to Homebrew-installed zsh completions
 // for databricks, or empty string if not found.
-func homebrewCompletionPath() string {
-	prefix := os.Getenv("HOMEBREW_PREFIX")
+func homebrewCompletionPath(ctx context.Context) string {
+	prefix := env.Get(ctx, "HOMEBREW_PREFIX")
 	if prefix == "" {
 		// Check common defaults.
 		// See: https://docs.brew.sh/Installation

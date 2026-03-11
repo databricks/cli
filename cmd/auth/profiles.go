@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -39,7 +39,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		Loaders:           []config.Loader{config.ConfigFile},
 		ConfigFile:        configFilePath,
 		Profile:           c.Name,
-		DatabricksCliPath: os.Getenv("DATABRICKS_CLI_PATH"),
+		DatabricksCliPath: env.Get(ctx, "DATABRICKS_CLI_PATH"),
 	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {

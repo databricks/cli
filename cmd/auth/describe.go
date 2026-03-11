@@ -8,9 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -180,16 +178,12 @@ func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) 
 	}
 
 	// If profile is not set explicitly, show which profile is being used.
+	// When a default_profile is configured, MustWorkspaceClient/MustAccountClient
+	// resolves it before we get here, so cfg.Profile is already set.
 	if _, ok := details.Configuration["profile"]; !ok {
 		displayProfile := cfg.Profile
 		if displayProfile == "" {
 			displayProfile = "default"
-			resolved, err := databrickscfg.GetConfiguredDefaultProfile(cmd.Context(), cfg.ConfigFile)
-			if err != nil {
-				log.Warnf(cmd.Context(), "Failed to read default profile setting: %v", err)
-			} else if resolved != "" {
-				displayProfile = fmt.Sprintf("default (%s)", resolved)
-			}
 		}
 		details.Configuration["profile"] = &config.AttrConfig{Value: displayProfile, Source: config.Source{Type: config.SourceDynamicConfig}}
 	}

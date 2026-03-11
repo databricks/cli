@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -469,8 +468,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 	}
 
 	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	allProfiles, loadErr := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
-	isOnlyProfile := errors.Is(loadErr, profile.ErrNoConfiguration) || (loadErr == nil && len(allProfiles) == 0)
+	isFirst := databrickscfg.IsFirstProfile(ctx, configFile)
 
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:                    profileName,
@@ -486,10 +484,8 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		return "", nil, err
 	}
 
-	if isOnlyProfile {
-		if err := databrickscfg.SetDefaultProfile(ctx, profileName, configFile); err != nil {
-			log.Debugf(ctx, "Failed to auto-set default profile: %v", err)
-		}
+	if isFirst {
+		databrickscfg.SetDefaultProfileQuietly(ctx, profileName, configFile)
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))

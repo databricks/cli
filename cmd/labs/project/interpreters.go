@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 	"golang.org/x/mod/semver"
@@ -112,7 +113,7 @@ func DetectInterpreters(ctx context.Context) (allInterpreters, error) {
 }
 
 func pythonicExecutablesFromPathEnvironment(ctx context.Context) (out []string, err error) {
-	paths := strings.Split(os.Getenv("PATH"), string(os.PathListSeparator))
+	paths := strings.Split(env.Get(ctx, "PATH"), string(os.PathListSeparator))
 	for _, prefix := range paths {
 		info, err := os.Stat(prefix)
 		if errors.Is(err, fs.ErrNotExist) {
