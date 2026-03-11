@@ -2,19 +2,20 @@
 
 package schema
 
+
 type DataSourceNotificationDestinationsNotificationDestinations struct {
-	DestinationType string `json:"destination_type,omitempty"`
-	DisplayName     string `json:"display_name,omitempty"`
-	Id              string `json:"id,omitempty"`
+    DestinationType string `json:"destination_type,omitempty"`
+    DisplayName string `json:"display_name,omitempty"`
+    Id string `json:"id,omitempty"`
 }
 
 type DataSourceNotificationDestinationsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+    WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceNotificationDestinations struct {
-	DisplayNameContains      string                                                       `json:"display_name_contains,omitempty"`
-	NotificationDestinations []DataSourceNotificationDestinationsNotificationDestinations `json:"notification_destinations,omitempty"`
-	ProviderConfig           *DataSourceNotificationDestinationsProviderConfig            `json:"provider_config,omitempty"`
-	Type                     string                                                       `json:"type,omitempty"`
+    DisplayNameContains string `json:"display_name_contains,omitempty"`
+    NotificationDestinations []DataSourceNotificationDestinationsNotificationDestinations `json:"notification_destinations,omitempty"`
+    ProviderConfig *DataSourceNotificationDestinationsProviderConfig `json:"provider_config,omitempty"`
+    Type string `json:"type,omitempty"`
 }

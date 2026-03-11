@@ -2,19 +2,20 @@
 
 package schema
 
+
 type DataSourceInstanceProfilesInstanceProfiles struct {
-	Arn     string `json:"arn,omitempty"`
-	IsMeta  bool   `json:"is_meta,omitempty"`
-	Name    string `json:"name,omitempty"`
-	RoleArn string `json:"role_arn,omitempty"`
+    Arn string `json:"arn,omitempty"`
+    IsMeta bool `json:"is_meta,omitempty"`
+    Name string `json:"name,omitempty"`
+    RoleArn string `json:"role_arn,omitempty"`
 }
 
 type DataSourceInstanceProfilesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+    WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceInstanceProfiles struct {
-	Id               string                                       `json:"id,omitempty"`
-	InstanceProfiles []DataSourceInstanceProfilesInstanceProfiles `json:"instance_profiles,omitempty"`
-	ProviderConfig   *DataSourceInstanceProfilesProviderConfig    `json:"provider_config,omitempty"`
+    Id string `json:"id,omitempty"`
+    InstanceProfiles []DataSourceInstanceProfilesInstanceProfiles `json:"instance_profiles,omitempty"`
+    ProviderConfig *DataSourceInstanceProfilesProviderConfig `json:"provider_config,omitempty"`
 }

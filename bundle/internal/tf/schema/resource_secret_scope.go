@@ -2,20 +2,21 @@
 
 package schema
 
+
 type ResourceSecretScopeKeyvaultMetadata struct {
-	DnsName    string `json:"dns_name"`
-	ResourceId string `json:"resource_id"`
+    DnsName string `json:"dns_name"`
+    ResourceId string `json:"resource_id"`
 }
 
 type ResourceSecretScopeProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+    WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceSecretScope struct {
-	BackendType            string                               `json:"backend_type,omitempty"`
-	Id                     string                               `json:"id,omitempty"`
-	InitialManagePrincipal string                               `json:"initial_manage_principal,omitempty"`
-	Name                   string                               `json:"name"`
-	KeyvaultMetadata       *ResourceSecretScopeKeyvaultMetadata `json:"keyvault_metadata,omitempty"`
-	ProviderConfig         *ResourceSecretScopeProviderConfig   `json:"provider_config,omitempty"`
+    BackendType string `json:"backend_type,omitempty"`
+    Id string `json:"id,omitempty"`
+    InitialManagePrincipal string `json:"initial_manage_principal,omitempty"`
+    Name string `json:"name"`
+    KeyvaultMetadata *ResourceSecretScopeKeyvaultMetadata `json:"keyvault_metadata,omitempty"`
+    ProviderConfig *ResourceSecretScopeProviderConfig `json:"provider_config,omitempty"`
 }

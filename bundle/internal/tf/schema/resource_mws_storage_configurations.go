@@ -2,12 +2,13 @@
 
 package schema
 
+
 type ResourceMwsStorageConfigurations struct {
-	AccountId                string `json:"account_id"`
-	BucketName               string `json:"bucket_name"`
-	CreationTime             int    `json:"creation_time,omitempty"`
-	Id                       string `json:"id,omitempty"`
-	RoleArn                  string `json:"role_arn,omitempty"`
-	StorageConfigurationId   string `json:"storage_configuration_id,omitempty"`
-	StorageConfigurationName string `json:"storage_configuration_name"`
+    AccountId string `json:"account_id"`
+    BucketName string `json:"bucket_name"`
+    CreationTime int `json:"creation_time,omitempty"`
+    Id string `json:"id,omitempty"`
+    RoleArn string `json:"role_arn,omitempty"`
+    StorageConfigurationId string `json:"storage_configuration_id,omitempty"`
+    StorageConfigurationName string `json:"storage_configuration_name"`
 }

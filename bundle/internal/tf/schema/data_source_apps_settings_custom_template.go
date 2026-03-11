@@ -2,60 +2,61 @@
 
 package schema
 
+
 type DataSourceAppsSettingsCustomTemplateManifestResourceSpecsExperimentSpec struct {
-	Permission string `json:"permission"`
+    Permission string `json:"permission"`
 }
 
 type DataSourceAppsSettingsCustomTemplateManifestResourceSpecsJobSpec struct {
-	Permission string `json:"permission"`
+    Permission string `json:"permission"`
 }
 
 type DataSourceAppsSettingsCustomTemplateManifestResourceSpecsSecretSpec struct {
-	Permission string `json:"permission"`
+    Permission string `json:"permission"`
 }
 
 type DataSourceAppsSettingsCustomTemplateManifestResourceSpecsServingEndpointSpec struct {
-	Permission string `json:"permission"`
+    Permission string `json:"permission"`
 }
 
 type DataSourceAppsSettingsCustomTemplateManifestResourceSpecsSqlWarehouseSpec struct {
-	Permission string `json:"permission"`
+    Permission string `json:"permission"`
 }
 
 type DataSourceAppsSettingsCustomTemplateManifestResourceSpecsUcSecurableSpec struct {
-	Permission    string `json:"permission"`
-	SecurableType string `json:"securable_type"`
+    Permission string `json:"permission"`
+    SecurableType string `json:"securable_type"`
 }
 
 type DataSourceAppsSettingsCustomTemplateManifestResourceSpecs struct {
-	Description         string                                                                        `json:"description,omitempty"`
-	ExperimentSpec      *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsExperimentSpec      `json:"experiment_spec,omitempty"`
-	JobSpec             *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsJobSpec             `json:"job_spec,omitempty"`
-	Name                string                                                                        `json:"name"`
-	SecretSpec          *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsSecretSpec          `json:"secret_spec,omitempty"`
-	ServingEndpointSpec *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsServingEndpointSpec `json:"serving_endpoint_spec,omitempty"`
-	SqlWarehouseSpec    *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsSqlWarehouseSpec    `json:"sql_warehouse_spec,omitempty"`
-	UcSecurableSpec     *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsUcSecurableSpec     `json:"uc_securable_spec,omitempty"`
+    Description string `json:"description,omitempty"`
+    ExperimentSpec *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsExperimentSpec `json:"experiment_spec,omitempty"`
+    JobSpec *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsJobSpec `json:"job_spec,omitempty"`
+    Name string `json:"name"`
+    SecretSpec *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsSecretSpec `json:"secret_spec,omitempty"`
+    ServingEndpointSpec *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsServingEndpointSpec `json:"serving_endpoint_spec,omitempty"`
+    SqlWarehouseSpec *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsSqlWarehouseSpec `json:"sql_warehouse_spec,omitempty"`
+    UcSecurableSpec *DataSourceAppsSettingsCustomTemplateManifestResourceSpecsUcSecurableSpec `json:"uc_securable_spec,omitempty"`
 }
 
 type DataSourceAppsSettingsCustomTemplateManifest struct {
-	Description   string                                                      `json:"description,omitempty"`
-	Name          string                                                      `json:"name"`
-	ResourceSpecs []DataSourceAppsSettingsCustomTemplateManifestResourceSpecs `json:"resource_specs,omitempty"`
-	Version       int                                                         `json:"version"`
+    Description string `json:"description,omitempty"`
+    Name string `json:"name"`
+    ResourceSpecs []DataSourceAppsSettingsCustomTemplateManifestResourceSpecs `json:"resource_specs,omitempty"`
+    Version int `json:"version"`
 }
 
 type DataSourceAppsSettingsCustomTemplateProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+    WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceAppsSettingsCustomTemplate struct {
-	Creator        string                                              `json:"creator,omitempty"`
-	Description    string                                              `json:"description,omitempty"`
-	GitProvider    string                                              `json:"git_provider,omitempty"`
-	GitRepo        string                                              `json:"git_repo,omitempty"`
-	Manifest       *DataSourceAppsSettingsCustomTemplateManifest       `json:"manifest,omitempty"`
-	Name           string                                              `json:"name"`
-	Path           string                                              `json:"path,omitempty"`
-	ProviderConfig *DataSourceAppsSettingsCustomTemplateProviderConfig `json:"provider_config,omitempty"`
+    Creator string `json:"creator,omitempty"`
+    Description string `json:"description,omitempty"`
+    GitProvider string `json:"git_provider,omitempty"`
+    GitRepo string `json:"git_repo,omitempty"`
+    Manifest *DataSourceAppsSettingsCustomTemplateManifest `json:"manifest,omitempty"`
+    Name string `json:"name"`
+    Path string `json:"path,omitempty"`
+    ProviderConfig *DataSourceAppsSettingsCustomTemplateProviderConfig `json:"provider_config,omitempty"`
 }

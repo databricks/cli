@@ -2,12 +2,13 @@
 
 package schema
 
+
 type ResourceMaterializedFeaturesFeatureTagProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+    WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceMaterializedFeaturesFeatureTag struct {
-	Key            string                                                `json:"key"`
-	ProviderConfig *ResourceMaterializedFeaturesFeatureTagProviderConfig `json:"provider_config,omitempty"`
-	Value          string                                                `json:"value,omitempty"`
+    Key string `json:"key"`
+    ProviderConfig *ResourceMaterializedFeaturesFeatureTagProviderConfig `json:"provider_config,omitempty"`
+    Value string `json:"value,omitempty"`
 }

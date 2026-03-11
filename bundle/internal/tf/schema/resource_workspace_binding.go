@@ -2,16 +2,17 @@
 
 package schema
 
+
 type ResourceWorkspaceBindingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+    WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceWorkspaceBinding struct {
-	BindingType    string                                  `json:"binding_type,omitempty"`
-	CatalogName    string                                  `json:"catalog_name,omitempty"`
-	Id             string                                  `json:"id,omitempty"`
-	SecurableName  string                                  `json:"securable_name,omitempty"`
-	SecurableType  string                                  `json:"securable_type,omitempty"`
-	WorkspaceId    int                                     `json:"workspace_id"`
-	ProviderConfig *ResourceWorkspaceBindingProviderConfig `json:"provider_config,omitempty"`
+    BindingType string `json:"binding_type,omitempty"`
+    CatalogName string `json:"catalog_name,omitempty"`
+    Id string `json:"id,omitempty"`
+    SecurableName string `json:"securable_name,omitempty"`
+    SecurableType string `json:"securable_type,omitempty"`
+    WorkspaceId int `json:"workspace_id"`
+    ProviderConfig *ResourceWorkspaceBindingProviderConfig `json:"provider_config,omitempty"`
 }
