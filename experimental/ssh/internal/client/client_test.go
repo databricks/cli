@@ -18,9 +18,9 @@ func TestValidate(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name:    "no cluster or connection name",
+			name:    "no cluster or connection name or accelerator",
 			opts:    client.ClientOptions{},
-			wantErr: "please provide --cluster flag with the cluster ID, or --name flag with the connection name (for serverless compute)",
+			wantErr: "please provide --cluster or --accelerator flag",
 		},
 		{
 			name: "proxy mode skips cluster/name check",
@@ -31,9 +31,13 @@ func TestValidate(t *testing.T) {
 			opts: client.ClientOptions{ClusterID: "abc-123"},
 		},
 		{
-			name:    "accelerator without connection name",
+			name:    "accelerator with cluster ID",
 			opts:    client.ClientOptions{ClusterID: "abc-123", Accelerator: "GPU_1xA10"},
-			wantErr: "--accelerator flag can only be used with serverless compute (--name flag)",
+			wantErr: "--accelerator flag can only be used with serverless compute, not with --cluster",
+		},
+		{
+			name: "accelerator only (auto-generate session name)",
+			opts: client.ClientOptions{Accelerator: "GPU_1xA10"},
 		},
 		{
 			name:    "connection name without accelerator",
@@ -55,8 +59,9 @@ func TestValidate(t *testing.T) {
 			opts: client.ClientOptions{ConnectionName: "my-conn_1", Accelerator: "GPU_1xA10"},
 		},
 		{
-			name: "both cluster ID and connection name",
-			opts: client.ClientOptions{ClusterID: "abc-123", ConnectionName: "my-conn", Accelerator: "GPU_1xA10"},
+			name:    "both cluster ID and connection name (no accelerator)",
+			opts:    client.ClientOptions{ClusterID: "abc-123", ConnectionName: "my-conn"},
+			wantErr: "--name flag requires --accelerator to be set (for now we only support serverless GPU compute)",
 		},
 		{
 			name:    "proxy mode with invalid connection name",

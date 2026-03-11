@@ -160,14 +160,45 @@ func PromptRecreateConfig(ctx context.Context, hostName string) (bool, error) {
 	return response, nil
 }
 
+// RemoveHostConfig deletes the SSH config file for a given host name.
+func RemoveHostConfig(ctx context.Context, hostName string) error {
+	configPath, err := GetHostConfigPath(ctx, hostName)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(configPath)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	return err
+}
+
+// GenerateHostConfig generates an SSH host config block.
 func GenerateHostConfig(hostName, userName, identityFile, proxyCommand string) string {
+	return generateHostConfig(hostName, userName, identityFile, proxyCommand, false)
+}
+
+// GenerateServerlessHostConfig generates an SSH host config block for serverless compute.
+// It disables strict host key checking since serverless containers generate fresh keys each time,
+// and identity is already verified through Databricks authentication and Driver Proxy.
+func GenerateServerlessHostConfig(hostName, userName, identityFile, proxyCommand string) string {
+	return generateHostConfig(hostName, userName, identityFile, proxyCommand, true)
+}
+
+func generateHostConfig(hostName, userName, identityFile, proxyCommand string, serverless bool) string {
+	hostKeyChecking := "StrictHostKeyChecking accept-new"
+	knownHostsLine := ""
+	if serverless {
+		hostKeyChecking = "StrictHostKeyChecking no"
+		knownHostsLine = "    UserKnownHostsFile /dev/null\n"
+	}
 	return fmt.Sprintf(`
 Host %s
     User %s
     ConnectTimeout 360
-    StrictHostKeyChecking accept-new
-    IdentitiesOnly yes
+    %s
+%s    IdentitiesOnly yes
     IdentityFile %q
     ProxyCommand %s
-`, hostName, userName, identityFile, proxyCommand)
+`, hostName, userName, hostKeyChecking, knownHostsLine, identityFile, proxyCommand)
 }
