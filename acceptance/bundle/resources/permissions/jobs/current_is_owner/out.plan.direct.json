@@ -42,7 +42,7 @@
           "object_id": "",
           "_": [
             {
-              "permission_level": "IS_OWNER",
+              "level": "IS_OWNER",
               "user_name": "[USERNAME]"
             }
           ]

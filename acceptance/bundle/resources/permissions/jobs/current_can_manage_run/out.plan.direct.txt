@@ -56,7 +56,7 @@
         "object_id": "/jobs/[NUMID]",
         "_": [
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "service_principal_name": "[USERNAME]"
           }
         ]

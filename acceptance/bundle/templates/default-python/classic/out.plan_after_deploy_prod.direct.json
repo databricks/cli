@@ -202,7 +202,7 @@
         "object_id": "/jobs/[NUMID]",
         "_": [
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           }
         ]
@@ -260,7 +260,7 @@
         "object_id": "/pipelines/[UUID]",
         "_": [
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           }
         ]

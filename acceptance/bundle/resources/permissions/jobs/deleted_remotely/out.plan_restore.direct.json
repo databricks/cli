@@ -84,15 +84,15 @@
           "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
           "_": [
             {
-              "permission_level": "CAN_VIEW",
+              "level": "CAN_VIEW",
               "user_name": "viewer@example.com"
             },
             {
-              "group_name": "data-team",
-              "permission_level": "CAN_MANAGE"
+              "level": "CAN_MANAGE",
+              "group_name": "data-team"
             },
             {
-              "permission_level": "IS_OWNER",
+              "level": "IS_OWNER",
               "user_name": "[USERNAME]"
             }
           ]
@@ -102,7 +102,7 @@
         "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
         "_": [
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           }
         ]
@@ -111,22 +111,22 @@
         "[group_name='data-team']": {
           "action": "update",
           "old": {
-            "group_name": "data-team",
-            "permission_level": "CAN_MANAGE"
+            "level": "CAN_MANAGE",
+            "group_name": "data-team"
           },
           "new": {
-            "group_name": "data-team",
-            "permission_level": "CAN_MANAGE"
+            "level": "CAN_MANAGE",
+            "group_name": "data-team"
           }
         },
         "[user_name='viewer@example.com']": {
           "action": "update",
           "old": {
-            "permission_level": "CAN_VIEW",
+            "level": "CAN_VIEW",
             "user_name": "viewer@example.com"
           },
           "new": {
-            "permission_level": "CAN_VIEW",
+            "level": "CAN_VIEW",
             "user_name": "viewer@example.com"
           }
         }

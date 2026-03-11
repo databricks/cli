@@ -41,15 +41,15 @@
           "object_id": "",
           "_": [
             {
-              "group_name": "team-alpha",
-              "permission_level": "CAN_VIEW"
+              "level": "CAN_VIEW",
+              "group_name": "team-alpha"
             },
             {
-              "group_name": "team-beta",
-              "permission_level": "CAN_MANAGE"
+              "level": "CAN_MANAGE",
+              "group_name": "team-beta"
             },
             {
-              "permission_level": "IS_OWNER",
+              "level": "IS_OWNER",
               "user_name": "[USERNAME]"
             }
           ]
@@ -90,15 +90,15 @@
           "object_id": "",
           "_": [
             {
-              "group_name": "viewers",
-              "permission_level": "CAN_VIEW"
+              "level": "CAN_VIEW",
+              "group_name": "viewers"
             },
             {
-              "group_name": "admins",
-              "permission_level": "CAN_MANAGE"
+              "level": "CAN_MANAGE",
+              "group_name": "admins"
             },
             {
-              "permission_level": "IS_OWNER",
+              "level": "IS_OWNER",
               "user_name": "[USERNAME]"
             }
           ]
