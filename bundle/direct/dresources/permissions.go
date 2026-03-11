@@ -2,11 +2,11 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -33,9 +33,45 @@ type ResourcePermissions struct {
 	client *databricks.WorkspaceClient
 }
 
+// StatePermission is a state-specific permission type that supports both the current
+// "level" field and the legacy "permission_level" field for backward compatibility.
+// Old state files used iam.AccessControlRequest which serialized as "permission_level".
+// New state uses "level" (from resources.Permission). PrepareState migrates old values.
+type StatePermission struct {
+	Level                iam.PermissionLevel `json:"level,omitempty"`
+	PermissionLevel      iam.PermissionLevel `json:"permission_level,omitempty"`
+	UserName             string              `json:"user_name,omitempty"`
+	ServicePrincipalName string              `json:"service_principal_name,omitempty"`
+	GroupName            string              `json:"group_name,omitempty"`
+}
+
 type PermissionsState struct {
-	ObjectID      string                 `json:"object_id"`
-	EmbeddedSlice []resources.Permission `json:"_,omitempty"`
+	ObjectID      string            `json:"object_id"`
+	EmbeddedSlice []StatePermission `json:"_,omitempty"`
+}
+
+// UnmarshalJSON implements custom deserialization that migrates legacy "permission_level"
+// to "level" for backward compatibility with old state files.
+func (p *PermissionsState) UnmarshalJSON(data []byte) error {
+	// Use an alias to avoid infinite recursion.
+	type Alias PermissionsState
+	var raw Alias
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	*p = PermissionsState(raw)
+	migratePermissionLevel(p.EmbeddedSlice)
+	return nil
+}
+
+// migratePermissionLevel copies legacy "permission_level" to "level" when "level" is empty.
+func migratePermissionLevel(perms []StatePermission) {
+	for i := range perms {
+		if perms[i].Level == "" && perms[i].PermissionLevel != "" {
+			perms[i].Level = perms[i].PermissionLevel
+		}
+		perms[i].PermissionLevel = ""
+	}
 }
 
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -55,7 +91,7 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		return nil, fmt.Errorf("unsupported permissions resource type: %s", resourceType)
 	}
 
-	permissions, err := toPermissions(inputConfig)
+	permissions, err := toStatePermissions(inputConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -94,9 +130,9 @@ func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState 
 	return s
 }
 
-// toPermissions converts any slice of typed permission structs (e.g. []JobPermission)
-// to []resources.Permission. All permission types share the same underlying struct layout.
-func toPermissions(ps any) ([]resources.Permission, error) {
+// toStatePermissions converts any slice of typed permission structs (e.g. []JobPermission)
+// to []StatePermission. All permission types share the same underlying struct layout.
+func toStatePermissions(ps any) ([]StatePermission, error) {
 	v := reflect.ValueOf(ps)
 	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
@@ -104,10 +140,10 @@ func toPermissions(ps any) ([]resources.Permission, error) {
 	if v.Kind() != reflect.Slice {
 		return nil, fmt.Errorf("expected permissions slice, got %T", ps)
 	}
-	result := make([]resources.Permission, v.Len())
+	result := make([]StatePermission, v.Len())
 	for i := range v.Len() {
 		elem := v.Index(i)
-		result[i] = resources.Permission{
+		result[i] = StatePermission{
 			Level:                iam.PermissionLevel(elem.FieldByName("Level").String()),
 			UserName:             elem.FieldByName("UserName").String(),
 			ServicePrincipalName: elem.FieldByName("ServicePrincipalName").String(),
@@ -117,7 +153,7 @@ func toPermissions(ps any) ([]resources.Permission, error) {
 	return result, nil
 }
 
-func permissionKey(x resources.Permission) (string, string) {
+func permissionKey(x StatePermission) (string, string) {
 	if x.UserName != "" {
 		return "user_name", x.UserName
 	}
@@ -184,7 +220,7 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 			if permission.Inherited {
 				continue
 			}
-			result.EmbeddedSlice = append(result.EmbeddedSlice, resources.Permission{
+			result.EmbeddedSlice = append(result.EmbeddedSlice, StatePermission{
 				Level:                permission.PermissionLevel,
 				GroupName:            accessControl.GroupName,
 				UserName:             accessControl.UserName,
