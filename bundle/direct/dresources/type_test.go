@@ -80,6 +80,7 @@ var knownMissingInRemoteType = map[string][]string{
 		"custom_tags",
 		"default_endpoint_settings",
 		"display_name",
+		"enable_pg_native_login",
 		"history_retention_duration",
 		"pg_version",
 		"project_id",

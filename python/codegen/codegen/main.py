@@ -3,6 +3,7 @@ from dataclasses import replace
 from pathlib import Path
 from textwrap import dedent
 
+import codegen.aliases_patch as aliases_patch
 import codegen.generated_dataclass as generated_dataclass
 import codegen.generated_dataclass_patch as generated_dataclass_patch
 import codegen.generated_enum as generated_enum
@@ -141,6 +142,8 @@ def _write_exports(
     for _, enum in enums.items():
         exports += [enum.class_name, f"{enum.class_name}Param"]
 
+    aliases = aliases_patch.ALIASES.get(namespace, {})
+
     exports.sort()
 
     b = CodeBuilder()
@@ -148,6 +151,8 @@ def _write_exports(
     b.append("__all__ = [\n")
     for export in exports:
         b.indent().append_repr(export).append(",").newline()
+    for old_name in sorted(aliases):
+        b.indent().append_repr(old_name).append(",").newline()
     b.append("]").newline()
     b.newline()
     b.newline()
@@ -158,6 +163,11 @@ def _write_exports(
     # FIXME should be better generalized
     if namespace == "jobs":
         _append_resolve_recursive_imports(b)
+
+    if aliases:
+        b.newline()
+        for old_name, new_name in sorted(aliases.items()):
+            b.append(f"{old_name} = {new_name}").newline()
 
     root_package = packages.get_root_package(namespace)
     package_path = Path(root_package.replace(".", "/"))

@@ -74,6 +74,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "source_code_path":
     "description": |-
       PLACEHOLDER
+  "telemetry_export_destinations":
+    "description": |-
+      PLACEHOLDER
   "usage_policy_id":
     "description": |-
       PLACEHOLDER
@@ -277,29 +280,6 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
   "lifecycle":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ExternalLocationGrantPrivilege:
-  "_":
-    "description": |-
-      Privilege to grant on an external location
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        CREATE_EXTERNAL_TABLE
-      - |-
-        CREATE_EXTERNAL_VOLUME
-      - |-
-        CREATE_MANAGED_STORAGE
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        MANAGE
-      - |-
-        READ_FILES
-      - |-
-        WRITE_FILES
 github.com/databricks/cli/bundle/config/resources.Job:
   "_":
     "markdown_description": |-
@@ -634,41 +614,6 @@ github.com/databricks/cli/bundle/config/resources.Schema:
   "properties":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        CREATE_FUNCTION
-      - |-
-        CREATE_MATERIALIZED_VIEW
-      - |-
-        CREATE_MODEL
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        EXECUTE
-      - |-
-        EXTERNAL_USE_SCHEMA
-      - |-
-        MANAGE
-      - |-
-        MODIFY
-      - |-
-        READ_VOLUME
-      - |-
-        REFRESH
-      - |-
-        SELECT
-      - |-
-        USE_SCHEMA
-      - |-
-        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
   "_":
     "enum":
@@ -741,19 +686,6 @@ github.com/databricks/cli/bundle/config/resources.Volume:
   "volume_type":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        MANAGE
-      - |-
-        READ_VOLUME
-      - |-
-        WRITE_VOLUME
 github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "create_time":
     "description": |-
@@ -806,6 +738,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "job":
     "description": |-
       PLACEHOLDER
+  "postgres":
+    "description": |-
+      PLACEHOLDER
   "secret":
     "description": |-
       PLACEHOLDER
@@ -847,6 +782,16 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
   "id":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgres:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "database":
     "description": |-
       PLACEHOLDER
   "permission":

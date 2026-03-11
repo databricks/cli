@@ -22,18 +22,14 @@ func TestConvertVolume(t *testing.T) {
 			StorageLocation: "s3://bucket/path",
 			VolumeType:      "EXTERNAL",
 		},
-		Grants: []resources.VolumeGrant{
+		Grants: []catalog.PrivilegeAssignment{
 			{
-				Privileges: []resources.VolumeGrantPrivilege{
-					resources.VolumeGrantPrivilegeReadVolume,
-				},
-				Principal: "jack@gmail.com",
+				Privileges: []catalog.Privilege{catalog.PrivilegeReadVolume},
+				Principal:  "jack@gmail.com",
 			},
 			{
-				Privileges: []resources.VolumeGrantPrivilege{
-					resources.VolumeGrantPrivilegeWriteVolume,
-				},
-				Principal: "jane@gmail.com",
+				Privileges: []catalog.Privilege{catalog.PrivilegeWriteVolume},
+				Principal:  "jane@gmail.com",
 			},
 		},
 	}
