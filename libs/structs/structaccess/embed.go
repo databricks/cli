@@ -2,9 +2,13 @@ package structaccess
 
 import (
 	"reflect"
-
-	"github.com/databricks/cli/libs/structs/structtag"
 )
+
+// EmbeddedSliceFieldName is the Go field name that signals struct walkers to treat
+// the field as transparent — its contents appear directly at the parent path level
+// without adding the field name to the path. Only supported on slice fields with
+// one EmbeddedSlice field per struct.
+const EmbeddedSliceFieldName = "EmbeddedSlice"
 
 // findEmbedField returns the value of the EmbeddedSlice field in struct v, if any.
 // Returns an invalid reflect.Value if no EmbeddedSlice field exists.
@@ -18,7 +22,7 @@ func findEmbedField(v reflect.Value) reflect.Value {
 		if sf.PkgPath != "" {
 			continue
 		}
-		if sf.Name == structtag.EmbeddedSliceFieldName {
+		if sf.Name == EmbeddedSliceFieldName {
 			return v.Field(i)
 		}
 	}
@@ -38,7 +42,7 @@ func findEmbedFieldType(t reflect.Type) reflect.Type {
 		if sf.PkgPath != "" {
 			continue
 		}
-		if sf.Name == structtag.EmbeddedSliceFieldName {
+		if sf.Name == EmbeddedSliceFieldName {
 			return sf.Type
 		}
 	}

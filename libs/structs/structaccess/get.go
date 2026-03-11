@@ -247,7 +247,7 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 			name = ""
 		}
 
-		if sf.Name == structtag.EmbeddedSliceFieldName {
+		if sf.Name == EmbeddedSliceFieldName {
 			continue // EmbeddedSlice fields are not accessible by name
 		}
 		if name != "" && name == key {

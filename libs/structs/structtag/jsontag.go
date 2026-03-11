@@ -2,12 +2,6 @@ package structtag
 
 import "strings"
 
-// EmbeddedSliceFieldName is the Go field name that signals struct walkers to treat
-// the field as transparent — its contents appear directly at the parent path level
-// without adding the field name to the path. Only supported on slice fields with
-// one EmbeddedSlice field per struct.
-const EmbeddedSliceFieldName = "EmbeddedSlice"
-
 // JSONTag represents a struct field's `json` tag as a string.
 // It provides methods to lazily extract information from the tag.
 type JSONTag string
