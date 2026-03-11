@@ -1,1 +1,1 @@
-direct: Fix permissions state path to match input config schema
+direct: Fix permissions state path and enable cross-resource permission references
