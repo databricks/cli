@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/client"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -165,6 +166,74 @@ func TestToProxyCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.opts.ToProxyCommand()
 			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestBuildTelemetryEvent(t *testing.T) {
+	tests := []struct {
+		name string
+		opts client.ClientOptions
+		want *protos.SshTunnelEvent
+	}{
+		{
+			name: "dedicated cluster with SSH client",
+			opts: client.ClientOptions{
+				ClusterID:        "abc-123",
+				AutoStartCluster: true,
+			},
+			want: &protos.SshTunnelEvent{
+				ComputeType:      protos.SshTunnelComputeTypeDedicated,
+				ClientMode:       protos.SshTunnelClientModeSSH,
+				AutoStartCluster: true,
+			},
+		},
+		{
+			name: "serverless with IDE",
+			opts: client.ClientOptions{
+				ConnectionName: "my-conn",
+				Accelerator:    "GPU_1xA10",
+				IDE:            "vscode",
+			},
+			want: &protos.SshTunnelEvent{
+				ComputeType:     protos.SshTunnelComputeTypeServerless,
+				ClientMode:      protos.SshTunnelClientModeIDE,
+				AcceleratorType: "GPU_1xA10",
+				IdeType:         "vscode",
+			},
+		},
+		{
+			name: "proxy mode with metadata (reconnect)",
+			opts: client.ClientOptions{
+				ClusterID:      "abc-123",
+				ProxyMode:      true,
+				ServerMetadata: "user,2222,abc-123",
+			},
+			want: &protos.SshTunnelEvent{
+				ComputeType: protos.SshTunnelComputeTypeDedicated,
+				ClientMode:  protos.SshTunnelClientModeProxy,
+				IsReconnect: true,
+			},
+		},
+		{
+			name: "serverless proxy mode",
+			opts: client.ClientOptions{
+				ConnectionName: "my-conn",
+				Accelerator:    "GPU_8xH100",
+				ProxyMode:      true,
+			},
+			want: &protos.SshTunnelEvent{
+				ComputeType:     protos.SshTunnelComputeTypeServerless,
+				ClientMode:      protos.SshTunnelClientModeProxy,
+				AcceleratorType: "GPU_8xH100",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := client.BuildTelemetryEvent(tt.opts)
 			assert.Equal(t, tt.want, got)
 		})
 	}
