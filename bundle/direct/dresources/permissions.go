@@ -145,6 +145,7 @@ func toStatePermissions(ps any) ([]StatePermission, error) {
 		elem := v.Index(i)
 		result[i] = StatePermission{
 			Level:                iam.PermissionLevel(elem.FieldByName("Level").String()),
+			PermissionLevel:      "",
 			UserName:             elem.FieldByName("UserName").String(),
 			ServicePrincipalName: elem.FieldByName("ServicePrincipalName").String(),
 			GroupName:            elem.FieldByName("GroupName").String(),
@@ -222,6 +223,7 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 			}
 			result.EmbeddedSlice = append(result.EmbeddedSlice, StatePermission{
 				Level:                permission.PermissionLevel,
+				PermissionLevel:      "",
 				GroupName:            accessControl.GroupName,
 				UserName:             accessControl.UserName,
 				ServicePrincipalName: accessControl.ServicePrincipalName,
