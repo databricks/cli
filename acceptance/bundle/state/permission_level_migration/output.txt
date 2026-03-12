@@ -1,5 +1,5 @@
 
-=== Plan with old permission_level state
+=== Plan with old v1 state
 >>> [CLI] bundle plan -o json
 
 === Deploy (migrates state)
@@ -12,7 +12,7 @@ Deployment complete!
 === Print state after deploy
 >>> print_state.py
 {
- "state_version": 1,
+ "state_version": 2,
  "cli_version": "[DEV_VERSION]",
  "lineage": "test-lineage",
  "serial": 2,
