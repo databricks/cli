@@ -410,7 +410,7 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "all-apis, ,sql,", func(string) error { return nil })
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "all-apis, ,sql,", nil, func(string) error { return nil })
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)

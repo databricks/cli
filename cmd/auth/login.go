@@ -161,7 +161,13 @@ depends on the existing profiles you have set in your configuration file
 		// If no host is available from any source, use the discovery flow
 		// via login.databricks.com.
 		if shouldUseDiscovery(authArguments.Host, args, existingProfile) {
-			return discoveryLogin(ctx, profileName, loginTimeout, scopes, getBrowserFunc(cmd))
+			if configureCluster {
+				return errors.New("--configure-cluster requires --host to be specified")
+			}
+			if configureServerless {
+				return errors.New("--configure-serverless requires --host to be specified")
+			}
+			return discoveryLogin(ctx, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
 		}
 
 		// Load unified host flags from the profile if not explicitly set via CLI flag
@@ -454,10 +460,10 @@ func openURLSuppressingStderr(url string) error {
 // discoveryLogin runs the login.databricks.com discovery flow. The user
 // authenticates in the browser, selects a workspace, and the CLI receives
 // the workspace host from the OAuth callback's iss parameter.
-func discoveryLogin(ctx context.Context, profileName string, timeout time.Duration, scopes string, browserFunc func(string) error) error {
+func discoveryLogin(ctx context.Context, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
 	arg, err := newDiscoveryOAuthArgument(profileName)
 	if err != nil {
-		return fmt.Errorf("setting up login.databricks.com: %w\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>", err)
+		return fmt.Errorf("setting up login.databricks.com: %w"+discoveryFallbackTip, err)
 	}
 
 	scopesList := splitScopes(scopes)
@@ -477,13 +483,13 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 
 	persistentAuth, err := newDiscoveryPersistentAuth(ctx, opts...)
 	if err != nil {
-		return fmt.Errorf("setting up login.databricks.com: %w\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>", err)
+		return fmt.Errorf("setting up login.databricks.com: %w"+discoveryFallbackTip, err)
 	}
 	defer persistentAuth.Close()
 
 	cmdio.LogString(ctx, "Opening login.databricks.com in your browser...")
 	if err := persistentAuth.Challenge(); err != nil {
-		return fmt.Errorf("login via login.databricks.com failed: %w\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>", err)
+		return fmt.Errorf("login via login.databricks.com failed: %w"+discoveryFallbackTip, err)
 	}
 
 	discoveredHost := arg.GetDiscoveredHost()
@@ -504,6 +510,13 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 		// account_id as part of the profile/cache key. Adding it now would break
 		// existing auth flows that don't expect account_id on workspace profiles.
 		workspaceID = introspection.WorkspaceID
+
+		// Warn if the detected account_id differs from what's already saved in the profile.
+		if existingProfile != nil && existingProfile.AccountID != "" && introspection.AccountID != "" &&
+			existingProfile.AccountID != introspection.AccountID {
+			log.Warnf(ctx, "detected account ID %q differs from existing profile account ID %q",
+				introspection.AccountID, existingProfile.AccountID)
+		}
 	}
 
 	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
