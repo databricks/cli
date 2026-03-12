@@ -16,9 +16,6 @@ token     = token-b
 auth_type = pat
 EOF
 
-title "Initial config\n"
-cat "./home/.databrickscfg"
-
 title "Switch to profile-a\n"
 trace $CLI auth switch --profile profile-a
 

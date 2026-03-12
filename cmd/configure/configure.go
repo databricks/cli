@@ -166,24 +166,14 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		// and leaving it can change HostType() routing.
 		clearKeys = append(clearKeys, "experimental_is_unified_host")
 
-		configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-		isFirst := databrickscfg.IsFirstProfile(ctx, configFile)
-
 		err = databrickscfg.SaveToProfile(ctx, &config.Config{
 			Profile:    cfg.Profile,
 			Host:       cfg.Host,
 			Token:      cfg.Token,
 			ClusterID:  cfg.ClusterID,
-			ConfigFile: configFile,
+			ConfigFile: env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		}, clearKeys...)
-		if err != nil {
-			return err
-		}
-
-		if isFirst && cfg.Profile != "" {
-			databrickscfg.SetDefaultProfileQuietly(ctx, cfg.Profile, configFile)
-		}
-		return nil
+		return err
 	}
 
 	return cmd

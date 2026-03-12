@@ -131,14 +131,8 @@ func GetDefaultProfileFrom(configFile *config.File) string {
 	return ""
 }
 
-// IsFirstProfile returns true if the config file has no profiles yet.
-// Call before SaveToProfile to check whether the profile being saved
-// will be the first one.
-func IsFirstProfile(ctx context.Context, configFilePath string) bool {
-	configFile, err := loadConfigFile(ctx, configFilePath)
-	if err != nil || configFile == nil {
-		return true
-	}
+// isFirstProfileInFile returns true if the config file has no profiles (sections with a "host" key) yet.
+func isFirstProfileInFile(configFile *config.File) bool {
 	for _, s := range configFile.Sections() {
 		if s.Name() == databricksSettingsSection {
 			continue
@@ -148,15 +142,6 @@ func IsFirstProfile(ctx context.Context, configFilePath string) bool {
 		}
 	}
 	return true
-}
-
-// SetDefaultProfileQuietly sets profileName as the default, logging errors
-// at debug level instead of returning them. Use after saving a new profile
-// to auto-configure the default.
-func SetDefaultProfileQuietly(ctx context.Context, profileName, configFilePath string) {
-	if err := SetDefaultProfile(ctx, profileName, configFilePath); err != nil {
-		log.Debugf(ctx, "Failed to auto-set default profile: %v", err)
-	}
 }
 
 // SetDefaultProfile writes the default_profile key to the [__settings__] section.
@@ -294,6 +279,10 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 		return err
 	}
 
+	// Check before writing so the new section (without keys yet) is not counted.
+	firstProfile := isFirstProfileInFile(configFile)
+	profileName := cfg.Profile
+
 	section, err := matchOrCreateSection(ctx, configFile, cfg)
 	if err != nil {
 		return err
@@ -316,6 +305,13 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 		}
 		key := section.Key(attr.Name)
 		key.SetValue(attr.GetString(cfg))
+	}
+
+	// Auto-set default profile when saving the first profile to the config file.
+	if firstProfile && profileName != "" {
+		settingsSection := configFile.Section(databricksSettingsSection)
+		settingsSection.Key(defaultProfileKey).SetValue(profileName)
+		log.Debugf(ctx, "Auto-setting default profile to %q (first profile)", profileName)
 	}
 
 	return backupAndSaveConfigFile(ctx, configFile)

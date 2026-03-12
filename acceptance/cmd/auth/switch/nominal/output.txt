@@ -1,18 +1,4 @@
 
-=== Initial config
-; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
-[DEFAULT]
-
-[profile-a]
-host      = https://profile-a.cloud.databricks.com
-token     = token-a
-auth_type = pat
-
-[profile-b]
-host      = https://profile-b.cloud.databricks.com
-token     = token-b
-auth_type = pat
-
 === Switch to profile-a
 
 >>> [CLI] auth switch --profile profile-a

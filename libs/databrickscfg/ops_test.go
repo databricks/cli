@@ -152,6 +152,9 @@ func TestSaveToProfile_NewFileWithoutDefault(t *testing.T) {
 [abc]
 host  = https://foo
 token = xyz
+
+[__settings__]
+default_profile = abc
 `, string(contents))
 }
 
@@ -174,6 +177,9 @@ func TestSaveToProfile_NewFileWithDefault(t *testing.T) {
 		`[DEFAULT]
 host  = https://foo
 token = xyz
+
+[__settings__]
+default_profile = DEFAULT
 `, string(contents))
 }
 

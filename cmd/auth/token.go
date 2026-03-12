@@ -467,9 +467,6 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		clearKeys = append(clearKeys, "experimental_is_unified_host")
 	}
 
-	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	isFirst := databrickscfg.IsFirstProfile(ctx, configFile)
-
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:                    profileName,
 		Host:                       loginArgs.Host,
@@ -477,15 +474,11 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		AccountID:                  loginArgs.AccountID,
 		WorkspaceID:                loginArgs.WorkspaceID,
 		Experimental_IsUnifiedHost: loginArgs.IsUnifiedHost,
-		ConfigFile:                 configFile,
+		ConfigFile:                 env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		Scopes:                     scopesList,
 	}, clearKeys...)
 	if err != nil {
 		return "", nil, err
-	}
-
-	if isFirst {
-		databrickscfg.SetDefaultProfileQuietly(ctx, profileName, configFile)
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))

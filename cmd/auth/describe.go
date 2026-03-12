@@ -177,15 +177,13 @@ func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) 
 		}
 	}
 
-	// If profile is not set explicitly, show which profile is being used.
-	// When a default_profile is configured, MustWorkspaceClient/MustAccountClient
-	// resolves it before we get here, so cfg.Profile is already set.
+	// If profile is not set explicitly, default to "default"
 	if _, ok := details.Configuration["profile"]; !ok {
-		displayProfile := cfg.Profile
-		if displayProfile == "" {
-			displayProfile = "default"
+		profile := cfg.Profile
+		if profile == "" {
+			profile = "default"
 		}
-		details.Configuration["profile"] = &config.AttrConfig{Value: displayProfile, Source: config.Source{Type: config.SourceDynamicConfig}}
+		details.Configuration["profile"] = &config.AttrConfig{Value: profile, Source: config.Source{Type: config.SourceDynamicConfig}}
 	}
 
 	// Unset source for databricks_cli_path because it can't be overridden anyway

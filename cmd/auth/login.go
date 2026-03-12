@@ -240,9 +240,6 @@ depends on the existing profiles you have set in your configuration file
 		}
 
 		if profileName != "" {
-			configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-			isFirst := databrickscfg.IsFirstProfile(ctx, configFile)
-
 			err := databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:                    profileName,
 				Host:                       authArguments.Host,
@@ -251,7 +248,7 @@ depends on the existing profiles you have set in your configuration file
 				WorkspaceID:                authArguments.WorkspaceID,
 				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 				ClusterID:                  clusterID,
-				ConfigFile:                 configFile,
+				ConfigFile:                 env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 				ServerlessComputeID:        serverlessComputeID,
 				Scopes:                     scopesList,
 			}, clearKeys...)
@@ -259,9 +256,6 @@ depends on the existing profiles you have set in your configuration file
 				return err
 			}
 
-			if isFirst {
-				databrickscfg.SetDefaultProfileQuietly(ctx, profileName, configFile)
-			}
 			cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
 		}
 
