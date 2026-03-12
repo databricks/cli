@@ -592,6 +592,57 @@ host = https://only.cloud.databricks.com
 	}
 }
 
+func TestClearDefaultProfile(t *testing.T) {
+	cases := []struct {
+		name        string
+		initial     string
+		profileName string
+		wantDefault string
+	}{
+		{
+			name:        "clears matching default",
+			initial:     "[__settings__]\ndefault_profile = my-workspace\n\n[my-workspace]\nhost = https://abc\n\n[other]\nhost = https://def\n",
+			profileName: "my-workspace",
+			wantDefault: "",
+		},
+		{
+			name:        "no-op when default differs",
+			initial:     "[__settings__]\ndefault_profile = other\n\n[my-workspace]\nhost = https://abc\n\n[other]\nhost = https://def\n",
+			profileName: "my-workspace",
+			wantDefault: "other",
+		},
+		{
+			name:        "no-op when no settings section",
+			initial:     "[my-workspace]\nhost = https://abc\n",
+			profileName: "my-workspace",
+			wantDefault: "",
+		},
+		{
+			name:        "no-op when no file",
+			initial:     "",
+			profileName: "my-workspace",
+			wantDefault: "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			path := filepath.Join(t.TempDir(), "databrickscfg")
+			if tc.initial != "" {
+				require.NoError(t, os.WriteFile(path, []byte(tc.initial), 0o600))
+			}
+
+			err := ClearDefaultProfile(ctx, tc.profileName, path)
+			require.NoError(t, err)
+
+			got, err := GetConfiguredDefaultProfile(ctx, path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantDefault, got)
+		})
+	}
+}
+
 func TestDeleteProfile_NotFound(t *testing.T) {
 	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), ".databrickscfg")

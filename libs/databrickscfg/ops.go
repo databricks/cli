@@ -169,6 +169,32 @@ func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) 
 	return writeConfigFile(ctx, configFile)
 }
 
+// ClearDefaultProfile removes the default_profile key from the [__settings__]
+// section if the current default matches the given profile name.
+func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		return err
+	}
+	if configFile == nil {
+		return nil
+	}
+
+	current := GetConfiguredDefaultProfileFrom(configFile)
+	if current != profileName {
+		return nil
+	}
+
+	section, err := configFile.GetSection(databricksSettingsSection)
+	if err != nil {
+		// No settings section means no default to clear.
+		return nil
+	}
+
+	section.DeleteKey(defaultProfileKey)
+	return writeConfigFile(ctx, configFile)
+}
+
 func loadOrCreateConfigFile(ctx context.Context, filename string) (*config.File, error) {
 	filename, err := resolveConfigFilePath(ctx, filename)
 	if err != nil {
