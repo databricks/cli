@@ -1,4 +1,4 @@
-package bundle
+package experimental
 
 import (
 	"github.com/databricks/cli/bundle/lsp"
@@ -6,14 +6,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newLspCommand() *cobra.Command {
+func newBundleLspCommand() *cobra.Command {
 	var target string
 
 	cmd := &cobra.Command{
-		Use:    "lsp",
-		Short:  "Start a Language Server Protocol server for bundle files",
-		Hidden: true,
-		Args:   root.NoArgs,
+		Use:   "bundle-lsp",
+		Short: "Start a Language Server Protocol server for bundle files",
+		Args:  root.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			srv := lsp.NewServer()
 			if target != "" {
