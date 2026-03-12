@@ -2,6 +2,7 @@
 // but are now manually maintained because the v2 API versions have taken
 // over as the generated commands. See https://github.com/databricks/cli/pull/4722.
 
+//nolint:staticcheck,perfsprint
 package users
 
 import (
