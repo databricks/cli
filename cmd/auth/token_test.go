@@ -1,17 +1,23 @@
 package auth
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 )
@@ -728,4 +734,115 @@ func (e errProfiler) LoadProfiles(context.Context, profile.ProfileMatchFunction)
 
 func (e errProfiler) GetPath(context.Context) (string, error) {
 	return "<error>", nil
+}
+
+func TestTokenCommand_TextOutput(t *testing.T) {
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{
+				Name: "test-ws",
+				Host: "https://test-ws.cloud.databricks.com",
+			},
+		},
+	}
+	tokenCache := &inMemoryTokenCache{
+		Tokens: map[string]*oauth2.Token{
+			"test-ws": {
+				RefreshToken: "test-ws",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
+		},
+	}
+	persistentAuthOpts := []u2m.PersistentAuthOption{
+		u2m.WithTokenCache(tokenCache),
+		u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+		u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+	}
+
+	cases := []struct {
+		name       string
+		args       []string
+		wantSubstr string
+		wantJSON   bool
+	}{
+		{
+			name:       "default output is JSON",
+			args:       []string{"--profile", "test-ws"},
+			wantSubstr: `"access_token"`,
+			wantJSON:   true,
+		},
+		{
+			name:       "explicit --output json produces JSON",
+			args:       []string{"--profile", "test-ws", "--output", "json"},
+			wantSubstr: `"access_token"`,
+			wantJSON:   true,
+		},
+		{
+			name:       "explicit --output text produces plain token",
+			args:       []string{"--profile", "test-ws", "--output", "text"},
+			wantSubstr: "new-access-token",
+			wantJSON:   false,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := cmdio.MockDiscard(t.Context())
+			authArgs := &auth.AuthArguments{}
+
+			parent := &cobra.Command{Use: "databricks"}
+			outputFlag := flags.OutputText
+			parent.PersistentFlags().VarP(&outputFlag, "output", "o", "output type: text or json")
+			parent.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
+
+			tokenCmd := newTokenCommand(authArgs)
+			// Override RunE to inject test profiler and token cache while
+			// keeping the same output formatting logic as the real command.
+			tokenCmd.RunE = func(cmd *cobra.Command, args []string) error {
+				profileName := ""
+				if f := cmd.Flag("profile"); f != nil {
+					profileName = f.Value.String()
+				}
+				tok, err := loadToken(cmd.Context(), loadTokenArgs{
+					authArguments:      authArgs,
+					profileName:        profileName,
+					args:               args,
+					tokenTimeout:       1 * time.Hour,
+					profiler:           profiler,
+					persistentAuthOpts: persistentAuthOpts,
+				})
+				if err != nil {
+					return err
+				}
+				if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
+					_, _ = fmt.Fprint(cmd.OutOrStdout(), tok.AccessToken)
+					return nil
+				}
+				raw, err := json.MarshalIndent(tok, "", "  ")
+				if err != nil {
+					return err
+				}
+				_, _ = cmd.OutOrStdout().Write(raw)
+				return nil
+			}
+
+			parent.AddCommand(tokenCmd)
+			parent.SetContext(ctx)
+
+			var buf bytes.Buffer
+			parent.SetOut(&buf)
+			parent.SetArgs(append([]string{"token"}, c.args...))
+
+			err := parent.Execute()
+			assert.NoError(t, err)
+
+			output := buf.String()
+			assert.Contains(t, output, c.wantSubstr)
+			if c.wantJSON {
+				assert.Contains(t, output, "{")
+			} else {
+				assert.NotContains(t, output, "{")
+			}
+		})
+	}
 }

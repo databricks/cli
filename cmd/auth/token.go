@@ -8,11 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -83,6 +85,13 @@ using a client ID and secret is not supported.`,
 		if err != nil {
 			return err
 		}
+
+		// Output plain token when the user explicitly passes --output text.
+		if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
+			_, _ = fmt.Fprint(cmd.OutOrStdout(), t.AccessToken)
+			return nil
+		}
+
 		raw, err := json.MarshalIndent(t, "", "  ")
 		if err != nil {
 			return err
