@@ -495,12 +495,14 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 	}
 
 	// Best-effort introspection for metadata
-	var accountID, workspaceID string
+	var workspaceID string
 	introspection, err := introspectToken(ctx, discoveredHost, tok.AccessToken)
 	if err != nil {
 		log.Debugf(ctx, "token introspection failed (non-fatal): %v", err)
 	} else {
-		accountID = introspection.AccountID
+		// TODO: Save introspection.AccountID once the SDKs are ready to use
+		// account_id as part of the profile/cache key. Adding it now would break
+		// existing auth flows that don't expect account_id on workspace profiles.
 		workspaceID = introspection.WorkspaceID
 	}
 
@@ -509,7 +511,6 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 		Profile:     profileName,
 		Host:        discoveredHost,
 		AuthType:    authTypeDatabricksCLI,
-		AccountID:   accountID,
 		WorkspaceID: workspaceID,
 		Scopes:      scopesList,
 		ConfigFile:  configFile,
