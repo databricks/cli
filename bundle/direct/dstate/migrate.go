@@ -60,16 +60,16 @@ type oldPermissionsStateV1 struct {
 }
 
 type oldPermissionV1 struct {
-	PermissionLevel string `json:"permission_level,omitempty"`
-	UserName        string `json:"user_name,omitempty"`
+	PermissionLevel      string `json:"permission_level,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName       string `json:"group_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
 }
 
 // New types matching current dresources.PermissionsState format.
 type newPermissionsStateV2 struct {
-	ObjectID      string              `json:"object_id"`
-	EmbeddedSlice []newPermissionV2   `json:"_,omitempty"`
+	ObjectID      string            `json:"object_id"`
+	EmbeddedSlice []newPermissionV2 `json:"_,omitempty"`
 }
 
 type newPermissionV2 struct {
