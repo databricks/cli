@@ -85,6 +85,14 @@ workspace:
 
 func TestBundleConfigureDefault(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Restrict PATH to system directories to prevent the SDK from invoking
+	// external tools (e.g. az) during auth resolution.
+	// Bundle loading requires a shell so PATH cannot be fully cleared.
+	if runtime.GOOS == "windows" {
+		t.Setenv("PATH", `C:\Windows\System32`)
+	} else {
+		t.Setenv("PATH", "/usr/bin:/bin")
+	}
 
 	cmd := emptyCommand(t)
 	diags := setupWithHost(t, cmd, "https://x.com")
