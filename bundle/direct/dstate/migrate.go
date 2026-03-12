@@ -1,0 +1,106 @@
+package dstate
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+
+// migrateState runs all necessary migrations on the database.
+// It is called after loading state from disk.
+func migrateState(db *Database) error {
+	if db.StateVersion >= currentStateVersion {
+		return nil
+	}
+
+	for version := db.StateVersion; version < currentStateVersion; version++ {
+		fn, ok := migrations[version]
+		if !ok {
+			return fmt.Errorf("unsupported state version %d (current: %d)", version, currentStateVersion)
+		}
+		if err := fn(db); err != nil {
+			return fmt.Errorf("migrating state from version %d: %w", version, err)
+		}
+		db.StateVersion = version + 1
+	}
+
+	return nil
+}
+
+// migrations maps source version to the function that migrates to version+1.
+var migrations = map[int]func(*Database) error{
+	1: migrateV1ToV2,
+}
+
+// migrateV1ToV2 migrates permissions entries from the old format
+// (iam.AccessControlRequest with "permissions" key and "permission_level" field)
+// to the new format (StatePermission with "_" key and "level" field).
+func migrateV1ToV2(db *Database) error {
+	for key, entry := range db.State {
+		if !strings.HasSuffix(key, ".permissions") {
+			continue
+		}
+		if len(entry.State) == 0 {
+			continue
+		}
+		migrated, err := migratePermissionsEntry(entry.State)
+		if err != nil {
+			return fmt.Errorf("migrating %s: %w", key, err)
+		}
+		entry.State = migrated
+		db.State[key] = entry
+	}
+	return nil
+}
+
+// Old types from main branch — copied here for migration purposes.
+type oldPermissionsStateV1 struct {
+	ObjectID    string            `json:"object_id"`
+	Permissions []oldPermissionV1 `json:"permissions,omitempty"`
+}
+
+type oldPermissionV1 struct {
+	PermissionLevel string `json:"permission_level,omitempty"`
+	UserName        string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName       string `json:"group_name,omitempty"`
+}
+
+// New types matching current dresources.PermissionsState format.
+type newPermissionsStateV2 struct {
+	ObjectID      string              `json:"object_id"`
+	EmbeddedSlice []newPermissionV2   `json:"_,omitempty"`
+}
+
+type newPermissionV2 struct {
+	Level                string `json:"level,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+}
+
+func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
+	var old oldPermissionsStateV1
+	if err := json.Unmarshal(raw, &old); err != nil {
+		return nil, err
+	}
+
+	// If old format had no permissions, try parsing as new format (might already be migrated).
+	if len(old.Permissions) == 0 {
+		return raw, nil
+	}
+
+	newState := newPermissionsStateV2{
+		ObjectID: old.ObjectID,
+	}
+	for _, p := range old.Permissions {
+		newState.EmbeddedSlice = append(newState.EmbeddedSlice, newPermissionV2{
+			Level:                p.PermissionLevel,
+			UserName:             p.UserName,
+			ServicePrincipalName: p.ServicePrincipalName,
+			GroupName:            p.GroupName,
+		})
+	}
+
+	return json.MarshalIndent(newState, "  ", " ")
+}
