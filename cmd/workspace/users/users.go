@@ -1,4 +1,6 @@
-// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+// These SCIM commands were previously auto-generated from OpenAPI specs
+// but are now manually maintained because the v2 API versions have taken
+// over as the generated commands.
 
 package users
 
