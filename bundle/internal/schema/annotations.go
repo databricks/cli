@@ -49,7 +49,15 @@ func newAnnotationHandler(annotationsPath string, openapi *openapiParser) (*anno
 		}
 		if existing, ok := resolved[key]; ok {
 			// Merge fields from both entries (Go path and bundle path).
-			maps.Copy(existing, fields)
+			// Use mergeDescriptor to properly combine descriptors rather
+			// than maps.Copy which would overwrite entire descriptors.
+			for fieldName, desc := range fields {
+				if existingDesc, ok := existing[fieldName]; ok {
+					existing[fieldName] = mergeDescriptor(existingDesc, desc)
+				} else {
+					existing[fieldName] = desc
+				}
+			}
 		} else {
 			resolved[key] = fields
 		}
