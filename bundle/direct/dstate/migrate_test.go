@@ -93,12 +93,14 @@ func TestMigrateState_CurrentVersion(t *testing.T) {
 	assert.Equal(t, currentStateVersion, db.StateVersion)
 }
 
-func TestMigrateState_UnsupportedVersion(t *testing.T) {
+func TestMigrateState_Version0(t *testing.T) {
+	// Version 0 means state_version was absent; should be treated like version 1.
 	db := Database{
 		StateVersion: 0,
 		State:        map[string]ResourceEntry{},
 	}
 
 	err := migrateState(&db)
-	assert.ErrorContains(t, err, "unsupported state version 0")
+	require.NoError(t, err)
+	assert.Equal(t, currentStateVersion, db.StateVersion)
 }

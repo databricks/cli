@@ -28,7 +28,9 @@ func migrateState(db *Database) error {
 }
 
 // migrations maps source version to the function that migrates to version+1.
+// Version 0 means state_version was absent in old state files; treat same as 1.
 var migrations = map[int]func(*Database) error{
+	0: migrateV1ToV2,
 	1: migrateV1ToV2,
 }
 
