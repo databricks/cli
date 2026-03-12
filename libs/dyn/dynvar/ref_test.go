@@ -3,6 +3,7 @@ package dynvar
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,6 +46,37 @@ func TestNewRefInvalidPattern(t *testing.T) {
 		_, ok := NewRef(dyn.V(v))
 		require.False(t, ok, "should not match invalid pattern: %s", v)
 	}
+}
+
+func TestNewRefWithDiagnosticsMalformedReference(t *testing.T) {
+	for _, tc := range []struct {
+		in      string
+		warning string
+	}{
+		{"${foo.bar-}", "invalid"},
+		{"${foo..bar}", "invalid"},
+		{"${0foo}", "invalid"},
+		{"${}", "empty"},
+		{"${foo.bar", "unterminated"},
+	} {
+		_, ok, diags := NewRefWithDiagnostics(dyn.V(tc.in))
+		assert.False(t, ok, "should not match malformed pattern: %s", tc.in)
+		require.Len(t, diags, 1, tc.in)
+		assert.Equal(t, diag.Warning, diags[0].Severity, tc.in)
+		assert.Contains(t, diags[0].Summary, tc.warning, tc.in)
+	}
+}
+
+func TestNewRefWithDiagnosticsValidReference(t *testing.T) {
+	_, ok, diags := NewRefWithDiagnostics(dyn.V("${foo.bar}"))
+	assert.True(t, ok)
+	assert.Empty(t, diags)
+}
+
+func TestNewRefWithDiagnosticsNoReference(t *testing.T) {
+	_, ok, diags := NewRefWithDiagnostics(dyn.V("plain text"))
+	assert.False(t, ok)
+	assert.Empty(t, diags)
 }
 
 func TestIsPureVariableReference(t *testing.T) {

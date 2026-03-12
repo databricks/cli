@@ -7,8 +7,24 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar/interpolation"
 	"github.com/databricks/cli/libs/utils"
 )
+
+// SuggestFn is a function that returns a suggested correction for a reference path.
+// It returns an empty string if no suggestion is available.
+type SuggestFn func(path dyn.Path) string
+
+// ResolveOption configures optional behavior for [Resolve].
+type ResolveOption func(*resolver)
+
+// WithSuggestFn configures a suggestion function that is called when a
+// reference does not exist. The suggestion is appended to the error message.
+func WithSuggestFn(fn SuggestFn) ResolveOption {
+	return func(r *resolver) {
+		r.suggestFn = fn
+	}
+}
 
 // Resolve resolves variable references in the given input value using the provided lookup function.
 // It returns the resolved output value and any error encountered during the resolution process.
@@ -33,8 +49,12 @@ import (
 // If a cycle is detected in the variable references, an error is returned.
 // If for some path the resolution function returns [ErrSkipResolution], the variable reference is left in place.
 // This is useful when some variable references are not yet ready to be interpolated.
-func Resolve(in dyn.Value, fn Lookup) (out dyn.Value, err error) {
-	return resolver{in: in, fn: fn}.run()
+func Resolve(in dyn.Value, fn Lookup, opts ...ResolveOption) (out dyn.Value, err error) {
+	r := resolver{in: in, fn: fn}
+	for _, opt := range opts {
+		opt(&r)
+	}
+	return r.run()
 }
 
 type lookupResult struct {
@@ -45,6 +65,8 @@ type lookupResult struct {
 type resolver struct {
 	in dyn.Value
 	fn Lookup
+
+	suggestFn SuggestFn
 
 	refs     map[string]Ref
 	resolved map[string]dyn.Value
@@ -156,30 +178,39 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 		return dyn.NewValue(resolved[0].Value(), ref.Value.Locations()), nil
 	}
 
-	// Not pure; perform string interpolation.
-	for j := range ref.Matches {
-		// The value is invalid if resolution returned [ErrSkipResolution].
-		// We must skip those and leave the original variable reference in place.
-		if !resolved[j].IsValid() {
-			continue
-		}
-
-		// Try to turn the resolved value into a string.
-		s, ok := resolved[j].AsString()
-		if !ok {
-			// Only allow primitive types to be converted to string.
-			switch resolved[j].Kind() {
-			case dyn.KindString, dyn.KindBool, dyn.KindInt, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
-				s = fmt.Sprint(resolved[j].AsAny())
-			default:
-				return dyn.InvalidValue, fmt.Errorf("cannot interpolate non-primitive value of type %s into string", resolved[j].Kind())
+	// Not pure; perform token-based string interpolation.
+	var buf strings.Builder
+	refIdx := 0
+	for _, tok := range ref.Tokens {
+		switch tok.Kind {
+		case interpolation.TokenLiteral:
+			buf.WriteString(tok.Value)
+		case interpolation.TokenRef:
+			// The value is invalid if resolution returned [ErrSkipResolution].
+			// We must skip those and leave the original variable reference in place.
+			if !resolved[refIdx].IsValid() {
+				buf.WriteString("${")
+				buf.WriteString(tok.Value)
+				buf.WriteByte('}')
+			} else {
+				// Try to turn the resolved value into a string.
+				s, ok := resolved[refIdx].AsString()
+				if !ok {
+					// Only allow primitive types to be converted to string.
+					switch resolved[refIdx].Kind() {
+					case dyn.KindString, dyn.KindBool, dyn.KindInt, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
+						s = fmt.Sprint(resolved[refIdx].AsAny())
+					default:
+						return dyn.InvalidValue, fmt.Errorf("cannot interpolate non-primitive value of type %s into string", resolved[refIdx].Kind())
+					}
+				}
+				buf.WriteString(s)
 			}
+			refIdx++
 		}
-
-		ref.Str = strings.Replace(ref.Str, ref.Matches[j][0], s, 1)
 	}
 
-	return dyn.NewValue(ref.Str, ref.Value.Locations()), nil
+	return dyn.NewValue(buf.String(), ref.Value.Locations()), nil
 }
 
 func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
@@ -198,7 +229,13 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 	v, err := r.fn(p)
 	if err != nil {
 		if dyn.IsNoSuchKeyError(err) {
-			err = fmt.Errorf("reference does not exist: ${%s}", key)
+			msg := fmt.Sprintf("reference does not exist: ${%s}", key)
+			if r.suggestFn != nil {
+				if suggestion := r.suggestFn(p); suggestion != "" {
+					msg += fmt.Sprintf(". did you mean ${%s}?", suggestion)
+				}
+			}
+			err = errors.New(msg)
 		}
 
 		// Cache the return value and return to the caller.
