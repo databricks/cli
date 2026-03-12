@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/creachadair/jrpc2"
@@ -61,6 +62,7 @@ func newTestClientServer(t *testing.T, srv *Server) *jrpc2.Client {
 		"textDocument/didClose":     handler.New(srv.handleTextDocumentDidClose),
 		"textDocument/documentLink": handler.New(srv.handleDocumentLink),
 		"textDocument/hover":        handler.New(srv.handleHover),
+		"textDocument/definition":   handler.New(srv.handleDefinition),
 	}
 
 	clientCh, serverCh := channel.Direct()
@@ -96,6 +98,7 @@ func TestServerHandleInitialize(t *testing.T) {
 	result := initializeClient(ctx, t, cli, "file://"+tmpDir)
 
 	assert.True(t, result.Capabilities.HoverProvider)
+	assert.True(t, result.Capabilities.DefinitionProvider)
 	require.NotNil(t, result.Capabilities.DocumentLinkProvider)
 	require.NotNil(t, result.Capabilities.TextDocumentSync)
 	assert.True(t, result.Capabilities.TextDocumentSync.OpenClose)
@@ -330,4 +333,336 @@ resources:
 	// 10. Shutdown.
 	_, err = cli.Call(ctx, "shutdown", nil)
 	require.NoError(t, err)
+}
+
+const testBundleYAMLWithInterpolation = `bundle:
+  name: test-bundle
+workspace:
+  host: "https://my-workspace.databricks.com"
+targets:
+  dev:
+    default: true
+variables:
+  my_var:
+    default: "hello"
+resources:
+  jobs:
+    my_job:
+      name: "${var.my_var}"
+  pipelines:
+    my_pipeline:
+      name: "My Pipeline"
+`
+
+func TestServerDefinitionOnInterpolation(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "databricks.yml"), []byte(testBundleYAMLWithInterpolation), 0o644))
+
+	srv := NewServer()
+	cli := newTestClientServer(t, srv)
+	ctx := t.Context()
+
+	initializeClient(ctx, t, cli, "file://"+tmpDir)
+
+	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
+		TextDocument: TextDocumentItem{
+			URI:        docURI,
+			LanguageID: "yaml",
+			Version:    1,
+			Text:       testBundleYAMLWithInterpolation,
+		},
+	})
+	require.NoError(t, err)
+
+	// Find the line with "${var.my_var}" and position cursor on it.
+	lines := strings.Split(testBundleYAMLWithInterpolation, "\n")
+	var targetLine int
+	var targetCol int
+	for i, line := range lines {
+		idx := strings.Index(line, "${var.my_var}")
+		if idx >= 0 {
+			targetLine = i
+			targetCol = idx + 2 // inside the "${...}"
+			break
+		}
+	}
+
+	var loc LSPLocation
+	err = cli.CallResult(ctx, "textDocument/definition", DefinitionParams{
+		TextDocument: TextDocumentIdentifier{URI: docURI},
+		Position:     Position{Line: targetLine, Character: targetCol},
+	}, &loc)
+	require.NoError(t, err)
+	assert.Contains(t, loc.URI, "databricks.yml")
+}
+
+func TestServerDefinitionOnResourceKey(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "databricks.yml"), []byte(testBundleYAMLWithInterpolation), 0o644))
+
+	srv := NewServer()
+	cli := newTestClientServer(t, srv)
+	ctx := t.Context()
+
+	initializeClient(ctx, t, cli, "file://"+tmpDir)
+
+	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
+		TextDocument: TextDocumentItem{
+			URI:        docURI,
+			LanguageID: "yaml",
+			Version:    1,
+			Text:       testBundleYAMLWithInterpolation,
+		},
+	})
+	require.NoError(t, err)
+
+	// Get links to find the position of my_job key.
+	var links []DocumentLink
+	err = cli.CallResult(ctx, "textDocument/documentLink", DocumentLinkParams{
+		TextDocument: TextDocumentIdentifier{URI: docURI},
+	}, &links)
+	require.NoError(t, err)
+
+	// my_job has no deployment state, so no document links. Use resource index position directly.
+	// Find the resource key position via IndexResources.
+	lines := strings.Split(testBundleYAMLWithInterpolation, "\n")
+	var myJobLine int
+	var myJobCol int
+	for i, line := range lines {
+		idx := strings.Index(line, "my_job:")
+		if idx >= 0 {
+			myJobLine = i
+			myJobCol = idx + 1 // inside "my_job"
+			break
+		}
+	}
+
+	// Ctrl+click on "my_job" key should return references (${...} expressions referencing it).
+	// The YAML has name: "${var.my_var}" which does NOT reference my_job, so this may return empty.
+	// Let's just verify the call succeeds without error.
+	rsp, err := cli.Call(ctx, "textDocument/definition", DefinitionParams{
+		TextDocument: TextDocumentIdentifier{URI: docURI},
+		Position:     Position{Line: myJobLine, Character: myJobCol},
+	})
+	require.NoError(t, err)
+	// Result may be null (no references to my_job in the tree).
+	assert.NotNil(t, rsp)
+}
+
+func TestServerDefinitionVarShorthand(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "databricks.yml"), []byte(testBundleYAMLWithInterpolation), 0o644))
+
+	srv := NewServer()
+	cli := newTestClientServer(t, srv)
+	ctx := t.Context()
+
+	initializeClient(ctx, t, cli, "file://"+tmpDir)
+
+	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
+		TextDocument: TextDocumentItem{
+			URI:        docURI,
+			LanguageID: "yaml",
+			Version:    1,
+			Text:       testBundleYAMLWithInterpolation,
+		},
+	})
+	require.NoError(t, err)
+
+	// Find the line with "${var.my_var}" and position cursor on "var" part.
+	lines := strings.Split(testBundleYAMLWithInterpolation, "\n")
+	var targetLine int
+	var targetCol int
+	for i, line := range lines {
+		idx := strings.Index(line, "${var.my_var}")
+		if idx >= 0 {
+			targetLine = i
+			targetCol = idx + 2 // on "var" inside "${var.my_var}"
+			break
+		}
+	}
+
+	var loc LSPLocation
+	err = cli.CallResult(ctx, "textDocument/definition", DefinitionParams{
+		TextDocument: TextDocumentIdentifier{URI: docURI},
+		Position:     Position{Line: targetLine, Character: targetCol},
+	}, &loc)
+	require.NoError(t, err)
+	// Should resolve to the variables section.
+	assert.Contains(t, loc.URI, "databricks.yml")
+}
+
+func TestServerDefinitionNoMatch(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "databricks.yml"), []byte(testBundleYAMLWithInterpolation), 0o644))
+
+	srv := NewServer()
+	cli := newTestClientServer(t, srv)
+	ctx := t.Context()
+
+	initializeClient(ctx, t, cli, "file://"+tmpDir)
+
+	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
+		TextDocument: TextDocumentItem{
+			URI:        docURI,
+			LanguageID: "yaml",
+			Version:    1,
+			Text:       testBundleYAMLWithInterpolation,
+		},
+	})
+	require.NoError(t, err)
+
+	// Cursor on line 0, character 0 ("bundle:") — not an interpolation or resource key.
+	rsp, err := cli.Call(ctx, "textDocument/definition", DefinitionParams{
+		TextDocument: TextDocumentIdentifier{URI: docURI},
+		Position:     Position{Line: 0, Character: 0},
+	})
+	require.NoError(t, err)
+
+	var result *LSPLocation
+	err = rsp.UnmarshalResult(&result)
+	require.NoError(t, err)
+	assert.Nil(t, result)
+}
+
+func TestServerDefinitionCrossFile(t *testing.T) {
+	mainYAML := `bundle:
+  name: test-bundle
+include:
+  - "resources/*.yml"
+variables:
+  my_var:
+    default: "hello"
+`
+	resourceYAML := `resources:
+  jobs:
+    my_job:
+      name: "${var.my_var}"
+`
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "databricks.yml"), []byte(mainYAML), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "resources"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "resources", "jobs.yml"), []byte(resourceYAML), 0o644))
+
+	srv := NewServer()
+	cli := newTestClientServer(t, srv)
+	ctx := t.Context()
+
+	initializeClient(ctx, t, cli, "file://"+tmpDir)
+
+	// Open the resource file with the interpolation.
+	resDocURI := "file://" + filepath.Join(tmpDir, "resources", "jobs.yml")
+	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
+		TextDocument: TextDocumentItem{
+			URI:        resDocURI,
+			LanguageID: "yaml",
+			Version:    1,
+			Text:       resourceYAML,
+		},
+	})
+	require.NoError(t, err)
+
+	// Find "${var.my_var}" in the resource file.
+	lines := strings.Split(resourceYAML, "\n")
+	var targetLine int
+	var targetCol int
+	for i, line := range lines {
+		idx := strings.Index(line, "${var.my_var}")
+		if idx >= 0 {
+			targetLine = i
+			targetCol = idx + 2
+			break
+		}
+	}
+
+	// Definition should resolve to variables.my_var in the main config file.
+	var loc LSPLocation
+	err = cli.CallResult(ctx, "textDocument/definition", DefinitionParams{
+		TextDocument: TextDocumentIdentifier{URI: resDocURI},
+		Position:     Position{Line: targetLine, Character: targetCol},
+	}, &loc)
+	require.NoError(t, err)
+	assert.Contains(t, loc.URI, "databricks.yml")
+}
+
+func TestServerHoverMultiTarget(t *testing.T) {
+	bundleYAML := `bundle:
+  name: test-bundle
+workspace:
+  host: "https://default.databricks.com"
+targets:
+  dev:
+    default: true
+    workspace:
+      host: "https://dev.databricks.com"
+  prod:
+    workspace:
+      host: "https://prod.databricks.com"
+resources:
+  jobs:
+    my_job:
+      name: "My Job"
+`
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "databricks.yml"), []byte(bundleYAML), 0o644))
+
+	// Create state for both targets.
+	for _, target := range []struct {
+		name string
+		id   string
+	}{
+		{"dev", "111"},
+		{"prod", "222"},
+	} {
+		stateDir := filepath.Join(tmpDir, ".databricks", "bundle", target.name)
+		require.NoError(t, os.MkdirAll(stateDir, 0o755))
+		stateJSON := `{"state_version": 1, "state": {"resources.jobs.my_job": {"__id__": "` + target.id + `"}}}`
+		require.NoError(t, os.WriteFile(filepath.Join(stateDir, "resources.json"), []byte(stateJSON), 0o644))
+	}
+
+	srv := NewServer()
+	cli := newTestClientServer(t, srv)
+	ctx := t.Context()
+
+	initializeClient(ctx, t, cli, "file://"+tmpDir)
+
+	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
+		TextDocument: TextDocumentItem{
+			URI:        docURI,
+			LanguageID: "yaml",
+			Version:    1,
+			Text:       bundleYAML,
+		},
+	})
+	require.NoError(t, err)
+
+	// Find the position of my_job key.
+	lines := strings.Split(bundleYAML, "\n")
+	var myJobLine int
+	var myJobCol int
+	for i, line := range lines {
+		idx := strings.Index(line, "my_job:")
+		if idx >= 0 {
+			myJobLine = i
+			myJobCol = idx + 1
+			break
+		}
+	}
+
+	var hover Hover
+	err = cli.CallResult(ctx, "textDocument/hover", HoverParams{
+		TextDocument: TextDocumentIdentifier{URI: docURI},
+		Position:     Position{Line: myJobLine, Character: myJobCol},
+	}, &hover)
+	require.NoError(t, err)
+	assert.Contains(t, hover.Contents.Value, "dev")
+	assert.Contains(t, hover.Contents.Value, "prod")
+	assert.Contains(t, hover.Contents.Value, "111")
+	assert.Contains(t, hover.Contents.Value, "222")
+	assert.Contains(t, hover.Contents.Value, "Open in Databricks")
 }

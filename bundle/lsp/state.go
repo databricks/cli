@@ -190,6 +190,35 @@ func LoadTarget(v dyn.Value) string {
 	return "default"
 }
 
+// LoadAllTargets returns all target names from the parsed config.
+func LoadAllTargets(v dyn.Value) []string {
+	targets := v.Get("targets")
+	if targets.Kind() != dyn.KindMap {
+		return nil
+	}
+	tm, ok := targets.AsMap()
+	if !ok {
+		return nil
+	}
+	var names []string
+	for _, pair := range tm.Pairs() {
+		names = append(names, pair.Key.MustString())
+	}
+	return names
+}
+
+// LoadTargetWorkspaceHost extracts workspace host from a specific target override,
+// falling back to the root-level workspace host.
+func LoadTargetWorkspaceHost(v dyn.Value, target string) string {
+	// Try target-specific override first.
+	host := v.Get("targets").Get(target).Get("workspace").Get("host")
+	if s, ok := host.AsString(); ok && !strings.Contains(s, "${") {
+		return s
+	}
+	// Fall back to root-level.
+	return LoadWorkspaceHost(v)
+}
+
 // BuildResourceURL constructs the workspace URL for a resource.
 func BuildResourceURL(host, resourceType, id string) string {
 	if host == "" || id == "" {
