@@ -145,8 +145,8 @@ func (sp *spinner) Close() {
 //
 //	sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 func (c *cmdIO) NewSpinner(ctx context.Context, opts ...SpinnerOption) *spinner {
-	// Don't show spinner if not interactive
-	if !c.capabilities.SupportsInteractive() {
+	// Don't show spinner if quiet or not interactive
+	if c.capabilities.quiet || !c.capabilities.SupportsInteractive() {
 		return &spinner{p: nil, c: c, ctx: ctx}
 	}
 

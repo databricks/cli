@@ -449,8 +449,19 @@ const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
 
 `
 
+// RenderDiagnostics renders diagnostics to stderr.
+// In quiet mode, only Error-severity diagnostics are rendered.
 func RenderDiagnostics(ctx context.Context, diags diag.Diagnostics) error {
 	c := fromContext(ctx)
+	if c.capabilities.quiet {
+		var errorsOnly diag.Diagnostics
+		for _, d := range diags {
+			if d.Severity == diag.Error {
+				errorsOnly = append(errorsOnly, d)
+			}
+		}
+		return renderDiagnostics(c.err, errorsOnly)
+	}
 	return renderDiagnostics(c.err, diags)
 }
 

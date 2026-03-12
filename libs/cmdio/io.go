@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,9 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/manifoldco/promptui"
 )
+
+// ErrNoInput is returned when an interactive prompt is attempted with --no-input set.
+var ErrNoInput = errors.New("prompting is disabled with --no-input")
 
 // cmdIO is the private instance, that is not supposed to be accessed
 // outside of `cmdio` package. Use the public package-level functions
@@ -77,9 +81,48 @@ func GetInteractiveMode(ctx context.Context) InteractiveMode {
 	return c.capabilities.InteractiveMode()
 }
 
+// SetQuiet enables quiet mode, suppressing non-essential output.
+func SetQuiet(ctx context.Context) {
+	c := fromContext(ctx)
+	c.capabilities.quiet = true
+}
+
+// IsQuiet returns true if quiet mode is enabled.
+func IsQuiet(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.quiet
+}
+
+// SetNoInput disables all interactive prompts.
+func SetNoInput(ctx context.Context) {
+	c := fromContext(ctx)
+	c.capabilities.noInput = true
+}
+
+// IsNoInput returns true if no-input mode is enabled.
+func IsNoInput(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.noInput
+}
+
+// SetYes enables auto-approval for all yes/no confirmation prompts.
+func SetYes(ctx context.Context) {
+	c := fromContext(ctx)
+	c.capabilities.yes = true
+}
+
+// IsYes returns true if yes mode is enabled.
+func IsYes(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.capabilities.yes
+}
+
 type Tuple struct{ Name, Id string }
 
 func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
+	if c.capabilities.noInput {
+		return "", ErrNoInput
+	}
 	if !c.capabilities.SupportsInteractive() {
 		return "", fmt.Errorf("expected to have %s", label)
 	}
@@ -129,6 +172,9 @@ func SelectOrdered(ctx context.Context, items []Tuple, label string) (id string,
 }
 
 func (c *cmdIO) Secret(label string) (value string, err error) {
+	if c.capabilities.noInput {
+		return "", ErrNoInput
+	}
 	prompt := (promptui.Prompt{
 		Label:       label,
 		Mask:        '*',
@@ -176,6 +222,9 @@ func Prompt(ctx context.Context) *promptui.Prompt {
 
 func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error) {
 	c := fromContext(ctx)
+	if c.capabilities.noInput {
+		return 0, "", ErrNoInput
+	}
 	prompt.Stdin = c.promptStdin()
 	prompt.Stdout = nopWriteCloser{c.err}
 	return prompt.Run()

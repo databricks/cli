@@ -10,9 +10,18 @@ import (
 )
 
 const envOutputFormat = "DATABRICKS_OUTPUT_FORMAT"
+const envQuiet = "DATABRICKS_QUIET"
+const envNoInput = "DATABRICKS_NO_INPUT"
+const envYes = "DATABRICKS_YES"
 
 type outputFlag struct {
 	output flags.Output
+}
+
+type interactionFlags struct {
+	quiet   bool
+	noInput bool
+	yes     bool
 }
 
 func initOutputFlag(cmd *cobra.Command) *outputFlag {
@@ -28,6 +37,37 @@ func initOutputFlag(cmd *cobra.Command) *outputFlag {
 
 	cmd.PersistentFlags().VarP(&f.output, "output", "o", "output type: text or json")
 	return &f
+}
+
+func initInteractionFlags(cmd *cobra.Command) *interactionFlags {
+	f := &interactionFlags{}
+
+	ctx := cmd.Context()
+
+	// Configure defaults from environment variables.
+	if v, ok := env.Lookup(ctx, envQuiet); ok && isTruthy(v) {
+		f.quiet = true
+	}
+	if v, ok := env.Lookup(ctx, envNoInput); ok && isTruthy(v) {
+		f.noInput = true
+	}
+	if v, ok := env.Lookup(ctx, envYes); ok && isTruthy(v) {
+		f.yes = true
+	}
+
+	cmd.PersistentFlags().BoolVarP(&f.quiet, "quiet", "q", f.quiet, "suppress non-essential output")
+	cmd.PersistentFlags().BoolVar(&f.noInput, "no-input", f.noInput, "disable interactive prompts")
+	cmd.PersistentFlags().BoolVarP(&f.yes, "yes", "y", f.yes, "auto-approve all yes/no prompts")
+	return f
+}
+
+// isTruthy returns true for common truthy string values.
+func isTruthy(v string) bool {
+	switch v {
+	case "1", "true", "TRUE", "yes", "YES":
+		return true
+	}
+	return false
 }
 
 func OutputType(cmd *cobra.Command) flags.Output {
@@ -51,4 +91,16 @@ func (f *outputFlag) initializeIO(ctx context.Context, cmd *cobra.Command) (cont
 	ctx = cmdio.InContext(ctx, cmdIO)
 	cmd.SetContext(ctx)
 	return ctx, nil
+}
+
+func (f *interactionFlags) applyToContext(ctx context.Context) {
+	if f.quiet {
+		cmdio.SetQuiet(ctx)
+	}
+	if f.noInput {
+		cmdio.SetNoInput(ctx)
+	}
+	if f.yes {
+		cmdio.SetYes(ctx)
+	}
 }
