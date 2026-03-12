@@ -5,13 +5,23 @@ add_repl.py $NEW_JOB_ID NEW_JOB_ID
 # Update the databricks.yml with the actual job ID
 update_file.py databricks.yml 'PLACEHOLDER_JOB_ID' "$NEW_JOB_ID"
 
-# Run plan - should show import_and_update action (name differs from config)
+# Run plan - should show bind action (name differs from config)
 trace $CLI bundle plan
 
 # Deploy with auto-approve
 trace $CLI bundle deploy --auto-approve
 
 # Verify the job was updated
+trace $CLI jobs get $NEW_JOB_ID | jq -r .settings.name
+
+# Now update the job name again in the config and deploy again.
+# This time the action should be "update", not "bind", since the resource
+# is already bound in state.
+update_file.py databricks.yml 'updated-job-name' 'second-update-name'
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+
+# Verify the job was updated with the second name
 trace $CLI jobs get $NEW_JOB_ID | jq -r .settings.name
 
 # Cleanup
