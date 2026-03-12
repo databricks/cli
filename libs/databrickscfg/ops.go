@@ -95,6 +95,35 @@ func AuthCredentialKeys() []string {
 	return keys
 }
 
+func writeConfigFile(ctx context.Context, configFile *config.File) error {
+	section := configFile.Section(ini.DefaultSection)
+	if len(section.Keys()) == 0 && section.Comment == "" {
+		section.Comment = defaultComment
+	}
+	if err := backupConfigFile(ctx, configFile); err != nil {
+		return err
+	}
+	return configFile.SaveTo(configFile.Path())
+}
+
+func backupConfigFile(ctx context.Context, configFile *config.File) error {
+	orig, backupErr := os.ReadFile(configFile.Path())
+	if len(orig) > 0 && backupErr == nil {
+		log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
+		err := os.WriteFile(configFile.Path()+".bak", orig, fileMode)
+		if err != nil {
+			return fmt.Errorf("backup: %w", err)
+		}
+		log.Infof(ctx, "Overwriting %s", configFile.Path())
+	} else if backupErr != nil {
+		log.Warnf(ctx, "Failed to backup %s: %v. Proceeding to save",
+			configFile.Path(), backupErr)
+	} else {
+		log.Infof(ctx, "Saving %s", configFile.Path())
+	}
+	return nil
+}
+
 // SaveToProfile merges the provided config into a .databrickscfg profile.
 // Non-zero fields in cfg overwrite existing values. Existing keys not
 // mentioned in cfg are preserved. Keys listed in clearKeys are explicitly
@@ -130,27 +159,36 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 		key.SetValue(attr.GetString(cfg))
 	}
 
-	// Add a comment to the default section if it's empty.
-	section = configFile.Section(ini.DefaultSection)
-	if len(section.Keys()) == 0 && section.Comment == "" {
-		section.Comment = defaultComment
+	return writeConfigFile(ctx, configFile)
+}
+
+// DeleteProfile removes the named profile section from the databrickscfg file.
+// It creates a backup of the original file before modifying it.
+func DeleteProfile(ctx context.Context, profileName, configFilePath string) error {
+	configFile, err := config.LoadFile(configFilePath)
+	if err != nil {
+		return fmt.Errorf("cannot load config file %s: %w", configFilePath, err)
 	}
 
-	orig, backupErr := os.ReadFile(configFile.Path())
-	if len(orig) > 0 && backupErr == nil {
-		log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
-		err = os.WriteFile(configFile.Path()+".bak", orig, fileMode)
-		if err != nil {
-			return fmt.Errorf("backup: %w", err)
-		}
-		log.Infof(ctx, "Overwriting %s", configFile.Path())
-	} else if backupErr != nil {
-		log.Warnf(ctx, "Failed to backup %s: %v. Proceeding to save",
-			configFile.Path(), backupErr)
-	} else {
-		log.Infof(ctx, "Saving %s", configFile.Path())
+	// If the profile doesn't exist, return an error to avoid
+	// creating a backup file with the same content as the original file.
+	if _, err := configFile.SectionsByName(profileName); err != nil {
+		return fmt.Errorf("profile %q not found: %w", profileName, err)
 	}
-	return configFile.SaveTo(configFile.Path())
+
+	// If trying to delete the default section, clear its keys.
+	// This ensures that the default section is always present at the top of the file.
+	if profileName == ini.DefaultSection {
+		section := configFile.Section(ini.DefaultSection)
+
+		for _, key := range section.Keys() {
+			section.DeleteKey(key.Name())
+		}
+	} else {
+		configFile.DeleteSection(profileName)
+	}
+
+	return writeConfigFile(ctx, configFile)
 }
 
 func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {

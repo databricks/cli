@@ -1,0 +1,28 @@
+sethome "./home"
+
+cat > "./home/.databrickscfg" <<'EOF'
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[dev]
+host = https://dev.cloud.databricks.com
+token = dev-pat-token
+EOF
+
+title "Initial config\n"
+cat "./home/.databrickscfg"
+
+title "Logout without --delete — should report no changes for non-U2M profile"
+trace $CLI auth logout --profile dev --force
+
+title "Config after logout — profile should be unchanged\n"
+cat "./home/.databrickscfg"
+
+title "Logout with --delete — should delete the profile"
+trace $CLI auth logout --profile dev --force --delete
+
+title "Backup file should exist\n"
+assert_backup_exists
+
+title "Config after delete — profile should be removed\n"
+cat "./home/.databrickscfg"
