@@ -44,6 +44,7 @@ type queryOutputMode int
 
 const (
 	queryOutputModeJSON queryOutputMode = iota
+	queryOutputModeCSV
 	queryOutputModeStaticTable
 	queryOutputModeInteractiveTable
 )
@@ -69,6 +70,7 @@ func selectQueryOutputMode(outputType flags.Output, stdoutInteractive, promptSup
 func newQueryCmd() *cobra.Command {
 	var warehouseID string
 	var filePath string
+	var format string
 
 	cmd := &cobra.Command{
 		Use:   "query [SQL | file.sql]",
@@ -83,15 +85,21 @@ The command auto-detects an available warehouse unless --warehouse is set
 or the DATABRICKS_WAREHOUSE_ID environment variable is configured.
 
 Output is JSON in non-interactive contexts. In interactive terminals it renders
-tables, and large results open an interactive table browser.`,
+tables, and large results open an interactive table browser. Use --format csv
+to export results as CSV.`,
 		Example: `  databricks experimental aitools tools query "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --warehouse abc123 "SELECT 1"
   databricks experimental aitools tools query --file report.sql
   databricks experimental aitools tools query report.sql
+  databricks experimental aitools tools query --format csv "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   echo "SELECT 1" | databricks experimental aitools tools query`,
 		Args:    cobra.MaximumNArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if format != "" && format != "csv" {
+				return fmt.Errorf("unsupported format %q, supported values: csv", format)
+			}
+
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 
@@ -121,6 +129,11 @@ tables, and large results open an interactive table browser.`,
 				return nil
 			}
 
+			// CSV format bypasses the normal output mode selection.
+			if format == "csv" {
+				return renderCSV(cmd.OutOrStdout(), columns, rows)
+			}
+
 			// Output format depends on stdout capabilities.
 			// Interactive table browsing also requires prompt-capable stdin.
 			stdoutInteractive := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
@@ -139,6 +152,7 @@ tables, and large results open an interactive table browser.`,
 
 	cmd.Flags().StringVarP(&warehouseID, "warehouse", "w", "", "SQL warehouse ID to use for execution")
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to a SQL file to execute")
+	cmd.Flags().StringVar(&format, "format", "", "Output format: csv (default uses --output flag behavior)")
 
 	return cmd
 }

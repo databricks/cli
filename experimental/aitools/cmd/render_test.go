@@ -93,3 +93,52 @@ func TestRenderStaticTableEmpty(t *testing.T) {
 	assert.Contains(t, output, "id")
 	assert.Contains(t, output, "0 rows")
 }
+
+func TestRenderCSVBasic(t *testing.T) {
+	var buf bytes.Buffer
+	columns := []string{"id", "name", "city"}
+	rows := [][]string{
+		{"1", "Alice", "New York"},
+		{"2", "Bob", "London"},
+	}
+
+	err := renderCSV(&buf, columns, rows)
+	require.NoError(t, err)
+	assert.Equal(t, "id,name,city\n1,Alice,New York\n2,Bob,London\n", buf.String())
+}
+
+func TestRenderCSVSpecialCharacters(t *testing.T) {
+	var buf bytes.Buffer
+	columns := []string{"name", "description"}
+	rows := [][]string{
+		{"Alice", "has a comma, here"},
+		{"Bob", `has "quotes" here`},
+		{"Carol", "has a\nnewline"},
+	}
+
+	err := renderCSV(&buf, columns, rows)
+	require.NoError(t, err)
+	assert.Equal(t, "name,description\nAlice,\"has a comma, here\"\nBob,\"has \"\"quotes\"\" here\"\nCarol,\"has a\nnewline\"\n", buf.String())
+}
+
+func TestRenderCSVEmptyResultSet(t *testing.T) {
+	var buf bytes.Buffer
+	columns := []string{"id", "name"}
+	var rows [][]string
+
+	err := renderCSV(&buf, columns, rows)
+	require.NoError(t, err)
+	assert.Equal(t, "id,name\n", buf.String())
+}
+
+func TestRenderCSVShortRows(t *testing.T) {
+	var buf bytes.Buffer
+	columns := []string{"a", "b", "c"}
+	rows := [][]string{
+		{"1"},
+	}
+
+	err := renderCSV(&buf, columns, rows)
+	require.NoError(t, err)
+	assert.Equal(t, "a,b,c\n1,,\n", buf.String())
+}
