@@ -44,6 +44,8 @@ linters:
           msg: Use cmdio.IsPromptSupported(ctx) to check for a TTY.
         - pattern: 'os\.UserHomeDir'
           msg: Use env.UserHomeDir(ctx) from libs/env instead.
+        - pattern: 'os\.Getenv'
+          msg: Use env.Get(ctx) from the libs/env package instead of os.Getenv.
       analyze-types: true
     copyloopvar:
       check-alias: true
@@ -121,6 +123,10 @@ linters:
       - path: bundle/direct/dresources/.*_test.go
         linters:
           - exhaustruct
+      - text: "Use env\\.Get"
+        path: "_test\\.go$"
+        linters:
+          - forbidigo
       # TODO: remove these exceptions by moving the dependency out of experimental/.
       - path: cmd/apps/init.go
         linters:

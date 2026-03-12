@@ -132,8 +132,8 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.ModelServingEndpointPermission{Level: "CAN_QUERY", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.DashboardPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.DashboardPermission{Level: "CAN_READ", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission{Level: "CAN_READ", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.Apps["app_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_MANAGE", UserName: "TestUser"})

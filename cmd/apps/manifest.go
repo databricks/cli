@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/apps/manifest"
+	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +17,7 @@ import (
 func runManifestOnly(ctx context.Context, templatePath, branch, version string) error {
 	templateSrc := templatePath
 	if templateSrc == "" {
-		templateSrc = os.Getenv(templatePathEnvVar)
+		templateSrc = env.Get(ctx, templatePathEnvVar)
 	}
 	gitRef := branch
 	usingDefaultTemplate := templateSrc == ""

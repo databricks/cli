@@ -9,7 +9,7 @@ import (
 
 // GetEnvOrSkipTest proceeds with test only with that env variable.
 func GetEnvOrSkipTest(t TestingT, name string) string {
-	value := os.Getenv(name)
+	value := os.Getenv(name) //nolint:forbidigo // import cycle: libs/env tests import internal/testutil
 	if value == "" {
 		t.Skipf("Environment variable %s is missing", name)
 	}
