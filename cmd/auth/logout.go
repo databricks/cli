@@ -1,3 +1,18 @@
+// The auth logout command was implemented across three stacked PRs that were
+// inadvertently squashed into a single commit cb3c326 (titled after #4647 only):
+//
+//   - #4613 (7c5707a..22d250f): core logout command with --profile, --force,
+//     --delete flags, token cache cleanup, and DeleteProfile in libs/databrickscfg/ops.go.
+//     https://github.com/databricks/cli/pull/4613
+//
+//   - #4616 (5a8c9d8..e5a1d88): interactive profile picker when --profile is
+//     omitted in an interactive terminal.
+//     https://github.com/databricks/cli/pull/4616
+//
+//   - #4647 (fdeef96..51f14b5): extract shared SelectProfile helper, deduplicate
+//     profile pickers across auth logout, auth token, cmd/root/auth.go, cmd/root/bundle.go.
+//     https://github.com/databricks/cli/pull/4647
+
 package auth
 
 import (
@@ -28,35 +43,36 @@ You will need to run {{ "databricks auth login" | bold }} to re-authenticate.
 
 func newLogoutCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "logout",
-		Short:  "Log out of a Databricks profile",
-		Hidden: true,
-		Long: `Log out of a Databricks profile.
+		Use:   "logout",
+		Short: "Log out of a Databricks profile",
+		Long: `Log out of a Databricks profile by clearing its cached OAuth tokens. You
+will need to run "databricks auth login" to re-authenticate. The profile
+remains in the configuration file (~/.databrickscfg by default) unless
+you also specify --delete.
 
-This command clears any cached OAuth tokens for the specified profile so
-that the next CLI invocation requires re-authentication. The profile
-entry in ~/.databrickscfg is left intact unless --delete is also specified.
+This behavior applies only to profiles created with "databricks auth login"
+(auth_type set to "databricks-cli"). Profiles that use other authentication
+methods, such as personal access tokens or machine-to-machine credentials, do
+not store cached OAuth tokens, so there is nothing to clear. If multiple
+profiles share the same cached token, the command removes only the selected
+profile's cache entry and preserves the shared token.
 
-This command requires a profile to be specified (using --profile) or an
-interactive terminal. If you omit --profile and run in an interactive
-terminal, you'll be shown a profile picker. In a non-interactive
-environment (e.g. CI/CD), omitting --profile is an error.
+Command behavior:
 
 1. If you specify --profile, the command logs out of that profile. In an
-   interactive terminal you'll be asked to confirm unless --force is set.
+   interactive terminal, it asks for confirmation unless you also specify
+   --force.
 
-2. If you omit --profile in an interactive terminal, you'll be shown
-   an interactive picker listing all profiles from your configuration file.
-   You can search by profile name, host, or account ID. After selecting a
-   profile, you'll be asked to confirm unless --force is specified.
+2. If you omit --profile in an interactive terminal, the command shows a
+   searchable profile picker. You can search by profile name, host, or
+   account ID. After you select a profile, the command asks for confirmation
+   unless you also specify --force.
 
-3. If you omit --profile in a non-interactive environment (e.g. CI/CD pipeline),
-   the command will fail with an error asking you to specify --profile.
+3. If you omit --profile in a non-interactive environment, the command fails
+   and asks you to specify --profile.
 
-4. Use --force to skip the confirmation prompt. This is required when
-   running in non-interactive environments.
-
-5. Use --delete to also remove the selected profile from ~/.databrickscfg.`,
+4. In a non-interactive environment, use --profile together with --force to
+   skip confirmation.`,
 	}
 
 	var force bool
