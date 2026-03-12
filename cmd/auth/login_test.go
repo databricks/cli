@@ -1,13 +1,16 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,11 +18,30 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
+
+// logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
+type logBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (lb *logBuffer) Write(p []byte) (int, error) {
+	lb.mu.Lock()
+	defer lb.mu.Unlock()
+	return lb.buf.Write(p)
+}
+
+func (lb *logBuffer) String() string {
+	lb.mu.Lock()
+	defer lb.mu.Unlock()
+	return lb.buf.String()
+}
 
 func loadTestProfile(t *testing.T, ctx context.Context, profileName string) *profile.Profile {
 	profile, err := loadProfileByName(ctx, profileName, profile.DefaultProfiler)
@@ -443,4 +465,123 @@ func TestIntrospectToken_SuccessExtractsMetadata(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "acc-12345", result.AccountID)
 	assert.Equal(t, "2548836972759138", result.WorkspaceID)
+}
+
+func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	originalIntrospectToken := introspectToken
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+		introspectToken = originalIntrospectToken
+	})
+
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+		if err != nil {
+			return nil, err
+		}
+		arg.SetDiscoveredHost("https://workspace.example.com")
+		return arg, nil
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	introspectToken = func(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
+		return &auth.IntrospectionResult{
+			AccountID:   "new-account-id",
+			WorkspaceID: "12345",
+		}, nil
+	}
+
+	// Set up a logger that captures log records to verify the warning.
+	var logBuf logBuffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	ctx = log.NewContext(ctx, logger)
+
+	existingProfile := &profile.Profile{
+		Name:      "DISCOVERY",
+		AccountID: "old-account-id",
+	}
+
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	require.NoError(t, err)
+
+	// Verify warning about mismatched account IDs was logged.
+	assert.Contains(t, logBuf.String(), "new-account-id")
+	assert.Contains(t, logBuf.String(), "old-account-id")
+
+	// Verify the profile was saved without account_id (not overwritten).
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "https://workspace.example.com", savedProfile.Host)
+	assert.Equal(t, "12345", savedProfile.WorkspaceID)
+}
+
+func TestDiscoveryLogin_NoWarningWhenAccountIDsMatch(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	originalIntrospectToken := introspectToken
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+		introspectToken = originalIntrospectToken
+	})
+
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+		if err != nil {
+			return nil, err
+		}
+		arg.SetDiscoveredHost("https://workspace.example.com")
+		return arg, nil
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	introspectToken = func(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
+		return &auth.IntrospectionResult{
+			AccountID:   "same-account-id",
+			WorkspaceID: "12345",
+		}, nil
+	}
+
+	var logBuf logBuffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	ctx = log.NewContext(ctx, logger)
+
+	existingProfile := &profile.Profile{
+		Name:      "DISCOVERY",
+		AccountID: "same-account-id",
+	}
+
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	require.NoError(t, err)
+
+	// No warning should be logged when account IDs match.
+	assert.Empty(t, logBuf.String())
 }
