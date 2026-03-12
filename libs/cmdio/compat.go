@@ -15,14 +15,19 @@ Temporary compatibility layer for the progress logger interfaces.
 
 // Log is a compatibility layer for the progress logger interfaces.
 // It writes the string representation of the stringer to the error writer.
+// Suppressed in quiet mode.
 func Log(ctx context.Context, str fmt.Stringer) {
 	LogString(ctx, str.String())
 }
 
 // LogString is a compatibility layer for the progress logger interfaces.
 // It writes the string to the error writer.
+// Suppressed in quiet mode.
 func LogString(ctx context.Context, str string) {
 	c := fromContext(ctx)
+	if c.capabilities.quiet {
+		return
+	}
 	_, _ = io.WriteString(c.err, str+"\n")
 }
 
@@ -55,8 +60,17 @@ func readLine(r io.Reader) (string, error) {
 
 // Ask is a compatibility layer for the progress logger interfaces.
 // It prompts the user with a question and returns the answer.
+// When --no-input is set, returns the default value if one is provided,
+// otherwise returns ErrNoInput.
 func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 	c := fromContext(ctx)
+
+	if c.capabilities.noInput {
+		if defaultVal != "" {
+			return defaultVal, nil
+		}
+		return "", ErrNoInput
+	}
 
 	// Add default value to question prompt.
 	if defaultVal != "" {
@@ -86,7 +100,17 @@ func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 
 // AskYesOrNo is a compatibility layer for the progress logger interfaces.
 // It prompts the user with a question and returns the answer.
+// Precedence: --yes (returns true) > --no-input (returns ErrNoInput) > normal prompting.
 func AskYesOrNo(ctx context.Context, question string) (bool, error) {
+	c := fromContext(ctx)
+
+	if c.capabilities.yes {
+		return true, nil
+	}
+	if c.capabilities.noInput {
+		return false, ErrNoInput
+	}
+
 	ans, err := Ask(ctx, question+" [y/n]", "")
 	if err != nil {
 		return false, err
@@ -105,8 +129,13 @@ func splitAtLastNewLine(s string) (string, string) {
 
 // AskSelect is a compatibility layer for the progress logger interfaces.
 // It prompts the user with a question and returns the answer.
+// Returns ErrNoInput when --no-input is set.
 func AskSelect(ctx context.Context, question string, choices []string) (string, error) {
 	c := fromContext(ctx)
+
+	if c.capabilities.noInput {
+		return "", ErrNoInput
+	}
 
 	// Promptui does not support multiline prompts. So we split the question.
 	first, last := splitAtLastNewLine(question)

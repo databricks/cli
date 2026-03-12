@@ -122,8 +122,8 @@ func (sp *spinner) Close() {
 //	defer sp.Close()
 //	sp.Update("processing files")
 func (c *cmdIO) NewSpinner(ctx context.Context) *spinner {
-	// Don't show spinner if not interactive
-	if !c.capabilities.SupportsInteractive() {
+	// Don't show spinner if quiet or not interactive
+	if c.capabilities.quiet || !c.capabilities.SupportsInteractive() {
 		return &spinner{p: nil, c: c, ctx: ctx}
 	}
 
