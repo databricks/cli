@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle validate -o json
-Warning: invalid variable reference ${resources.volumes.bar.bad..syntax} at position 0: invalid path
+Warning: invalid variable reference ${resources.volumes.bar.bad..syntax}: invalid path
   in databricks.yml:11:21
 
 {

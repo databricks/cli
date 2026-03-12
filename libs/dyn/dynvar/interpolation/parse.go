@@ -1,6 +1,7 @@
 package interpolation
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -28,11 +29,13 @@ const (
 	closeBrace = '}'
 )
 
-// pathPattern validates the content inside ${...}. Each segment matches
-// baseVarDef from libs/dyn/dynvar/ref.go: [a-zA-Z]+([-_]*[a-zA-Z0-9]+)*
-var pathPattern = regexp.MustCompile(
-	`^[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*(\[[0-9]+\])*)*(\[[0-9]+\])*$`,
-)
+// keyPattern validates a single key segment in a variable path.
+// Matches: [a-zA-Z]+([-_]*[a-zA-Z0-9]+)*
+// Examples: "foo", "my-job", "a_b_c", "abc123"
+var keyPattern = regexp.MustCompile(`^[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*$`)
+
+// indexPattern matches one or more [N] index suffixes.
+var indexPattern = regexp.MustCompile(`^(\[[0-9]+\])+$`)
 
 // Parse parses a string that may contain ${...} variable references.
 // It returns a slice of tokens representing literal text and variable references.
@@ -140,9 +143,9 @@ func Parse(s string) ([]Token, error) {
 				)
 			}
 
-			if !pathPattern.MatchString(path) {
+			if err := validatePath(path); err != nil {
 				return nil, fmt.Errorf(
-					"invalid variable reference ${%s} at position %d: invalid path", path, refStart,
+					"invalid variable reference ${%s}: %w", path, err,
 				)
 			}
 
@@ -167,4 +170,38 @@ func Parse(s string) ([]Token, error) {
 
 	flushLiteral(i)
 	return tokens, nil
+}
+
+// validatePath validates the path inside a ${...} reference by splitting on
+// '.' and validating each segment individually.
+func validatePath(path string) error {
+	segments := strings.Split(path, ".")
+	for _, seg := range segments {
+		if seg == "" {
+			return errors.New("invalid path")
+		}
+
+		// Strip trailing [N] index suffixes to get the key part.
+		key, idx := splitKeyAndIndex(seg)
+
+		if key == "" {
+			return fmt.Errorf("invalid key %q", seg)
+		}
+		if !keyPattern.MatchString(key) {
+			return fmt.Errorf("invalid key %q", key)
+		}
+		if idx != "" && !indexPattern.MatchString(idx) {
+			return fmt.Errorf("invalid index in %q", seg)
+		}
+	}
+	return nil
+}
+
+// splitKeyAndIndex splits "foo[0][1]" into ("foo", "[0][1]").
+func splitKeyAndIndex(seg string) (string, string) {
+	i := strings.IndexByte(seg, '[')
+	if i < 0 {
+		return seg, ""
+	}
+	return seg[:i], seg[i:]
 }

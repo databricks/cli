@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle validate
-Warning: invalid variable reference ${foo.bar-} at position 0: invalid path
+Warning: invalid variable reference ${foo.bar-}: invalid key "bar-"
   in databricks.yml:2:9
 
 Name: ${foo.bar-}
