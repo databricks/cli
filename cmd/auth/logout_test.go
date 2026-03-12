@@ -51,6 +51,8 @@ var logoutTestTokensCacheConfig = map[string]*oauth2.Token{
 	"https://my-unique-workspace.cloud.databricks.com":           {AccessToken: "unique-workspace-host-token"},
 	"https://accounts.cloud.databricks.com/oidc/accounts/abc123": {AccessToken: "account-host-token"},
 	"https://unified.cloud.databricks.com/oidc/accounts/def456":  {AccessToken: "unified-host-token"},
+	"my-m2m":                              {AccessToken: "m2m-service-token"},
+	"https://my-m2m.cloud.databricks.com": {AccessToken: "m2m-host-token"},
 }
 
 func copyTokens(src map[string]*oauth2.Token) map[string]*oauth2.Token {
@@ -74,6 +76,7 @@ func TestLogout(t *testing.T) {
 		profileName   string
 		hostBasedKey  string
 		isSharedKey   bool
+		isNonU2M      bool // true for profiles that are not created by login (PAT, M2M, etc.)
 		force         bool
 		deleteProfile bool
 		wantErr       string
@@ -151,8 +154,10 @@ func TestLogout(t *testing.T) {
 			deleteProfile: true,
 		},
 		{
-			name:          "do not delete m2m profile",
+			name:          "do not delete m2m profile tokens",
 			profileName:   "my-m2m",
+			hostBasedKey:  "https://my-m2m.cloud.databricks.com",
+			isNonU2M:      true,
 			force:         true,
 			deleteProfile: false,
 		},
@@ -191,12 +196,18 @@ func TestLogout(t *testing.T) {
 				assert.NotEmpty(t, profiles, "expected profile %q to still exist", tc.profileName)
 			}
 
-			// Verify tokens were cleaned up.
-			assert.Nil(t, tokenCache.Tokens[tc.profileName], "expected token %q to be removed", tc.profileName)
-			if tc.isSharedKey {
-				assert.NotNil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be preserved", tc.hostBasedKey)
+			// Verify token cache state.
+			if tc.isNonU2M {
+				// Non-U2M profiles should not touch the token cache at all.
+				assert.NotNil(t, tokenCache.Tokens[tc.profileName], "expected token %q to be preserved for non-U2M profile", tc.profileName)
+				assert.NotNil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be preserved for non-U2M profile", tc.hostBasedKey)
 			} else {
-				assert.Nil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be removed", tc.hostBasedKey)
+				assert.Nil(t, tokenCache.Tokens[tc.profileName], "expected token %q to be removed", tc.profileName)
+				if tc.isSharedKey {
+					assert.NotNil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be preserved", tc.hostBasedKey)
+				} else {
+					assert.Nil(t, tokenCache.Tokens[tc.hostBasedKey], "expected token %q to be removed", tc.hostBasedKey)
+				}
 			}
 		})
 	}

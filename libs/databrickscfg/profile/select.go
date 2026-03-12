@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/manifoldco/promptui"
@@ -76,11 +77,22 @@ func SelectProfile(ctx context.Context, cfg SelectConfig) (string, error) {
 		cfg.SelectedTemplate = defaultSelectedTemplate
 	}
 
+	// Build the searcher from the items slice directly so it stays coupled
+	// to the Items list passed to promptui (rather than the original Profiles
+	// slice which could diverge if items were ever filtered or reordered).
+	searcher := func(input string, index int) bool {
+		input = strings.ToLower(input)
+		p := items[index].Profile
+		return strings.Contains(strings.ToLower(p.Name), input) ||
+			strings.Contains(strings.ToLower(p.Host), input) ||
+			strings.Contains(strings.ToLower(p.AccountID), input)
+	}
+
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
 		Label:             cfg.Label,
 		Items:             items,
 		StartInSearchMode: cfg.StartInSearchMode,
-		Searcher:          cfg.Profiles.SearchCaseInsensitive,
+		Searcher:          searcher,
 		Templates: &promptui.SelectTemplates{
 			Label:    "{{ . | faint }}",
 			Active:   cfg.ActiveTemplate,

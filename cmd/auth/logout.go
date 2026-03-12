@@ -230,8 +230,11 @@ func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Pr
 		return fmt.Errorf("failed to get host-based cache key for profile %q", p.Name)
 	}
 
+	// Only preserve the host-keyed token if another U2M profile shares the
+	// same host. Non-U2M profiles (PAT, M2M, etc.) never use the OAuth
+	// token cache, so they should not prevent cleanup.
 	otherProfiles, err := profiler.LoadProfiles(ctx, func(candidate profile.Profile) bool {
-		return candidate.Name != p.Name && matchFn(candidate)
+		return candidate.Name != p.Name && candidate.AuthType == "databricks-cli" && matchFn(candidate)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to load profiles for host cache key %q: %w", hostCacheKey, err)
