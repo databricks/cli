@@ -165,31 +165,3 @@ func (c *cmdIO) NewSpinner(ctx context.Context) *spinner {
 
 	return sp
 }
-
-// Spinner returns a channel for updating spinner status messages.
-// Send messages to update the suffix, close the channel to stop.
-// The spinner runs until the channel is closed or context is cancelled.
-func (c *cmdIO) Spinner(ctx context.Context) chan string {
-	updates := make(chan string)
-	sp := c.NewSpinner(ctx)
-
-	// Bridge goroutine: channel -> spinner.Update()
-	go func() {
-		defer sp.Close()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case msg, ok := <-updates:
-				if !ok {
-					// Channel closed
-					return
-				}
-				sp.Update(msg)
-			}
-		}
-	}()
-
-	return updates
-}

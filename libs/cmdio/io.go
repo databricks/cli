@@ -181,11 +181,6 @@ func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error
 	return prompt.Run()
 }
 
-func Spinner(ctx context.Context) chan string {
-	c := fromContext(ctx)
-	return c.Spinner(ctx)
-}
-
 // NewSpinner creates a new spinner for displaying progress indicators.
 // The returned spinner should be closed when done to release resources.
 //
