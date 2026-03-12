@@ -83,6 +83,15 @@ type BundleDeployExperimental struct {
 
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
+
+	// Per-resource config sizes in bytes, one entry per resource instance.
+	// Sorted in ascending order.
+	ResourceStateSizeBytes []int64 `json:"resource_state_size_bytes,omitempty"`
+
+	// Per-resource-type deployment action counts.
+	// Keys are "{resource_type}.{action}" (e.g., "jobs.create", "pipelines.update").
+	// Values are the number of resources with that action.
+	ResourceActionCounts []IntMapEntry `json:"resource_action_counts,omitempty"`
 }
 
 type BoolMapEntry struct {
