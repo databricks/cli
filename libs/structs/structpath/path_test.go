@@ -883,6 +883,136 @@ func TestHasPrefix(t *testing.T) {
 	}
 }
 
+func TestHasPatternPrefix(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		pattern  string
+		expected bool
+	}{
+		{
+			name:     "empty pattern",
+			path:     "a.b.c",
+			pattern:  "",
+			expected: true,
+		},
+		{
+			name:     "empty path",
+			path:     "",
+			pattern:  "a",
+			expected: false,
+		},
+		{
+			name:     "exact match no wildcards",
+			path:     "config",
+			pattern:  "config",
+			expected: true,
+		},
+		{
+			name:     "simple prefix no wildcards",
+			path:     "a.b",
+			pattern:  "a",
+			expected: true,
+		},
+
+		// .* wildcard
+		{
+			name:     "dot star matches field",
+			path:     "tasks.my_task.notebook_task",
+			pattern:  "tasks.*.notebook_task",
+			expected: true,
+		},
+		{
+			name:     "dot star matches any field",
+			path:     "tasks.other.notebook_task",
+			pattern:  "tasks.*.notebook_task",
+			expected: true,
+		},
+		{
+			name:     "dot star matches index",
+			path:     "items[0].name",
+			pattern:  "items.*.name",
+			expected: true,
+		},
+		{
+			name:     "dot star as prefix",
+			path:     "items[0].name.value",
+			pattern:  "items.*",
+			expected: true,
+		},
+
+		// [*] wildcard
+		{
+			name:     "bracket star matches index",
+			path:     "items[0].name",
+			pattern:  "items[*].name",
+			expected: true,
+		},
+		{
+			name:     "bracket star matches field",
+			path:     "tasks.my_task.notebook_task",
+			pattern:  "tasks[*].notebook_task",
+			expected: true,
+		},
+		{
+			name:     "bracket star matches key-value",
+			path:     "tasks[task_key='my_task'].notebook_task",
+			pattern:  "tasks[*].notebook_task",
+			expected: true,
+		},
+
+		// Multiple wildcards
+		{
+			name:     "multiple wildcards",
+			path:     "tasks[0].params[1].value",
+			pattern:  "tasks[*].params[*].value",
+			expected: true,
+		},
+
+		// Non-matches
+		{
+			name:     "wildcard but wrong suffix",
+			path:     "tasks[0].notebook_task",
+			pattern:  "tasks[*].spark_task",
+			expected: false,
+		},
+		{
+			name:     "pattern longer than path",
+			path:     "tasks[0]",
+			pattern:  "tasks[*].notebook_task",
+			expected: false,
+		},
+		{
+			name:     "no wildcard mismatch",
+			path:     "a.b.c",
+			pattern:  "a.x.c",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, err := ParsePath(tt.path)
+			require.NoError(t, err)
+
+			pattern, err := ParsePattern(tt.pattern)
+			require.NoError(t, err)
+
+			result := path.HasPatternPrefix(pattern)
+			assert.Equal(t, tt.expected, result, "path.HasPatternPrefix(pattern) where path=%q, pattern=%q", tt.path, tt.pattern)
+
+			// If the full pattern matches, every prefix of it must also match.
+			if tt.expected {
+				for n := range pattern.Len() + 1 {
+					prefix := pattern.Prefix(n)
+					assert.True(t, path.HasPatternPrefix(prefix),
+						"path=%q pattern=%q prefix_len=%d prefix=%s", tt.path, tt.pattern, n, prefix)
+				}
+			}
+		})
+	}
+}
+
 func TestPathNodeYAMLMarshal(t *testing.T) {
 	tests := []struct {
 		name     string

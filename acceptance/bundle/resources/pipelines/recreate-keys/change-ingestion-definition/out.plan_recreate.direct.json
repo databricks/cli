@@ -69,7 +69,7 @@
         },
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "dbfs:/pipelines/[MY_ID]"
         }
       }

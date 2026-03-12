@@ -57,7 +57,7 @@ func TestTemplateInMemoryFilePersistToDisk(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.SkipNow()
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testInMemoryFile(t, ctx, 0o755)
 }
 
@@ -67,7 +67,7 @@ func TestTemplateInMemoryFilePersistToDiskForWindows(t *testing.T) {
 	}
 	// we have separate tests for windows because of differences in valid
 	// fs.FileMode values we can use for different operating systems.
-	ctx := context.Background()
+	ctx := t.Context()
 	testInMemoryFile(t, ctx, 0o666)
 }
 
@@ -75,7 +75,7 @@ func TestTemplateCopyFilePersistToDisk(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.SkipNow()
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	testCopyFile(t, ctx, 0o644)
 }
 
@@ -85,6 +85,6 @@ func TestTemplateCopyFilePersistToDiskForWindows(t *testing.T) {
 	}
 	// we have separate tests for windows because of differences in valid
 	// fs.FileMode values we can use for different operating systems.
-	ctx := context.Background()
+	ctx := t.Context()
 	testCopyFile(t, ctx, 0o666)
 }

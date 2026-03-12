@@ -112,9 +112,9 @@ func CreateArchive(archiveDir, binDir, repoRoot string) error {
 
 		// TODO: Serverless clusters do not support arm64 yet.
 		// Enable ARM64 once serverless clusters support it.
-		// goDownloader{arch: "arm64", binDir: binDir},
-		// uvDownloader{arch: "arm64", binDir: binDir},
-		// jqDownloader{arch: "arm64", binDir: binDir},
+		// GoDownloader{Arch: "arm64", BinDir: binDir, RepoRoot: repoRoot},
+		// UvDownloader{Arch: "arm64", BinDir: binDir},
+		// JqDownloader{Arch: "arm64", BinDir: binDir},
 	}
 
 	for _, downloader := range downloaders {
@@ -135,7 +135,7 @@ func CreateArchive(archiveDir, binDir, repoRoot string) error {
 	}
 
 	totalFiles := len(gitFiles) + len(binFiles)
-	fmt.Printf("Found %d git-tracked files and %d downloaded files (%d total)\n",
+	logf("Found %d git-tracked files and %d downloaded files (%d total)\n",
 		len(gitFiles), len(binFiles), totalFiles)
 
 	// Create archive directory if it doesn't exist
@@ -158,13 +158,13 @@ func CreateArchive(archiveDir, binDir, repoRoot string) error {
 	tarWriter := tar.NewWriter(gzWriter)
 	defer tarWriter.Close()
 
-	fmt.Printf("Creating archive %s...\n", archivePath)
+	logf("Creating archive %s...\n", archivePath)
 
 	// Add git-tracked files to the archive
 	for _, file := range gitFiles {
 		err := addFileToArchive(tarWriter, filepath.Join(repoRoot, file), filepath.Join("cli", file))
 		if err != nil {
-			fmt.Printf("Warning: failed to add git file %s: %v\n", file, err)
+			logf("Warning: failed to add git file %s: %v\n", file, err)
 		}
 	}
 
@@ -172,7 +172,7 @@ func CreateArchive(archiveDir, binDir, repoRoot string) error {
 	for _, file := range binFiles {
 		err := addFileToArchive(tarWriter, filepath.Join(binDir, file), filepath.Join("bin", file))
 		if err != nil {
-			fmt.Printf("Warning: failed to add downloaded file %s: %v\n", file, err)
+			logf("Warning: failed to add downloaded file %s: %v\n", file, err)
 		}
 	}
 
@@ -181,6 +181,6 @@ func CreateArchive(archiveDir, binDir, repoRoot string) error {
 		return fmt.Errorf("failed to stat archive: %w", err)
 	}
 
-	fmt.Printf("✅ Successfully created comprehensive archive. Archive size: %.1f MB\n", float64(stat.Size())/(1024*1024))
+	logf("✅ Archive created (%.1f MB)\n", float64(stat.Size())/(1024*1024))
 	return nil
 }

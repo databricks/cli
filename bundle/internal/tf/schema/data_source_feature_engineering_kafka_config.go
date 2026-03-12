@@ -7,9 +7,12 @@ type DataSourceFeatureEngineeringKafkaConfigAuthConfig struct {
 }
 
 type DataSourceFeatureEngineeringKafkaConfigBackfillSourceDeltaTableSource struct {
-	EntityColumns    []string `json:"entity_columns"`
-	FullName         string   `json:"full_name"`
-	TimeseriesColumn string   `json:"timeseries_column"`
+	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
+	EntityColumns     []string `json:"entity_columns"`
+	FilterCondition   string   `json:"filter_condition,omitempty"`
+	FullName          string   `json:"full_name"`
+	TimeseriesColumn  string   `json:"timeseries_column"`
+	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigBackfillSource struct {
@@ -18,6 +21,10 @@ type DataSourceFeatureEngineeringKafkaConfigBackfillSource struct {
 
 type DataSourceFeatureEngineeringKafkaConfigKeySchema struct {
 	JsonSchema string `json:"json_schema,omitempty"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigSubscriptionMode struct {
@@ -37,6 +44,7 @@ type DataSourceFeatureEngineeringKafkaConfig struct {
 	ExtraOptions     map[string]string                                        `json:"extra_options,omitempty"`
 	KeySchema        *DataSourceFeatureEngineeringKafkaConfigKeySchema        `json:"key_schema,omitempty"`
 	Name             string                                                   `json:"name"`
+	ProviderConfig   *DataSourceFeatureEngineeringKafkaConfigProviderConfig   `json:"provider_config,omitempty"`
 	SubscriptionMode *DataSourceFeatureEngineeringKafkaConfigSubscriptionMode `json:"subscription_mode,omitempty"`
 	ValueSchema      *DataSourceFeatureEngineeringKafkaConfigValueSchema      `json:"value_schema,omitempty"`
 }

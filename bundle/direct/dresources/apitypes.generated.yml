@@ -16,6 +16,8 @@ database_instances: database.DatabaseInstance
 
 experiments: ml.CreateExperiment
 
+external_locations: catalog.CreateExternalLocation
+
 jobs: jobs.JobSettings
 
 model_serving_endpoints: serving.CreateServingEndpoint

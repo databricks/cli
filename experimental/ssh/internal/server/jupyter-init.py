@@ -1,7 +1,7 @@
 from typing import List, Optional
 from IPython.core.getipython import get_ipython
 from IPython.display import display as ip_display
-from dbruntime import UserNamespaceInitializer
+import os
 
 
 def _log_exceptions(func):
@@ -16,20 +16,6 @@ def _log_exceptions(func):
             print(f"Error in {func.__name__}: {e}")
 
     return wrapper
-
-
-_user_namespace_initializer = UserNamespaceInitializer.getOrCreate()
-_entry_point = _user_namespace_initializer.get_spark_entry_point()
-_globals = _user_namespace_initializer.get_namespace_globals()
-for name, value in _globals.items():
-    print(f"Registering global: {name} = {value}")
-    if name not in globals():
-        globals()[name] = value
-
-
-# 'display' from the runtime uses custom widgets that don't work in Jupyter.
-# We use the IPython display instead (in combination with the html formatter for DataFrames).
-globals()["display"] = ip_display
 
 
 @_log_exceptions
@@ -157,19 +143,36 @@ def _parse_line_for_databricks_magics(lines: List[str]) -> List[str]:
 
 
 @_log_exceptions
-def _register_magics():
-    """Register the magic command parser with IPython."""
-    from dbruntime.DatasetInfo import UserNamespaceDict
-    from dbruntime.PipMagicOverrides import PipMagicOverrides
-
-    user_ns = UserNamespaceDict(
-        _user_namespace_initializer.get_namespace_globals(),
-        _entry_point.getDriverConf(),
-        _entry_point,
-    )
+def _register_common_magics():
+    """Register the common magic command parser with IPython."""
     ip = get_ipython()
     ip.input_transformers_cleanup.append(_parse_line_for_databricks_magics)
-    ip.register_magics(PipMagicOverrides(_entry_point, _globals["sc"]._conf, user_ns))
+
+
+@_log_exceptions
+def _register_pip_magics():
+    """Register the pip magic command parser with IPython."""
+    from dbruntime.DatasetInfo import UserNamespaceDict
+    from dbruntime.PipMagicOverrides import PipMagicOverrides
+    from dbruntime import UserNamespaceInitializer
+
+    user_namespace_initializer = UserNamespaceInitializer.getOrCreate()
+    entry_point = user_namespace_initializer.get_spark_entry_point()
+    user_ns = UserNamespaceDict(
+        user_namespace_initializer.get_namespace_globals(),
+        entry_point.getDriverConf(),
+        entry_point,
+    )
+    ip = get_ipython()
+
+    try:
+        # Older DBRs
+        pip_magic = PipMagicOverrides(entry_point, ip.user_ns["sc"]._conf, user_ns)
+    except Exception:
+        # Newer DBRs
+        pip_magic = PipMagicOverrides(entry_point, user_ns, ip)
+
+    ip.register_magics(pip_magic)
 
 
 @_log_exceptions
@@ -186,6 +189,66 @@ def _register_formatters():
     html_formatter.for_type(DataFrame, df_html)
 
 
-_register_magics()
+def _create_spark_session(builder_fn):
+    from databricks.connect import DatabricksSession
+
+    user_ns = get_ipython().user_ns
+    existing_session = user_ns.get("spark")
+    # Clear the existing local spark session, otherwise DatabricksSession will re-use it.
+    user_ns["spark"] = None
+    try:
+        return builder_fn(DatabricksSession.builder).getOrCreate()
+    except Exception:
+        user_ns["spark"] = existing_session
+        raise
+
+
+def _initialize_spark(is_serverless: bool, existing_spark: any):
+    from pyspark.sql.session import SparkSession
+
+    # On serverless always initialize a new remote Databricks Connect session.
+    if is_serverless:
+        return _create_spark_session(lambda b: b.serverless(True))
+    # On dedicated or standard initialize a new remote session if the existing spark session is local.
+    if existing_spark is None or isinstance(existing_spark, SparkSession):
+        return _create_spark_session(
+            lambda b: b.remote(
+                host=os.environ["DATABRICKS_HOST"],
+                token=os.environ["DATABRICKS_TOKEN"],
+                cluster_id=os.environ["DATABRICKS_CLUSTER_ID"],
+            )
+        )
+    # Otherwise re-use the existing remote session.
+    return existing_spark
+
+
+@_log_exceptions
+def _setup_globals(is_serverless: bool):
+    from dbruntime import UserNamespaceInitializer
+
+    ns = UserNamespaceInitializer.getOrCreate()
+    ns_globals = ns.get_namespace_globals()
+    existing_spark = ns_globals.get("spark")
+    spark = _initialize_spark(is_serverless, existing_spark)
+    try:
+        ns.db_connection.spark_provider.set_spark(spark)
+    except Exception as e:
+        print(f"Error updating spark provider: {e}")
+    ns_globals["spark"] = spark
+    if spark is not None:
+        ns_globals["table"] = spark.table
+        ns_globals["sql"] = spark.sql
+    user_ns = get_ipython().user_ns
+    for name, value in ns_globals.items():
+        print(f"Registering global: {name} = {value}")
+        user_ns[name] = value
+    # 'display' from the runtime uses custom widgets that don't work in Jupyter.
+    # We use the IPython display instead (in combination with the html formatter for DataFrames).
+    user_ns["display"] = ip_display
+
+
+_setup_globals(os.environ.get("DATABRICKS_JUPYTER_SERVERLESS") == "true")
+_register_pip_magics()
+_register_common_magics()
 _register_formatters()
 _register_runtime_hooks()

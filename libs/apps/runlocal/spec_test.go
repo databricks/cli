@@ -136,7 +136,7 @@ func TestAppSpecLoadEnvVars(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			spec, ctx, customEnv := tt.setup(ctx)
 			env, err := spec.LoadEnvVars(ctx, customEnv)
 

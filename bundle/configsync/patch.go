@@ -1,10 +1,12 @@
 package configsync
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,12 +16,14 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
+	"go.yaml.in/yaml/v3"
 )
 
 // ApplyChangesToYAML generates YAML files for the given field changes.
 func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) ([]FileChange, error) {
 	originalFiles := make(map[string][]byte)
 	modifiedFiles := make(map[string][]byte)
+	fileFieldChanges := make(map[string][]FieldChange)
 
 	for _, fieldChange := range fieldChanges {
 		filePath := fieldChange.FilePath
@@ -30,7 +34,7 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 				return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
 			}
 			originalFiles[filePath] = content
-			modifiedFiles[filePath] = content
+			modifiedFiles[filePath] = preserveBlankLines(content)
 		}
 
 		modifiedContent, err := applyChange(ctx, modifiedFiles[filePath], fieldChange)
@@ -39,14 +43,22 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		}
 
 		modifiedFiles[filePath] = modifiedContent
+		fileFieldChanges[filePath] = append(fileFieldChanges[filePath], fieldChange)
 	}
 
 	var result []FileChange
 	for filePath := range modifiedFiles {
+		// TODO: A good alternative approach is to remove parent nodes during the Resolve phase,
+		// when all of their keys/items are removed, but this should be tested for edge cases.
+		// In this case flow style will never appear because empty nodes are never serialized and we won't need clearAddedFlowStyle
+		normalized, err := clearAddedFlowStyle(modifiedFiles[filePath], fileFieldChanges[filePath])
+		if err != nil {
+			return nil, fmt.Errorf("failed to normalize YAML style in %s: %w", filePath, err)
+		}
 		result = append(result, FileChange{
 			Path:            filePath,
 			OriginalContent: string(originalFiles[filePath]),
-			ModifiedContent: string(modifiedFiles[filePath]),
+			ModifiedContent: string(restoreBlankLines(normalized)),
 		})
 	}
 
@@ -261,4 +273,183 @@ func strPathToJSONPointer(pathStr string) (string, error) {
 		return "", nil
 	}
 	return "/" + strings.Join(parts, "/"), nil
+}
+
+// clearAddedFlowStyle clears FlowStyle on YAML nodes along the changed field paths.
+// This prevents flow-style formatting (e.g. {key: value}) that yaml.v3 introduces
+// when empty mappings are serialized as "{}" during patch operations
+func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, error) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return content, nil
+	}
+	for _, fc := range fieldChanges {
+		for _, candidate := range fc.FieldCandidates {
+			clearFlowStyleAlongPath(&doc, candidate)
+		}
+	}
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&doc); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), enc.Close()
+}
+
+// clearFlowStyleAlongPath navigates the YAML tree along the given structpath,
+// clearing FlowStyle on every node from root to leaf (inclusive).
+func clearFlowStyleAlongPath(doc *yaml.Node, pathStr string) {
+	node, err := structpath.ParsePath(pathStr)
+	if err != nil {
+		return
+	}
+
+	current := doc
+	if current.Kind == yaml.DocumentNode && len(current.Content) > 0 {
+		current = current.Content[0]
+	}
+
+	for _, n := range node.AsSlice() {
+		current.Style &^= yaml.FlowStyle
+
+		if key, ok := n.StringKey(); ok {
+			if current.Kind != yaml.MappingNode {
+				return
+			}
+			found := false
+			// current.Content: [key1, val1, key2, val2, ...]
+			for i := 0; i+1 < len(current.Content); i += 2 {
+				if current.Content[i].Value == key {
+					current = current.Content[i+1]
+					found = true
+					break
+				}
+			}
+			if !found {
+				return
+			}
+			continue
+		}
+
+		if idx, ok := n.Index(); ok {
+			if current.Kind != yaml.SequenceNode || idx < 0 || idx >= len(current.Content) {
+				return
+			}
+			current = current.Content[idx]
+			continue
+		}
+
+		return
+	}
+
+	clearFlowStyleNodes(current)
+}
+
+func clearFlowStyleNodes(node *yaml.Node) {
+	node.Style &^= yaml.FlowStyle
+	for _, child := range node.Content {
+		clearFlowStyleNodes(child)
+	}
+}
+
+const blankLineMarker = "# __YAMLPATCH_BLANK_LINE__"
+
+// blockScalarRe matches YAML lines that start a block scalar (| or >).
+// [-:]  — colon (mapping value) or dash (sequence item)
+// [|>]  — literal or folded block scalar indicator
+// [-+0-9]* — optional chomp (+/-) and indent indicators
+// (?:#.*)? — optional comment
+var blockScalarRe = regexp.MustCompile(`[-:]\s+[|>][-+0-9]*\s*(?:#.*)?$`)
+
+// preserveBlankLines replaces blank lines with marker comments that survive yaml.v3 round-trips
+func preserveBlankLines(content []byte) []byte {
+	lines := strings.Split(string(content), "\n")
+	result := make([]string, 0, len(lines))
+
+	inBlockScalar := false
+	blockScalarIndent := 0
+	pendingBlanks := 0
+
+	for i, line := range lines {
+		trimmed := strings.TrimRight(line, " \t")
+
+		// Buffer blank lines (except the trailing empty element from Split).
+		if trimmed == "" && i < len(lines)-1 {
+			pendingBlanks++
+			continue
+		}
+
+		indent := len(line) - len(strings.TrimLeft(line, " "))
+
+		// Exit block scalar when indentation decreases.
+		if inBlockScalar && indent <= blockScalarIndent {
+			inBlockScalar = false
+		}
+
+		// Flush buffered blank lines: keep literal inside block scalars,
+		// replace with markers otherwise.
+		for range pendingBlanks {
+			if inBlockScalar {
+				result = append(result, "")
+			} else {
+				result = append(result, blankLineMarker)
+			}
+		}
+		pendingBlanks = 0
+
+		if !inBlockScalar && blockScalarRe.MatchString(trimmed) {
+			inBlockScalar = true
+			blockScalarIndent = indent
+		}
+
+		result = append(result, line)
+	}
+
+	return []byte(strings.Join(result, "\n"))
+}
+
+// flushBlanks appends blank lines to result. When markers are present,
+// it emits exactly that many blanks (dropping yaml.v3-added duplicates);
+// otherwise it keeps all blanks as-is.
+func flushBlanks(result []string, blanks, markers int) []string {
+	n := blanks
+	if markers > 0 {
+		n = markers
+	}
+	for range n {
+		result = append(result, "")
+	}
+	return result
+}
+
+// restoreBlankLines replaces marker comments back to blank lines.
+func restoreBlankLines(content []byte) []byte {
+	lines := strings.Split(string(content), "\n")
+	result := make([]string, 0, len(lines))
+	blanks := 0
+	markers := 0
+
+	for i, line := range lines {
+		if strings.TrimSpace(line) == blankLineMarker {
+			markers++
+			continue
+		}
+		if strings.TrimRight(line, " \t") == "" && i < len(lines)-1 {
+			blanks++
+			continue
+		}
+		result = flushBlanks(result, blanks, markers)
+		blanks = 0
+		markers = 0
+		result = append(result, line)
+	}
+	result = flushBlanks(result, blanks, markers)
+
+	out := strings.Join(result, "\n")
+
+	// Safety net: replace any markers that survived due to unexpected reasons
+	out = strings.ReplaceAll(out, blankLineMarker, "")
+
+	return []byte(out)
 }

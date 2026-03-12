@@ -190,6 +190,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The experiment definitions for the bundle, where each key is the name of the experiment.
     "markdown_description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment. See [\_](/dev-tools/bundles/resources.md#experiments).
+  "external_locations":
+    "description": |-
+      PLACEHOLDER
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
@@ -513,19 +516,12 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "warehouse_id":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AlertPermission:
-  "group_name":
+github.com/databricks/cli/bundle/config/resources.App:
+  "git_source":
     "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
+      Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
+      to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
+      The source_code_path within git_source specifies the relative path to the app code within the repository.
 github.com/databricks/cli/bundle/config/resources.AppConfig:
   "command":
     "description": |-
@@ -563,12 +559,6 @@ github.com/databricks/cli/bundle/config/resources.Catalog:
   "connection_name":
     "description": |-
       PLACEHOLDER
-  "grants":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
   "name":
     "description": |-
       PLACEHOLDER
@@ -587,66 +577,6 @@ github.com/databricks/cli/bundle/config/resources.Catalog:
   "storage_root":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.CatalogGrant:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        CREATE_CONNECTION
-      - |-
-        CREATE_EXTERNAL_LOCATION
-      - |-
-        CREATE_EXTERNAL_TABLE
-      - |-
-        CREATE_EXTERNAL_VOLUME
-      - |-
-        CREATE_FOREIGN_CATALOG
-      - |-
-        CREATE_FUNCTION
-      - |-
-        CREATE_MANAGED_STORAGE
-      - |-
-        CREATE_MATERIALIZED_VIEW
-      - |-
-        CREATE_MODEL
-      - |-
-        CREATE_SCHEMA
-      - |-
-        CREATE_STORAGE_CREDENTIAL
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        EXECUTE
-      - |-
-        MANAGE
-      - |-
-        MODIFY
-      - |-
-        READ_VOLUME
-      - |-
-        REFRESH
-      - |-
-        SELECT
-      - |-
-        USE_CATALOG
-      - |-
-        USE_CONNECTION
-      - |-
-        USE_SCHEMA
-      - |-
-        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.ClusterPermission:
   "group_name":
     "description": |-
@@ -667,43 +597,47 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
   "dataset_schema":
     "description": |-
       Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
-github.com/databricks/cli/bundle/config/resources.DashboardPermission:
-  "group_name":
-    "description": |-
-      PLACEHOLDER
-  "level":
-    "description": |-
-      PLACEHOLDER
-  "service_principal_name":
-    "description": |-
-      PLACEHOLDER
-  "user_name":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "effective_capacity":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
-  "group_name":
+github.com/databricks/cli/bundle/config/resources.ExternalLocation:
+  "comment":
     "description": |-
       PLACEHOLDER
-  "level":
+  "credential_name":
     "description": |-
       PLACEHOLDER
-  "service_principal_name":
+  "enable_file_events":
     "description": |-
       PLACEHOLDER
-  "user_name":
+  "encryption_details":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Grant:
-  "principal":
+  "fallback":
     "description": |-
-      The name of the principal that will be granted privileges
-  "privileges":
+      PLACEHOLDER
+  "file_event_queue":
     "description": |-
-      The privileges to grant to the specified entity
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "read_only":
+    "description": |-
+      PLACEHOLDER
+  "skip_validation":
+    "description": |-
+      PLACEHOLDER
+  "url":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.JobPermission:
   "group_name":
     "description": |-
@@ -859,6 +793,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
   "endpoint_type":
     "description": |-
       PLACEHOLDER
+  "group":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
     "description": |-
       PLACEHOLDER
@@ -890,13 +827,22 @@ github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PostgresProject:
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
   "create_time":
+    "description": |-
+      PLACEHOLDER
+  "custom_tags":
     "description": |-
       PLACEHOLDER
   "default_endpoint_settings":
     "description": |-
       PLACEHOLDER
   "display_name":
+    "description": |-
+      PLACEHOLDER
+  "enable_pg_native_login":
     "description": |-
       PLACEHOLDER
   "history_retention_duration":
@@ -906,6 +852,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
     "description": |-
       PLACEHOLDER
   "pg_version":
@@ -924,13 +873,6 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
     "description": |-
       PLACEHOLDER
   "update_time":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SchemaGrant:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SecretScope:
@@ -998,13 +940,6 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
     "description": |-
       PLACEHOLDER
   "unity_catalog_provisioning_state":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.VolumeGrant:
-  "principal":
-    "description": |-
-      PLACEHOLDER
-  "privileges":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:

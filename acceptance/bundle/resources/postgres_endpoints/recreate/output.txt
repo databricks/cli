@@ -28,7 +28,7 @@ resources:
     my_endpoint:
       parent: ${resources.postgres_branches.main.id}
       endpoint_id: test-endpoint-[UNIQUE_NAME]
-      endpoint_type: ENDPOINT_TYPE_READ_WRITE
+      endpoint_type: ENDPOINT_TYPE_READ_ONLY
       autoscaling_limit_min_cu: 0.5
       autoscaling_limit_max_cu: 2
 
@@ -70,7 +70,7 @@ Deployment complete!
     "branch_id": "main"
       "autoscaling_limit_max_cu": 2,
       "autoscaling_limit_min_cu": 0.5,
-      "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
+      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY"
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
     "endpoint_id": "test-endpoint-[UNIQUE_NAME]"
 
@@ -102,7 +102,7 @@ resources:
   postgres_endpoints:
     my_endpoint:
       parent: ${resources.postgres_branches.main.id}
-      endpoint_id: test-endpoint-[UNIQUE_NAME]
+      endpoint_id: test-endpoint-[UNIQUE_NAME]-v2
       endpoint_type: ENDPOINT_TYPE_READ_ONLY
       autoscaling_limit_min_cu: 0.5
       autoscaling_limit_max_cu: 2
@@ -133,11 +133,11 @@ Deployment complete!
   "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
   "q": {
-    "endpoint_id": "test-endpoint-[UNIQUE_NAME]"
+    "endpoint_id": "test-endpoint-[UNIQUE_NAME]-v2"
   }
 
-=== Fetch endpoint ID and verify it has the new type (READ_ONLY)
->>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
+=== Fetch endpoint and verify it exists after recreation
+>>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]-v2
 "ENDPOINT_TYPE_READ_ONLY"
 
 === Destroy and verify cleanup
@@ -155,7 +155,7 @@ Destroy complete!
 >>> print_requests
 {
   "method": "DELETE",
-  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
+  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]-v2"
 }
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"

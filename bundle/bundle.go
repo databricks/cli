@@ -149,6 +149,14 @@ type Bundle struct {
 	// files
 	AutoApprove bool
 
+	// SkipLocalFileValidation makes path translation tolerant of missing local files.
+	// When set, TranslatePaths computes workspace paths without verifying files exist.
+	// Used by config-remote-sync: a user may modify resource paths remotely (e.g.,
+	// rename a pipeline root folder in the UI), and the updated paths may not exist
+	// locally. Path translation is still needed to produce fully resolved paths for
+	// comparison with remote state, but local file validation would incorrectly fail.
+	SkipLocalFileValidation bool
+
 	// Tagging is used to normalize tag keys and values.
 	// The implementation depends on the cloud being targeted.
 	Tagging tags.Cloud
@@ -243,6 +251,14 @@ func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
 	b.clientOnce.Do(func() {})
 	b.client = w
+}
+
+// ClearWorkspaceClient resets the workspace client cache, allowing
+// WorkspaceClientE() to attempt client creation again on the next call.
+func (b *Bundle) ClearWorkspaceClient() {
+	b.clientOnce = sync.Once{}
+	b.client = nil
+	b.clientErr = nil
 }
 
 // LocalStateDir returns directory to use for temporary files for this bundle without creating

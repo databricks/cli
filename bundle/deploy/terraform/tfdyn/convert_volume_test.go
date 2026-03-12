@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -23,18 +22,14 @@ func TestConvertVolume(t *testing.T) {
 			StorageLocation: "s3://bucket/path",
 			VolumeType:      "EXTERNAL",
 		},
-		Grants: []resources.VolumeGrant{
+		Grants: []catalog.PrivilegeAssignment{
 			{
-				Privileges: []resources.VolumeGrantPrivilege{
-					resources.VolumeGrantPrivilegeReadVolume,
-				},
-				Principal: "jack@gmail.com",
+				Privileges: []catalog.Privilege{catalog.PrivilegeReadVolume},
+				Principal:  "jack@gmail.com",
 			},
 			{
-				Privileges: []resources.VolumeGrantPrivilege{
-					resources.VolumeGrantPrivilegeWriteVolume,
-				},
-				Principal: "jane@gmail.com",
+				Privileges: []catalog.Privilege{catalog.PrivilegeWriteVolume},
+				Principal:  "jane@gmail.com",
 			},
 		},
 	}
@@ -42,7 +37,7 @@ func TestConvertVolume(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = volumeConverter{}.Convert(ctx, "my_volume", vin, out)
 	require.NoError(t, err)

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -103,7 +104,7 @@ func TestValidateProjectName(t *testing.T) {
 
 func TestRunWithSpinnerCtx(t *testing.T) {
 	t.Run("successful action", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 		executed := false
 
 		err := RunWithSpinnerCtx(ctx, "Testing...", func() error {
@@ -116,7 +117,7 @@ func TestRunWithSpinnerCtx(t *testing.T) {
 	})
 
 	t.Run("action returns error", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 		expectedErr := errors.New("action failed")
 
 		err := RunWithSpinnerCtx(ctx, "Testing...", func() error {
@@ -127,7 +128,7 @@ func TestRunWithSpinnerCtx(t *testing.T) {
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(cmdio.MockDiscard(context.Background()))
+		ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
 		actionStarted := make(chan struct{})
 		actionDone := make(chan struct{})
 
@@ -149,7 +150,7 @@ func TestRunWithSpinnerCtx(t *testing.T) {
 	})
 
 	t.Run("action panics - recovered", func(t *testing.T) {
-		ctx := cmdio.MockDiscard(context.Background())
+		ctx := cmdio.MockDiscard(t.Context())
 
 		err := RunWithSpinnerCtx(ctx, "Testing...", func() error {
 			panic("test panic")
@@ -165,6 +166,112 @@ func TestRunModeConstants(t *testing.T) {
 	assert.Equal(t, RunModeNone, RunMode("none"))
 	assert.Equal(t, RunModeDev, RunMode("dev"))
 	assert.Equal(t, RunModeDevRemote, RunMode("dev-remote"))
+}
+
+func TestApplyResolvedValues(t *testing.T) {
+	t.Run("maps resolver names to manifest field names", func(t *testing.T) {
+		r := manifest.Resource{
+			ResourceKey: "postgres",
+			Fields: map[string]manifest.ResourceField{
+				"branch":       {Description: "branch path"},
+				"database":     {Description: "database name"},
+				"host":         {Resolve: "postgres:host"},
+				"databaseName": {Resolve: "postgres:databaseName"},
+				"endpointPath": {Resolve: "postgres:endpointPath"},
+				"port":         {Value: "5432"},
+			},
+		}
+
+		resolvedValues := map[string]string{
+			"postgres:host":         "my-host.example.com",
+			"postgres:databaseName": "my_db",
+			"postgres:endpointPath": "projects/p1/branches/b1/endpoints/e1",
+		}
+
+		result := map[string]string{
+			"postgres.branch":   "projects/p1/branches/b1",
+			"postgres.database": "projects/p1/branches/b1/databases/d1",
+		}
+
+		applyResolvedValues(r, resolvedValues, result)
+
+		assert.Equal(t, map[string]string{
+			"postgres.branch":       "projects/p1/branches/b1",
+			"postgres.database":     "projects/p1/branches/b1/databases/d1",
+			"postgres.host":         "my-host.example.com",
+			"postgres.databaseName": "my_db",
+			"postgres.endpointPath": "projects/p1/branches/b1/endpoints/e1",
+		}, result)
+	})
+
+	t.Run("renamed fields still map via resolver", func(t *testing.T) {
+		r := manifest.Resource{
+			ResourceKey: "postgres",
+			Fields: map[string]manifest.ResourceField{
+				"pg_host":     {Resolve: "postgres:host"},
+				"pg_database": {Resolve: "postgres:databaseName"},
+				"pg_endpoint": {Resolve: "postgres:endpointPath"},
+			},
+		}
+
+		resolvedValues := map[string]string{
+			"postgres:host":         "host.example.com",
+			"postgres:databaseName": "testdb",
+			"postgres:endpointPath": "projects/p1/branches/b1/endpoints/e1",
+		}
+
+		result := map[string]string{}
+		applyResolvedValues(r, resolvedValues, result)
+
+		assert.Equal(t, map[string]string{
+			"postgres.pg_host":     "host.example.com",
+			"postgres.pg_database": "testdb",
+			"postgres.pg_endpoint": "projects/p1/branches/b1/endpoints/e1",
+		}, result)
+	})
+
+	t.Run("skips fields without resolve", func(t *testing.T) {
+		r := manifest.Resource{
+			ResourceKey: "postgres",
+			Fields: map[string]manifest.ResourceField{
+				"branch": {Description: "no resolve"},
+				"host":   {Resolve: "postgres:host"},
+				"port":   {Value: "5432"},
+			},
+		}
+
+		resolvedValues := map[string]string{
+			"postgres:host": "my-host",
+		}
+
+		result := map[string]string{}
+		applyResolvedValues(r, resolvedValues, result)
+
+		assert.Equal(t, map[string]string{
+			"postgres.host": "my-host",
+		}, result)
+	})
+
+	t.Run("skips resolve values not in resolvedValues map", func(t *testing.T) {
+		r := manifest.Resource{
+			ResourceKey: "postgres",
+			Fields: map[string]manifest.ResourceField{
+				"host":    {Resolve: "postgres:host"},
+				"unknown": {Resolve: "postgres:unknownResolver"},
+			},
+		}
+
+		resolvedValues := map[string]string{
+			"postgres:host": "my-host",
+		}
+
+		result := map[string]string{}
+		applyResolvedValues(r, resolvedValues, result)
+
+		assert.Equal(t, map[string]string{
+			"postgres.host": "my-host",
+		}, result)
+	})
 }
 
 func TestMaxAppNameLength(t *testing.T) {

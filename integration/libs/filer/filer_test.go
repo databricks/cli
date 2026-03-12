@@ -131,7 +131,7 @@ func TestFilerRecursiveDelete(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			f, _ := testCase.f(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// Common tests we run across all filers to ensure consistent behavior.
 			commonFilerRecursiveDeleteTest(t, ctx, f)
@@ -233,7 +233,7 @@ func TestFilerReadWrite(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			f, _ := testCase.f(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			// Common tests we run across all filers to ensure consistent behavior.
 			commonFilerReadWriteTests(t, ctx, f)
@@ -339,7 +339,7 @@ func TestFilerReadDir(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			f, _ := testCase.f(t)
-			ctx := context.Background()
+			ctx := t.Context()
 
 			commonFilerReadDirTest(t, ctx, f)
 		})
@@ -349,7 +349,7 @@ func TestFilerReadDir(t *testing.T) {
 func TestFilerWorkspaceNotebook(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	var err error
 
 	tcases := []struct {
@@ -488,7 +488,7 @@ func TestFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		basenames[basename] = struct{}{}
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	for _, f := range files {
@@ -548,7 +548,7 @@ func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	for _, f := range files {
@@ -562,7 +562,7 @@ func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 func TestFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	wf := setupFilerWithExtensionsTest(t)
 
 	// Read contents of test fixtures as a sanity check.
@@ -599,7 +599,7 @@ func TestFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 func TestFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	wf := setupFilerWithExtensionsTest(t)
 
 	for _, fileName := range []string{
@@ -648,7 +648,7 @@ func TestFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 func TestFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	wf := setupFilerWithExtensionsTest(t)
 
 	for _, fileName := range []string{
@@ -695,7 +695,7 @@ func TestFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 func TestWorkspaceFilesExtensionsDirectoriesAreNotNotebooks(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	// Create a directory with an extension
@@ -710,7 +710,7 @@ func TestWorkspaceFilesExtensionsDirectoriesAreNotNotebooks(t *testing.T) {
 func TestWorkspaceFilesExtensionsNotebooksAreNotReadAsFiles(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	// Create a notebook
@@ -729,7 +729,7 @@ func TestWorkspaceFilesExtensionsNotebooksAreNotReadAsFiles(t *testing.T) {
 func TestWorkspaceFilesExtensionsNotebooksAreNotStatAsFiles(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	// Create a notebook
@@ -748,7 +748,7 @@ func TestWorkspaceFilesExtensionsNotebooksAreNotStatAsFiles(t *testing.T) {
 func TestWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	// Create a notebook
@@ -803,7 +803,7 @@ func TestWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 		t.Run("source_"+tc.language, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			wf, _ := setupWsfsExtensionsFiler(t)
 
 			err := wf.Write(ctx, tc.sourceName, strings.NewReader(tc.sourceContent))
@@ -858,7 +858,7 @@ func TestWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 		t.Run("jupyter_"+tc.language, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			wf, _ := setupWsfsExtensionsFiler(t)
 
 			err := wf.Write(ctx, tc.jupyterName, strings.NewReader(tc.jupyterContent))

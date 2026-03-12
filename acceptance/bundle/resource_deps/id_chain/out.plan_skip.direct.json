@@ -30,17 +30,17 @@
       "changes": {
         "email_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         },
         "timeout_seconds": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty",
           "remote": 0
         },
         "webhook_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         }
       }
@@ -77,17 +77,17 @@
       "changes": {
         "email_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         },
         "timeout_seconds": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty",
           "remote": 0
         },
         "webhook_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         }
       }
@@ -124,17 +124,17 @@
       "changes": {
         "email_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         },
         "timeout_seconds": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty",
           "remote": 0
         },
         "webhook_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         }
       }
@@ -171,17 +171,17 @@
       "changes": {
         "email_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         },
         "timeout_seconds": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty",
           "remote": 0
         },
         "webhook_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         }
       }
@@ -218,17 +218,17 @@
       "changes": {
         "email_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         },
         "timeout_seconds": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty",
           "remote": 0
         },
         "webhook_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         }
       }

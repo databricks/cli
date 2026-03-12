@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourcePostgresBranchesBranchesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourcePostgresBranchesBranchesSpec struct {
 	ExpireTime       string `json:"expire_time,omitempty"`
 	IsProtected      bool   `json:"is_protected,omitempty"`
@@ -26,17 +30,23 @@ type DataSourcePostgresBranchesBranchesStatus struct {
 }
 
 type DataSourcePostgresBranchesBranches struct {
-	CreateTime string                                    `json:"create_time,omitempty"`
-	Name       string                                    `json:"name"`
-	Parent     string                                    `json:"parent,omitempty"`
-	Spec       *DataSourcePostgresBranchesBranchesSpec   `json:"spec,omitempty"`
-	Status     *DataSourcePostgresBranchesBranchesStatus `json:"status,omitempty"`
-	Uid        string                                    `json:"uid,omitempty"`
-	UpdateTime string                                    `json:"update_time,omitempty"`
+	CreateTime     string                                            `json:"create_time,omitempty"`
+	Name           string                                            `json:"name"`
+	Parent         string                                            `json:"parent,omitempty"`
+	ProviderConfig *DataSourcePostgresBranchesBranchesProviderConfig `json:"provider_config,omitempty"`
+	Spec           *DataSourcePostgresBranchesBranchesSpec           `json:"spec,omitempty"`
+	Status         *DataSourcePostgresBranchesBranchesStatus         `json:"status,omitempty"`
+	Uid            string                                            `json:"uid,omitempty"`
+	UpdateTime     string                                            `json:"update_time,omitempty"`
+}
+
+type DataSourcePostgresBranchesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourcePostgresBranches struct {
-	Branches []DataSourcePostgresBranchesBranches `json:"branches,omitempty"`
-	PageSize int                                  `json:"page_size,omitempty"`
-	Parent   string                               `json:"parent"`
+	Branches       []DataSourcePostgresBranchesBranches      `json:"branches,omitempty"`
+	PageSize       int                                       `json:"page_size,omitempty"`
+	Parent         string                                    `json:"parent"`
+	ProviderConfig *DataSourcePostgresBranchesProviderConfig `json:"provider_config,omitempty"`
 }

@@ -54,7 +54,7 @@
     },
     "history_retention_duration": {
       "action": "skip",
-      "reason": "empty_struct",
+      "reason": "empty",
       "old": "604800s",
       "new": "604800s"
     },

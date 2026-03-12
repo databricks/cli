@@ -13,7 +13,7 @@ import (
 
 // TestFileCacheExpiryBehavior tests that the cache writes files and respects expiry based on mtime
 func TestFileCacheExpiryBehavior(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 
 	// Create cache with 1 minute expiry
@@ -71,7 +71,7 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 
 // TestReadFromCacheRespectsExpiry tests that readFromCacheJSON returns false for expired entries based on mtime
 func TestReadFromCacheRespectsExpiry(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	cache, err := newFileCacheWithBaseDir(ctx, tempDir, 1*time.Minute) // 1 minute expiry
 	require.NoError(t, err)

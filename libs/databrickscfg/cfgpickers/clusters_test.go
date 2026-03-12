@@ -1,7 +1,6 @@
 package cfgpickers
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -114,7 +113,7 @@ func TestFirstCompatibleCluster(t *testing.T) {
 	defer server.Close()
 	w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
 
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 
 	clusterID, err := AskForCluster(ctx, w, WithDatabricksConnect("13.1"))
 	require.NoError(t, err)
@@ -161,7 +160,7 @@ func TestNoCompatibleClusters(t *testing.T) {
 	defer server.Close()
 	w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
 
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	_, err := AskForCluster(ctx, w, WithDatabricksConnect("13.1"))
 	require.Equal(t, ErrNoCompatibleClusters, err)
 }

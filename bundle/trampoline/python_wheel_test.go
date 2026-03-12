@@ -1,7 +1,6 @@
 package trampoline
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -137,6 +136,6 @@ func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
 		},
 	}
 	trampoline := TransformWheelTask()
-	diags := bundle.Apply(context.Background(), b, trampoline)
+	diags := bundle.Apply(t.Context(), b, trampoline)
 	require.NoError(t, diags.Error())
 }

@@ -28,6 +28,7 @@ var prefixToGroup = []struct{ prefix, group string }{
 	{"model_serving_", "model_serving_endpoints"},
 	{"sql_endpoint_", "sql_warehouses"},
 	{"database_instance_", "database_instances"},
+	{"postgres_project_", "postgres_projects"},
 }
 
 var grantsPrefix = []struct{ prefix, group string }{

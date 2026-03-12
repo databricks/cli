@@ -8,6 +8,10 @@ type ResourceCatalogEffectivePredictiveOptimizationFlag struct {
 	Value             string `json:"value"`
 }
 
+type ResourceCatalogProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceCatalogProvisioningInfo struct {
 	State string `json:"state,omitempty"`
 }
@@ -37,5 +41,6 @@ type ResourceCatalog struct {
 	UpdatedAt                           int                                                 `json:"updated_at,omitempty"`
 	UpdatedBy                           string                                              `json:"updated_by,omitempty"`
 	EffectivePredictiveOptimizationFlag *ResourceCatalogEffectivePredictiveOptimizationFlag `json:"effective_predictive_optimization_flag,omitempty"`
+	ProviderConfig                      *ResourceCatalogProviderConfig                      `json:"provider_config,omitempty"`
 	ProvisioningInfo                    *ResourceCatalogProvisioningInfo                    `json:"provisioning_info,omitempty"`
 }

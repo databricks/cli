@@ -43,7 +43,7 @@ func TestBackoffStrategy_Wait(t *testing.T) {
 		b := newBackoffStrategy(50*time.Millisecond, 100*time.Millisecond)
 
 		start := time.Now()
-		err := b.Wait(context.Background())
+		err := b.Wait(t.Context())
 		elapsed := time.Since(start)
 
 		require.NoError(t, err)
@@ -54,7 +54,7 @@ func TestBackoffStrategy_Wait(t *testing.T) {
 	t.Run("returns early on cancel", func(t *testing.T) {
 		b := newBackoffStrategy(1*time.Second, 5*time.Second)
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		go func() {
 			time.Sleep(20 * time.Millisecond)
 			cancel()

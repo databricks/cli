@@ -176,7 +176,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		}
 	}
 
-	deploymentBundle.Apply(ctx, b.WorkspaceClient(), &uninterpolatedConfig, plan, direct.MigrateMode(true))
+	deploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(true))
 
 	return diags
 }

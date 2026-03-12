@@ -101,6 +101,8 @@ func doBuild(ctx context.Context, artifactName string, a *config.Artifact) error
 		return fmt.Errorf("build failed %s, error: %v, output: %s", artifactName, err, out)
 	}
 
+	log.Debugf(ctx, "build output for %s:\n%s", artifactName, out)
+
 	return nil
 }
 

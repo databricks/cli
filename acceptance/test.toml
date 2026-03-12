@@ -18,9 +18,13 @@ Env.PYTHONUNBUFFERED = "1"
 Env.PYTHONUTF8 = "1"
 
 # Clear agent env vars to prevent them from affecting test output
+Env.ANTIGRAVITY_AGENT = ""
 Env.CLAUDECODE = ""
-Env.GEMINI_CLI = ""
+Env.CLINE_ACTIVE = ""
+Env.CODEX_CI = ""
 Env.CURSOR_AGENT = ""
+Env.GEMINI_CLI = ""
+Env.OPENCODE = ""
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 EnvMatrixExclude.noplantf = ["DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN=1"]

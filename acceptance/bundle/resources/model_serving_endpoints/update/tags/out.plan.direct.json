@@ -70,7 +70,7 @@
       "changes": {
         "route_optimized": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty",
           "remote": false
         },
         "tags[0].value": {

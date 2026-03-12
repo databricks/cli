@@ -191,14 +191,14 @@ func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundl
 	info, err := os.Stat(filename)
 	if err == nil {
 		if info.IsDir() {
-			return fmt.Errorf("%s is a directory", rel)
+			return fmt.Errorf("%s is a directory", filepath.ToSlash(rel))
 		}
 		if !d.force {
-			return fmt.Errorf("%s already exists. Use --force to overwrite", rel)
+			return fmt.Errorf("%s already exists. Use --force to overwrite", filepath.ToSlash(rel))
 		}
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Writing dashboard to %q", rel))
+	cmdio.LogString(ctx, "Writing dashboard to "+filepath.ToSlash(rel))
 	return os.WriteFile(filename, data, 0o644)
 }
 
@@ -242,7 +242,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 		rel = resourcePath
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Writing configuration to %q", rel))
+	cmdio.LogString(ctx, "Writing configuration to "+filepath.ToSlash(rel))
 	err = saver.SaveAsYAML(result, resourcePath, d.force)
 	if err != nil {
 		return err

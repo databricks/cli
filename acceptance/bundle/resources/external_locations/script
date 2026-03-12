@@ -1,0 +1,44 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+CATALOG_NAME="test_catalog_${UNIQUE_NAME}"
+EXT_LOCATION_NAME="test_ext_location_${UNIQUE_NAME}"
+
+cleanup() {
+  title "Test cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy bundle with catalog and external location"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+title "Assert the catalog is created with grants"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment, properties}"
+trace $CLI grants get catalog "${CATALOG_NAME}" | jq --sort-keys
+
+title "Assert the external location is created with grants"
+trace $CLI external-locations get "${EXT_LOCATION_NAME}" | jq "{name, url, credential_name, comment}"
+trace $CLI grants get external_location "${EXT_LOCATION_NAME}" | jq --sort-keys
+
+title "Update external location comment"
+update_file.py databricks.yml "Test external location from DABs" "Updated external location from DABs"
+
+title "Redeploy with updated comment"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+title "Assert the external location comment is updated"
+trace $CLI external-locations get "${EXT_LOCATION_NAME}" | jq "{name, comment}"
+
+title "Update catalog comment"
+update_file.py databricks.yml "Test catalog for external locations" "Updated catalog for external locations"
+
+title "Redeploy with updated catalog comment"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+title "Assert the catalog comment is updated"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment}"

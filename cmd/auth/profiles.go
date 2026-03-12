@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -33,9 +34,10 @@ func (c *profileMetadata) IsEmpty() bool {
 
 func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipValidate bool) {
 	cfg := &config.Config{
-		Loaders:    []config.Loader{config.ConfigFile},
-		ConfigFile: configFilePath,
-		Profile:    c.Name,
+		Loaders:           []config.Loader{config.ConfigFile},
+		ConfigFile:        configFilePath,
+		Profile:           c.Name,
+		DatabricksCliPath: env.Get(ctx, "DATABRICKS_CLI_PATH"),
 	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {

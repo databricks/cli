@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Generate databricks.yml from template
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Set up cleanup trap to ensure resources are destroyed even on failure
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Validate bundle configuration"
+trace $CLI bundle validate
+
+title "Plan bundle deployment"
+trace $CLI bundle plan
+
+title "Deploy bundle"
+trace $CLI bundle deploy
+
+title "Get app details and verify git_source configuration"
+app_name=$(trace $CLI bundle summary --output json | jq -r '.resources.apps.my_app.name')
+echo "$app_name:APP_NAME" >> ACC_REPLS
+
+trace $CLI apps get $app_name --output json | jq '{name, description, git_repository, git_source}'
+
+title "Verify no drift after deployment"
+trace $CLI bundle plan
+
+title "Run the app to verify it works"
+$CLI bundle run my_app &> out.app-run || true
+trace cat out.app-run | head -20
+
+title "Update git_source branch and redeploy"
+# Change branch from main to a different value (still main, but via sed to test config change)
+sed -i.bak 's/branch: main/branch: main # updated/' databricks.yml
+trace $CLI bundle deploy
+
+title "Verify config update was applied"
+trace $CLI apps get $app_name --output json | jq '{name, git_source}'

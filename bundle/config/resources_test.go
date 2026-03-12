@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
 	"reflect"
 	"strings"
@@ -145,6 +144,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				CreateCatalog: catalog.CreateCatalog{},
 			},
 		},
+		ExternalLocations: map[string]*resources.ExternalLocation{
+			"my_external_location": {
+				CreateExternalLocation: catalog.CreateExternalLocation{},
+			},
+		},
 		Schemas: map[string]*resources.Schema{
 			"my_schema": {
 				CreateSchema: catalog.CreateSchema{},
@@ -236,15 +240,18 @@ func TestResourcesBindSupport(t *testing.T) {
 			},
 		},
 	}
-	unbindableResources := map[string]bool{"model": true}
+	unbindableResources := map[string]bool{
+		"model": true,
+	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockJobsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockCatalogsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockExternalLocationsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)

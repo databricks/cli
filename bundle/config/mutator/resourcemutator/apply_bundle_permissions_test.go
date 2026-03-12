@@ -1,7 +1,6 @@
 package resourcemutator
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"testing"
@@ -20,13 +19,13 @@ import (
 // These resources are there because they use grants, not permissions:
 var unsupportedResources = []string{
 	"catalogs",
+	"external_locations",
 	"volumes",
 	"schemas",
 	"quality_monitors",
 	"registered_models",
 	"database_catalogs",
 	"synced_database_tables",
-	"postgres_projects",
 	"postgres_branches",
 	"postgres_endpoints",
 }
@@ -83,7 +82,7 @@ func TestApplyBundlePermissions(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
+	diags := bundle.Apply(t.Context(), b, ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
 
 	require.Len(t, b.Config.Resources.Jobs["job_1"].Permissions, 3)
@@ -133,8 +132,8 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.ModelServingEndpointPermission{Level: "CAN_QUERY", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, 2)
-	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.DashboardPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
-	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.DashboardPermission{Level: "CAN_READ", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission{Level: "CAN_READ", GroupName: "TestGroup"})
 
 	require.Len(t, b.Config.Resources.Apps["app_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
@@ -174,7 +173,7 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
+	diags := bundle.Apply(t.Context(), b, ApplyBundlePermissions())
 	require.NoError(t, diags.Error())
 
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.JobPermission{Level: "CAN_VIEW", UserName: "TestUser"})

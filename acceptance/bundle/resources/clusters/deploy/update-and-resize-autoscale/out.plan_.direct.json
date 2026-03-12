@@ -38,8 +38,14 @@
       },
       "remote_state": {
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 2,
         "spark_version": "13.3.x-snapshot-scala2.12"
@@ -51,6 +57,24 @@
             "max_workers": 4,
             "min_workers": 2
           }
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
         },
         "num_workers": {
           "action": "update",
@@ -87,8 +111,14 @@
           "min_workers": 2
         },
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
         "spark_version": "13.3.x-snapshot-scala2.12"
       },
@@ -104,6 +134,24 @@
           "old": 2,
           "new": 3,
           "remote": 2
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
         }
       }
     }
@@ -135,8 +183,14 @@
           "min_workers": 3
         },
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
         "spark_version": "13.3.x-snapshot-scala2.12",
         "state": "RUNNING"
@@ -155,6 +209,24 @@
           "old": 3,
           "new": 4,
           "remote": 3
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
         }
       }
     }
@@ -183,8 +255,14 @@
           "min_workers": 4
         },
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
         "spark_version": "13.3.x-snapshot-scala2.12",
         "state": "RUNNING"
@@ -201,6 +279,24 @@
             "max_workers": 6,
             "min_workers": 4
           }
+        },
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
         },
         "num_workers": {
           "action": "resize",

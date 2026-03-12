@@ -1,0 +1,17 @@
+# Set up .databrickscfg with two account-only profiles for the same host.
+envsubst < .databrickscfg > out && mv out .databrickscfg
+
+cat > databricks.yml << EOF
+bundle:
+  name: multi-profile-no-ws
+
+workspace:
+  host: $DATABRICKS_HOST
+EOF
+
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# No workspace-compatible profiles → original multi-profile error returned.
+errcode trace $CLI bundle validate

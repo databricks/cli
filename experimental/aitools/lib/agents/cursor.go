@@ -1,10 +1,13 @@
 package agents
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/databricks/cli/libs/env"
 )
 
 type cursorConfig struct {
@@ -18,11 +21,12 @@ type mcpServer struct {
 }
 
 // InstallCursor installs the Databricks AI Tools MCP server in Cursor.
-func InstallCursor() error {
-	configDir, err := homeSubdir(".cursor")()
+func InstallCursor(ctx context.Context) error {
+	home, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to determine Cursor config path: %w", err)
 	}
+	configDir := filepath.Join(home, ".cursor")
 
 	// Check if .cursor directory exists
 	if _, err := os.Stat(configDir); err != nil {

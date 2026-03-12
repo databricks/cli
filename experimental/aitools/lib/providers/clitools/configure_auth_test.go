@@ -1,7 +1,6 @@
 package clitools
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -16,7 +15,7 @@ func TestConfigureAuthWithSkipCheck(t *testing.T) {
 	os.Setenv("DATABRICKS_MCP_SKIP_AUTH_CHECK", "1")
 	defer os.Unsetenv("DATABRICKS_MCP_SKIP_AUTH_CHECK")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	sess := session.NewSession()
 
 	host := "https://test.cloud.databricks.com"
@@ -38,7 +37,7 @@ func TestConfigureAuthStoresClientInSession(t *testing.T) {
 		t.Skip("Skipping test: no Databricks configuration found")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	sess := session.NewSession()
 
 	client, err := ConfigureAuth(ctx, sess, nil, nil)
@@ -58,7 +57,7 @@ func TestConfigureAuthWithCustomHost(t *testing.T) {
 		t.Skip("Skipping test: DATABRICKS_HOST not set")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	sess := session.NewSession()
 
 	host := os.Getenv("DATABRICKS_HOST")
@@ -75,7 +74,7 @@ func TestConfigureAuthWithCustomHost(t *testing.T) {
 }
 
 func TestWrapAuthError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string

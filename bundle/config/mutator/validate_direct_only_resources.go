@@ -30,6 +30,18 @@ var directOnlyResources = []directOnlyResource{
 			return result
 		},
 	},
+	{
+		resourceType: "external_locations",
+		pluralName:   "External Location",
+		singularName: "external location",
+		getResources: func(b *bundle.Bundle) map[string]any {
+			result := make(map[string]any)
+			for k, v := range b.Config.Resources.ExternalLocations {
+				result[k] = v
+			}
+			return result
+		},
+	},
 }
 
 type validateDirectOnlyResources struct {

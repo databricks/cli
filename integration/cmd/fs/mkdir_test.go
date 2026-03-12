@@ -1,7 +1,6 @@
 package fs_test
 
 import (
-	"context"
 	"io/fs"
 	"path"
 	"regexp"
@@ -20,7 +19,7 @@ func TestFsMkdir(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			f, tmpDir := testCase.setupFiler(t)
 
 			// create directory "a"
@@ -29,7 +28,7 @@ func TestFsMkdir(t *testing.T) {
 			assert.Equal(t, "", stdout.String())
 
 			// assert directory "a" is created
-			info, err := f.Stat(context.Background(), "a")
+			info, err := f.Stat(t.Context(), "a")
 			require.NoError(t, err)
 			assert.Equal(t, "a", info.Name())
 			assert.True(t, info.IsDir())
@@ -44,7 +43,7 @@ func TestFsMkdirCreatesIntermediateDirectories(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			f, tmpDir := testCase.setupFiler(t)
 
 			// create directory "a/b/c"
@@ -53,19 +52,19 @@ func TestFsMkdirCreatesIntermediateDirectories(t *testing.T) {
 			assert.Equal(t, "", stdout.String())
 
 			// assert directory "a" is created
-			infoA, err := f.Stat(context.Background(), "a")
+			infoA, err := f.Stat(t.Context(), "a")
 			require.NoError(t, err)
 			assert.Equal(t, "a", infoA.Name())
 			assert.True(t, infoA.IsDir())
 
 			// assert directory "b" is created
-			infoB, err := f.Stat(context.Background(), "a/b")
+			infoB, err := f.Stat(t.Context(), "a/b")
 			require.NoError(t, err)
 			assert.Equal(t, "b", infoB.Name())
 			assert.True(t, infoB.IsDir())
 
 			// assert directory "c" is created
-			infoC, err := f.Stat(context.Background(), "a/b/c")
+			infoC, err := f.Stat(t.Context(), "a/b/c")
 			require.NoError(t, err)
 			assert.Equal(t, "c", infoC.Name())
 			assert.True(t, infoC.IsDir())
@@ -80,11 +79,11 @@ func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			f, tmpDir := testCase.setupFiler(t)
 
 			// create directory "a"
-			err := f.Mkdir(context.Background(), "a")
+			err := f.Mkdir(t.Context(), "a")
 			require.NoError(t, err)
 
 			// assert run is successful without any errors
@@ -101,11 +100,11 @@ func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	t.Run("dbfs", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		f, tmpDir := setupDbfsFiler(t)
 
 		// create file "hello"
-		err := f.Write(context.Background(), "hello", strings.NewReader("abc"))
+		err := f.Write(t.Context(), "hello", strings.NewReader("abc"))
 		require.NoError(t, err)
 
 		// assert mkdir fails
@@ -119,11 +118,11 @@ func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	t.Run("uc-volumes", func(t *testing.T) {
 		t.Parallel()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		f, tmpDir := setupUcVolumesFiler(t)
 
 		// create file "hello"
-		err := f.Write(context.Background(), "hello", strings.NewReader("abc"))
+		err := f.Write(t.Context(), "hello", strings.NewReader("abc"))
 		require.NoError(t, err)
 
 		// assert mkdir fails

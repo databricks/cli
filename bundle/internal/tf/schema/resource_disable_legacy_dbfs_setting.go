@@ -6,9 +6,14 @@ type ResourceDisableLegacyDbfsSettingDisableLegacyDbfs struct {
 	Value bool `json:"value"`
 }
 
+type ResourceDisableLegacyDbfsSettingProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceDisableLegacyDbfsSetting struct {
 	Etag              string                                             `json:"etag,omitempty"`
 	Id                string                                             `json:"id,omitempty"`
 	SettingName       string                                             `json:"setting_name,omitempty"`
 	DisableLegacyDbfs *ResourceDisableLegacyDbfsSettingDisableLegacyDbfs `json:"disable_legacy_dbfs,omitempty"`
+	ProviderConfig    *ResourceDisableLegacyDbfsSettingProviderConfig    `json:"provider_config,omitempty"`
 }

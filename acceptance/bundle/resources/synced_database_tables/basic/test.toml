@@ -4,6 +4,10 @@ Badness = "post deployment, bundle summary should print actual name that is full
 
 RecordRequests = false
 
+# The test fails with this today:
+# Error: cannot create resources.synced_database_tables.my_synced_table: Cannot create more than 20 synced database table(s) per source table. (400 BAD_REQUEST)
+RunsOnDbr = false
+
 [[Repls]]
 # clean up ?o=<num> suffix after URL since not all workspaces have that
 Old = '\?o=\[(NUMID|ALPHANUMID)\]'

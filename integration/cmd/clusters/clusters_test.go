@@ -1,7 +1,6 @@
 package clusters_test
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"testing"
@@ -15,7 +14,7 @@ import (
 )
 
 func TestClustersList(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "clusters", "list")
 	outStr := stdout.String()
 	assert.Contains(t, outStr, "ID")
@@ -29,7 +28,7 @@ func TestClustersList(t *testing.T) {
 }
 
 func TestClustersGet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	clusterId := findValidClusterID(t)
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "clusters", "get", clusterId)
 	outStr := stdout.String()
@@ -38,7 +37,7 @@ func TestClustersGet(t *testing.T) {
 }
 
 func TestClusterCreateErrorWhenNoArguments(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, err := testcli.RequireErrorRun(t, ctx, "clusters", "create")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }

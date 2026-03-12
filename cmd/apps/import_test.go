@@ -103,14 +103,7 @@ env: []`,
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create temp directory and change to it
-			tmpDir := t.TempDir()
-			originalDir, err := os.Getwd()
-			require.NoError(t, err)
-			defer func() {
-				_ = os.Chdir(originalDir)
-			}()
-			err = os.Chdir(tmpDir)
-			require.NoError(t, err)
+			t.Chdir(t.TempDir())
 
 			// Setup files
 			for filename, content := range tt.setupFiles {
@@ -159,17 +152,10 @@ env: []`,
 
 func TestInlineAppConfigFileErrors(t *testing.T) {
 	t.Run("invalid yaml", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		originalDir, err := os.Getwd()
-		require.NoError(t, err)
-		defer func() {
-			_ = os.Chdir(originalDir)
-		}()
-		err = os.Chdir(tmpDir)
-		require.NoError(t, err)
+		t.Chdir(t.TempDir())
 
 		// Create invalid YAML
-		err = os.WriteFile("app.yml", []byte("invalid: yaml: content:\n  - broken"), 0o644)
+		err := os.WriteFile("app.yml", []byte("invalid: yaml: content:\n  - broken"), 0o644)
 		require.NoError(t, err)
 
 		appValue := dyn.V(map[string]dyn.Value{"name": dyn.V("test")})
@@ -179,16 +165,9 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 	})
 
 	t.Run("app value not a map", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		originalDir, err := os.Getwd()
-		require.NoError(t, err)
-		defer func() {
-			_ = os.Chdir(originalDir)
-		}()
-		err = os.Chdir(tmpDir)
-		require.NoError(t, err)
+		t.Chdir(t.TempDir())
 
-		err = os.WriteFile("app.yml", []byte("command: [\"test\"]"), 0o644)
+		err := os.WriteFile("app.yml", []byte("command: [\"test\"]"), 0o644)
 		require.NoError(t, err)
 
 		appValue := dyn.V("not a map")
@@ -198,18 +177,11 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 	})
 
 	t.Run("unreadable app.yml", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		originalDir, err := os.Getwd()
-		require.NoError(t, err)
-		defer func() {
-			_ = os.Chdir(originalDir)
-		}()
-		err = os.Chdir(tmpDir)
-		require.NoError(t, err)
+		t.Chdir(t.TempDir())
 
 		// Create file with no read permissions
 		filename := "app.yml"
-		err = os.WriteFile(filename, []byte("command: [\"test\"]"), 0o644)
+		err := os.WriteFile(filename, []byte("command: [\"test\"]"), 0o644)
 		require.NoError(t, err)
 
 		if runtime.GOOS == "windows" {
@@ -239,16 +211,9 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 
 func TestInlineAppConfigFileFieldPriority(t *testing.T) {
 	t.Run("all fields present", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		originalDir, err := os.Getwd()
-		require.NoError(t, err)
-		defer func() {
-			_ = os.Chdir(originalDir)
-		}()
-		err = os.Chdir(tmpDir)
-		require.NoError(t, err)
+		t.Chdir(t.TempDir())
 
-		err = os.WriteFile("app.yml", []byte(`command: ["python", "app.py"]
+		err := os.WriteFile("app.yml", []byte(`command: ["python", "app.py"]
 env:
   - name: FOO
     value: bar

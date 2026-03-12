@@ -10,14 +10,16 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run foo
-Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 
-[TIMESTAMP] "run-name" TERMINATED
+[TIMESTAMP] "foo" RUNNING
+[TIMESTAMP] "foo" TERMINATED SUCCESS
 
 === Testing that clean state that affect run command -- it'll fetch the state
 >>> rm -fr .databricks
 
 >>> [CLI] bundle run foo
-Run URL: [DATABRICKS_URL]/job/run/[NUMID]
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 
-[TIMESTAMP] "run-name" TERMINATED
+[TIMESTAMP] "foo" RUNNING
+[TIMESTAMP] "foo" TERMINATED SUCCESS

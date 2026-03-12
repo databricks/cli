@@ -1,10 +1,12 @@
 package databrickscfg
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoaderSkipsEmptyHost(t *testing.T) {
@@ -132,4 +134,33 @@ func TestLoaderErrorsOnMultipleMatches(t *testing.T) {
 	err := cfg.EnsureResolved()
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "https://foo: multiple profiles matched: foo1, foo2")
+}
+
+func TestAsMultipleProfilesExtractsNames(t *testing.T) {
+	cfg := config.Config{
+		Loaders: []config.Loader{
+			ResolveProfileFromHost,
+		},
+		ConfigFile: "profile/testdata/databrickscfg",
+		Host:       "https://foo/bar",
+	}
+
+	err := cfg.EnsureResolved()
+	require.Error(t, err)
+
+	names, ok := AsMultipleProfiles(err)
+	assert.True(t, ok)
+	assert.Equal(t, []string{"foo1", "foo2"}, names)
+}
+
+func TestAsMultipleProfilesReturnsFalseForUnrelatedError(t *testing.T) {
+	names, ok := AsMultipleProfiles(errors.New("some other error"))
+	assert.False(t, ok)
+	assert.Nil(t, names)
+}
+
+func TestAsMultipleProfilesReturnsFalseForNil(t *testing.T) {
+	names, ok := AsMultipleProfiles(nil)
+	assert.False(t, ok)
+	assert.Nil(t, names)
 }

@@ -3,7 +3,6 @@ sethome "./home"
 # Use a fake browser that performs a GET on the authorization URL
 # and follows the redirect back to localhost.
 export BROWSER="browser.py"
-export DATABRICKS_CLI_PATH=$CLI
 
 trace $CLI auth login --host $DATABRICKS_HOST --profile test
 trace $CLI auth profiles

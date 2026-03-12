@@ -1,0 +1,14 @@
+Local = true
+Cloud = true
+RecordRequests = false
+
+Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "out.app-run"]
+
+# Apps can take longer to deploy
+TimeoutCloud = "5m"
+
+# Simulate the Terraform provider's old update API not supporting compute_size changes.
+[[Server]]
+Pattern = "PATCH /api/2.0/apps/{name}"
+Response.StatusCode = 400
+Response.Body = '{"error_code": "INVALID_PARAMETER_VALUE", "message": "Compute size updates are not supported in this update API. Please use the new update API instead."}'

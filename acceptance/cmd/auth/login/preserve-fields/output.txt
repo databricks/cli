@@ -1,0 +1,21 @@
+
+=== Initial profile
+[DEFAULT]
+host = [DATABRICKS_URL]
+cluster_id = existing-cluster-123
+warehouse_id = warehouse-456
+azure_environment = USGOVERNMENT
+custom_key = my-custom-value
+
+=== Run auth login (no --configure-cluster or --configure-serverless)
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile DEFAULT
+Profile DEFAULT was successfully saved
+
+=== Profile after auth login — all non-auth fields should be preserved
+[DEFAULT]
+host              = [DATABRICKS_URL]
+cluster_id        = existing-cluster-123
+warehouse_id      = warehouse-456
+azure_environment = USGOVERNMENT
+custom_key        = my-custom-value
+auth_type         = databricks-cli

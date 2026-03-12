@@ -25,7 +25,7 @@ resources:
   postgres_endpoints:
     my_endpoint:
       parent: ${resources.postgres_branches.main.id}
-      endpoint_id: test-endpoint-$UNIQUE_NAME
-      endpoint_type: ENDPOINT_TYPE_PLACEHOLDER
+      endpoint_id: ENDPOINT_ID_PLACEHOLDER
+      endpoint_type: ENDPOINT_TYPE_READ_ONLY
       autoscaling_limit_min_cu: 0.5
       autoscaling_limit_max_cu: 2

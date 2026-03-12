@@ -1,7 +1,6 @@
 package run
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -43,11 +42,11 @@ func TestPipelineRunnerCancel(t *testing.T) {
 	}
 
 	pipelineApi := m.GetMockPipelinesAPI()
-	pipelineApi.EXPECT().Stop(context.Background(), pipelines.StopRequest{
+	pipelineApi.EXPECT().Stop(t.Context(), pipelines.StopRequest{
 		PipelineId: "123",
 	}).Return(mockWait, nil)
 
-	err := runner.Cancel(context.Background())
+	err := runner.Cancel(t.Context())
 	require.NoError(t, err)
 }
 
@@ -74,7 +73,7 @@ func TestPipelineRunnerRestart(t *testing.T) {
 	}
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 
 	mockWait := &pipelines.WaitGetPipelineIdle[struct{}]{
 		Poll: func(time.Duration, func(*pipelines.GetPipelineResponse)) (*pipelines.GetPipelineResponse, error) {
