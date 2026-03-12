@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"net/url"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -93,4 +94,12 @@ func URIToPath(uri string) string {
 		p = p[1:]
 	}
 	return p
+}
+
+// PathToURI converts a filesystem path to a file:// URI.
+func PathToURI(path string) string {
+	if runtime.GOOS == "windows" {
+		path = "/" + filepath.ToSlash(path)
+	}
+	return "file://" + path
 }

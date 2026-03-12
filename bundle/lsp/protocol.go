@@ -17,6 +17,19 @@ type ServerCapabilities struct {
 	TextDocumentSync     *TextDocumentSyncOptions `json:"textDocumentSync,omitempty"`
 	HoverProvider        bool                     `json:"hoverProvider,omitempty"`
 	DocumentLinkProvider *DocumentLinkOptions     `json:"documentLinkProvider,omitempty"`
+	DefinitionProvider   bool                     `json:"definitionProvider,omitempty"`
+}
+
+// DefinitionParams holds the parameters for textDocument/definition.
+type DefinitionParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Position     Position               `json:"position"`
+}
+
+// LSPLocation represents a location in a document (used for definition results).
+type LSPLocation struct {
+	URI   string `json:"uri"`
+	Range Range  `json:"range"`
 }
 
 // TextDocumentSyncOptions describes how text document syncing works.

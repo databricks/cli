@@ -372,3 +372,63 @@ func TestLoadResourceStateNoState(t *testing.T) {
 	result := lsp.LoadResourceState("/nonexistent", "dev")
 	assert.Empty(t, result)
 }
+
+func TestLoadAllTargets(t *testing.T) {
+	yaml := `
+targets:
+  dev:
+    default: true
+  staging:
+    workspace:
+      host: "https://staging.databricks.com"
+  prod:
+    workspace:
+      host: "https://prod.databricks.com"
+`
+	v, err := yamlloader.LoadYAML("test.yml", strings.NewReader(yaml))
+	require.NoError(t, err)
+
+	targets := lsp.LoadAllTargets(v)
+	require.Len(t, targets, 3)
+	assert.Equal(t, "dev", targets[0])
+	assert.Equal(t, "staging", targets[1])
+	assert.Equal(t, "prod", targets[2])
+}
+
+func TestLoadAllTargetsNoTargets(t *testing.T) {
+	yaml := `
+bundle:
+  name: "test"
+`
+	v, err := yamlloader.LoadYAML("test.yml", strings.NewReader(yaml))
+	require.NoError(t, err)
+
+	targets := lsp.LoadAllTargets(v)
+	assert.Nil(t, targets)
+}
+
+func TestLoadTargetWorkspaceHost(t *testing.T) {
+	yaml := `
+workspace:
+  host: "https://default.databricks.com"
+targets:
+  dev:
+    workspace:
+      host: "https://dev.databricks.com"
+  prod:
+    workspace:
+      host: "https://prod.databricks.com"
+  staging: {}
+`
+	v, err := yamlloader.LoadYAML("test.yml", strings.NewReader(yaml))
+	require.NoError(t, err)
+
+	assert.Equal(t, "https://dev.databricks.com", lsp.LoadTargetWorkspaceHost(v, "dev"))
+	assert.Equal(t, "https://prod.databricks.com", lsp.LoadTargetWorkspaceHost(v, "prod"))
+	// staging has no override, falls back to root.
+	assert.Equal(t, "https://default.databricks.com", lsp.LoadTargetWorkspaceHost(v, "staging"))
+}
+
+func TestPathToURI(t *testing.T) {
+	assert.Equal(t, "file:///home/user/file.yml", lsp.PathToURI("/home/user/file.yml"))
+}
