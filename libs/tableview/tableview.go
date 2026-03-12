@@ -5,26 +5,9 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-)
-
-const (
-	horizontalScrollStep = 4
-	footerHeight         = 1
-	searchFooterHeight   = 2
-	// headerLines is the number of non-data lines at the top (header + separator).
-	headerLines = 2
-)
-
-var (
-	searchHighlightStyle = lipgloss.NewStyle().Background(lipgloss.Color("228")).Foreground(lipgloss.Color("0"))
-	cursorStyle          = lipgloss.NewStyle().Background(lipgloss.Color("57")).Foreground(lipgloss.Color("229"))
-	footerStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-	searchStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("229"))
 )
 
 // Run displays tabular data in an interactive browser.
@@ -40,92 +23,6 @@ func Run(w io.Writer, columns []string, rows [][]string) error {
 	p := tea.NewProgram(m, tea.WithOutput(w))
 	_, err := p.Run()
 	return err
-}
-
-// renderTableLines produces aligned table text as individual lines.
-func renderTableLines(columns []string, rows [][]string) []string {
-	var buf strings.Builder
-	tw := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
-
-	// Header.
-	fmt.Fprintln(tw, strings.Join(columns, "\t"))
-
-	// Separator: compute widths from header + data for dash line.
-	widths := make([]int, len(columns))
-	for i, col := range columns {
-		widths[i] = len(col)
-	}
-	for _, row := range rows {
-		for i := range columns {
-			if i < len(row) {
-				widths[i] = max(widths[i], len(row[i]))
-			}
-		}
-	}
-	seps := make([]string, len(columns))
-	for i, w := range widths {
-		seps[i] = strings.Repeat("─", w)
-	}
-	fmt.Fprintln(tw, strings.Join(seps, "\t"))
-
-	// Data rows.
-	for _, row := range rows {
-		vals := make([]string, len(columns))
-		for i := range columns {
-			if i < len(row) {
-				vals[i] = row[i]
-			}
-		}
-		fmt.Fprintln(tw, strings.Join(vals, "\t"))
-	}
-
-	tw.Flush()
-
-	// Split into lines, drop trailing empty.
-	lines := strings.Split(buf.String(), "\n")
-	if len(lines) > 0 && lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1]
-	}
-	return lines
-}
-
-// findMatches returns line indices containing the query (case-insensitive).
-func findMatches(lines []string, query string) []int {
-	if query == "" {
-		return nil
-	}
-	lower := strings.ToLower(query)
-	var matches []int
-	for i, line := range lines {
-		if strings.Contains(strings.ToLower(line), lower) {
-			matches = append(matches, i)
-		}
-	}
-	return matches
-}
-
-// highlightSearch applies search match highlighting to a single line.
-func highlightSearch(line, query string) string {
-	if query == "" {
-		return line
-	}
-	lower := strings.ToLower(query)
-	qLen := len(query)
-	lineLower := strings.ToLower(line)
-
-	var b strings.Builder
-	pos := 0
-	for {
-		idx := strings.Index(lineLower[pos:], lower)
-		if idx < 0 {
-			b.WriteString(line[pos:])
-			break
-		}
-		b.WriteString(line[pos : pos+idx])
-		b.WriteString(searchHighlightStyle.Render(line[pos+idx : pos+idx+qLen]))
-		pos += idx + qLen
-	}
-	return b.String()
 }
 
 // renderContent builds the viewport content with cursor and search highlighting.
@@ -208,7 +105,7 @@ func (m model) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.matchIdx = (m.matchIdx + 1) % len(m.matchLines)
 			m.cursor = m.matchLines[m.matchIdx]
 			m.viewport.SetContent(m.renderContent())
-			m.scrollToCursor()
+			scrollViewportToCursor(&m.viewport, m.cursor)
 		}
 		return m, nil
 	case "N":
@@ -216,7 +113,7 @@ func (m model) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.matchIdx = (m.matchIdx - 1 + len(m.matchLines)) % len(m.matchLines)
 			m.cursor = m.matchLines[m.matchIdx]
 			m.viewport.SetContent(m.renderContent())
-			m.scrollToCursor()
+			scrollViewportToCursor(&m.viewport, m.cursor)
 		}
 		return m, nil
 	case "up", "k":
@@ -255,18 +152,7 @@ func (m *model) moveCursor(delta int) {
 	m.cursor = max(m.cursor, headerLines)
 	m.cursor = min(m.cursor, len(m.lines)-1)
 	m.viewport.SetContent(m.renderContent())
-	m.scrollToCursor()
-}
-
-// scrollToCursor ensures the cursor line is visible in the viewport.
-func (m *model) scrollToCursor() {
-	top := m.viewport.YOffset
-	bottom := top + m.viewport.Height - 1
-	if m.cursor < top {
-		m.viewport.SetYOffset(m.cursor)
-	} else if m.cursor > bottom {
-		m.viewport.SetYOffset(m.cursor - m.viewport.Height + 1)
-	}
+	scrollViewportToCursor(&m.viewport, m.cursor)
 }
 
 func (m model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -283,7 +169,7 @@ func (m model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.viewport.SetContent(m.renderContent())
 		if len(m.matchLines) > 0 {
-			m.scrollToCursor()
+			scrollViewportToCursor(&m.viewport, m.cursor)
 		}
 		return m, nil
 	case "esc", "ctrl+c":

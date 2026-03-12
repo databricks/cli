@@ -42,6 +42,12 @@ func (c Capabilities) SupportsPrompt() bool {
 	return c.SupportsInteractive() && c.stdinIsTTY && !c.isGitBash
 }
 
+// SupportsTUI returns true when the terminal supports a full interactive TUI.
+// Requires stdin (keyboard), stderr (prompts), and stdout (TUI output) all be TTYs with color.
+func (c Capabilities) SupportsTUI() bool {
+	return c.stdinIsTTY && c.stdoutIsTTY && c.stderrIsTTY && c.color && !c.isGitBash
+}
+
 // SupportsColor returns true if the given writer supports colored output.
 // This checks both TTY status and environment variables (NO_COLOR, TERM=dumb).
 func (c Capabilities) SupportsColor(w io.Writer) bool {
