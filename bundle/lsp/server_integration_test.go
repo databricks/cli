@@ -55,7 +55,7 @@ func newTestClientServer(t *testing.T, srv *Server) *jrpc2.Client {
 
 	mux := handler.Map{
 		"initialize":                handler.New(srv.handleInitialize),
-		"initialized":              handler.New(srv.handleInitialized),
+		"initialized":               handler.New(srv.handleInitialized),
 		"shutdown":                  handler.New(srv.handleShutdown),
 		"textDocument/didOpen":      handler.New(srv.handleTextDocumentDidOpen),
 		"textDocument/didChange":    handler.New(srv.handleTextDocumentDidChange),
@@ -95,7 +95,7 @@ func TestServerHandleInitialize(t *testing.T) {
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	result := initializeClient(ctx, t, cli, "file://"+tmpDir)
+	result := initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
 	assert.True(t, result.Capabilities.HoverProvider)
 	assert.True(t, result.Capabilities.DefinitionProvider)
@@ -111,9 +111,9 @@ func TestServerHandleDocumentLink(t *testing.T) {
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	initializeClient(ctx, t, cli, "file://"+tmpDir)
+	initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
-	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	docURI := PathToURI(filepath.Join(tmpDir, "databricks.yml"))
 	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        docURI,
@@ -145,9 +145,9 @@ func TestServerHandleDocumentLinkNoState(t *testing.T) {
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	initializeClient(ctx, t, cli, "file://"+tmpDir)
+	initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
-	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	docURI := PathToURI(filepath.Join(tmpDir, "databricks.yml"))
 	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        docURI,
@@ -172,9 +172,9 @@ func TestServerHandleHoverOnResource(t *testing.T) {
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	initializeClient(ctx, t, cli, "file://"+tmpDir)
+	initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
-	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	docURI := PathToURI(filepath.Join(tmpDir, "databricks.yml"))
 	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        docURI,
@@ -210,9 +210,9 @@ func TestServerHandleHoverOffResource(t *testing.T) {
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	initializeClient(ctx, t, cli, "file://"+tmpDir)
+	initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
-	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	docURI := PathToURI(filepath.Join(tmpDir, "databricks.yml"))
 	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        docURI,
@@ -244,7 +244,7 @@ func TestServerEndToEnd(t *testing.T) {
 	ctx := t.Context()
 
 	// 1. Initialize.
-	result := initializeClient(ctx, t, cli, "file://"+tmpDir)
+	result := initializeClient(ctx, t, cli, PathToURI(tmpDir))
 	assert.True(t, result.Capabilities.HoverProvider)
 
 	// 2. Initialized notification.
@@ -252,7 +252,7 @@ func TestServerEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 
 	// 3. Open document.
-	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	docURI := PathToURI(filepath.Join(tmpDir, "databricks.yml"))
 	err = cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        docURI,
@@ -362,9 +362,9 @@ func TestServerDefinitionOnInterpolation(t *testing.T) {
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	initializeClient(ctx, t, cli, "file://"+tmpDir)
+	initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
-	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	docURI := PathToURI(filepath.Join(tmpDir, "databricks.yml"))
 	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        docURI,
@@ -405,9 +405,9 @@ func TestServerDefinitionOnResourceKey(t *testing.T) {
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	initializeClient(ctx, t, cli, "file://"+tmpDir)
+	initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
-	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	docURI := PathToURI(filepath.Join(tmpDir, "databricks.yml"))
 	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        docURI,
@@ -418,15 +418,7 @@ func TestServerDefinitionOnResourceKey(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Get links to find the position of my_job key.
-	var links []DocumentLink
-	err = cli.CallResult(ctx, "textDocument/documentLink", DocumentLinkParams{
-		TextDocument: TextDocumentIdentifier{URI: docURI},
-	}, &links)
-	require.NoError(t, err)
-
-	// my_job has no deployment state, so no document links. Use resource index position directly.
-	// Find the resource key position via IndexResources.
+	// Find the resource key position.
 	lines := strings.Split(testBundleYAMLWithInterpolation, "\n")
 	var myJobLine int
 	var myJobCol int
@@ -441,13 +433,11 @@ func TestServerDefinitionOnResourceKey(t *testing.T) {
 
 	// Ctrl+click on "my_job" key should return references (${...} expressions referencing it).
 	// The YAML has name: "${var.my_var}" which does NOT reference my_job, so this may return empty.
-	// Let's just verify the call succeeds without error.
 	rsp, err := cli.Call(ctx, "textDocument/definition", DefinitionParams{
 		TextDocument: TextDocumentIdentifier{URI: docURI},
 		Position:     Position{Line: myJobLine, Character: myJobCol},
 	})
 	require.NoError(t, err)
-	// Result may be null (no references to my_job in the tree).
 	assert.NotNil(t, rsp)
 }
 
@@ -459,9 +449,9 @@ func TestServerDefinitionVarShorthand(t *testing.T) {
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	initializeClient(ctx, t, cli, "file://"+tmpDir)
+	initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
-	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	docURI := PathToURI(filepath.Join(tmpDir, "databricks.yml"))
 	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        docURI,
@@ -491,7 +481,6 @@ func TestServerDefinitionVarShorthand(t *testing.T) {
 		Position:     Position{Line: targetLine, Character: targetCol},
 	}, &loc)
 	require.NoError(t, err)
-	// Should resolve to the variables section.
 	assert.Contains(t, loc.URI, "databricks.yml")
 }
 
@@ -503,9 +492,9 @@ func TestServerDefinitionNoMatch(t *testing.T) {
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	initializeClient(ctx, t, cli, "file://"+tmpDir)
+	initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
-	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	docURI := PathToURI(filepath.Join(tmpDir, "databricks.yml"))
 	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        docURI,
@@ -552,10 +541,10 @@ variables:
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	initializeClient(ctx, t, cli, "file://"+tmpDir)
+	initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
 	// Open the resource file with the interpolation.
-	resDocURI := "file://" + filepath.Join(tmpDir, "resources", "jobs.yml")
+	resDocURI := PathToURI(filepath.Join(tmpDir, "resources", "jobs.yml"))
 	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        resDocURI,
@@ -628,9 +617,9 @@ resources:
 	cli := newTestClientServer(t, srv)
 	ctx := t.Context()
 
-	initializeClient(ctx, t, cli, "file://"+tmpDir)
+	initializeClient(ctx, t, cli, PathToURI(tmpDir))
 
-	docURI := "file://" + filepath.Join(tmpDir, "databricks.yml")
+	docURI := PathToURI(filepath.Join(tmpDir, "databricks.yml"))
 	err := cli.Notify(ctx, "textDocument/didOpen", DidOpenTextDocumentParams{
 		TextDocument: TextDocumentItem{
 			URI:        docURI,
