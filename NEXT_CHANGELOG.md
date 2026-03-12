@@ -1,6 +1,6 @@
 # NEXT CHANGELOG
 
-## Release v0.293.0
+## Release v0.294.0
 
 ### CLI
 
