@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -462,7 +461,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		AccountID:                  loginArgs.AccountID,
 		WorkspaceID:                loginArgs.WorkspaceID,
 		Experimental_IsUnifiedHost: loginArgs.IsUnifiedHost,
-		ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
+		ConfigFile:                 env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		Scopes:                     scopesList,
 	}, clearKeys...)
 	if err != nil {

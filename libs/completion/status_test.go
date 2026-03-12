@@ -14,7 +14,7 @@ func TestStatusNotInstalled(t *testing.T) {
 	// Override HOMEBREW_PREFIX so the real system Homebrew isn't detected.
 	t.Setenv("HOMEBREW_PREFIX", t.TempDir())
 
-	result, err := Status(Zsh, home)
+	result, err := Status(t.Context(), Zsh, home)
 	require.NoError(t, err)
 	assert.False(t, result.Installed)
 	assert.Empty(t, result.Method)
@@ -26,7 +26,7 @@ func TestStatusInstalledViaMarker(t *testing.T) {
 	rcPath := filepath.Join(home, ".zshrc")
 	require.NoError(t, os.WriteFile(rcPath, []byte(ShimContent(Zsh)), 0o644))
 
-	result, err := Status(Zsh, home)
+	result, err := Status(t.Context(), Zsh, home)
 	require.NoError(t, err)
 	assert.True(t, result.Installed)
 	assert.Equal(t, "marker", result.Method)
@@ -39,7 +39,7 @@ func TestStatusFishFileExists(t *testing.T) {
 	// Write a file without our markers (simulating package manager install).
 	require.NoError(t, os.WriteFile(fishPath, []byte("# package manager completions\n"), 0o644))
 
-	result, err := Status(Fish, home)
+	result, err := Status(t.Context(), Fish, home)
 	require.NoError(t, err)
 	assert.True(t, result.Installed)
 	assert.Equal(t, "file", result.Method)
@@ -51,7 +51,7 @@ func TestStatusFishWithMarker(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Dir(fishPath), 0o755))
 	require.NoError(t, os.WriteFile(fishPath, []byte(ShimContent(Fish)), 0o644))
 
-	result, err := Status(Fish, home)
+	result, err := Status(t.Context(), Fish, home)
 	require.NoError(t, err)
 	assert.True(t, result.Installed)
 	assert.Equal(t, "marker", result.Method)
@@ -72,7 +72,7 @@ func TestStatusHomebrewZsh(t *testing.T) {
 
 	t.Setenv("HOMEBREW_PREFIX", brewPrefix)
 
-	result, err := Status(Zsh, home)
+	result, err := Status(t.Context(), Zsh, home)
 	require.NoError(t, err)
 	assert.True(t, result.Installed)
 	assert.Equal(t, "homebrew", result.Method)
@@ -94,7 +94,7 @@ func TestStatusMarkerTakesPrecedenceOverHomebrew(t *testing.T) {
 	rcPath := filepath.Join(home, ".zshrc")
 	require.NoError(t, os.WriteFile(rcPath, []byte(ShimContent(Zsh)), 0o644))
 
-	result, err := Status(Zsh, home)
+	result, err := Status(t.Context(), Zsh, home)
 	require.NoError(t, err)
 	assert.True(t, result.Installed)
 	assert.Equal(t, "marker", result.Method)
@@ -105,7 +105,7 @@ func TestStatusBash(t *testing.T) {
 	filePath := TargetFilePath(Bash, home)
 	require.NoError(t, os.WriteFile(filePath, []byte(ShimContent(Bash)), 0o644))
 
-	result, err := Status(Bash, home)
+	result, err := Status(t.Context(), Bash, home)
 	require.NoError(t, err)
 	assert.True(t, result.Installed)
 	assert.Equal(t, "marker", result.Method)
@@ -117,7 +117,7 @@ func TestStatusPowerShell(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Dir(filePath), 0o755))
 	require.NoError(t, os.WriteFile(filePath, []byte(ShimContent(PowerShell)), 0o644))
 
-	result, err := Status(PowerShell, home)
+	result, err := Status(t.Context(), PowerShell, home)
 	require.NoError(t, err)
 	assert.True(t, result.Installed)
 	assert.Equal(t, "marker", result.Method)

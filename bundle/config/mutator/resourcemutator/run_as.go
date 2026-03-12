@@ -201,7 +201,7 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 				(runAs.UserName != "" && p.UserName == runAs.UserName)
 		})
 		pipeline.Permissions = append(pipeline.Permissions, resources.PipelinePermission{
-			Level:                "IS_OWNER",
+			Level:                pipelines.PipelinePermissionLevelIsOwner,
 			ServicePrincipalName: runAs.ServicePrincipalName,
 			UserName:             runAs.UserName,
 		})

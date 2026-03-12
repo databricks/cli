@@ -43,7 +43,7 @@
                     "x-since-version": "v0.279.0"
                   },
                   "permissions": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AlertPermission",
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
                     "x-since-version": "v0.279.0"
                   },
                   "query_text": {
@@ -76,40 +76,6 @@
                   "query_text",
                   "schedule",
                   "warehouse_id"
-                ]
-              },
-              "resources.AlertPermission": {
-                "type": "object",
-                "properties": {
-                  "group_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
-                  },
-                  "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AlertPermissionLevel",
-                    "x-since-version": "v0.279.0"
-                  },
-                  "service_principal_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
-                  },
-                  "user_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "level"
-                ]
-              },
-              "resources.AlertPermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_EDIT",
-                  "CAN_MANAGE",
-                  "CAN_READ",
-                  "CAN_RUN"
                 ]
               },
               "resources.App": {
@@ -174,6 +140,9 @@
                     "doNotSuggest": true,
                     "x-since-version": "v0.290.0"
                   },
+                  "telemetry_export_destinations": {
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination"
+                  },
                   "usage_policy_id": {
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.283.0"
@@ -231,7 +200,7 @@
                     "x-since-version": "v0.247.0"
                   },
                   "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppPermissionLevel",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppPermissionLevel",
                     "x-since-version": "v0.247.0"
                   },
                   "service_principal_name": {
@@ -246,13 +215,6 @@
                 "additionalProperties": false,
                 "required": [
                   "level"
-                ]
-              },
-              "resources.AppPermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_MANAGE",
-                  "CAN_USE"
                 ]
               },
               "resources.Catalog": {
@@ -494,7 +456,7 @@
                     "x-since-version": "v0.247.0"
                   },
                   "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPermissionLevel",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterPermissionLevel",
                     "x-since-version": "v0.247.0"
                   },
                   "service_principal_name": {
@@ -509,14 +471,6 @@
                 "additionalProperties": false,
                 "required": [
                   "level"
-                ]
-              },
-              "resources.ClusterPermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_MANAGE",
-                  "CAN_RESTART",
-                  "CAN_ATTACH_TO"
                 ]
               },
               "resources.Dashboard": {
@@ -581,7 +535,7 @@
                     "x-since-version": "v0.234.0"
                   },
                   "permissions": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DashboardPermission",
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
                     "x-since-version": "v0.232.0"
                   },
                   "serialized_dashboard": {
@@ -602,40 +556,6 @@
                 },
                 "additionalProperties": false,
                 "markdownDescription": "The dashboard resource allows you to manage [AI/BI dashboards](https://docs.databricks.com/api/workspace/lakeview/create) in a bundle. For information about AI/BI dashboards, see [link](https://docs.databricks.com/dashboards/index.html)."
-              },
-              "resources.DashboardPermission": {
-                "type": "object",
-                "properties": {
-                  "group_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.247.0"
-                  },
-                  "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel",
-                    "x-since-version": "v0.247.0"
-                  },
-                  "service_principal_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.247.0"
-                  },
-                  "user_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.247.0"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "level"
-                ]
-              },
-              "resources.DashboardPermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_READ",
-                  "CAN_RUN",
-                  "CAN_EDIT",
-                  "CAN_MANAGE"
-                ]
               },
               "resources.DatabaseCatalog": {
                 "type": "object",
@@ -717,7 +637,7 @@
                     "x-since-version": "v0.265.0"
                   },
                   "permissions": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission",
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
                     "x-since-version": "v0.265.0"
                   },
                   "retention_window_in_days": {
@@ -739,71 +659,6 @@
                 "additionalProperties": false,
                 "required": [
                   "name"
-                ]
-              },
-              "resources.DatabaseInstancePermission": {
-                "type": "object",
-                "properties": {
-                  "group_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.265.0"
-                  },
-                  "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel",
-                    "x-since-version": "v0.265.0"
-                  },
-                  "service_principal_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.265.0"
-                  },
-                  "user_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.265.0"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "level"
-                ]
-              },
-              "resources.DatabaseInstancePermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_CREATE",
-                  "CAN_USE",
-                  "CAN_MANAGE"
-                ]
-              },
-              "resources.DatabaseProjectPermission": {
-                "type": "object",
-                "properties": {
-                  "group_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.292.0"
-                  },
-                  "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermissionLevel",
-                    "x-since-version": "v0.292.0"
-                  },
-                  "service_principal_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.292.0"
-                  },
-                  "user_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.292.0"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "level"
-                ]
-              },
-              "resources.DatabaseProjectPermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_USE",
-                  "CAN_MANAGE"
                 ]
               },
               "resources.ExternalLocation": {
@@ -999,7 +854,7 @@
                     "x-since-version": "v0.247.0"
                   },
                   "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobPermissionLevel",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobPermissionLevel",
                     "x-since-version": "v0.247.0"
                   },
                   "service_principal_name": {
@@ -1014,15 +869,6 @@
                 "additionalProperties": false,
                 "required": [
                   "level"
-                ]
-              },
-              "resources.JobPermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_MANAGE",
-                  "CAN_MANAGE_RUN",
-                  "CAN_VIEW",
-                  "IS_OWNER"
                 ]
               },
               "resources.Lifecycle": {
@@ -1078,7 +924,7 @@
                     "x-since-version": "v0.247.0"
                   },
                   "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermissionLevel",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.ExperimentPermissionLevel",
                     "x-since-version": "v0.247.0"
                   },
                   "service_principal_name": {
@@ -1093,14 +939,6 @@
                 "additionalProperties": false,
                 "required": [
                   "level"
-                ]
-              },
-              "resources.MlflowExperimentPermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_MANAGE",
-                  "CAN_EDIT",
-                  "CAN_READ"
                 ]
               },
               "resources.MlflowModel": {
@@ -1145,7 +983,7 @@
                     "x-since-version": "v0.247.0"
                   },
                   "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.MlflowModelPermissionLevel",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/ml.RegisteredModelPermissionLevel",
                     "x-since-version": "v0.247.0"
                   },
                   "service_principal_name": {
@@ -1160,16 +998,6 @@
                 "additionalProperties": false,
                 "required": [
                   "level"
-                ]
-              },
-              "resources.MlflowModelPermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_EDIT",
-                  "CAN_MANAGE",
-                  "CAN_MANAGE_STAGING_VERSIONS",
-                  "CAN_MANAGE_PRODUCTION_VERSIONS",
-                  "CAN_READ"
                 ]
               },
               "resources.ModelServingEndpoint": {
@@ -1245,7 +1073,7 @@
                     "x-since-version": "v0.247.0"
                   },
                   "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermissionLevel",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServingEndpointPermissionLevel",
                     "x-since-version": "v0.247.0"
                   },
                   "service_principal_name": {
@@ -1262,14 +1090,6 @@
                   "level"
                 ]
               },
-              "resources.ModelServingEndpointPermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_MANAGE",
-                  "CAN_QUERY",
-                  "CAN_VIEW"
-                ]
-              },
               "resources.Permission": {
                 "type": "object",
                 "properties": {
@@ -1280,7 +1100,7 @@
                   },
                   "level": {
                     "description": "The allowed permission for user, group, service principal defined for this permission.",
-                    "$ref": "#/$defs/string",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel",
                     "x-since-version": "v0.229.0"
                   },
                   "service_principal_name": {
@@ -1477,7 +1297,7 @@
                     "x-since-version": "v0.247.0"
                   },
                   "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelinePermissionLevel",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelinePermissionLevel",
                     "x-since-version": "v0.247.0"
                   },
                   "service_principal_name": {
@@ -1492,15 +1312,6 @@
                 "additionalProperties": false,
                 "required": [
                   "level"
-                ]
-              },
-              "resources.PipelinePermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_MANAGE",
-                  "IS_OWNER",
-                  "CAN_RUN",
-                  "CAN_VIEW"
                 ]
               },
               "resources.PostgresBranch": {
@@ -1639,7 +1450,7 @@
                     "x-since-version": "v0.287.0"
                   },
                   "permissions": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission",
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
                     "x-since-version": "v0.292.0"
                   },
                   "pg_version": {
@@ -2029,7 +1840,7 @@
                     "x-since-version": "v0.260.0"
                   },
                   "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel",
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel",
                     "x-since-version": "v0.260.0"
                   },
                   "service_principal_name": {
@@ -2046,18 +1857,8 @@
                   "level"
                 ]
               },
-              "resources.SqlWarehousePermissionLevel": {
-                "type": "string",
-                "enum": [
-                  "CAN_MANAGE",
-                  "CAN_USE",
-                  "CAN_MONITOR",
-                  "CAN_VIEW"
-                ]
-              },
               "resources.SyncedDatabaseTable": {
                 "type": "object",
-                "description": "Next field marker: 18",
                 "properties": {
                   "database_instance_name": {
                     "$ref": "#/$defs/string",
@@ -2955,13 +2756,19 @@
               "type": "object",
               "additionalProperties": false
             },
+            "apps.AppPermissionLevel": {
+              "type": "string",
+              "description": "Permission level",
+              "enum": [
+                "CAN_MANAGE",
+                "CAN_USE"
+              ]
+            },
             "apps.AppResource": {
               "type": "object",
               "properties": {
                 "app": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceApp",
-                  "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
                   "x-since-version": "v0.290.0"
                 },
                 "database": {
@@ -3393,6 +3200,41 @@
                 }
               },
               "additionalProperties": false
+            },
+            "apps.TelemetryExportDestination": {
+              "type": "object",
+              "description": "A single telemetry export destination with its configuration and status.",
+              "properties": {
+                "unity_catalog": {
+                  "description": "Unity Catalog Destinations for OTEL telemetry export.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.UnityCatalog"
+                }
+              },
+              "additionalProperties": false
+            },
+            "apps.UnityCatalog": {
+              "type": "object",
+              "description": "Unity Catalog Destinations for OTEL telemetry export.",
+              "properties": {
+                "logs_table": {
+                  "description": "Unity Catalog table for OTEL logs.",
+                  "$ref": "#/$defs/string"
+                },
+                "metrics_table": {
+                  "description": "Unity Catalog table for OTEL metrics.",
+                  "$ref": "#/$defs/string"
+                },
+                "traces_table": {
+                  "description": "Unity Catalog table for OTEL traces (spans).",
+                  "$ref": "#/$defs/string"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "logs_table",
+                "metrics_table",
+                "traces_table"
+              ]
             },
             "catalog.AwsSqsQueue": {
               "type": "object",
@@ -3977,6 +3819,15 @@
                 }
               },
               "additionalProperties": false
+            },
+            "compute.ClusterPermissionLevel": {
+              "type": "string",
+              "description": "Permission level",
+              "enum": [
+                "CAN_MANAGE",
+                "CAN_RESTART",
+                "CAN_ATTACH_TO"
+              ]
             },
             "compute.ClusterSpec": {
               "type": "object",
@@ -4847,6 +4698,31 @@
               "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_TRIGGERED_UPDATE\nor the SYNCED_NO_PENDING_UPDATE state.",
               "additionalProperties": false
             },
+            "iam.PermissionLevel": {
+              "type": "string",
+              "description": "Permission level",
+              "enum": [
+                "CAN_MANAGE",
+                "CAN_RESTART",
+                "CAN_ATTACH_TO",
+                "IS_OWNER",
+                "CAN_MANAGE_RUN",
+                "CAN_VIEW",
+                "CAN_READ",
+                "CAN_RUN",
+                "CAN_EDIT",
+                "CAN_USE",
+                "CAN_MANAGE_STAGING_VERSIONS",
+                "CAN_MANAGE_PRODUCTION_VERSIONS",
+                "CAN_EDIT_METADATA",
+                "CAN_VIEW_METADATA",
+                "CAN_BIND",
+                "CAN_QUERY",
+                "CAN_MONITOR",
+                "CAN_CREATE",
+                "CAN_MONITOR_ONLY"
+              ]
+            },
             "jobs.AuthenticationMethod": {
               "type": "string",
               "enum": [
@@ -5426,6 +5302,16 @@
               "required": [
                 "default",
                 "name"
+              ]
+            },
+            "jobs.JobPermissionLevel": {
+              "type": "string",
+              "description": "Permission level",
+              "enum": [
+                "CAN_MANAGE",
+                "IS_OWNER",
+                "CAN_MANAGE_RUN",
+                "CAN_VIEW"
               ]
             },
             "jobs.JobRunAs": {
@@ -6573,6 +6459,15 @@
               },
               "additionalProperties": false
             },
+            "ml.ExperimentPermissionLevel": {
+              "type": "string",
+              "description": "Permission level",
+              "enum": [
+                "CAN_MANAGE",
+                "CAN_EDIT",
+                "CAN_READ"
+              ]
+            },
             "ml.ExperimentTag": {
               "type": "object",
               "description": "A tag for an experiment.",
@@ -6606,6 +6501,17 @@
                 }
               },
               "additionalProperties": false
+            },
+            "ml.RegisteredModelPermissionLevel": {
+              "type": "string",
+              "description": "Permission level",
+              "enum": [
+                "CAN_MANAGE",
+                "CAN_MANAGE_PRODUCTION_VERSIONS",
+                "CAN_MANAGE_STAGING_VERSIONS",
+                "CAN_EDIT",
+                "CAN_READ"
+              ]
             },
             "pipelines.AutoFullRefreshPolicy": {
               "type": "object",
@@ -7188,6 +7094,16 @@
                 }
               },
               "additionalProperties": false
+            },
+            "pipelines.PipelinePermissionLevel": {
+              "type": "string",
+              "description": "Permission level",
+              "enum": [
+                "CAN_MANAGE",
+                "IS_OWNER",
+                "CAN_RUN",
+                "CAN_VIEW"
+              ]
             },
             "pipelines.PipelineTrigger": {
               "type": "object",
@@ -8507,6 +8423,15 @@
                 "MULTIGPU_MEDIUM"
               ]
             },
+            "serving.ServingEndpointPermissionLevel": {
+              "type": "string",
+              "description": "Permission level",
+              "enum": [
+                "CAN_MANAGE",
+                "CAN_QUERY",
+                "CAN_VIEW"
+              ]
+            },
             "serving.ServingModelWorkloadType": {
               "type": "string",
               "description": "Please keep this in sync with with workload types in InferenceEndpointEntities.scala",
@@ -8807,6 +8732,17 @@
                 "RELIABILITY_OPTIMIZED"
               ]
             },
+            "sql.WarehousePermissionLevel": {
+              "type": "string",
+              "description": "Permission level",
+              "enum": [
+                "CAN_MANAGE",
+                "IS_OWNER",
+                "CAN_USE",
+                "CAN_MONITOR",
+                "CAN_VIEW"
+              ]
+            },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "type": "object",
               "description": "The metadata of the Azure KeyVault for a secret scope of type `AZURE_KEYVAULT`",
@@ -9045,12 +8981,6 @@
           "cli": {
             "bundle": {
               "config": {
-                "resources.AlertPermission": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AlertPermission"
-                  }
-                },
                 "resources.AppEnvVar": {
                   "type": "array",
                   "items": {
@@ -9067,24 +8997,6 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPermission"
-                  }
-                },
-                "resources.DashboardPermission": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DashboardPermission"
-                  }
-                },
-                "resources.DatabaseInstancePermission": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission"
-                  }
-                },
-                "resources.DatabaseProjectPermission": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseProjectPermission"
                   }
                 },
                 "resources.JobPermission": {
@@ -9156,6 +9068,12 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.EnvVar"
+                }
+              },
+              "apps.TelemetryExportDestination": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination"
                 }
               },
               "catalog.MonitorMetric": {

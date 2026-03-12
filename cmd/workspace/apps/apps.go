@@ -100,6 +100,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
 	cmd.Flags().StringVar(&createReq.App.Space, "space", createReq.App.Space, `Name of the space this app belongs to.`)
+	// TODO: array: telemetry_export_destinations
 	cmd.Flags().StringVar(&createReq.App.UsagePolicyId, "usage-policy-id", createReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
@@ -1536,6 +1537,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
 	cmd.Flags().StringVar(&updateReq.App.Space, "space", updateReq.App.Space, `Name of the space this app belongs to.`)
+	// TODO: array: telemetry_export_destinations
 	cmd.Flags().StringVar(&updateReq.App.UsagePolicyId, "usage-policy-id", updateReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 

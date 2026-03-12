@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	ignore "github.com/sabhiram/go-gitignore"
@@ -227,7 +228,8 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 		rv[resourceKey+"."+fieldName] = value
 	}
 
-	// Validate multi-field resources: if any non-bundleIgnore field is set, all non-bundleIgnore fields must be set.
+	// Validate multi-field resources: if any user-provided field is set, all user-provided fields must be set.
+	// Fields with BundleIgnore or LocalOnly are auto-populated and exempt from this check.
 	for _, p := range m.GetPlugins() {
 		for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
 			if len(r.Fields) <= 1 {
@@ -237,7 +239,7 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 			setCount := 0
 			totalCheckable := 0
 			for _, fn := range names {
-				if r.Fields[fn].BundleIgnore {
+				if r.Fields[fn].BundleIgnore || r.Fields[fn].LocalOnly {
 					continue
 				}
 				totalCheckable++
@@ -248,7 +250,7 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 			if setCount > 0 && setCount < totalCheckable {
 				var missing []string
 				for _, fn := range names {
-					if r.Fields[fn].BundleIgnore {
+					if r.Fields[fn].BundleIgnore || r.Fields[fn].LocalOnly {
 						continue
 					}
 					if rv[r.Key()+"."+fn] == "" {
@@ -552,7 +554,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Resolve template path (supports local paths and GitHub URLs)
 	templateSrc := opts.templatePath
 	if templateSrc == "" {
-		templateSrc = os.Getenv(templatePathEnvVar)
+		templateSrc = env.Get(ctx, templatePathEnvVar)
 	}
 
 	// Resolve the git reference (branch/tag) to use for default appkit template

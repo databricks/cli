@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/aitools/lib/state"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
@@ -96,7 +97,7 @@ After initialization:
 		ctx := cmd.Context()
 
 		// Resolve template source: env var override or default remote
-		templatePathOrUrl := os.Getenv(templatePathEnvVar)
+		templatePathOrUrl := env.Get(ctx, templatePathEnvVar)
 		templateDir := ""
 		branch := ""
 

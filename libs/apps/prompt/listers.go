@@ -430,6 +430,17 @@ func ListPostgresDatabases(ctx context.Context, branchName string) ([]ListItem, 
 	return out, nil
 }
 
+// ListPostgresEndpoints returns endpoints for a branch as raw Endpoint objects.
+// Returns raw objects (not ListItem) since we need multiple fields (Name, Status.Hosts.Host).
+func ListPostgresEndpoints(ctx context.Context, branchName string) ([]postgres.Endpoint, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Postgres.ListEndpoints(ctx, postgres.ListEndpointsRequest{Parent: branchName})
+	return listing.ToSlice(ctx, iter)
+}
+
 // ListGenieSpaces returns Genie spaces as selectable items.
 func ListGenieSpaces(ctx context.Context) ([]ListItem, error) {
 	w, err := workspaceClient(ctx)

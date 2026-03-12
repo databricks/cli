@@ -17,6 +17,7 @@ type Config struct {
 	AzureWorkspaceResourceId   string   `json:"azure_workspace_resource_id,omitempty"`
 	ClientId                   string   `json:"client_id,omitempty"`
 	ClientSecret               string   `json:"client_secret,omitempty"`
+	Cloud                      string   `json:"cloud,omitempty"`
 	ClusterId                  string   `json:"cluster_id,omitempty"`
 	ConfigFile                 string   `json:"config_file,omitempty"`
 	DatabricksCliPath          string   `json:"databricks_cli_path,omitempty"`
@@ -24,6 +25,7 @@ type Config struct {
 	DebugHeaders               bool     `json:"debug_headers,omitempty"`
 	DebugTruncateBytes         int      `json:"debug_truncate_bytes,omitempty"`
 	DisableOauthRefreshToken   bool     `json:"disable_oauth_refresh_token,omitempty"`
+	DiscoveryUrl               string   `json:"discovery_url,omitempty"`
 	ExperimentalIsUnifiedHost  bool     `json:"experimental_is_unified_host,omitempty"`
 	GoogleCredentials          string   `json:"google_credentials,omitempty"`
 	GoogleServiceAccount       string   `json:"google_service_account,omitempty"`

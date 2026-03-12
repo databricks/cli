@@ -109,7 +109,7 @@ func fetchRepositoryInfoDotGit(ctx context.Context, path string) (RepositoryInfo
 
 	result.WorktreeRoot = rootDir
 
-	repo, err := NewRepository(vfs.MustNew(rootDir))
+	repo, err := NewRepository(ctx, vfs.MustNew(rootDir))
 	if err != nil {
 		log.Warnf(ctx, "failed to read .git: %s", err)
 
