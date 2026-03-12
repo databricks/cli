@@ -32,7 +32,7 @@ func (m *script) Name() string {
 }
 
 func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	command := getCommmand(b, m.scriptHook)
+	command := getCommand(b, m.scriptHook)
 	if command == "" {
 		log.Debugf(ctx, "No script defined for %s, skipping", m.scriptHook)
 		return nil
@@ -79,7 +79,7 @@ func executeHook(ctx context.Context, executor *exec.Executor, command config.Co
 	return cmd, io.MultiReader(cmd.Stdout(), cmd.Stderr()), nil
 }
 
-func getCommmand(b *bundle.Bundle, hook config.ScriptHook) config.Command {
+func getCommand(b *bundle.Bundle, hook config.ScriptHook) config.Command {
 	if b.Config.Experimental == nil || b.Config.Experimental.Scripts == nil {
 		return ""
 	}
