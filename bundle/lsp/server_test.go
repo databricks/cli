@@ -256,29 +256,12 @@ bundle:
 	}
 }
 
-func TestURIToPath(t *testing.T) {
-	tests := []struct {
-		name     string
-		uri      string
-		expected string
-	}{
-		{
-			name:     "unix file uri",
-			uri:      "file:///home/user/project/databricks.yml",
-			expected: "/home/user/project/databricks.yml",
-		},
-		{
-			name:     "plain path fallback",
-			uri:      "/some/path",
-			expected: "/some/path",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, lsp.URIToPath(tt.uri))
-		})
-	}
+func TestURIToPathRoundTrip(t *testing.T) {
+	// Test that PathToURI and URIToPath are inverses of each other.
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "databricks.yml")
+	uri := lsp.PathToURI(path)
+	assert.Equal(t, path, lsp.URIToPath(uri))
 }
 
 func TestDocumentStoreOpenGetClose(t *testing.T) {

@@ -45,15 +45,15 @@ func NewServer() *Server {
 // Run starts the LSP server on stdin/stdout.
 func (s *Server) Run(ctx context.Context) error {
 	mux := handler.Map{
-		"initialize":                 handler.New(s.handleInitialize),
+		"initialize":                handler.New(s.handleInitialize),
 		"initialized":               handler.New(s.handleInitialized),
-		"shutdown":                   handler.New(s.handleShutdown),
-		"textDocument/didOpen":       handler.New(s.handleTextDocumentDidOpen),
-		"textDocument/didChange":     handler.New(s.handleTextDocumentDidChange),
-		"textDocument/didClose":      handler.New(s.handleTextDocumentDidClose),
-		"textDocument/documentLink":  handler.New(s.handleDocumentLink),
-		"textDocument/hover":         handler.New(s.handleHover),
-		"textDocument/definition":    handler.New(s.handleDefinition),
+		"shutdown":                  handler.New(s.handleShutdown),
+		"textDocument/didOpen":      handler.New(s.handleTextDocumentDidOpen),
+		"textDocument/didChange":    handler.New(s.handleTextDocumentDidChange),
+		"textDocument/didClose":     handler.New(s.handleTextDocumentDidClose),
+		"textDocument/documentLink": handler.New(s.handleDocumentLink),
+		"textDocument/hover":        handler.New(s.handleHover),
+		"textDocument/definition":   handler.New(s.handleDefinition),
 	}
 
 	srv := jrpc2.NewServer(mux, &jrpc2.ServerOptions{
