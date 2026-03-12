@@ -25,9 +25,9 @@ func levenshtein(a, b string) int {
 			}
 			tmp := row[j+1]
 			row[j+1] = min(
-				row[j+1]+1,  // deletion
-				row[j]+1,    // insertion
-				prev+cost,   // substitution
+				row[j+1]+1, // deletion
+				row[j]+1,   // insertion
+				prev+cost,  // substitution
 			)
 			prev = tmp
 		}
