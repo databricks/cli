@@ -11,13 +11,27 @@ DABs variable interpolation (`${...}`) was regex-based. This caused:
 2. **No suggestions** — `${bundle.nme}` produces "reference does not exist" with no hint.
 3. **No escape mechanism** — no way to produce a literal `${` in output.
 
+## Background: How Other Systems Parse `${...}`
+
+| System | Strategy | Escape | Error Quality |
+|--------|----------|--------|---------------|
+| Go `text/template` | State-function lexer | None | Line + template name |
+| HCL2 (Terraform) | Ragel FSM + recursive descent | `$${` → literal `${` | Source range + suggestions |
+| Python f-strings | Mode-stack tokenizer | `{{` → `{` | Line/column |
+| Rust `format!` | Iterator-based descent | `{{`/`}}` | Spans + suggestions |
+| Bash | Char-by-char + depth tracking | `\$` | Line number |
+
+For a syntax as simple as `${path.to.var[0]}` (no nesting, no functions, no
+operators), a full recursive descent parser is overkill. A **two-mode character
+scanner** — the same core pattern used by Go's `text/template` and HCL — gives
+proper error reporting and escape support without the complexity.
+
 ## Design Decisions
 
-### Two-mode character scanner (not recursive descent)
+### Two-mode character scanner
 
-For syntax as simple as `${path.to.var[0]}`, a recursive descent parser is
-overkill. A two-mode scanner (TEXT / REFERENCE) is sufficient and easy to
-port to the Python implementation.
+A two-mode scanner (TEXT / REFERENCE) that produces a flat list of tokens.
+No AST, no recursive descent. Easy to port to the Python implementation.
 
 See `libs/dyn/dynvar/interpolation/parse.go`.
 
