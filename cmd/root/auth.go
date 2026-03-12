@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
@@ -258,26 +257,6 @@ func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	}
 }
 
-// promptForProfileByHost prompts the user to select a profile when multiple
-// profiles match the same host.
-func promptForProfileByHost(ctx context.Context, profiles profile.Profiles, host string) (string, error) {
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             "Multiple profiles match host " + host,
-		Items:             profiles,
-		Searcher:          profiles.SearchCaseInsensitive,
-		StartInSearchMode: true,
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}}{{if .AccountID}} (account: {{.AccountID|faint}}){{end}}{{if .WorkspaceID}} (workspace: {{.WorkspaceID|faint}}){{end}}`,
-			Inactive: `{{.Name}}{{if .AccountID}} (account: {{.AccountID}}){{end}}{{if .WorkspaceID}} (workspace: {{.WorkspaceID}}){{end}}`,
-			Selected: `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
-		},
-	})
-	if err != nil {
-		return "", err
-	}
-	return profiles[i].Name, nil
-}
 
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 	profiler := profile.GetProfiler(ctx)
@@ -295,22 +274,14 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 	case 1:
 		return profiles[0].Name, nil
 	}
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+	return profile.SelectProfile(ctx, profile.SelectConfig{
 		Label:             "Workspace profiles defined in " + path,
-		Items:             profiles,
-		Searcher:          profiles.SearchCaseInsensitive,
+		Profiles:          profiles,
 		StartInSearchMode: true,
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}} ({{.Host|faint}})`,
-			Inactive: `{{.Name}}`,
-			Selected: `{{ "Using workspace profile" | faint }}: {{ .Name | bold }}`,
-		},
+		ActiveTemplate:    `{{.Name | bold}} ({{.Host|faint}})`,
+		InactiveTemplate:  `{{.Name}}`,
+		SelectedTemplate:  `{{ "Using workspace profile" | faint }}: {{ .Name | bold }}`,
 	})
-	if err != nil {
-		return "", err
-	}
-	return profiles[i].Name, nil
 }
 
 func AskForAccountProfile(ctx context.Context) (string, error) {
@@ -329,22 +300,14 @@ func AskForAccountProfile(ctx context.Context) (string, error) {
 	case 1:
 		return profiles[0].Name, nil
 	}
-	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
+	return profile.SelectProfile(ctx, profile.SelectConfig{
 		Label:             "Account profiles defined in " + path,
-		Items:             profiles,
-		Searcher:          profiles.SearchCaseInsensitive,
+		Profiles:          profiles,
 		StartInSearchMode: true,
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . | faint }}",
-			Active:   `{{.Name | bold}} ({{.AccountID|faint}} {{.Cloud|faint}})`,
-			Inactive: `{{.Name}}`,
-			Selected: `{{ "Using account profile" | faint }}: {{ .Name | bold }}`,
-		},
+		ActiveTemplate:    `{{.Name | bold}} ({{.AccountID|faint}} {{.Cloud|faint}})`,
+		InactiveTemplate:  `{{.Name}}`,
+		SelectedTemplate:  `{{ "Using account profile" | faint }}: {{ .Name | bold }}`,
 	})
-	if err != nil {
-		return "", err
-	}
-	return profiles[i].Name, nil
 }
 
 // To verify that a client is configured correctly, we pass an empty HTTP request

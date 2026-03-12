@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/ini.v1"
 )
 
 func TestLoadOrCreate(t *testing.T) {
@@ -502,4 +503,101 @@ func TestSaveToProfile_MergeSemantics(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeleteProfile(t *testing.T) {
+	cfg := func(body string) string {
+		return "; " + defaultComment + "\n" + body
+	}
+
+	cases := []struct {
+		name            string
+		seedConfig      string
+		profileToDelete string
+		wantSections    []string
+		wantDefaultKeys map[string]string
+	}{
+		{
+			name: "delete one of two profiles",
+			seedConfig: cfg(`[DEFAULT]
+[first]
+host = https://first.cloud.databricks.com
+[second]
+host = https://second.cloud.databricks.com
+`),
+			profileToDelete: "first",
+			wantSections:    []string{"DEFAULT", "second"},
+		},
+		{
+			name: "delete last non-default profile",
+			seedConfig: cfg(`[DEFAULT]
+host = https://default.cloud.databricks.com
+[only]
+host = https://only.cloud.databricks.com
+`),
+			profileToDelete: "only",
+			wantSections:    []string{"DEFAULT"},
+			wantDefaultKeys: map[string]string{"host": "https://default.cloud.databricks.com"},
+		},
+		{
+			name: "delete profile with multiple keys",
+			seedConfig: cfg(`[DEFAULT]
+[simple]
+host = https://simple.cloud.databricks.com
+[my-unified]
+host = https://unified.cloud.databricks.com
+account_id = def456
+experimental_is_unified_host = true
+`),
+			profileToDelete: "my-unified",
+			wantSections:    []string{"DEFAULT", "simple"},
+		},
+		{
+			name: "delete default clears its keys and restores comment",
+			seedConfig: cfg(`[DEFAULT]
+host = https://default.cloud.databricks.com
+[only]
+host = https://only.cloud.databricks.com
+`),
+			profileToDelete: "DEFAULT",
+			wantSections:    []string{"DEFAULT", "only"},
+			wantDefaultKeys: map[string]string{},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			path := filepath.Join(t.TempDir(), ".databrickscfg")
+			require.NoError(t, os.WriteFile(path, []byte(tc.seedConfig), fileMode))
+
+			err := DeleteProfile(ctx, tc.profileToDelete, path)
+			require.NoError(t, err)
+
+			file, err := config.LoadFile(path)
+			require.NoError(t, err)
+
+			var sectionNames []string
+			for _, s := range file.Sections() {
+				sectionNames = append(sectionNames, s.Name())
+			}
+			assert.Equal(t, tc.wantSections, sectionNames)
+
+			defaultSection := file.Section(ini.DefaultSection)
+			assert.Contains(t, defaultSection.Comment, defaultComment)
+			if tc.wantDefaultKeys != nil {
+				assert.Equal(t, tc.wantDefaultKeys, defaultSection.KeysHash())
+			}
+		})
+	}
+}
+
+func TestDeleteProfile_NotFound(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(path, []byte(""), fileMode))
+
+	err := DeleteProfile(ctx, "not-found", path)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, `profile "not-found" not found`)
 }

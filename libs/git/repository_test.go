@@ -44,7 +44,7 @@ func newTestRepository(t *testing.T) *testRepository {
 	_, err = f2.WriteString(`ref: refs/heads/main`)
 	require.NoError(t, err)
 
-	repo, err := NewRepository(vfs.MustNew(tmp))
+	repo, err := NewRepository(t.Context(), vfs.MustNew(tmp))
 	require.NoError(t, err)
 
 	return &testRepository{
@@ -99,7 +99,7 @@ func (testRepo *testRepository) addOriginUrl(url string) {
 	require.NoError(testRepo.t, err)
 
 	// reload config to reflect the remote url
-	err = testRepo.r.loadConfig()
+	err = testRepo.r.loadConfig(testRepo.t.Context())
 	require.NoError(testRepo.t, err)
 }
 
@@ -128,7 +128,7 @@ func (testRepo *testRepository) assertOriginUrl(expected string) {
 
 func TestRepository(t *testing.T) {
 	// Load this repository as test.
-	repo, err := NewRepository(vfs.MustNew("../.."))
+	repo, err := NewRepository(t.Context(), vfs.MustNew("../.."))
 	tr := testRepository{t, repo}
 	require.NoError(t, err)
 
@@ -192,7 +192,7 @@ func TestRepositoryGitConfigForSshUrl(t *testing.T) {
 
 func TestRepositoryGitConfigWhenNotARepo(t *testing.T) {
 	tmp := t.TempDir()
-	repo, err := NewRepository(vfs.MustNew(tmp))
+	repo, err := NewRepository(t.Context(), vfs.MustNew(tmp))
 	require.NoError(t, err)
 
 	branch, err := repo.CurrentBranch()
