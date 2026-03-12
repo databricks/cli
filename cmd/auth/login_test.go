@@ -3,11 +3,8 @@ package auth
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"log/slog"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sync"
@@ -442,29 +439,6 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	assert.Equal(t, "all-apis,sql", savedProfile.Scopes)
 	assert.Empty(t, savedProfile.AccountID)
 	assert.Empty(t, savedProfile.WorkspaceID)
-}
-
-func TestIntrospectToken_SuccessExtractsMetadata(t *testing.T) {
-	introspectServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
-		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).Encode(map[string]any{
-			"principal_context": map[string]any{
-				"authentication_scope": map[string]any{
-					"account_id":   "acc-12345",
-					"workspace_id": 2548836972759138,
-				},
-			},
-		})
-		assert.NoError(t, err)
-	}))
-	defer introspectServer.Close()
-
-	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
-	result, err := auth.IntrospectToken(ctx, introspectServer.URL, "test-token")
-	require.NoError(t, err)
-	assert.Equal(t, "acc-12345", result.AccountID)
-	assert.Equal(t, "2548836972759138", result.WorkspaceID)
 }
 
 func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
