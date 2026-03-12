@@ -3,6 +3,7 @@
 ## Release v0.293.0
 
 ### CLI
+* Improve `auth token` error formatting for easier copy-paste of login commands ([#4602](https://github.com/databricks/cli/pull/4602))
 
 ### Bundles
 * Modify grants to use SDK types ([#4666](https://github.com/databricks/cli/pull/4666))
