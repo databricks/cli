@@ -1,11 +1,11 @@
 
-# Test that old state files with "permission_level" are migrated to "level".
-# Before this fix, old state with permission_level would cause spurious diffs
-# because the new code expects "level".
+# Test that old v1 state files (from main) are migrated to v2.
+# Old format used "permissions" key with "permission_level" field.
+# New format uses "_" key with "level" field.
 
 mkdir -p .databricks/bundle/default
 
-# Create state file with old "permission_level" format (pre-migration)
+# Create state file in old v1 format (as produced by main branch)
 cat > .databricks/bundle/default/resources.json << 'ENDOFSTATE'
 {
  "state_version": 1,
@@ -33,7 +33,7 @@ cat > .databricks/bundle/default/resources.json << 'ENDOFSTATE'
    "__id__": "/jobs/123",
    "state": {
     "object_id": "/jobs/123",
-    "_": [
+    "permissions": [
      {
       "permission_level": "CAN_VIEW",
       "group_name": "viewers"
@@ -55,7 +55,7 @@ cat > .databricks/bundle/default/resources.json << 'ENDOFSTATE'
 }
 ENDOFSTATE
 
-title "Plan with old permission_level state"
+title "Plan with old v1 state"
 trace $CLI bundle plan -o json > out.plan.direct.json
 
 title "Deploy (migrates state)"
