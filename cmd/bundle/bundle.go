@@ -39,6 +39,7 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	cmd.AddCommand(deployment.NewDeploymentCommand())
 	cmd.AddCommand(newOpenCommand())
 	cmd.AddCommand(newPlanCommand())
+	cmd.AddCommand(newLspCommand())
 	cmd.AddCommand(newConfigRemoteSyncCommand())
 	return cmd
 }
