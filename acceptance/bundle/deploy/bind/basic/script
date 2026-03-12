@@ -17,5 +17,8 @@ trace $CLI bundle plan
 # Verify state file contains the imported ID
 trace print_state.py | contains.py "$NEW_JOB_ID"
 
+# Remove bind block before destroy (destroy blocks on active bind blocks)
+python3 -c "open('databricks.yml', 'w').write(open('databricks.yml').read().split('\ntargets:')[0] + '\n')"
+
 # Cleanup
 trace $CLI bundle destroy --auto-approve

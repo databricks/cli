@@ -24,5 +24,8 @@ trace $CLI bundle deploy --auto-approve
 # Verify the job was updated with the second name
 trace $CLI jobs get $NEW_JOB_ID | jq -r .settings.name
 
+# Remove bind block before destroy (destroy blocks on active bind blocks)
+python3 -c "open('databricks.yml', 'w').write(open('databricks.yml').read().split('\ntargets:')[0] + '\n')"
+
 # Cleanup
 trace $CLI bundle destroy --auto-approve

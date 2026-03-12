@@ -2,10 +2,16 @@ package phases
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
+	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -13,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -158,6 +165,15 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	var plan *deployplan.Plan
 	if engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
+
+		// Validate: cannot destroy resources managed via bind blocks.
+		if b.Target != nil && !b.Target.Bind.IsEmpty() {
+			if err := validateNoBindForDestroy(localPath, b.Target.Bind); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+		}
+
 		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil, localPath, nil)
 		if err != nil {
 			logdiag.LogError(ctx, err)
@@ -188,4 +204,37 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
+}
+
+// validateNoBindForDestroy checks that no bind blocks reference resources
+// that are currently tracked in the deployment state. Destroying bound resources
+// would delete pre-existing workspace resources, which is likely unintended.
+func validateNoBindForDestroy(statePath string, bindConfig config.Bind) error {
+	data, err := os.ReadFile(statePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("reading state from %s: %w", statePath, err)
+	}
+
+	var db dstate.Database
+	if err := json.Unmarshal(data, &db); err != nil {
+		return fmt.Errorf("parsing state from %s: %w", statePath, err)
+	}
+
+	var boundInState []string
+	bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+		key := "resources." + resourceType + "." + resourceName
+		if entry, ok := db.State[key]; ok && entry.ID == bindID {
+			boundInState = append(boundInState, key)
+		}
+	})
+
+	if len(boundInState) == 0 {
+		return nil
+	}
+
+	slices.Sort(boundInState)
+	return fmt.Errorf("cannot destroy with bind blocks that reference resources in the deployment state: %s; remove the bind blocks from the target configuration or run 'bundle deployment unbind' before destroying", strings.Join(boundInState, ", "))
 }

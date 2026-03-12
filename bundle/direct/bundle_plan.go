@@ -1101,16 +1101,20 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 	// Determine action based on changes
 	maxAction := getMaxAction(entry.Changes)
 
-	// Block recreate action for bound resources
-	if maxAction == deployplan.Recreate {
+	switch maxAction {
+	case deployplan.Skip, deployplan.Undefined:
+		entry.Action = deployplan.Bind
+	case deployplan.Update, deployplan.Resize:
+		entry.Action = deployplan.BindAndUpdate
+	case deployplan.Recreate:
 		logdiag.LogError(ctx, fmt.Errorf("%s: cannot recreate resource with bind block; this would destroy the existing workspace resource. Remove the bind block to allow recreation", errorPrefix))
 		return false
-	}
-
-	if maxAction == deployplan.Skip || maxAction == deployplan.Undefined {
-		entry.Action = deployplan.Bind
-	} else {
-		entry.Action = deployplan.BindAndUpdate
+	case deployplan.UpdateWithID:
+		logdiag.LogError(ctx, fmt.Errorf("%s: cannot update resource ID with bind block; this would replace the existing workspace resource. Remove the bind block to allow ID update", errorPrefix))
+		return false
+	default:
+		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: unexpected action %q during bind planning", errorPrefix, maxAction))
+		return false
 	}
 
 	return true
