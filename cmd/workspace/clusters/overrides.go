@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -16,6 +17,20 @@ func listOverride(listCmd *cobra.Command, listReq *compute.ListClustersRequest) 
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{.ClusterId | green}}	{{.ClusterName | cyan}}	{{if eq .State "RUNNING"}}{{green "%s" .State}}{{else if eq .State "TERMINATED"}}{{red "%s" .State}}{{else}}{{blue "%s" .State}}{{end}}
 	{{end}}`)
+
+	columns := []tableview.ColumnDef{
+		{Header: "Cluster ID", Extract: func(v any) string {
+			return v.(compute.ClusterDetails).ClusterId
+		}},
+		{Header: "Name", Extract: func(v any) string {
+			return v.(compute.ClusterDetails).ClusterName
+		}},
+		{Header: "State", Extract: func(v any) string {
+			return string(v.(compute.ClusterDetails).State)
+		}},
+	}
+
+	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
 
 	listReq.FilterBy = &compute.ListClustersFilterBy{}
 	listCmd.Flags().BoolVar(&listReq.FilterBy.IsPinned, "is-pinned", false, "Filter clusters by pinned status")

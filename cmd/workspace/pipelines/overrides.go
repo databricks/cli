@@ -1,15 +1,55 @@
 package pipelines
 
 import (
+	"context"
+	"fmt"
 	"regexp"
 	"slices"
+	"strings"
 
 	pipelinesCli "github.com/databricks/cli/cmd/pipelines"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
 
+func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipelinesRequest) {
+	listCmd.Annotations["template"] = cmdio.Heredoc(`
+	{{range .}}{{green "%s" .PipelineId}}	{{.Name}}	{{blue "%s" .State}}
+	{{end}}`)
+
+	columns := []tableview.ColumnDef{
+		{Header: "Pipeline ID", Extract: func(v any) string {
+			return v.(pipelines.PipelineStateInfo).PipelineId
+		}},
+		{Header: "Name", Extract: func(v any) string {
+			return v.(pipelines.PipelineStateInfo).Name
+		}},
+		{Header: "State", Extract: func(v any) string {
+			return string(v.(pipelines.PipelineStateInfo).State)
+		}},
+	}
+
+	tableview.RegisterConfig(listCmd, tableview.TableConfig{
+		Columns: columns,
+		Search: &tableview.SearchConfig{
+			Placeholder: "Filter by name...",
+			NewIterator: func(ctx context.Context, query string) tableview.RowIterator {
+				req := *listReq
+				escaped := strings.ReplaceAll(query, "'", "''")
+				req.Filter = fmt.Sprintf("name LIKE '%%%s%%'", escaped)
+				w := cmdctx.WorkspaceClient(ctx)
+				return tableview.WrapIterator(w.Pipelines.ListPipelines(ctx, req), columns)
+			},
+		},
+	})
+}
+
 func init() {
+	listPipelinesOverrides = append(listPipelinesOverrides, listPipelinesOverride)
+
 	cmdOverrides = append(cmdOverrides, func(cli *cobra.Command) {
 		// all auto-generated commands apart from nonManagementCommands go into 'management' group
 		nonManagementCommands := []string{

@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
@@ -20,6 +21,23 @@ func listOverride(listCmd *cobra.Command, listReq *workspace.ListReposRequest) {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{green "%d" .Id}}	{{.Path}}	{{.Branch|blue}}	{{.Url|cyan}}
 	{{end}}`)
+
+	columns := []tableview.ColumnDef{
+		{Header: "ID", Extract: func(v any) string {
+			return strconv.FormatInt(v.(workspace.RepoInfo).Id, 10)
+		}},
+		{Header: "Path", Extract: func(v any) string {
+			return v.(workspace.RepoInfo).Path
+		}},
+		{Header: "Branch", Extract: func(v any) string {
+			return v.(workspace.RepoInfo).Branch
+		}},
+		{Header: "URL", Extract: func(v any) string {
+			return v.(workspace.RepoInfo).Url
+		}},
+	}
+
+	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
 }
 
 func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoRequest) {
