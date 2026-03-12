@@ -12,25 +12,30 @@ func TestNormalizeHost(t *testing.T) {
 		expected string
 	}{
 		// Empty input
-		{"", "https://"},
-		{"   ", "https://"},
+		{"", ""},
+		{"   ", ""},
 
 		// Already has https://
 		{"https://example.databricks.com", "https://example.databricks.com"},
-		{"HTTPS://EXAMPLE.DATABRICKS.COM", "HTTPS://EXAMPLE.DATABRICKS.COM"},
-		{"https://example.databricks.com/", "https://example.databricks.com/"},
+		{"https://example.databricks.com/", "https://example.databricks.com"},
 
 		// Missing protocol (should add https://)
 		{"example.databricks.com", "https://example.databricks.com"},
 		{"  example.databricks.com  ", "https://example.databricks.com"},
 		{"subdomain.example.databricks.com", "https://subdomain.example.databricks.com"},
+		{"example.databricks.com/", "https://example.databricks.com"},
+
+		// Paths, query strings, and anchors are stripped
+		{"https://example.databricks.com/path", "https://example.databricks.com"},
+		{"https://example.databricks.com/path/", "https://example.databricks.com"},
+		{"https://example.databricks.com?query", "https://example.databricks.com"},
+		{"https://example.databricks.com#anchor", "https://example.databricks.com"},
 
 		// Edge cases
 		{"https://", "https://"},
 		{"example.com", "https://example.com"},
-		{"https://example.databricks.com/path", "https://example.databricks.com/path"},
-		{"https://example.databricks.com/path/", "https://example.databricks.com/path/"},
 		{"http://localhost:8080", "http://localhost:8080"},
+		{"http://localhost:8080/", "http://localhost:8080"},
 	}
 
 	for _, test := range tests {
@@ -50,15 +55,13 @@ func TestValidateHost(t *testing.T) {
 	err = validateHost("http://host")
 	assert.ErrorContains(t, err, "must start with https://")
 	err = validateHost("ftp://host")
+	assert.ErrorContains(t, err, "must start with https://")
 
 	// Must use empty path
-	assert.ErrorContains(t, err, "must start with https://")
 	err = validateHost("https://host/path")
 	assert.ErrorContains(t, err, "must use empty path")
 
-	// Ignore query params
-	err = validateHost("https://host/?query")
-	assert.NoError(t, err)
-	err = validateHost("https://host/")
+	// Valid hosts
+	err = validateHost("https://host")
 	assert.NoError(t, err)
 }
