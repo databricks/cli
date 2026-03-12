@@ -1,0 +1,6 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle validate -o json | jq .resources.volumes
+$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace jq '.plan."resources.volumes.bar" | {action, new_state: .new_state.value}' out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace jq '.plan."resources.volumes.foo" | {action, depends_on, new_state: .new_state.value}' out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt

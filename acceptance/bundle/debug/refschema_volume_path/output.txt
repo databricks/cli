@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle debug refschema
+
+>>> cat out.volume_path.txt
+resources.volumes.*.volume_path	string	REMOTE

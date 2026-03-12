@@ -1,0 +1,46 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "bar": {
+    "catalog_name": "main",
+    "name": "volumebar-[UNIQUE_NAME]",
+    "schema_name": "default",
+    "volume_type": "MANAGED"
+  },
+  "foo": {
+    "catalog_name": "main",
+    "comment": "${resources.volumes.bar.volume_path}",
+    "name": "volumefoo-[UNIQUE_NAME]",
+    "schema_name": "default",
+    "volume_type": "MANAGED"
+  }
+}
+
+>>> jq .plan."resources.volumes.bar" | {action, new_state: .new_state.value} out.plan.direct.json
+{
+  "action": "create",
+  "new_state": {
+    "catalog_name": "main",
+    "name": "volumebar-[UNIQUE_NAME]",
+    "schema_name": "default",
+    "volume_type": "MANAGED"
+  }
+}
+
+>>> jq .plan."resources.volumes.foo" | {action, depends_on, new_state: .new_state.value} out.plan.direct.json
+{
+  "action": "create",
+  "depends_on": [
+    {
+      "node": "resources.volumes.bar",
+      "label": "${resources.volumes.bar.volume_path}"
+    }
+  ],
+  "new_state": {
+    "catalog_name": "main",
+    "comment": "${resources.volumes.bar.volume_path}",
+    "name": "volumefoo-[UNIQUE_NAME]",
+    "schema_name": "default",
+    "volume_type": "MANAGED"
+  }
+}
