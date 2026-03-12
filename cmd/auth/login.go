@@ -519,7 +519,7 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 		}
 	}
 
-	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     profileName,
 		Host:        discoveredHost,
