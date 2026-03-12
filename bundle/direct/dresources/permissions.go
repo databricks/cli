@@ -45,7 +45,6 @@ type PermissionsState struct {
 	EmbeddedSlice []StatePermission `json:"_,omitempty"`
 }
 
-
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
 	baseNode, ok := strings.CutSuffix(node, ".permissions")
 	if !ok {
