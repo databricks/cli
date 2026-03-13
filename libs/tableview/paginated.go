@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -15,13 +16,28 @@ const (
 	fetchBatchSize           = 50
 	fetchThresholdFromBottom = 10
 	defaultMaxColumnWidth    = 50
+	searchDebounceDelay      = 200 * time.Millisecond
 )
+
+// FinalModel is implemented by the paginated TUI model to expose errors
+// that occurred during data fetching. tea.Program.Run() only returns
+// framework errors, not application-level errors stored in the model.
+type FinalModel interface {
+	Err() error
+}
 
 // rowsFetchedMsg carries newly fetched rows from the iterator.
 type rowsFetchedMsg struct {
-	rows      [][]string
-	exhausted bool
-	err       error
+	rows       [][]string
+	exhausted  bool
+	err        error
+	generation int
+}
+
+// searchDebounceMsg fires after the debounce delay to trigger a search.
+// The seq field is compared against the model's debounceSeq to discard stale ticks.
+type searchDebounceMsg struct {
+	seq int
 }
 
 // PaginatedModel is the exported alias used by callers (e.g. RenderIterator)
@@ -42,20 +58,23 @@ type paginatedModel struct {
 	err       error
 
 	// Fetch state
-	rowIter        RowIterator
-	makeFetchCmd   func(m paginatedModel) tea.Cmd // closure capturing ctx
-	makeSearchIter func(query string) RowIterator // closure capturing ctx
+	rowIter         RowIterator
+	makeFetchCmd    func(m paginatedModel) tea.Cmd // closure capturing ctx
+	makeSearchIter  func(query string) RowIterator // closure capturing ctx
+	fetchGeneration int
 
 	// Display
 	cursor int
 	widths []int
 
 	// Search
-	searching    bool
-	searchInput  string
-	savedRows    [][]string
-	savedIter    RowIterator
-	savedExhaust bool
+	searching      bool
+	searchInput    string
+	debounceSeq    int
+	hasSearchState bool
+	savedRows      [][]string
+	savedIter      RowIterator
+	savedExhaust   bool
 
 	// Limits
 	maxItems     int
@@ -73,6 +92,7 @@ func newFetchCmdFunc(ctx context.Context) func(paginatedModel) tea.Cmd {
 		iter := m.rowIter
 		currentLen := len(m.rows)
 		maxItems := m.maxItems
+		generation := m.fetchGeneration
 
 		return func() tea.Msg {
 			var rows [][]string
@@ -82,7 +102,7 @@ func newFetchCmdFunc(ctx context.Context) func(paginatedModel) tea.Cmd {
 			if maxItems > 0 {
 				remaining := maxItems - currentLen
 				if remaining <= 0 {
-					return rowsFetchedMsg{exhausted: true}
+					return rowsFetchedMsg{exhausted: true, generation: generation}
 				}
 				limit = min(limit, remaining)
 			}
@@ -94,7 +114,7 @@ func newFetchCmdFunc(ctx context.Context) func(paginatedModel) tea.Cmd {
 				}
 				row, err := iter.Next(ctx)
 				if err != nil {
-					return rowsFetchedMsg{err: err}
+					return rowsFetchedMsg{err: err, generation: generation}
 				}
 				rows = append(rows, row)
 			}
@@ -103,7 +123,7 @@ func newFetchCmdFunc(ctx context.Context) func(paginatedModel) tea.Cmd {
 				exhausted = true
 			}
 
-			return rowsFetchedMsg{rows: rows, exhausted: exhausted}
+			return rowsFetchedMsg{rows: rows, exhausted: exhausted, generation: generation}
 		}
 	}
 }
@@ -152,6 +172,11 @@ func RunPaginated(ctx context.Context, w io.Writer, cfg *TableConfig, iter RowIt
 	return nil
 }
 
+// Err returns any error that occurred during data fetching.
+func (m paginatedModel) Err() error {
+	return m.err
+}
+
 func (m paginatedModel) Init() tea.Cmd {
 	return m.makeFetchCmd(m)
 }
@@ -177,6 +202,9 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case rowsFetchedMsg:
+		if msg.generation != m.fetchGeneration {
+			return m, nil
+		}
 		m.loading = false
 		if msg.err != nil {
 			m.err = msg.err
@@ -201,6 +229,12 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.SetContent(m.renderContent())
 		}
 		return m, nil
+
+	case searchDebounceMsg:
+		if msg.seq != m.debounceSeq || !m.searching {
+			return m, nil
+		}
+		return m.executeSearch(m.searchInput)
 
 	case tea.KeyMsg:
 		if m.searching {
@@ -301,6 +335,10 @@ func (m paginatedModel) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.cfg.Search != nil {
 			m.searching = true
 			m.searchInput = ""
+			// Prevent maybeFetch from starting new fetches against the old iterator
+			// while we're in search mode. Any in-flight fetch will be discarded
+			// via generation check when it returns.
+			m.loading = true
 			m.viewport.Height--
 			return m, nil
 		}
@@ -359,54 +397,92 @@ func maybeFetch(m paginatedModel) (paginatedModel, tea.Cmd) {
 	return m, nil
 }
 
+// scheduleSearchDebounce returns a command that sends a searchDebounceMsg after the delay.
+func (m *paginatedModel) scheduleSearchDebounce() tea.Cmd {
+	m.debounceSeq++
+	seq := m.debounceSeq
+	return tea.Tick(searchDebounceDelay, func(_ time.Time) tea.Msg {
+		return searchDebounceMsg{seq: seq}
+	})
+}
+
+// executeSearch triggers a server-side search for the given query.
+// If query is empty, it restores the original (pre-search) state.
+func (m paginatedModel) executeSearch(query string) (tea.Model, tea.Cmd) {
+	if query == "" {
+		if m.hasSearchState {
+			m.fetchGeneration++
+			m.rows = m.savedRows
+			m.rowIter = m.savedIter
+			m.exhausted = m.savedExhaust
+			m.loading = false
+			m.hasSearchState = false
+			m.savedRows = nil
+			m.savedIter = nil
+			m.savedExhaust = false
+			m.cursor = 0
+			if m.ready {
+				m.viewport.SetContent(m.renderContent())
+				m.viewport.GotoTop()
+			}
+		}
+		return m, nil
+	}
+
+	if !m.hasSearchState {
+		m.hasSearchState = true
+		m.savedRows = m.rows
+		m.savedIter = m.rowIter
+		m.savedExhaust = m.exhausted
+	}
+
+	m.fetchGeneration++
+	m.rows = nil
+	m.exhausted = false
+	m.loading = true
+	m.cursor = 0
+	m.rowIter = m.makeSearchIter(query)
+	return m, m.makeFetchCmd(m)
+}
+
 func (m paginatedModel) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "enter":
 		m.searching = false
 		m.viewport.Height++
-		query := m.searchInput
-		if query == "" {
-			// Restore original state
-			if m.savedRows != nil {
-				m.rows = m.savedRows
-				m.rowIter = m.savedIter
-				m.exhausted = m.savedExhaust
-				m.savedRows = nil
-				m.savedIter = nil
-				m.cursor = 0
-				m.viewport.SetContent(m.renderContent())
-				m.viewport.GotoTop()
-			}
-			return m, nil
-		}
-		// Save current state
-		if m.savedRows == nil {
-			m.savedRows = m.rows
-			m.savedIter = m.rowIter
-			m.savedExhaust = m.exhausted
-		}
-		// Create new iterator with search
-		m.rows = nil
-		m.exhausted = false
-		m.loading = false
-		m.cursor = 0
-		m.rowIter = m.makeSearchIter(query)
-		return m, m.makeFetchCmd(m)
+		// Execute final search immediately (bypass debounce).
+		return m.executeSearch(m.searchInput)
 	case "esc", "ctrl+c":
 		m.searching = false
 		m.searchInput = ""
 		m.viewport.Height++
+		if m.hasSearchState {
+			m.fetchGeneration++
+			m.rows = m.savedRows
+			m.rowIter = m.savedIter
+			m.exhausted = m.savedExhaust
+			m.loading = false
+			m.hasSearchState = false
+			m.savedRows = nil
+			m.savedIter = nil
+			m.savedExhaust = false
+			m.cursor = 0
+			if m.ready {
+				m.viewport.SetContent(m.renderContent())
+				m.viewport.GotoTop()
+			}
+		}
 		return m, nil
 	case "backspace":
 		if len(m.searchInput) > 0 {
 			m.searchInput = m.searchInput[:len(m.searchInput)-1]
 		}
-		return m, nil
+		return m, m.scheduleSearchDebounce()
 	default:
 		if len(msg.String()) == 1 || msg.Type == tea.KeyRunes {
 			m.searchInput += msg.String()
 		}
-		return m, nil
+		return m, m.scheduleSearchDebounce()
 	}
 }
 

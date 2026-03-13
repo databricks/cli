@@ -282,12 +282,9 @@ func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 				if err != nil {
 					return err
 				}
-				// p.Run() may succeed even if the model recorded an iterator
-				// fetch error (shown on screen but not propagated). Check the
-				// final model so the command exits non-zero on API errors.
-				if m, ok := finalModel.(tableview.PaginatedModel); ok {
-					if fetchErr := m.Err(); fetchErr != nil {
-						return fetchErr
+				if pm, ok := finalModel.(tableview.FinalModel); ok {
+					if modelErr := pm.Err(); modelErr != nil {
+						return modelErr
 					}
 				}
 				return nil

@@ -3,7 +3,6 @@ package middlewares
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
@@ -11,34 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
-
-const (
-	warehouseLoadingKey = "warehouse_loading"
-	warehouseErrorKey   = "warehouse_error"
-)
-
-// loadWarehouseInBackground loads the default warehouse in a background goroutine.
-func loadWarehouseInBackground(ctx context.Context) {
-	sess, err := session.GetSession(ctx)
-	if err != nil {
-		return
-	}
-
-	// Create a WaitGroup to track loading state
-	var wg sync.WaitGroup
-	wg.Add(1)
-	sess.Set(warehouseLoadingKey, &wg)
-
-	defer wg.Done()
-
-	warehouse, err := getDefaultWarehouse(ctx)
-	if err != nil {
-		sess.Set(warehouseErrorKey, err)
-		return
-	}
-
-	sess.Set("warehouse_endpoint", warehouse)
-}
 
 // GetWarehouseEndpoint returns the resolved warehouse endpoint.
 // If autoStart is true and the warehouse is stopped, it will be started automatically.
@@ -48,22 +19,9 @@ func GetWarehouseEndpoint(ctx context.Context, autoStart bool) (*sql.EndpointInf
 		return nil, err
 	}
 
-	// Wait for background loading if in progress
-	if wgRaw, ok := sess.Get(warehouseLoadingKey); ok {
-		wg := wgRaw.(*sync.WaitGroup)
-		wg.Wait()
-		sess.Delete(warehouseLoadingKey)
-
-		// Check if there was an error during background loading
-		if errRaw, ok := sess.Get(warehouseErrorKey); ok {
-			sess.Delete(warehouseErrorKey)
-			return nil, errRaw.(error)
-		}
-	}
-
+	var endpoint *sql.EndpointInfo
 	warehouse, ok := sess.Get("warehouse_endpoint")
 	if !ok {
-		// Fallback: synchronously load if background loading didn't happen
 		warehouse, err = getDefaultWarehouse(ctx)
 		if err != nil {
 			return nil, err
@@ -71,7 +29,7 @@ func GetWarehouseEndpoint(ctx context.Context, autoStart bool) (*sql.EndpointInf
 		sess.Set("warehouse_endpoint", warehouse)
 	}
 
-	endpoint := warehouse.(*sql.EndpointInfo)
+	endpoint = warehouse.(*sql.EndpointInfo)
 
 	if autoStart && (endpoint.State == sql.StateStopped || endpoint.State == sql.StateStopping) {
 		endpoint, err = startWarehouse(ctx, endpoint.Id)
