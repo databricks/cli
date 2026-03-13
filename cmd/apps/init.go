@@ -717,9 +717,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
-	// Resolve derived values for postgres resources in flags mode.
+	// In flags/non-interactive mode, resolve derived postgres values and validate resources.
 	if flagsMode || !isInteractive {
 		resources := m.CollectResources(selectedPlugins)
+
+		// Resolve derived values for postgres resources.
 		for _, r := range resources {
 			if r.Type != prompt.ResourceTypePostgres {
 				continue
@@ -740,11 +742,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				}
 			}
 		}
-	}
 
-	// In flags/non-interactive mode, validate that all required resources are provided.
-	if flagsMode || !isInteractive {
-		resources := m.CollectResources(selectedPlugins)
+		// Validate that all required resources are provided.
 		for _, r := range resources {
 			found := false
 			for k := range resourceValues {
