@@ -88,7 +88,8 @@ func TestAccountClientOrPrompt(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	t.Setenv("PATH", "/nothing")
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	t.Run("Prompt if nothing is specified", func(t *testing.T) {
 		expectPrompts(t, accountPromptFn, &config.Config{})
@@ -157,7 +158,8 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	t.Setenv("PATH", "/nothing")
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	t.Run("Prompt if nothing is specified", func(t *testing.T) {
 		expectPrompts(t, workspacePromptFn, &config.Config{})
@@ -248,6 +250,8 @@ func TestMustAccountClientErrorsWithNoDatabricksCfg(t *testing.T) {
 
 func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
@@ -276,6 +280,8 @@ func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 
 func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
@@ -305,6 +311,8 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 
 func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")

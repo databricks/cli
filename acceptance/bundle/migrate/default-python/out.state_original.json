@@ -408,7 +408,8 @@
               {
                 "dependencies": [
                   "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files"
-                ]
+                ],
+                "environment_version": ""
               }
             ],
             "event_log": [],

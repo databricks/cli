@@ -88,6 +88,7 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 			ServerlessComputeID:  all["serverless_compute_id"],
 			HasClientCredentials: all["client_id"] != "" && all["client_secret"] != "",
 			Scopes:               all["scopes"],
+			AuthType:             all["auth_type"],
 		}
 		if fn(profile) {
 			profiles = append(profiles, profile)

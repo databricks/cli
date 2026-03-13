@@ -12,11 +12,11 @@ type DataSources struct {
 	AlertV2                                map[string]any `json:"databricks_alert_v2,omitempty"`
 	AlertsV2                               map[string]any `json:"databricks_alerts_v2,omitempty"`
 	App                                    map[string]any `json:"databricks_app,omitempty"`
+	AppSpace                               map[string]any `json:"databricks_app_space,omitempty"`
+	AppSpaces                              map[string]any `json:"databricks_app_spaces,omitempty"`
 	Apps                                   map[string]any `json:"databricks_apps,omitempty"`
 	AppsSettingsCustomTemplate             map[string]any `json:"databricks_apps_settings_custom_template,omitempty"`
 	AppsSettingsCustomTemplates            map[string]any `json:"databricks_apps_settings_custom_templates,omitempty"`
-	AppsSpace                              map[string]any `json:"databricks_apps_space,omitempty"`
-	AppsSpaces                             map[string]any `json:"databricks_apps_spaces,omitempty"`
 	AwsAssumeRolePolicy                    map[string]any `json:"databricks_aws_assume_role_policy,omitempty"`
 	AwsBucketPolicy                        map[string]any `json:"databricks_aws_bucket_policy,omitempty"`
 	AwsCrossaccountPolicy                  map[string]any `json:"databricks_aws_crossaccount_policy,omitempty"`
@@ -33,6 +33,7 @@ type DataSources struct {
 	CurrentMetastore                       map[string]any `json:"databricks_current_metastore,omitempty"`
 	CurrentUser                            map[string]any `json:"databricks_current_user,omitempty"`
 	Dashboards                             map[string]any `json:"databricks_dashboards,omitempty"`
+	DataClassificationCatalogConfig        map[string]any `json:"databricks_data_classification_catalog_config,omitempty"`
 	DataQualityMonitor                     map[string]any `json:"databricks_data_quality_monitor,omitempty"`
 	DataQualityMonitors                    map[string]any `json:"databricks_data_quality_monitors,omitempty"`
 	DataQualityRefresh                     map[string]any `json:"databricks_data_quality_refresh,omitempty"`
@@ -66,6 +67,10 @@ type DataSources struct {
 	InstanceProfiles                       map[string]any `json:"databricks_instance_profiles,omitempty"`
 	Job                                    map[string]any `json:"databricks_job,omitempty"`
 	Jobs                                   map[string]any `json:"databricks_jobs,omitempty"`
+	KnowledgeAssistant                     map[string]any `json:"databricks_knowledge_assistant,omitempty"`
+	KnowledgeAssistantKnowledgeSource      map[string]any `json:"databricks_knowledge_assistant_knowledge_source,omitempty"`
+	KnowledgeAssistantKnowledgeSources     map[string]any `json:"databricks_knowledge_assistant_knowledge_sources,omitempty"`
+	KnowledgeAssistants                    map[string]any `json:"databricks_knowledge_assistants,omitempty"`
 	MaterializedFeaturesFeatureTag         map[string]any `json:"databricks_materialized_features_feature_tag,omitempty"`
 	MaterializedFeaturesFeatureTags        map[string]any `json:"databricks_materialized_features_feature_tags,omitempty"`
 	Metastore                              map[string]any `json:"databricks_metastore,omitempty"`
@@ -88,6 +93,8 @@ type DataSources struct {
 	PolicyInfos                            map[string]any `json:"databricks_policy_infos,omitempty"`
 	PostgresBranch                         map[string]any `json:"databricks_postgres_branch,omitempty"`
 	PostgresBranches                       map[string]any `json:"databricks_postgres_branches,omitempty"`
+	PostgresDatabase                       map[string]any `json:"databricks_postgres_database,omitempty"`
+	PostgresDatabases                      map[string]any `json:"databricks_postgres_databases,omitempty"`
 	PostgresEndpoint                       map[string]any `json:"databricks_postgres_endpoint,omitempty"`
 	PostgresEndpoints                      map[string]any `json:"databricks_postgres_endpoints,omitempty"`
 	PostgresProject                        map[string]any `json:"databricks_postgres_project,omitempty"`
@@ -140,11 +147,11 @@ func NewDataSources() *DataSources {
 		AlertV2:                                make(map[string]any),
 		AlertsV2:                               make(map[string]any),
 		App:                                    make(map[string]any),
+		AppSpace:                               make(map[string]any),
+		AppSpaces:                              make(map[string]any),
 		Apps:                                   make(map[string]any),
 		AppsSettingsCustomTemplate:             make(map[string]any),
 		AppsSettingsCustomTemplates:            make(map[string]any),
-		AppsSpace:                              make(map[string]any),
-		AppsSpaces:                             make(map[string]any),
 		AwsAssumeRolePolicy:                    make(map[string]any),
 		AwsBucketPolicy:                        make(map[string]any),
 		AwsCrossaccountPolicy:                  make(map[string]any),
@@ -161,6 +168,7 @@ func NewDataSources() *DataSources {
 		CurrentMetastore:                       make(map[string]any),
 		CurrentUser:                            make(map[string]any),
 		Dashboards:                             make(map[string]any),
+		DataClassificationCatalogConfig:        make(map[string]any),
 		DataQualityMonitor:                     make(map[string]any),
 		DataQualityMonitors:                    make(map[string]any),
 		DataQualityRefresh:                     make(map[string]any),
@@ -194,6 +202,10 @@ func NewDataSources() *DataSources {
 		InstanceProfiles:                       make(map[string]any),
 		Job:                                    make(map[string]any),
 		Jobs:                                   make(map[string]any),
+		KnowledgeAssistant:                     make(map[string]any),
+		KnowledgeAssistantKnowledgeSource:      make(map[string]any),
+		KnowledgeAssistantKnowledgeSources:     make(map[string]any),
+		KnowledgeAssistants:                    make(map[string]any),
 		MaterializedFeaturesFeatureTag:         make(map[string]any),
 		MaterializedFeaturesFeatureTags:        make(map[string]any),
 		Metastore:                              make(map[string]any),
@@ -216,6 +228,8 @@ func NewDataSources() *DataSources {
 		PolicyInfos:                            make(map[string]any),
 		PostgresBranch:                         make(map[string]any),
 		PostgresBranches:                       make(map[string]any),
+		PostgresDatabase:                       make(map[string]any),
+		PostgresDatabases:                      make(map[string]any),
 		PostgresEndpoint:                       make(map[string]any),
 		PostgresEndpoints:                      make(map[string]any),
 		PostgresProject:                        make(map[string]any),
