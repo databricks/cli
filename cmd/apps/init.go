@@ -721,19 +721,15 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	if flagsMode || !isInteractive {
 		resources := m.CollectResources(selectedPlugins)
 
-		// Resolve derived values for postgres resources.
+		// Resolve derived values for resources that support it.
 		for _, r := range resources {
-			if r.Type != prompt.ResourceTypePostgres {
+			resolveFn, ok := prompt.GetResolveFunc(r.Type)
+			if !ok {
 				continue
 			}
-			branchName := resourceValues[r.Key()+".branch"]
-			dbName := resourceValues[r.Key()+".database"]
-			if branchName == "" || dbName == "" {
-				continue
-			}
-			resolved, err := prompt.ResolvePostgresValues(ctx, r, branchName, dbName)
+			resolved, err := resolveFn(ctx, r, resourceValues)
 			if err != nil {
-				log.Warnf(ctx, "Could not resolve Lakebase connection details: %v", err)
+				log.Warnf(ctx, "Could not resolve derived values for %s: %v", r.Alias, err)
 				continue
 			}
 			for k, v := range resolved {

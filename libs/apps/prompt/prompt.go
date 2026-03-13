@@ -575,7 +575,7 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 	if err != nil {
 		return nil, err
 	}
-	dbName, _, err := promptFromListWithLabel(ctx, "Select Database", "no databases found in branch "+branchName, databases, required)
+	dbName, pgDatabaseName, err := promptFromListWithLabel(ctx, "Select Database", "no databases found in branch "+branchName, databases, required)
 	if err != nil {
 		return nil, err
 	}
@@ -590,7 +590,7 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 	}
 
 	// Resolve derived values (host, databaseName, endpointPath) — non-fatal.
-	resolved, resolveErr := ResolvePostgresValues(ctx, r, branchName, dbName)
+	resolved, resolveErr := ResolvePostgresValues(ctx, r, branchName, dbName, pgDatabaseName)
 	if resolveErr != nil {
 		log.Warnf(ctx, "Could not resolve connection details: %v", resolveErr)
 	}
@@ -599,10 +599,20 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 	return result, nil
 }
 
+// resolvePostgresResource adapts ResolvePostgresValues for the generic ResolveResourceFunc signature.
+func resolvePostgresResource(ctx context.Context, r manifest.Resource, provided map[string]string) (map[string]string, error) {
+	branchName := provided[r.Key()+".branch"]
+	dbName := provided[r.Key()+".database"]
+	if branchName == "" || dbName == "" {
+		return nil, nil
+	}
+	return ResolvePostgresValues(ctx, r, branchName, dbName, "")
+}
+
 // ResolvePostgresValues resolves derived field values (host, databaseName, endpointPath)
-// from a branch and database resource name. Used in non-interactive mode where
-// the user provides branch and database via --set flags.
-func ResolvePostgresValues(ctx context.Context, r manifest.Resource, branchName, dbName string) (map[string]string, error) {
+// from a branch and database resource name. If pgDatabaseName is already known
+// (e.g. from a prior prompt), pass it to skip the ListDatabases API call.
+func ResolvePostgresValues(ctx context.Context, r manifest.Resource, branchName, dbName, pgDatabaseName string) (map[string]string, error) {
 	var host, endpointPath string
 	endpoints, err := ListPostgresEndpoints(ctx, branchName)
 	if err != nil {
@@ -618,15 +628,16 @@ func ResolvePostgresValues(ctx context.Context, r manifest.Resource, branchName,
 		}
 	}
 
-	var pgDatabaseName string
-	databases, err := ListPostgresDatabases(ctx, branchName)
-	if err != nil {
-		return nil, fmt.Errorf("resolving database name: %w", err)
-	}
-	for _, db := range databases {
-		if db.ID == dbName {
-			pgDatabaseName = db.Label
-			break
+	if pgDatabaseName == "" {
+		databases, err := ListPostgresDatabases(ctx, branchName)
+		if err != nil {
+			return nil, fmt.Errorf("resolving database name: %w", err)
+		}
+		for _, db := range databases {
+			if db.ID == dbName {
+				pgDatabaseName = db.Label
+				break
+			}
 		}
 	}
 

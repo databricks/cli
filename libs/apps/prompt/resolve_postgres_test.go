@@ -62,7 +62,7 @@ func TestResolvePostgresValuesHappyPath(t *testing.T) {
 		Return(&databases).Once()
 
 	r := newPostgresResource()
-	result, err := ResolvePostgresValues(ctx, r, branchName, dbName)
+	result, err := ResolvePostgresValues(ctx, r, branchName, dbName, "")
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]string{
@@ -103,7 +103,7 @@ func TestResolvePostgresValuesNoReadWriteEndpoint(t *testing.T) {
 		Return(&databases).Once()
 
 	r := newPostgresResource()
-	result, err := ResolvePostgresValues(ctx, r, branchName, dbName)
+	result, err := ResolvePostgresValues(ctx, r, branchName, dbName, "")
 	require.NoError(t, err)
 
 	// host and endpointPath should be empty since no ReadWrite endpoint found.
@@ -146,13 +146,46 @@ func TestResolvePostgresValuesDatabaseNotFound(t *testing.T) {
 		Return(&databases).Once()
 
 	r := newPostgresResource()
-	result, err := ResolvePostgresValues(ctx, r, branchName, dbName)
+	result, err := ResolvePostgresValues(ctx, r, branchName, dbName, "")
 	require.NoError(t, err)
 
 	// databaseName should be empty since no match.
 	assert.Equal(t, map[string]string{
 		"postgres.host":         "my-host.example.com",
 		"postgres.databaseName": "",
+		"postgres.endpointPath": "projects/p1/branches/main/endpoints/ep1",
+	}, result)
+}
+
+func TestResolvePostgresValuesSkipsDatabaseListWhenNameProvided(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+
+	branchName := "projects/p1/branches/main"
+	dbName := "projects/p1/branches/main/databases/mydb"
+
+	endpoints := listing.SliceIterator[postgres.Endpoint]{
+		{
+			Name: "projects/p1/branches/main/endpoints/ep1",
+			Status: &postgres.EndpointStatus{
+				EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+				Hosts:        &postgres.EndpointHosts{Host: "my-host.example.com"},
+			},
+		},
+	}
+	m.GetMockPostgresAPI().EXPECT().
+		ListEndpoints(mock.Anything, postgres.ListEndpointsRequest{Parent: branchName}).
+		Return(&endpoints).Once()
+
+	// ListDatabases should NOT be called since pgDatabaseName is pre-provided.
+
+	r := newPostgresResource()
+	result, err := ResolvePostgresValues(ctx, r, branchName, dbName, "my_pg_db")
+	require.NoError(t, err)
+
+	assert.Equal(t, map[string]string{
+		"postgres.host":         "my-host.example.com",
+		"postgres.databaseName": "my_pg_db",
 		"postgres.endpointPath": "projects/p1/branches/main/endpoints/ep1",
 	}, result)
 }
@@ -171,7 +204,7 @@ func TestResolvePostgresValuesEndpointAPIError(t *testing.T) {
 		}).Once()
 
 	r := newPostgresResource()
-	_, err := ResolvePostgresValues(ctx, r, branchName, "some-db")
+	_, err := ResolvePostgresValues(ctx, r, branchName, "some-db", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "resolving endpoint details")
 }
