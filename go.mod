@@ -51,6 +51,8 @@ require gopkg.in/yaml.v3 v3.0.1 // indirect
 // Dependencies for experimental SSH commands
 require github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 
+require github.com/creachadair/jrpc2 v1.3.5
+
 require (
 	cloud.google.com/go/auth v0.18.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -71,6 +73,7 @@ require (
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.5.0 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
+	github.com/creachadair/mds v0.26.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect

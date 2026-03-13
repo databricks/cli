@@ -21,6 +21,7 @@ development. They may change or be removed in future versions without notice.`,
 	}
 
 	cmd.AddCommand(mcp.NewMcpCmd())
+	cmd.AddCommand(newBundleLspCommand())
 
 	return cmd
 }
