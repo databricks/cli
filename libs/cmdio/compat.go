@@ -25,6 +25,8 @@ func Log(ctx context.Context, str fmt.Stringer) {
 // Suppressed in quiet mode.
 func LogString(ctx context.Context, str string) {
 	c := fromContext(ctx)
+	// Quiet mode suppresses informational output (progress, status messages)
+	// while still allowing Render() to write structured data to stdout.
 	if c.capabilities.quiet {
 		return
 	}

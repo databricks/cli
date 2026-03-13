@@ -64,9 +64,9 @@ func newUninstallCmd() *cobra.Command {
 			}
 
 			// Confirm before modifying.
-			if !autoApprove {
+			if !autoApprove && !cmdio.IsYes(ctx) {
 				if !cmdio.IsPromptSupported(ctx) {
-					return errors.New("use --auto-approve to skip the confirmation prompt, or run 'databricks completion status' to preview the detected shell and target file")
+					return errors.New("use --auto-approve or --yes to skip the confirmation prompt, or run 'databricks completion status' to preview the detected shell and target file")
 				}
 				cmdio.LogString(ctx, "Shell: "+shell.DisplayName())
 				cmdio.LogString(ctx, "File:  "+displayPath)
