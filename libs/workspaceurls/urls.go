@@ -56,6 +56,23 @@ var resourceURLPatterns = map[string]string{
 	ResourceWarehouses:            WarehousePattern,
 }
 
+// dotSeparatedResources lists resource types where the identifier is commonly
+// provided as a dot-separated name (e.g. "catalog.schema.model") but the URL
+// requires slash-separated segments.
+var dotSeparatedResources = map[string]bool{
+	ResourceRegisteredModels: true,
+}
+
+// NormalizeDotSeparatedID converts dots to slashes for resource types that use
+// multi-part names (e.g. registered_models: "catalog.schema.model" becomes
+// "catalog/schema/model").
+func NormalizeDotSeparatedID(resourceType, id string) string {
+	if dotSeparatedResources[resourceType] {
+		return strings.ReplaceAll(id, ".", "/")
+	}
+	return id
+}
+
 // LookupPattern returns the workspace URL pattern for a resource type.
 func LookupPattern(resourceType string) (string, bool) {
 	pattern, ok := resourceURLPatterns[resourceType]

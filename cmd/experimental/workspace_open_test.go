@@ -32,10 +32,11 @@ func TestBuildWorkspaceURLPathBasedResources(t *testing.T) {
 		{"queries", "q-1", "https://myworkspace.databricks.com/sql/editor/q-1"},
 		{"apps", "my-app", "https://myworkspace.databricks.com/apps/my-app"},
 		{"clusters", "0123-456789-abc", "https://myworkspace.databricks.com/compute/clusters/0123-456789-abc"},
+		{"registered_models", "catalog.schema.model", "https://myworkspace.databricks.com/explore/data/models/catalog/schema/model"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.resourceType, func(t *testing.T) {
+		t.Run(tt.resourceType+"/"+tt.id, func(t *testing.T) {
 			got, err := buildWorkspaceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, 0)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
@@ -134,7 +135,9 @@ func TestWorkspaceOpenCommandHelpText(t *testing.T) {
 	assert.Contains(t, cmd.Long, "Supported resource types: alerts, apps, clusters, dashboards, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, queries, registered_models, warehouses.")
 	assert.Contains(t, cmd.Long, "databricks experimental open jobs 123456789")
 	assert.Contains(t, cmd.Long, "databricks experimental open notebooks /Users/user@example.com/my-notebook")
+	assert.Contains(t, cmd.Long, "databricks experimental open registered_models catalog.schema.my_model")
 	assert.Contains(t, cmd.Long, "databricks experimental open jobs 123456789 --url")
+	assert.Contains(t, cmd.Long, "dot-separated name")
 
 	flag := cmd.Flags().Lookup("url")
 	require.NotNil(t, flag)

@@ -36,7 +36,10 @@ var currentWorkspaceID = func(ctx context.Context) (int64, error) {
 }
 
 var openWorkspaceURL = func(ctx context.Context, targetURL string) error {
-	return browser.OpenURL(ctx, ".", targetURL)
+	opener := browser.NewOpener(ctx, ".",
+		browser.WithDisabledMessage("Open this URL in your browser to view the resource:\n"),
+	)
+	return opener(targetURL)
 }
 
 func resourceTypeNames() []string {
@@ -54,6 +57,7 @@ func buildWorkspaceURL(host, resourceType, id string, workspaceID int64) (string
 		return "", fmt.Errorf("unknown resource type %q, must be one of: %s", resourceType, supportedResourceTypes())
 	}
 
+	id = workspaceurls.NormalizeDotSeparatedID(resourceType, id)
 	return workspaceurls.BuildResourceURL(host, pattern, id, workspaceID)
 }
 
@@ -67,10 +71,14 @@ func newWorkspaceOpenCommand() *cobra.Command {
 
 Supported resource types: %s.
 
+For registered_models, use the dot-separated name (catalog.schema.model)
+and it will be converted to the correct URL path automatically.
+
 Examples:
   databricks experimental open jobs 123456789
   databricks experimental open notebooks /Users/user@example.com/my-notebook
   databricks experimental open clusters 0123-456789-abcdef
+  databricks experimental open registered_models catalog.schema.my_model
   databricks experimental open jobs 123456789 --url`, supportedResourceTypes()),
 		Args:    cobra.ExactArgs(2),
 		PreRunE: root.MustWorkspaceClient,

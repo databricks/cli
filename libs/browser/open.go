@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	osexec "os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -13,8 +14,9 @@ import (
 )
 
 const (
-	browserEnvVar   = "BROWSER"
-	disabledBrowser = "none"
+	browserEnvVar          = "BROWSER"
+	disabledBrowser        = "none"
+	defaultDisabledMessage = "Open this link in your browser:\n"
 )
 
 var openDefaultBrowserURL = func(targetURL string) error {
@@ -36,20 +38,76 @@ var runBrowserCommand = func(ctx context.Context, workingDirectory string, brows
 	return cmd.Run()
 }
 
+// shellName returns the shell executable name for the current OS.
+func shellName() string {
+	if runtime.GOOS == "windows" {
+		return "cmd"
+	}
+	return "sh"
+}
+
+// shellFlag returns the flag to pass an inline command to the shell.
+func shellFlag() string {
+	if runtime.GOOS == "windows" {
+		return "/c"
+	}
+	return "-c"
+}
+
+// containsQuotes reports whether s contains single or double quote characters.
+func containsQuotes(s string) bool {
+	return strings.ContainsAny(s, `"'`)
+}
+
+// parseBrowserCommand splits the BROWSER env var into a command slice.
+// If the value contains quotes it delegates to the system shell so that
+// values like `open -a "Google Chrome"` are handled correctly.
+func parseBrowserCommand(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	if containsQuotes(raw) {
+		return []string{shellName(), shellFlag(), raw}
+	}
+	return strings.Fields(raw)
+}
+
 // IsDisabled reports whether browser launching is disabled for the context.
 func IsDisabled(ctx context.Context) bool {
 	return env.Get(ctx, browserEnvVar) == disabledBrowser
 }
 
+// OpenerOption configures NewOpener.
+type OpenerOption func(*openerConfig)
+
+type openerConfig struct {
+	disabledMessage string
+}
+
+// WithDisabledMessage overrides the message printed when BROWSER=none.
+func WithDisabledMessage(msg string) OpenerOption {
+	return func(cfg *openerConfig) {
+		cfg.disabledMessage = msg
+	}
+}
+
 // NewOpener returns a function that opens URLs in the browser.
-func NewOpener(ctx context.Context, workingDirectory string) func(string) error {
-	browserCommand := strings.Fields(env.Get(ctx, browserEnvVar))
+func NewOpener(ctx context.Context, workingDirectory string, opts ...OpenerOption) func(string) error {
+	cfg := &openerConfig{
+		disabledMessage: defaultDisabledMessage,
+	}
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
+	raw := env.Get(ctx, browserEnvVar)
+	browserCommand := parseBrowserCommand(raw)
 	switch {
 	case len(browserCommand) == 0:
 		return openDefaultBrowserURL
-	case len(browserCommand) == 1 && browserCommand[0] == disabledBrowser:
+	case raw == disabledBrowser:
 		return func(targetURL string) error {
-			cmdio.LogString(ctx, "Please complete authentication by opening this link in your browser:\n"+targetURL)
+			cmdio.LogString(ctx, cfg.disabledMessage+targetURL)
 			return nil
 		}
 	default:

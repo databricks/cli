@@ -172,7 +172,9 @@ depends on the existing profiles you have set in your configuration file
 		}
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
-			u2m.WithBrowser(browser.NewOpener(cmd.Context(), ".")),
+			u2m.WithBrowser(browser.NewOpener(cmd.Context(), ".",
+				browser.WithDisabledMessage("Please complete authentication by opening this link in your browser:\n"),
+			)),
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
