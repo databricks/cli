@@ -268,7 +268,7 @@ func checkNetworkWithHost(cmd *cobra.Command, host string) CheckResult {
 		}
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	_, _ = io.Copy(io.Discard, resp.Body)
 
 	return CheckResult{
 		Name:    "Network",

@@ -157,6 +157,7 @@ Postgres
 
 Developer Tools
   bundle                                 Databricks Asset Bundles let you express data/AI/analytics projects as code.
+  doctor                                 Validate your Databricks CLI setup
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:

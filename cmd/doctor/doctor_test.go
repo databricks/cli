@@ -234,7 +234,7 @@ func TestCheckIdentitySuccess(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"userName": "test@example.com"}`))
+			_, _ = w.Write([]byte(`{"userName": "test@example.com"}`))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -446,6 +446,6 @@ func TestNewCommandJSONTrailingNewline(t *testing.T) {
 
 	err := cmd.Execute()
 	require.NoError(t, err)
-	assert.True(t, buf.Len() > 0)
+	assert.Positive(t, buf.Len())
 	assert.Equal(t, byte('\n'), buf.Bytes()[buf.Len()-1])
 }
