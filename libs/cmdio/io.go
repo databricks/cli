@@ -81,10 +81,31 @@ func GetInteractiveMode(ctx context.Context) InteractiveMode {
 	return c.capabilities.InteractiveMode()
 }
 
-// SetQuiet enables quiet mode, suppressing non-essential output.
-func SetQuiet(ctx context.Context) {
-	c := fromContext(ctx)
-	c.capabilities.quiet = true
+func withCapabilities(ctx context.Context, update func(*Capabilities)) context.Context {
+	c := fromContext(ctx).clone()
+	update(&c.capabilities)
+	return InContext(ctx, c)
+}
+
+func (c *cmdIO) clone() *cmdIO {
+	return &cmdIO{
+		capabilities:   c.capabilities,
+		outputFormat:   c.outputFormat,
+		headerTemplate: c.headerTemplate,
+		template:       c.template,
+		in:             c.in,
+		out:            c.out,
+		err:            c.err,
+		teaProgram:     c.teaProgram,
+		teaDone:        c.teaDone,
+	}
+}
+
+// SetQuiet returns a new context with quiet mode enabled.
+func SetQuiet(ctx context.Context) context.Context {
+	return withCapabilities(ctx, func(c *Capabilities) {
+		c.quiet = true
+	})
 }
 
 // IsQuiet returns true if quiet mode is enabled.
@@ -93,10 +114,11 @@ func IsQuiet(ctx context.Context) bool {
 	return c.capabilities.quiet
 }
 
-// SetNoInput disables all interactive prompts.
-func SetNoInput(ctx context.Context) {
-	c := fromContext(ctx)
-	c.capabilities.noInput = true
+// SetNoInput returns a new context with prompting disabled.
+func SetNoInput(ctx context.Context) context.Context {
+	return withCapabilities(ctx, func(c *Capabilities) {
+		c.noInput = true
+	})
 }
 
 // IsNoInput returns true if no-input mode is enabled.
@@ -105,10 +127,11 @@ func IsNoInput(ctx context.Context) bool {
 	return c.capabilities.noInput
 }
 
-// SetYes enables auto-approval for all yes/no confirmation prompts.
-func SetYes(ctx context.Context) {
-	c := fromContext(ctx)
-	c.capabilities.yes = true
+// SetYes returns a new context with yes/no prompts auto-approved.
+func SetYes(ctx context.Context) context.Context {
+	return withCapabilities(ctx, func(c *Capabilities) {
+		c.yes = true
+	})
 }
 
 // IsYes returns true if yes mode is enabled.

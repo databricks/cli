@@ -84,7 +84,8 @@ Examples:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if quiet {
-				cmdio.SetQuiet(ctx)
+				ctx = cmdio.SetQuiet(ctx)
+				cmd.SetContext(ctx)
 			}
 			quiet = quiet || cmdio.IsQuiet(ctx)
 			w := cmdctx.WorkspaceClient(ctx)

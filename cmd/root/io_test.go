@@ -10,36 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsTruthy(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected bool
-	}{
-		{"1", true},
-		{"true", true},
-		{"TRUE", true},
-		{"yes", true},
-		{"YES", true},
-		{"0", false},
-		{"false", false},
-		{"no", false},
-		{"", false},
-		{"random", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			assert.Equal(t, tt.expected, isTruthy(tt.input))
-		})
-	}
-}
-
 func TestInitInteractionFlagsFromEnv(t *testing.T) {
 	ctx := t.Context()
 
-	ctx = env.Set(ctx, "DATABRICKS_QUIET", "1")
-	ctx = env.Set(ctx, "DATABRICKS_NO_INPUT", "true")
-	ctx = env.Set(ctx, "DATABRICKS_YES", "YES")
+	ctx = env.Set(ctx, envQuiet, "on")
+	ctx = env.Set(ctx, envNoInput, "T")
+	ctx = env.Set(ctx, envYes, "YES")
 
 	cmd := &cobra.Command{Use: "test"}
 	cmd.SetContext(ctx)
@@ -48,6 +24,22 @@ func TestInitInteractionFlagsFromEnv(t *testing.T) {
 	assert.True(t, f.quiet)
 	assert.True(t, f.noInput)
 	assert.True(t, f.yes)
+}
+
+func TestInitInteractionFlagsFromFalseOrInvalidEnv(t *testing.T) {
+	ctx := t.Context()
+
+	ctx = env.Set(ctx, envQuiet, "off")
+	ctx = env.Set(ctx, envNoInput, "")
+	ctx = env.Set(ctx, envYes, "maybe")
+
+	cmd := &cobra.Command{Use: "test"}
+	cmd.SetContext(ctx)
+
+	f := initInteractionFlags(cmd)
+	assert.False(t, f.quiet)
+	assert.False(t, f.noInput)
+	assert.False(t, f.yes)
 }
 
 func TestInitInteractionFlagsDefaultFalse(t *testing.T) {
@@ -70,9 +62,12 @@ func TestApplyToContextSetsFlags(t *testing.T) {
 	ctx = cmdio.InContext(ctx, cmdIO)
 
 	f := &interactionFlags{quiet: true, noInput: true, yes: true}
-	f.applyToContext(ctx)
+	flagCtx := f.applyToContext(ctx)
 
-	assert.True(t, cmdio.IsQuiet(ctx))
-	assert.True(t, cmdio.IsNoInput(ctx))
-	assert.True(t, cmdio.IsYes(ctx))
+	assert.False(t, cmdio.IsQuiet(ctx))
+	assert.False(t, cmdio.IsNoInput(ctx))
+	assert.False(t, cmdio.IsYes(ctx))
+	assert.True(t, cmdio.IsQuiet(flagCtx))
+	assert.True(t, cmdio.IsNoInput(flagCtx))
+	assert.True(t, cmdio.IsYes(flagCtx))
 }

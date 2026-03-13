@@ -66,7 +66,8 @@ func New(ctx context.Context) *cobra.Command {
 		}
 
 		// Apply interaction flags (--quiet, --no-input, --yes) to cmdio context.
-		interactionFlags.applyToContext(ctx)
+		ctx = interactionFlags.applyToContext(ctx)
+		cmd.SetContext(ctx)
 
 		// Configure default logger.
 		ctx, err = logFlags.initializeContext(ctx)
