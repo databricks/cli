@@ -43,7 +43,7 @@ func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipeli
 				escaped = strings.ReplaceAll(escaped, "_", "\\_")
 				nameFilter := fmt.Sprintf("name LIKE '%%%s%%'", escaped)
 				if req.Filter != "" {
-					req.Filter = req.Filter + " AND " + nameFilter
+					req.Filter = "(" + req.Filter + ") AND " + nameFilter
 				} else {
 					req.Filter = nameFilter
 				}

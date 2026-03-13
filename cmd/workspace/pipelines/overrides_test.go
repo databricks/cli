@@ -71,7 +71,28 @@ func TestListPipelinesSearchPreservesExistingFilter(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockPipelinesAPI().EXPECT().
 		ListPipelines(mock.Anything, sdkpipelines.ListPipelinesRequest{
-			Filter: "state = 'RUNNING' AND name LIKE '%myquery%'",
+			Filter: "(state = 'RUNNING') AND name LIKE '%myquery%'",
+		}).
+		Return(nil)
+
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
+	assert.NotNil(t, cfg.Search.NewIterator(ctx, "myquery"))
+}
+
+func TestListPipelinesSearchWrapsORFilterInParens(t *testing.T) {
+	cmd := newListPipelines()
+
+	err := cmd.Flags().Set("filter", "state = 'RUNNING' OR state = 'IDLE'")
+	require.NoError(t, err)
+
+	cfg := tableview.GetConfig(cmd)
+	require.NotNil(t, cfg)
+	require.NotNil(t, cfg.Search)
+
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockPipelinesAPI().EXPECT().
+		ListPipelines(mock.Anything, sdkpipelines.ListPipelinesRequest{
+			Filter: "(state = 'RUNNING' OR state = 'IDLE') AND name LIKE '%myquery%'",
 		}).
 		Return(nil)
 
