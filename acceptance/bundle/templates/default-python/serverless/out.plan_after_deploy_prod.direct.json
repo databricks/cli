@@ -205,6 +205,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "environment": {
           "dependencies": [
             "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files"
