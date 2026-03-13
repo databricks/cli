@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/url"
 	"sort"
+	"strconv"
+	"strings"
 
 	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
@@ -17,14 +19,14 @@ import (
 // resourceURLPatterns maps resource type names to their URL path patterns.
 // Patterns starting with "#" use URL fragments instead of path segments.
 var resourceURLPatterns = map[string]string{
-	"job":       "jobs/%s",
+	"job":       "/jobs/%s",
 	"notebook":  "#notebook/%s",
-	"cluster":   "#/setting/clusters/%s/configuration",
-	"pipeline":  "pipelines/%s",
-	"dashboard": "sql/dashboards/%s",
-	"warehouse": "sql/warehouses/%s",
-	"query":     "sql/editor/%s",
-	"app":       "apps/%s",
+	"cluster":   "/compute/clusters/%s",
+	"pipeline":  "/pipelines/%s",
+	"dashboard": "/dashboardsv3/%s/published",
+	"warehouse": "/sql/warehouses/%s",
+	"query":     "/sql/editor/%s",
+	"app":       "/apps/%s",
 }
 
 func resourceTypeNames() []string {
@@ -37,7 +39,7 @@ func resourceTypeNames() []string {
 }
 
 // buildWorkspaceURL constructs a full workspace URL for a given resource type and ID.
-func buildWorkspaceURL(host, resourceType, id string) (string, error) {
+func buildWorkspaceURL(host, resourceType, id string, workspaceID int64) (string, error) {
 	pattern, ok := resourceURLPatterns[resourceType]
 	if !ok {
 		return "", fmt.Errorf("unknown resource type %q, must be one of: %v", resourceType, resourceTypeNames())
@@ -48,10 +50,23 @@ func buildWorkspaceURL(host, resourceType, id string) (string, error) {
 		return "", fmt.Errorf("invalid workspace host %q: %w", host, err)
 	}
 
+	// Append ?o=<workspace-id> when the workspace ID is not already in the
+	// hostname (e.g. vanity URLs or legacy workspace URLs).
+	// See https://docs.databricks.com/en/workspace/workspace-details.html
+	if workspaceID != 0 {
+		orgID := strconv.FormatInt(workspaceID, 10)
+		if !strings.Contains(baseURL.Hostname(), orgID) {
+			values := baseURL.Query()
+			values.Add("o", orgID)
+			baseURL.RawQuery = values.Encode()
+		}
+	}
+
 	resourcePath := fmt.Sprintf(pattern, id)
 
 	// Fragment-based URLs (starting with #) need special handling.
 	if len(resourcePath) > 0 && resourcePath[0] == '#' {
+		baseURL.Path = "/"
 		baseURL.Fragment = resourcePath[1:]
 	} else {
 		baseURL.Path = resourcePath
@@ -81,7 +96,12 @@ Examples:
 			resourceType := args[0]
 			id := args[1]
 
-			resourceURL, err := buildWorkspaceURL(w.Config.Host, resourceType, id)
+			workspaceID, err := w.CurrentWorkspaceID(ctx)
+			if err != nil {
+				workspaceID = 0
+			}
+
+			resourceURL, err := buildWorkspaceURL(w.Config.Host, resourceType, id, workspaceID)
 			if err != nil {
 				return err
 			}
@@ -101,6 +121,9 @@ Examples:
 	return cmd
 }
 
+// openURLSuppressingBrowserStderr suppresses stderr output from the browser
+// launcher, which often emits noisy warnings (e.g. from xdg-open) that
+// would confuse CLI users.
 func openURLSuppressingBrowserStderr(targetURL string) error {
 	originalStderr := browserpkg.Stderr
 	defer func() {
