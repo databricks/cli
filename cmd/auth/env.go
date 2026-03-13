@@ -173,7 +173,7 @@ func collectEnvVars(cfg *config.Config) map[string]string {
 
 // quoteEnvValue quotes a value for KEY=VALUE output if it contains spaces or
 // shell-special characters. Single quotes prevent shell expansion, and
-// embedded single quotes use the POSIX-compatible '\'' sequence.
+// embedded single quotes use the POSIX-compatible '\” sequence.
 func quoteEnvValue(v string) string {
 	if v == "" {
 		return `''`
