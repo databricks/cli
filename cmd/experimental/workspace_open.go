@@ -3,9 +3,7 @@ package experimental
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"sort"
-	"strconv"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -14,21 +12,19 @@ import (
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/workspaceurls"
 )
 
-// resourceURLPatterns is a hardcoded list of known resource types and their URL path patterns.
-// Patterns starting with "#" use URL fragments instead of path segments.
-// bundle open uses a similar hardcoded approach via InitializeURL methods on each resource type.
-var resourceURLPatterns = map[string]string{
-	"apps":        "/apps/%s",
-	"clusters":    "/compute/clusters/%s",
-	"dashboards":  "/dashboardsv3/%s/published",
-	"experiments": "ml/experiments/%s",
-	"jobs":        "/jobs/%s",
-	"notebooks":   "#notebook/%s",
-	"pipelines":   "/pipelines/%s",
-	"queries":     "/sql/editor/%s",
-	"warehouses":  "/sql/warehouses/%s",
+var supportedOpenResourceTypes = []string{
+	workspaceurls.ResourceApps,
+	workspaceurls.ResourceClusters,
+	workspaceurls.ResourceDashboards,
+	workspaceurls.ResourceExperiments,
+	workspaceurls.ResourceJobs,
+	workspaceurls.ResourceNotebooks,
+	workspaceurls.ResourcePipelines,
+	workspaceurls.ResourceQueries,
+	workspaceurls.ResourceWarehouses,
 }
 
 var currentWorkspaceID = func(ctx context.Context) (int64, error) {
@@ -40,12 +36,7 @@ var openWorkspaceURL = func(ctx context.Context, targetURL string) error {
 }
 
 func resourceTypeNames() []string {
-	names := make([]string, 0, len(resourceURLPatterns))
-	for name := range resourceURLPatterns {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
+	return workspaceurls.SortResourceTypes(supportedOpenResourceTypes)
 }
 
 func supportedResourceTypes() string {
@@ -54,44 +45,16 @@ func supportedResourceTypes() string {
 
 // buildWorkspaceURL constructs a full workspace URL for a given resource type and ID.
 func buildWorkspaceURL(host, resourceType, id string, workspaceID int64) (string, error) {
-	pattern, ok := resourceURLPatterns[resourceType]
+	if !slices.Contains(supportedOpenResourceTypes, resourceType) {
+		return "", fmt.Errorf("unknown resource type %q, must be one of: %s", resourceType, supportedResourceTypes())
+	}
+
+	pattern, ok := workspaceurls.LookupPattern(resourceType)
 	if !ok {
 		return "", fmt.Errorf("unknown resource type %q, must be one of: %s", resourceType, supportedResourceTypes())
 	}
 
-	baseURL, err := url.Parse(host)
-	if err != nil {
-		return "", fmt.Errorf("invalid workspace host %q: %w", host, err)
-	}
-
-	// Append ?o=<workspace-id> when the workspace ID is not already in the
-	// hostname (e.g. vanity URLs or legacy workspace URLs).
-	// See https://docs.databricks.com/en/workspace/workspace-details.html
-	if workspaceID != 0 {
-		orgID := strconv.FormatInt(workspaceID, 10)
-		if !hasWorkspaceIDInHostname(baseURL.Hostname(), orgID) {
-			values := baseURL.Query()
-			values.Add("o", orgID)
-			baseURL.RawQuery = values.Encode()
-		}
-	}
-
-	resourcePath := fmt.Sprintf(pattern, id)
-
-	// Fragment-based URLs (starting with #) need special handling.
-	if len(resourcePath) > 0 && resourcePath[0] == '#' {
-		baseURL.Path = "/"
-		baseURL.Fragment = resourcePath[1:]
-	} else {
-		baseURL.Path = resourcePath
-	}
-
-	return baseURL.String(), nil
-}
-
-func hasWorkspaceIDInHostname(hostname, workspaceID string) bool {
-	remainder, ok := strings.CutPrefix(strings.ToLower(hostname), "adb-"+workspaceID)
-	return ok && (remainder == "" || strings.HasPrefix(remainder, "."))
+	return workspaceurls.BuildResourceURL(host, pattern, id, workspaceID)
 }
 
 func newWorkspaceOpenCommand() *cobra.Command {

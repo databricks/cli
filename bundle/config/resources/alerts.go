@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -52,8 +53,7 @@ func (a *Alert) InitializeURL(baseURL url.URL) {
 	if a.ID == "" {
 		return
 	}
-	baseURL.Path = "sql/alerts-v2/" + a.ID
-	a.URL = baseURL.String()
+	a.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.AlertPattern, a.ID)
 }
 
 func (a *Alert) GetName() string {

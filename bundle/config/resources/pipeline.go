@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -49,8 +50,7 @@ func (p *Pipeline) InitializeURL(baseURL url.URL) {
 	if p.ID == "" {
 		return
 	}
-	baseURL.Path = "pipelines/" + p.ID
-	p.URL = baseURL.String()
+	p.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.PipelinePattern, p.ID)
 }
 
 func (p *Pipeline) GetName() string {

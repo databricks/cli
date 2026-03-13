@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -54,8 +55,11 @@ func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = "explore/data/models/" + strings.ReplaceAll(s.ID, ".", "/")
-	s.URL = baseURL.String()
+	s.URL = workspaceurls.ResourceURL(
+		baseURL,
+		workspaceurls.RegisteredModelPattern,
+		strings.ReplaceAll(s.ID, ".", "/"),
+	)
 }
 
 func (s *RegisteredModel) GetName() string {

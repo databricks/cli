@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -54,8 +55,7 @@ func (j *Job) InitializeURL(baseURL url.URL) {
 	if j.ID == "" {
 		return
 	}
-	baseURL.Path = "jobs/" + j.ID
-	j.URL = baseURL.String()
+	j.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.JobPattern, j.ID)
 }
 
 func (j *Job) GetName() string {
