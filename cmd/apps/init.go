@@ -717,6 +717,31 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
+	// Resolve derived values for postgres resources in flags mode.
+	if flagsMode || !isInteractive {
+		resources := m.CollectResources(selectedPlugins)
+		for _, r := range resources {
+			if r.Type != prompt.ResourceTypePostgres {
+				continue
+			}
+			branchName := resourceValues[r.Key()+".branch"]
+			dbName := resourceValues[r.Key()+".database"]
+			if branchName == "" || dbName == "" {
+				continue
+			}
+			resolved, err := prompt.ResolvePostgresValues(ctx, r, branchName, dbName)
+			if err != nil {
+				log.Warnf(ctx, "Could not resolve Lakebase connection details: %v", err)
+				continue
+			}
+			for k, v := range resolved {
+				if resourceValues[k] == "" {
+					resourceValues[k] = v
+				}
+			}
+		}
+	}
+
 	// In flags/non-interactive mode, validate that all required resources are provided.
 	if flagsMode || !isInteractive {
 		resources := m.CollectResources(selectedPlugins)

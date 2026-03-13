@@ -624,6 +624,48 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 	return result, nil
 }
 
+// ResolvePostgresValues resolves derived field values (host, databaseName, endpointPath)
+// from a branch and database resource name. Used in non-interactive mode where
+// the user provides branch and database via --set flags.
+func ResolvePostgresValues(ctx context.Context, r manifest.Resource, branchName, dbName string) (map[string]string, error) {
+	var host, endpointPath string
+	endpoints, err := ListPostgresEndpoints(ctx, branchName)
+	if err != nil {
+		return nil, fmt.Errorf("resolving endpoint details: %w", err)
+	}
+	for _, ep := range endpoints {
+		if ep.Status != nil && ep.Status.EndpointType == postgres.EndpointTypeEndpointTypeReadWrite {
+			endpointPath = ep.Name
+			if ep.Status.Hosts != nil && ep.Status.Hosts.Host != "" {
+				host = ep.Status.Hosts.Host
+			}
+			break
+		}
+	}
+
+	var pgDatabaseName string
+	databases, err := ListPostgresDatabases(ctx, branchName)
+	if err != nil {
+		return nil, fmt.Errorf("resolving database name: %w", err)
+	}
+	for _, db := range databases {
+		if db.ID == dbName {
+			pgDatabaseName = db.Label
+			break
+		}
+	}
+
+	resolvedValues := map[string]string{
+		"postgres:host":         host,
+		"postgres:databaseName": pgDatabaseName,
+		"postgres:endpointPath": endpointPath,
+	}
+
+	result := make(map[string]string)
+	applyResolvedValues(r, resolvedValues, result)
+	return result, nil
+}
+
 // applyResolvedValues populates result with values from resolvedValues,
 // using the manifest's resolve property to map resolver names to field names.
 func applyResolvedValues(r manifest.Resource, resolvedValues, result map[string]string) {
