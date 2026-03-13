@@ -1,0 +1,32 @@
+
+=== Switch to profile-a
+
+>>> [CLI] auth switch --profile profile-a
+Default profile set to "profile-a".
+
+=== Settings after first switch
+[__settings__]
+default_profile = profile-a
+
+=== Profiles after first switch
+
+>>> [CLI] auth profiles --skip-validate
+Name                 Host                                    Valid
+profile-a (Default)  https://profile-a.cloud.databricks.com  NO
+profile-b            https://profile-b.cloud.databricks.com  NO
+
+=== Switch to profile-b
+
+>>> [CLI] auth switch --profile profile-b
+Default profile set to "profile-b".
+
+=== Settings after second switch
+[__settings__]
+default_profile = profile-b
+
+=== Profiles after second switch
+
+>>> [CLI] auth profiles --skip-validate
+Name                 Host                                    Valid
+profile-a            https://profile-a.cloud.databricks.com  NO
+profile-b (Default)  https://profile-b.cloud.databricks.com  NO
