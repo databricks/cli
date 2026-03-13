@@ -537,17 +537,13 @@ func runTest(t *testing.T,
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
 	// Generate materialized config for this test
-	materializedConfig, err := internal.GenerateMaterializedConfig(config)
-	require.NoError(t, err)
-	testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
-
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
-	// Add materialized config to outputs for comparison
-	outputs[internal.MaterializedConfigFile] = true
+	// out.test.toml is written to the source dir during test discovery, not compared.
+	delete(outputs, internal.MaterializedConfigFile)
 
 	timeout := config.Timeout
 
@@ -661,14 +657,6 @@ func runTest(t *testing.T,
 	// Compare expected outputs
 	for relPath := range outputs {
 		if shouldSkip(pathFilter, relPath) {
-			continue
-		}
-
-		if relPath == internal.MaterializedConfigFile {
-			// Always write out.test.toml to source dir without comparing.
-			// CI checks for drift with git diff after tests run.
-			content := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
-			testutil.WriteFile(t, filepath.Join(dir, relPath), content)
 			continue
 		}
 
