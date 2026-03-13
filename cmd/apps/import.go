@@ -83,6 +83,10 @@ Examples:
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			if quiet {
+				cmdio.SetQuiet(ctx)
+			}
+			quiet = quiet || cmdio.IsQuiet(ctx)
 			w := cmdctx.WorkspaceClient(ctx)
 
 			// Get current user to filter apps
