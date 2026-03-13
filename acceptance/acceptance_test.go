@@ -296,13 +296,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
-			if testdiff.OverwriteMode || OnlyOutTestToml {
-				// Generate materialized config for this test
-				// We do this before skipping the test, so the configs are generated for all tests.
-				materializedConfig, err := internal.GenerateMaterializedConfig(config)
-				require.NoError(t, err)
-				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
-			}
+			// Generate materialized config for this test.
+			// We do this before skipping the test, so the configs are generated for all tests.
+			materializedConfig, err := internal.GenerateMaterializedConfig(config)
+			require.NoError(t, err)
+			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
 
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
@@ -666,11 +664,15 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		skipRepls := false
 		if relPath == internal.MaterializedConfigFile {
-			skipRepls = true
+			// Always write out.test.toml to source dir without comparing.
+			// CI checks for drift with git diff after tests run.
+			content := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
+			testutil.WriteFile(t, filepath.Join(dir, relPath), content)
+			continue
 		}
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, skipRepls)
+
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, false)
 	}
 
 	// Make sure there are not unaccounted for new files

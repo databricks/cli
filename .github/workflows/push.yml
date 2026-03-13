@@ -145,6 +145,13 @@ jobs:
       - name: Analyze slow tests
         run: make slowest
 
+      - name: Check out.test.toml files are up to date
+        run: |
+          if ! git diff --exit-code; then
+            echo "ERROR: detected changed files in the repository; Most likely you have out.test.toml files that are out of date. Run 'make generate-out-test-toml' to update."
+            exit 1
+          fi
+
   test-exp-aitools:
     needs:
       - cleanups
