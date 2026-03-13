@@ -80,8 +80,12 @@ func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
 // so remote returns "/Users/..." while the config has "/Workspace/Users/...".
 //
 // This matches the Terraform provider's experimentNameSuppressDiff behavior.
-// https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/mlflow/resource_mlflow_experiment.go#L35
+// https://github.com/databricks/terraform-provider-databricks/blob/8945a7b2328659b1fc976d04e32457305860131f/mlflow/resource_mlflow_experiment.go#L13
 func (*ResourceExperiment) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *ml.Experiment) error {
+	if change.Action == deployplan.Skip {
+		return nil
+	}
+
 	if path.String() != "name" {
 		return nil
 	}
@@ -92,11 +96,24 @@ func (*ResourceExperiment) OverrideChangeDesc(_ context.Context, path *structpat
 		return nil
 	}
 
-	normalizedNew := strings.TrimSuffix(strings.TrimPrefix(newStr, "/Workspace"), "/")
-	normalizedRemote := strings.TrimSuffix(strings.TrimPrefix(remoteStr, "/Workspace"), "/")
+	// Normalize by stripping the /Workspace/ prefix (keeping the trailing slash
+	// to avoid false matches like "/WorkspaceExtra/...").
+	normalizedNew := stripWorkspacePrefix(newStr)
+	normalizedRemote := stripWorkspacePrefix(remoteStr)
 	if normalizedNew == normalizedRemote {
 		change.Action = deployplan.Skip
+		change.Reason = deployplan.ReasonAlias
 	}
 
 	return nil
+}
+
+// stripWorkspacePrefix removes the "/Workspace" portion from paths like
+// "/Workspace/Users/..." while preserving the leading slash. Uses "/Workspace/"
+// with trailing slash to avoid false matches on paths like "/WorkspaceExtra/...".
+func stripWorkspacePrefix(s string) string {
+	if strings.HasPrefix(s, "/Workspace/") {
+		return s[len("/Workspace"):]
+	}
+	return s
 }
