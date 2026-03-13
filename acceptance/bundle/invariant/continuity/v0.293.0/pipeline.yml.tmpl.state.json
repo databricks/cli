@@ -1,0 +1,27 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "1a766d1f-20ee-405c-86bb-b8daede790d8",
+ "serial": 1,
+ "state": {
+  "resources.pipelines.foo": {
+   "__id__": "79c16fd6-46ce-94e8-79c1-6fd646ce94e9",
+   "state": {
+    "channel": "CURRENT",
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-w6mmgu5tvrbxthvkwtccidkwte/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+     {
+      "file": {
+       "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-w6mmgu5tvrbxthvkwtccidkwte/default/files/pipeline.py"
+      }
+     }
+    ],
+    "name": "test-pipeline-w6mmgu5tvrbxthvkwtccidkwte"
+   }
+  }
+ }
+}

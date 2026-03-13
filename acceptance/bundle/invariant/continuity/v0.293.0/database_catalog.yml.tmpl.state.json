@@ -1,0 +1,30 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "a54f56e2-fd84-4ace-8927-6280795aa3fa",
+ "serial": 1,
+ "state": {
+  "resources.database_catalogs.foo": {
+   "__id__": "test-catalog-rznfgn7mhvhhlkpn43rkrdyaby",
+   "state": {
+    "create_database_if_not_exists": true,
+    "database_instance_name": "test-db-instance-rznfgn7mhvhhlkpn43rkrdyaby",
+    "database_name": "test_db",
+    "name": "test-catalog-rznfgn7mhvhhlkpn43rkrdyaby"
+   },
+   "depends_on": [
+    {
+     "node": "resources.database_instances.instance1",
+     "label": "${resources.database_instances.instance1.name}"
+    }
+   ]
+  },
+  "resources.database_instances.instance1": {
+   "__id__": "test-db-instance-rznfgn7mhvhhlkpn43rkrdyaby",
+   "state": {
+    "capacity": "CU_1",
+    "name": "test-db-instance-rznfgn7mhvhhlkpn43rkrdyaby"
+   }
+  }
+ }
+}

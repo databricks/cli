@@ -1,0 +1,3 @@
+# Continuity tests verify the current CLI can operate on state produced by older versions.
+# They run only against the local mock server (state format is a software-only concern).
+Cloud = false

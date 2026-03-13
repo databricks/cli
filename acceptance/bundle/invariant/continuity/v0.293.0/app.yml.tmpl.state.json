@@ -1,0 +1,15 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "e86ac1c2-059b-467d-8c55-4715d258b0c3",
+ "serial": 1,
+ "state": {
+  "resources.apps.foo": {
+   "__id__": "app-fdu5alrx4vf5bj4xfmtgcxqtyy",
+   "state": {
+    "description": "",
+    "name": "app-fdu5alrx4vf5bj4xfmtgcxqtyy"
+   }
+  }
+ }
+}

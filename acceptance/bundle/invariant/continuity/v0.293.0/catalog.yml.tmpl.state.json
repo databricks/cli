@@ -1,0 +1,15 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "9a65eac4-d3aa-4d7b-b76a-48f93559d4b9",
+ "serial": 1,
+ "state": {
+  "resources.catalogs.foo": {
+   "__id__": "test-catalog-gamv57n5rrc6vn6ixraztwdr2e",
+   "state": {
+    "comment": "This is a test catalog",
+    "name": "test-catalog-gamv57n5rrc6vn6ixraztwdr2e"
+   }
+  }
+ }
+}

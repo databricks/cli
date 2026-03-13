@@ -1,0 +1,59 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "6e7ae437-c7a5-47fd-8b3b-13a4dcef3724",
+ "serial": 1,
+ "state": {
+  "resources.database_catalogs.catalog1": {
+   "__id__": "test-catalog-sdnciwyzyjg2zfziccefocjswa",
+   "state": {
+    "create_database_if_not_exists": true,
+    "database_instance_name": "test-db-instance-sdnciwyzyjg2zfziccefocjswa",
+    "database_name": "test_db",
+    "name": "test-catalog-sdnciwyzyjg2zfziccefocjswa"
+   },
+   "depends_on": [
+    {
+     "node": "resources.database_instances.instance1",
+     "label": "${resources.database_instances.instance1.name}"
+    }
+   ]
+  },
+  "resources.database_instances.instance1": {
+   "__id__": "test-db-instance-sdnciwyzyjg2zfziccefocjswa",
+   "state": {
+    "capacity": "CU_1",
+    "name": "test-db-instance-sdnciwyzyjg2zfziccefocjswa"
+   }
+  },
+  "resources.synced_database_tables.foo": {
+   "__id__": "test-catalog-sdnciwyzyjg2zfziccefocjswa.test_db.test_table",
+   "state": {
+    "database_instance_name": "test-db-instance-sdnciwyzyjg2zfziccefocjswa",
+    "logical_database_name": "test_db",
+    "name": "test-catalog-sdnciwyzyjg2zfziccefocjswa.test_db.test_table",
+    "spec": {
+     "primary_key_columns": [
+      "tpep_pickup_datetime"
+     ],
+     "scheduling_policy": "SNAPSHOT",
+     "source_table_full_name": "main.test_synced_sdnciwyzyjg2zfziccefocjswa.trips_source"
+    }
+   },
+   "depends_on": [
+    {
+     "node": "resources.database_catalogs.catalog1",
+     "label": "${resources.database_catalogs.catalog1.database_name}"
+    },
+    {
+     "node": "resources.database_catalogs.catalog1",
+     "label": "${resources.database_catalogs.catalog1.name}"
+    },
+    {
+     "node": "resources.database_instances.instance1",
+     "label": "${resources.database_instances.instance1.name}"
+    }
+   ]
+  }
+ }
+}

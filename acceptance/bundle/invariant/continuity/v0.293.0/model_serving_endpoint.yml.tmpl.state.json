@@ -1,0 +1,14 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "495eb07e-a973-472c-94d3-a3a7b763a5b1",
+ "serial": 1,
+ "state": {
+  "resources.model_serving_endpoints.foo": {
+   "__id__": "test-endpoint-6bonlr6d4zeltpdppl7pqehxvq",
+   "state": {
+    "name": "test-endpoint-6bonlr6d4zeltpdppl7pqehxvq"
+   }
+  }
+ }
+}

@@ -1,0 +1,15 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "99711db9-7d1e-46b1-abeb-18e50b6f6a22",
+ "serial": 1,
+ "state": {
+  "resources.postgres_projects.foo": {
+   "__id__": "projects/test-pg-project-6c6tbgxfqnai5ejlogfqehaeba",
+   "state": {
+    "display_name": "Test Postgres Project",
+    "project_id": "test-pg-project-6c6tbgxfqnai5ejlogfqehaeba"
+   }
+  }
+ }
+}

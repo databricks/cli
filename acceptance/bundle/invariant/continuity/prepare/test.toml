@@ -1,0 +1,7 @@
+# Run only via prepare.py (uses -forcerun to override these).
+Local = false
+Cloud = false
+
+# Exclude configs that use features added after v0.293.0.
+EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]
+EnvMatrixExclude.no_cross_resource_ref = ["INPUT_CONFIG=job_cross_resource_ref.yml.tmpl"]

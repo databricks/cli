@@ -1,0 +1,18 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "d76cd845-c1a0-4e69-981f-812266592096",
+ "serial": 1,
+ "state": {
+  "resources.clusters.foo": {
+   "__id__": "79c16fd6-554d-3ab0-79c1-6fd6554d3ab1",
+   "state": {
+    "autotermination_minutes": 60,
+    "cluster_name": "test-cluster-7m5t4urnpjee7ejrwrlmbaj2um",
+    "node_type_id": "i3.xlarge",
+    "num_workers": 1,
+    "spark_version": "13.3.x-scala2.12"
+   }
+  }
+ }
+}

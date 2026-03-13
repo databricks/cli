@@ -1,0 +1,24 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "29bfaa2a-2dcb-47f5-9e05-8b241c88c45f",
+ "serial": 1,
+ "state": {
+  "resources.jobs.foo": {
+   "__id__": "8773416515227162000",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-broxwmphyfhrbnsqxqs6m6id4e/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "test-job-broxwmphyfhrbnsqxqs6m6id4e",
+    "queue": {
+     "enabled": true
+    }
+   }
+  }
+ }
+}
