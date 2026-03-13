@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -387,6 +388,56 @@ func TestSplitScopes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.output, splitScopes(tt.input))
+		})
+	}
+}
+
+func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
+	tests := []struct {
+		name    string
+		setFlag string
+		flagVal string
+		wantErr string
+	}{
+		{
+			name:    "account-id is incompatible",
+			setFlag: "account-id",
+			flagVal: "abc123",
+			wantErr: "--account-id requires --host to be specified",
+		},
+		{
+			name:    "workspace-id is incompatible",
+			setFlag: "workspace-id",
+			flagVal: "12345",
+			wantErr: "--workspace-id requires --host to be specified",
+		},
+		{
+			name:    "experimental-is-unified-host is incompatible",
+			setFlag: "experimental-is-unified-host",
+			flagVal: "true",
+			wantErr: "--experimental-is-unified-host requires --host to be specified",
+		},
+		{
+			name: "no flags set is ok",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String("account-id", "", "")
+			cmd.Flags().String("workspace-id", "", "")
+			cmd.Flags().Bool("experimental-is-unified-host", false, "")
+
+			if tt.setFlag != "" {
+				require.NoError(t, cmd.Flags().Set(tt.setFlag, tt.flagVal))
+			}
+
+			err := validateDiscoveryFlagCompatibility(cmd)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

@@ -166,6 +166,9 @@ depends on the existing profiles you have set in your configuration file
 			if configureServerless {
 				return errors.New("--configure-serverless requires --host to be specified")
 			}
+			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
+				return err
+			}
 			return discoveryLogin(ctx, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
 		}
 
@@ -438,6 +441,26 @@ func shouldUseDiscovery(hostFlag string, args []string, existingProfile *profile
 		return false
 	}
 	return true
+}
+
+// discoveryIncompatibleFlags lists flags that require --host and are incompatible
+// with the discovery login flow via login.databricks.com.
+var discoveryIncompatibleFlags = []string{
+	"account-id",
+	"workspace-id",
+	"experimental-is-unified-host",
+}
+
+// validateDiscoveryFlagCompatibility returns an error if any flags that require
+// --host were explicitly set. These flags are meaningless in discovery mode
+// and could lead to incorrect profile configuration.
+func validateDiscoveryFlagCompatibility(cmd *cobra.Command) error {
+	for _, name := range discoveryIncompatibleFlags {
+		if cmd.Flag(name).Changed {
+			return fmt.Errorf("--%s requires --host to be specified", name)
+		}
+	}
+	return nil
 }
 
 // openURLSuppressingStderr opens a URL in the browser while suppressing stderr output.
