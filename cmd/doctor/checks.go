@@ -1,11 +1,15 @@
 package doctor
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"time"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -14,7 +18,10 @@ import (
 const (
 	statusPass = "pass"
 	statusFail = "fail"
+	statusWarn = "warn"
 	statusInfo = "info"
+
+	networkTimeout = 10 * time.Second
 )
 
 // runChecks runs all diagnostic checks and returns the results.
@@ -67,6 +74,14 @@ func checkConfigFile(cmd *cobra.Command) CheckResult {
 
 	profiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
 	if err != nil {
+		// Config file absence is not a hard failure since auth can work via env vars.
+		if errors.Is(err, profile.ErrNoConfiguration) {
+			return CheckResult{
+				Name:    "Config File",
+				Status:  statusWarn,
+				Message: "No config file found (auth can still work via environment variables)",
+			}
+		}
 		return CheckResult{
 			Name:    "Config File",
 			Status:  statusFail,
@@ -83,18 +98,34 @@ func checkConfigFile(cmd *cobra.Command) CheckResult {
 }
 
 func checkCurrentProfile(cmd *cobra.Command) CheckResult {
+	ctx := cmd.Context()
+
 	profileFlag := cmd.Flag("profile")
-	profileName := "default"
 	if profileFlag != nil && profileFlag.Changed {
-		profileName = profileFlag.Value.String()
+		return CheckResult{
+			Name:    "Current Profile",
+			Status:  statusInfo,
+			Message: profileFlag.Value.String(),
+		}
 	}
+
+	if envProfile := env.Get(ctx, "DATABRICKS_CONFIG_PROFILE"); envProfile != "" {
+		return CheckResult{
+			Name:    "Current Profile",
+			Status:  statusInfo,
+			Message: envProfile + " (from DATABRICKS_CONFIG_PROFILE)",
+		}
+	}
+
 	return CheckResult{
 		Name:    "Current Profile",
 		Status:  statusInfo,
-		Message: profileName,
+		Message: "none (using environment or defaults)",
 	}
 }
 
+// checkAuth uses the SDK's standard config resolution to authenticate.
+// This respects --profile, --host, environment variables, and config file.
 func checkAuth(cmd *cobra.Command) (CheckResult, *databricks.WorkspaceClient) {
 	ctx := cmd.Context()
 	cfg := &config.Config{}
@@ -198,7 +229,8 @@ func checkNetworkWithHost(cmd *cobra.Command, host string) CheckResult {
 		}
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{Timeout: networkTimeout}
+	resp, err := client.Do(req)
 	if err != nil {
 		return CheckResult{
 			Name:    "Network",
@@ -207,7 +239,8 @@ func checkNetworkWithHost(cmd *cobra.Command, host string) CheckResult {
 			Detail:  err.Error(),
 		}
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
+	io.Copy(io.Discard, resp.Body)
 
 	return CheckResult{
 		Name:    "Network",

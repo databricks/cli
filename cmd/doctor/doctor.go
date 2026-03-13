@@ -1,12 +1,11 @@
 package doctor
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -23,13 +22,13 @@ type CheckResult struct {
 // New returns the doctor command.
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "doctor",
-		Args:  root.NoArgs,
-		Short: "Validate your Databricks CLI setup",
+		Use:     "doctor",
+		Args:    root.NoArgs,
+		Short:   "Validate your Databricks CLI setup",
+		GroupID: "development",
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
 		results := runChecks(cmd)
 
 		switch root.OutputType(cmd) {
@@ -38,10 +37,11 @@ func New() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			buf = append(buf, '\n')
 			_, err = cmd.OutOrStdout().Write(buf)
 			return err
 		case flags.OutputText:
-			renderResults(ctx, results)
+			renderResults(cmd.OutOrStdout(), results)
 			return nil
 		default:
 			return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
@@ -51,7 +51,7 @@ func New() *cobra.Command {
 	return cmd
 }
 
-func renderResults(ctx context.Context, results []CheckResult) {
+func renderResults(w io.Writer, results []CheckResult) {
 	green := color.New(color.FgGreen).SprintFunc()
 	red := color.New(color.FgRed).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
@@ -61,19 +61,19 @@ func renderResults(ctx context.Context, results []CheckResult) {
 	for _, r := range results {
 		var icon string
 		switch r.Status {
-		case "pass":
+		case statusPass:
 			icon = green("[ok]")
-		case "fail":
+		case statusFail:
 			icon = red("[FAIL]")
-		case "warn":
+		case statusWarn:
 			icon = yellow("[warn]")
-		case "info":
+		case statusInfo:
 			icon = cyan("[info]")
 		}
 		msg := fmt.Sprintf("%s %s: %s", icon, bold(r.Name), r.Message)
 		if r.Detail != "" {
 			msg += fmt.Sprintf(" (%s)", r.Detail)
 		}
-		cmdio.LogString(ctx, msg)
+		fmt.Fprintln(w, msg)
 	}
 }
