@@ -1,7 +1,7 @@
 package secrets
 
 import (
-	"strconv"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/tableview"
@@ -48,7 +48,7 @@ func listSecretsOverride(listSecretsCommand *cobra.Command, _ *workspace.ListSec
 			if ts == 0 {
 				return ""
 			}
-			return strconv.FormatInt(ts, 10)
+			return time.UnixMilli(ts).UTC().Format("2006-01-02 15:04:05")
 		}},
 	}
 
