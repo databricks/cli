@@ -1,6 +1,7 @@
 package root
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -8,11 +9,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const (
-	unknownFlagPrefix          = "unknown flag: "
-	unknownShorthandFlagPrefix = "unknown shorthand flag: "
-	maxSuggestionDistance      = 2
-)
+const maxSuggestionDistance = 2
 
 // levenshteinDistance computes the edit distance between two strings.
 func levenshteinDistance(a, b string) int {
@@ -49,28 +46,27 @@ func levenshteinDistance(a, b string) int {
 	return prev[len(b)]
 }
 
-// suggestFlagFromError inspects the error message from Cobra for "unknown flag" patterns.
+// suggestFlagFromError inspects the error from Cobra for unknown-flag errors.
 // If a close match is found among the command's flags, it returns an enhanced error
 // with a "Did you mean" suggestion appended. Otherwise it returns the original error.
 func suggestFlagFromError(cmd *cobra.Command, err error) error {
-	msg := err.Error()
-
-	if strings.HasPrefix(msg, unknownShorthandFlagPrefix) {
-		return suggestShorthandFlag(cmd, err, msg)
+	var notExist *pflag.NotExistError
+	if !errors.As(err, &notExist) {
+		return err
 	}
 
-	if strings.HasPrefix(msg, unknownFlagPrefix) {
-		return suggestLongFlag(cmd, err, msg)
+	flagName := notExist.GetSpecifiedName()
+	isShorthand := notExist.GetSpecifiedShortnames() != ""
+
+	if isShorthand {
+		return suggestShorthandFlag(cmd, err, flagName)
 	}
 
-	return err
+	return suggestLongFlag(cmd, err, flagName)
 }
 
-// suggestLongFlag suggests a matching long flag name for an "unknown flag: --xyz" error.
-func suggestLongFlag(cmd *cobra.Command, original error, msg string) error {
-	// Extract the flag name: "unknown flag: --flagname" -> "flagname"
-	flagName := strings.TrimPrefix(msg, unknownFlagPrefix)
-	flagName = strings.TrimPrefix(flagName, "--")
+// suggestLongFlag suggests a matching long flag name for an unknown long flag error.
+func suggestLongFlag(cmd *cobra.Command, original error, flagName string) error {
 	if flagName == "" {
 		return original
 	}
@@ -83,15 +79,12 @@ func suggestLongFlag(cmd *cobra.Command, original error, msg string) error {
 	return fmt.Errorf("%w\n\nDid you mean \"--%s\"?", original, best)
 }
 
-// suggestShorthandFlag suggests a matching shorthand for an
-// "unknown shorthand flag: 'x' in -x" error.
-func suggestShorthandFlag(cmd *cobra.Command, original error, msg string) error {
-	// Extract the shorthand character: "unknown shorthand flag: 'x' in -x"
-	rest := strings.TrimPrefix(msg, unknownShorthandFlagPrefix)
-	if len(rest) < 3 || rest[0] != '\'' || rest[2] != '\'' {
+// suggestShorthandFlag suggests a matching shorthand for an unknown shorthand flag error.
+func suggestShorthandFlag(cmd *cobra.Command, original error, flagName string) error {
+	if flagName == "" {
 		return original
 	}
-	ch := string(rest[1])
+	ch := string(flagName[0])
 
 	best := findClosestShorthand(cmd, ch)
 	if best == "" {
@@ -109,7 +102,7 @@ func findClosestFlag(cmd *cobra.Command, name string) (string, int) {
 
 	seen := map[string]bool{}
 	check := func(f *pflag.Flag) {
-		if f.Hidden || f.Deprecated != "" || f.ShorthandDeprecated != "" {
+		if f.Hidden || f.Deprecated != "" {
 			return
 		}
 		if seen[f.Name] {
