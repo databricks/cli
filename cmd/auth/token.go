@@ -457,6 +457,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 	if !loginArgs.IsUnifiedHost {
 		clearKeys = append(clearKeys, "experimental_is_unified_host")
 	}
+
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:                    profileName,
 		Host:                       loginArgs.Host,
