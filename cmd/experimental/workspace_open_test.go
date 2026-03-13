@@ -75,6 +75,12 @@ func TestBuildWorkspaceURLWithWorkspaceIDInHostname(t *testing.T) {
 	assert.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/123", got)
 }
 
+func TestBuildWorkspaceURLWithWorkspaceIDInVanityHostname(t *testing.T) {
+	got, err := buildWorkspaceURL("https://workspace-123456.example.com", "job", "123", 123456)
+	require.NoError(t, err)
+	assert.Equal(t, "https://workspace-123456.example.com/jobs/123?o=123456", got)
+}
+
 func TestBuildWorkspaceURLFragmentWithWorkspaceID(t *testing.T) {
 	got, err := buildWorkspaceURL("https://myworkspace.databricks.com", "notebook", "12345", 789)
 	require.NoError(t, err)

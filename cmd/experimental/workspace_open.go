@@ -2,16 +2,15 @@ package experimental
 
 import (
 	"fmt"
-	"io"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 
-	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 )
@@ -55,7 +54,7 @@ func buildWorkspaceURL(host, resourceType, id string, workspaceID int64) (string
 	// See https://docs.databricks.com/en/workspace/workspace-details.html
 	if workspaceID != 0 {
 		orgID := strconv.FormatInt(workspaceID, 10)
-		if !strings.Contains(baseURL.Hostname(), orgID) {
+		if !hasWorkspaceIDInHostname(baseURL.Hostname(), orgID) {
 			values := baseURL.Query()
 			values.Add("o", orgID)
 			baseURL.RawQuery = values.Encode()
@@ -73,6 +72,11 @@ func buildWorkspaceURL(host, resourceType, id string, workspaceID int64) (string
 	}
 
 	return baseURL.String(), nil
+}
+
+func hasWorkspaceIDInHostname(hostname, workspaceID string) bool {
+	remainder, ok := strings.CutPrefix(strings.ToLower(hostname), "adb-"+workspaceID)
+	return ok && (remainder == "" || strings.HasPrefix(remainder, "."))
 }
 
 func newWorkspaceOpenCommand() *cobra.Command {
@@ -106,9 +110,11 @@ Examples:
 				return err
 			}
 
-			cmdio.LogString(ctx, fmt.Sprintf("Opening %s %s in the browser...", resourceType, id))
+			if !browser.IsDisabled(ctx) {
+				cmdio.LogString(ctx, fmt.Sprintf("Opening %s %s in the browser...", resourceType, id))
+			}
 
-			return openURLSuppressingBrowserStderr(resourceURL)
+			return browser.OpenURL(ctx, ".", resourceURL)
 		},
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			if len(args) == 0 {
@@ -119,18 +125,4 @@ Examples:
 	}
 
 	return cmd
-}
-
-// openURLSuppressingBrowserStderr suppresses stderr output from the browser
-// launcher, which often emits noisy warnings (e.g. from xdg-open) that
-// would confuse CLI users.
-func openURLSuppressingBrowserStderr(targetURL string) error {
-	originalStderr := browserpkg.Stderr
-	defer func() {
-		browserpkg.Stderr = originalStderr
-	}()
-
-	browserpkg.Stderr = io.Discard
-
-	return browserpkg.OpenURL(targetURL)
 }

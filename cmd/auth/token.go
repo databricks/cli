@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -432,7 +433,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 	}
 	persistentAuthOpts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArgument),
-		u2m.WithBrowser(openURLSuppressingStderr),
+		u2m.WithBrowser(browser.NewOpener(ctx, ".")),
 	}
 	if len(scopesList) > 0 {
 		persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
