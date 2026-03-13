@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -430,7 +430,7 @@ func TestCheckNetworkConfigResolutionFailureWithHost(t *testing.T) {
 	cfg := &config.Config{
 		Host: srv.URL,
 	}
-	resolveErr := fmt.Errorf("validate: missing credentials")
+	resolveErr := errors.New("validate: missing credentials")
 
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newTestCmd(ctx)
