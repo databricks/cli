@@ -20,14 +20,10 @@ const (
 
 // Data keys for session storage
 const (
-	WorkDirDataKey      = "workDir"
-	StartTimeDataKey    = "startTime"
-	ToolCallsDataKey    = "toolCalls"
-	TrackerDataKey      = "tracker"
-	CapabilitiesDataKey = "capabilities"
+	WorkDirDataKey = "workDir"
 )
 
-// Session represents an MCP session with state tracking
+// Session represents a CLI session with state tracking
 type Session struct {
 	ID   string
 	mu   sync.RWMutex
@@ -40,8 +36,6 @@ func NewSession() *Session {
 		ID:   generateID(),
 		data: make(map[string]any),
 	}
-	sess.data[StartTimeDataKey] = time.Now()
-	sess.data[ToolCallsDataKey] = 0
 	return sess
 }
 
@@ -92,58 +86,6 @@ func GetWorkDir(ctx context.Context) (string, error) {
 	}
 
 	return workDir.(string), nil
-}
-
-// IncrementToolCalls increments the tool call counter
-func (s *Session) IncrementToolCalls() int {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	count, ok := s.data[ToolCallsDataKey]
-	if !ok {
-		count = 0
-	}
-	newCount := count.(int) + 1
-	s.data[ToolCallsDataKey] = newCount
-	return newCount
-}
-
-// GetToolCalls returns the number of tool calls made in this session
-func (s *Session) GetToolCalls() int {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	count, ok := s.data[ToolCallsDataKey]
-	if !ok {
-		return 0
-	}
-	return count.(int)
-}
-
-// GetUptime returns the duration since the session started
-func (s *Session) GetUptime() time.Duration {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	startTime, ok := s.data[StartTimeDataKey]
-	if !ok {
-		return 0
-	}
-	return time.Since(startTime.(time.Time))
-}
-
-// SetTracker stores the trajectory tracker in the session
-func (s *Session) SetTracker(tracker any) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.data[TrackerDataKey] = tracker
-}
-
-// GetTracker retrieves the trajectory tracker from the session
-func (s *Session) GetTracker() any {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.data[TrackerDataKey]
 }
 
 // Get retrieves a value from session data.

@@ -14,7 +14,6 @@ The available profiles are:
 {{- end }}
 
 IMPORTANT: YOU MUST ASK the user which of the configured profiles or databricks workspace URL they want to use.
-Only then call the `databricks_configure_auth` tool to configure the authentication.
+Then set the DATABRICKS_HOST and DATABRICKS_TOKEN environment variables, or use a named profile via DATABRICKS_CONFIG_PROFILE.
 
 Do not run anything else before authenticating successfully.
-Once authenticated, you can use this tool again
