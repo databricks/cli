@@ -7,10 +7,10 @@ resources:
     job_src:
       name: test-job-src-$UNIQUE_NAME
       tags:
-        perm_group: viewers
+        perm_group: users
       permissions:
         - level: CAN_VIEW
-          group_name: viewers
+          group_name: users
 
     # job_perm_ref uses permission fields from job_src as its permission values
     job_perm_ref:
