@@ -65,7 +65,7 @@ func TestBuildWorkspaceURLFragmentBasedResources(t *testing.T) {
 func TestBuildWorkspaceURLUnknownResourceType(t *testing.T) {
 	_, err := buildWorkspaceURL("https://myworkspace.databricks.com", "unknown", "123", 0)
 	assert.ErrorContains(t, err, "unknown resource type \"unknown\"")
-	assert.ErrorContains(t, err, "apps, clusters, dashboards, experiments, jobs, notebooks, pipelines, queries, warehouses")
+	assert.ErrorContains(t, err, "alerts, apps, clusters, dashboards, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, queries, registered_models, warehouses")
 }
 
 func TestBuildWorkspaceURLHostWithTrailingSlash(t *testing.T) {
@@ -104,16 +104,20 @@ func TestWorkspaceOpenCommandCompletion(t *testing.T) {
 
 	completions, directive := cmd.ValidArgsFunction(cmd, []string{}, "")
 	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
-	assert.Contains(t, completions, "jobs")
-	assert.Contains(t, completions, "notebooks")
+	assert.Contains(t, completions, "alerts")
+	assert.Contains(t, completions, "apps")
 	assert.Contains(t, completions, "clusters")
-	assert.Contains(t, completions, "pipelines")
 	assert.Contains(t, completions, "dashboards")
 	assert.Contains(t, completions, "experiments")
-	assert.Contains(t, completions, "warehouses")
+	assert.Contains(t, completions, "jobs")
+	assert.Contains(t, completions, "models")
+	assert.Contains(t, completions, "model_serving_endpoints")
+	assert.Contains(t, completions, "notebooks")
+	assert.Contains(t, completions, "pipelines")
 	assert.Contains(t, completions, "queries")
-	assert.Contains(t, completions, "apps")
-	assert.Len(t, completions, 9)
+	assert.Contains(t, completions, "registered_models")
+	assert.Contains(t, completions, "warehouses")
+	assert.Len(t, completions, 13)
 }
 
 func TestWorkspaceOpenCommandCompletionSecondArg(t *testing.T) {
@@ -127,7 +131,7 @@ func TestWorkspaceOpenCommandCompletionSecondArg(t *testing.T) {
 func TestWorkspaceOpenCommandHelpText(t *testing.T) {
 	cmd := newWorkspaceOpenCommand()
 
-	assert.Contains(t, cmd.Long, "Supported resource types: apps, clusters, dashboards, experiments, jobs, notebooks, pipelines, queries, warehouses.")
+	assert.Contains(t, cmd.Long, "Supported resource types: alerts, apps, clusters, dashboards, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, queries, registered_models, warehouses.")
 	assert.Contains(t, cmd.Long, "databricks experimental open jobs 123456789")
 	assert.Contains(t, cmd.Long, "databricks experimental open notebooks /Users/user@example.com/my-notebook")
 	assert.Contains(t, cmd.Long, "databricks experimental open jobs 123456789 --url")

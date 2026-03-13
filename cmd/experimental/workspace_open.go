@@ -3,7 +3,6 @@ package experimental
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -17,14 +16,18 @@ import (
 )
 
 var supportedOpenResourceTypes = []string{
+	workspaceurls.ResourceAlerts,
 	workspaceurls.ResourceApps,
 	workspaceurls.ResourceClusters,
 	workspaceurls.ResourceDashboards,
 	workspaceurls.ResourceExperiments,
 	workspaceurls.ResourceJobs,
+	workspaceurls.ResourceModels,
+	workspaceurls.ResourceModelServingEndpoints,
 	workspaceurls.ResourceNotebooks,
 	workspaceurls.ResourcePipelines,
 	workspaceurls.ResourceQueries,
+	workspaceurls.ResourceRegisteredModels,
 	workspaceurls.ResourceWarehouses,
 }
 
@@ -46,10 +49,6 @@ func supportedResourceTypes() string {
 
 // buildWorkspaceURL constructs a full workspace URL for a given resource type and ID.
 func buildWorkspaceURL(host, resourceType, id string, workspaceID int64) (string, error) {
-	if !slices.Contains(supportedOpenResourceTypes, resourceType) {
-		return "", fmt.Errorf("unknown resource type %q, must be one of: %s", resourceType, supportedResourceTypes())
-	}
-
 	pattern, ok := workspaceurls.LookupPattern(resourceType)
 	if !ok {
 		return "", fmt.Errorf("unknown resource type %q, must be one of: %s", resourceType, supportedResourceTypes())
