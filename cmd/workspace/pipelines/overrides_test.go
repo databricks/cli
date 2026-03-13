@@ -56,3 +56,25 @@ func TestListPipelinesSearchEscapesLikeWildcards(t *testing.T) {
 	ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
 	assert.NotNil(t, cfg.Search.NewIterator(ctx, "foo'%_bar"))
 }
+
+func TestListPipelinesSearchPreservesExistingFilter(t *testing.T) {
+	cmd := newListPipelines()
+
+	// Simulate the user passing --filter on the command line.
+	err := cmd.Flags().Set("filter", "state = 'RUNNING'")
+	require.NoError(t, err)
+
+	cfg := tableview.GetConfig(cmd)
+	require.NotNil(t, cfg)
+	require.NotNil(t, cfg.Search)
+
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockPipelinesAPI().EXPECT().
+		ListPipelines(mock.Anything, sdkpipelines.ListPipelinesRequest{
+			Filter: "state = 'RUNNING' AND name LIKE '%myquery%'",
+		}).
+		Return(nil)
+
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
+	assert.NotNil(t, cfg.Search.NewIterator(ctx, "myquery"))
+}
