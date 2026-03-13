@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle sync --output text
-Action: PUT: .gitignore, databricks.yml, dryrun/databricks.yml, dryrun/out.test.toml, ignored-folder/folder1/script.py, ignored-folder/script.py, out.test.toml
+Action: PUT: .gitignore, databricks.yml, dryrun/databricks.yml, dryrun/out.test.toml, ignored-folder/folder1/script.py, ignored-folder/script.py
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded databricks.yml
@@ -10,4 +10,3 @@ Uploaded dryrun/out.test.toml
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
 Uploaded ignored-folder/script.py
-Uploaded out.test.toml
