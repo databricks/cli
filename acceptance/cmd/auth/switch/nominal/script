@@ -1,0 +1,38 @@
+sethome "./home"
+
+# Create two profiles without a [__settings__] section.
+cat > "./home/.databrickscfg" <<'EOF'
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[profile-a]
+host      = https://profile-a.cloud.databricks.com
+token     = token-a
+auth_type = pat
+
+[profile-b]
+host      = https://profile-b.cloud.databricks.com
+token     = token-b
+auth_type = pat
+EOF
+
+title "Switch to profile-a\n"
+trace $CLI auth switch --profile profile-a
+
+title "Settings after first switch\n"
+cat "./home/.databrickscfg" | grep -A1 __settings__
+
+title "Profiles after first switch\n"
+trace $CLI auth profiles --skip-validate
+
+title "Switch to profile-b\n"
+trace $CLI auth switch --profile profile-b
+
+title "Settings after second switch\n"
+cat "./home/.databrickscfg" | grep -A1 __settings__
+
+title "Profiles after second switch\n"
+trace $CLI auth profiles --skip-validate
+
+# Track the final .databrickscfg to surface changes.
+cp "./home/.databrickscfg" "./out.databrickscfg"
