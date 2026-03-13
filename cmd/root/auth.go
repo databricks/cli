@@ -9,7 +9,10 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	envlib "github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -119,6 +122,8 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 
 	profiler := profile.GetProfiler(ctx)
 
+	resolveDefaultProfile(ctx, cfg)
+
 	if cfg.Profile == "" {
 		// account-level CLI was not really done before, so here are the assumptions:
 		// 1. only admins will have account configured
@@ -193,6 +198,8 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profile
 	}
 
+	resolveDefaultProfile(ctx, cfg)
+
 	_, isTargetFlagSet := targetFlagValue(cmd)
 	// If the profile flag is set but the target flag is not, we should skip loading the bundle configuration.
 	if !isTargetFlagSet && hasProfileFlag {
@@ -231,6 +238,23 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	ctx = cmdctx.SetWorkspaceClient(ctx, w)
 	cmd.SetContext(ctx)
 	return nil
+}
+
+// resolveDefaultProfile applies the [__settings__].default_profile setting
+// when no profile is specified via --profile flag or DATABRICKS_CONFIG_PROFILE.
+func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
+	if cfg.Profile != "" || envlib.Get(ctx, "DATABRICKS_CONFIG_PROFILE") != "" {
+		return
+	}
+	configFilePath := envlib.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	resolvedProfile, err := databrickscfg.GetConfiguredDefaultProfile(ctx, configFilePath)
+	if err != nil {
+		log.Warnf(ctx, "Failed to load default profile: %v", err)
+		return
+	}
+	if resolvedProfile != "" {
+		cfg.Profile = resolvedProfile
+	}
 }
 
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
