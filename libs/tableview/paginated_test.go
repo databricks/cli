@@ -793,7 +793,7 @@ func TestPaginatedSearchEscWithNoSearchStateDoesNothing(t *testing.T) {
 
 func TestPaginatedModelErr(t *testing.T) {
 	m := newTestModel(t, nil, 0)
-	assert.Nil(t, m.Err())
+	assert.NoError(t, m.Err())
 
 	m.err = errors.New("test error")
 	assert.Equal(t, "test error", m.Err().Error())
