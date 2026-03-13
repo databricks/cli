@@ -168,11 +168,12 @@ func TestCheckAuthSuccess(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	t.Setenv("DATABRICKS_HOST", srv.URL)
+	t.Setenv("DATABRICKS_TOKEN", "test-token")
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
+	t.Setenv("HOME", t.TempDir())
+
 	ctx := cmdio.MockDiscard(t.Context())
-	ctx = env.Set(ctx, "DATABRICKS_HOST", srv.URL)
-	ctx = env.Set(ctx, "DATABRICKS_TOKEN", "test-token")
-	ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "")
-	ctx = env.Set(ctx, "HOME", t.TempDir())
 	cmd := newTestCmd(ctx)
 
 	result, w := checkAuth(cmd)
