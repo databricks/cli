@@ -57,9 +57,9 @@ func initInteractionFlags(cmd *cobra.Command) *interactionFlags {
 		f.yes = true
 	}
 
-	cmd.PersistentFlags().BoolVarP(&f.quiet, "quiet", "q", f.quiet, "Suppress non-essential output. Use with --yes for fully silent operation.")
-	cmd.PersistentFlags().BoolVar(&f.noInput, "no-input", f.noInput, "disable interactive prompts")
-	cmd.PersistentFlags().BoolVarP(&f.yes, "yes", "y", f.yes, "auto-approve all yes/no prompts")
+	cmd.PersistentFlags().BoolVarP(&f.quiet, "quiet", "q", f.quiet, "Suppress non-essential output")
+	cmd.PersistentFlags().BoolVar(&f.noInput, "no-input", f.noInput, "Disable interactive prompts")
+	cmd.PersistentFlags().BoolVarP(&f.yes, "yes", "y", f.yes, "Auto-approve all yes/no prompts")
 	return f
 }
 
