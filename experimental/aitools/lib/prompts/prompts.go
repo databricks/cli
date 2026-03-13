@@ -39,28 +39,3 @@ func MustExecuteTemplate(name string, data any) string {
 	}
 	return result
 }
-
-// LoadTemplate loads a template without executing it.
-// Returns the raw template content as a string.
-func LoadTemplate(name string) (string, error) {
-	tmplContent, err := promptTemplates.ReadFile(name)
-	if err != nil {
-		return "", fmt.Errorf("failed to read template %s: %w", name, err)
-	}
-	return string(tmplContent), nil
-}
-
-// MustLoadTemplate is like LoadTemplate but panics on error.
-func MustLoadTemplate(name string) string {
-	result, err := LoadTemplate(name)
-	if err != nil {
-		panic(err)
-	}
-	return result
-}
-
-// TemplateExists checks if a template with the given name exists.
-func TemplateExists(name string) bool {
-	_, err := promptTemplates.ReadFile(name)
-	return err == nil
-}
