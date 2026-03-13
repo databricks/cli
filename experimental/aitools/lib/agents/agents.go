@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 )
 
-// Agent defines a coding agent that can have skills installed and optionally MCP server.
+// Agent defines a supported coding agent.
 type Agent struct {
 	Name        string
 	DisplayName string
@@ -17,9 +17,6 @@ type Agent struct {
 	ConfigDir func(ctx context.Context) (string, error)
 	// SkillsSubdir is the subdirectory within ConfigDir for skills (default: "skills").
 	SkillsSubdir string
-	// InstallMCP installs the Databricks MCP server for this agent.
-	// Nil if agent doesn't support MCP or we haven't implemented it.
-	InstallMCP func(ctx context.Context) error
 }
 
 // Detected returns true if the agent is installed on the system.
@@ -63,13 +60,11 @@ var Registry = []Agent{
 		Name:        "claude-code",
 		DisplayName: "Claude Code",
 		ConfigDir:   homeSubdir(".claude"),
-		InstallMCP:  InstallClaude,
 	},
 	{
 		Name:        "cursor",
 		DisplayName: "Cursor",
 		ConfigDir:   homeSubdir(".cursor"),
-		InstallMCP:  InstallCursor,
 	},
 	{
 		Name:        "codex",
@@ -103,14 +98,4 @@ func DetectInstalled(ctx context.Context) []*Agent {
 		}
 	}
 	return installed
-}
-
-// GetByName returns an agent by name, or nil if not found.
-func GetByName(name string) *Agent {
-	for i := range Registry {
-		if Registry[i].Name == name {
-			return &Registry[i]
-		}
-	}
-	return nil
 }
