@@ -55,6 +55,7 @@ func renderJSON(w io.Writer, columns []string, rows [][]string) error {
 // renderCSV writes query results as CSV with column headers as the first row.
 func renderCSV(w io.Writer, columns []string, rows [][]string) error {
 	cw := csv.NewWriter(w)
+	cw.UseCRLF = true
 	if err := cw.Write(columns); err != nil {
 		return fmt.Errorf("write CSV header: %w", err)
 	}

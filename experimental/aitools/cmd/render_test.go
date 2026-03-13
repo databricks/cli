@@ -104,7 +104,7 @@ func TestRenderCSVBasic(t *testing.T) {
 
 	err := renderCSV(&buf, columns, rows)
 	require.NoError(t, err)
-	assert.Equal(t, "id,name,city\n1,Alice,New York\n2,Bob,London\n", buf.String())
+	assert.Equal(t, "id,name,city\r\n1,Alice,New York\r\n2,Bob,London\r\n", buf.String())
 }
 
 func TestRenderCSVSpecialCharacters(t *testing.T) {
@@ -118,7 +118,7 @@ func TestRenderCSVSpecialCharacters(t *testing.T) {
 
 	err := renderCSV(&buf, columns, rows)
 	require.NoError(t, err)
-	assert.Equal(t, "name,description\nAlice,\"has a comma, here\"\nBob,\"has \"\"quotes\"\" here\"\nCarol,\"has a\nnewline\"\n", buf.String())
+	assert.Equal(t, "name,description\r\nAlice,\"has a comma, here\"\r\nBob,\"has \"\"quotes\"\" here\"\r\nCarol,\"has a\r\nnewline\"\r\n", buf.String())
 }
 
 func TestRenderCSVEmptyResultSet(t *testing.T) {
@@ -128,7 +128,7 @@ func TestRenderCSVEmptyResultSet(t *testing.T) {
 
 	err := renderCSV(&buf, columns, rows)
 	require.NoError(t, err)
-	assert.Equal(t, "id,name\n", buf.String())
+	assert.Equal(t, "id,name\r\n", buf.String())
 }
 
 func TestRenderCSVShortRows(t *testing.T) {
@@ -140,5 +140,5 @@ func TestRenderCSVShortRows(t *testing.T) {
 
 	err := renderCSV(&buf, columns, rows)
 	require.NoError(t, err)
-	assert.Equal(t, "a,b,c\n1,,\n", buf.String())
+	assert.Equal(t, "a,b,c\r\n1,,\r\n", buf.String())
 }

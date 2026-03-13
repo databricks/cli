@@ -471,12 +471,12 @@ func TestRenderCSVOutput(t *testing.T) {
 	var buf strings.Builder
 	err := renderCSV(&buf, []string{"id", "name"}, [][]string{{"1", "alice"}, {"2", "bob"}})
 	require.NoError(t, err)
-	assert.Equal(t, "id,name\n1,alice\n2,bob\n", buf.String())
+	assert.Equal(t, "id,name\r\n1,alice\r\n2,bob\r\n", buf.String())
 }
 
 func TestRenderCSVHeadersOnlyWhenNoRows(t *testing.T) {
 	var buf strings.Builder
 	err := renderCSV(&buf, []string{"id", "name"}, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "id,name\n", buf.String())
+	assert.Equal(t, "id,name\r\n", buf.String())
 }
