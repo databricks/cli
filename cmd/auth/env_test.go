@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -17,15 +18,16 @@ func TestQuoteEnvValue(t *testing.T) {
 		want string
 	}{
 		{name: "simple value", in: "hello", want: "hello"},
-		{name: "empty value", in: "", want: `""`},
-		{name: "value with space", in: "hello world", want: `"hello world"`},
-		{name: "value with tab", in: "hello\tworld", want: "\"hello\tworld\""},
-		{name: "value with double quote", in: `say "hi"`, want: `"say \"hi\""`},
-		{name: "value with backslash", in: `path\to`, want: `"path\\to"`},
+		{name: "empty value", in: "", want: `''`},
+		{name: "value with space", in: "hello world", want: "'hello world'"},
+		{name: "value with tab", in: "hello\tworld", want: "'hello\tworld'"},
+		{name: "value with double quote", in: `say "hi"`, want: "'say \"hi\"'"},
+		{name: "value with backslash", in: `path\to`, want: "'path\\to'"},
 		{name: "url value", in: "https://example.com", want: "https://example.com"},
-		{name: "value with dollar", in: "price$5", want: `"price\$5"`},
-		{name: "value with backtick", in: "hello`world", want: `"hello\` + "`" + `world"`},
-		{name: "value with bang", in: "hello!world", want: `"hello\!world"`},
+		{name: "value with dollar", in: "price$5", want: "'price$5'"},
+		{name: "value with backtick", in: "hello`world", want: "'hello`world'"},
+		{name: "value with bang", in: "hello!world", want: "'hello!world'"},
+		{name: "value with single quote", in: "it's", want: "'it'\\''s'"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -51,6 +53,11 @@ func TestEnvCommand_TextOutput(t *testing.T) {
 			args:     []string{"--host", "https://test.cloud.databricks.com", "--output", "text"},
 			wantJSON: false,
 		},
+		{
+			name:     "explicit --output json produces JSON",
+			args:     []string{"--host", "https://test.cloud.databricks.com", "--output", "json"},
+			wantJSON: true,
+		},
 	}
 
 	for _, c := range cases {
@@ -61,6 +68,7 @@ func TestEnvCommand_TextOutput(t *testing.T) {
 
 			envCmd := newEnvCommand()
 			parent.AddCommand(envCmd)
+			parent.SetContext(cmdio.MockDiscard(t.Context()))
 
 			// Set DATABRICKS_TOKEN so the SDK's config.Authenticate succeeds
 			// without hitting a real endpoint.

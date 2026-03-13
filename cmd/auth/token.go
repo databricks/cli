@@ -85,22 +85,25 @@ using a client ID and secret is not supported.`,
 		if err != nil {
 			return err
 		}
-
-		// Output plain token when the user explicitly passes --output text.
-		if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(), t.AccessToken)
-			return nil
-		}
-
-		raw, err := json.MarshalIndent(t, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, _ = cmd.OutOrStdout().Write(raw)
-		return nil
+		return writeTokenOutput(cmd, t)
 	}
 
 	return cmd
+}
+
+func writeTokenOutput(cmd *cobra.Command, t *oauth2.Token) error {
+	// Output plain token when the user explicitly passes --output text.
+	if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
+		_, _ = fmt.Fprintln(cmd.OutOrStdout(), t.AccessToken)
+		return nil
+	}
+
+	raw, err := json.MarshalIndent(t, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, _ = cmd.OutOrStdout().Write(raw)
+	return nil
 }
 
 type loadTokenArgs struct {

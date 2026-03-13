@@ -32,6 +32,8 @@ func canonicalHost(host string) (string, error) {
 
 var ErrNoMatchingProfiles = errors.New("no matching profiles found")
 
+const shellQuotedSpecialChars = " \t\"\\$`!#&|;(){}[]<>?*~'"
+
 func resolveSection(cfg *config.Config, iniFile *config.File) (*ini.Section, error) {
 	var candidates []*ini.Section
 	configuredHost, err := canonicalHost(cfg.Host)
@@ -169,25 +171,16 @@ func collectEnvVars(cfg *config.Config) map[string]string {
 	return vars
 }
 
-// quoteEnvValue quotes a value for KEY=VALUE output if it contains spaces,
-// double quotes, or shell-special characters. Embedded double quotes and
-// backslashes are escaped with a backslash.
+// quoteEnvValue quotes a value for KEY=VALUE output if it contains spaces or
+// shell-special characters. Single quotes prevent shell expansion, and
+// embedded single quotes use the POSIX-compatible '\'' sequence.
 func quoteEnvValue(v string) string {
 	if v == "" {
-		return `""`
+		return `''`
 	}
-	needsQuoting := strings.ContainsAny(v, " \t\"\\$`!#&|;(){}[]<>?*~'")
+	needsQuoting := strings.ContainsAny(v, shellQuotedSpecialChars)
 	if !needsQuoting {
 		return v
 	}
-	var b strings.Builder
-	b.WriteByte('"')
-	for _, c := range v {
-		if c == '"' || c == '\\' || c == '$' || c == '`' || c == '!' {
-			b.WriteByte('\\')
-		}
-		b.WriteRune(c)
-	}
-	b.WriteByte('"')
-	return b.String()
+	return "'" + strings.ReplaceAll(v, "'", "'\\''") + "'"
 }

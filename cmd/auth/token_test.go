@@ -3,13 +3,10 @@ package auth
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -796,9 +793,8 @@ func TestTokenCommand_TextOutput(t *testing.T) {
 			parent.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 
 			tokenCmd := newTokenCommand(authArgs)
-			// Override RunE to inject test profiler and token cache.
-			// The output formatting logic below must mirror newTokenCommand.RunE.
-			// If you change the output logic in newTokenCommand, update this too.
+			// Override RunE to inject test profiler and token cache while reusing
+			// the production output formatter.
 			tokenCmd.RunE = func(cmd *cobra.Command, args []string) error {
 				profileName := ""
 				if f := cmd.Flag("profile"); f != nil {
@@ -815,16 +811,7 @@ func TestTokenCommand_TextOutput(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
-					_, _ = fmt.Fprintln(cmd.OutOrStdout(), tok.AccessToken)
-					return nil
-				}
-				raw, err := json.MarshalIndent(tok, "", "  ")
-				if err != nil {
-					return err
-				}
-				_, _ = cmd.OutOrStdout().Write(raw)
-				return nil
+				return writeTokenOutput(cmd, tok)
 			}
 
 			parent.AddCommand(tokenCmd)
