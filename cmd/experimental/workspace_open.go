@@ -16,17 +16,19 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 )
 
-// resourceURLPatterns maps resource type names to their URL path patterns.
+// resourceURLPatterns is a hardcoded list of known resource types and their URL path patterns.
 // Patterns starting with "#" use URL fragments instead of path segments.
+// bundle open uses a similar hardcoded approach via InitializeURL methods on each resource type.
 var resourceURLPatterns = map[string]string{
-	"apps":       "/apps/%s",
-	"clusters":   "/compute/clusters/%s",
-	"dashboards": "/dashboardsv3/%s/published",
-	"jobs":       "/jobs/%s",
-	"notebooks":  "#notebook/%s",
-	"pipelines":  "/pipelines/%s",
-	"queries":    "/sql/editor/%s",
-	"warehouses": "/sql/warehouses/%s",
+	"apps":        "/apps/%s",
+	"clusters":    "/compute/clusters/%s",
+	"dashboards":  "/dashboardsv3/%s/published",
+	"experiments": "ml/experiments/%s",
+	"jobs":        "/jobs/%s",
+	"notebooks":   "#notebook/%s",
+	"pipelines":   "/pipelines/%s",
+	"queries":     "/sql/editor/%s",
+	"warehouses":  "/sql/warehouses/%s",
 }
 
 var currentWorkspaceID = func(ctx context.Context) (int64, error) {
