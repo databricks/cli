@@ -19,7 +19,10 @@ Flags:
 
 Global Flags:
       --debug            enable debug logging
+      --no-input         disable interactive prompts
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
+  -q, --quiet            Suppress non-essential output. Use with --yes for fully silent operation.
   -t, --target string    bundle target to use (if applicable)
+  -y, --yes              auto-approve all yes/no prompts
       --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
