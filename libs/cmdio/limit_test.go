@@ -144,3 +144,21 @@ func TestApplyLimitPreservesErrors(t *testing.T) {
 	assert.ErrorContains(t, err, "fetch error")
 	assert.Equal(t, []int{1, 2}, result)
 }
+
+func TestLimitIteratorNextWithoutHasNextReturnsError(t *testing.T) {
+	ctx := cmdio.WithLimit(t.Context(), 2)
+	iter := cmdio.ApplyLimit(ctx, &sliceIterator[int]{items: []int{1, 2, 3, 4, 5}})
+
+	// Drain the allowed items.
+	v1, err := iter.Next(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, 1, v1)
+
+	v2, err := iter.Next(t.Context())
+	require.NoError(t, err)
+	assert.Equal(t, 2, v2)
+
+	// Calling Next() again without HasNext() must return ErrNoMoreItems.
+	_, err = iter.Next(t.Context())
+	assert.ErrorIs(t, err, listing.ErrNoMoreItems)
+}

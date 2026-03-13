@@ -32,6 +32,10 @@ func (l *limitIterator[T]) HasNext(ctx context.Context) bool {
 }
 
 func (l *limitIterator[T]) Next(ctx context.Context) (T, error) {
+	if l.remaining <= 0 {
+		var zero T
+		return zero, listing.ErrNoMoreItems
+	}
 	v, err := l.inner.Next(ctx)
 	if err != nil {
 		return v, err
