@@ -1,6 +1,7 @@
 package root
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -114,10 +115,10 @@ func TestSuggestFlagFromError_CobraErrorFormats(t *testing.T) {
 			contains: `"--output"`,
 		},
 		{
-			name:     "shorthand with quote format",
+			name:     "shorthand with no matching flags",
 			errMsg:   "unknown shorthand flag: 'x' in -x",
 			flags:    map[string]string{},
-			contains: "",
+			contains: "unknown shorthand flag: 'x' in -x",
 		},
 	}
 
@@ -127,11 +128,9 @@ func TestSuggestFlagFromError_CobraErrorFormats(t *testing.T) {
 			for name, usage := range tt.flags {
 				cmd.Flags().String(name, "", usage)
 			}
-			err := fmt.Errorf("%s", tt.errMsg)
+			err := errors.New(tt.errMsg)
 			got := suggestFlagFromError(cmd, err)
-			if tt.contains != "" {
-				assert.Contains(t, got.Error(), tt.contains)
-			}
+			assert.Contains(t, got.Error(), tt.contains)
 		})
 	}
 }
@@ -149,4 +148,22 @@ func TestSuggestFlagFromError_DeduplicatesLocalAndInherited(t *testing.T) {
 
 	// Should suggest once, not panic or produce duplicate suggestions.
 	assert.Contains(t, got.Error(), `Did you mean "--target"?`)
+}
+
+func TestSuggestFlagFromError_EmptyFlagName(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	cmd.Flags().String("output", "", "output format")
+	err := fmt.Errorf("unknown flag: --")
+	got := suggestFlagFromError(cmd, err)
+	assert.Equal(t, err.Error(), got.Error())
+}
+
+func TestSuggestFlagFromError_ShorthandUnrelatedNoSuggestion(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	cmd.Flags().StringP("output", "o", "", "output format")
+
+	err := fmt.Errorf("unknown shorthand flag: 'z' in -z")
+	got := suggestFlagFromError(cmd, err)
+	assert.NotContains(t, got.Error(), "Did you mean")
+	assert.Equal(t, err.Error(), got.Error())
 }

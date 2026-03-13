@@ -70,7 +70,7 @@ func suggestFlagFromError(cmd *cobra.Command, err error) error {
 func suggestLongFlag(cmd *cobra.Command, original error, msg string) error {
 	// Extract the flag name: "unknown flag: --flagname" -> "flagname"
 	flagName := strings.TrimPrefix(msg, unknownFlagPrefix)
-	flagName = strings.TrimLeft(flagName, "-")
+	flagName = strings.TrimPrefix(flagName, "--")
 	if flagName == "" {
 		return original
 	}
@@ -109,7 +109,7 @@ func findClosestFlag(cmd *cobra.Command, name string) (string, int) {
 
 	seen := map[string]bool{}
 	check := func(f *pflag.Flag) {
-		if f.Hidden || f.Deprecated != "" {
+		if f.Hidden || f.Deprecated != "" || f.ShorthandDeprecated != "" {
 			return
 		}
 		if seen[f.Name] {
@@ -130,31 +130,25 @@ func findClosestFlag(cmd *cobra.Command, name string) (string, int) {
 	return best, bestDist
 }
 
-// findClosestShorthand returns the closest non-hidden, non-deprecated shorthand
-// that differs by at most 1 edit from the given character.
+// findClosestShorthand returns a case-insensitive exact match for the given
+// shorthand character. Levenshtein is not useful for single characters because
+// any two distinct characters always have distance 1.
 func findClosestShorthand(cmd *cobra.Command, ch string) string {
 	best := ""
-	bestDist := maxSuggestionDistance + 1
-
 	seen := map[string]bool{}
 	check := func(f *pflag.Flag) {
-		if f.Hidden || f.Deprecated != "" || f.Shorthand == "" {
+		if f.Hidden || f.Deprecated != "" || f.ShorthandDeprecated != "" || f.Shorthand == "" {
 			return
 		}
 		if seen[f.Shorthand] {
 			return
 		}
 		seen[f.Shorthand] = true
-
-		d := levenshteinDistance(ch, f.Shorthand)
-		if d < bestDist {
-			bestDist = d
+		if strings.EqualFold(ch, f.Shorthand) {
 			best = f.Shorthand
 		}
 	}
-
 	cmd.Flags().VisitAll(check)
 	cmd.InheritedFlags().VisitAll(check)
-
 	return best
 }
