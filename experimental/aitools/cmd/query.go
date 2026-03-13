@@ -100,7 +100,7 @@ to export results as CSV.`,
 			}
 
 			if format != "" && cmd.Flag("output").Changed {
-				return fmt.Errorf("cannot use --format and --output together; use --format csv or --output json/text")
+				return errors.New("cannot use --format and --output together; use --format csv or --output json/text")
 			}
 
 			ctx := cmd.Context()
