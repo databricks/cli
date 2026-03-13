@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *sql.ListWarehousesRequest) {
+func listOverride(listCmd *cobra.Command, _ *sql.ListWarehousesRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "ID"}}	{{header "Name"}}	{{header "Size"}}	{{header "State"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

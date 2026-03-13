@@ -62,7 +62,7 @@ func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipeli
 	}
 }
 
-func listPipelineEventsOverride(listCmd *cobra.Command, listReq *pipelines.ListPipelineEventsRequest) {
+func listPipelineEventsOverride(listCmd *cobra.Command, _ *pipelines.ListPipelineEventsRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Timestamp"}}	{{header "Level"}}	{{header "Event Type"}}	{{header "Message"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

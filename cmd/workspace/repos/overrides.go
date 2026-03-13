@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *workspace.ListReposRequest) {
+func listOverride(listCmd *cobra.Command, _ *workspace.ListReposRequest) {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{green "%d" .Id}}	{{.Path}}	{{.Branch|blue}}	{{.Url|cyan}}
 	{{end}}`)
