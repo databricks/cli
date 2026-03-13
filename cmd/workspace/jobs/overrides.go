@@ -42,7 +42,7 @@ func listOverride(listCmd *cobra.Command, listReq *jobs.ListJobsRequest) {
 	})
 }
 
-func listRunsOverride(listRunsCmd *cobra.Command, listRunsReq *jobs.ListRunsRequest) {
+func listRunsOverride(listRunsCmd *cobra.Command, _ *jobs.ListRunsRequest) {
 	listRunsCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Job ID"}}	{{header "Run ID"}}	{{header "Result State"}}	URL`)
 	listRunsCmd.Annotations["template"] = cmdio.Heredoc(`
