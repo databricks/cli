@@ -1,4 +1,0 @@
-# Permission ref configs use group names (viewers, admins) that don't exist in real workspaces.
-[EnvMatrixExclude]
-no_permission_ref_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=job_permission_ref.yml.tmpl"]
-no_cross_resource_ref_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=job_cross_resource_ref.yml.tmpl"]
