@@ -43,11 +43,9 @@ func (c Capabilities) SupportsInteractive() bool {
 
 // SupportsPrompt returns true if terminal supports user prompting.
 // Prompts write to stderr and read from stdin, so we only need those to be TTYs.
-// Returns false when --no-input is set, preventing any interactive prompts.
+// Note: this only reflects terminal capability. The --no-input flag is checked
+// directly in prompt functions (Ask, AskYesOrNo, etc.) rather than here.
 func (c Capabilities) SupportsPrompt() bool {
-	if c.noInput {
-		return false
-	}
 	return c.SupportsInteractive() && c.stdinIsTTY && !c.isGitBash
 }
 

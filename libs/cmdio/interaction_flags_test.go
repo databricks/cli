@@ -17,25 +17,6 @@ type stringer string
 
 func (s stringer) String() string { return string(s) }
 
-// newTestContext creates a cmdio context with specified capabilities and captured stderr.
-func newTestContext(t *testing.T, caps Capabilities) (*bytes.Buffer, *bytes.Buffer) {
-	t.Helper()
-	stdout := &bytes.Buffer{}
-	stderr := &bytes.Buffer{}
-	ctx := t.Context()
-	cmdIO := &cmdIO{
-		capabilities:   caps,
-		outputFormat:   flags.OutputText,
-		headerTemplate: "",
-		template:       "",
-		in:             io.NopCloser(strings.NewReader("")),
-		out:            stdout,
-		err:            stderr,
-	}
-	InContext(ctx, cmdIO)
-	return stdout, stderr
-}
-
 // --- Quiet mode tests ---
 
 func TestLogStringSuppressedWhenQuiet(t *testing.T) {
@@ -194,7 +175,9 @@ func TestIsNoInputAndSetNoInput(t *testing.T) {
 	assert.True(t, IsNoInput(ctx))
 }
 
-func TestSupportsPromptFalseWhenNoInput(t *testing.T) {
+func TestSupportsPromptTrueEvenWhenNoInput(t *testing.T) {
+	// SupportsPrompt reports terminal capability only.
+	// The --no-input flag is checked directly in prompt functions.
 	caps := Capabilities{
 		stdinIsTTY:  true,
 		stdoutIsTTY: true,
@@ -203,7 +186,7 @@ func TestSupportsPromptFalseWhenNoInput(t *testing.T) {
 		isGitBash:   false,
 		noInput:     true,
 	}
-	assert.False(t, caps.SupportsPrompt())
+	assert.True(t, caps.SupportsPrompt())
 }
 
 func TestAskReturnsDefaultWhenNoInput(t *testing.T) {

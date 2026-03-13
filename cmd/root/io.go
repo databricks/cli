@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -55,7 +56,7 @@ func initInteractionFlags(cmd *cobra.Command) *interactionFlags {
 		f.yes = true
 	}
 
-	cmd.PersistentFlags().BoolVarP(&f.quiet, "quiet", "q", f.quiet, "suppress non-essential output")
+	cmd.PersistentFlags().BoolVarP(&f.quiet, "quiet", "q", f.quiet, "Suppress non-essential output. Use with --yes for fully silent operation.")
 	cmd.PersistentFlags().BoolVar(&f.noInput, "no-input", f.noInput, "disable interactive prompts")
 	cmd.PersistentFlags().BoolVarP(&f.yes, "yes", "y", f.yes, "auto-approve all yes/no prompts")
 	return f
@@ -63,11 +64,7 @@ func initInteractionFlags(cmd *cobra.Command) *interactionFlags {
 
 // isTruthy returns true for common truthy string values.
 func isTruthy(v string) bool {
-	switch v {
-	case "1", "true", "TRUE", "yes", "YES":
-		return true
-	}
-	return false
+	return v == "1" || strings.EqualFold(v, "true") || strings.EqualFold(v, "yes")
 }
 
 func OutputType(cmd *cobra.Command) flags.Output {

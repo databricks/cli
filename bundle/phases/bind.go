@@ -68,9 +68,9 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 				}
 			}
 
-			if !cmdio.IsPromptSupported(ctx) {
+			if !cmdio.IsPromptSupported(ctx) && !cmdio.IsYes(ctx) {
 				result.Cancel()
-				logdiag.LogError(ctx, errors.New("This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.")) //nolint
+				logdiag.LogError(ctx, errors.New("This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve or --yes if you would like to skip prompts and proceed.")) //nolint
 				return
 			}
 
