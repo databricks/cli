@@ -2,10 +2,12 @@ package mutator
 
 import (
 	"context"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/workspaceurls"
 )
 
 type initializeURLs struct{}
@@ -23,22 +25,36 @@ func (m *initializeURLs) Name() string {
 }
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	workspaceID, err := b.WorkspaceClient().CurrentWorkspaceID(ctx)
+	workspaceId, err := b.WorkspaceClient().CurrentWorkspaceID(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	orgId := strconv.FormatInt(workspaceId, 10)
 	host := b.WorkspaceClient().Config.CanonicalHostName()
-	err = initializeForWorkspace(b, workspaceID, host)
+	err = initializeForWorkspace(b, orgId, host)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	return nil
 }
 
-func initializeForWorkspace(b *bundle.Bundle, workspaceID int64, host string) error {
-	baseURL, err := workspaceurls.WorkspaceBaseURL(host, workspaceID)
+func initializeForWorkspace(b *bundle.Bundle, orgId, host string) error {
+	baseURL, err := url.Parse(host)
 	if err != nil {
 		return err
+	}
+
+	// Add ?o=<workspace id> only if <workspace id> wasn't in the subdomain already.
+	// The ?o= is needed when vanity URLs / legacy workspace URLs are used.
+	// If it's not needed we prefer to leave it out since these URLs are rather
+	// long for most terminals.
+	//
+	// See https://docs.databricks.com/en/workspace/workspace-details.html for
+	// further reading about the '?o=' suffix.
+	if !strings.Contains(baseURL.Hostname(), orgId) {
+		values := baseURL.Query()
+		values.Add("o", orgId)
+		baseURL.RawQuery = values.Encode()
 	}
 
 	for _, group := range b.Config.Resources.AllResources() {

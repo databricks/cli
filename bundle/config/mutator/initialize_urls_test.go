@@ -109,7 +109,7 @@ func TestInitializeURLs(t *testing.T) {
 		"dashboard1":       "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?o=123456",
 	}
 
-	err := initializeForWorkspace(b, 123456, "https://mycompany.databricks.com/")
+	err := initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")
 	require.NoError(t, err)
 
 	for _, group := range b.Config.Resources.AllResources() {
@@ -133,28 +133,8 @@ func TestInitializeURLsWithoutOrgId(t *testing.T) {
 		},
 	}
 
-	err := initializeForWorkspace(b, 123456, "https://adb-123456.azuredatabricks.net/")
+	err := initializeForWorkspace(b, "123456", "https://adb-123456.azuredatabricks.net/")
 	require.NoError(t, err)
 
 	require.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/1", b.Config.Resources.Jobs["job1"].URL)
-}
-
-func TestInitializeURLsWithWorkspaceIDInVanityHostname(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job1": {
-						BaseResource: resources.BaseResource{ID: "1"},
-						JobSettings:  jobs.JobSettings{Name: "job1"},
-					},
-				},
-			},
-		},
-	}
-
-	err := initializeForWorkspace(b, 123456, "https://workspace-123456.example.com/")
-	require.NoError(t, err)
-
-	require.Equal(t, "https://workspace-123456.example.com/jobs/1?o=123456", b.Config.Resources.Jobs["job1"].URL)
 }
