@@ -124,8 +124,6 @@ func newEnvCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		vars := collectEnvVars(cfg)
-
 		// Output KEY=VALUE lines when the user explicitly passes --output text.
 		if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
 			w := cmd.OutOrStdout()
@@ -141,6 +139,7 @@ func newEnvCommand() *cobra.Command {
 			return nil
 		}
 
+		vars := collectEnvVars(cfg)
 		raw, err := json.MarshalIndent(map[string]any{
 			"env": vars,
 		}, "", "  ")
@@ -184,7 +183,7 @@ func quoteEnvValue(v string) string {
 	var b strings.Builder
 	b.WriteByte('"')
 	for _, c := range v {
-		if c == '"' || c == '\\' {
+		if c == '"' || c == '\\' || c == '$' || c == '`' || c == '!' {
 			b.WriteByte('\\')
 		}
 		b.WriteRune(c)

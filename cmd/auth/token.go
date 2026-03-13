@@ -88,7 +88,7 @@ using a client ID and secret is not supported.`,
 
 		// Output plain token when the user explicitly passes --output text.
 		if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
-			_, _ = fmt.Fprint(cmd.OutOrStdout(), t.AccessToken)
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), t.AccessToken)
 			return nil
 		}
 

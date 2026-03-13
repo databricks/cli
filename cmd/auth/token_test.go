@@ -778,9 +778,9 @@ func TestTokenCommand_TextOutput(t *testing.T) {
 			wantJSON:   true,
 		},
 		{
-			name:       "explicit --output text produces plain token",
+			name:       "explicit --output text produces plain token with newline",
 			args:       []string{"--profile", "test-ws", "--output", "text"},
-			wantSubstr: "new-access-token",
+			wantSubstr: "new-access-token\n",
 			wantJSON:   false,
 		},
 	}
@@ -796,8 +796,9 @@ func TestTokenCommand_TextOutput(t *testing.T) {
 			parent.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 
 			tokenCmd := newTokenCommand(authArgs)
-			// Override RunE to inject test profiler and token cache while
-			// keeping the same output formatting logic as the real command.
+			// Override RunE to inject test profiler and token cache.
+			// The output formatting logic below must mirror newTokenCommand.RunE.
+			// If you change the output logic in newTokenCommand, update this too.
 			tokenCmd.RunE = func(cmd *cobra.Command, args []string) error {
 				profileName := ""
 				if f := cmd.Flag("profile"); f != nil {
@@ -815,7 +816,7 @@ func TestTokenCommand_TextOutput(t *testing.T) {
 					return err
 				}
 				if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
-					_, _ = fmt.Fprint(cmd.OutOrStdout(), tok.AccessToken)
+					_, _ = fmt.Fprintln(cmd.OutOrStdout(), tok.AccessToken)
 					return nil
 				}
 				raw, err := json.MarshalIndent(tok, "", "  ")
