@@ -492,6 +492,9 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 	}
 
 	discoveredHost := arg.GetDiscoveredHost()
+	if discoveredHost == "" {
+		return fmt.Errorf("login succeeded but no workspace host was discovered" + discoveryFallbackTip)
+	}
 
 	// Get the token for introspection
 	tok, err := persistentAuth.Token()

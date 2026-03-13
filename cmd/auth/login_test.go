@@ -559,3 +559,28 @@ func TestDiscoveryLogin_NoWarningWhenAccountIDsMatch(t *testing.T) {
 	// No warning should be logged when account IDs match.
 	assert.Empty(t, logBuf.String())
 }
+
+func TestDiscoveryLogin_EmptyDiscoveredHostReturnsError(t *testing.T) {
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+	})
+
+	// Return arg without calling SetDiscoveredHost, so GetDiscoveredHost returns "".
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		return u2m.NewBasicDiscoveryOAuthArgument(profileName)
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err := discoveryLogin(ctx, "DISCOVERY", time.Second, "", nil, func(string) error { return nil })
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no workspace host was discovered")
+}
