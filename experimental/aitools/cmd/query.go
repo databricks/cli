@@ -44,7 +44,6 @@ type queryOutputMode int
 
 const (
 	queryOutputModeJSON queryOutputMode = iota
-	queryOutputModeCSV
 	queryOutputModeStaticTable
 	queryOutputModeInteractiveTable
 )
@@ -100,6 +99,10 @@ to export results as CSV.`,
 				return fmt.Errorf("unsupported format %q, supported values: csv", format)
 			}
 
+			if format != "" && cmd.Flag("output").Changed {
+				return fmt.Errorf("cannot use --format and --output together; use --format csv or --output json/text")
+			}
+
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 
@@ -124,14 +127,17 @@ to export results as CSV.`,
 				return err
 			}
 
+			// CSV format bypasses the normal output mode selection.
+			if format == "csv" {
+				if len(columns) == 0 && len(rows) == 0 {
+					return nil
+				}
+				return renderCSV(cmd.OutOrStdout(), columns, rows)
+			}
+
 			if len(columns) == 0 && len(rows) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "Query executed successfully (no results)")
 				return nil
-			}
-
-			// CSV format bypasses the normal output mode selection.
-			if format == "csv" {
-				return renderCSV(cmd.OutOrStdout(), columns, rows)
 			}
 
 			// Output format depends on stdout capabilities.
@@ -152,7 +158,7 @@ to export results as CSV.`,
 
 	cmd.Flags().StringVarP(&warehouseID, "warehouse", "w", "", "SQL warehouse ID to use for execution")
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to a SQL file to execute")
-	cmd.Flags().StringVar(&format, "format", "", "Output format: csv (default uses --output flag behavior)")
+	cmd.Flags().StringVar(&format, "format", "", "Output format (supported: csv). When omitted, uses --output flag behavior.")
 
 	return cmd
 }
