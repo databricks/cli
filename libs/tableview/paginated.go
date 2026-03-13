@@ -19,6 +19,13 @@ const (
 	searchDebounceDelay      = 200 * time.Millisecond
 )
 
+// FinalModel is implemented by the paginated TUI model to expose errors
+// that occurred during data fetching. tea.Program.Run() only returns
+// framework errors, not application-level errors stored in the model.
+type FinalModel interface {
+	Err() error
+}
+
 // rowsFetchedMsg carries newly fetched rows from the iterator.
 type rowsFetchedMsg struct {
 	rows       [][]string
@@ -146,6 +153,11 @@ func RunPaginated(ctx context.Context, w io.Writer, cfg *TableConfig, iter RowIt
 	p := NewPaginatedProgram(ctx, w, cfg, iter, maxItems)
 	_, err := p.Run()
 	return err
+}
+
+// Err returns any error that occurred during data fetching.
+func (m paginatedModel) Err() error {
+	return m.err
 }
 
 func (m paginatedModel) Init() tea.Cmd {
@@ -301,6 +313,10 @@ func (m paginatedModel) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.cfg.Search != nil {
 			m.searching = true
 			m.searchInput = ""
+			// Prevent maybeFetch from starting new fetches against the old iterator
+			// while we're in search mode. Any in-flight fetch will be discarded
+			// via generation check when it returns.
+			m.loading = true
 			m.viewport.Height--
 			return m, nil
 		}
@@ -401,7 +417,7 @@ func (m paginatedModel) executeSearch(query string) (tea.Model, tea.Cmd) {
 	m.fetchGeneration++
 	m.rows = nil
 	m.exhausted = false
-	m.loading = false
+	m.loading = true
 	m.cursor = 0
 	m.rowIter = m.makeSearchIter(query)
 	return m, m.makeFetchCmd(m)
@@ -418,6 +434,22 @@ func (m paginatedModel) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.searching = false
 		m.searchInput = ""
 		m.viewport.Height++
+		if m.hasSearchState {
+			m.fetchGeneration++
+			m.rows = m.savedRows
+			m.rowIter = m.savedIter
+			m.exhausted = m.savedExhaust
+			m.loading = false
+			m.hasSearchState = false
+			m.savedRows = nil
+			m.savedIter = nil
+			m.savedExhaust = false
+			m.cursor = 0
+			if m.ready {
+				m.viewport.SetContent(m.renderContent())
+				m.viewport.GotoTop()
+			}
+		}
 		return m, nil
 	case "backspace":
 		if len(m.searchInput) > 0 {

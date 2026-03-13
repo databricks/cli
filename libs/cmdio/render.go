@@ -278,8 +278,16 @@ func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 				p := tableview.NewPaginatedProgram(ctx, c.out, cfg, iter, maxItems)
 				c.acquireTeaProgram(p)
 				defer c.releaseTeaProgram()
-				_, err := p.Run()
-				return err
+				finalModel, err := p.Run()
+				if err != nil {
+					return err
+				}
+				if pm, ok := finalModel.(tableview.FinalModel); ok {
+					if modelErr := pm.Err(); modelErr != nil {
+						return modelErr
+					}
+				}
+				return nil
 			}
 		}
 	}
