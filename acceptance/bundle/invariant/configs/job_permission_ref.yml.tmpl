@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    job_b:
+      name: test-job-b-$UNIQUE_NAME
+      permissions:
+        - level: CAN_VIEW
+          group_name: viewers
+        - level: CAN_MANAGE
+          group_name: admins
+
+    job_a:
+      name: test-job-a-$UNIQUE_NAME
+      permissions:
+        # Reference level and group_name from job_b by index
+        - level: ${resources.jobs.job_b.permissions[0].level}
+          group_name: ${resources.jobs.job_b.permissions[0].group_name}
+        - level: ${resources.jobs.job_b.permissions[1].level}
+          group_name: ${resources.jobs.job_b.permissions[1].group_name}
