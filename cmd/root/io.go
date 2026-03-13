@@ -2,7 +2,6 @@ package root
 
 import (
 	"context"
-	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -48,13 +47,13 @@ func initInteractionFlags(cmd *cobra.Command) *interactionFlags {
 	ctx := cmd.Context()
 
 	// Configure defaults from environment variables.
-	if v, ok := env.Lookup(ctx, envQuiet); ok && isTruthy(v) {
+	if enabled, ok := env.GetBool(ctx, envQuiet); ok && enabled {
 		f.quiet = true
 	}
-	if v, ok := env.Lookup(ctx, envNoInput); ok && isTruthy(v) {
+	if enabled, ok := env.GetBool(ctx, envNoInput); ok && enabled {
 		f.noInput = true
 	}
-	if v, ok := env.Lookup(ctx, envYes); ok && isTruthy(v) {
+	if enabled, ok := env.GetBool(ctx, envYes); ok && enabled {
 		f.yes = true
 	}
 
@@ -62,11 +61,6 @@ func initInteractionFlags(cmd *cobra.Command) *interactionFlags {
 	cmd.PersistentFlags().BoolVar(&f.noInput, "no-input", f.noInput, "disable interactive prompts")
 	cmd.PersistentFlags().BoolVarP(&f.yes, "yes", "y", f.yes, "auto-approve all yes/no prompts")
 	return f
-}
-
-// isTruthy returns true for common truthy string values.
-func isTruthy(v string) bool {
-	return v == "1" || strings.EqualFold(v, "true") || strings.EqualFold(v, "yes")
 }
 
 func OutputType(cmd *cobra.Command) flags.Output {
@@ -92,14 +86,15 @@ func (f *outputFlag) initializeIO(ctx context.Context, cmd *cobra.Command) (cont
 	return ctx, nil
 }
 
-func (f *interactionFlags) applyToContext(ctx context.Context) {
+func (f *interactionFlags) applyToContext(ctx context.Context) context.Context {
 	if f.quiet {
-		cmdio.SetQuiet(ctx)
+		ctx = cmdio.SetQuiet(ctx)
 	}
 	if f.noInput {
-		cmdio.SetNoInput(ctx)
+		ctx = cmdio.SetNoInput(ctx)
 	}
 	if f.yes {
-		cmdio.SetYes(ctx)
+		ctx = cmdio.SetYes(ctx)
 	}
+	return ctx
 }

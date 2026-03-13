@@ -153,8 +153,9 @@ func TestIsQuietAndSetQuiet(t *testing.T) {
 	ctx = InContext(ctx, cmdIO)
 
 	assert.False(t, IsQuiet(ctx))
-	SetQuiet(ctx)
-	assert.True(t, IsQuiet(ctx))
+	quietCtx := SetQuiet(ctx)
+	assert.False(t, IsQuiet(ctx))
+	assert.True(t, IsQuiet(quietCtx))
 }
 
 // --- No-input mode tests ---
@@ -171,8 +172,9 @@ func TestIsNoInputAndSetNoInput(t *testing.T) {
 	ctx = InContext(ctx, cmdIO)
 
 	assert.False(t, IsNoInput(ctx))
-	SetNoInput(ctx)
-	assert.True(t, IsNoInput(ctx))
+	noInputCtx := SetNoInput(ctx)
+	assert.False(t, IsNoInput(ctx))
+	assert.True(t, IsNoInput(noInputCtx))
 }
 
 func TestSupportsPromptTrueEvenWhenNoInput(t *testing.T) {
@@ -310,8 +312,9 @@ func TestIsYesAndSetYes(t *testing.T) {
 	ctx = InContext(ctx, cmdIO)
 
 	assert.False(t, IsYes(ctx))
-	SetYes(ctx)
-	assert.True(t, IsYes(ctx))
+	yesCtx := SetYes(ctx)
+	assert.False(t, IsYes(ctx))
+	assert.True(t, IsYes(yesCtx))
 }
 
 func TestAskYesOrNoReturnsTrueWhenYes(t *testing.T) {
