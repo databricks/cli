@@ -4,3 +4,8 @@ EnvMatrixExclude.no_external_location = ["INPUT_CONFIG=external_location.yml.tmp
 
 # Unexpected action='create' for resources.secret_scopes.foo.permissions
 EnvMatrixExclude.no_secret_scope = ["INPUT_CONFIG=secret_scope.yml.tmpl"]
+
+# Cross-resource permission references (e.g. ${resources.jobs.job_b.permissions[0].level})
+# don't work in terraform mode: Terraform's databricks_job resource does not expose
+# permissions as output attributes, so the reference can't be resolved.
+EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]
