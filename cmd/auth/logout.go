@@ -1,15 +1,15 @@
 // The auth logout command was implemented across three stacked PRs that were
 // inadvertently squashed into a single commit cb3c326 (titled after #4647 only):
 //
-//   - #4613 (7c5707a..22d250f): core logout command with --profile, --force,
+//   - #4613: core logout command with --profile, --force,
 //     --delete flags, token cache cleanup, and DeleteProfile in libs/databrickscfg/ops.go.
 //     https://github.com/databricks/cli/pull/4613
 //
-//   - #4616 (5a8c9d8..e5a1d88): interactive profile picker when --profile is
+//   - #4616: interactive profile picker when --profile is
 //     omitted in an interactive terminal.
 //     https://github.com/databricks/cli/pull/4616
 //
-//   - #4647 (fdeef96..51f14b5): extract shared SelectProfile helper, deduplicate
+//   - #4647: extract shared SelectProfile helper, deduplicate
 //     profile pickers across auth logout, auth token, cmd/root/auth.go, cmd/root/bundle.go.
 //     https://github.com/databricks/cli/pull/4647
 
