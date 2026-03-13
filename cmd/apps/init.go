@@ -619,6 +619,7 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 	}
 
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		log.Warnf(ctx, "Failed to create %s: %v, skipping background npm install", destDir, err)
 		return nil
 	}
 
@@ -986,6 +987,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	if npmInstallCh != nil {
 		if err := awaitBackgroundNpmInstall(ctx, npmInstallCh); err != nil {
 			log.Warnf(ctx, "Background npm install failed: %v, will retry during project initialization", err)
+			os.RemoveAll(filepath.Join(destDir, "node_modules"))
 		}
 	}
 

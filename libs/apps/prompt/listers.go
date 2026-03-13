@@ -555,7 +555,8 @@ func NewPagedJobs(ctx context.Context) (*PagedFetcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Jobs.List(ctx, jobs.ListJobsRequest{Limit: min(pageSize, 100)})
+	apiLimit := min(pageSize, 100)
+	iter := w.Jobs.List(ctx, jobs.ListJobsRequest{Limit: apiLimit})
 	mapFn := func(j jobs.BaseJob) ListItem {
 		label := j.Settings.Name
 		id := strconv.FormatInt(j.JobId, 10)
@@ -564,7 +565,7 @@ func NewPagedJobs(ctx context.Context) (*PagedFetcher, error) {
 		}
 		return ListItem{ID: id, Label: label}
 	}
-	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	items, hasMore, err := collectN(ctx, iter, apiLimit, mapFn)
 	if err != nil {
 		return nil, err
 	}
@@ -572,7 +573,7 @@ func NewPagedJobs(ctx context.Context) (*PagedFetcher, error) {
 		Items:   items,
 		HasMore: hasMore,
 		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
-			return collectN(ctx, iter, pageSize, mapFn)
+			return collectN(ctx, iter, apiLimit, mapFn)
 		},
 	}, nil
 }
@@ -721,6 +722,10 @@ func NewPagedConnections(ctx context.Context) (*PagedFetcher, error) {
 }
 
 // NewPagedVectorSearchIndexes creates a PagedFetcher for vector search indexes.
+// Unlike other paged constructors, this eagerly loads all indexes across all
+// endpoints because the API requires a two-level query (endpoint → indexes).
+// Incremental loading isn't feasible without restructuring the picker into a
+// two-step flow. The result is capped at maxTotalResults.
 func NewPagedVectorSearchIndexes(ctx context.Context) (*PagedFetcher, error) {
 	w, err := workspaceClient(ctx)
 	if err != nil {
@@ -793,11 +798,12 @@ func NewPagedDatabaseInstances(ctx context.Context) (*PagedFetcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Database.ListDatabaseInstances(ctx, database.ListDatabaseInstancesRequest{PageSize: min(pageSize, 100)})
+	apiLimit := min(pageSize, 100)
+	iter := w.Database.ListDatabaseInstances(ctx, database.ListDatabaseInstancesRequest{PageSize: apiLimit})
 	mapFn := func(inst database.DatabaseInstance) ListItem {
 		return ListItem{ID: inst.Name, Label: inst.Name}
 	}
-	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	items, hasMore, err := collectN(ctx, iter, apiLimit, mapFn)
 	if err != nil {
 		return nil, err
 	}
@@ -805,7 +811,7 @@ func NewPagedDatabaseInstances(ctx context.Context) (*PagedFetcher, error) {
 		Items:   items,
 		HasMore: hasMore,
 		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
-			return collectN(ctx, iter, pageSize, mapFn)
+			return collectN(ctx, iter, apiLimit, mapFn)
 		},
 	}, nil
 }
@@ -816,7 +822,8 @@ func NewPagedPostgresProjects(ctx context.Context) (*PagedFetcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Postgres.ListProjects(ctx, postgres.ListProjectsRequest{PageSize: min(pageSize, 100)})
+	apiLimit := min(pageSize, 100)
+	iter := w.Postgres.ListProjects(ctx, postgres.ListProjectsRequest{PageSize: apiLimit})
 	mapFn := func(p postgres.Project) ListItem {
 		label := p.Name
 		if p.Status != nil && p.Status.DisplayName != "" {
@@ -824,7 +831,7 @@ func NewPagedPostgresProjects(ctx context.Context) (*PagedFetcher, error) {
 		}
 		return ListItem{ID: p.Name, Label: label}
 	}
-	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
+	items, hasMore, err := collectN(ctx, iter, apiLimit, mapFn)
 	if err != nil {
 		return nil, err
 	}
@@ -832,7 +839,7 @@ func NewPagedPostgresProjects(ctx context.Context) (*PagedFetcher, error) {
 		Items:   items,
 		HasMore: hasMore,
 		loadMore: func(ctx context.Context) ([]ListItem, bool, error) {
-			return collectN(ctx, iter, pageSize, mapFn)
+			return collectN(ctx, iter, apiLimit, mapFn)
 		},
 	}, nil
 }
