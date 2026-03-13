@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/databricks/cli/internal/build"
@@ -26,13 +27,15 @@ const (
 
 // runChecks runs all diagnostic checks and returns the results.
 func runChecks(cmd *cobra.Command) []CheckResult {
+	cfg, err := resolveConfig(cmd)
+
 	var results []CheckResult
 
 	results = append(results, checkCLIVersion())
 	results = append(results, checkConfigFile(cmd))
 	results = append(results, checkCurrentProfile(cmd))
 
-	authResult, w := checkAuth(cmd)
+	authResult, w := checkAuth(cmd, cfg, err)
 	results = append(results, authResult)
 
 	if w != nil {
@@ -45,7 +48,7 @@ func runChecks(cmd *cobra.Command) []CheckResult {
 		})
 	}
 
-	results = append(results, checkNetwork(cmd, w))
+	results = append(results, checkNetwork(cmd, cfg, err, w))
 	return results
 }
 
@@ -124,15 +127,40 @@ func checkCurrentProfile(cmd *cobra.Command) CheckResult {
 	}
 }
 
-// checkAuth uses the SDK's standard config resolution to authenticate.
-// This respects --profile, --host, environment variables, and config file.
-func checkAuth(cmd *cobra.Command) (CheckResult, *databricks.WorkspaceClient) {
+func resolveConfig(cmd *cobra.Command) (*config.Config, error) {
 	ctx := cmd.Context()
 	cfg := &config.Config{}
+
+	if configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE"); configFile != "" {
+		cfg.ConfigFile = configFile
+	} else if home := env.Get(ctx, env.HomeEnvVar()); home != "" {
+		cfg.ConfigFile = filepath.Join(home, ".databrickscfg")
+	}
+
+	cfg.Loaders = []config.Loader{
+		env.NewConfigLoader(ctx),
+		config.ConfigAttributes,
+		config.ConfigFile,
+	}
 
 	profileFlag := cmd.Flag("profile")
 	if profileFlag != nil && profileFlag.Changed {
 		cfg.Profile = profileFlag.Value.String()
+	}
+
+	return cfg, cfg.EnsureResolved()
+}
+
+// checkAuth uses the resolved config to authenticate.
+func checkAuth(cmd *cobra.Command, cfg *config.Config, resolveErr error) (CheckResult, *databricks.WorkspaceClient) {
+	ctx := cmd.Context()
+	if resolveErr != nil {
+		return CheckResult{
+			Name:    "Authentication",
+			Status:  statusFail,
+			Message: "Cannot resolve config",
+			Detail:  resolveErr.Error(),
+		}, nil
 	}
 
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
@@ -191,21 +219,21 @@ func checkIdentity(cmd *cobra.Command, w *databricks.WorkspaceClient) CheckResul
 	}
 }
 
-func checkNetwork(cmd *cobra.Command, w *databricks.WorkspaceClient) CheckResult {
-	var host string
-	if w != nil {
-		host = w.Config.Host
-	} else {
-		cfg := &config.Config{}
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil && profileFlag.Changed {
-			cfg.Profile = profileFlag.Value.String()
+func checkNetwork(cmd *cobra.Command, cfg *config.Config, resolveErr error, w *databricks.WorkspaceClient) CheckResult {
+	if resolveErr != nil {
+		return CheckResult{
+			Name:    "Network",
+			Status:  statusFail,
+			Message: "Cannot resolve config",
+			Detail:  resolveErr.Error(),
 		}
-		_ = cfg.EnsureResolved()
-		host = cfg.Host
 	}
 
-	return checkNetworkWithHost(cmd, host)
+	if w != nil {
+		return checkNetworkWithHost(cmd, w.Config.Host)
+	}
+
+	return checkNetworkWithHost(cmd, cfg.Host)
 }
 
 func checkNetworkWithHost(cmd *cobra.Command, host string) CheckResult {

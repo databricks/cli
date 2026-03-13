@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -65,6 +67,18 @@ func newTestCmd(ctx context.Context) *cobra.Command {
 	return cmd
 }
 
+func clearConfigEnv(t *testing.T) {
+	t.Helper()
+
+	for _, attr := range config.ConfigAttributes {
+		for _, key := range attr.EnvVars {
+			t.Setenv(key, "")
+		}
+	}
+
+	t.Setenv(env.HomeEnvVar(), t.TempDir())
+}
+
 func TestCheckCLIVersion(t *testing.T) {
 	result := checkCLIVersion()
 	assert.Equal(t, "CLI Version", result.Name)
@@ -118,6 +132,8 @@ func TestCheckConfigFileAbsentIsWarn(t *testing.T) {
 }
 
 func TestCheckCurrentProfileDefault(t *testing.T) {
+	clearConfigEnv(t)
+
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newTestCmd(ctx)
 
@@ -168,15 +184,17 @@ func TestCheckAuthSuccess(t *testing.T) {
 	}))
 	defer srv.Close()
 
+	clearConfigEnv(t)
 	t.Setenv("DATABRICKS_HOST", srv.URL)
 	t.Setenv("DATABRICKS_TOKEN", "test-token")
-	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
-	t.Setenv("HOME", t.TempDir())
 
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newTestCmd(ctx)
 
-	result, w := checkAuth(cmd)
+	cfg, err := resolveConfig(cmd)
+	require.NoError(t, err)
+
+	result, w := checkAuth(cmd, cfg, err)
 	assert.Equal(t, "Authentication", result.Name)
 	assert.Equal(t, statusPass, result.Status)
 	assert.Contains(t, result.Message, "OK")
@@ -184,18 +202,32 @@ func TestCheckAuthSuccess(t *testing.T) {
 }
 
 func TestCheckAuthFailure(t *testing.T) {
-	t.Setenv("DATABRICKS_HOST", "")
-	t.Setenv("DATABRICKS_TOKEN", "")
-	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
-	t.Setenv("HOME", t.TempDir())
+	clearConfigEnv(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newTestCmd(ctx)
 
-	result, w := checkAuth(cmd)
+	cfg, err := resolveConfig(cmd)
+	result, w := checkAuth(cmd, cfg, err)
 	assert.Equal(t, "Authentication", result.Name)
 	assert.Equal(t, statusFail, result.Status)
 	assert.Nil(t, w)
+}
+
+func TestResolveConfigUsesCommandContextEnv(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("DATABRICKS_HOST", "https://real.example.com")
+	t.Setenv("DATABRICKS_TOKEN", "real-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = env.Set(ctx, "DATABRICKS_HOST", "https://context.example.com")
+	ctx = env.Set(ctx, "DATABRICKS_TOKEN", "context-token")
+	cmd := newTestCmd(ctx)
+
+	cfg, err := resolveConfig(cmd)
+	require.NoError(t, err)
+	assert.Equal(t, "https://context.example.com", cfg.Host)
+	assert.Equal(t, "context-token", cfg.Token)
 }
 
 func TestCheckIdentitySuccess(t *testing.T) {
@@ -284,10 +316,32 @@ func TestCheckNetworkWithClient(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newTestCmd(ctx)
 
-	result := checkNetwork(cmd, w)
+	result := checkNetwork(cmd, w.Config, nil, w)
 	assert.Equal(t, "Network", result.Name)
 	assert.Equal(t, statusPass, result.Status)
 	assert.Contains(t, result.Message, "reachable")
+}
+
+func TestCheckNetworkConfigResolutionFailure(t *testing.T) {
+	clearConfigEnv(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte("[DEFAULT]\nhost = https://example.com\n"), 0o600)
+	require.NoError(t, err)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", configFile)
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "missing")
+	cmd := newTestCmd(ctx)
+
+	cfg, err := resolveConfig(cmd)
+	require.Error(t, err)
+
+	result := checkNetwork(cmd, cfg, err, nil)
+	assert.Equal(t, "Network", result.Name)
+	assert.Equal(t, statusFail, result.Status)
+	assert.Equal(t, "Cannot resolve config", result.Message)
+	assert.Contains(t, result.Detail, "missing profile")
 }
 
 func TestRenderResultsText(t *testing.T) {
@@ -337,11 +391,9 @@ func TestRenderResultsJSONOmitsEmptyDetail(t *testing.T) {
 }
 
 func TestNewCommandJSON(t *testing.T) {
+	clearConfigEnv(t)
+
 	ctx := cmdio.MockDiscard(t.Context())
-	ctx = env.Set(ctx, "DATABRICKS_HOST", "")
-	ctx = env.Set(ctx, "DATABRICKS_TOKEN", "")
-	ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "")
-	ctx = env.Set(ctx, "HOME", t.TempDir())
 	ctx = profile.WithProfiler(ctx, &mockProfiler{
 		path: "/tmp/.databrickscfg",
 		profiles: profile.Profiles{
@@ -372,11 +424,9 @@ func TestNewCommandJSON(t *testing.T) {
 }
 
 func TestNewCommandJSONTrailingNewline(t *testing.T) {
+	clearConfigEnv(t)
+
 	ctx := cmdio.MockDiscard(t.Context())
-	ctx = env.Set(ctx, "DATABRICKS_HOST", "")
-	ctx = env.Set(ctx, "DATABRICKS_TOKEN", "")
-	ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "")
-	ctx = env.Set(ctx, "HOME", t.TempDir())
 	ctx = profile.WithProfiler(ctx, &mockProfiler{
 		path: "/tmp/.databrickscfg",
 		profiles: profile.Profiles{
