@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,14 +41,14 @@ func TestMigrateV1ToV2_PermissionsEntry(t *testing.T) {
 	assert.Equal(t, `{"name": "my job"}`, string(db.State["resources.jobs.my_job"].State))
 
 	// Permissions entry should be migrated.
-	var result newPermissionsStateV2
+	var result dresources.PermissionsState
 	err = json.Unmarshal(db.State["resources.jobs.my_job.permissions"].State, &result)
 	require.NoError(t, err)
 	assert.Equal(t, "/jobs/123", result.ObjectID)
 	require.Len(t, result.EmbeddedSlice, 2)
-	assert.Equal(t, "CAN_VIEW", result.EmbeddedSlice[0].Level)
+	assert.Equal(t, "CAN_VIEW", string(result.EmbeddedSlice[0].Level))
 	assert.Equal(t, "viewers", result.EmbeddedSlice[0].GroupName)
-	assert.Equal(t, "IS_OWNER", result.EmbeddedSlice[1].Level)
+	assert.Equal(t, "IS_OWNER", string(result.EmbeddedSlice[1].Level))
 	assert.Equal(t, "tester@databricks.com", result.EmbeddedSlice[1].UserName)
 }
 
@@ -76,10 +77,10 @@ func TestMigrateV1ToV2_AlreadyNewFormat(t *testing.T) {
 	assert.Equal(t, 2, db.StateVersion)
 
 	// Should pass through unchanged (old.Permissions is empty, so raw is returned as-is).
-	var result newPermissionsStateV2
+	var result dresources.PermissionsState
 	err = json.Unmarshal(db.State["resources.jobs.my_job.permissions"].State, &result)
 	require.NoError(t, err)
-	assert.Equal(t, "CAN_VIEW", result.EmbeddedSlice[0].Level)
+	assert.Equal(t, "CAN_VIEW", string(result.EmbeddedSlice[0].Level))
 }
 
 func TestMigrateState_CurrentVersion(t *testing.T) {
