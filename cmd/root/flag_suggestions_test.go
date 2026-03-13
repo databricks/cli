@@ -36,7 +36,7 @@ func TestSuggestFlagFromError_LongFlagCloseMatch(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	cmd.Flags().String("output", "", "output format")
 
-	err := fmt.Errorf("unknown flag: --outpu")
+	err := errors.New("unknown flag: --outpu")
 	got := suggestFlagFromError(cmd, err)
 	assert.Contains(t, got.Error(), `Did you mean "--output"?`)
 	assert.Contains(t, got.Error(), "unknown flag: --outpu")
@@ -46,7 +46,7 @@ func TestSuggestFlagFromError_LongFlagNoMatch(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	cmd.Flags().String("output", "", "output format")
 
-	err := fmt.Errorf("unknown flag: --zzzzzzz")
+	err := errors.New("unknown flag: --zzzzzzz")
 	got := suggestFlagFromError(cmd, err)
 	assert.Equal(t, err.Error(), got.Error())
 }
@@ -55,7 +55,7 @@ func TestSuggestFlagFromError_ShorthandFlag(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	cmd.Flags().StringP("output", "o", "", "output format")
 
-	err := fmt.Errorf("unknown shorthand flag: 'O' in -O")
+	err := errors.New("unknown shorthand flag: 'O' in -O")
 	got := suggestFlagFromError(cmd, err)
 	assert.Contains(t, got.Error(), `Did you mean "-o"?`)
 }
@@ -65,7 +65,7 @@ func TestSuggestFlagFromError_HiddenFlagsExcluded(t *testing.T) {
 	cmd.Flags().String("secret", "", "secret flag")
 	_ = cmd.Flags().MarkHidden("secret")
 
-	err := fmt.Errorf("unknown flag: --secre")
+	err := errors.New("unknown flag: --secre")
 	got := suggestFlagFromError(cmd, err)
 	assert.NotContains(t, got.Error(), "Did you mean")
 }
@@ -75,7 +75,7 @@ func TestSuggestFlagFromError_DeprecatedFlagsExcluded(t *testing.T) {
 	cmd.Flags().String("legacy", "", "old flag")
 	_ = cmd.Flags().MarkDeprecated("legacy", "use --new instead")
 
-	err := fmt.Errorf("unknown flag: --legac")
+	err := errors.New("unknown flag: --legac")
 	got := suggestFlagFromError(cmd, err)
 	assert.NotContains(t, got.Error(), "Did you mean")
 }
@@ -87,7 +87,7 @@ func TestSuggestFlagFromError_InheritedFlags(t *testing.T) {
 	child := &cobra.Command{Use: "child"}
 	parent.AddCommand(child)
 
-	err := fmt.Errorf("unknown flag: --profil")
+	err := errors.New("unknown flag: --profil")
 	got := suggestFlagFromError(child, err)
 	assert.Contains(t, got.Error(), `Did you mean "--profile"?`)
 }
@@ -96,7 +96,7 @@ func TestSuggestFlagFromError_NonFlagError(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	cmd.Flags().String("output", "", "output format")
 
-	err := fmt.Errorf("flag needs an argument: --output")
+	err := errors.New("flag needs an argument: --output")
 	got := suggestFlagFromError(cmd, err)
 	assert.Equal(t, err.Error(), got.Error())
 }
@@ -143,7 +143,7 @@ func TestSuggestFlagFromError_DeduplicatesLocalAndInherited(t *testing.T) {
 	child.Flags().String("target", "", "deployment target")
 	parent.AddCommand(child)
 
-	err := fmt.Errorf("unknown flag: --targe")
+	err := errors.New("unknown flag: --targe")
 	got := suggestFlagFromError(child, err)
 
 	// Should suggest once, not panic or produce duplicate suggestions.
@@ -153,7 +153,7 @@ func TestSuggestFlagFromError_DeduplicatesLocalAndInherited(t *testing.T) {
 func TestSuggestFlagFromError_EmptyFlagName(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	cmd.Flags().String("output", "", "output format")
-	err := fmt.Errorf("unknown flag: --")
+	err := errors.New("unknown flag: --")
 	got := suggestFlagFromError(cmd, err)
 	assert.Equal(t, err.Error(), got.Error())
 }
@@ -162,7 +162,7 @@ func TestSuggestFlagFromError_ShorthandUnrelatedNoSuggestion(t *testing.T) {
 	cmd := &cobra.Command{Use: "test"}
 	cmd.Flags().StringP("output", "o", "", "output format")
 
-	err := fmt.Errorf("unknown shorthand flag: 'z' in -z")
+	err := errors.New("unknown shorthand flag: 'z' in -z")
 	got := suggestFlagFromError(cmd, err)
 	assert.NotContains(t, got.Error(), "Did you mean")
 	assert.Equal(t, err.Error(), got.Error())

@@ -11,7 +11,7 @@ import (
 const (
 	unknownFlagPrefix          = "unknown flag: "
 	unknownShorthandFlagPrefix = "unknown shorthand flag: "
-	maxSuggestionDistance       = 2
+	maxSuggestionDistance      = 2
 )
 
 // levenshteinDistance computes the edit distance between two strings.
@@ -38,7 +38,7 @@ func levenshteinDistance(a, b string) int {
 				cost = 0
 			}
 			curr[j+1] = min(
-				curr[j]+1,     // insertion
+				curr[j]+1,    // insertion
 				prev[j+1]+1,  // deletion
 				prev[j]+cost, // substitution
 			)
