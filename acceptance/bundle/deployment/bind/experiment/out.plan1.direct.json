@@ -1,0 +1,14 @@
+{
+  "plan": {
+    "resources.experiments.experiment1": {
+      "action": "skip",
+      "name_change": {
+        "action": "skip",
+        "reason": "alias",
+        "old": "/Workspace/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
+        "new": "/Workspace/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
+        "remote": "/Users/[USERNAME]/test-experiment[UNIQUE_NAME]"
+      }
+    }
+  }
+}
