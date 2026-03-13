@@ -72,5 +72,5 @@ Global Flags:
   -p, --profile string   ~/.databrickscfg profile
   -q, --quiet            Suppress non-essential output. Use with --yes for fully silent operation.
   -t, --target string    bundle target to use (if applicable)
-  -y, --yes              auto-approve all yes/no prompts
       --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
+  -y, --yes              auto-approve all yes/no prompts

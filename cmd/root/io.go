@@ -10,10 +10,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const envOutputFormat = "DATABRICKS_OUTPUT_FORMAT"
-const envQuiet = "DATABRICKS_QUIET"
-const envNoInput = "DATABRICKS_NO_INPUT"
-const envYes = "DATABRICKS_YES"
+const (
+	envOutputFormat = "DATABRICKS_OUTPUT_FORMAT"
+	envQuiet        = "DATABRICKS_QUIET"
+	envNoInput      = "DATABRICKS_NO_INPUT"
+	envYes          = "DATABRICKS_YES"
+)
 
 type outputFlag struct {
 	output flags.Output
