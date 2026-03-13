@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -564,29 +565,6 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 		return nil, nil
 	}
 
-	// Step 2.5: resolve endpoint details from the branch (non-fatal).
-	var host, endpointPath string
-	endpointErr := RunWithSpinnerCtx(ctx, "Resolving connection details...", func() error {
-		endpoints, fetchErr := ListPostgresEndpoints(ctx, branchName)
-		if fetchErr != nil {
-			return fetchErr
-		}
-		for _, ep := range endpoints {
-			if ep.Status != nil && ep.Status.EndpointType == postgres.EndpointTypeEndpointTypeReadWrite {
-				endpointPath = ep.Name
-				if ep.Status.Hosts != nil && ep.Status.Hosts.Host != "" {
-					host = ep.Status.Hosts.Host
-				}
-				break
-			}
-		}
-		return nil
-	})
-	if endpointErr != nil {
-		log.Warnf(ctx, "Could not resolve endpoint details: %v", endpointErr)
-		// non-fatal: user can fill values manually
-	}
-
 	// Step 3: pick a database within the branch
 	var databases []ListItem
 	err = RunWithSpinnerCtx(ctx, "Fetching databases...", func() error {
@@ -597,19 +575,12 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 	if err != nil {
 		return nil, err
 	}
-	dbName, pgDatabaseName, err := promptFromListWithLabel(ctx, "Select Database", "no databases found in branch "+branchName, databases, required)
+	dbName, _, err := promptFromListWithLabel(ctx, "Select Database", "no databases found in branch "+branchName, databases, required)
 	if err != nil {
 		return nil, err
 	}
 	if dbName == "" {
 		return nil, nil
-	}
-
-	// Build resolver results map keyed by resolver name.
-	resolvedValues := map[string]string{
-		"postgres:host":         host,
-		"postgres:databaseName": pgDatabaseName,
-		"postgres:endpointPath": endpointPath,
 	}
 
 	// Start with prompted values (fields without resolve).
@@ -618,8 +589,12 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 		r.Key() + ".database": dbName,
 	}
 
-	// Map resolved values to fields using the manifest's resolve property.
-	applyResolvedValues(r, resolvedValues, result)
+	// Resolve derived values (host, databaseName, endpointPath) — non-fatal.
+	resolved, resolveErr := ResolvePostgresValues(ctx, r, branchName, dbName)
+	if resolveErr != nil {
+		log.Warnf(ctx, "Could not resolve connection details: %v", resolveErr)
+	}
+	maps.Copy(result, resolved)
 
 	return result, nil
 }
