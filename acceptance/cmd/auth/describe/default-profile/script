@@ -1,0 +1,20 @@
+sethome "./home"
+
+# Create a config with two profiles and an explicit default.
+cat > "./home/.databrickscfg" <<EOF
+[DEFAULT]
+
+[my-workspace]
+host  = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+
+[other-workspace]
+host  = https://other.cloud.databricks.com
+token = other-token
+
+[__settings__]
+default_profile = my-workspace
+EOF
+
+title "Describe without --profile (should use default)\n"
+trace $CLI auth describe

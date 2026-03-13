@@ -90,19 +90,19 @@ func testViewAtRoot(t *testing.T, tv testView) {
 }
 
 func TestViewRootInBricksRepo(t *testing.T) {
-	v, err := NewViewAtRoot(vfs.MustNew("./testdata"))
+	v, err := NewViewAtRoot(t.Context(), vfs.MustNew("./testdata"))
 	require.NoError(t, err)
 	testViewAtRoot(t, testView{t, v})
 }
 
 func TestViewRootInTempRepo(t *testing.T) {
-	v, err := NewViewAtRoot(vfs.MustNew(createFakeRepo(t, "testdata")))
+	v, err := NewViewAtRoot(t.Context(), vfs.MustNew(createFakeRepo(t, "testdata")))
 	require.NoError(t, err)
 	testViewAtRoot(t, testView{t, v})
 }
 
 func TestViewRootInTempDir(t *testing.T) {
-	v, err := NewViewAtRoot(vfs.MustNew(copyTestdata(t, "testdata")))
+	v, err := NewViewAtRoot(t.Context(), vfs.MustNew(copyTestdata(t, "testdata")))
 	require.NoError(t, err)
 	testViewAtRoot(t, testView{t, v})
 }
@@ -125,21 +125,21 @@ func testViewAtA(t *testing.T, tv testView) {
 }
 
 func TestViewAInBricksRepo(t *testing.T) {
-	v, err := NewView(vfs.MustNew("."), vfs.MustNew("./testdata/a"))
+	v, err := NewView(t.Context(), vfs.MustNew("."), vfs.MustNew("./testdata/a"))
 	require.NoError(t, err)
 	testViewAtA(t, testView{t, v})
 }
 
 func TestViewAInTempRepo(t *testing.T) {
 	repo := createFakeRepo(t, "testdata")
-	v, err := NewView(vfs.MustNew(repo), vfs.MustNew(filepath.Join(repo, "a")))
+	v, err := NewView(t.Context(), vfs.MustNew(repo), vfs.MustNew(filepath.Join(repo, "a")))
 	require.NoError(t, err)
 	testViewAtA(t, testView{t, v})
 }
 
 func TestViewAInTempDir(t *testing.T) {
 	// Since this is not a fake repo it should not traverse up the tree.
-	v, err := NewViewAtRoot(vfs.MustNew(filepath.Join(copyTestdata(t, "testdata"), "a")))
+	v, err := NewViewAtRoot(t.Context(), vfs.MustNew(filepath.Join(copyTestdata(t, "testdata"), "a")))
 	require.NoError(t, err)
 	tv := testView{t, v}
 
@@ -176,21 +176,21 @@ func testViewAtAB(t *testing.T, tv testView) {
 }
 
 func TestViewABInBricksRepo(t *testing.T) {
-	v, err := NewView(vfs.MustNew("."), vfs.MustNew("./testdata/a/b"))
+	v, err := NewView(t.Context(), vfs.MustNew("."), vfs.MustNew("./testdata/a/b"))
 	require.NoError(t, err)
 	testViewAtAB(t, testView{t, v})
 }
 
 func TestViewABInTempRepo(t *testing.T) {
 	repo := createFakeRepo(t, "testdata")
-	v, err := NewView(vfs.MustNew(repo), vfs.MustNew(filepath.Join(repo, "a", "b")))
+	v, err := NewView(t.Context(), vfs.MustNew(repo), vfs.MustNew(filepath.Join(repo, "a", "b")))
 	require.NoError(t, err)
 	testViewAtAB(t, testView{t, v})
 }
 
 func TestViewABInTempDir(t *testing.T) {
 	// Since this is not a fake repo it should not traverse up the tree.
-	v, err := NewViewAtRoot(vfs.MustNew(filepath.Join(copyTestdata(t, "testdata"), "a", "b")))
+	v, err := NewViewAtRoot(t.Context(), vfs.MustNew(filepath.Join(copyTestdata(t, "testdata"), "a", "b")))
 	tv := testView{t, v}
 	require.NoError(t, err)
 
@@ -212,7 +212,7 @@ func TestViewABInTempDir(t *testing.T) {
 func TestViewAlwaysIgnoresLocalStateDir(t *testing.T) {
 	repoPath := createFakeRepo(t, "testdata")
 
-	v, err := NewViewAtRoot(vfs.MustNew(repoPath))
+	v, err := NewViewAtRoot(t.Context(), vfs.MustNew(repoPath))
 	require.NoError(t, err)
 
 	// assert .databricks is still being ignored

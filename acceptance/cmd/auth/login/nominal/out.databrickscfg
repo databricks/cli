@@ -4,3 +4,6 @@
 [test]
 host      = [DATABRICKS_URL]
 auth_type = databricks-cli
+
+[__settings__]
+default_profile = test

@@ -1219,6 +1219,15 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
       State of the deployment.
     "x-databricks-field-behaviors_output_only": |-
       true
+github.com/databricks/databricks-sdk-go/service/apps.AppPermissionLevel:
+  "_":
+    "description": |-
+      Permission level
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_USE
 github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "app": {}
   "database": {}
@@ -2049,6 +2058,17 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterLogConf:
     "description": |-
       destination needs to be provided, e.g.
       `{ "volumes": { "destination": "/Volumes/catalog/schema/volume/cluster_log" } }`
+github.com/databricks/databricks-sdk-go/service/compute.ClusterPermissionLevel:
+  "_":
+    "description": |-
+      Permission level
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_RESTART
+      - |-
+        CAN_ATTACH_TO
 github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
   "_":
     "description": |-
@@ -2984,6 +3004,49 @@ github.com/databricks/databricks-sdk-go/service/database.SyncedTableTriggeredUpd
       Progress of the active data synchronization pipeline.
     "x-databricks-field-behaviors_output_only": |-
       true
+github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel:
+  "_":
+    "description": |-
+      Permission level
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_RESTART
+      - |-
+        CAN_ATTACH_TO
+      - |-
+        IS_OWNER
+      - |-
+        CAN_MANAGE_RUN
+      - |-
+        CAN_VIEW
+      - |-
+        CAN_READ
+      - |-
+        CAN_RUN
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_USE
+      - |-
+        CAN_MANAGE_STAGING_VERSIONS
+      - |-
+        CAN_MANAGE_PRODUCTION_VERSIONS
+      - |-
+        CAN_EDIT_METADATA
+      - |-
+        CAN_VIEW_METADATA
+      - |-
+        CAN_BIND
+      - |-
+        CAN_QUERY
+      - |-
+        CAN_MONITOR
+      - |-
+        CAN_CREATE
+      - |-
+        CAN_MONITOR_ONLY
 github.com/databricks/databricks-sdk-go/service/jobs.AuthenticationMethod:
   "_":
     "enum":
@@ -3357,6 +3420,19 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition:
   "name":
     "description": |-
       The name of the defined parameter. May only contain alphanumeric characters, `_`, `-`, and `.`
+github.com/databricks/databricks-sdk-go/service/jobs.JobPermissionLevel:
+  "_":
+    "description": |-
+      Permission level
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        IS_OWNER
+      - |-
+        CAN_MANAGE_RUN
+      - |-
+        CAN_VIEW
 github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs:
   "_":
     "description": |-
@@ -4138,6 +4214,17 @@ github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications:
   "on_success":
     "description": |-
       An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.
+github.com/databricks/databricks-sdk-go/service/ml.ExperimentPermissionLevel:
+  "_":
+    "description": |-
+      Permission level
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_READ
 github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag:
   "_":
     "description": |-
@@ -4158,6 +4245,21 @@ github.com/databricks/databricks-sdk-go/service/ml.ModelTag:
   "value":
     "description": |-
       The tag value.
+github.com/databricks/databricks-sdk-go/service/ml.RegisteredModelPermissionLevel:
+  "_":
+    "description": |-
+      Permission level
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_MANAGE_PRODUCTION_VERSIONS
+      - |-
+        CAN_MANAGE_STAGING_VERSIONS
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_READ
 github.com/databricks/databricks-sdk-go/service/pipelines.AutoFullRefreshPolicy:
   "_":
     "description": |-
@@ -4621,6 +4723,19 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
       URI of the whl to be installed.
     "deprecation_message": |-
       This field is deprecated
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelinePermissionLevel:
+  "_":
+    "description": |-
+      Permission level
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        IS_OWNER
+      - |-
+        CAN_RUN
+      - |-
+        CAN_VIEW
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "cron": {}
   "manual": {}
@@ -5504,6 +5619,17 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInputWorkload
         GPU_LARGE
       - |-
         MULTIGPU_MEDIUM
+github.com/databricks/databricks-sdk-go/service/serving.ServingEndpointPermissionLevel:
+  "_":
+    "description": |-
+      Permission level
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_QUERY
+      - |-
+        CAN_VIEW
 github.com/databricks/databricks-sdk-go/service/serving.ServingModelWorkloadType:
   "_":
     "description": |-
@@ -5723,6 +5849,21 @@ github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy:
         COST_OPTIMIZED
       - |-
         RELIABILITY_OPTIMIZED
+github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel:
+  "_":
+    "description": |-
+      Permission level
+    "enum":
+      - |-
+        CAN_MANAGE
+      - |-
+        IS_OWNER
+      - |-
+        CAN_USE
+      - |-
+        CAN_MONITOR
+      - |-
+        CAN_VIEW
 github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
   "_":
     "description": |-

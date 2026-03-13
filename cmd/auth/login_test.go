@@ -99,11 +99,23 @@ func TestSetHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "val from --host", authArguments.Host)
 
+	// Test setting host from flag with trailing slash is stripped
+	authArguments.Host = "https://www.host1.com/"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://www.host1.com", authArguments.Host)
+
 	// Test setting host from argument
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"val from [HOST]"})
 	assert.NoError(t, err)
 	assert.Equal(t, "val from [HOST]", authArguments.Host)
+
+	// Test setting host from argument with trailing slash is stripped
+	authArguments.Host = ""
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"https://www.host1.com/"})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://www.host1.com", authArguments.Host)
 
 	// Test setting host from profile
 	authArguments.Host = ""

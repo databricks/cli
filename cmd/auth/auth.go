@@ -30,9 +30,11 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 
 	cmd.AddCommand(newEnvCommand())
 	cmd.AddCommand(newLoginCommand(&authArguments))
+	cmd.AddCommand(newLogoutCommand())
 	cmd.AddCommand(newProfilesCommand())
 	cmd.AddCommand(newTokenCommand(&authArguments))
 	cmd.AddCommand(newDescribeCommand())
+	cmd.AddCommand(newSwitchCommand())
 	return cmd
 }
 

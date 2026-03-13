@@ -1,0 +1,31 @@
+
+=== Initial config
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[dev]
+host = https://dev.cloud.databricks.com
+token = dev-pat-token
+
+=== Logout without --delete — should report no changes for non-U2M profile
+>>> [CLI] auth logout --profile dev --force
+No tokens to clear for profile "dev". Use --delete to remove it from the config file.
+
+=== Config after logout — profile should be unchanged
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[dev]
+host = https://dev.cloud.databricks.com
+token = dev-pat-token
+
+=== Logout with --delete — should delete the profile
+>>> [CLI] auth logout --profile dev --force --delete
+Deleted profile "dev" with no tokens to clear.
+
+=== Backup file should exist
+OK: Backup file exists
+
+=== Config after delete — profile should be removed
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
