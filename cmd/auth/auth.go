@@ -38,7 +38,7 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 }
 
 func promptForHost(ctx context.Context) (string, error) {
-	if !cmdio.IsPromptSupported(ctx) {
+	if !cmdio.IsPromptSupported(ctx) || cmdio.IsNoInput(ctx) {
 		return "", errors.New("the command is being run in a non-interactive environment, please specify a host using --host")
 	}
 
@@ -48,7 +48,7 @@ func promptForHost(ctx context.Context) (string, error) {
 }
 
 func promptForAccountID(ctx context.Context) (string, error) {
-	if !cmdio.IsPromptSupported(ctx) {
+	if !cmdio.IsPromptSupported(ctx) || cmdio.IsNoInput(ctx) {
 		return "", errors.New("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
 	}
 
@@ -60,7 +60,7 @@ func promptForAccountID(ctx context.Context) (string, error) {
 }
 
 func promptForWorkspaceID(ctx context.Context) (string, error) {
-	if !cmdio.IsPromptSupported(ctx) {
+	if !cmdio.IsPromptSupported(ctx) || cmdio.IsNoInput(ctx) {
 		// Workspace ID is optional for unified hosts, so return empty string in non-interactive mode
 		return "", nil
 	}

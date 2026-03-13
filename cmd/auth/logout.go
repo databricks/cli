@@ -125,7 +125,7 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 	}
 
 	if !args.force {
-		if !cmdio.IsPromptSupported(ctx) {
+		if (!cmdio.IsPromptSupported(ctx) || cmdio.IsNoInput(ctx)) && !cmdio.IsYes(ctx) {
 			return errors.New("please specify --force to skip confirmation in non-interactive mode")
 		}
 
