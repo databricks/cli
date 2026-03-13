@@ -278,8 +278,19 @@ func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 				p := tableview.NewPaginatedProgram(ctx, c.out, cfg, iter, maxItems)
 				c.acquireTeaProgram(p)
 				defer c.releaseTeaProgram()
-				_, err := p.Run()
-				return err
+				finalModel, err := p.Run()
+				if err != nil {
+					return err
+				}
+				// p.Run() may succeed even if the model recorded an iterator
+				// fetch error (shown on screen but not propagated). Check the
+				// final model so the command exits non-zero on API errors.
+				if m, ok := finalModel.(tableview.PaginatedModel); ok {
+					if fetchErr := m.Err(); fetchErr != nil {
+						return fetchErr
+					}
+				}
+				return nil
 			}
 		}
 	}
