@@ -333,6 +333,33 @@ func TestCheckNetworkUsesWorkspaceClientTransport(t *testing.T) {
 	assert.Contains(t, result.Message, "reachable")
 }
 
+func TestCheckNetworkFallbackUsesConfigTransport(t *testing.T) {
+	called := false
+	cfg := &config.Config{
+		Host:  "https://example.com",
+		Token: "test-token",
+		HTTPTransport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			called = true
+			assert.Equal(t, http.MethodHead, r.Method)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       http.NoBody,
+				Header:     make(http.Header),
+				Request:    r,
+			}, nil
+		}),
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkNetwork(cmd, cfg, nil, nil)
+	assert.True(t, called, "expected config's HTTPTransport to be used")
+	assert.Equal(t, "Network", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Contains(t, result.Message, "reachable")
+}
+
 func TestCheckNetworkConfigResolutionFailure(t *testing.T) {
 	clearConfigEnv(t)
 

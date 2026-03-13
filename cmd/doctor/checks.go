@@ -236,8 +236,10 @@ func checkNetwork(cmd *cobra.Command, cfg *config.Config, resolveErr error, w *d
 		return checkNetworkWithHost(cmd, w.Config.Host, configuredNetworkHTTPClient(w.Config))
 	}
 
-	log.Warnf(cmd.Context(), "workspace client unavailable for network check, falling back to default HTTP client")
-	return checkNetworkWithHost(cmd, cfg.Host, http.DefaultClient)
+	// Workspace client unavailable, but we can still build an HTTP client
+	// from the resolved config to respect proxy and TLS settings.
+	log.Warnf(cmd.Context(), "workspace client unavailable for network check, using config-based HTTP client")
+	return checkNetworkWithHost(cmd, cfg.Host, configuredNetworkHTTPClient(cfg))
 }
 
 func checkNetworkWithHost(cmd *cobra.Command, host string, client *http.Client) CheckResult {
