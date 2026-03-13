@@ -4,14 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    ignore:
-      - dependency-name: "go"
   - package-ecosystem: "gomod"
     directory: "/tools"
     schedule:
       interval: "weekly"
-    ignore:
-      - dependency-name: "go"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
