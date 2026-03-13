@@ -1,0 +1,16 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "88e6a25a-4926-43e1-b51a-6fd5ffd31b24",
+ "serial": 1,
+ "state": {
+  "resources.registered_models.foo": {
+   "__id__": "main.default.test-model-sxw7mhgbzffbzb2iephnhplir4",
+   "state": {
+    "catalog_name": "main",
+    "name": "test-model-sxw7mhgbzffbzb2iephnhplir4",
+    "schema_name": "default"
+   }
+  }
+ }
+}

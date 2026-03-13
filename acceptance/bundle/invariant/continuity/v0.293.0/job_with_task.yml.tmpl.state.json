@@ -1,0 +1,37 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "c02ae9f1-1b0a-49b6-a17d-a248f817ef85",
+ "serial": 1,
+ "state": {
+  "resources.jobs.foo": {
+   "__id__": "8773416515181677000",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-hudx5lj5hrdhpekijsebayesxy/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "test-job-hudx5lj5hrdhpekijsebayesxy",
+    "queue": {
+     "enabled": true
+    },
+    "tasks": [
+     {
+      "new_cluster": {
+       "node_type_id": "i3.xlarge",
+       "num_workers": 1,
+       "spark_version": "13.3.x-snapshot-scala2.12"
+      },
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "only_task"
+     }
+    ]
+   }
+  }
+ }
+}

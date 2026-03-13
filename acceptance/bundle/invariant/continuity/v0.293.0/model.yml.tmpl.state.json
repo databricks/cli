@@ -1,0 +1,14 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "03a27ace-ddc9-4d71-9582-e553ee9d7132",
+ "serial": 1,
+ "state": {
+  "resources.models.foo": {
+   "__id__": "test-model-naplbfotpzd73n4qzjczsrl434",
+   "state": {
+    "name": "test-model-naplbfotpzd73n4qzjczsrl434"
+   }
+  }
+ }
+}

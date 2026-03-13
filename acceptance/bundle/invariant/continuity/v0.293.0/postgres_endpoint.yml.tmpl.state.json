@@ -1,0 +1,43 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "f8399ad2-7483-41da-b5df-c2935066cce2",
+ "serial": 1,
+ "state": {
+  "resources.postgres_branches.branch": {
+   "__id__": "projects/test-pg-project-rx7cqnpsjvhydd5opnqhazeope/branches/test-branch-rx7cqnpsjvhydd5opnqhazeope",
+   "state": {
+    "branch_id": "test-branch-rx7cqnpsjvhydd5opnqhazeope",
+    "no_expiry": true,
+    "parent": "projects/test-pg-project-rx7cqnpsjvhydd5opnqhazeope"
+   },
+   "depends_on": [
+    {
+     "node": "resources.postgres_projects.project",
+     "label": "${resources.postgres_projects.project.name}"
+    }
+   ]
+  },
+  "resources.postgres_endpoints.foo": {
+   "__id__": "projects/test-pg-project-rx7cqnpsjvhydd5opnqhazeope/branches/test-branch-rx7cqnpsjvhydd5opnqhazeope/endpoints/test-endpoint-rx7cqnpsjvhydd5opnqhazeope",
+   "state": {
+    "endpoint_id": "test-endpoint-rx7cqnpsjvhydd5opnqhazeope",
+    "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+    "parent": "projects/test-pg-project-rx7cqnpsjvhydd5opnqhazeope/branches/test-branch-rx7cqnpsjvhydd5opnqhazeope"
+   },
+   "depends_on": [
+    {
+     "node": "resources.postgres_branches.branch",
+     "label": "${resources.postgres_branches.branch.name}"
+    }
+   ]
+  },
+  "resources.postgres_projects.project": {
+   "__id__": "projects/test-pg-project-rx7cqnpsjvhydd5opnqhazeope",
+   "state": {
+    "display_name": "Test Postgres Project",
+    "project_id": "test-pg-project-rx7cqnpsjvhydd5opnqhazeope"
+   }
+  }
+ }
+}

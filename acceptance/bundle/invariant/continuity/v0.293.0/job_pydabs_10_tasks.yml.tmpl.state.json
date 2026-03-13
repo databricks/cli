@@ -1,0 +1,106 @@
+{
+ "state_version": 1,
+ "cli_version": "0.293.0",
+ "lineage": "30ac66ae-b953-49fa-8238-46f98cb8b546",
+ "serial": 1,
+ "state": {
+  "resources.jobs.foo": {
+   "__id__": "8773416515727745000",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-6chn7437vbappeb3he6n2cu7pq/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "job_clusters": [
+     {
+      "job_cluster_key": "main_cluster",
+      "new_cluster": {
+       "node_type_id": "i3.xlarge",
+       "num_workers": 1,
+       "spark_version": "13.3.x-snapshot-scala2.12"
+      }
+     }
+    ],
+    "max_concurrent_runs": 1,
+    "name": "test-job-6chn7437vbappeb3he6n2cu7pq",
+    "queue": {
+     "enabled": true
+    },
+    "tasks": [
+     {
+      "job_cluster_key": "main_cluster",
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "task_00"
+     },
+     {
+      "job_cluster_key": "main_cluster",
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "task_01"
+     },
+     {
+      "job_cluster_key": "main_cluster",
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "task_02"
+     },
+     {
+      "job_cluster_key": "main_cluster",
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "task_03"
+     },
+     {
+      "job_cluster_key": "main_cluster",
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "task_04"
+     },
+     {
+      "job_cluster_key": "main_cluster",
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "task_05"
+     },
+     {
+      "job_cluster_key": "main_cluster",
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "task_06"
+     },
+     {
+      "job_cluster_key": "main_cluster",
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "task_07"
+     },
+     {
+      "job_cluster_key": "main_cluster",
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "task_08"
+     },
+     {
+      "job_cluster_key": "main_cluster",
+      "notebook_task": {
+       "notebook_path": "/Shared/notebook"
+      },
+      "task_key": "task_09"
+     }
+    ]
+   }
+  }
+ }
+}
