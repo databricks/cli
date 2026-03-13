@@ -209,6 +209,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
+	if !inprocessMode {
+		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
+		t.Setenv("CLI_293", cli293Path)
+		repls.SetPath(cli293Path, "[CLI_293]")
+	}
+
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
