@@ -257,7 +257,6 @@ func resolveDefaultProfile(ctx context.Context, cfg *config.Config) {
 	}
 }
 
-
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 	profiler := profile.GetProfiler(ctx)
 	path, err := profiler.GetPath(ctx)
