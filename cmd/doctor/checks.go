@@ -24,8 +24,10 @@ const (
 	statusFail = "fail"
 	statusWarn = "warn"
 	statusInfo = "info"
+	statusSkip = "skip"
 
 	networkTimeout = 10 * time.Second
+	checkTimeout   = 15 * time.Second
 )
 
 // runChecks runs all diagnostic checks and returns the results.
@@ -38,20 +40,20 @@ func runChecks(cmd *cobra.Command) []CheckResult {
 	results = append(results, checkConfigFile(cmd))
 	results = append(results, checkCurrentProfile(cmd))
 
-	authResult, w := checkAuth(cmd, cfg, err)
+	authResult, authCfg := checkAuth(cmd, cfg, err)
 	results = append(results, authResult)
 
-	if w != nil {
-		results = append(results, checkIdentity(cmd, w))
+	if authCfg != nil {
+		results = append(results, checkIdentity(cmd, authCfg))
 	} else {
 		results = append(results, CheckResult{
 			Name:    "Identity",
-			Status:  statusFail,
+			Status:  statusSkip,
 			Message: "Skipped (authentication failed)",
 		})
 	}
 
-	results = append(results, checkNetwork(cmd, cfg, err, w))
+	results = append(results, checkNetwork(cmd, cfg, err, authCfg))
 	return results
 }
 
@@ -154,9 +156,17 @@ func resolveConfig(cmd *cobra.Command) (*config.Config, error) {
 	return cfg, cfg.EnsureResolved()
 }
 
+// isAccountLevelConfig returns true if the resolved config targets account-level APIs.
+func isAccountLevelConfig(cfg *config.Config) bool {
+	return cfg.AccountID != "" && cfg.Host != "" && cfg.HostType() == config.AccountHost
+}
+
 // checkAuth uses the resolved config to authenticate.
-func checkAuth(cmd *cobra.Command, cfg *config.Config, resolveErr error) (CheckResult, *databricks.WorkspaceClient) {
-	ctx := cmd.Context()
+// On success it returns the authenticated config for use in subsequent checks.
+func checkAuth(cmd *cobra.Command, cfg *config.Config, resolveErr error) (CheckResult, *config.Config) {
+	ctx, cancel := context.WithTimeout(cmd.Context(), checkTimeout)
+	defer cancel()
+
 	if resolveErr != nil {
 		return CheckResult{
 			Name:    "Authentication",
@@ -166,14 +176,31 @@ func checkAuth(cmd *cobra.Command, cfg *config.Config, resolveErr error) (CheckR
 		}, nil
 	}
 
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
-	if err != nil {
-		return CheckResult{
-			Name:    "Authentication",
-			Status:  statusFail,
-			Message: "Cannot create workspace client",
-			Detail:  err.Error(),
-		}, nil
+	// Detect account-level configs and use the appropriate client constructor
+	// so that account profiles are not incorrectly reported as broken.
+	var authCfg *config.Config
+	if isAccountLevelConfig(cfg) {
+		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
+		if err != nil {
+			return CheckResult{
+				Name:    "Authentication",
+				Status:  statusFail,
+				Message: "Cannot create account client",
+				Detail:  err.Error(),
+			}, nil
+		}
+		authCfg = a.Config
+	} else {
+		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+		if err != nil {
+			return CheckResult{
+				Name:    "Authentication",
+				Status:  statusFail,
+				Message: "Cannot create workspace client",
+				Detail:  err.Error(),
+			}, nil
+		}
+		authCfg = w.Config
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "", "", nil)
@@ -186,7 +213,7 @@ func checkAuth(cmd *cobra.Command, cfg *config.Config, resolveErr error) (CheckR
 		}, nil
 	}
 
-	err = w.Config.Authenticate(req)
+	err = authCfg.Authenticate(req)
 	if err != nil {
 		return CheckResult{
 			Name:    "Authentication",
@@ -196,15 +223,41 @@ func checkAuth(cmd *cobra.Command, cfg *config.Config, resolveErr error) (CheckR
 		}, nil
 	}
 
+	msg := fmt.Sprintf("OK (%s)", authCfg.AuthType)
+	if isAccountLevelConfig(cfg) {
+		msg += " [account-level]"
+	}
+
 	return CheckResult{
 		Name:    "Authentication",
 		Status:  statusPass,
-		Message: fmt.Sprintf("OK (%s)", w.Config.AuthType),
-	}, w
+		Message: msg,
+	}, authCfg
 }
 
-func checkIdentity(cmd *cobra.Command, w *databricks.WorkspaceClient) CheckResult {
-	ctx := cmd.Context()
+func checkIdentity(cmd *cobra.Command, authCfg *config.Config) CheckResult {
+	ctx, cancel := context.WithTimeout(cmd.Context(), checkTimeout)
+	defer cancel()
+
+	// Account-level configs don't support the /me endpoint for workspace identity.
+	if authCfg.HostType() == config.AccountHost {
+		return CheckResult{
+			Name:    "Identity",
+			Status:  statusSkip,
+			Message: "Skipped (account-level profile, workspace identity not available)",
+		}
+	}
+
+	w, err := databricks.NewWorkspaceClient((*databricks.Config)(authCfg))
+	if err != nil {
+		return CheckResult{
+			Name:    "Identity",
+			Status:  statusFail,
+			Message: "Cannot create workspace client",
+			Detail:  err.Error(),
+		}
+	}
+
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return CheckResult{
@@ -222,24 +275,30 @@ func checkIdentity(cmd *cobra.Command, w *databricks.WorkspaceClient) CheckResul
 	}
 }
 
-func checkNetwork(cmd *cobra.Command, cfg *config.Config, resolveErr error, w *databricks.WorkspaceClient) CheckResult {
+func checkNetwork(cmd *cobra.Command, cfg *config.Config, resolveErr error, authCfg *config.Config) CheckResult {
+	// Prefer the authenticated config (it has the fully resolved host).
+	if authCfg != nil {
+		return checkNetworkWithHost(cmd, authCfg.Host, configuredNetworkHTTPClient(authCfg))
+	}
+
+	// Auth failed or was skipped. If we still have a host from config resolution
+	// (even if resolution had other errors), attempt the network check.
+	if cfg != nil && cfg.Host != "" {
+		log.Warnf(cmd.Context(), "authenticated client unavailable for network check, using config-based HTTP client")
+		return checkNetworkWithHost(cmd, cfg.Host, configuredNetworkHTTPClient(cfg))
+	}
+
+	// No host available at all.
+	detail := "no host configured"
 	if resolveErr != nil {
-		return CheckResult{
-			Name:    "Network",
-			Status:  statusFail,
-			Message: "Cannot resolve config",
-			Detail:  resolveErr.Error(),
-		}
+		detail = resolveErr.Error()
 	}
-
-	if w != nil {
-		return checkNetworkWithHost(cmd, w.Config.Host, configuredNetworkHTTPClient(w.Config))
+	return CheckResult{
+		Name:    "Network",
+		Status:  statusFail,
+		Message: "No host configured",
+		Detail:  detail,
 	}
-
-	// Workspace client unavailable, but we can still build an HTTP client
-	// from the resolved config to respect proxy and TLS settings.
-	log.Warnf(cmd.Context(), "workspace client unavailable for network check, using config-based HTTP client")
-	return checkNetworkWithHost(cmd, cfg.Host, configuredNetworkHTTPClient(cfg))
 }
 
 func checkNetworkWithHost(cmd *cobra.Command, host string, client *http.Client) CheckResult {

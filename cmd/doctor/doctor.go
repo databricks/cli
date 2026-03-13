@@ -78,6 +78,8 @@ func renderResults(w io.Writer, results []CheckResult) {
 			icon = yellow("[warn]")
 		case statusInfo:
 			icon = cyan("[info]")
+		case statusSkip:
+			icon = yellow("[skip]")
 		}
 		msg := fmt.Sprintf("%s %s: %s", icon, bold(r.Name), r.Message)
 		if r.Detail != "" {

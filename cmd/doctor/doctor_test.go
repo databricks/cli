@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -200,11 +200,11 @@ func TestCheckAuthSuccess(t *testing.T) {
 	cfg, err := resolveConfig(cmd)
 	require.NoError(t, err)
 
-	result, w := checkAuth(cmd, cfg, err)
+	result, authCfg := checkAuth(cmd, cfg, err)
 	assert.Equal(t, "Authentication", result.Name)
 	assert.Equal(t, statusPass, result.Status)
 	assert.Contains(t, result.Message, "OK")
-	assert.NotNil(t, w)
+	assert.NotNil(t, authCfg)
 }
 
 func TestCheckAuthFailure(t *testing.T) {
@@ -214,10 +214,34 @@ func TestCheckAuthFailure(t *testing.T) {
 	cmd := newTestCmd(ctx)
 
 	cfg, err := resolveConfig(cmd)
-	result, w := checkAuth(cmd, cfg, err)
+	result, authCfg := checkAuth(cmd, cfg, err)
 	assert.Equal(t, "Authentication", result.Name)
 	assert.Equal(t, statusFail, result.Status)
-	assert.Nil(t, w)
+	assert.Nil(t, authCfg)
+}
+
+func TestCheckAuthAccountLevel(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	clearConfigEnv(t)
+	t.Setenv("DATABRICKS_HOST", "https://accounts.cloud.databricks.com")
+	t.Setenv("DATABRICKS_ACCOUNT_ID", "test-account-123")
+	t.Setenv("DATABRICKS_TOKEN", "test-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	cfg, err := resolveConfig(cmd)
+	require.NoError(t, err)
+
+	result, authCfg := checkAuth(cmd, cfg, err)
+	assert.Equal(t, "Authentication", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Contains(t, result.Message, "account-level")
+	assert.NotNil(t, authCfg)
 }
 
 func TestResolveConfigUsesCommandContextEnv(t *testing.T) {
@@ -247,16 +271,15 @@ func TestCheckIdentitySuccess(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(&config.Config{
+	cfg := &config.Config{
 		Host:  srv.URL,
 		Token: "test-token",
-	}))
-	require.NoError(t, err)
+	}
 
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newTestCmd(ctx)
 
-	result := checkIdentity(cmd, w)
+	result := checkIdentity(cmd, cfg)
 	assert.Equal(t, "Identity", result.Name)
 	assert.Equal(t, statusPass, result.Status)
 	assert.Equal(t, "test@example.com", result.Message)
@@ -268,18 +291,33 @@ func TestCheckIdentityFailure(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(&config.Config{
+	cfg := &config.Config{
 		Host:  srv.URL,
 		Token: "bad-token",
-	}))
-	require.NoError(t, err)
+	}
 
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newTestCmd(ctx)
 
-	result := checkIdentity(cmd, w)
+	result := checkIdentity(cmd, cfg)
 	assert.Equal(t, "Identity", result.Name)
 	assert.Equal(t, statusFail, result.Status)
+}
+
+func TestCheckIdentitySkippedForAccountLevel(t *testing.T) {
+	cfg := &config.Config{
+		Host:      "https://accounts.cloud.databricks.com",
+		AccountID: "test-account-123",
+		Token:     "test-token",
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkIdentity(cmd, cfg)
+	assert.Equal(t, "Identity", result.Name)
+	assert.Equal(t, statusSkip, result.Status)
+	assert.Contains(t, result.Message, "account-level")
 }
 
 func TestCheckNetworkReachable(t *testing.T) {
@@ -307,8 +345,8 @@ func TestCheckNetworkNoHost(t *testing.T) {
 	assert.Contains(t, result.Message, "No host configured")
 }
 
-func TestCheckNetworkUsesWorkspaceClientTransport(t *testing.T) {
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(&config.Config{
+func TestCheckNetworkUsesAuthConfigTransport(t *testing.T) {
+	cfg := &config.Config{
 		Host:  "https://example.com",
 		Token: "test-token",
 		HTTPTransport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
@@ -321,13 +359,12 @@ func TestCheckNetworkUsesWorkspaceClientTransport(t *testing.T) {
 				Request:    r,
 			}, nil
 		}),
-	}))
-	require.NoError(t, err)
+	}
 
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newTestCmd(ctx)
 
-	result := checkNetwork(cmd, w.Config, nil, w)
+	result := checkNetwork(cmd, cfg, nil, cfg)
 	assert.Equal(t, "Network", result.Name)
 	assert.Equal(t, statusPass, result.Status)
 	assert.Contains(t, result.Message, "reachable")
@@ -360,7 +397,7 @@ func TestCheckNetworkFallbackUsesConfigTransport(t *testing.T) {
 	assert.Contains(t, result.Message, "reachable")
 }
 
-func TestCheckNetworkConfigResolutionFailure(t *testing.T) {
+func TestCheckNetworkConfigResolutionFailureNoHost(t *testing.T) {
 	clearConfigEnv(t)
 
 	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
@@ -372,14 +409,36 @@ func TestCheckNetworkConfigResolutionFailure(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "missing")
 	cmd := newTestCmd(ctx)
 
-	cfg, err := resolveConfig(cmd)
-	require.Error(t, err)
+	cfg, resolveErr := resolveConfig(cmd)
+	require.Error(t, resolveErr)
 
-	result := checkNetwork(cmd, cfg, err, nil)
+	// Config resolution failed and host is empty, so network check reports failure.
+	result := checkNetwork(cmd, cfg, resolveErr, nil)
 	assert.Equal(t, "Network", result.Name)
 	assert.Equal(t, statusFail, result.Status)
-	assert.Equal(t, "Cannot resolve config", result.Message)
-	assert.Contains(t, result.Detail, "missing profile")
+	assert.Equal(t, "No host configured", result.Message)
+}
+
+func TestCheckNetworkConfigResolutionFailureWithHost(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	// Config resolution may fail (e.g. missing credentials) but if the host
+	// was partially resolved we should still attempt the network check.
+	cfg := &config.Config{
+		Host: srv.URL,
+	}
+	resolveErr := fmt.Errorf("validate: missing credentials")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkNetwork(cmd, cfg, resolveErr, nil)
+	assert.Equal(t, "Network", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Contains(t, result.Message, "reachable")
 }
 
 func TestRenderResultsText(t *testing.T) {
@@ -440,6 +499,7 @@ func TestHasFailedChecks(t *testing.T) {
 				{Name: "Test", Status: statusPass},
 				{Name: "Info", Status: statusInfo},
 				{Name: "Warn", Status: statusWarn},
+				{Name: "Skip", Status: statusSkip},
 			},
 			want: false,
 		},
