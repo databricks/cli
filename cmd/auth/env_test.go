@@ -28,6 +28,8 @@ func TestQuoteEnvValue(t *testing.T) {
 		{name: "value with backtick", in: "hello`world", want: "'hello`world'"},
 		{name: "value with bang", in: "hello!world", want: "'hello!world'"},
 		{name: "value with single quote", in: "it's", want: "'it'\\''s'"},
+		{name: "value with newline", in: "line1\nline2", want: "'line1\nline2'"},
+		{name: "value with carriage return", in: "line1\rline2", want: "'line1\rline2'"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -32,7 +32,7 @@ func canonicalHost(host string) (string, error) {
 
 var ErrNoMatchingProfiles = errors.New("no matching profiles found")
 
-const shellQuotedSpecialChars = " \t\"\\$`!#&|;(){}[]<>?*~'"
+const shellQuotedSpecialChars = " \t\n\r\"\\$`!#&|;(){}[]<>?*~'"
 
 func resolveSection(cfg *config.Config, iniFile *config.File) (*ini.Section, error) {
 	var candidates []*ini.Section
@@ -173,7 +173,7 @@ func collectEnvVars(cfg *config.Config) map[string]string {
 
 // quoteEnvValue quotes a value for KEY=VALUE output if it contains spaces or
 // shell-special characters. Single quotes prevent shell expansion, and
-// embedded single quotes use the POSIX-compatible '\'' sequence.
+// embedded single quotes use the POSIX-compatible '\” sequence.
 func quoteEnvValue(v string) string {
 	if v == "" {
 		return `''`
