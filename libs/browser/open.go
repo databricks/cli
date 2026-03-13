@@ -2,12 +2,13 @@ package browser
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"os"
+	osexec "os/exec"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/exec"
 	browserpkg "github.com/pkg/browser"
 )
 
@@ -26,19 +27,13 @@ var openDefaultBrowserURL = func(targetURL string) error {
 	return browserpkg.OpenURL(targetURL)
 }
 
-var runBrowserCommand = func(ctx context.Context, workingDirectory, browserCommand, targetURL string) error {
-	e, err := exec.NewCommandExecutor(workingDirectory)
-	if err != nil {
-		return err
-	}
-
-	e.WithInheritOutput()
-	cmd, err := e.StartCommand(ctx, fmt.Sprintf("%q %q", browserCommand, targetURL))
-	if err != nil {
-		return err
-	}
-
-	return cmd.Wait()
+var runBrowserCommand = func(ctx context.Context, workingDirectory string, browserCommand []string, targetURL string) error {
+	cmd := osexec.CommandContext(ctx, browserCommand[0], append(browserCommand[1:], targetURL)...)
+	cmd.Dir = workingDirectory
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 // IsDisabled reports whether browser launching is disabled for the context.
@@ -48,11 +43,11 @@ func IsDisabled(ctx context.Context) bool {
 
 // NewOpener returns a function that opens URLs in the browser.
 func NewOpener(ctx context.Context, workingDirectory string) func(string) error {
-	browserCommand := env.Get(ctx, browserEnvVar)
-	switch browserCommand {
-	case "":
+	browserCommand := strings.Fields(env.Get(ctx, browserEnvVar))
+	switch {
+	case len(browserCommand) == 0:
 		return openDefaultBrowserURL
-	case disabledBrowser:
+	case len(browserCommand) == 1 && browserCommand[0] == disabledBrowser:
 		return func(targetURL string) error {
 			cmdio.LogString(ctx, "Please complete authentication by opening this link in your browser:\n"+targetURL)
 			return nil

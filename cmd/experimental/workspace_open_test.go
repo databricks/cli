@@ -3,10 +3,14 @@ package experimental
 import (
 	"bytes"
 	"context"
+	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/log/handler"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -211,4 +215,45 @@ func TestWorkspaceOpenCommandURLFlag(t *testing.T) {
 	assert.False(t, browserOpened)
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123?o=789\n", stdout.String())
 	assert.Equal(t, "", stderr.String())
+}
+
+func TestWorkspaceOpenCommandWarnsWhenWorkspaceIDLookupFails(t *testing.T) {
+	originalCurrentWorkspaceID := currentWorkspaceID
+	originalOpenWorkspaceURL := openWorkspaceURL
+	t.Cleanup(func() {
+		currentWorkspaceID = originalCurrentWorkspaceID
+		openWorkspaceURL = originalOpenWorkspaceURL
+	})
+
+	currentWorkspaceID = func(context.Context) (int64, error) {
+		return 0, errors.New("lookup failed")
+	}
+
+	openWorkspaceURL = func(ctx context.Context, targetURL string) error {
+		return nil
+	}
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	ctx = log.NewContext(ctx, slog.New(handler.NewFriendlyHandler(stderr, &handler.Options{
+		Level: log.LevelWarn,
+	})))
+	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
+		Config: &config.Config{
+			Host: "https://myworkspace.databricks.com",
+		},
+	})
+
+	cmd := newWorkspaceOpenCommand()
+	cmd.SetContext(ctx)
+
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+
+	require.NoError(t, cmd.Flags().Set("url", "true"))
+
+	err := cmd.RunE(cmd, []string{"jobs", "123"})
+	require.NoError(t, err)
+
+	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123\n", stdout.String())
+	assert.Contains(t, stderr.String(), "Could not determine workspace ID: lookup failed")
 }

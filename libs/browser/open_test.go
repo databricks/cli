@@ -43,13 +43,13 @@ func TestOpenURLUsesCustomBrowserCommand(t *testing.T) {
 		runBrowserCommand = original
 	})
 
-	ctx := env.Set(t.Context(), browserEnvVar, "custom-browser")
+	ctx := env.Set(t.Context(), browserEnvVar, "custom-browser --private-window")
 
 	var gotCtx context.Context
 	var gotDirectory string
-	var gotCommand string
+	var gotCommand []string
 	var gotURL string
-	runBrowserCommand = func(ctx context.Context, workingDirectory, browserCommand, targetURL string) error {
+	runBrowserCommand = func(ctx context.Context, workingDirectory string, browserCommand []string, targetURL string) error {
 		gotCtx = ctx
 		gotDirectory = workingDirectory
 		gotCommand = browserCommand
@@ -61,7 +61,7 @@ func TestOpenURLUsesCustomBrowserCommand(t *testing.T) {
 	require.NoError(t, err)
 	assert.Same(t, ctx, gotCtx)
 	assert.Equal(t, "test-dir", gotDirectory)
-	assert.Equal(t, "custom-browser", gotCommand)
+	assert.Equal(t, []string{"custom-browser", "--private-window"}, gotCommand)
 	assert.Equal(t, "https://example.com", gotURL)
 }
 

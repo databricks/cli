@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
 )
 
@@ -83,7 +84,7 @@ Examples:
 
 			workspaceID, err := currentWorkspaceID(ctx)
 			if err != nil {
-				workspaceID = 0
+				log.Warnf(ctx, "Could not determine workspace ID: %v", err)
 			}
 
 			resourceURL, err := buildWorkspaceURL(w.Config.Host, resourceType, id, workspaceID)
