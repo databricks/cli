@@ -1,6 +1,8 @@
 package doctor
 
 import (
+	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +13,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -230,14 +233,16 @@ func checkNetwork(cmd *cobra.Command, cfg *config.Config, resolveErr error, w *d
 	}
 
 	if w != nil {
-		return checkNetworkWithHost(cmd, w.Config.Host)
+		return checkNetworkWithHost(cmd, w.Config.Host, configuredNetworkHTTPClient(w.Config))
 	}
 
-	return checkNetworkWithHost(cmd, cfg.Host)
+	log.Warnf(cmd.Context(), "workspace client unavailable for network check, falling back to default HTTP client")
+	return checkNetworkWithHost(cmd, cfg.Host, http.DefaultClient)
 }
 
-func checkNetworkWithHost(cmd *cobra.Command, host string) CheckResult {
-	ctx := cmd.Context()
+func checkNetworkWithHost(cmd *cobra.Command, host string, client *http.Client) CheckResult {
+	ctx, cancel := context.WithTimeout(cmd.Context(), networkTimeout)
+	defer cancel()
 
 	if host == "" {
 		return CheckResult{
@@ -257,7 +262,6 @@ func checkNetworkWithHost(cmd *cobra.Command, host string) CheckResult {
 		}
 	}
 
-	client := &http.Client{Timeout: networkTimeout}
 	resp, err := client.Do(req)
 	if err != nil {
 		return CheckResult{
@@ -275,4 +279,34 @@ func checkNetworkWithHost(cmd *cobra.Command, host string) CheckResult {
 		Status:  statusPass,
 		Message: host + " is reachable",
 	}
+}
+
+func configuredNetworkHTTPClient(cfg *config.Config) *http.Client {
+	return &http.Client{
+		Transport: configuredNetworkHTTPTransport(cfg),
+	}
+}
+
+func configuredNetworkHTTPTransport(cfg *config.Config) http.RoundTripper {
+	if cfg.HTTPTransport != nil {
+		return cfg.HTTPTransport
+	}
+
+	if !cfg.InsecureSkipVerify {
+		return http.DefaultTransport
+	}
+
+	transport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return http.DefaultTransport
+	}
+
+	clone := transport.Clone()
+	if clone.TLSClientConfig != nil {
+		clone.TLSClientConfig = clone.TLSClientConfig.Clone()
+	} else {
+		clone.TLSClientConfig = &tls.Config{}
+	}
+	clone.TLSClientConfig.InsecureSkipVerify = true
+	return clone
 }

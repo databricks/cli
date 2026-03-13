@@ -2,6 +2,7 @@ package doctor
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -22,10 +23,12 @@ type CheckResult struct {
 // New returns the doctor command.
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "doctor",
-		Args:    root.NoArgs,
-		Short:   "Validate your Databricks CLI setup",
-		GroupID: "development",
+		Use:           "doctor",
+		Args:          root.NoArgs,
+		Short:         "Validate your Databricks CLI setup",
+		GroupID:       "development",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -39,13 +42,19 @@ func New() *cobra.Command {
 			}
 			buf = append(buf, '\n')
 			_, err = cmd.OutOrStdout().Write(buf)
-			return err
+			if err != nil {
+				return err
+			}
 		case flags.OutputText:
 			renderResults(cmd.OutOrStdout(), results)
-			return nil
 		default:
 			return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 		}
+
+		if hasFailedChecks(results) {
+			return errors.New("one or more checks failed")
+		}
+		return nil
 	}
 
 	return cmd
@@ -76,4 +85,13 @@ func renderResults(w io.Writer, results []CheckResult) {
 		}
 		fmt.Fprintln(w, msg)
 	}
+}
+
+func hasFailedChecks(results []CheckResult) bool {
+	for _, result := range results {
+		if result.Status == statusFail {
+			return true
+		}
+	}
+	return false
 }

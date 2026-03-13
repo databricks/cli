@@ -60,6 +60,12 @@ func (m *noConfigProfiler) GetPath(_ context.Context) (string, error) {
 	return m.path, nil
 }
 
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
 func newTestCmd(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -285,7 +291,7 @@ func TestCheckNetworkReachable(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newTestCmd(ctx)
 
-	result := checkNetworkWithHost(cmd, srv.URL)
+	result := checkNetworkWithHost(cmd, srv.URL, http.DefaultClient)
 	assert.Equal(t, "Network", result.Name)
 	assert.Equal(t, statusPass, result.Status)
 	assert.Contains(t, result.Message, "reachable")
@@ -295,21 +301,26 @@ func TestCheckNetworkNoHost(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newTestCmd(ctx)
 
-	result := checkNetworkWithHost(cmd, "")
+	result := checkNetworkWithHost(cmd, "", http.DefaultClient)
 	assert.Equal(t, "Network", result.Name)
 	assert.Equal(t, statusFail, result.Status)
 	assert.Contains(t, result.Message, "No host configured")
 }
 
-func TestCheckNetworkWithClient(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer srv.Close()
-
+func TestCheckNetworkUsesWorkspaceClientTransport(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(&config.Config{
-		Host:  srv.URL,
+		Host:  "https://example.com",
 		Token: "test-token",
+		HTTPTransport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			assert.Equal(t, http.MethodHead, r.Method)
+			assert.Equal(t, "https://example.com", r.URL.String())
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       http.NoBody,
+				Header:     make(http.Header),
+				Request:    r,
+			}, nil
+		}),
 	}))
 	require.NoError(t, err)
 
@@ -390,6 +401,38 @@ func TestRenderResultsJSONOmitsEmptyDetail(t *testing.T) {
 	assert.NotContains(t, string(buf), "detail")
 }
 
+func TestHasFailedChecks(t *testing.T) {
+	tests := []struct {
+		name    string
+		results []CheckResult
+		want    bool
+	}{
+		{
+			name: "no failures",
+			results: []CheckResult{
+				{Name: "Test", Status: statusPass},
+				{Name: "Info", Status: statusInfo},
+				{Name: "Warn", Status: statusWarn},
+			},
+			want: false,
+		},
+		{
+			name: "has failure",
+			results: []CheckResult{
+				{Name: "Test", Status: statusPass},
+				{Name: "Broken", Status: statusFail},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, hasFailedChecks(tt.results))
+		})
+	}
+}
+
 func TestNewCommandJSON(t *testing.T) {
 	clearConfigEnv(t)
 
@@ -412,7 +455,7 @@ func TestNewCommandJSON(t *testing.T) {
 	cmd.SetArgs([]string{"--output", "json"})
 
 	err := cmd.Execute()
-	require.NoError(t, err)
+	require.ErrorContains(t, err, "one or more checks failed")
 
 	var results []CheckResult
 	err = json.Unmarshal(buf.Bytes(), &results)
@@ -445,7 +488,7 @@ func TestNewCommandJSONTrailingNewline(t *testing.T) {
 	cmd.SetArgs([]string{"--output", "json"})
 
 	err := cmd.Execute()
-	require.NoError(t, err)
+	require.ErrorContains(t, err, "one or more checks failed")
 	assert.Positive(t, buf.Len())
 	assert.Equal(t, byte('\n'), buf.Bytes()[buf.Len()-1])
 }
