@@ -1,6 +1,7 @@
 package experimental
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"sort"
@@ -18,14 +19,22 @@ import (
 // resourceURLPatterns maps resource type names to their URL path patterns.
 // Patterns starting with "#" use URL fragments instead of path segments.
 var resourceURLPatterns = map[string]string{
-	"job":       "/jobs/%s",
-	"notebook":  "#notebook/%s",
-	"cluster":   "/compute/clusters/%s",
-	"pipeline":  "/pipelines/%s",
-	"dashboard": "/dashboardsv3/%s/published",
-	"warehouse": "/sql/warehouses/%s",
-	"query":     "/sql/editor/%s",
-	"app":       "/apps/%s",
+	"apps":       "/apps/%s",
+	"clusters":   "/compute/clusters/%s",
+	"dashboards": "/dashboardsv3/%s/published",
+	"jobs":       "/jobs/%s",
+	"notebooks":  "#notebook/%s",
+	"pipelines":  "/pipelines/%s",
+	"queries":    "/sql/editor/%s",
+	"warehouses": "/sql/warehouses/%s",
+}
+
+var currentWorkspaceID = func(ctx context.Context) (int64, error) {
+	return cmdctx.WorkspaceClient(ctx).CurrentWorkspaceID(ctx)
+}
+
+var openWorkspaceURL = func(ctx context.Context, targetURL string) error {
+	return browser.OpenURL(ctx, ".", targetURL)
 }
 
 func resourceTypeNames() []string {
@@ -37,11 +46,15 @@ func resourceTypeNames() []string {
 	return names
 }
 
+func supportedResourceTypes() string {
+	return strings.Join(resourceTypeNames(), ", ")
+}
+
 // buildWorkspaceURL constructs a full workspace URL for a given resource type and ID.
 func buildWorkspaceURL(host, resourceType, id string, workspaceID int64) (string, error) {
 	pattern, ok := resourceURLPatterns[resourceType]
 	if !ok {
-		return "", fmt.Errorf("unknown resource type %q, must be one of: %v", resourceType, resourceTypeNames())
+		return "", fmt.Errorf("unknown resource type %q, must be one of: %s", resourceType, supportedResourceTypes())
 	}
 
 	baseURL, err := url.Parse(host)
@@ -80,17 +93,20 @@ func hasWorkspaceIDInHostname(hostname, workspaceID string) bool {
 }
 
 func newWorkspaceOpenCommand() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "open RESOURCE_TYPE ID_OR_PATH",
-		Short: "Open a workspace resource in the browser",
-		Long: `Open a workspace resource in the default browser.
+	var printURL bool
 
-Supported resource types: job, notebook, cluster, pipeline, dashboard, warehouse, query, app.
+	cmd := &cobra.Command{
+		Use:   "open [flags] RESOURCE_TYPE ID_OR_PATH",
+		Short: "Open a workspace resource or print its URL",
+		Long: fmt.Sprintf(`Open a workspace resource in the default browser, or print its URL.
+
+Supported resource types: %s.
 
 Examples:
-  databricks experimental open job 123456789
-  databricks experimental open notebook /Users/user@example.com/my-notebook
-  databricks experimental open cluster 0123-456789-abcdef`,
+  databricks experimental open jobs 123456789
+  databricks experimental open notebooks /Users/user@example.com/my-notebook
+  databricks experimental open clusters 0123-456789-abcdef
+  databricks experimental open jobs 123456789 --url`, supportedResourceTypes()),
 		Args:    cobra.ExactArgs(2),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -100,7 +116,7 @@ Examples:
 			resourceType := args[0]
 			id := args[1]
 
-			workspaceID, err := w.CurrentWorkspaceID(ctx)
+			workspaceID, err := currentWorkspaceID(ctx)
 			if err != nil {
 				workspaceID = 0
 			}
@@ -110,11 +126,16 @@ Examples:
 				return err
 			}
 
+			if printURL {
+				_, err := fmt.Fprintln(cmd.OutOrStdout(), resourceURL)
+				return err
+			}
+
 			if !browser.IsDisabled(ctx) {
 				cmdio.LogString(ctx, fmt.Sprintf("Opening %s %s in the browser...", resourceType, id))
 			}
 
-			return browser.OpenURL(ctx, ".", resourceURL)
+			return openWorkspaceURL(ctx, resourceURL)
 		},
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			if len(args) == 0 {
@@ -123,6 +144,8 @@ Examples:
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		},
 	}
+
+	cmd.Flags().BoolVar(&printURL, "url", false, "Print the workspace URL instead of opening the browser")
 
 	return cmd
 }
