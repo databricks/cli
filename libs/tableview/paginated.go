@@ -19,9 +19,10 @@ const (
 
 // rowsFetchedMsg carries newly fetched rows from the iterator.
 type rowsFetchedMsg struct {
-	rows      [][]string
-	exhausted bool
-	err       error
+	rows       [][]string
+	exhausted  bool
+	err        error
+	generation int
 }
 
 type paginatedModel struct {
@@ -38,20 +39,22 @@ type paginatedModel struct {
 	err       error
 
 	// Fetch state
-	rowIter        RowIterator
-	makeFetchCmd   func(m paginatedModel) tea.Cmd // closure capturing ctx
-	makeSearchIter func(query string) RowIterator // closure capturing ctx
+	rowIter         RowIterator
+	makeFetchCmd    func(m paginatedModel) tea.Cmd // closure capturing ctx
+	makeSearchIter  func(query string) RowIterator // closure capturing ctx
+	fetchGeneration int
 
 	// Display
 	cursor int
 	widths []int
 
 	// Search
-	searching    bool
-	searchInput  string
-	savedRows    [][]string
-	savedIter    RowIterator
-	savedExhaust bool
+	searching      bool
+	searchInput    string
+	hasSearchState bool
+	savedRows      [][]string
+	savedIter      RowIterator
+	savedExhaust   bool
 
 	// Limits
 	maxItems     int
@@ -64,6 +67,7 @@ func newFetchCmdFunc(ctx context.Context) func(paginatedModel) tea.Cmd {
 		iter := m.rowIter
 		currentLen := len(m.rows)
 		maxItems := m.maxItems
+		generation := m.fetchGeneration
 
 		return func() tea.Msg {
 			var rows [][]string
@@ -73,7 +77,7 @@ func newFetchCmdFunc(ctx context.Context) func(paginatedModel) tea.Cmd {
 			if maxItems > 0 {
 				remaining := maxItems - currentLen
 				if remaining <= 0 {
-					return rowsFetchedMsg{exhausted: true}
+					return rowsFetchedMsg{exhausted: true, generation: generation}
 				}
 				limit = min(limit, remaining)
 			}
@@ -85,7 +89,7 @@ func newFetchCmdFunc(ctx context.Context) func(paginatedModel) tea.Cmd {
 				}
 				row, err := iter.Next(ctx)
 				if err != nil {
-					return rowsFetchedMsg{err: err}
+					return rowsFetchedMsg{err: err, generation: generation}
 				}
 				rows = append(rows, row)
 			}
@@ -94,7 +98,7 @@ func newFetchCmdFunc(ctx context.Context) func(paginatedModel) tea.Cmd {
 				exhausted = true
 			}
 
-			return rowsFetchedMsg{rows: rows, exhausted: exhausted}
+			return rowsFetchedMsg{rows: rows, exhausted: exhausted, generation: generation}
 		}
 	}
 }
@@ -160,6 +164,9 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case rowsFetchedMsg:
+		if msg.generation != m.fetchGeneration {
+			return m, nil
+		}
 		m.loading = false
 		if msg.err != nil {
 			m.err = msg.err
@@ -345,12 +352,16 @@ func (m paginatedModel) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		query := m.searchInput
 		if query == "" {
 			// Restore original state
-			if m.savedRows != nil {
+			if m.hasSearchState {
+				m.fetchGeneration++
 				m.rows = m.savedRows
 				m.rowIter = m.savedIter
 				m.exhausted = m.savedExhaust
+				m.loading = false
+				m.hasSearchState = false
 				m.savedRows = nil
 				m.savedIter = nil
+				m.savedExhaust = false
 				m.cursor = 0
 				m.viewport.SetContent(m.renderContent())
 				m.viewport.GotoTop()
@@ -358,12 +369,14 @@ func (m paginatedModel) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		// Save current state
-		if m.savedRows == nil {
+		if !m.hasSearchState {
+			m.hasSearchState = true
 			m.savedRows = m.rows
 			m.savedIter = m.rowIter
 			m.savedExhaust = m.exhausted
 		}
 		// Create new iterator with search
+		m.fetchGeneration++
 		m.rows = nil
 		m.exhausted = false
 		m.loading = false
