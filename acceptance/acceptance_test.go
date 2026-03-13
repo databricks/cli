@@ -660,7 +660,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, false)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -694,7 +694,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, false)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
@@ -767,7 +767,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, skipRepls bool) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -782,7 +782,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
-	if !NoRepl && !skipRepls {
+	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
 	}
 
