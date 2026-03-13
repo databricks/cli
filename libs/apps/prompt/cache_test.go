@@ -40,14 +40,12 @@ func TestResourceCacheConcurrentAccess(t *testing.T) {
 	var wg sync.WaitGroup
 
 	for i := range 100 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			key := "key"
 			f := &PagedFetcher{Items: []ListItem{{ID: string(rune('A' + i%26))}}}
 			cache.SetFetcher(key, f)
 			_ = cache.GetFetcher(key)
-		}()
+		})
 	}
 
 	wg.Wait()
