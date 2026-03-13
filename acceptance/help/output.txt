@@ -173,12 +173,12 @@ Additional Commands:
 Flags:
       --debug            enable debug logging
   -h, --help             help for databricks
-      --no-input         disable interactive prompts
+      --no-input         Disable interactive prompts
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
-  -q, --quiet            Suppress non-essential output. Use with --yes for fully silent operation.
+  -q, --quiet            Suppress non-essential output
   -t, --target string    bundle target to use (if applicable)
   -v, --version          version for databricks
-  -y, --yes              auto-approve all yes/no prompts
+  -y, --yes              Auto-approve all yes/no prompts
 
 Use "databricks [command] --help" for more information about a command.

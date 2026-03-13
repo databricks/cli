@@ -19,11 +19,11 @@ Flags:
 
 Global Flags:
       --debug            enable debug logging
-      --no-input         disable interactive prompts
+      --no-input         Disable interactive prompts
   -p, --profile string   ~/.databrickscfg profile
-  -q, --quiet            Suppress non-essential output. Use with --yes for fully silent operation.
+  -q, --quiet            Suppress non-essential output
   -t, --target string    bundle target to use (if applicable)
-  -y, --yes              auto-approve all yes/no prompts
+  -y, --yes              Auto-approve all yes/no prompts
 
 
 Exit code: 1
