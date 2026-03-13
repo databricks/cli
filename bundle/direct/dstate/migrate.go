@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 // migrateState runs all necessary migrations on the database.
@@ -68,19 +71,6 @@ type oldPermissionV1 struct {
 	GroupName            string `json:"group_name,omitempty"`
 }
 
-// New types matching current dresources.PermissionsState format.
-type newPermissionsStateV2 struct {
-	ObjectID      string            `json:"object_id"`
-	EmbeddedSlice []newPermissionV2 `json:"_,omitempty"`
-}
-
-type newPermissionV2 struct {
-	Level                string `json:"level,omitempty"`
-	UserName             string `json:"user_name,omitempty"`
-	ServicePrincipalName string `json:"service_principal_name,omitempty"`
-	GroupName            string `json:"group_name,omitempty"`
-}
-
 func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 	var old oldPermissionsStateV1
 	if err := json.Unmarshal(raw, &old); err != nil {
@@ -92,12 +82,12 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 		return raw, nil
 	}
 
-	newState := newPermissionsStateV2{
+	newState := dresources.PermissionsState{
 		ObjectID: old.ObjectID,
 	}
 	for _, p := range old.Permissions {
-		newState.EmbeddedSlice = append(newState.EmbeddedSlice, newPermissionV2{
-			Level:                p.PermissionLevel,
+		newState.EmbeddedSlice = append(newState.EmbeddedSlice, dresources.StatePermission{
+			Level:                iam.PermissionLevel(p.PermissionLevel),
 			UserName:             p.UserName,
 			ServicePrincipalName: p.ServicePrincipalName,
 			GroupName:            p.GroupName,
