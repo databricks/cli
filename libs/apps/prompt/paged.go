@@ -18,6 +18,13 @@ const (
 // Subsequent pages are loaded on demand via LoadMore. Once maxTotalResults
 // items have been accumulated, Capped is set to true and no more pages are
 // offered — only the manual input fallback.
+//
+// Thread-safety: When created via startPrefetch, the fields are written by a
+// background goroutine and the done channel is closed after all writes
+// complete. Callers MUST call WaitForFirstPage (or verify IsDone returns
+// true) before reading Items, HasMore, Capped, or Err. After the first page
+// is ready, LoadMore must only be called from a single goroutine (the main
+// prompt loop) — the underlying SDK iterator is not safe for concurrent use.
 type PagedFetcher struct {
 	Items   []ListItem
 	HasMore bool

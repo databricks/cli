@@ -50,6 +50,12 @@ var firstStepPrefetch = map[string]struct {
 // databases, postgres) the first-step fetcher (catalogs, instances, projects)
 // is prefetched under an internal cache key so the first picker renders
 // instantly.
+//
+// Goroutine lifecycle: each goroutine makes one SDK API call to fetch the
+// first page. The goroutines respect the provided context — when the context
+// is cancelled (e.g. Ctrl+C), the SDK HTTP client aborts the request and the
+// goroutine terminates shortly after. Callers do not need to explicitly join
+// the goroutines; they are short-lived and self-draining.
 func PrefetchResources(ctx context.Context, resources []manifest.Resource) context.Context {
 	cache := CacheFromContext(ctx)
 	if cache == nil {
@@ -78,7 +84,9 @@ func PrefetchResources(ctx context.Context, resources []manifest.Resource) conte
 }
 
 // startPrefetch launches a background goroutine that creates a PagedFetcher
-// and stores it in the cache under the given key.
+// and stores it in the cache under the given key. The fetcher's done channel
+// is closed after all fields are written, establishing a happens-before
+// relationship — callers must call WaitForFirstPage before reading fields.
 func startPrefetch(ctx context.Context, cache *ResourceCache, key string, ctor pagedConstructor) {
 	f := &PagedFetcher{done: make(chan struct{})}
 	cache.SetFetcher(key, f)

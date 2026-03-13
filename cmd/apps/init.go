@@ -600,11 +600,15 @@ func findProjectSrcDir(templateDir string) string {
 }
 
 // startBackgroundNpmInstall copies the package files from the template into
-// destDir and launches `npm ci` in the background. The caller should read the
-// returned channel after copyTemplate to get the result. Returns nil if the
-// template is not a Node.js project or npm is not available.
+// destDir and launches `npm ci` in the background. The caller should await
+// the returned channel BEFORE writing other files to destDir to prevent
+// concurrent writes. Returns nil if the template is not a Node.js project
+// or npm is not available.
+//
+// IMPORTANT: All reads from srcProjectDir happen synchronously before the
+// goroutine launches. The template directory may be cleaned up after this
+// function returns, so file reads must not be deferred to the goroutine.
 func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, projectName string) <-chan error {
-	// Check that the template has a package-lock.json (needed by npm ci).
 	lockFile := filepath.Join(srcProjectDir, "package-lock.json")
 	if _, err := os.Stat(lockFile); err != nil {
 		return nil
@@ -620,13 +624,13 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 
 	// Copy package.json (apply template substitution so the file is valid JSON)
 	// and package-lock.json (no template vars — copy raw).
+	var pkgWritten bool
 	for _, name := range []string{"package.json", "package.json.tmpl"} {
 		src := filepath.Join(srcProjectDir, name)
 		content, err := os.ReadFile(src)
 		if err != nil {
 			continue
 		}
-		// Minimal template vars so package.json renders to valid JSON.
 		minVars := templateData(templateVars{
 			ProjectName:    projectName,
 			AppDescription: prompt.DefaultAppDescription,
@@ -634,22 +638,32 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		})
 		tmpl, err := template.New(name).Option("missingkey=zero").Parse(string(content))
 		if err != nil {
-			// Not a Go template — copy raw.
-			_ = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644)
+			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644) == nil
 			break
 		}
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, minVars); err != nil {
-			_ = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644)
+			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644) == nil
 			break
 		}
-		_ = os.WriteFile(filepath.Join(destDir, "package.json"), buf.Bytes(), 0o644)
+		pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), buf.Bytes(), 0o644) == nil
 		break
 	}
 
+	if !pkgWritten {
+		log.Warnf(ctx, "Failed to write package.json to %s, skipping background npm install", destDir)
+		return nil
+	}
+
 	// Copy package-lock.json raw (never has template vars).
-	if data, err := os.ReadFile(lockFile); err == nil {
-		_ = os.WriteFile(filepath.Join(destDir, "package-lock.json"), data, 0o644)
+	lockData, err := os.ReadFile(lockFile)
+	if err != nil {
+		log.Warnf(ctx, "Failed to read package-lock.json: %v, skipping background npm install", err)
+		return nil
+	}
+	if err := os.WriteFile(filepath.Join(destDir, "package-lock.json"), lockData, 0o644); err != nil {
+		log.Warnf(ctx, "Failed to write package-lock.json: %v, skipping background npm install", err)
+		return nil
 	}
 
 	ch := make(chan error, 1)
@@ -965,6 +979,16 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		Plugins: plugins,
 	}
 
+	// Await background npm install BEFORE copying the template so there are
+	// no concurrent writes to destDir. npm ci ran with the raw lock file; the
+	// dependency tree is determined entirely by package-lock.json which has no
+	// template variables, so the installed node_modules is valid.
+	if npmInstallCh != nil {
+		if err := awaitBackgroundNpmInstall(ctx, npmInstallCh); err != nil {
+			log.Warnf(ctx, "Background npm install failed: %v, will retry during project initialization", err)
+		}
+	}
+
 	// Copy template with variable substitution
 	var fileCount int
 	runErr = prompt.RunWithSpinnerCtx(ctx, "Creating project...", func() error {
@@ -981,14 +1005,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	absOutputDir, err := filepath.Abs(destDir)
 	if err != nil {
 		absOutputDir = destDir
-	}
-
-	// Await background npm install (started before prompts to overlap with user interaction).
-	// If it finishes before this point, the checkmark appears instantly.
-	if npmInstallCh != nil {
-		if err := awaitBackgroundNpmInstall(ctx, npmInstallCh); err != nil {
-			log.Warnf(ctx, "Background npm install failed: %v, will retry during project initialization", err)
-		}
 	}
 
 	// Initialize project based on type (Node.js, Python, etc.).

@@ -360,16 +360,19 @@ func promptFromPagedFetcher(ctx context.Context, title, emptyMessage string, fet
 			labels[it.ID] = it.Label
 		}
 
-		desc := fmt.Sprintf("%d available — / to filter", len(fetcher.Items))
+		var desc string
 		if fetcher.HasMore && !fetcher.Capped {
+			desc = fmt.Sprintf("%d fetched — / to filter, ↓ load more", len(fetcher.Items))
 			options = append(options, huh.NewOption("↓ Load more...", moreID))
 		} else if fetcher.Capped {
+			desc = fmt.Sprintf("%d fetched — / to filter", len(fetcher.Items))
 			manualLabel := "Can't find it? Enter name/ID manually..."
 			if searchFn != nil {
 				manualLabel = "Can't find it? Search by name..."
 			}
 			options = append(options, huh.NewOption(manualLabel, manualID))
-			desc += " (showing first 500)"
+		} else {
+			desc = fmt.Sprintf("%d available — / to filter", len(fetcher.Items))
 		}
 
 		var selected string
@@ -431,11 +434,11 @@ func promptFromPagedFetcher(ctx context.Context, title, emptyMessage string, fet
 				printAnswered(ctx, title, results[0].Label)
 				return results[0].ID, results[0].Label, nil
 			}
-			id, pickErr := PromptFromList(ctx, title+" — search results", "no matches", results, required)
+			id, label, pickErr := promptFromListWithLabel(ctx, title+" — search results", "no matches", results, required)
 			if pickErr != nil {
 				return "", "", pickErr
 			}
-			return id, id, nil
+			return id, label, nil
 
 		default:
 			printAnswered(ctx, title, labels[selected])
