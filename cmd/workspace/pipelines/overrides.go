@@ -39,6 +39,8 @@ func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipeli
 			NewIterator: func(ctx context.Context, query string) tableview.RowIterator {
 				req := *listReq
 				escaped := strings.ReplaceAll(query, "'", "''")
+				escaped = strings.ReplaceAll(escaped, "%", "\\%")
+				escaped = strings.ReplaceAll(escaped, "_", "\\_")
 				req.Filter = fmt.Sprintf("name LIKE '%%%s%%'", escaped)
 				w := cmdctx.WorkspaceClient(ctx)
 				return tableview.WrapIterator(w.Pipelines.ListPipelines(ctx, req), columns)
