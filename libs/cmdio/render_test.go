@@ -167,6 +167,36 @@ var testCases = []testCase{
 	},
 }
 
+func TestRenderIteratorWithLimit(t *testing.T) {
+	output := &bytes.Buffer{}
+	ctx := t.Context()
+	cmdIO := NewIO(ctx, flags.OutputText, nil, output, output,
+		"id\tname",
+		"{{range .}}{{.WorkspaceId}}\t{{.WorkspaceName}}\n{{end}}")
+	ctx = InContext(ctx, cmdIO)
+	ctx = WithLimit(ctx, 3)
+
+	err := RenderIterator(ctx, makeIterator(10))
+	assert.NoError(t, err)
+	assert.Equal(t, "id   name\n"+makeBigOutput(3), output.String())
+}
+
+func TestRenderIteratorWithLimitJSON(t *testing.T) {
+	output := &bytes.Buffer{}
+	ctx := t.Context()
+	cmdIO := NewIO(ctx, flags.OutputJSON, nil, output, output, "", "")
+	ctx = InContext(ctx, cmdIO)
+	ctx = WithLimit(ctx, 2)
+
+	err := RenderIterator(ctx, makeIterator(10))
+	assert.NoError(t, err)
+
+	var items []provisioning.Workspace
+	err = json.Unmarshal(output.Bytes(), &items)
+	assert.NoError(t, err)
+	assert.Len(t, items, 2)
+}
+
 func TestRender(t *testing.T) {
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
