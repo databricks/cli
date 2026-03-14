@@ -1,0 +1,581 @@
+package doctor
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+type mockProfiler struct {
+	profiles profile.Profiles
+	path     string
+	err      error
+}
+
+func (m *mockProfiler) LoadProfiles(_ context.Context, match profile.ProfileMatchFunction) (profile.Profiles, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	var result profile.Profiles
+	for _, p := range m.profiles {
+		if match(p) {
+			result = append(result, p)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockProfiler) GetPath(_ context.Context) (string, error) {
+	if m.err != nil {
+		return "", m.err
+	}
+	return m.path, nil
+}
+
+// noConfigProfiler returns a path but ErrNoConfiguration from LoadProfiles.
+type noConfigProfiler struct {
+	path string
+}
+
+func (m *noConfigProfiler) LoadProfiles(_ context.Context, _ profile.ProfileMatchFunction) (profile.Profiles, error) {
+	return nil, profile.ErrNoConfiguration
+}
+
+func (m *noConfigProfiler) GetPath(_ context.Context) (string, error) {
+	return m.path, nil
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+func newTestCmd(ctx context.Context) *cobra.Command {
+	cmd := &cobra.Command{}
+	cmd.SetContext(ctx)
+	cmd.Flags().String("profile", "", "")
+	return cmd
+}
+
+func clearConfigEnv(t *testing.T) {
+	t.Helper()
+
+	for _, attr := range config.ConfigAttributes {
+		for _, key := range attr.EnvVars {
+			t.Setenv(key, "")
+		}
+	}
+
+	t.Setenv(env.HomeEnvVar(), t.TempDir())
+}
+
+func TestCheckCLIVersion(t *testing.T) {
+	result := checkCLIVersion()
+	assert.Equal(t, "CLI Version", result.Name)
+	assert.Equal(t, statusInfo, result.Status)
+	assert.NotEmpty(t, result.Message)
+}
+
+func TestCheckConfigFilePass(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = profile.WithProfiler(ctx, &mockProfiler{
+		path: "/home/user/.databrickscfg",
+		profiles: profile.Profiles{
+			{Name: "default", Host: "https://example.com"},
+			{Name: "staging", Host: "https://staging.example.com"},
+		},
+	})
+	cmd := newTestCmd(ctx)
+
+	result := checkConfigFile(cmd)
+	assert.Equal(t, "Config File", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Contains(t, result.Message, "2 profiles")
+	assert.Contains(t, result.Message, "/home/user/.databrickscfg")
+}
+
+func TestCheckConfigFileMissingWarn(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = profile.WithProfiler(ctx, &mockProfiler{
+		path: "/home/user/.databrickscfg",
+		err:  profile.ErrNoConfiguration,
+	})
+	cmd := newTestCmd(ctx)
+
+	result := checkConfigFile(cmd)
+	assert.Equal(t, "Config File", result.Name)
+	// GetPath returns err first, so this hits the first failure branch.
+	// To test the warn path, we need GetPath to succeed but LoadProfiles to fail.
+	assert.Equal(t, statusFail, result.Status)
+}
+
+func TestCheckConfigFileAbsentIsWarn(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	// Profiler that returns a path but fails on LoadProfiles with ErrNoConfiguration.
+	ctx = profile.WithProfiler(ctx, &noConfigProfiler{path: "/home/user/.databrickscfg"})
+	cmd := newTestCmd(ctx)
+
+	result := checkConfigFile(cmd)
+	assert.Equal(t, "Config File", result.Name)
+	assert.Equal(t, statusWarn, result.Status)
+	assert.Contains(t, result.Message, "environment variables")
+}
+
+func TestCheckCurrentProfileDefault(t *testing.T) {
+	clearConfigEnv(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkCurrentProfile(cmd)
+	assert.Equal(t, "Current Profile", result.Name)
+	assert.Equal(t, statusInfo, result.Status)
+	assert.Equal(t, "none (using environment or defaults)", result.Message)
+}
+
+func TestCheckCurrentProfileFromFlag(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+	err := cmd.Flag("profile").Value.Set("staging")
+	require.NoError(t, err)
+	cmd.Flag("profile").Changed = true
+
+	result := checkCurrentProfile(cmd)
+	assert.Equal(t, "Current Profile", result.Name)
+	assert.Equal(t, statusInfo, result.Status)
+	assert.Equal(t, "staging", result.Message)
+}
+
+func TestCheckCurrentProfileFromEnv(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "from-env")
+	cmd := newTestCmd(ctx)
+
+	result := checkCurrentProfile(cmd)
+	assert.Equal(t, statusInfo, result.Status)
+	assert.Equal(t, "from-env (from DATABRICKS_CONFIG_PROFILE)", result.Message)
+}
+
+func TestCheckCurrentProfileFlagOverridesEnv(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "from-env")
+	cmd := newTestCmd(ctx)
+	err := cmd.Flag("profile").Value.Set("from-flag")
+	require.NoError(t, err)
+	cmd.Flag("profile").Changed = true
+
+	result := checkCurrentProfile(cmd)
+	assert.Equal(t, "from-flag", result.Message)
+}
+
+func TestCheckAuthSuccess(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	clearConfigEnv(t)
+	t.Setenv("DATABRICKS_HOST", srv.URL)
+	t.Setenv("DATABRICKS_TOKEN", "test-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	cfg, err := resolveConfig(cmd)
+	require.NoError(t, err)
+
+	result, authCfg := checkAuth(cmd, cfg, err)
+	assert.Equal(t, "Authentication", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Contains(t, result.Message, "OK")
+	assert.NotNil(t, authCfg)
+}
+
+func TestCheckAuthFailure(t *testing.T) {
+	clearConfigEnv(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	cfg, err := resolveConfig(cmd)
+	result, authCfg := checkAuth(cmd, cfg, err)
+	assert.Equal(t, "Authentication", result.Name)
+	assert.Equal(t, statusFail, result.Status)
+	assert.Nil(t, authCfg)
+}
+
+func TestCheckAuthAccountLevel(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	clearConfigEnv(t)
+	t.Setenv("DATABRICKS_HOST", "https://accounts.cloud.databricks.com")
+	t.Setenv("DATABRICKS_ACCOUNT_ID", "test-account-123")
+	t.Setenv("DATABRICKS_TOKEN", "test-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	cfg, err := resolveConfig(cmd)
+	require.NoError(t, err)
+
+	result, authCfg := checkAuth(cmd, cfg, err)
+	assert.Equal(t, "Authentication", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Contains(t, result.Message, "account-level")
+	assert.NotNil(t, authCfg)
+}
+
+func TestResolveConfigUsesCommandContextEnv(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("DATABRICKS_HOST", "https://real.example.com")
+	t.Setenv("DATABRICKS_TOKEN", "real-token")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = env.Set(ctx, "DATABRICKS_HOST", "https://context.example.com")
+	ctx = env.Set(ctx, "DATABRICKS_TOKEN", "context-token")
+	cmd := newTestCmd(ctx)
+
+	cfg, err := resolveConfig(cmd)
+	require.NoError(t, err)
+	assert.Equal(t, "https://context.example.com", cfg.Host)
+	assert.Equal(t, "context-token", cfg.Token)
+}
+
+func TestCheckIdentitySuccess(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"userName": "test@example.com"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	cfg := &config.Config{
+		Host:  srv.URL,
+		Token: "test-token",
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkIdentity(cmd, cfg)
+	assert.Equal(t, "Identity", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Equal(t, "test@example.com", result.Message)
+}
+
+func TestCheckIdentityFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer srv.Close()
+
+	cfg := &config.Config{
+		Host:  srv.URL,
+		Token: "bad-token",
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkIdentity(cmd, cfg)
+	assert.Equal(t, "Identity", result.Name)
+	assert.Equal(t, statusFail, result.Status)
+}
+
+func TestCheckIdentitySkippedForAccountLevel(t *testing.T) {
+	cfg := &config.Config{
+		Host:      "https://accounts.cloud.databricks.com",
+		AccountID: "test-account-123",
+		Token:     "test-token",
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkIdentity(cmd, cfg)
+	assert.Equal(t, "Identity", result.Name)
+	assert.Equal(t, statusSkip, result.Status)
+	assert.Contains(t, result.Message, "account-level")
+}
+
+func TestCheckNetworkReachable(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkNetworkWithHost(cmd, srv.URL, http.DefaultClient)
+	assert.Equal(t, "Network", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Contains(t, result.Message, "reachable")
+}
+
+func TestCheckNetworkNoHost(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkNetworkWithHost(cmd, "", http.DefaultClient)
+	assert.Equal(t, "Network", result.Name)
+	assert.Equal(t, statusFail, result.Status)
+	assert.Contains(t, result.Message, "No host configured")
+}
+
+func TestCheckNetworkUsesAuthConfigTransport(t *testing.T) {
+	cfg := &config.Config{
+		Host:  "https://example.com",
+		Token: "test-token",
+		HTTPTransport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			assert.Equal(t, http.MethodHead, r.Method)
+			assert.Equal(t, "https://example.com", r.URL.String())
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       http.NoBody,
+				Header:     make(http.Header),
+				Request:    r,
+			}, nil
+		}),
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkNetwork(cmd, cfg, nil, cfg)
+	assert.Equal(t, "Network", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Contains(t, result.Message, "reachable")
+}
+
+func TestCheckNetworkFallbackUsesConfigTransport(t *testing.T) {
+	called := false
+	cfg := &config.Config{
+		Host:  "https://example.com",
+		Token: "test-token",
+		HTTPTransport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			called = true
+			assert.Equal(t, http.MethodHead, r.Method)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       http.NoBody,
+				Header:     make(http.Header),
+				Request:    r,
+			}, nil
+		}),
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkNetwork(cmd, cfg, nil, nil)
+	assert.True(t, called, "expected config's HTTPTransport to be used")
+	assert.Equal(t, "Network", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Contains(t, result.Message, "reachable")
+}
+
+func TestCheckNetworkConfigResolutionFailureNoHost(t *testing.T) {
+	clearConfigEnv(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte("[DEFAULT]\nhost = https://example.com\n"), 0o600)
+	require.NoError(t, err)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", configFile)
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "missing")
+	cmd := newTestCmd(ctx)
+
+	cfg, resolveErr := resolveConfig(cmd)
+	require.Error(t, resolveErr)
+
+	// Config resolution failed and host is empty, so network check reports failure.
+	result := checkNetwork(cmd, cfg, resolveErr, nil)
+	assert.Equal(t, "Network", result.Name)
+	assert.Equal(t, statusFail, result.Status)
+	assert.Equal(t, "No host configured", result.Message)
+}
+
+func TestCheckNetworkConfigResolutionFailureWithHost(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	// Config resolution may fail (e.g. missing credentials) but if the host
+	// was partially resolved we should still attempt the network check.
+	cfg := &config.Config{
+		Host: srv.URL,
+	}
+	resolveErr := errors.New("validate: missing credentials")
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestCmd(ctx)
+
+	result := checkNetwork(cmd, cfg, resolveErr, nil)
+	assert.Equal(t, "Network", result.Name)
+	assert.Equal(t, statusPass, result.Status)
+	assert.Contains(t, result.Message, "reachable")
+}
+
+func TestRenderResultsText(t *testing.T) {
+	results := []CheckResult{
+		{Name: "Test", Status: statusPass, Message: "all good"},
+		{Name: "Another", Status: statusFail, Message: "broken", Detail: "details here"},
+		{Name: "Version", Status: statusInfo, Message: "1.0.0"},
+		{Name: "Config", Status: statusWarn, Message: "not found"},
+	}
+
+	var buf bytes.Buffer
+	renderResults(&buf, results)
+	output := buf.String()
+	assert.Contains(t, output, "Test")
+	assert.Contains(t, output, "all good")
+	assert.Contains(t, output, "broken")
+	assert.Contains(t, output, "details here")
+}
+
+func TestRenderResultsJSON(t *testing.T) {
+	results := []CheckResult{
+		{Name: "Test", Status: statusPass, Message: "all good"},
+		{Name: "Another", Status: statusFail, Message: "broken", Detail: "details here"},
+	}
+
+	buf, err := json.MarshalIndent(results, "", "  ")
+	require.NoError(t, err)
+
+	var parsed []CheckResult
+	err = json.Unmarshal(buf, &parsed)
+	require.NoError(t, err)
+	assert.Len(t, parsed, 2)
+	assert.Equal(t, "Test", parsed[0].Name)
+	assert.Equal(t, statusPass, parsed[0].Status)
+	assert.Equal(t, "broken", parsed[1].Message)
+	assert.Equal(t, "details here", parsed[1].Detail)
+}
+
+func TestRenderResultsJSONOmitsEmptyDetail(t *testing.T) {
+	results := []CheckResult{
+		{Name: "Test", Status: statusPass, Message: "ok"},
+	}
+
+	buf, err := json.Marshal(results)
+	require.NoError(t, err)
+	assert.NotContains(t, string(buf), "detail")
+}
+
+func TestHasFailedChecks(t *testing.T) {
+	tests := []struct {
+		name    string
+		results []CheckResult
+		want    bool
+	}{
+		{
+			name: "no failures",
+			results: []CheckResult{
+				{Name: "Test", Status: statusPass},
+				{Name: "Info", Status: statusInfo},
+				{Name: "Warn", Status: statusWarn},
+				{Name: "Skip", Status: statusSkip},
+			},
+			want: false,
+		},
+		{
+			name: "has failure",
+			results: []CheckResult{
+				{Name: "Test", Status: statusPass},
+				{Name: "Broken", Status: statusFail},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, hasFailedChecks(tt.results))
+		})
+	}
+}
+
+func TestNewCommandJSON(t *testing.T) {
+	clearConfigEnv(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = profile.WithProfiler(ctx, &mockProfiler{
+		path: "/tmp/.databrickscfg",
+		profiles: profile.Profiles{
+			{Name: "default", Host: "https://example.com"},
+		},
+	})
+
+	cmd := New()
+	cmd.SetContext(ctx)
+
+	outputFlag := flags.OutputText
+	cmd.PersistentFlags().VarP(&outputFlag, "output", "o", "output type: text or json")
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetArgs([]string{"--output", "json"})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "one or more checks failed")
+
+	var results []CheckResult
+	err = json.Unmarshal(buf.Bytes(), &results)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, len(results), 4)
+
+	assert.Equal(t, "CLI Version", results[0].Name)
+	assert.Equal(t, statusInfo, results[0].Status)
+}
+
+func TestNewCommandJSONTrailingNewline(t *testing.T) {
+	clearConfigEnv(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = profile.WithProfiler(ctx, &mockProfiler{
+		path: "/tmp/.databrickscfg",
+		profiles: profile.Profiles{
+			{Name: "default", Host: "https://example.com"},
+		},
+	})
+
+	cmd := New()
+	cmd.SetContext(ctx)
+
+	outputFlag := flags.OutputText
+	cmd.PersistentFlags().VarP(&outputFlag, "output", "o", "output type: text or json")
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetArgs([]string{"--output", "json"})
+
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "one or more checks failed")
+	assert.Positive(t, buf.Len())
+	assert.Equal(t, byte('\n'), buf.Bytes()[buf.Len()-1])
+}
