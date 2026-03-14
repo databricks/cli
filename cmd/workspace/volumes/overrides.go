@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *catalog.ListVolumesRequest) {
+func listOverride(listCmd *cobra.Command, _ *catalog.ListVolumesRequest) {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{green "%s" .Name}}	{{.VolumeType}}	{{.FullName}}
 	{{end}}`)

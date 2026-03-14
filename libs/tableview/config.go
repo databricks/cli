@@ -4,8 +4,11 @@ import "context"
 
 // ColumnDef defines a column in the TUI table.
 type ColumnDef struct {
-	Header   string             // Display name in header row.
-	MaxWidth int                // Max cell width; 0 = default (50).
+	Header string // Display name in header row.
+	// MaxWidth caps cell display width; 0 = default (50). Values exceeding
+	// this limit are destructively truncated with "..." in the rendered
+	// output. Horizontal scrolling does not recover the hidden portion.
+	MaxWidth int
 	Extract  func(v any) string // Extracts cell value from typed SDK struct.
 }
 

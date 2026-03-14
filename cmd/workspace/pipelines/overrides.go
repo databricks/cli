@@ -54,8 +54,34 @@ func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipeli
 	})
 }
 
+func listPipelineEventsOverride(listCmd *cobra.Command, _ *pipelines.ListPipelineEventsRequest) {
+	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
+	{{header "Timestamp"}}	{{header "Level"}}	{{header "Event Type"}}	{{header "Message"}}`)
+	listCmd.Annotations["template"] = cmdio.Heredoc(`
+	{{range .}}{{.Timestamp}}	{{.Level}}	{{.EventType}}	{{.Message}}
+	{{end}}`)
+
+	columns := []tableview.ColumnDef{
+		{Header: "Timestamp", Extract: func(v any) string {
+			return v.(pipelines.PipelineEvent).Timestamp
+		}},
+		{Header: "Level", Extract: func(v any) string {
+			return string(v.(pipelines.PipelineEvent).Level)
+		}},
+		{Header: "Event Type", Extract: func(v any) string {
+			return v.(pipelines.PipelineEvent).EventType
+		}},
+		{Header: "Message", MaxWidth: 60, Extract: func(v any) string {
+			return v.(pipelines.PipelineEvent).Message
+		}},
+	}
+
+	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
+}
+
 func init() {
 	listPipelinesOverrides = append(listPipelinesOverrides, listPipelinesOverride)
+	listPipelineEventsOverrides = append(listPipelineEventsOverrides, listPipelineEventsOverride)
 
 	cmdOverrides = append(cmdOverrides, func(cli *cobra.Command) {
 		// all auto-generated commands apart from nonManagementCommands go into 'management' group

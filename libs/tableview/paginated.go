@@ -40,6 +40,10 @@ type searchDebounceMsg struct {
 	seq int
 }
 
+// PaginatedModel is the exported alias used by callers (e.g. RenderIterator)
+// to inspect the final model returned by tea.Program.Run().
+type PaginatedModel = paginatedModel
+
 type paginatedModel struct {
 	cfg     *TableConfig
 	headers []string
@@ -75,6 +79,11 @@ type paginatedModel struct {
 	// Limits
 	maxItems     int
 	limitReached bool
+}
+
+// Err returns the error recorded during data fetching, if any.
+func (m paginatedModel) Err() error {
+	return m.err
 }
 
 // newFetchCmdFunc returns a closure that creates fetch commands, capturing ctx.
@@ -151,13 +160,16 @@ func NewPaginatedProgram(ctx context.Context, w io.Writer, cfg *TableConfig, ite
 // RunPaginated launches the paginated TUI table.
 func RunPaginated(ctx context.Context, w io.Writer, cfg *TableConfig, iter RowIterator, maxItems int) error {
 	p := NewPaginatedProgram(ctx, w, cfg, iter, maxItems)
-	_, err := p.Run()
-	return err
-}
-
-// Err returns any error that occurred during data fetching.
-func (m paginatedModel) Err() error {
-	return m.err
+	finalModel, err := p.Run()
+	if err != nil {
+		return err
+	}
+	if m, ok := finalModel.(PaginatedModel); ok {
+		if fetchErr := m.Err(); fetchErr != nil {
+			return fetchErr
+		}
+	}
+	return nil
 }
 
 func (m paginatedModel) Init() tea.Cmd {
@@ -263,7 +275,12 @@ func (m paginatedModel) renderContent() string {
 	}
 	fmt.Fprintln(tw, strings.Join(seps, "\t"))
 
-	// Data rows
+	// Data rows.
+	// NOTE: MaxWidth truncation here is destructive, not display wrapping.
+	// Values exceeding MaxWidth are cut and suffixed with "..." in the
+	// rendered output. Horizontal scrolling cannot recover the hidden tail.
+	// A future improvement could store full values and only truncate the
+	// visible slice, but that requires per-cell width tracking.
 	for _, row := range m.rows {
 		vals := make([]string, len(m.headers))
 		for i := range m.headers {
