@@ -16,12 +16,14 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/exec"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
 )
 
 func promptForProfile(ctx context.Context, defaultValue string) (string, error) {
@@ -45,7 +47,22 @@ const (
 	minimalDbConnectVersion = "13.1"
 	defaultTimeout          = 1 * time.Hour
 	authTypeDatabricksCLI   = "databricks-cli"
+	discoveryFallbackTip    = "\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>"
 )
+
+type discoveryPersistentAuth interface {
+	Challenge() error
+	Token() (*oauth2.Token, error)
+	Close() error
+}
+
+var newDiscoveryOAuthArgument = u2m.NewBasicDiscoveryOAuthArgument
+
+var newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+	return u2m.NewPersistentAuth(ctx, opts...)
+}
+
+var introspectToken = auth.IntrospectToken
 
 func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
@@ -69,9 +86,11 @@ you can refer to the documentation linked below.
   GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html
 
 
-This command requires a Databricks Host URL (using --host or as a positional argument
-or implicitly inferred from the specified profile name)
-and a profile name (using --profile) to be specified. If you don't specify these
+If no host is provided (via --host, as a positional argument, or from an existing
+profile), the CLI will open login.databricks.com where you can authenticate and
+select a workspace. The workspace URL will be discovered automatically.
+
+A profile name (using --profile) can be specified. If you don't specify these
 values, you'll be prompted for values at runtime.
 
 While this command always logs you into the specified host, the runtime behaviour
@@ -138,6 +157,21 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
+		// If no host is available from any source, use the discovery flow
+		// via login.databricks.com.
+		if shouldUseDiscovery(authArguments.Host, args, existingProfile) {
+			if configureCluster {
+				return errors.New("--configure-cluster requires --host to be specified")
+			}
+			if configureServerless {
+				return errors.New("--configure-serverless requires --host to be specified")
+			}
+			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
+				return err
+			}
+			return discoveryLogin(ctx, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
+		}
+
 		// Load unified host flags from the profile if not explicitly set via CLI flag
 		if !cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
 			authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
@@ -157,15 +191,11 @@ depends on the existing profiles you have set in your configuration file
 		switch {
 		case scopes != "":
 			// Explicit --scopes flag takes precedence.
-			for _, s := range strings.Split(scopes, ",") {
-				scopesList = append(scopesList, strings.TrimSpace(s))
-			}
+			scopesList = splitScopes(scopes)
 		case existingProfile != nil && existingProfile.Scopes != "":
 			// Preserve scopes from the existing profile so re-login
 			// uses the same scopes the user previously configured.
-			for _, s := range strings.Split(existingProfile.Scopes, ",") {
-				scopesList = append(scopesList, strings.TrimSpace(s))
-			}
+			scopesList = splitScopes(existingProfile.Scopes)
 		}
 
 		oauthArgument, err := authArguments.ToOAuthArgument()
@@ -400,6 +430,41 @@ func loadProfileByName(ctx context.Context, profileName string, profiler profile
 	return nil, nil
 }
 
+// shouldUseDiscovery returns true if the discovery flow should be used
+// (no host available from any source).
+func shouldUseDiscovery(hostFlag string, args []string, existingProfile *profile.Profile) bool {
+	if hostFlag != "" {
+		return false
+	}
+	if len(args) > 0 {
+		return false
+	}
+	if existingProfile != nil && existingProfile.Host != "" {
+		return false
+	}
+	return true
+}
+
+// discoveryIncompatibleFlags lists flags that require --host and are incompatible
+// with the discovery login flow via login.databricks.com.
+var discoveryIncompatibleFlags = []string{
+	"account-id",
+	"workspace-id",
+	"experimental-is-unified-host",
+}
+
+// validateDiscoveryFlagCompatibility returns an error if any flags that require
+// --host were explicitly set. These flags are meaningless in discovery mode
+// and could lead to incorrect profile configuration.
+func validateDiscoveryFlagCompatibility(cmd *cobra.Command) error {
+	for _, name := range discoveryIncompatibleFlags {
+		if cmd.Flag(name).Changed {
+			return fmt.Errorf("--%s requires --host to be specified", name)
+		}
+	}
+	return nil
+}
+
 // openURLSuppressingStderr opens a URL in the browser while suppressing stderr output.
 // This prevents xdg-open error messages from being displayed to the user.
 func openURLSuppressingStderr(url string) error {
@@ -414,6 +479,110 @@ func openURLSuppressingStderr(url string) error {
 
 	// Call the browser open function
 	return browserpkg.OpenURL(url)
+}
+
+// discoveryLogin runs the login.databricks.com discovery flow. The user
+// authenticates in the browser, selects a workspace, and the CLI receives
+// the workspace host from the OAuth callback's iss parameter.
+func discoveryLogin(ctx context.Context, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
+	arg, err := newDiscoveryOAuthArgument(profileName)
+	if err != nil {
+		return fmt.Errorf("setting up login.databricks.com: %w"+discoveryFallbackTip, err)
+	}
+
+	scopesList := splitScopes(scopes)
+
+	opts := []u2m.PersistentAuthOption{
+		u2m.WithOAuthArgument(arg),
+		u2m.WithBrowser(browserFunc),
+		u2m.WithDiscoveryLogin(),
+	}
+	if len(scopesList) > 0 {
+		opts = append(opts, u2m.WithScopes(scopesList))
+	}
+
+	// Apply timeout before creating PersistentAuth so Challenge() respects it.
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	persistentAuth, err := newDiscoveryPersistentAuth(ctx, opts...)
+	if err != nil {
+		return fmt.Errorf("setting up login.databricks.com: %w"+discoveryFallbackTip, err)
+	}
+	defer persistentAuth.Close()
+
+	cmdio.LogString(ctx, "Opening login.databricks.com in your browser...")
+	if err := persistentAuth.Challenge(); err != nil {
+		return fmt.Errorf("login via login.databricks.com failed: %w"+discoveryFallbackTip, err)
+	}
+
+	discoveredHost := arg.GetDiscoveredHost()
+	if discoveredHost == "" {
+		return errors.New("login succeeded but no workspace host was discovered" + discoveryFallbackTip)
+	}
+
+	// Get the token for introspection
+	tok, err := persistentAuth.Token()
+	if err != nil {
+		return fmt.Errorf("retrieving token after login: %w", err)
+	}
+
+	// Best-effort introspection for metadata
+	var workspaceID string
+	introspection, err := introspectToken(ctx, discoveredHost, tok.AccessToken)
+	if err != nil {
+		log.Debugf(ctx, "token introspection failed (non-fatal): %v", err)
+	} else {
+		// TODO: Save introspection.AccountID once the SDKs are ready to use
+		// account_id as part of the profile/cache key. Adding it now would break
+		// existing auth flows that don't expect account_id on workspace profiles.
+		workspaceID = introspection.WorkspaceID
+
+		// Warn if the detected account_id differs from what's already saved in the profile.
+		if existingProfile != nil && existingProfile.AccountID != "" && introspection.AccountID != "" &&
+			existingProfile.AccountID != introspection.AccountID {
+			log.Warnf(ctx, "detected account ID %q differs from existing profile account ID %q",
+				introspection.AccountID, existingProfile.AccountID)
+		}
+	}
+
+	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	err = databrickscfg.SaveToProfile(ctx, &config.Config{
+		Profile:     profileName,
+		Host:        discoveredHost,
+		AuthType:    authTypeDatabricksCLI,
+		WorkspaceID: workspaceID,
+		Scopes:      scopesList,
+		ConfigFile:  configFile,
+	}, oauthLoginClearKeys()...)
+	if err != nil {
+		if configFile != "" {
+			return fmt.Errorf("saving profile %q to %s: %w", profileName, configFile, err)
+		}
+		return fmt.Errorf("saving profile %q: %w", profileName, err)
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
+	return nil
+}
+
+// splitScopes splits a comma-separated scopes string into a trimmed slice.
+func splitScopes(scopes string) []string {
+	if scopes == "" {
+		return nil
+	}
+	var result []string
+	for _, s := range strings.Split(scopes, ",") {
+		scope := strings.TrimSpace(s)
+		if scope == "" {
+			continue
+		}
+		result = append(result, scope)
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }
 
 // oauthLoginClearKeys returns profile keys that should be explicitly removed

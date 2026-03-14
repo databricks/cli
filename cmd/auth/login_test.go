@@ -1,22 +1,72 @@
 package auth
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
+
+// logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
+type logBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (lb *logBuffer) Write(p []byte) (int, error) {
+	lb.mu.Lock()
+	defer lb.mu.Unlock()
+	return lb.buf.Write(p)
+}
+
+func (lb *logBuffer) String() string {
+	lb.mu.Lock()
+	defer lb.mu.Unlock()
+	return lb.buf.String()
+}
 
 func loadTestProfile(t *testing.T, ctx context.Context, profileName string) *profile.Profile {
 	profile, err := loadProfileByName(ctx, profileName, profile.DefaultProfiler)
 	require.NoError(t, err)
 	require.NotNil(t, profile)
 	return profile
+}
+
+type fakeDiscoveryPersistentAuth struct {
+	token        *oauth2.Token
+	challengeErr error
+	tokenErr     error
+}
+
+func (f *fakeDiscoveryPersistentAuth) Challenge() error {
+	return f.challengeErr
+}
+
+func (f *fakeDiscoveryPersistentAuth) Token() (*oauth2.Token, error) {
+	if f.tokenErr != nil {
+		return nil, f.tokenErr
+	}
+	return f.token, nil
+}
+
+func (f *fakeDiscoveryPersistentAuth) Close() error {
+	return nil
 }
 
 func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
@@ -266,4 +316,334 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestShouldUseDiscovery(t *testing.T) {
+	tests := []struct {
+		name            string
+		hostFlag        string
+		args            []string
+		existingProfile *profile.Profile
+		want            bool
+	}{
+		{
+			name: "no host from any source",
+			want: true,
+		},
+		{
+			name:     "host from flag",
+			hostFlag: "https://example.com",
+			want:     false,
+		},
+		{
+			name: "host from positional arg",
+			args: []string{"https://example.com"},
+			want: false,
+		},
+		{
+			name:            "host from existing profile",
+			existingProfile: &profile.Profile{Host: "https://example.com"},
+			want:            false,
+		},
+		{
+			name:            "existing profile without host",
+			existingProfile: &profile.Profile{Name: "test"},
+			want:            true,
+		},
+		{
+			name:            "nil profile",
+			existingProfile: nil,
+			want:            true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldUseDiscovery(tt.hostFlag, tt.args, tt.existingProfile)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestSplitScopes(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		output []string
+	}{
+		{
+			name:   "empty input",
+			input:  "",
+			output: nil,
+		},
+		{
+			name:   "single scope",
+			input:  "all-apis",
+			output: []string{"all-apis"},
+		},
+		{
+			name:   "trims whitespace",
+			input:  " all-apis , sql ",
+			output: []string{"all-apis", "sql"},
+		},
+		{
+			name:   "drops empty entries",
+			input:  "all-apis, ,sql,,",
+			output: []string{"all-apis", "sql"},
+		},
+		{
+			name:   "only empty entries",
+			input:  " , , ",
+			output: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.output, splitScopes(tt.input))
+		})
+	}
+}
+
+func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
+	tests := []struct {
+		name    string
+		setFlag string
+		flagVal string
+		wantErr string
+	}{
+		{
+			name:    "account-id is incompatible",
+			setFlag: "account-id",
+			flagVal: "abc123",
+			wantErr: "--account-id requires --host to be specified",
+		},
+		{
+			name:    "workspace-id is incompatible",
+			setFlag: "workspace-id",
+			flagVal: "12345",
+			wantErr: "--workspace-id requires --host to be specified",
+		},
+		{
+			name:    "experimental-is-unified-host is incompatible",
+			setFlag: "experimental-is-unified-host",
+			flagVal: "true",
+			wantErr: "--experimental-is-unified-host requires --host to be specified",
+		},
+		{
+			name: "no flags set is ok",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String("account-id", "", "")
+			cmd.Flags().String("workspace-id", "", "")
+			cmd.Flags().Bool("experimental-is-unified-host", false, "")
+
+			if tt.setFlag != "" {
+				require.NoError(t, cmd.Flags().Set(tt.setFlag, tt.flagVal))
+			}
+
+			err := validateDiscoveryFlagCompatibility(cmd)
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	originalIntrospectToken := introspectToken
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+		introspectToken = originalIntrospectToken
+	})
+
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+		if err != nil {
+			return nil, err
+		}
+		arg.SetDiscoveredHost("https://workspace.example.com")
+		return arg, nil
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	introspectToken = func(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
+		assert.Equal(t, "https://workspace.example.com", host)
+		assert.Equal(t, "test-token", accessToken)
+		return nil, errors.New("introspection failed")
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "all-apis, ,sql,", nil, func(string) error { return nil })
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "https://workspace.example.com", savedProfile.Host)
+	assert.Equal(t, "all-apis,sql", savedProfile.Scopes)
+	assert.Empty(t, savedProfile.AccountID)
+	assert.Empty(t, savedProfile.WorkspaceID)
+}
+
+func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	originalIntrospectToken := introspectToken
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+		introspectToken = originalIntrospectToken
+	})
+
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+		if err != nil {
+			return nil, err
+		}
+		arg.SetDiscoveredHost("https://workspace.example.com")
+		return arg, nil
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	introspectToken = func(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
+		return &auth.IntrospectionResult{
+			AccountID:   "new-account-id",
+			WorkspaceID: "12345",
+		}, nil
+	}
+
+	// Set up a logger that captures log records to verify the warning.
+	var logBuf logBuffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	ctx = log.NewContext(ctx, logger)
+
+	existingProfile := &profile.Profile{
+		Name:      "DISCOVERY",
+		AccountID: "old-account-id",
+	}
+
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	require.NoError(t, err)
+
+	// Verify warning about mismatched account IDs was logged.
+	assert.Contains(t, logBuf.String(), "new-account-id")
+	assert.Contains(t, logBuf.String(), "old-account-id")
+
+	// Verify the profile was saved without account_id (not overwritten).
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "https://workspace.example.com", savedProfile.Host)
+	assert.Equal(t, "12345", savedProfile.WorkspaceID)
+}
+
+func TestDiscoveryLogin_NoWarningWhenAccountIDsMatch(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	originalIntrospectToken := introspectToken
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+		introspectToken = originalIntrospectToken
+	})
+
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+		if err != nil {
+			return nil, err
+		}
+		arg.SetDiscoveredHost("https://workspace.example.com")
+		return arg, nil
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	introspectToken = func(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
+		return &auth.IntrospectionResult{
+			AccountID:   "same-account-id",
+			WorkspaceID: "12345",
+		}, nil
+	}
+
+	var logBuf logBuffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	ctx = log.NewContext(ctx, logger)
+
+	existingProfile := &profile.Profile{
+		Name:      "DISCOVERY",
+		AccountID: "same-account-id",
+	}
+
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	require.NoError(t, err)
+
+	// No warning should be logged when account IDs match.
+	assert.Empty(t, logBuf.String())
+}
+
+func TestDiscoveryLogin_EmptyDiscoveredHostReturnsError(t *testing.T) {
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+	})
+
+	// Return arg without calling SetDiscoveredHost, so GetDiscoveredHost returns "".
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		return u2m.NewBasicDiscoveryOAuthArgument(profileName)
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err := discoveryLogin(ctx, "DISCOVERY", time.Second, "", nil, func(string) error { return nil })
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no workspace host was discovered")
 }
