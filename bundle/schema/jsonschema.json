@@ -151,7 +151,7 @@
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
                       },
                       "name": {
                         "description": "The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
@@ -401,7 +401,7 @@
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
                       },
                       "node_type_id": {
                         "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
@@ -879,6 +879,28 @@
                     "properties": {
                       "prevent_destroy": {
                         "description": "Lifecycle setting to prevent the resource from being destroyed.",
+                        "$ref": "#/$defs/bool"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.LifecycleWithStarted": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "prevent_destroy": {
+                        "description": "Lifecycle setting to prevent the resource from being destroyed.",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "started": {
+                        "description": "Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.",
                         "$ref": "#/$defs/bool"
                       }
                     },
@@ -1791,7 +1813,7 @@
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
                       },
                       "max_num_clusters": {
                         "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",

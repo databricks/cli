@@ -89,6 +89,79 @@ func (s *FakeWorkspace) AppsGetUpdate(_ Request, name string) Response {
 	}
 }
 
+func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	_, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	var deployment apps.AppDeployment
+	if err := json.Unmarshal(req.Body, &deployment); err != nil {
+		return Response{StatusCode: 500, Body: fmt.Sprintf("internal error: %s", err)}
+	}
+
+	deployment.DeploymentId = "deploy-1"
+	deployment.Status = &apps.AppDeploymentStatus{
+		State:   apps.AppDeploymentStateSucceeded,
+		Message: "Deployment succeeded.",
+	}
+
+	return Response{Body: deployment}
+}
+
+func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) Response {
+	defer s.LockUnlock()()
+
+	_, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	return Response{Body: apps.AppDeployment{
+		DeploymentId: deploymentID,
+		Status: &apps.AppDeploymentStatus{
+			State:   apps.AppDeploymentStateSucceeded,
+			Message: "Deployment succeeded.",
+		},
+	}}
+}
+
+func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	app.ComputeStatus = &apps.ComputeStatus{
+		State:   apps.ComputeStateActive,
+		Message: "App compute is active.",
+	}
+	s.Apps[name] = app
+
+	return Response{Body: app}
+}
+
+func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	app.ComputeStatus = &apps.ComputeStatus{
+		State:   apps.ComputeStateStopped,
+		Message: "App compute is stopped.",
+	}
+	s.Apps[name] = app
+
+	return Response{Body: app}
+}
+
 func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 	var app apps.App
 

@@ -100,14 +100,14 @@ resources.apps.*.compute_status	*apps.ComputeStatus	ALL
 resources.apps.*.compute_status.active_instances	int	ALL
 resources.apps.*.compute_status.message	string	ALL
 resources.apps.*.compute_status.state	apps.ComputeState	ALL
-resources.apps.*.config	*resources.AppConfig	INPUT
-resources.apps.*.config.command	[]string	INPUT
-resources.apps.*.config.command[*]	string	INPUT
-resources.apps.*.config.env	[]resources.AppEnvVar	INPUT
-resources.apps.*.config.env[*]	resources.AppEnvVar	INPUT
-resources.apps.*.config.env[*].name	string	INPUT
-resources.apps.*.config.env[*].value	string	INPUT
-resources.apps.*.config.env[*].value_from	string	INPUT
+resources.apps.*.config	*resources.AppConfig	INPUT	STATE
+resources.apps.*.config.command	[]string	INPUT	STATE
+resources.apps.*.config.command[*]	string	INPUT	STATE
+resources.apps.*.config.env	[]resources.AppEnvVar	INPUT	STATE
+resources.apps.*.config.env[*]	resources.AppEnvVar	INPUT	STATE
+resources.apps.*.config.env[*].name	string	INPUT	STATE
+resources.apps.*.config.env[*].value	string	INPUT	STATE
+resources.apps.*.config.env[*].value_from	string	INPUT	STATE
 resources.apps.*.create_time	string	ALL
 resources.apps.*.creator	string	ALL
 resources.apps.*.default_source_code_path	string	ALL
@@ -119,18 +119,20 @@ resources.apps.*.effective_user_api_scopes[*]	string	ALL
 resources.apps.*.git_repository	*apps.GitRepository	ALL
 resources.apps.*.git_repository.provider	string	ALL
 resources.apps.*.git_repository.url	string	ALL
-resources.apps.*.git_source	*apps.GitSource	INPUT
-resources.apps.*.git_source.branch	string	INPUT
-resources.apps.*.git_source.commit	string	INPUT
-resources.apps.*.git_source.git_repository	*apps.GitRepository	INPUT
-resources.apps.*.git_source.git_repository.provider	string	INPUT
-resources.apps.*.git_source.git_repository.url	string	INPUT
-resources.apps.*.git_source.resolved_commit	string	INPUT
-resources.apps.*.git_source.source_code_path	string	INPUT
-resources.apps.*.git_source.tag	string	INPUT
+resources.apps.*.git_source	*apps.GitSource	INPUT	STATE
+resources.apps.*.git_source.branch	string	INPUT	STATE
+resources.apps.*.git_source.commit	string	INPUT	STATE
+resources.apps.*.git_source.git_repository	*apps.GitRepository	INPUT	STATE
+resources.apps.*.git_source.git_repository.provider	string	INPUT	STATE
+resources.apps.*.git_source.git_repository.url	string	INPUT	STATE
+resources.apps.*.git_source.resolved_commit	string	INPUT	STATE
+resources.apps.*.git_source.source_code_path	string	INPUT	STATE
+resources.apps.*.git_source.tag	string	INPUT	STATE
 resources.apps.*.id	string	ALL
 resources.apps.*.lifecycle	resources.Lifecycle	INPUT
+resources.apps.*.lifecycle	resources.LifecycleWithStarted	INPUT
 resources.apps.*.lifecycle.prevent_destroy	bool	INPUT
+resources.apps.*.lifecycle.started	*bool	INPUT
 resources.apps.*.modified_status	string	INPUT
 resources.apps.*.name	string	ALL
 resources.apps.*.oauth2_app_client_id	string	ALL
@@ -210,8 +212,9 @@ resources.apps.*.resources[*].uc_securable.securable_type	apps.AppResourceUcSecu
 resources.apps.*.service_principal_client_id	string	ALL
 resources.apps.*.service_principal_id	int64	ALL
 resources.apps.*.service_principal_name	string	ALL
-resources.apps.*.source_code_path	string	INPUT
+resources.apps.*.source_code_path	string	INPUT	STATE
 resources.apps.*.space	string	ALL
+resources.apps.*.started	bool	STATE
 resources.apps.*.telemetry_export_destinations	[]apps.TelemetryExportDestination	ALL
 resources.apps.*.telemetry_export_destinations[*]	apps.TelemetryExportDestination	ALL
 resources.apps.*.telemetry_export_destinations[*].unity_catalog	*apps.UnityCatalog	ALL
@@ -396,7 +399,9 @@ resources.clusters.*.kind	compute.Kind	ALL
 resources.clusters.*.last_restarted_time	int64	REMOTE
 resources.clusters.*.last_state_loss_time	int64	REMOTE
 resources.clusters.*.lifecycle	resources.Lifecycle	INPUT
+resources.clusters.*.lifecycle	resources.LifecycleWithStarted	INPUT
 resources.clusters.*.lifecycle.prevent_destroy	bool	INPUT
+resources.clusters.*.lifecycle.started	*bool	INPUT
 resources.clusters.*.modified_status	string	INPUT
 resources.clusters.*.node_type_id	string	ALL
 resources.clusters.*.num_workers	int	ALL
@@ -527,6 +532,7 @@ resources.clusters.*.spec.workload_type.clients.notebooks	bool	REMOTE
 resources.clusters.*.ssh_public_keys	[]string	ALL
 resources.clusters.*.ssh_public_keys[*]	string	ALL
 resources.clusters.*.start_time	int64	REMOTE
+resources.clusters.*.started	bool	STATE
 resources.clusters.*.state	compute.State	REMOTE
 resources.clusters.*.state_message	string	REMOTE
 resources.clusters.*.terminated_time	int64	REMOTE
@@ -2875,7 +2881,9 @@ resources.sql_warehouses.*.id	string	INPUT	REMOTE
 resources.sql_warehouses.*.instance_profile_arn	string	ALL
 resources.sql_warehouses.*.jdbc_url	string	REMOTE
 resources.sql_warehouses.*.lifecycle	resources.Lifecycle	INPUT
+resources.sql_warehouses.*.lifecycle	resources.LifecycleWithStarted	INPUT
 resources.sql_warehouses.*.lifecycle.prevent_destroy	bool	INPUT
+resources.sql_warehouses.*.lifecycle.started	*bool	INPUT
 resources.sql_warehouses.*.max_num_clusters	int	ALL
 resources.sql_warehouses.*.min_num_clusters	int	ALL
 resources.sql_warehouses.*.modified_status	string	INPUT
@@ -2894,6 +2902,7 @@ resources.sql_warehouses.*.permissions[*].level	sql.WarehousePermissionLevel	INP
 resources.sql_warehouses.*.permissions[*].service_principal_name	string	INPUT
 resources.sql_warehouses.*.permissions[*].user_name	string	INPUT
 resources.sql_warehouses.*.spot_instance_policy	sql.SpotInstancePolicy	ALL
+resources.sql_warehouses.*.started	bool	STATE
 resources.sql_warehouses.*.state	sql.State	REMOTE
 resources.sql_warehouses.*.tags	*sql.EndpointTags	ALL
 resources.sql_warehouses.*.tags.custom_tags	[]sql.EndpointTagPair	ALL

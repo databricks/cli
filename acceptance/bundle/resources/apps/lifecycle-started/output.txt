@@ -1,0 +1,10 @@
+
+>>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+
+>>> update_file.py databricks.yml started: true started: false
+
+>>> update_file.py databricks.yml MY_APP_DESCRIPTION MY_APP_DESCRIPTION_2
+
+>>> update_file.py databricks.yml started: false started: true
+
+>>> update_file.py databricks.yml MY_APP_DESCRIPTION_2 MY_APP_DESCRIPTION_3

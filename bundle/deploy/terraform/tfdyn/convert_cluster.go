@@ -29,7 +29,7 @@ func (clusterConverter) Convert(ctx context.Context, key string, vin dyn.Value, 
 		return err
 	}
 
-	// We always set no_wait as it allows DABs not to wait for cluster to be started.
+	// Always skip wait during creation; lifecycle.started is only supported in direct mode.
 	vout, err = dyn.Set(vout, "no_wait", dyn.V(true))
 	if err != nil {
 		return err

@@ -7,3 +7,8 @@ type BaseResource struct {
 	URL            string         `json:"url,omitempty" bundle:"internal"`
 	Lifecycle      Lifecycle      `json:"lifecycle,omitempty"`
 }
+
+// GetLifecycle returns the lifecycle settings for the resource.
+func (b *BaseResource) GetLifecycle() ILifecycle {
+	return b.Lifecycle
+}
