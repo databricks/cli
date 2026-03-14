@@ -135,7 +135,7 @@ jobs:
 
     steps:
       - name: Download Windows artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: windows-artifacts
           path: dist
