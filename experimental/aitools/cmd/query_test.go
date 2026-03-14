@@ -447,3 +447,36 @@ func TestResolveSQLMissingFileReturnsError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "read SQL file")
 }
+
+func TestQueryCommandUnsupportedFormatReturnsError(t *testing.T) {
+	cmd := newQueryCmd()
+	cmd.PreRunE = nil
+	cmd.SetArgs([]string{"--format", "xml", "SELECT 1"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported format")
+}
+
+func TestQueryCommandFormatAndOutputConflictReturnsError(t *testing.T) {
+	cmd := newQueryCmd()
+	cmd.PreRunE = nil
+	cmd.PersistentFlags().String("output", "text", "output type")
+	cmd.SetArgs([]string{"--format", "csv", "--output", "json", "SELECT 1"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot use --format and --output together")
+}
+
+func TestRenderCSVOutput(t *testing.T) {
+	var buf strings.Builder
+	err := renderCSV(&buf, []string{"id", "name"}, [][]string{{"1", "alice"}, {"2", "bob"}})
+	require.NoError(t, err)
+	assert.Equal(t, "id,name\r\n1,alice\r\n2,bob\r\n", buf.String())
+}
+
+func TestRenderCSVHeadersOnlyWhenNoRows(t *testing.T) {
+	var buf strings.Builder
+	err := renderCSV(&buf, []string{"id", "name"}, nil)
+	require.NoError(t, err)
+	assert.Equal(t, "id,name\r\n", buf.String())
+}
