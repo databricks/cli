@@ -115,7 +115,7 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}
 
       - name: Upload Windows artifacts to GitHub Actions
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: windows-artifacts
           path: |
