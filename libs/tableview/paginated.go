@@ -173,11 +173,6 @@ func RunPaginated(ctx context.Context, w io.Writer, cfg *TableConfig, iter RowIt
 	return nil
 }
 
-// Err returns any error that occurred during data fetching.
-func (m paginatedModel) Err() error {
-	return m.err
-}
-
 func (m paginatedModel) Init() tea.Cmd {
 	return m.makeFetchCmd(m)
 }
