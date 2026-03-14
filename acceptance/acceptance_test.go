@@ -296,13 +296,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
-			if testdiff.OverwriteMode || OnlyOutTestToml {
-				// Generate materialized config for this test
-				// We do this before skipping the test, so the configs are generated for all tests.
-				materializedConfig, err := internal.GenerateMaterializedConfig(config)
-				require.NoError(t, err)
-				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
-			}
+			// Generate materialized config for this test.
+			// We do this before skipping the test, so the configs are generated for all tests.
+			materializedConfig, err := internal.GenerateMaterializedConfig(config)
+			require.NoError(t, err)
+			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
 
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
@@ -539,17 +537,13 @@ func runTest(t *testing.T,
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
 	// Generate materialized config for this test
-	materializedConfig, err := internal.GenerateMaterializedConfig(config)
-	require.NoError(t, err)
-	testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
-
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
-	// Add materialized config to outputs for comparison
-	outputs[internal.MaterializedConfigFile] = true
+	// out.test.toml is written to the source dir during test discovery, not compared.
+	delete(outputs, internal.MaterializedConfigFile)
 
 	timeout := config.Timeout
 
@@ -666,11 +660,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		skipRepls := false
-		if relPath == internal.MaterializedConfigFile {
-			skipRepls = true
-		}
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, skipRepls)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -704,7 +694,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, false)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
@@ -777,7 +767,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, skipRepls bool) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -792,7 +782,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
-	if !NoRepl && !skipRepls {
+	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
 	}
 
