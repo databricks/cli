@@ -121,13 +121,13 @@ func newCreate() *cobra.Command {
 		if createSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *cleanrooms.CleanRoom) {
 			status := i.Status
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
