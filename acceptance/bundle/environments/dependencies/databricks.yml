@@ -21,6 +21,8 @@ resources:
             client: "1"
             dependencies:
               - "-r ./requirements.txt"
+              - -r "${workspace.file_path}/Path With Spaces/requirements.txt"
+              - "-r '${workspace.file_path}/Path With Spaces/requirements.txt'"
               - "-e ./file.py"
               - "-i http://myindexurl.com"
               - "--index-url http://myindexurl.com"

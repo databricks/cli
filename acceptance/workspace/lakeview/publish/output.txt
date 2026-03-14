@@ -7,5 +7,6 @@
 {
   "display_name":"Test Dashboard",
   "embed_credentials":false,
+  "revision_create_time":"[TIMESTAMP]",
   "warehouse_id":"test-warehouse"
 }

@@ -13,9 +13,12 @@ import (
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/logdiag"
 	databricks "github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/spf13/cobra"
 )
 
 // Copied from cmd/bundle/run.go
@@ -339,5 +342,19 @@ func isPipeline(ref resources.Reference) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func suggestPipelineDeploy(ctx context.Context, cmd *cobra.Command) {
+	deployCmd := cmd.Parent().CommandPath() + " deploy"
+	diags := diag.Recommendationf(
+		`This command runs the last deployed version of the code
+
+If you've made local changes, run '%s' first to ensure they are included.`,
+		deployCmd,
+	)
+
+	for _, el := range diags {
+		logdiag.LogDiag(ctx, el)
 	}
 }

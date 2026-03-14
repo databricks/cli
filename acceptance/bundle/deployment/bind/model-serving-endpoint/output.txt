@@ -4,11 +4,11 @@ bundle:
 resources:
   model_serving_endpoints:
     endpoint1:
-      name: test-endpoint-[UUID]
+      name: test-endpoint-[UNIQUE_NAME]
 
->>> [CLI] serving-endpoints create test-endpoint-[UUID]
+>>> [CLI] serving-endpoints create test-endpoint-[UNIQUE_NAME]
 {
-  "name": "test-endpoint-[UUID]",
+  "name": "test-endpoint-[UNIQUE_NAME]",
   "permission_level": "CAN_MANAGE",
   "route_optimized": false,
   "state": {
@@ -17,9 +17,9 @@ resources:
   }
 }
 
->>> [CLI] serving-endpoints get test-endpoint-[UUID]
+>>> [CLI] serving-endpoints get test-endpoint-[UNIQUE_NAME]
 {
-  "name": "test-endpoint-[UUID]",
+  "name": "test-endpoint-[UNIQUE_NAME]",
   "permission_level": "CAN_MANAGE",
   "route_optimized": false,
   "state": {
@@ -28,9 +28,9 @@ resources:
   }
 }
 
->>> [CLI] bundle deployment bind endpoint1 test-endpoint-[UUID]
+>>> [CLI] bundle deployment bind endpoint1 test-endpoint-[UNIQUE_NAME]
 Updating deployment state...
-Successfully bound model_serving_endpoint with an id 'test-endpoint-[UUID]'
+Successfully bound model_serving_endpoint with an id 'test-endpoint-[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
@@ -39,9 +39,9 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] serving-endpoints get test-endpoint-[UUID]
+>>> [CLI] serving-endpoints get test-endpoint-[UNIQUE_NAME]
 {
-  "name": "test-endpoint-[UUID]",
+  "name": "test-endpoint-[UNIQUE_NAME]",
   "permission_level": "CAN_MANAGE",
   "route_optimized": false,
   "state": {
@@ -59,9 +59,9 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> [CLI] serving-endpoints get test-endpoint-[UUID]
+>>> [CLI] serving-endpoints get test-endpoint-[UNIQUE_NAME]
 {
-  "name": "test-endpoint-[UUID]",
+  "name": "test-endpoint-[UNIQUE_NAME]",
   "permission_level": "CAN_MANAGE",
   "route_optimized": false,
   "state": {
@@ -70,4 +70,4 @@ Destroy complete!
   }
 }
 
->>> [CLI] serving-endpoints delete test-endpoint-[UUID]
+>>> [CLI] serving-endpoints delete test-endpoint-[UNIQUE_NAME]

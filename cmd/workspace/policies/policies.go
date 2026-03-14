@@ -125,7 +125,7 @@ func newCreatePolicy() *cobra.Command {
         TABLE,
         VOLUME,
       ]
-    POLICY_TYPE: Type of the policy. Required on create and ignored on update.
+    POLICY_TYPE: Type of the policy. Required on create.
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
@@ -153,7 +153,7 @@ func newCreatePolicy() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -467,7 +467,7 @@ func newUpdatePolicy() *cobra.Command {
         TABLE,
         VOLUME,
       ]
-    POLICY_TYPE: Type of the policy. Required on create and ignored on update.
+    POLICY_TYPE: Type of the policy. Required on create.
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
@@ -495,7 +495,7 @@ func newUpdatePolicy() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

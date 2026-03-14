@@ -1,0 +1,26 @@
+
+# Test that app-granted permissions on a job survive a second deploy.
+# Issue: https://github.com/databricks/cli/issues/4309
+
+trace $CLI bundle deploy
+
+job_id=$(read_id.py my_job)
+
+has_manage_run() {
+  MSYS_NO_PATHCONV=1 $CLI api get /api/2.0/permissions/jobs/$job_id \
+    | jq 'any(.access_control_list[].all_permissions[]; .permission_level == "CAN_MANAGE_RUN")'
+}
+
+title "After first deploy"
+trace has_manage_run
+
+title "After second deploy"
+trace $CLI bundle deploy
+trace has_manage_run
+
+title "Apply fix and redeploy"
+patch -s --no-backup-if-mismatch databricks.yml < fix.patch
+trace $CLI bundle deploy
+trace has_manage_run
+
+trace $CLI bundle destroy --auto-approve

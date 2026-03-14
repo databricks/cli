@@ -28,6 +28,10 @@ type DataSourceDatabaseInstanceParentInstanceRef struct {
 	Uid          string `json:"uid,omitempty"`
 }
 
+type DataSourceDatabaseInstanceProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceDatabaseInstance struct {
 	Capacity                           string                                          `json:"capacity,omitempty"`
 	ChildInstanceRefs                  []DataSourceDatabaseInstanceChildInstanceRefs   `json:"child_instance_refs,omitempty"`
@@ -48,6 +52,7 @@ type DataSourceDatabaseInstance struct {
 	NodeCount                          int                                             `json:"node_count,omitempty"`
 	ParentInstanceRef                  *DataSourceDatabaseInstanceParentInstanceRef    `json:"parent_instance_ref,omitempty"`
 	PgVersion                          string                                          `json:"pg_version,omitempty"`
+	ProviderConfig                     *DataSourceDatabaseInstanceProviderConfig       `json:"provider_config,omitempty"`
 	ReadOnlyDns                        string                                          `json:"read_only_dns,omitempty"`
 	ReadWriteDns                       string                                          `json:"read_write_dns,omitempty"`
 	RetentionWindowInDays              int                                             `json:"retention_window_in_days,omitempty"`

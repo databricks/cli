@@ -41,7 +41,7 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 	}
 }
 
-func (s *FakeWorkspace) AlertsDelete(alertId string) Response {
+func (s *FakeWorkspace) AlertsDelete(alertId string, purge bool) Response {
 	defer s.LockUnlock()()
 
 	alert, ok := s.Alerts[alertId]
@@ -51,8 +51,12 @@ func (s *FakeWorkspace) AlertsDelete(alertId string) Response {
 		}
 	}
 
-	alert.LifecycleState = sql.AlertLifecycleStateDeleted
-	s.Alerts[alertId] = alert
+	if purge {
+		delete(s.Alerts, alertId)
+	} else {
+		alert.LifecycleState = sql.AlertLifecycleStateDeleted
+		s.Alerts[alertId] = alert
+	}
 
 	return Response{
 		StatusCode: 200,

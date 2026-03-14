@@ -37,7 +37,6 @@ dist/my_test_code-0.1.0-py3-none-any.whl
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__init__.py"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__main__.py"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt"
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.test.toml"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/repls.json"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/script"
@@ -64,21 +63,7 @@ dist/my_test_code-0.2.0-py3-none-any.whl
 
 === Expecting 1 wheel in libraries section in /jobs/reset
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks out.requests.txt
-[
-  {
-    "existing_cluster_id": "0717-aaaaa-bbbbbb",
-    "libraries": [
-      {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl"
-      }
-    ],
-    "python_wheel_task": {
-      "entry_point": "run",
-      "package_name": "my_test_code"
-    },
-    "task_key": "TestTask"
-  }
-]
+json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl";
 
 === Expecting 1 wheel to be uploaded
 >>> jq .path out.requests.txt
@@ -110,21 +95,7 @@ dist/my_test_code-0.2.0-py3-none-any.whl
 
 === Expecting 1 wheel in libraries section in /jobs/reset
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks out.requests.txt
-[
-  {
-    "existing_cluster_id": "0717-aaaaa-bbbbbb",
-    "libraries": [
-      {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl"
-      }
-    ],
-    "python_wheel_task": {
-      "entry_point": "run",
-      "package_name": "my_test_code"
-    },
-    "task_key": "TestTask"
-  }
-]
+json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl";
 
 === Expecting 1 wheel to be uploaded
 >>> jq .path out.requests.txt

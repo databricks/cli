@@ -20,7 +20,7 @@ Failed script
 === This should complain about Hello present in output
 >>> python3 ./success.py
 Hello world
-contains error: 'Hello' was not expected
+contains error: 'Hello' was not expected: 'Hello world'
 
 === This should not complain
 >>> python3 ./success.py

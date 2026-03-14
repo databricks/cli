@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,10 +14,10 @@ func TestGetPanics(t *testing.T) {
 		assert.Equal(t, "context not configured with bundle", r)
 	}()
 
-	Get(context.Background())
+	Get(t.Context())
 }
 
 func TestGetSuccess(t *testing.T) {
-	ctx := Context(context.Background(), &Bundle{})
+	ctx := Context(t.Context(), &Bundle{})
 	require.NotNil(t, Get(ctx))
 }

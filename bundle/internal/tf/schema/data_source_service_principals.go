@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceServicePrincipalsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceServicePrincipalsServicePrincipals struct {
 	AclPrincipalId string `json:"acl_principal_id,omitempty"`
 	Active         bool   `json:"active,omitempty"`
@@ -19,5 +23,6 @@ type DataSourceServicePrincipals struct {
 	ApplicationIds      []string                                       `json:"application_ids,omitempty"`
 	DisplayNameContains string                                         `json:"display_name_contains,omitempty"`
 	Id                  string                                         `json:"id,omitempty"`
+	ProviderConfig      *DataSourceServicePrincipalsProviderConfig     `json:"provider_config,omitempty"`
 	ServicePrincipals   []DataSourceServicePrincipalsServicePrincipals `json:"service_principals,omitempty"`
 }

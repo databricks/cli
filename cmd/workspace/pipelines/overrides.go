@@ -10,10 +10,6 @@ import (
 )
 
 func init() {
-	if !pipelinesCli.Enabled() {
-		return
-	}
-
 	cmdOverrides = append(cmdOverrides, func(cli *cobra.Command) {
 		// all auto-generated commands apart from nonManagementCommands go into 'management' group
 		nonManagementCommands := []string{
@@ -55,7 +51,12 @@ func init() {
 				return originalRunE(cmd, args)
 			}
 			// Looks like a bundle key or no args - use Lakeflow stop
-			return pipelinesCli.StopCommand().RunE(cmd, args)
+
+			// context is already initialized by workspace command group
+			// if we initialize it again, CLI crashes
+			opts := pipelinesCli.StopCommandOpts{SkipInitContext: true}
+
+			return pipelinesCli.StopCommand(opts).RunE(cmd, args)
 		}
 
 		// Update usage to reflect dual nature

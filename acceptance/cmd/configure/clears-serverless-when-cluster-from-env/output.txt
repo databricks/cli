@@ -1,0 +1,14 @@
+
+=== Initial profile with serverless_compute_id
+[DEFAULT]
+host                  = https://host
+serverless_compute_id = auto
+
+=== Run configure with cluster from env var
+>>> [CLI] configure --token --host https://host
+
+=== Profile after configure (serverless should be cleared)
+[DEFAULT]
+host       = https://host
+cluster_id = env-cluster-789
+token      = [DATABRICKS_TOKEN]

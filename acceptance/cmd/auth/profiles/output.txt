@@ -1,0 +1,30 @@
+
+=== Profiles with workspace_id (JSON output)
+{
+  "profiles": [
+    {
+      "name":"workspace-profile",
+      "host":"https://test.cloud.databricks.com",
+      "cloud":"aws",
+      "auth_type":"",
+      "valid":false
+    },
+    {
+      "name":"account-profile",
+      "host":"https://accounts.cloud.databricks.com",
+      "account_id":"test-account-123",
+      "cloud":"aws",
+      "auth_type":"",
+      "valid":false
+    },
+    {
+      "name":"unified-profile",
+      "host":"https://unified.databricks.com",
+      "account_id":"unified-account-456",
+      "workspace_id":"[NUMID]",
+      "cloud":"aws",
+      "auth_type":"",
+      "valid":false
+    }
+  ]
+}

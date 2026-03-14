@@ -1,0 +1,43 @@
+# Invariant to test: migrate is successful, no drift after deploy
+# Additional checks: no internal errors / panics in any commands
+
+unset DATABRICKS_BUNDLE_ENGINE
+
+# Copy data files to test directory
+cp -r "$TESTDIR/../data/." . &> LOG.cp
+
+# Run init script if present
+INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
+if [ -f "$INIT_SCRIPT" ]; then
+    source "$INIT_SCRIPT" &> LOG.init
+fi
+
+envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
+
+cp databricks.yml LOG.config
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve &> LOG.destroy
+    cat LOG.destroy | contains.py '!panic:' '!internal error' > /dev/null
+
+    # Run cleanup script if present
+    CLEANUP_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-cleanup.sh"
+    if [ -f "$CLEANUP_SCRIPT" ]; then
+        source "$CLEANUP_SCRIPT" &> LOG.cleanup
+    fi
+}
+
+trap cleanup EXIT
+
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy &> LOG.deploy
+cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
+
+echo INPUT_CONFIG_OK
+
+trace $CLI bundle deployment migrate &> LOG.migrate
+
+cat LOG.migrate | contains.py '!panic:' '!internal error' > /dev/null
+
+$CLI bundle plan -o json &> plan.json
+cat plan.json | contains.py '!panic:' '!internal error' > /dev/null
+verify_no_drift.py plan.json

@@ -3,6 +3,7 @@
 .codegen/_openapi_sha
 .release_metadata.json
 bundle/schema/jsonschema.json
+bundle/schema/jsonschema_for_docs.json
 python/docs/images/databricks-logo.svg
 **/*.dist-info/METADATA
 **/*.dist-info/WHEEL
@@ -10,7 +11,6 @@ python/docs/images/databricks-logo.svg
 # Binary files
 **/*.zip
 **/*.whl
-**/*.png
 
 # new lines are recorded differently on windows and unix.
 # In unix: "raw_body": "hello, world\n"

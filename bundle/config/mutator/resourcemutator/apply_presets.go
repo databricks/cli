@@ -239,12 +239,22 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Apps: No presets
 
-	// Alerts: Prefix
+	// Alerts: Prefix, TriggerPauseStatus
 	for _, a := range r.Alerts {
 		if a == nil {
 			continue
 		}
 		a.DisplayName = prefix + a.DisplayName
+		if t.TriggerPauseStatus != "" {
+			paused := sql.SchedulePauseStatusPaused
+			if t.TriggerPauseStatus == config.Unpaused {
+				paused = sql.SchedulePauseStatusUnpaused
+			}
+			// Only set pause status if a schedule is defined and pause status is not already set
+			if a.Schedule.QuartzCronSchedule != "" && a.Schedule.PauseStatus == "" {
+				a.Schedule.PauseStatus = paused
+			}
+		}
 	}
 
 	// SQL Warehouses: Prefix, Tags

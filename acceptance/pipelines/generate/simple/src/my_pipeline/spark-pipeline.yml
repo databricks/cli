@@ -1,0 +1,5 @@
+name: My Pipeline
+storage: file:///Users/foo/bar/baz
+libraries:
+  - glob:
+      include: transformations/**

@@ -39,7 +39,7 @@ Useful after deployment to see what was created and where to find it.`,
 			cmd.SetContext(ctx)
 			logdiag.SetSeverity(ctx, diag.Warning)
 
-			err = showFullConfig(ctx, cmd)
+			err = showFullConfig(ctx, cmd, includeLocations)
 			if err != nil {
 				return err
 			}
@@ -68,7 +68,7 @@ Useful after deployment to see what was created and where to find it.`,
 	return cmd
 }
 
-func showFullConfig(ctx context.Context, cmd *cobra.Command) error {
+func showFullConfig(ctx context.Context, cmd *cobra.Command, includeLocations bool) error {
 	// call `MustLoad` directly instead of `MustConfigureBundle` because the latter does
 	// validation that we're not interested in here
 	b := bundle.MustLoad(ctx)
@@ -79,6 +79,14 @@ func showFullConfig(ctx context.Context, cmd *cobra.Command) error {
 	mutator.DefaultMutators(ctx, b)
 	if logdiag.HasError(ctx) {
 		return nil
+	}
+
+	if includeLocations {
+		// Include location information in the output
+		bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
+		if logdiag.HasError(ctx) {
+			return nil
+		}
 	}
 
 	err := renderJsonOutput(cmd, b)

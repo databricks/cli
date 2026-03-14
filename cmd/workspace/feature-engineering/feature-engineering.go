@@ -75,7 +75,7 @@ func newCreateFeature() *cobra.Command {
 	cmd.Flags().Var(&createFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createFeatureReq.Feature.Description, "description", createFeatureReq.Feature.Description, `The description of the feature.`)
-	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, `The filter condition applied to the source data before aggregation.`)
+	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, `Deprecated: Use DeltaTableSource.filter_condition or KafkaSource.filter_condition instead.`)
 	// TODO: complex arg: lineage_context
 	// TODO: complex arg: time_window
 
@@ -88,7 +88,8 @@ func newCreateFeature() *cobra.Command {
   Arguments:
     FULL_NAME: The full three-part name (catalog, schema, name) of the feature.
     SOURCE: The data source of the feature.
-    INPUTS: The input columns from which the feature is computed.
+    INPUTS: Deprecated: Use AggregationFunction.inputs instead. Kept for backwards
+      compatibility. The input columns from which the feature is computed.
     FUNCTION: The function by which the feature is computed.`
 
 	cmd.Annotations = make(map[string]string)
@@ -116,7 +117,7 @@ func newCreateFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -184,6 +185,7 @@ func newCreateKafkaConfig() *cobra.Command {
 
 	cmd.Flags().Var(&createKafkaConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: backfill_source
 	// TODO: map via StringToStringVar: extra_options
 	// TODO: complex arg: key_schema
 	// TODO: complex arg: value_schema
@@ -229,7 +231,7 @@ func newCreateKafkaConfig() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -294,6 +296,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 	cmd.Flags().Var(&createMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", createMaterializedFeatureReq.MaterializedFeature.CronSchedule, `The quartz cron expression that defines the schedule of the materialization pipeline.`)
+	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Unique identifier for the materialized feature.`)
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
 	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
@@ -330,7 +333,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -868,7 +871,7 @@ func newUpdateFeature() *cobra.Command {
 	cmd.Flags().Var(&updateFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature.`)
-	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, `The filter condition applied to the source data before aggregation.`)
+	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, `Deprecated: Use DeltaTableSource.filter_condition or KafkaSource.filter_condition instead.`)
 	// TODO: complex arg: lineage_context
 	// TODO: complex arg: time_window
 
@@ -882,7 +885,8 @@ func newUpdateFeature() *cobra.Command {
     FULL_NAME: The full three-part name (catalog, schema, name) of the feature.
     UPDATE_MASK: The list of fields to update.
     SOURCE: The data source of the feature.
-    INPUTS: The input columns from which the feature is computed.
+    INPUTS: Deprecated: Use AggregationFunction.inputs instead. Kept for backwards
+      compatibility. The input columns from which the feature is computed.
     FUNCTION: The function by which the feature is computed.`
 
 	cmd.Annotations = make(map[string]string)
@@ -910,7 +914,7 @@ func newUpdateFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -977,6 +981,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 
 	cmd.Flags().Var(&updateKafkaConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: backfill_source
 	// TODO: map via StringToStringVar: extra_options
 	// TODO: complex arg: key_schema
 	// TODO: complex arg: value_schema
@@ -1023,7 +1028,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1090,6 +1095,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	cmd.Flags().Var(&updateMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, `The quartz cron expression that defines the schedule of the materialization pipeline.`)
+	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Unique identifier for the materialized feature.`)
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
 	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
@@ -1131,7 +1137,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

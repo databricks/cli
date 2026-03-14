@@ -3,12 +3,12 @@ print_requests() {
     rm out.requests.txt
 }
 
-trace $PIPELINES deploy
+trace $CLI pipelines deploy
 rm out.requests.txt
 title "Dry running pipeline, should have validate_only set to true"
-trace $PIPELINES dry-run
+trace $CLI pipelines dry-run
 print_requests
 
 title "Dry running pipeline with KEY, expect same output as without KEY"
-trace $PIPELINES dry-run my_pipeline
+trace $CLI pipelines dry-run my_pipeline
 print_requests

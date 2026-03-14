@@ -38,6 +38,10 @@ from databricks.bundles.jobs._models.init_script_info import (
     InitScriptInfoParam,
 )
 from databricks.bundles.jobs._models.kind import Kind, KindParam
+from databricks.bundles.jobs._models.node_type_flexibility import (
+    NodeTypeFlexibility,
+    NodeTypeFlexibilityParam,
+)
 from databricks.bundles.jobs._models.runtime_engine import (
     RuntimeEngine,
     RuntimeEngineParam,
@@ -123,6 +127,11 @@ class ClusterSpec:
     The optional ID of the instance pool for the driver of the cluster belongs.
     The pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not
     assigned.
+    """
+
+    driver_node_type_flexibility: VariableOrOptional[NodeTypeFlexibility] = None
+    """
+    Flexible node type configuration for the driver node.
     """
 
     driver_node_type_id: VariableOrOptional[str] = None
@@ -258,6 +267,11 @@ class ClusterSpec:
     `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
     """
 
+    worker_node_type_flexibility: VariableOrOptional[NodeTypeFlexibility] = None
+    """
+    Flexible node type configuration for worker nodes.
+    """
+
     workload_type: VariableOrOptional[WorkloadType] = None
 
     @classmethod
@@ -337,6 +351,11 @@ class ClusterSpecDict(TypedDict, total=False):
     The optional ID of the instance pool for the driver of the cluster belongs.
     The pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not
     assigned.
+    """
+
+    driver_node_type_flexibility: VariableOrOptional[NodeTypeFlexibilityParam]
+    """
+    Flexible node type configuration for the driver node.
     """
 
     driver_node_type_id: VariableOrOptional[str]
@@ -470,6 +489,11 @@ class ClusterSpecDict(TypedDict, total=False):
     This field can only be used when `kind = CLASSIC_PREVIEW`.
     
     `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
+    """
+
+    worker_node_type_flexibility: VariableOrOptional[NodeTypeFlexibilityParam]
+    """
+    Flexible node type configuration for worker nodes.
     """
 
     workload_type: VariableOrOptional[WorkloadTypeParam]

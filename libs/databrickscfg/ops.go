@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"gopkg.in/ini.v1"
@@ -17,18 +18,187 @@ const fileMode = 0o600
 
 const defaultComment = "The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified."
 
-func loadOrCreateConfigFile(filename string) (*config.File, error) {
+const (
+	databricksSettingsSection = "__settings__"
+	defaultProfileKey         = "default_profile"
+)
+
+// GetConfiguredDefaultProfile returns the explicitly configured default profile
+// by loading the config file at configFilePath.
+// Returns "" if the file doesn't exist or default_profile is not set.
+func GetConfiguredDefaultProfile(ctx context.Context, configFilePath string) (string, error) {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		return "", err
+	}
+	if configFile == nil {
+		return "", nil
+	}
+	return GetConfiguredDefaultProfileFrom(configFile), nil
+}
+
+// GetConfiguredDefaultProfileFrom returns the explicit default profile from
+// [__settings__].default_profile, or "" when it is not set.
+func GetConfiguredDefaultProfileFrom(configFile *config.File) string {
+	return configFile.Section(databricksSettingsSection).Key(defaultProfileKey).String()
+}
+
+// GetDefaultProfile returns the name of the default profile by loading the
+// config file at configFilePath. Returns "" if the file doesn't exist.
+// See GetDefaultProfileFrom for resolution order.
+func GetDefaultProfile(ctx context.Context, configFilePath string) (string, error) {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		return "", err
+	}
+	if configFile == nil {
+		return "", nil
+	}
+	return GetDefaultProfileFrom(configFile), nil
+}
+
+// loadConfigFile loads a config file without creating it if it doesn't exist.
+// Returns (nil, nil) when the file is not found.
+func loadConfigFile(ctx context.Context, filename string) (*config.File, error) {
+	filename, err := resolveConfigFilePath(ctx, filename)
+	if err != nil {
+		return nil, err
+	}
+	configFile, err := config.LoadFile(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("parse %s: %w", filename, err)
+	}
+	return configFile, nil
+}
+
+// resolveConfigFilePath defaults to ~/.databrickscfg and expands ~ to the home directory.
+func resolveConfigFilePath(ctx context.Context, filename string) (string, error) {
 	if filename == "" {
 		filename = "~/.databrickscfg"
 	}
-	// Expand ~ to home directory, as we need a deterministic name for os.OpenFile
-	// to work in the cases when ~/.databrickscfg does not exist yet
 	if strings.HasPrefix(filename, "~") {
-		homedir, err := os.UserHomeDir()
+		homedir, err := env.UserHomeDir(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("cannot find homedir: %w", err)
+			return "", fmt.Errorf("cannot find homedir: %w", err)
 		}
 		filename = fmt.Sprintf("%s%s", homedir, filename[1:])
+	}
+	return filename, nil
+}
+
+// GetDefaultProfileFrom returns the name of the default profile from an
+// already-loaded config file. It uses the following resolution order:
+//  1. Explicit default_profile key in [__settings__].
+//  2. If there is exactly one profile in the file, return it.
+//  3. If a profile named DEFAULT exists, return it.
+//  4. Empty string (no default).
+func GetDefaultProfileFrom(configFile *config.File) string {
+	// 1. Check for explicit default_profile setting.
+	if profile := GetConfiguredDefaultProfileFrom(configFile); profile != "" {
+		return profile
+	}
+
+	// Collect profile sections (sections that have a "host" key, excluding
+	// the settings section).
+	var profileNames []string
+	hasDefault := false
+	for _, s := range configFile.Sections() {
+		if s.Name() == databricksSettingsSection {
+			continue
+		}
+		if !s.HasKey("host") {
+			continue
+		}
+		profileNames = append(profileNames, s.Name())
+		if s.Name() == ini.DefaultSection {
+			hasDefault = true
+		}
+	}
+
+	// 2. Exactly one profile: treat it as the default.
+	if len(profileNames) == 1 {
+		return profileNames[0]
+	}
+
+	// 3. Legacy fallback: a DEFAULT section with a host key.
+	if hasDefault {
+		return ini.DefaultSection
+	}
+
+	return ""
+}
+
+// isFirstProfileInFile returns true if the config file has no profiles (sections with a "host" key) yet.
+func isFirstProfileInFile(configFile *config.File) bool {
+	for _, s := range configFile.Sections() {
+		if s.Name() == databricksSettingsSection {
+			continue
+		}
+		if s.HasKey("host") {
+			return false
+		}
+	}
+	return true
+}
+
+// SetDefaultProfile writes the default_profile key to the [__settings__] section.
+func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
+	if profileName == databricksSettingsSection {
+		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
+	}
+
+	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
+	if err != nil {
+		return err
+	}
+
+	section, err := configFile.GetSection(databricksSettingsSection)
+	if err != nil {
+		// Section doesn't exist, create it.
+		section, err = configFile.NewSection(databricksSettingsSection)
+		if err != nil {
+			return fmt.Errorf("cannot create %s section: %w", databricksSettingsSection, err)
+		}
+	}
+
+	section.Key(defaultProfileKey).SetValue(profileName)
+
+	return writeConfigFile(ctx, configFile)
+}
+
+// ClearDefaultProfile removes the default_profile key from the [__settings__]
+// section if the current default matches the given profile name.
+func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		return err
+	}
+	if configFile == nil {
+		return nil
+	}
+
+	current := GetConfiguredDefaultProfileFrom(configFile)
+	if current != profileName {
+		return nil
+	}
+
+	section, err := configFile.GetSection(databricksSettingsSection)
+	if err != nil {
+		// No settings section means no default to clear.
+		return nil
+	}
+
+	section.DeleteKey(defaultProfileKey)
+	return writeConfigFile(ctx, configFile)
+}
+
+func loadOrCreateConfigFile(ctx context.Context, filename string) (*config.File, error) {
+	filename, err := resolveConfigFilePath(ctx, filename)
+	if err != nil {
+		return nil, err
 	}
 	configFile, err := config.LoadFile(filename)
 	if err != nil && errors.Is(err, fs.ErrNotExist) {
@@ -80,44 +250,36 @@ func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *con
 	return section, nil
 }
 
-func SaveToProfile(ctx context.Context, cfg *config.Config) error {
-	configFile, err := loadOrCreateConfigFile(cfg.ConfigFile)
-	if err != nil {
-		return err
-	}
-
-	section, err := matchOrCreateSection(ctx, configFile, cfg)
-	if err != nil {
-		return err
-	}
-
-	// zeroval profile name before adding it to a section
-	cfg.Profile = ""
-	cfg.ConfigFile = ""
-
-	// clear old keys in case we're overriding the section
-	for _, oldKey := range section.KeyStrings() {
-		section.DeleteKey(oldKey)
-	}
-
+// AuthCredentialKeys returns the config file key names for all auth credential
+// fields from the SDK's ConfigAttributes. These are fields annotated with an
+// auth type (e.g. pat, basic, oauth, azure, google). Use this to clear stale
+// credentials when switching auth methods.
+func AuthCredentialKeys() []string {
+	var keys []string
 	for _, attr := range config.ConfigAttributes {
-		if attr.IsZero(cfg) {
-			continue
+		if attr.HasAuthAttribute() {
+			keys = append(keys, attr.Name)
 		}
-		key := section.Key(attr.Name)
-		key.SetValue(attr.GetString(cfg))
 	}
+	return keys
+}
 
-	// Add a comment to the default section if it's empty.
-	section = configFile.Section(ini.DefaultSection)
+func writeConfigFile(ctx context.Context, configFile *config.File) error {
+	section := configFile.Section(ini.DefaultSection)
 	if len(section.Keys()) == 0 && section.Comment == "" {
 		section.Comment = defaultComment
 	}
+	if err := backupConfigFile(ctx, configFile); err != nil {
+		return err
+	}
+	return configFile.SaveTo(configFile.Path())
+}
 
+func backupConfigFile(ctx context.Context, configFile *config.File) error {
 	orig, backupErr := os.ReadFile(configFile.Path())
 	if len(orig) > 0 && backupErr == nil {
 		log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
-		err = os.WriteFile(configFile.Path()+".bak", orig, fileMode)
+		err := os.WriteFile(configFile.Path()+".bak", orig, fileMode)
 		if err != nil {
 			return fmt.Errorf("backup: %w", err)
 		}
@@ -128,7 +290,89 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 	} else {
 		log.Infof(ctx, "Saving %s", configFile.Path())
 	}
-	return configFile.SaveTo(configFile.Path())
+	return nil
+}
+
+// SaveToProfile merges the provided config into a .databrickscfg profile.
+// Non-zero fields in cfg overwrite existing values. Existing keys not
+// mentioned in cfg are preserved. Keys listed in clearKeys are explicitly
+// removed (use this for mutually exclusive fields like cluster_id vs
+// serverless_compute_id, or to drop stale auth credentials on auth-type switch).
+func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string) error {
+	if cfg.Profile == databricksSettingsSection {
+		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
+	}
+
+	configFile, err := loadOrCreateConfigFile(ctx, cfg.ConfigFile)
+	if err != nil {
+		return err
+	}
+
+	// Check before writing so the new section (without keys yet) is not counted.
+	firstProfile := isFirstProfileInFile(configFile)
+	profileName := cfg.Profile
+
+	section, err := matchOrCreateSection(ctx, configFile, cfg)
+	if err != nil {
+		return err
+	}
+
+	// zeroval profile name before adding it to a section
+	cfg.Profile = ""
+	cfg.ConfigFile = ""
+
+	// Explicitly remove keys the caller wants cleared.
+	for _, key := range clearKeys {
+		section.DeleteKey(key)
+	}
+
+	// Write non-zero fields from the new config. Iterates ConfigAttributes
+	// in declaration order for deterministic key ordering on new profiles.
+	for _, attr := range config.ConfigAttributes {
+		if attr.IsZero(cfg) {
+			continue
+		}
+		key := section.Key(attr.Name)
+		key.SetValue(attr.GetString(cfg))
+	}
+
+	// Auto-set default profile when saving the first profile to the config file.
+	if firstProfile && profileName != "" {
+		settingsSection := configFile.Section(databricksSettingsSection)
+		settingsSection.Key(defaultProfileKey).SetValue(profileName)
+		log.Debugf(ctx, "Auto-setting default profile to %q (first profile)", profileName)
+	}
+
+	return writeConfigFile(ctx, configFile)
+}
+
+// DeleteProfile removes the named profile section from the databrickscfg file.
+// It creates a backup of the original file before modifying it.
+func DeleteProfile(ctx context.Context, profileName, configFilePath string) error {
+	configFile, err := config.LoadFile(configFilePath)
+	if err != nil {
+		return fmt.Errorf("cannot load config file %s: %w", configFilePath, err)
+	}
+
+	// If the profile doesn't exist, return an error to avoid
+	// creating a backup file with the same content as the original file.
+	if _, err := configFile.SectionsByName(profileName); err != nil {
+		return fmt.Errorf("profile %q not found: %w", profileName, err)
+	}
+
+	// If trying to delete the default section, clear its keys.
+	// This ensures that the default section is always present at the top of the file.
+	if profileName == ini.DefaultSection {
+		section := configFile.Section(ini.DefaultSection)
+
+		for _, key := range section.Keys() {
+			section.DeleteKey(key.Name())
+		}
+	} else {
+		configFile.DeleteSection(profileName)
+	}
+
+	return writeConfigFile(ctx, configFile)
 }
 
 func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {

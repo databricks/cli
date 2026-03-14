@@ -114,12 +114,14 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		EmailNotifications: createReq.EmailNotifications,
 		Id:                 nextUUID(),
 		Name:               createReq.Name,
+		PermissionLevel:    serving.ServingEndpointDetailedPermissionLevelCanManage,
 		RouteOptimized:     createReq.RouteOptimized,
 		Tags:               createReq.Tags,
 		State: &serving.EndpointState{
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
+			Ready:        serving.EndpointStateReadyNotReady,
 		},
-		ForceSendFields: createReq.ForceSendFields,
+		ForceSendFields: append(createReq.ForceSendFields, "PermissionLevel", "RouteOptimized"),
 	}
 
 	s.ServingEndpoints[createReq.Name] = endpoint
@@ -175,6 +177,7 @@ func (s *FakeWorkspace) ServingEndpointUpdate(req Request, name string) Response
 	endpoint.Config = config
 	endpoint.State = &serving.EndpointState{
 		ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
+		Ready:        serving.EndpointStateReadyNotReady,
 	}
 
 	s.ServingEndpoints[name] = endpoint

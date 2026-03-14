@@ -449,12 +449,12 @@ const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
 
 `
 
-func RenderDiagnosticsToErrorOut(ctx context.Context, diags diag.Diagnostics) error {
+func RenderDiagnostics(ctx context.Context, diags diag.Diagnostics) error {
 	c := fromContext(ctx)
-	return RenderDiagnostics(c.err, diags)
+	return renderDiagnostics(c.err, diags)
 }
 
-func RenderDiagnostics(out io.Writer, diags diag.Diagnostics) error {
+func renderDiagnostics(out io.Writer, diags diag.Diagnostics) error {
 	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
 	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
 	recommendationT := template.Must(template.New("recommendation").Funcs(renderFuncMap).Parse(recommendationTemplate))

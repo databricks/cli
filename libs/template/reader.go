@@ -18,6 +18,10 @@ type Reader interface {
 	// LoadSchemaAndTemplateFS loads and returns the schema and template filesystem.
 	LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Schema, fs.FS, error)
 
+	// This may be different from the template FS returned by LoadSchemaAndTemplateFS
+	// when template_dir is set in the schema.
+	SchemaFS(ctx context.Context) (fs.FS, error)
+
 	// Cleanup releases any resources associated with the reader
 	// like cleaning up temporary directories.
 	Cleanup(ctx context.Context)
@@ -70,6 +74,21 @@ func (r *builtinReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschem
 	return nil, nil, fmt.Errorf("template directory %s (referenced by %s) not found", templateDirName, r.name)
 }
 
+func (r *builtinReader) SchemaFS(ctx context.Context) (fs.FS, error) {
+	builtin, err := builtin()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range builtin {
+		if entry.Name == r.name {
+			return entry.FS, nil
+		}
+	}
+
+	return nil, fmt.Errorf("builtin template %s not found", r.name)
+}
+
 func (r *builtinReader) Cleanup(ctx context.Context) {}
 
 // gitReader reads a template from a git repository.
@@ -85,6 +104,21 @@ type gitReader struct {
 	// Function to clone the repository. This is a function pointer to allow
 	// mocking in tests.
 	cloneFunc func(ctx context.Context, url, reference, targetPath string) error
+}
+
+// NewGitReader creates a new reader for a git repository template.
+func NewGitReader(gitUrl, ref, templateDir string, cloneFunc func(ctx context.Context, url, reference, targetPath string) error) Reader {
+	return &gitReader{
+		gitUrl:      gitUrl,
+		ref:         ref,
+		templateDir: templateDir,
+		cloneFunc:   cloneFunc,
+	}
+}
+
+// NewBuiltinReader creates a new reader for a built-in template.
+func NewBuiltinReader(name string) Reader {
+	return &builtinReader{name: name}
 }
 
 // Computes the repo name from the repo URL. Treats the last non empty word
@@ -112,17 +146,25 @@ func (r *gitReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Sc
 	r.tmpRepoDir = repoDir
 
 	// start the spinner
-	promptSpinner := cmdio.Spinner(ctx)
-	promptSpinner <- "Downloading the template\n"
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Downloading the template\n")
 
 	err = r.cloneFunc(ctx, r.gitUrl, r.ref, repoDir)
-	close(promptSpinner)
+	sp.Close()
 	if err != nil {
 		return nil, nil, err
 	}
 
 	templateDir := filepath.Join(repoDir, r.templateDir)
 	return loadSchemaAndResolveTemplateDir(templateDir)
+}
+
+func (r *gitReader) SchemaFS(ctx context.Context) (fs.FS, error) {
+	if r.tmpRepoDir == "" {
+		return nil, errors.New("must call LoadSchemaAndTemplateFS before SchemaFS")
+	}
+	templateDir := filepath.Join(r.tmpRepoDir, r.templateDir)
+	return os.DirFS(templateDir), nil
 }
 
 func (r *gitReader) Cleanup(ctx context.Context) {
@@ -143,8 +185,17 @@ type localReader struct {
 	path string
 }
 
+// NewLocalReader creates a new reader for a local template directory.
+func NewLocalReader(path string) Reader {
+	return &localReader{path: path}
+}
+
 func (r *localReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Schema, fs.FS, error) {
 	return loadSchemaAndResolveTemplateDir(r.path)
+}
+
+func (r *localReader) SchemaFS(ctx context.Context) (fs.FS, error) {
+	return os.DirFS(r.path), nil
 }
 
 func (r *localReader) Cleanup(ctx context.Context) {}

@@ -1,15 +1,25 @@
 
+>>> [CLI] bundle plan -o json
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] lakeview get-published [DASHBOARD_ID]
+>>> print_state.py
+
+>>> [CLI] lakeview get-published [DASHBOARD1_ID]
 {
   "embed_credentials": false
 }
 
->>> [CLI] lakeview unpublish [DASHBOARD_ID]
+>>> [CLI] lakeview unpublish [DASHBOARD1_ID]
 
-=== Run bundle plan after unpublishing
+>>> [CLI] bundle plan
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

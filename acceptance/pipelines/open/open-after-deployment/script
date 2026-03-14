@@ -1,0 +1,13 @@
+title "not deployed yet"
+errcode trace $CLI pipelines open
+
+errcode trace $CLI pipelines deploy
+
+title "Modify PATH so that real open is not run"
+export PATH=.:$PATH
+
+title "open after deployment. This will fail to open browser and complain, that's ok, we only want the message"
+musterr trace $CLI pipelines open
+
+title "open with KEY, expect same output as opening without KEY"
+musterr trace $CLI pipelines open test-pipelines-open

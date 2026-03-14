@@ -34,11 +34,32 @@ func (s *FakeWorkspace) DatabaseCatalogCreate(req Request) Response {
 		}
 	}
 
+	// Assign uid like the real backend does
+	databaseCatalog.Uid = nextUUID()
+
 	s.DatabaseCatalogs[databaseCatalog.Name] = databaseCatalog
 
 	return Response{
 		Body: databaseCatalog,
 	}
+}
+
+func (s *FakeWorkspace) DatabaseCatalogGet(name string) Response {
+	defer s.LockUnlock()()
+
+	catalog, ok := s.DatabaseCatalogs[name]
+	if !ok {
+		return Response{
+			Body:       fmt.Sprintf("database catalog with name '%s' not found", name),
+			StatusCode: 404,
+		}
+	}
+
+	// create_database_if_not_exists is a write-only field - the real API doesn't return it
+	result := catalog
+	result.CreateDatabaseIfNotExists = false
+
+	return Response{Body: result}
 }
 
 func (s *FakeWorkspace) DatabaseCatalogUpdate(req Request, name string) Response {

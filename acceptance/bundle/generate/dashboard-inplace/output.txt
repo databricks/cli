@@ -21,12 +21,12 @@ Deployment complete!
   "path":"/Users/[USERNAME]/.bundle/dashboard update inplace/default/resources/test dashboard.lvdash.json",
   "serialized_dashboard":"{\"a\":\"b\"}\n",
   "update_time":"[TIMESTAMP]",
-  "warehouse_id":"my-warehouse-1234"
+  "warehouse_id":""
 }
 
 === update the dashboard file using bundle generate
 >>> [CLI] bundle generate dashboard --resource test_dashboard --force
-Writing dashboard to "dash.lvdash.json"
+Writing dashboard to dash.lvdash.json
 
 >>> cat dash.lvdash.json
 {

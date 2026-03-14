@@ -1,0 +1,39 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]",
+  "q": {
+    "update_mask": "spec.autoscaling_limit_max_cu"
+  },
+  "body": {
+    "spec": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+      "suspend_timeout_duration": "300s"
+    }
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
+}

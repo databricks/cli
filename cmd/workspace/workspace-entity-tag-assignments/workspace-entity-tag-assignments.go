@@ -68,9 +68,10 @@ func newCreateTagAssignment() *cobra.Command {
   Create a tag assignment
 
   Arguments:
-    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are
-      dashboards, geniespaces
-    ENTITY_ID: The identifier of the entity to which the tag is assigned
+    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
+      dashboards, geniespaces, notebooks
+    ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
+      entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed`
 
@@ -99,7 +100,7 @@ func newCreateTagAssignment() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -155,9 +156,10 @@ func newDeleteTagAssignment() *cobra.Command {
   Delete a tag assignment
 
   Arguments:
-    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are
-      dashboards, geniespaces
-    ENTITY_ID: The identifier of the entity to which the tag is assigned
+    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
+      dashboards, geniespaces, notebooks
+    ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
+      entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed`
 
@@ -217,9 +219,10 @@ func newGetTagAssignment() *cobra.Command {
   Get a tag assignment
 
   Arguments:
-    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are
-      dashboards, geniespaces
-    ENTITY_ID: The identifier of the entity to which the tag is assigned
+    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
+      dashboards, geniespaces, notebooks
+    ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
+      entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed`
 
@@ -282,9 +285,10 @@ func newListTagAssignments() *cobra.Command {
   List the tag assignments for an entity
 
   Arguments:
-    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are
-      dashboards, geniespaces
-    ENTITY_ID: The identifier of the entity to which the tag is assigned`
+    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
+      dashboards, geniespaces, notebooks
+    ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
+      entity_id is the app name`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -344,9 +348,10 @@ func newUpdateTagAssignment() *cobra.Command {
   Update a tag assignment
 
   Arguments:
-    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are
-      dashboards, geniespaces
-    ENTITY_ID: The identifier of the entity to which the tag is assigned
+    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
+      dashboards, geniespaces, notebooks
+    ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
+      entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
       are not allowed
     UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
@@ -379,7 +384,7 @@ func newUpdateTagAssignment() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

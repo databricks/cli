@@ -1,5 +1,5 @@
 
->>> errcode [PIPELINES] deploy
+>>> errcode [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/files...
 Deploying resources...
 Updating deployment state...
@@ -10,7 +10,7 @@ View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 >>> [CLI] workspace import /Workspace/Users/[USERNAME]/.bundle/test-pipeline-force-lock/default/state/deploy.lock --format AUTO --file ./deploy.lock
 
 === test deployment without force-lock (should fail)
->>> errcode [PIPELINES] destroy --auto-approve
+>>> errcode [CLI] pipelines destroy --auto-approve
 Error: Failed to acquire deployment lock: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC. Use --force-lock to override
 Error: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC. Use --force-lock to override
 
@@ -18,11 +18,11 @@ Error: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +000
 Exit code: 1
 
 === test deployment with force-lock (should succeed)
->>> [PIPELINES] destroy --force-lock --auto-approve
+>>> [CLI] pipelines destroy --force-lock --auto-approve
 The following resources will be deleted:
   delete resources.pipelines.foo
 
-This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete resources.pipelines.foo
 

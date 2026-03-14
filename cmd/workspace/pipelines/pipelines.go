@@ -112,7 +112,7 @@ func newClone() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -178,7 +178,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -219,6 +219,8 @@ func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteReq pipelines.DeletePipelineRequest
+
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `If true, deletion will proceed even if resource cleanup fails.`)
 
 	cmd.Use = "delete PIPELINE_ID"
 	cmd.Short = `Delete a pipeline.`
@@ -769,7 +771,7 @@ func newSetPermissions() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -841,7 +843,10 @@ func newStartUpdate() *cobra.Command {
 ]`)
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
+	// TODO: map via StringToStringVar: parameters
 	// TODO: array: refresh_selection
+	// TODO: array: replace_where_overrides
+	// TODO: array: reset_checkpoint_selection
 	// TODO: complex arg: rewind_spec
 	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 
@@ -865,7 +870,7 @@ func newStartUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1064,7 +1069,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1150,7 +1155,7 @@ func newUpdatePermissions() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

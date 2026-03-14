@@ -6,9 +6,15 @@ type DataSourceTableProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type DataSourceTableTableInfoColumnsMaskUsingArguments struct {
+	Column   string `json:"column,omitempty"`
+	Constant string `json:"constant,omitempty"`
+}
+
 type DataSourceTableTableInfoColumnsMask struct {
-	FunctionName     string   `json:"function_name,omitempty"`
-	UsingColumnNames []string `json:"using_column_names,omitempty"`
+	FunctionName     string                                              `json:"function_name,omitempty"`
+	UsingColumnNames []string                                            `json:"using_column_names,omitempty"`
+	UsingArguments   []DataSourceTableTableInfoColumnsMaskUsingArguments `json:"using_arguments,omitempty"`
 }
 
 type DataSourceTableTableInfoColumns struct {
@@ -45,9 +51,15 @@ type DataSourceTableTableInfoEncryptionDetails struct {
 	SseEncryptionDetails *DataSourceTableTableInfoEncryptionDetailsSseEncryptionDetails `json:"sse_encryption_details,omitempty"`
 }
 
+type DataSourceTableTableInfoRowFilterInputArguments struct {
+	Column   string `json:"column,omitempty"`
+	Constant string `json:"constant,omitempty"`
+}
+
 type DataSourceTableTableInfoRowFilter struct {
-	FunctionName     string   `json:"function_name"`
-	InputColumnNames []string `json:"input_column_names"`
+	FunctionName     string                                            `json:"function_name"`
+	InputColumnNames []string                                          `json:"input_column_names"`
+	InputArguments   []DataSourceTableTableInfoRowFilterInputArguments `json:"input_arguments,omitempty"`
 }
 
 type DataSourceTableTableInfoSecurableKindManifestOptions struct {

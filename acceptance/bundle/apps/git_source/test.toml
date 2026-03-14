@@ -1,0 +1,50 @@
+# Test that git_repository and git_source fields are properly configured for apps
+Local = true
+# Temporary disable cloud tests because it fails with "Git repository cannot be defined in this workspace. Please try again later."
+Cloud = false
+RecordRequests = false
+RequiresWarehouse = true
+
+Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "out.app-run"]
+
+# Apps can take longer to deploy
+TimeoutCloud = "5m"
+
+# Mock responses for app deployment
+[[Server]]
+Pattern = "POST /api/2.0/apps/{app_name}/deployments"
+Response.Body = '''
+{
+  "deployment_id": "test-deployment-123",
+  "status": {
+    "state": "SUCCEEDED",
+    "message": "Deployment succeeded"
+  },
+  "git_source": {
+    "branch": "main",
+    "source_code_path": "internal/testdata/simple-app",
+    "resolved_commit": "abc123def456"
+  },
+  "source_code_path": "/Workspace/Users/tester@databricks.com/.bundle/files/app",
+  "mode": "SNAPSHOT"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/apps/{app_name}/deployments/{deployment_id}"
+Response.Body = '''
+{
+  "deployment_id": "test-deployment-123",
+  "status": {
+    "state": "SUCCEEDED",
+    "message": "Deployment succeeded"
+  },
+  "git_source": {
+    "branch": "main",
+    "source_code_path": "internal/testdata/simple-app",
+    "resolved_commit": "abc123def456"
+  },
+  "source_code_path": "/Workspace/Users/tester@databricks.com/.bundle/files/app",
+  "mode": "SNAPSHOT"
+}
+'''

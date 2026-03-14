@@ -7,10 +7,13 @@ type DataSources struct {
 	AccountFederationPolicy                map[string]any `json:"databricks_account_federation_policy,omitempty"`
 	AccountNetworkPolicies                 map[string]any `json:"databricks_account_network_policies,omitempty"`
 	AccountNetworkPolicy                   map[string]any `json:"databricks_account_network_policy,omitempty"`
+	AccountSettingUserPreferenceV2         map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                       map[string]any `json:"databricks_account_setting_v2,omitempty"`
 	AlertV2                                map[string]any `json:"databricks_alert_v2,omitempty"`
 	AlertsV2                               map[string]any `json:"databricks_alerts_v2,omitempty"`
 	App                                    map[string]any `json:"databricks_app,omitempty"`
+	AppSpace                               map[string]any `json:"databricks_app_space,omitempty"`
+	AppSpaces                              map[string]any `json:"databricks_app_spaces,omitempty"`
 	Apps                                   map[string]any `json:"databricks_apps,omitempty"`
 	AppsSettingsCustomTemplate             map[string]any `json:"databricks_apps_settings_custom_template,omitempty"`
 	AppsSettingsCustomTemplates            map[string]any `json:"databricks_apps_settings_custom_templates,omitempty"`
@@ -30,6 +33,7 @@ type DataSources struct {
 	CurrentMetastore                       map[string]any `json:"databricks_current_metastore,omitempty"`
 	CurrentUser                            map[string]any `json:"databricks_current_user,omitempty"`
 	Dashboards                             map[string]any `json:"databricks_dashboards,omitempty"`
+	DataClassificationCatalogConfig        map[string]any `json:"databricks_data_classification_catalog_config,omitempty"`
 	DataQualityMonitor                     map[string]any `json:"databricks_data_quality_monitor,omitempty"`
 	DataQualityMonitors                    map[string]any `json:"databricks_data_quality_monitors,omitempty"`
 	DataQualityRefresh                     map[string]any `json:"databricks_data_quality_refresh,omitempty"`
@@ -43,6 +47,8 @@ type DataSources struct {
 	DbfsFile                               map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths                          map[string]any `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory                              map[string]any `json:"databricks_directory,omitempty"`
+	Endpoint                               map[string]any `json:"databricks_endpoint,omitempty"`
+	Endpoints                              map[string]any `json:"databricks_endpoints,omitempty"`
 	EntityTagAssignment                    map[string]any `json:"databricks_entity_tag_assignment,omitempty"`
 	EntityTagAssignments                   map[string]any `json:"databricks_entity_tag_assignments,omitempty"`
 	ExternalLocation                       map[string]any `json:"databricks_external_location,omitempty"`
@@ -61,6 +67,10 @@ type DataSources struct {
 	InstanceProfiles                       map[string]any `json:"databricks_instance_profiles,omitempty"`
 	Job                                    map[string]any `json:"databricks_job,omitempty"`
 	Jobs                                   map[string]any `json:"databricks_jobs,omitempty"`
+	KnowledgeAssistant                     map[string]any `json:"databricks_knowledge_assistant,omitempty"`
+	KnowledgeAssistantKnowledgeSource      map[string]any `json:"databricks_knowledge_assistant_knowledge_source,omitempty"`
+	KnowledgeAssistantKnowledgeSources     map[string]any `json:"databricks_knowledge_assistant_knowledge_sources,omitempty"`
+	KnowledgeAssistants                    map[string]any `json:"databricks_knowledge_assistants,omitempty"`
 	MaterializedFeaturesFeatureTag         map[string]any `json:"databricks_materialized_features_feature_tag,omitempty"`
 	MaterializedFeaturesFeatureTags        map[string]any `json:"databricks_materialized_features_feature_tags,omitempty"`
 	Metastore                              map[string]any `json:"databricks_metastore,omitempty"`
@@ -83,6 +93,8 @@ type DataSources struct {
 	PolicyInfos                            map[string]any `json:"databricks_policy_infos,omitempty"`
 	PostgresBranch                         map[string]any `json:"databricks_postgres_branch,omitempty"`
 	PostgresBranches                       map[string]any `json:"databricks_postgres_branches,omitempty"`
+	PostgresDatabase                       map[string]any `json:"databricks_postgres_database,omitempty"`
+	PostgresDatabases                      map[string]any `json:"databricks_postgres_databases,omitempty"`
 	PostgresEndpoint                       map[string]any `json:"databricks_postgres_endpoint,omitempty"`
 	PostgresEndpoints                      map[string]any `json:"databricks_postgres_endpoints,omitempty"`
 	PostgresProject                        map[string]any `json:"databricks_postgres_project,omitempty"`
@@ -115,6 +127,8 @@ type DataSources struct {
 	Views                                  map[string]any `json:"databricks_views,omitempty"`
 	Volume                                 map[string]any `json:"databricks_volume,omitempty"`
 	Volumes                                map[string]any `json:"databricks_volumes,omitempty"`
+	WarehousesDefaultWarehouseOverride     map[string]any `json:"databricks_warehouses_default_warehouse_override,omitempty"`
+	WarehousesDefaultWarehouseOverrides    map[string]any `json:"databricks_warehouses_default_warehouse_overrides,omitempty"`
 	WorkspaceEntityTagAssignment           map[string]any `json:"databricks_workspace_entity_tag_assignment,omitempty"`
 	WorkspaceEntityTagAssignments          map[string]any `json:"databricks_workspace_entity_tag_assignments,omitempty"`
 	WorkspaceNetworkOption                 map[string]any `json:"databricks_workspace_network_option,omitempty"`
@@ -128,10 +142,13 @@ func NewDataSources() *DataSources {
 		AccountFederationPolicy:                make(map[string]any),
 		AccountNetworkPolicies:                 make(map[string]any),
 		AccountNetworkPolicy:                   make(map[string]any),
+		AccountSettingUserPreferenceV2:         make(map[string]any),
 		AccountSettingV2:                       make(map[string]any),
 		AlertV2:                                make(map[string]any),
 		AlertsV2:                               make(map[string]any),
 		App:                                    make(map[string]any),
+		AppSpace:                               make(map[string]any),
+		AppSpaces:                              make(map[string]any),
 		Apps:                                   make(map[string]any),
 		AppsSettingsCustomTemplate:             make(map[string]any),
 		AppsSettingsCustomTemplates:            make(map[string]any),
@@ -151,6 +168,7 @@ func NewDataSources() *DataSources {
 		CurrentMetastore:                       make(map[string]any),
 		CurrentUser:                            make(map[string]any),
 		Dashboards:                             make(map[string]any),
+		DataClassificationCatalogConfig:        make(map[string]any),
 		DataQualityMonitor:                     make(map[string]any),
 		DataQualityMonitors:                    make(map[string]any),
 		DataQualityRefresh:                     make(map[string]any),
@@ -164,6 +182,8 @@ func NewDataSources() *DataSources {
 		DbfsFile:                               make(map[string]any),
 		DbfsFilePaths:                          make(map[string]any),
 		Directory:                              make(map[string]any),
+		Endpoint:                               make(map[string]any),
+		Endpoints:                              make(map[string]any),
 		EntityTagAssignment:                    make(map[string]any),
 		EntityTagAssignments:                   make(map[string]any),
 		ExternalLocation:                       make(map[string]any),
@@ -182,6 +202,10 @@ func NewDataSources() *DataSources {
 		InstanceProfiles:                       make(map[string]any),
 		Job:                                    make(map[string]any),
 		Jobs:                                   make(map[string]any),
+		KnowledgeAssistant:                     make(map[string]any),
+		KnowledgeAssistantKnowledgeSource:      make(map[string]any),
+		KnowledgeAssistantKnowledgeSources:     make(map[string]any),
+		KnowledgeAssistants:                    make(map[string]any),
 		MaterializedFeaturesFeatureTag:         make(map[string]any),
 		MaterializedFeaturesFeatureTags:        make(map[string]any),
 		Metastore:                              make(map[string]any),
@@ -204,6 +228,8 @@ func NewDataSources() *DataSources {
 		PolicyInfos:                            make(map[string]any),
 		PostgresBranch:                         make(map[string]any),
 		PostgresBranches:                       make(map[string]any),
+		PostgresDatabase:                       make(map[string]any),
+		PostgresDatabases:                      make(map[string]any),
 		PostgresEndpoint:                       make(map[string]any),
 		PostgresEndpoints:                      make(map[string]any),
 		PostgresProject:                        make(map[string]any),
@@ -236,6 +262,8 @@ func NewDataSources() *DataSources {
 		Views:                                  make(map[string]any),
 		Volume:                                 make(map[string]any),
 		Volumes:                                make(map[string]any),
+		WarehousesDefaultWarehouseOverride:     make(map[string]any),
+		WarehousesDefaultWarehouseOverrides:    make(map[string]any),
 		WorkspaceEntityTagAssignment:           make(map[string]any),
 		WorkspaceEntityTagAssignments:          make(map[string]any),
 		WorkspaceNetworkOption:                 make(map[string]any),

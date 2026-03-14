@@ -110,6 +110,11 @@ func equalStruct(s1, s2 reflect.Value) bool {
 
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 
+		// Skip fields with json:"-"
+		if jsonTag.Name() == "-" {
+			continue
+		}
+
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
 

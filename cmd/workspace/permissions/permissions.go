@@ -92,9 +92,9 @@ func newGet() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
-      jobs, notebooks, pipelines, queries, registered-models, repos,
-      serving-endpoints, or warehouses.
+      database-projects, dbsql-dashboards, directories, experiments, files,
+      genie, instance-pools, jobs, notebooks, pipelines, queries,
+      registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -154,9 +154,9 @@ func newGetPermissionLevels() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
-      jobs, notebooks, pipelines, queries, registered-models, repos,
-      serving-endpoints, or warehouses.
+      database-projects, dbsql-dashboards, directories, experiments, files,
+      genie, instance-pools, jobs, notebooks, pipelines, queries,
+      registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
@@ -223,9 +223,9 @@ func newSet() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
-      jobs, notebooks, pipelines, queries, registered-models, repos,
-      serving-endpoints, or warehouses.
+      database-projects, dbsql-dashboards, directories, experiments, files,
+      genie, instance-pools, jobs, notebooks, pipelines, queries,
+      registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -246,7 +246,7 @@ func newSet() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -303,9 +303,9 @@ func newUpdate() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
-      jobs, notebooks, pipelines, queries, registered-models, repos,
-      serving-endpoints, or warehouses.
+      database-projects, dbsql-dashboards, directories, experiments, files,
+      genie, instance-pools, jobs, notebooks, pipelines, queries,
+      registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -326,7 +326,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

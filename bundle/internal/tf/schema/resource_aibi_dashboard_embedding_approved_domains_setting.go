@@ -6,9 +6,14 @@ type ResourceAibiDashboardEmbeddingApprovedDomainsSettingAibiDashboardEmbeddingA
 	ApprovedDomains []string `json:"approved_domains"`
 }
 
+type ResourceAibiDashboardEmbeddingApprovedDomainsSettingProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceAibiDashboardEmbeddingApprovedDomainsSetting struct {
 	Etag                                  string                                                                                     `json:"etag,omitempty"`
 	Id                                    string                                                                                     `json:"id,omitempty"`
 	SettingName                           string                                                                                     `json:"setting_name,omitempty"`
 	AibiDashboardEmbeddingApprovedDomains *ResourceAibiDashboardEmbeddingApprovedDomainsSettingAibiDashboardEmbeddingApprovedDomains `json:"aibi_dashboard_embedding_approved_domains,omitempty"`
+	ProviderConfig                        *ResourceAibiDashboardEmbeddingApprovedDomainsSettingProviderConfig                        `json:"provider_config,omitempty"`
 }

@@ -16,6 +16,11 @@ Old = "fatal: unable to access 'https://invalid-domain-123.databricks.com/hello/
 New = "fatal: repository 'https://invalid-domain-123.databricks.com/hello/world/' not found"
 
 [[Repls]]
+# Git redirection error (appears in some CI environments)
+Old = '''fatal: unable to update url base from redirection:\n  asked for: [^\n]+\n   redirect: [^\n]+'''
+New = "fatal: repository 'https://invalid-domain-123.databricks.com/hello/world/' not found"
+
+[[Repls]]
 Old = '''Cloning into '[^']+''''
 New = '''Cloning into '(redacted)''''
 

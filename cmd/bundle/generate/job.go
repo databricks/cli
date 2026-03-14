@@ -18,7 +18,7 @@ import (
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 func NewGenerateJobCommand() *cobra.Command {
@@ -145,7 +145,7 @@ After generation, you can deploy this job to other targets using:
 			return err
 		}
 
-		cmdio.LogString(ctx, "Job configuration successfully saved to "+filename)
+		cmdio.LogString(ctx, "Job configuration successfully saved to "+filepath.ToSlash(filename))
 
 		if bind {
 			return deployment.BindResource(cmd, jobKey, strconv.FormatInt(jobId, 10), true, false, true)

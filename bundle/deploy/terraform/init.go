@@ -170,11 +170,16 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 	// These variables are used by the Databricks Go SDK to authenticate with Azure DevOps OIDC.
 	azureDevOpsVars := []string{
 		"SYSTEM_ACCESSTOKEN",
-		"SYSTEM_TEAMFOUNDATIONCOLLECTIONURI",
-		"SYSTEM_PLANID",
 		"SYSTEM_COLLECTIONID",
-		"SYSTEM_TEAMPROJECTID",
+		"SYSTEM_COLLECTIONURI",
+		"SYSTEM_DEFINITIONID",
+		"SYSTEM_HOSTTYPE",
+		"SYSTEM_JOBID",
 		"SYSTEM_OIDCREQUESTURI",
+		"SYSTEM_PLANID",
+		"SYSTEM_TEAMFOUNDATIONCOLLECTIONURI",
+		"SYSTEM_TEAMPROJECT",
+		"SYSTEM_TEAMPROJECTID",
 	}
 	for _, varName := range azureDevOpsVars {
 		if val, ok := env.Lookup(ctx, varName); ok {

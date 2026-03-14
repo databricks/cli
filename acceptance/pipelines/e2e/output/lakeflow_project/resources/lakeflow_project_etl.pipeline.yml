@@ -1,0 +1,21 @@
+# The main pipeline for lakeflow_project
+
+resources:
+  pipelines:
+    lakeflow_project_etl:
+      name: lakeflow_project_etl
+      # Catalog is required for serverless compute
+      catalog: main
+      schema: ${var.schema}
+      serverless: true
+      root_path: "../src/lakeflow_project_etl"
+
+      libraries:
+        - glob:
+            include: ../src/lakeflow_project_etl/transformations/**
+
+      environment:
+        dependencies:
+          # We include every dependency defined by pyproject.toml by defining an editable environment
+          # that points to the folder where pyproject.toml is deployed.
+          - --editable ${workspace.file_path}

@@ -1,0 +1,10 @@
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[scoped-test]
+host      = [DATABRICKS_URL]
+scopes    = jobs,pipelines,clusters
+auth_type = databricks-cli
+
+[__settings__]
+default_profile = scoped-test

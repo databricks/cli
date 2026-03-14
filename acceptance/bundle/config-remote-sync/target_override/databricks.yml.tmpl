@@ -1,0 +1,23 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    my_job:
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+
+targets:
+  dev:
+    resources:
+      jobs:
+        my_job:
+          max_concurrent_runs: 2
+          tags:
+            env: dev

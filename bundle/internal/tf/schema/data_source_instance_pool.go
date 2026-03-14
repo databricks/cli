@@ -52,6 +52,10 @@ type DataSourceInstancePoolPoolInfoInstancePoolFleetAttributes struct {
 	LaunchTemplateOverride []DataSourceInstancePoolPoolInfoInstancePoolFleetAttributesLaunchTemplateOverride `json:"launch_template_override,omitempty"`
 }
 
+type DataSourceInstancePoolPoolInfoNodeTypeFlexibility struct {
+	AlternateNodeTypeIds []string `json:"alternate_node_type_ids"`
+}
+
 type DataSourceInstancePoolPoolInfoPreloadedDockerImageBasicAuth struct {
 	Password string `json:"password"`
 	Username string `json:"username"`
@@ -86,12 +90,18 @@ type DataSourceInstancePoolPoolInfo struct {
 	DiskSpec                           *DataSourceInstancePoolPoolInfoDiskSpec                     `json:"disk_spec,omitempty"`
 	GcpAttributes                      *DataSourceInstancePoolPoolInfoGcpAttributes                `json:"gcp_attributes,omitempty"`
 	InstancePoolFleetAttributes        []DataSourceInstancePoolPoolInfoInstancePoolFleetAttributes `json:"instance_pool_fleet_attributes,omitempty"`
+	NodeTypeFlexibility                *DataSourceInstancePoolPoolInfoNodeTypeFlexibility          `json:"node_type_flexibility,omitempty"`
 	PreloadedDockerImage               []DataSourceInstancePoolPoolInfoPreloadedDockerImage        `json:"preloaded_docker_image,omitempty"`
 	Stats                              *DataSourceInstancePoolPoolInfoStats                        `json:"stats,omitempty"`
 }
 
+type DataSourceInstancePoolProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceInstancePool struct {
-	Id       string                          `json:"id,omitempty"`
-	Name     string                          `json:"name"`
-	PoolInfo *DataSourceInstancePoolPoolInfo `json:"pool_info,omitempty"`
+	Id             string                                `json:"id,omitempty"`
+	Name           string                                `json:"name"`
+	PoolInfo       *DataSourceInstancePoolPoolInfo       `json:"pool_info,omitempty"`
+	ProviderConfig *DataSourceInstancePoolProviderConfig `json:"provider_config,omitempty"`
 }

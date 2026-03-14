@@ -12,7 +12,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/agent"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -51,10 +54,18 @@ func New(ctx context.Context) *cobra.Command {
 	initProgressLoggerFlag(cmd, logFlags)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		var err error
+
 		ctx := cmd.Context()
 
+		// Configure command IO
+		ctx, err = outputFlag.initializeIO(ctx, cmd)
+		if err != nil {
+			return err
+		}
+
 		// Configure default logger.
-		ctx, err := logFlags.initializeContext(ctx)
+		ctx, err = logFlags.initializeContext(ctx)
 		if err != nil {
 			return err
 		}
@@ -64,23 +75,20 @@ func New(ctx context.Context) *cobra.Command {
 			slog.String("version", build.GetInfo().Version),
 			slog.String("args", strings.Join(os.Args, ", ")))
 
-		// set context, so that initializeIO can have the current context
-		cmd.SetContext(ctx)
-
-		// Configure command IO
-		err = outputFlag.initializeIO(cmd)
-		if err != nil {
-			return err
-		}
-		// get the context back
-		ctx = cmd.Context()
-
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
 		ctx = withUpstreamInUserAgent(ctx)
+		ctx = withAgentInUserAgent(ctx)
+		ctx = withInteractiveModeInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
+		return nil
+	}
+
+	cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
+		// Wait for any active Bubble Tea programs to finish and restore terminal state
+		cmdio.Wait(cmd.Context())
 		return nil
 	}
 
@@ -129,6 +137,9 @@ Stack Trace:
 	// Detect if the CLI is running on DBR and store this on the context.
 	ctx = dbr.DetectRuntime(ctx)
 
+	// Detect if the CLI is running under an agent.
+	ctx = agent.Detect(ctx)
+
 	// Set a command execution ID value in the context
 	ctx = cmdctx.GenerateExecId(ctx)
 
@@ -137,6 +148,10 @@ Stack Trace:
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
+		if cmdctx.HasConfigUsed(cmd.Context()) {
+			cfg := cmdctx.ConfigUsed(cmd.Context())
+			err = auth.EnrichAuthError(cmd.Context(), cfg, err)
+		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
@@ -181,7 +196,7 @@ Stack Trace:
 		Version:         build.GetInfo().Version,
 		Command:         commandStr,
 		OperatingSystem: runtime.GOOS,
-		DbrVersion:      dbr.RuntimeVersion(ctx),
+		DbrVersion:      dbr.RuntimeVersion(ctx).String(),
 		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
 		ExitCode:        int64(exitCode),
 	})

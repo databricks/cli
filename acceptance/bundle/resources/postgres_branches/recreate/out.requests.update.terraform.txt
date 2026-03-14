@@ -1,0 +1,17 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/[MAIN_ID]"
+}
+{
+  "body": {
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+    "spec": {
+      "no_expiry": true
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
+  "q": {
+    "branch_id": "new-branch-[UNIQUE_NAME]"
+  }
+}

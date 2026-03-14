@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -174,7 +173,7 @@ Specify one of the following fields: job_cluster_key, environment_key, existing_
 			}
 
 			b := createBundle(map[string]*resources.Job{"job1": job})
-			diags := JobTaskClusterSpec().Apply(context.Background(), b)
+			diags := JobTaskClusterSpec().Apply(t.Context(), b)
 
 			if tc.errorPath != "" || tc.errorDetail != "" || tc.errorSummary != "" {
 				assert.Len(t, diags, 1)

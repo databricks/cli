@@ -5,6 +5,7 @@ from typing import Optional
 RESOURCE_NAMESPACE = {
     "resources.Job": "jobs",
     "resources.Pipeline": "pipelines",
+    "resources.Catalog": "catalogs",
     "resources.Schema": "schemas",
     "resources.Volume": "volumes",
 }

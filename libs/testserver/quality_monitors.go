@@ -30,12 +30,14 @@ func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, chec
 	defer s.LockUnlock()()
 
 	if checkExists {
-		_, ok := s.Monitors[tableName]
+		existing, ok := s.Monitors[tableName]
 		if !ok {
 			return Response{
 				StatusCode: 404,
 			}
 		}
+		// For updates, preserve fields that cannot be changed after creation
+		info.AssetsDir = existing.AssetsDir
 	}
 
 	if info.Status == "" {
@@ -44,6 +46,18 @@ func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, chec
 
 	if info.TableName == "" {
 		info.TableName = tableName
+	}
+
+	if info.DriftMetricsTableName == "" {
+		info.DriftMetricsTableName = tableName + "_drift_metrics"
+	}
+
+	if info.ProfileMetricsTableName == "" {
+		info.ProfileMetricsTableName = tableName + "_profile_metrics"
+	}
+
+	if info.DashboardId == "" {
+		info.DashboardId = nextDashboardID()
 	}
 
 	s.Monitors[tableName] = info

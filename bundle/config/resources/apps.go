@@ -10,13 +10,45 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
+// AppConfig represents the inline app.yaml configuration structure.
+// This matches the structure of an app.yaml file that can be used to configure how the app runs.
+type AppConfig struct {
+	// Command specifies the command to run the app (e.g., ["streamlit", "run", "app.py"])
+	Command []string `json:"command,omitempty" yaml:"command,omitempty"`
+
+	// Env contains environment variables to set for the app
+	Env []AppEnvVar `json:"env,omitempty" yaml:"env,omitempty"`
+}
+
+// AppEnvVar represents an environment variable configuration for an app
+type AppEnvVar struct {
+	// Name is the environment variable name
+	Name string `json:"name" yaml:"name"`
+
+	// Value is the environment variable value
+	Value string `json:"value,omitempty" yaml:"value,omitempty"`
+
+	// ValueFrom is the name of an external Databricks resource that contains the value, such as a secret or a database table.
+	ValueFrom string `json:"value_from,omitempty" yaml:"value_from,omitempty"`
+}
+
 type App struct {
 	BaseResource
 	apps.App // nolint App struct also defines Id and URL field with the same json tag "id" and "url"
+	// Note: apps.App already includes GitRepository field from the SDK
 
 	// SourceCodePath is a required field used by DABs to point to Databricks app source code
 	// on local disk and to the corresponding workspace path during app deployment.
-	SourceCodePath string `json:"source_code_path"`
+	SourceCodePath string `json:"source_code_path,omitempty"`
+
+	// Config represents inline app.yaml configuration for the app.
+	// When specified, this configuration is written to an app.yaml file in the source code path during deployment.
+	// This allows users to define app configuration directly in the bundle YAML instead of maintaining a separate app.yaml file.
+	Config *AppConfig `json:"config,omitempty"`
+
+	// GitSource specifies the git reference (branch, tag, or commit) to use during deployment.
+	// This is used in conjunction with GitRepository (from apps.App) and is passed to the Deploy API.
+	GitSource *apps.GitSource `json:"git_source,omitempty"`
 
 	Permissions []AppPermission `json:"permissions,omitempty"`
 }

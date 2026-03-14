@@ -26,12 +26,16 @@ and proxies them to local SSH daemon processes.
 	var maxClients int
 	var shutdownDelay time.Duration
 	var clusterID string
+	var sessionID string
 	var version string
 	var secretScopeName string
 	var authorizedKeySecretName string
+	var serverless bool
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID")
 	cmd.MarkFlagRequired("cluster")
+	cmd.Flags().StringVar(&sessionID, "session-id", "", "Session identifier (cluster ID or serverless connection name)")
+	cmd.MarkFlagRequired("session-id")
 	cmd.Flags().StringVar(&secretScopeName, "secret-scope-name", "", "Databricks secret scope name to store SSH keys")
 	cmd.MarkFlagRequired("secret-scope-name")
 	cmd.Flags().StringVar(&authorizedKeySecretName, "authorized-key-secret-name", "", "Name of the secret containing the client public key")
@@ -40,6 +44,7 @@ and proxies them to local SSH daemon processes.
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down after no pings from clients")
 	cmd.Flags().StringVar(&version, "version", "", "Client version of the Databricks CLI")
+	cmd.Flags().BoolVar(&serverless, "serverless", false, "Enable serverless mode for Jupyter initialization")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// The server can be executed under a directory with an invalid bundle configuration.
@@ -56,6 +61,7 @@ and proxies them to local SSH daemon processes.
 		wsc := cmdctx.WorkspaceClient(ctx)
 		opts := server.ServerOptions{
 			ClusterID:               clusterID,
+			SessionID:               sessionID,
 			MaxClients:              maxClients,
 			ShutdownDelay:           shutdownDelay,
 			Version:                 version,
@@ -66,6 +72,7 @@ and proxies them to local SSH daemon processes.
 			AuthorizedKeySecretName: authorizedKeySecretName,
 			DefaultPort:             defaultServerPort,
 			PortRange:               serverPortRange,
+			Serverless:              serverless,
 		}
 		return server.Run(ctx, wsc, opts)
 	}

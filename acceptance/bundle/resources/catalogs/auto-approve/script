@@ -1,0 +1,38 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < catalog.yml.tmpl > catalog.yml
+
+CATALOG_NAME="test-catalog-${UNIQUE_NAME}"
+SCHEMA_NAME="test-schema-${UNIQUE_NAME}"
+VOLUME_NAME="test-volume-${UNIQUE_NAME}"
+
+cleanup() {
+  title "Test cleanup"
+  trace $CLI bundle destroy --auto-approve
+
+  title "Assert the catalog is deleted"
+  trace errcode $CLI catalogs get "${CATALOG_NAME}" 2>/dev/null
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Assert the catalog is created"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{full_name, comment}"
+
+title "Assert the schema is created and uses the catalog"
+trace $CLI schemas get "${CATALOG_NAME}.${SCHEMA_NAME}" | jq "{full_name, catalog_name, comment}"
+
+title "Create a volume in the schema, and add a file to it. This ensures that the
+     catalog has some data in it and deletion will fail unless force deletion
+     is enabled."
+trace $CLI volumes create "${CATALOG_NAME}" "${SCHEMA_NAME}" "${VOLUME_NAME}" MANAGED | jq "{full_name}"
+
+FILE_NAME="test-file-${UNIQUE_NAME}.txt"
+echo "Hello, world!" > $FILE_NAME
+trace $CLI fs cp "${FILE_NAME}" "dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/${VOLUME_NAME}"
+
+title "Remove the UC catalog from the resource configuration."
+trace rm catalog.yml
+
+title "Try to redeploy the bundle - should fail without --auto-approve"
+trace $CLI bundle deploy

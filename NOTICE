@@ -8,13 +8,14 @@ spf13/cobra - https://github.com/spf13/cobra
 Copyright cobra authors
 License - https://github.com/spf13/cobra/blob/main/LICENSE.txt
 
-briandowns/spinner - https://github.com/briandowns/spinner
-Copyright 2022 Brian J. Downs
-License - https://github.com/briandowns/spinner/blob/master/LICENSE
-
 go-ini/ini - https://github.com/go-ini/ini
 Copyright ini authors
 License - https://github.com/go-ini/ini/blob/main/LICENSE
+
+go-yaml/yaml - https://github.com/yaml/go-yaml
+Copyright (c) 2011-2019 Canonical Ltd
+Copyright (c) 2006-2011 Kirill Simonov
+License - https://github.com/yaml/go-yaml/blob/v3/LICENSE
 
 —--
 
@@ -73,6 +74,22 @@ License - https://github.com/manifoldco/promptui/blob/master/LICENSE.md
 
 This Software contains code from the following open source projects, licensed under the MIT license:
 
+charmbracelet/bubbles - https://github.com/charmbracelet/bubbles
+Copyright (c) 2020-2025 Charmbracelet, Inc
+License - https://github.com/charmbracelet/bubbles/blob/master/LICENSE
+
+charmbracelet/bubbletea - https://github.com/charmbracelet/bubbletea
+Copyright (c) 2020-2025 Charmbracelet, Inc
+License - https://github.com/charmbracelet/bubbletea/blob/master/LICENSE
+
+charmbracelet/huh - https://github.com/charmbracelet/huh
+Copyright (c) 2023 Charmbracelet, Inc.
+License - https://github.com/charmbracelet/huh/blob/main/LICENSE
+
+charmbracelet/lipgloss - https://github.com/charmbracelet/lipgloss
+Copyright (c) 2021-2025 Charmbracelet, Inc
+License - https://github.com/charmbracelet/lipgloss/blob/master/LICENSE
+
 fatih/color - https://github.com/fatih/color
 Copyright (c) 2013 Fatih Arslan
 License - https://github.com/fatih/color/blob/main/LICENSE.md
@@ -122,3 +139,8 @@ https://github.com/darccio/mergo/blob/master/LICENSE
 https://github.com/gorilla/mux
 Copyright (c) 2023 The Gorilla Authors. All rights reserved.
 https://github.com/gorilla/mux/blob/main/LICENSE
+
+go-yaml/yaml - https://github.com/yaml/go-yaml
+Copyright (c) 2011-2019 Canonical Ltd
+Copyright (c) 2006-2011 Kirill Simonov
+License - https://github.com/yaml/go-yaml/blob/v3/LICENSE

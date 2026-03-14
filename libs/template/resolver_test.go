@@ -1,7 +1,6 @@
 package template
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -15,13 +14,13 @@ func TestTemplateResolverBothTagAndBranch(t *testing.T) {
 		Branch: "branch",
 	}
 
-	_, err := r.Resolve(context.Background())
+	_, err := r.Resolve(t.Context())
 	assert.EqualError(t, err, "only one of tag or branch can be specified")
 }
 
 func TestTemplateResolverErrorsWhenPromptingIsNotSupported(t *testing.T) {
 	r := Resolver{}
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 
 	_, err := r.Resolve(ctx)
 	assert.EqualError(t, err, "prompting is not supported. Please specify the path, name or URL of the template to use")
@@ -38,7 +37,7 @@ func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 				TemplatePathOrUrl: name,
 			}
 
-			tmpl, err := r.Resolve(context.Background())
+			tmpl, err := r.Resolve(t.Context())
 			require.NoError(t, err)
 
 			assert.Equal(t, &builtinReader{name: name}, tmpl.Reader)
@@ -52,7 +51,7 @@ func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 			ConfigFile:        "/config/file",
 		}
 
-		tmpl, err := r.Resolve(context.Background())
+		tmpl, err := r.Resolve(t.Context())
 		require.NoError(t, err)
 
 		// Assert reader and writer configuration
@@ -69,7 +68,7 @@ func TestTemplateResolverForCustomUrl(t *testing.T) {
 		ConfigFile:        "/config/file",
 	}
 
-	tmpl, err := r.Resolve(context.Background())
+	tmpl, err := r.Resolve(t.Context())
 	require.NoError(t, err)
 
 	assert.Equal(t, Custom, tmpl.name)
@@ -89,7 +88,7 @@ func TestTemplateResolverForCustomPath(t *testing.T) {
 		ConfigFile:        "/config/file",
 	}
 
-	tmpl, err := r.Resolve(context.Background())
+	tmpl, err := r.Resolve(t.Context())
 	require.NoError(t, err)
 
 	assert.Equal(t, Custom, tmpl.name)
@@ -102,9 +101,32 @@ func TestTemplateResolverForCustomPath(t *testing.T) {
 }
 
 func TestBundleInitIsRepoUrl(t *testing.T) {
-	assert.True(t, isRepoUrl("git@github.com:databricks/cli.git"))
-	assert.True(t, isRepoUrl("https://github.com/databricks/cli.git"))
+	assert.True(t, IsRepoUrl("git@github.com:databricks/cli.git"))
+	assert.True(t, IsRepoUrl("https://github.com/databricks/cli.git"))
 
-	assert.False(t, isRepoUrl("./local"))
-	assert.False(t, isRepoUrl("foo"))
+	assert.False(t, IsRepoUrl("./local"))
+	assert.False(t, IsRepoUrl("foo"))
+}
+
+func TestResolveReader(t *testing.T) {
+	t.Run("builtin template", func(t *testing.T) {
+		reader, isGit := ResolveReader("default-python", "", "")
+		assert.False(t, isGit)
+		assert.Equal(t, &builtinReader{name: "default-python"}, reader)
+	})
+
+	t.Run("git URL", func(t *testing.T) {
+		reader, isGit := ResolveReader("https://github.com/example/repo", "/template", "v1.0")
+		assert.True(t, isGit)
+		gitReader := reader.(*gitReader)
+		assert.Equal(t, "https://github.com/example/repo", gitReader.gitUrl)
+		assert.Equal(t, "/template", gitReader.templateDir)
+		assert.Equal(t, "v1.0", gitReader.ref)
+	})
+
+	t.Run("local path", func(t *testing.T) {
+		reader, isGit := ResolveReader("/local/path", "", "")
+		assert.False(t, isGit)
+		assert.Equal(t, "/local/path", reader.(*localReader).path)
+	})
 }

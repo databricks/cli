@@ -1,7 +1,6 @@
 package config_tests
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -14,7 +13,7 @@ import (
 )
 
 func TestIncludeInvalid(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 	b, err := bundle.Load(ctx, "./include_invalid")
 	require.NoError(t, err)

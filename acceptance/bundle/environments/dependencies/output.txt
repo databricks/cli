@@ -23,6 +23,8 @@ Deployment complete!
       "client": "1",
       "dependencies": [
         "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-r \"/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt\"",
+        "-r '/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt'",
         "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
         "-i http://myindexurl.com",
         "--index-url http://myindexurl.com",
@@ -88,6 +90,8 @@ Deployment complete!
       "client": "1",
       "dependencies": [
         "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
+        "-r \"/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt\"",
+        "-r '/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt'",
         "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
         "-i http://myindexurl.com",
         "--index-url http://myindexurl.com",

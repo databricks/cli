@@ -31,19 +31,19 @@
       "changes": {
         "description": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty",
           "remote": ""
         },
         "name": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "immutable",
           "old": "[ENDPOINT_NAME_1]",
           "new": "[ENDPOINT_NAME_2]",
           "remote": "[ENDPOINT_NAME_1]"
         },
         "route_optimized": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty",
           "remote": false
         }
       }

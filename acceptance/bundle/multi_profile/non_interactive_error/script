@@ -1,0 +1,17 @@
+# Set up .databrickscfg with two workspace profiles for the same host.
+envsubst < .databrickscfg > out && mv out .databrickscfg
+
+cat > databricks.yml << EOF
+bundle:
+  name: multi-profile-non-interactive
+
+workspace:
+  host: $DATABRICKS_HOST
+EOF
+
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# Multiple workspace profiles, non-interactive → error with guidance.
+errcode trace $CLI bundle validate

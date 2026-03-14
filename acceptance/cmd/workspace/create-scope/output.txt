@@ -17,6 +17,8 @@ Warning: unknown field: keyvault_metadata
   in (inline):4:4
 
 
+>>> [CLI] secrets delete-scope xxxxxxxx-xxx
+
 >>> [CLI] secrets create-scope --scope-backend-type AZURE_KEYVAULT --json {
   "scope": "xxxxxxxx-xxx",
   "scope_backend_type": "AZURE_KEYVAULT"

@@ -1,7 +1,6 @@
 package github
 
 import (
-	"context"
 	"fmt"
 	"maps"
 	"net/http"
@@ -24,7 +23,7 @@ func TestRepositories(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithApiOverride(ctx, server.URL)
 
 	r := NewRepositoryCache("databrickslabs", t.TempDir())
@@ -74,7 +73,7 @@ func TestRepositoriesPagination(t *testing.T) {
 	}))
 	defer server.Close()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithApiOverride(ctx, server.URL)
 
 	repos, err := getRepositories(ctx, "databrickslabs")

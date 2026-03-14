@@ -1,0 +1,21 @@
+CATALOG_NAME="main"
+SCHEMA_NAME="default"
+VOLUME_NAME="fs-cp-test-${UNIQUE_NAME}"
+
+cleanup() {
+  $CLI volumes delete "${CATALOG_NAME}.${SCHEMA_NAME}.${VOLUME_NAME}" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# Create volume for testing.
+$CLI volumes create "${CATALOG_NAME}" "${SCHEMA_NAME}" "${VOLUME_NAME}" MANAGED >/dev/null
+
+# Create parent directory.
+$CLI fs mkdir dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/${VOLUME_NAME}
+
+# Recursive directory copy (output sorted for deterministic ordering).
+trace $CLI fs cp -r localdir dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/${VOLUME_NAME}/uploaded-dir 2>&1 | sort
+
+# Verify files were uploaded correctly.
+trace $CLI fs cat dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/${VOLUME_NAME}/uploaded-dir/file1.txt
+trace $CLI fs cat dbfs:/Volumes/${CATALOG_NAME}/${SCHEMA_NAME}/${VOLUME_NAME}/uploaded-dir/file2.txt

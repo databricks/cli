@@ -28,11 +28,9 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	initVariableFlag(cmd)
 	cmd.AddCommand(newDeployCommand())
 	cmd.AddCommand(newDestroyCommand())
-	cmd.AddCommand(newLaunchCommand())
 	cmd.AddCommand(newRunCommand())
 	cmd.AddCommand(newSchemaCommand())
 	cmd.AddCommand(newSyncCommand())
-	cmd.AddCommand(newTestCommand())
 	cmd.AddCommand(newValidateCommand())
 	cmd.AddCommand(newInitCommand())
 	cmd.AddCommand(newSummaryCommand())
@@ -41,5 +39,6 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 	cmd.AddCommand(deployment.NewDeploymentCommand())
 	cmd.AddCommand(newOpenCommand())
 	cmd.AddCommand(newPlanCommand())
+	cmd.AddCommand(newConfigRemoteSyncCommand())
 	return cmd
 }

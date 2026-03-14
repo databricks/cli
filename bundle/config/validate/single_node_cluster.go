@@ -44,6 +44,13 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 		return false
 	}
 
+	// If is_single_node is set to true, the cluster is correctly configured automatically.
+	// No need to show the warning.
+	isSingleNode, ok := v.Get("is_single_node").AsBool()
+	if ok && isSingleNode {
+		return false
+	}
+
 	// Convenient type that contains the common fields from compute.ClusterSpec and
 	// pipelines.PipelineCluster that we are interested in.
 	type ClusterConf struct {

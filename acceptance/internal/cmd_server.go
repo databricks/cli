@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"strings"
@@ -27,7 +26,7 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 		// Change current working directory to match the callsite.
 		defer chdir(t, q.Get("cwd"))()
 
-		c := testcli.NewRunner(t, context.Background(), args...)
+		c := testcli.NewRunner(t, t.Context(), args...)
 		c.Verbose = false
 		stdout, stderr, err := c.Run()
 		result := map[string]any{
@@ -45,7 +44,7 @@ func StartCmdServer(t *testing.T) *testserver.Server {
 }
 
 // chdir variant that is intended to be used with defer so that it can switch back before function ends.
-// This is unlike testutil.Chdir which switches back only when tests end.
+// This is unlike t.Chdir which switches back only when tests end.
 func chdir(t *testing.T, cwd string) func() {
 	require.NotEmpty(t, cwd)
 	prevDir, err := os.Getwd()

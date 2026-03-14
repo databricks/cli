@@ -1,0 +1,55 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    job_one:
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/job1
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+
+    job_two:
+      max_concurrent_runs: 2
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/job2
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+
+  clusters:
+    test_cluster:
+      cluster_name: cluster-$UNIQUE_NAME
+      spark_version: $DEFAULT_SPARK_VERSION
+      node_type_id: $NODE_TYPE_ID
+      num_workers: 1
+
+  experiments:
+    test_experiment:
+      name: /Users/$CURRENT_USER_NAME/experiment-$UNIQUE_NAME
+
+  registered_models:
+    test_model:
+      name: model_$UNIQUE_NAME
+      catalog_name: main
+      schema_name: default
+
+  volumes:
+    test_volume:
+      name: volume_$UNIQUE_NAME
+      catalog_name: main
+      schema_name: default
+      volume_type: MANAGED
+
+  sql_warehouses:
+    test_warehouse:
+      name: warehouse-$UNIQUE_NAME
+      cluster_size: 2X-Small

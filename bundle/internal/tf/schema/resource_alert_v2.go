@@ -33,9 +33,9 @@ type ResourceAlertV2EvaluationThresholdColumn struct {
 }
 
 type ResourceAlertV2EvaluationThresholdValue struct {
-	BoolValue   bool   `json:"bool_value,omitempty"`
-	DoubleValue int    `json:"double_value,omitempty"`
-	StringValue string `json:"string_value,omitempty"`
+	BoolValue   bool    `json:"bool_value,omitempty"`
+	DoubleValue float64 `json:"double_value,omitempty"`
+	StringValue string  `json:"string_value,omitempty"`
 }
 
 type ResourceAlertV2EvaluationThreshold struct {
@@ -51,6 +51,10 @@ type ResourceAlertV2Evaluation struct {
 	Source             *ResourceAlertV2EvaluationSource       `json:"source,omitempty"`
 	State              string                                 `json:"state,omitempty"`
 	Threshold          *ResourceAlertV2EvaluationThreshold    `json:"threshold,omitempty"`
+}
+
+type ResourceAlertV2ProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceAlertV2RunAs struct {
@@ -75,6 +79,8 @@ type ResourceAlertV2 struct {
 	LifecycleState    string                         `json:"lifecycle_state,omitempty"`
 	OwnerUserName     string                         `json:"owner_user_name,omitempty"`
 	ParentPath        string                         `json:"parent_path,omitempty"`
+	ProviderConfig    *ResourceAlertV2ProviderConfig `json:"provider_config,omitempty"`
+	PurgeOnDelete     bool                           `json:"purge_on_delete,omitempty"`
 	QueryText         string                         `json:"query_text"`
 	RunAs             *ResourceAlertV2RunAs          `json:"run_as,omitempty"`
 	RunAsUserName     string                         `json:"run_as_user_name,omitempty"`

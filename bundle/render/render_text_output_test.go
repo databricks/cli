@@ -2,7 +2,6 @@ package render
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"testing"
@@ -27,7 +26,7 @@ import (
 func TestRenderSummaryHeaderTemplate_nilBundle(t *testing.T) {
 	writer := &bytes.Buffer{}
 
-	err := renderSummaryHeaderTemplate(context.Background(), writer, nil)
+	err := renderSummaryHeaderTemplate(t.Context(), writer, nil)
 	require.NoError(t, err)
 
 	assert.Equal(t, "", writer.String())
@@ -115,7 +114,7 @@ func TestRenderDiagnosticsSummary(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := logdiag.InitContext(context.Background())
+			ctx := logdiag.InitContext(t.Context())
 			logdiag.SetCollect(ctx, true) // Collect diagnostics instead of outputting to stderr
 
 			// Simulate diagnostic counts by logging fake diagnostics
@@ -276,12 +275,12 @@ func TestRenderDiagnostics(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			writer := &bytes.Buffer{}
+			ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 
-			err := cmdio.RenderDiagnostics(writer, tc.diags)
+			err := cmdio.RenderDiagnostics(ctx, tc.diags)
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.expected, writer.String())
+			assert.Equal(t, tc.expected, stderr.String())
 		})
 	}
 }
@@ -294,7 +293,7 @@ func TestRenderSummaryTemplate_nilBundle(t *testing.T) {
 		color.NoColor = oldNoColor
 	}()
 
-	ctx := logdiag.InitContext(context.Background())
+	ctx := logdiag.InitContext(t.Context())
 	writer := &bytes.Buffer{}
 
 	err := renderSummaryHeaderTemplate(ctx, writer, nil)
@@ -307,7 +306,7 @@ func TestRenderSummaryTemplate_nilBundle(t *testing.T) {
 }
 
 func TestRenderSummary(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Disable colors for consistent test output
 	oldNoColor := color.NoColor

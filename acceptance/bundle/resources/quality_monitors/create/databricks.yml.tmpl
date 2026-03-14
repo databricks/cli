@@ -1,0 +1,11 @@
+bundle:
+  name: quality-monitor-update-$UNIQUE_NAME
+
+resources:
+  quality_monitors:
+    monitor1:
+      table_name: main.qm_test_$UNIQUE_NAME.test_table
+      assets_dir: /Workspace/Users/$CURRENT_USER_NAME/monitor_assets_$UNIQUE_NAME
+      output_schema_name: main.qm_test_$UNIQUE_NAME
+      snapshot: {}
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID

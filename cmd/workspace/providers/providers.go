@@ -102,7 +102,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -300,9 +300,11 @@ func newList() *cobra.Command {
 	cmd.Long = `List providers.
 
   Gets an array of available authentication providers. The caller must either be
-  a metastore admin or the owner of the providers. Providers not owned by the
-  caller are not included in the response. There is no guarantee of a specific
-  ordering of the elements in the array.`
+  a metastore admin, have the **USE_PROVIDER** privilege on the providers, or be
+  the owner of the providers. Providers not owned by the caller and for which
+  the caller does not have the **USE_PROVIDER** privilege are not included in
+  the response. There is no guarantee of a specific ordering of the elements in
+  the array.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -513,7 +515,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

@@ -2,3 +2,6 @@ Cloud = false
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 Ignore = [".databricks"]
+
+# All tests explicitly set DATABRICKS_BUNDLE_ENGINE, so there is no need for matrix testing
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

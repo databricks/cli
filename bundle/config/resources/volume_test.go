@@ -1,7 +1,6 @@
 package resources
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -11,7 +10,7 @@ import (
 )
 
 func TestVolumeNotFound(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockVolumesAPI().On("Read", mock.Anything, mock.Anything).Return(nil, &apierr.APIError{

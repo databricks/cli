@@ -1,0 +1,41 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.catalogs.grants_catalog": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "comment": "Test catalog for grants",
+          "name": "catalog_grants_[UNIQUE_NAME]"
+        }
+      }
+    },
+    "resources.catalogs.grants_catalog.grants": {
+      "depends_on": [
+        {
+          "node": "resources.catalogs.grants_catalog",
+          "label": "${resources.catalogs.grants_catalog.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "full_name": "",
+          "grants": [
+            {
+              "principal": "deco-test-user@databricks.com",
+              "privileges": [
+                "CREATE_SCHEMA",
+                "USE_CATALOG"
+              ]
+            }
+          ]
+        },
+        "vars": {
+          "full_name": "${resources.catalogs.grants_catalog.id}"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,60 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the catalog is created
+>>> [CLI] catalogs get test-catalog-[UNIQUE_NAME]
+{
+  "full_name": "test-catalog-[UNIQUE_NAME]",
+  "comment": "This catalog was created from DABs"
+}
+
+=== Assert the schema is created and uses the catalog
+>>> [CLI] schemas get test-catalog-[UNIQUE_NAME].test-schema-[UNIQUE_NAME]
+{
+  "full_name": "test-catalog-[UNIQUE_NAME].test-schema-[UNIQUE_NAME]",
+  "catalog_name": "test-catalog-[UNIQUE_NAME]",
+  "comment": "This schema is in the test catalog"
+}
+
+=== Create a volume in the schema, and add a file to it. This ensures that the
+     catalog has some data in it and deletion will fail unless force deletion
+     is enabled.
+>>> [CLI] volumes create test-catalog-[UNIQUE_NAME] test-schema-[UNIQUE_NAME] test-volume-[UNIQUE_NAME] MANAGED
+{
+  "full_name": "test-catalog-[UNIQUE_NAME].test-schema-[UNIQUE_NAME].test-volume-[UNIQUE_NAME]"
+}
+
+>>> [CLI] fs cp test-file-[UNIQUE_NAME].txt dbfs:/Volumes/test-catalog-[UNIQUE_NAME]/test-schema-[UNIQUE_NAME]/test-volume-[UNIQUE_NAME]
+test-file-[UNIQUE_NAME].txt -> dbfs:/Volumes/test-catalog-[UNIQUE_NAME]/test-schema-[UNIQUE_NAME]/test-volume-[UNIQUE_NAME]/test-file-[UNIQUE_NAME].txt
+
+=== Remove the UC catalog from the resource configuration.
+>>> rm catalog.yml
+
+=== Try to redeploy the bundle - should fail without --auto-approve
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Error: cannot plan resources.schemas.foo: cannot resolve "${resources.catalogs.bar.name}": internal error: resources.catalogs.bar: action is "delete" missing new_state
+
+Error: planning failed
+
+
+=== Test cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.catalogs.bar
+  delete resources.schemas.foo
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+=== Assert the catalog is deleted
+Exit code: 1

@@ -1,0 +1,5 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/test-app/deployments",
+  "body": {}
+}

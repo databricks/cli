@@ -88,7 +88,7 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 		n.basePath = *dirPath
 	}
 
-	objects, err := n.w.Workspace.RecursiveList(ctx, *dirPath)
+	objects, err := n.recursiveListWithExclusions(ctx, *dirPath)
 	if err != nil {
 		return err
 	}
@@ -111,6 +111,37 @@ func (n *Downloader) MarkDirectoryForDownload(ctx context.Context, dirPath *stri
 
 	*dirPath = rel
 	return nil
+}
+
+// recursiveListWithExclusions recursively lists all files in a directory,
+// but skips recursing into directories that should be excluded (like node_modules).
+func (n *Downloader) recursiveListWithExclusions(ctx context.Context, dirPath string) ([]workspace.ObjectInfo, error) {
+	var result []workspace.ObjectInfo
+
+	objects, err := n.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+		Path: dirPath,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, obj := range objects {
+		if obj.ObjectType == workspace.ObjectTypeDirectory {
+			if path.Base(obj.Path) == "node_modules" {
+				continue
+			}
+
+			subObjects, err := n.recursiveListWithExclusions(ctx, obj.Path)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, subObjects...)
+		} else {
+			result = append(result, obj)
+		}
+	}
+
+	return result, nil
 }
 
 type workspaceStatus struct {
@@ -197,10 +228,10 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 		info, err := os.Stat(targetPath)
 		if err == nil {
 			if info.IsDir() {
-				return fmt.Errorf("%s is a directory", targetPath)
+				return fmt.Errorf("%s is a directory", filepath.ToSlash(targetPath))
 			}
 			if !force {
-				return fmt.Errorf("%s already exists. Use --force to overwrite", targetPath)
+				return fmt.Errorf("%s already exists. Use --force to overwrite", filepath.ToSlash(targetPath))
 			}
 		}
 	}
@@ -230,7 +261,7 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 				return err
 			}
 
-			cmdio.LogString(errCtx, "File successfully saved to "+targetPath)
+			cmdio.LogString(errCtx, "File successfully saved to "+filepath.ToSlash(targetPath))
 			return reader.Close()
 		})
 	}

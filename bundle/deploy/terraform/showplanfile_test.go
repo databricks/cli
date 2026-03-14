@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/deployplan"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestPopulatePlan(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	changes := []*tfjson.ResourceChange{
 		{
 			Type: "databricks_pipeline",
@@ -42,7 +41,7 @@ func TestPopulatePlan(t *testing.T) {
 		},
 	}
 
-	plan := deployplan.NewPlan()
+	plan := deployplan.NewPlanTerraform()
 	populatePlan(ctx, plan, changes)
 
 	actions := plan.GetActions()

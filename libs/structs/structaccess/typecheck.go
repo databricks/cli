@@ -11,39 +11,50 @@ import (
 
 // ValidateByString reports whether the given path string is valid for the provided type.
 // It returns nil if the path resolves fully, or an error indicating where resolution failed.
-// This is a convenience function that parses the path string and calls Validate.
+// This is a convenience function that parses the path string and calls ValidatePattern.
+// Wildcards are allowed in the path.
 func ValidateByString(t reflect.Type, path string) error {
 	if path == "" {
 		return nil
 	}
 
-	pathNode, err := structpath.Parse(path)
+	patternNode, err := structpath.ParsePattern(path)
 	if err != nil {
 		return err
 	}
 
-	return Validate(t, pathNode)
+	return ValidatePattern(t, patternNode)
 }
 
-// Validate reports whether the given path is valid for the provided type.
+// ValidatePath reports whether the given path is valid for the provided type.
 // It returns nil if the path resolves fully, or an error indicating where resolution failed.
-func Validate(t reflect.Type, path *structpath.PathNode) error {
+// Paths cannot contain wildcards.
+func ValidatePath(t reflect.Type, path *structpath.PathNode) error {
+	// PathNode is type definition of PatternNode, so we can cast directly
+	return ValidatePattern(t, (*structpath.PatternNode)(path))
+}
+
+// ValidatePattern reports whether the given pattern path is valid for the provided type.
+// It returns nil if the path resolves fully, or an error indicating where resolution failed.
+// Patterns may include wildcards ([*] and .*).
+func ValidatePattern(t reflect.Type, path *structpath.PatternNode) error {
 	if path.IsRoot() {
 		return nil
 	}
+	return validateNodeSlice(t, path.AsSlice())
+}
 
-	// Convert path to slice for easier iteration
-	pathSegments := path.AsSlice()
-
+// validateNodeSlice is the implementation for ValidatePattern.
+func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 	cur := t
-	for _, node := range pathSegments {
+	for _, node := range nodes {
 		// Always dereference pointers at the type level.
 		for cur.Kind() == reflect.Pointer {
 			cur = cur.Elem()
 		}
 
+		// Index access: slice/array
 		if _, isIndex := node.Index(); isIndex {
-			// Index access: slice/array
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
 				return fmt.Errorf("%s: cannot index %s", node.String(), kind)
@@ -52,9 +63,21 @@ func Validate(t reflect.Type, path *structpath.PathNode) error {
 			continue
 		}
 
-		// Handle wildcards
-		if node.DotStar() || node.BracketStar() {
-			return fmt.Errorf("wildcards not supported: %s", path.String())
+		// Handle wildcards - treat like index/key access
+		if node.BracketStar() {
+			kind := cur.Kind()
+			if kind != reflect.Slice && kind != reflect.Array {
+				return fmt.Errorf("%s: cannot use [*] on %s", node.String(), kind)
+			}
+			cur = cur.Elem()
+			continue
+		}
+		if node.DotStar() {
+			if cur.Kind() != reflect.Map {
+				return fmt.Errorf("%s: cannot use .* on %s", node.String(), cur.Kind())
+			}
+			cur = cur.Elem()
+			continue
 		}
 
 		// Handle key-value selector: validates that we can index the slice/array

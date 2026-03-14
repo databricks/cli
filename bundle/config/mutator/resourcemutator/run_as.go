@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 type setRunAs struct{}
@@ -110,16 +111,6 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		))
 	}
 
-	// Alerts do not support run_as in the API.
-	if len(b.Config.Resources.Alerts) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"alerts",
-			b.Config.GetLocation("resources.alerts"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
-
 	// Apps do not support run_as in the API.
 	if len(b.Config.Resources.Apps) > 0 {
 		diags = diags.Extend(reportRunAsNotSupported(
@@ -169,6 +160,24 @@ func setRunAsForPipelines(b *bundle.Bundle) {
 	}
 }
 
+func setRunAsForAlerts(b *bundle.Bundle) {
+	runAs := b.Config.RunAs
+	if runAs == nil {
+		return
+	}
+
+	for i := range b.Config.Resources.Alerts {
+		alert := b.Config.Resources.Alerts[i]
+		if alert.RunAs != nil {
+			continue
+		}
+		alert.RunAs = &sql.AlertV2RunAs{
+			ServicePrincipalName: runAs.ServicePrincipalName,
+			UserName:             runAs.UserName,
+		}
+	}
+}
+
 // Legacy behavior of run_as for DLT pipelines. Available under the experimental.use_run_as_legacy flag.
 // Only available to unblock customers stuck due to breaking changes in https://github.com/databricks/cli/pull/1233
 func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
@@ -192,7 +201,7 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 				(runAs.UserName != "" && p.UserName == runAs.UserName)
 		})
 		pipeline.Permissions = append(pipeline.Permissions, resources.PipelinePermission{
-			Level:                "IS_OWNER",
+			Level:                pipelines.PipelinePermissionLevelIsOwner,
 			ServicePrincipalName: runAs.ServicePrincipalName,
 			UserName:             runAs.UserName,
 		})
@@ -234,5 +243,6 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	setRunAsForJobs(b)
 	setRunAsForPipelines(b)
+	setRunAsForAlerts(b)
 	return nil
 }

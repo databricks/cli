@@ -1,0 +1,19 @@
+resources:
+  jobs:
+    job_two:
+      max_concurrent_runs: 2
+      tasks:
+        - task_key: run_pipeline
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/1
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - task_key: etl_pipeline
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/2
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 2

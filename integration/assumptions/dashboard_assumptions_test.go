@@ -88,11 +88,12 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 		current, err := convert.FromTyped(currentDashboard, dyn.NilValue)
 		require.NoError(t, err)
 
-		// Collect updated paths.
+		// Collect updated and deleted paths.
 		var updatedFieldPaths []string
+		var deletedFieldPaths []string
 		_, err = merge.Override(previous, current, merge.OverrideVisitor{
 			VisitDelete: func(basePath dyn.Path, left dyn.Value) error {
-				assert.Fail(t, "unexpected delete operation")
+				deletedFieldPaths = append(deletedFieldPaths, basePath.String())
 				return nil
 			},
 			VisitInsert: func(basePath dyn.Path, right dyn.Value) (dyn.Value, error) {
@@ -111,5 +112,10 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 			"etag",
 			"update_time",
 		}, updatedFieldPaths)
+
+		// The warehouse_id field is cleared after workspace import.
+		assert.ElementsMatch(t, []string{
+			"warehouse_id",
+		}, deletedFieldPaths)
 	}
 }

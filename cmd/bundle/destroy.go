@@ -4,15 +4,14 @@ package bundle
 
 import (
 	"errors"
-	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 func newDestroyCommand() *cobra.Command {
@@ -47,11 +46,13 @@ Typical use cases:
 }
 
 func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceDestroy bool) error {
-	// we require auto-approve for non tty terminals since interactive consent
-	// is not possible
-	if !term.IsTerminal(int(os.Stderr.Fd())) && !autoApprove {
-		return errors.New("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
+	// We require auto-approve for non-interactive terminals since prompts are not possible.
+	if !cmdio.IsPromptSupported(cmd.Context()) && !autoApprove {
+		return errors.New("please specify --auto-approve since terminal does not support interactive prompts")
 	}
+
+	// Check if context is already initialized (e.g., when called from apps delete override)
+	skipInitContext := logdiag.IsSetup(cmd.Context())
 
 	opts := utils.ProcessOptions{
 		InitFunc: func(b *bundle.Bundle) {
@@ -61,8 +62,9 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 			// If `--auto-approve`` is specified, we skip confirmation checks
 			b.AutoApprove = autoApprove
 		},
-		AlwaysPull: true,
-		// Do we need initialize phase here?
+		// Skip context initialization if already initialized by parent command
+		SkipInitContext: skipInitContext,
+		AlwaysPull:      true,
 	}
 
 	b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)

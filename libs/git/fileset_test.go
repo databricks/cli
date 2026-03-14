@@ -11,7 +11,7 @@ import (
 )
 
 func testFileSetAll(t *testing.T, worktreeRoot, root string) {
-	fileSet, err := NewFileSet(vfs.MustNew(worktreeRoot), vfs.MustNew(root))
+	fileSet, err := NewFileSet(t.Context(), vfs.MustNew(worktreeRoot), vfs.MustNew(root))
 	require.NoError(t, err)
 	files, err := fileSet.Files()
 	require.NoError(t, err)
@@ -43,7 +43,7 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	// Test what happens if the root directory can be simplified.
 	// Path simplification is done by most filepath functions.
 	// This should yield the same result as above test.
-	fileSet, err := NewFileSetAtRoot(vfs.MustNew("./testdata/../testdata"))
+	fileSet, err := NewFileSetAtRoot(t.Context(), vfs.MustNew("./testdata/../testdata"))
 	require.NoError(t, err)
 	files, err := fileSet.Files()
 	require.NoError(t, err)

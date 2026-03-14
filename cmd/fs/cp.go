@@ -9,94 +9,141 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
-type copy struct {
-	overwrite bool
-	recursive bool
+// Default number of concurrent file copy operations. This is a conservative
+// default that should be sufficient to fully utilize the available bandwidth
+// in most cases.
+const defaultConcurrency = 8
 
-	ctx          context.Context
+// errInvalidConcurrency is returned when the value of the concurrency
+// flag is invalid.
+var errInvalidConcurrency = errors.New("--concurrency must be at least 1")
+
+type copy struct {
+	overwrite   bool
+	recursive   bool
+	concurrency int
+
 	sourceFiler  filer.Filer
 	targetFiler  filer.Filer
 	sourceScheme string
 	targetScheme string
+
+	mu sync.Mutex // protect output from concurrent writes
 }
 
-func (c *copy) cpWriteCallback(sourceDir, targetDir string) fs.WalkDirFunc {
-	return func(sourcePath string, d fs.DirEntry, err error) error {
+// cpDirToDir recursively copies the content of a directory to another
+// directory.
+//
+// There is no guarantee on the order in which the files are copied.
+//
+// The method does not take care of retrying on error; this is considered to
+// be the responsibility of the Filer implementation. If a file copy fails,
+// the error is returned and the other copies are cancelled.
+func (c *copy) cpDirToDir(ctx context.Context, sourceDir, targetDir string) error {
+	if !c.recursive {
+		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
+	}
+
+	// Create a cancellable context purely for the purpose of having a way to
+	// cancel the goroutines in case of error walking the directory.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Pool of workers to process copy operations in parallel. The created
+	// context is the real context for this operation. It is shared by the
+	// walking function and the goroutines and can be cancelled manually
+	// by calling the cancel() function of its parent context.
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(c.concurrency)
+
+	// Walk the source directory, queueing file copy operations for processing.
+	sourceFs := filer.NewFS(ctx, c.sourceFiler)
+	err := fs.WalkDir(sourceFs, sourceDir, func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// Compute path relative to the target directory
+		// Compute path relative to the source directory.
 		relPath, err := filepath.Rel(sourceDir, sourcePath)
 		if err != nil {
 			return err
 		}
 		relPath = filepath.ToSlash(relPath)
 
-		// Compute target path for the file
+		// Compute target path for the file.
 		targetPath := path.Join(targetDir, relPath)
 
-		// create directory and return early
+		// Create the directory synchronously. This must happen before files
+		// are copied into it, and WalkDir guarantees directories are visited
+		// before their contents.
 		if d.IsDir() {
-			return c.targetFiler.Mkdir(c.ctx, targetPath)
+			return c.targetFiler.Mkdir(ctx, targetPath)
 		}
 
-		return c.cpFileToFile(sourcePath, targetPath)
+		g.Go(func() error {
+			// Goroutines are queued and may start after the context is already
+			// cancelled (e.g. a prior copy failed). This check aims to avoid
+			// starting work that will inevitably fail.
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return c.cpFileToFile(ctx, sourcePath, targetPath)
+		})
+		return nil
+	})
+	if err != nil {
+		cancel()     // cancel the goroutines
+		_ = g.Wait() // wait for the goroutines to finish
+		return err   // return the "real" error that led to cancellation
 	}
+	return g.Wait()
 }
 
-func (c *copy) cpDirToDir(sourceDir, targetDir string) error {
-	if !c.recursive {
-		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
-	}
-
-	sourceFs := filer.NewFS(c.ctx, c.sourceFiler)
-	return fs.WalkDir(sourceFs, sourceDir, c.cpWriteCallback(sourceDir, targetDir))
-}
-
-func (c *copy) cpFileToDir(sourcePath, targetDir string) error {
+func (c *copy) cpFileToDir(ctx context.Context, sourcePath, targetDir string) error {
 	fileName := filepath.Base(sourcePath)
 	targetPath := path.Join(targetDir, fileName)
 
-	return c.cpFileToFile(sourcePath, targetPath)
+	return c.cpFileToFile(ctx, sourcePath, targetPath)
 }
 
-func (c *copy) cpFileToFile(sourcePath, targetPath string) error {
+func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string) error {
 	// Get reader for file at source path
-	r, err := c.sourceFiler.Read(c.ctx, sourcePath)
+	r, err := c.sourceFiler.Read(ctx, sourcePath)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 
 	if c.overwrite {
-		err = c.targetFiler.Write(c.ctx, targetPath, r, filer.OverwriteIfExists)
+		err = c.targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
 		if err != nil {
 			return err
 		}
 	} else {
-		err = c.targetFiler.Write(c.ctx, targetPath, r)
+		err = c.targetFiler.Write(ctx, targetPath, r)
 		// skip if file already exists
 		if err != nil && errors.Is(err, fs.ErrExist) {
-			return c.emitFileSkippedEvent(sourcePath, targetPath)
+			return c.emitFileSkippedEvent(ctx, sourcePath, targetPath)
 		}
 		if err != nil {
 			return err
 		}
 	}
-	return c.emitFileCopiedEvent(sourcePath, targetPath)
+	return c.emitFileCopiedEvent(ctx, sourcePath, targetPath)
 }
 
 // TODO: emit these events on stderr
 // TODO: add integration tests for these events
-func (c *copy) emitFileSkippedEvent(sourcePath, targetPath string) error {
+func (c *copy) emitFileSkippedEvent(ctx context.Context, sourcePath, targetPath string) error {
 	fullSourcePath := sourcePath
 	if c.sourceScheme != "" {
 		fullSourcePath = path.Join(c.sourceScheme+":", sourcePath)
@@ -109,10 +156,12 @@ func (c *copy) emitFileSkippedEvent(sourcePath, targetPath string) error {
 	event := newFileSkippedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
 
-	return cmdio.RenderWithTemplate(c.ctx, event, "", template)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return cmdio.RenderWithTemplate(ctx, event, "", template)
 }
 
-func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
+func (c *copy) emitFileCopiedEvent(ctx context.Context, sourcePath, targetPath string) error {
 	fullSourcePath := sourcePath
 	if c.sourceScheme != "" {
 		fullSourcePath = path.Join(c.sourceScheme+":", sourcePath)
@@ -125,7 +174,9 @@ func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
 	event := newFileCopiedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}}\n"
 
-	return cmdio.RenderWithTemplate(c.ctx, event, "", template)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return cmdio.RenderWithTemplate(ctx, event, "", template)
 }
 
 // hasTrailingDirSeparator checks if a path ends with a directory separator.
@@ -153,13 +204,20 @@ func newCpCommand() *cobra.Command {
 	  When copying a file, if TARGET_PATH is a directory, the file will be created
 	  inside the directory, otherwise the file is created at TARGET_PATH.
 	`,
-		Args:    root.ExactArgs(2),
-		PreRunE: root.MustWorkspaceClient,
+		Args: root.ExactArgs(2),
 	}
 
 	var c copy
 	cmd.Flags().BoolVar(&c.overwrite, "overwrite", false, "overwrite existing files")
 	cmd.Flags().BoolVarP(&c.recursive, "recursive", "r", false, "recursively copy files from directory")
+	cmd.Flags().IntVar(&c.concurrency, "concurrency", defaultConcurrency, "number of parallel copy operations")
+
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if c.concurrency <= 0 {
+			return errInvalidConcurrency
+		}
+		return root.MustWorkspaceClient(cmd, args)
+	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -187,7 +245,6 @@ func newCpCommand() *cobra.Command {
 			c.targetScheme = "dbfs"
 		}
 
-		c.ctx = ctx
 		c.sourceFiler = sourceFiler
 		c.targetFiler = targetFiler
 
@@ -199,7 +256,7 @@ func newCpCommand() *cobra.Command {
 
 		// case 1: source path is a directory, then recursively create files at target path
 		if sourceInfo.IsDir() {
-			return c.cpDirToDir(sourcePath, targetPath)
+			return c.cpDirToDir(ctx, sourcePath, targetPath)
 		}
 
 		// If target path has a trailing separator, trim it and let case 2 handle it
@@ -210,11 +267,11 @@ func newCpCommand() *cobra.Command {
 		// case 2: source path is a file, and target path is a directory. In this case
 		// we copy the file to inside the directory
 		if targetInfo, err := targetFiler.Stat(ctx, targetPath); err == nil && targetInfo.IsDir() {
-			return c.cpFileToDir(sourcePath, targetPath)
+			return c.cpFileToDir(ctx, sourcePath, targetPath)
 		}
 
 		// case 3: source path is a file, and target path is a file
-		return c.cpFileToFile(sourcePath, targetPath)
+		return c.cpFileToFile(ctx, sourcePath, targetPath)
 	}
 
 	v := newValidArgs()

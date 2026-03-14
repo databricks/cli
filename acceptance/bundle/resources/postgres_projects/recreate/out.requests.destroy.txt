@@ -1,0 +1,4 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/[MY_PROJECT_ID_2]"
+}

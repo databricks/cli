@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -36,6 +37,24 @@ var testConfig map[string]any = map[string]any{
 	"apps": &resources.App{
 		App: apps.App{
 			Name: "myapp",
+		},
+	},
+
+	"catalogs": &resources.Catalog{
+		CreateCatalog: catalog.CreateCatalog{
+			Name:    "mycatalog",
+			Comment: "Test catalog",
+		},
+		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
+		// only during updates. They are not included in the test config.
+	},
+
+	"external_locations": &resources.ExternalLocation{
+		CreateExternalLocation: catalog.CreateExternalLocation{
+			Name:           "myexternallocation",
+			Url:            "s3://mybucket/mypath",
+			CredentialName: "mycredential",
+			Comment:        "Test external location",
 		},
 	},
 
@@ -161,6 +180,16 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"postgres_projects": &resources.PostgresProject{
+		PostgresProjectConfig: resources.PostgresProjectConfig{
+			ProjectId: "test-project",
+			ProjectSpec: postgres.ProjectSpec{
+				DisplayName: "Test Project",
+				PgVersion:   16,
+			},
+		},
+	},
+
 	"alerts": &resources.Alert{
 		AlertV2: sql.AlertV2{
 			DisplayName: "my-alert",
@@ -183,14 +212,42 @@ var testConfig map[string]any = map[string]any{
 			},
 		},
 	},
+
+	"quality_monitors": &resources.QualityMonitor{
+		TableName: "main.myschema.mytable",
+		CreateMonitor: catalog.CreateMonitor{
+			AssetsDir:        "/Workspace/Users/user@example.com/assets",
+			OutputSchemaName: "main.myschema",
+		},
+	},
+
+	"dashboards": &resources.Dashboard{
+		DashboardConfig: resources.DashboardConfig{
+			DisplayName: "my-dashboard",
+			ParentPath:  "/Workspace/Users/user@example.com",
+			WarehouseId: "test-warehouse-id",
+			SerializedDashboard: map[string]any{
+				"pages": []map[string]any{
+					{
+						"name":        "page1",
+						"displayName": "Page 1",
+						"pageType":    "PAGE_TYPE_CANVAS",
+					},
+				},
+			},
+
+			DatasetCatalog: "main",
+			DatasetSchema:  "myschema",
+		},
+	},
 }
 
-type prepareWorkspace func(client *databricks.WorkspaceClient) (any, error)
+type prepareWorkspace func(ctx context.Context, client *databricks.WorkspaceClient) (any, error)
 
 // some resource require other resources to exist
 var testDeps = map[string]prepareWorkspace{
-	"database_catalogs": func(client *databricks.WorkspaceClient) (any, error) {
-		_, err := client.Database.CreateDatabaseInstance(context.Background(), database.CreateDatabaseInstanceRequest{
+	"database_catalogs": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		_, err := client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 			DatabaseInstance: database.DatabaseInstance{
 				Name: "mydbinstance1",
 			},
@@ -204,8 +261,8 @@ var testDeps = map[string]prepareWorkspace{
 		}, err
 	},
 
-	"jobs.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Jobs.Create(context.Background(), jobs.CreateJob{
+	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Jobs.Create(ctx, jobs.CreateJob{
 			Name: "job-permissions",
 			Tasks: []jobs.Task{
 				{
@@ -229,8 +286,8 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"pipelines.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Pipelines.Create(context.Background(), pipelines.CreatePipeline{
+	"pipelines.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Pipelines.Create(ctx, pipelines.CreatePipeline{
 			Name: "pipeline-permissions",
 		})
 		if err != nil {
@@ -246,8 +303,8 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"models.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.ModelRegistry.CreateModel(context.Background(), ml.CreateModelRequest{
+	"models.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.ModelRegistry.CreateModel(ctx, ml.CreateModelRequest{
 			Name:        "model-permissions",
 			Description: "model for permissions testing",
 		})
@@ -264,8 +321,8 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"experiments.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.Experiments.CreateExperiment(context.Background(), ml.CreateExperiment{
+	"experiments.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Experiments.CreateExperiment(ctx, ml.CreateExperiment{
 			Name: "experiment-permissions",
 		})
 		if err != nil {
@@ -281,7 +338,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"clusters.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+	"clusters.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
 			Permissions: []iam.AccessControlRequest{{
@@ -291,8 +348,8 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"apps.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		waiter, err := client.Apps.Create(context.Background(), apps.CreateAppRequest{
+	"apps.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.Apps.Create(ctx, apps.CreateAppRequest{
 			App: apps.App{
 				Name: "app-permissions",
 			},
@@ -310,7 +367,7 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"sql_warehouses.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+	"sql_warehouses.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/sql/warehouses/warehouse-permissions",
 			Permissions: []iam.AccessControlRequest{{
@@ -320,8 +377,8 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"database_instances.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		waiter, err := client.Database.CreateDatabaseInstance(context.Background(), database.CreateDatabaseInstanceRequest{
+	"database_instances.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 			DatabaseInstance: database.DatabaseInstance{
 				Name: "dbinstance-permissions",
 			},
@@ -339,8 +396,29 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"dashboards.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		ctx := context.Background()
+	"postgres_projects.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "permissions-project",
+		})
+		if err != nil {
+			return nil, err
+		}
+		result, err := waiter.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		components, _ := ParsePostgresName(result.Name)
+		return &PermissionsState{
+			ObjectID: "/database-projects/" + components.ProjectID,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"dashboards.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		parentPath := "/Workspace/Users/user@example.com"
 
 		// Create parent directory if it doesn't exist
@@ -369,8 +447,8 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"model_serving_endpoints.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		waiter, err := client.ServingEndpoints.Create(context.Background(), serving.CreateServingEndpoint{
+	"model_serving_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.ServingEndpoints.Create(ctx, serving.CreateServingEndpoint{
 			Name: "endpoint-permissions",
 			Config: &serving.EndpointCoreConfigInput{
 				ServedModels: []serving.ServedModelInput{
@@ -396,8 +474,8 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"alerts.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		resp, err := client.AlertsV2.CreateAlert(context.Background(), sql.CreateAlertV2Request{
+	"alerts.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.AlertsV2.CreateAlert(ctx, sql.CreateAlertV2Request{
 			Alert: sql.AlertV2{
 				DisplayName: "alert-permissions",
 				QueryText:   "SELECT 1",
@@ -427,41 +505,63 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
-	"schemas.grants": func(client *databricks.WorkspaceClient) (any, error) {
+	"catalogs.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "catalog",
+			FullName:      "mycatalog",
+			Grants: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"external_locations.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "external_location",
+			FullName:      "myexternallocation",
+			Grants: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeReadFiles},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"schemas.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "schema",
 			FullName:      "main.myschema",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
 		}, nil
 	},
 
-	"volumes.grants": func(client *databricks.WorkspaceClient) (any, error) {
+	"volumes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "volume",
 			FullName:      "main.myschema.myvolume",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
 		}, nil
 	},
 
-	"registered_models.grants": func(client *databricks.WorkspaceClient) (any, error) {
+	"registered_models.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "registered-model",
 			FullName:      "modelid",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
 		}, nil
 	},
 
-	"secret_scopes.permissions": func(client *databricks.WorkspaceClient) (any, error) {
-		err := client.Secrets.CreateScope(context.Background(), workspace.CreateScope{
+	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
 			Scope:            "permissions_test_scope",
 			ScopeBackendType: workspace.ScopeBackendTypeAzureKeyvault,
 			BackendAzureKeyvault: &workspace.AzureKeyVaultSecretScopeMetadata{
@@ -483,18 +583,78 @@ var testDeps = map[string]prepareWorkspace{
 			},
 		}, nil
 	},
+
+	"postgres_branches": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-branch",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Branch",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresBranch{
+			PostgresBranchConfig: resources.PostgresBranchConfig{
+				Parent:     "projects/test-project-for-branch",
+				BranchId:   "test-branch",
+				BranchSpec: postgres.BranchSpec{},
+			},
+		}, nil
+	},
+
+	"postgres_endpoints": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-endpoint",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Endpoint",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-endpoint",
+			BranchId: "test-branch-for-endpoint",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresEndpoint{
+			PostgresEndpointConfig: resources.PostgresEndpointConfig{
+				Parent:     "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
+				EndpointId: "test-endpoint",
+				EndpointSpec: postgres.EndpointSpec{
+					EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+				},
+			},
+		}, nil
+	},
 }
 
 func TestAll(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
-	for group, resource := range SupportedResources {
-		t.Run(group, func(t *testing.T) {
-			adapter, err := NewAdapter(resource, client)
+	for resourceType, resource := range SupportedResources {
+		t.Run(resourceType, func(t *testing.T) {
+			adapter, err := NewAdapter(resource, resourceType, client)
 			require.NoError(t, err)
 			require.NotNil(t, adapter)
 
-			testCRUD(t, group, adapter, client)
+			testCRUD(t, resourceType, adapter, client)
 		})
 	}
 
@@ -503,13 +663,67 @@ func TestAll(t *testing.T) {
 	require.Len(t, m, len(SupportedResources))
 }
 
+// testIgnoreFilter encapsulates the logic for filtering fields based on ignore_remote_changes config.
+type testIgnoreFilter struct {
+	ignoreFields map[string]bool
+}
+
+// newTestIgnoreFilter creates a filter from the adapter's resource configs.
+func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
+	ignoreFields := make(map[string]bool)
+	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
+		if cfg == nil {
+			continue
+		}
+		for _, p := range cfg.IgnoreRemoteChanges {
+			ignoreFields[p.Field.String()] = true
+		}
+	}
+	return &testIgnoreFilter{ignoreFields: ignoreFields}
+}
+
+// shouldIgnore returns true if the field at the given path should be ignored.
+func (f *testIgnoreFilter) shouldIgnore(path string) bool {
+	if f.ignoreFields[path] {
+		return true
+	}
+	// Check if this is a nested field under an ignored top-level field
+	topLevelField := path
+	if prefix, _, ok := strings.Cut(path, "."); ok {
+		topLevelField = prefix
+	}
+	return f.ignoreFields[topLevelField]
+}
+
+// filterChanges returns only the changes that should not be ignored.
+// It also filters out the "updated_at" timestamp field.
+func (f *testIgnoreFilter) filterChanges(changes []structdiff.Change) []structdiff.Change {
+	var relevantChanges []structdiff.Change
+	for _, change := range changes {
+		fieldName := change.Path.String()
+		if !f.shouldIgnore(fieldName) {
+			relevantChanges = append(relevantChanges, change)
+		}
+	}
+	return relevantChanges
+}
+
+// requireEqual compares two structs and fails the test if there are differences
+// that are not in the ignore_remote_changes list.
+func (f *testIgnoreFilter) requireEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
+	changes, err := structdiff.GetStructDiff(expected, actual, nil)
+	require.NoError(t, err)
+	relevantChanges := f.filterChanges(changes)
+	require.Empty(t, relevantChanges, msgAndArgs...)
+}
+
 func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
 	var inputConfig any
 	var err error
 
 	prepDeps, hasDeps := testDeps[group]
 	if hasDeps {
-		inputConfig, err = prepDeps(client)
+		inputConfig, err = prepDeps(t.Context(), client)
 		require.NoError(t, err)
 	} else {
 		var ok bool
@@ -528,7 +742,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	newState, err := adapter.PrepareState(inputConfig)
 	require.NoError(t, err, "PrepareState failed")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// initial DoRead() cannot find the resource
 	remote, err := adapter.DoRead(ctx, "1234")
@@ -548,10 +762,14 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err)
 	require.NotNil(t, remappedState)
 
+	// Create filter for fields that should be ignored based on ignore_remote_changes config.
+	ignoreFilter := newTestIgnoreFilter(adapter)
+
 	if remoteStateFromCreate != nil {
 		remappedRemoteStateFromCreate, err := adapter.RemapState(remoteStateFromCreate)
 		require.NoError(t, err)
-		require.Equal(t, remappedState, remappedRemoteStateFromCreate)
+		ignoreFilter.requireEqual(t, remappedState, remappedRemoteStateFromCreate,
+			"unexpected differences between remappedState and remappedRemoteStateFromCreate")
 	}
 
 	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, newState)
@@ -566,17 +784,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		if remoteStateFromUpdate != nil {
 			remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 			require.NoError(t, err)
-			changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate, nil)
-			require.NoError(t, err)
-			// Filter out timestamp fields that are expected to differ in value
-			var relevantChanges []structdiff.Change
-			for _, change := range changes {
-				fieldName := change.Path.String()
-				if fieldName != "updated_at" {
-					relevantChanges = append(relevantChanges, change)
-				}
-			}
-			require.Empty(t, relevantChanges, "unexpected differences found: %v", relevantChanges)
+			ignoreFilter.requireEqual(t, remappedState, remappedStateFromUpdate,
+				"unexpected differences between remappedState and remappedStateFromUpdate")
 		}
 
 		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)
@@ -584,7 +793,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		if remoteStateFromWaitUpdate != nil {
 			remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)
 			require.NoError(t, err)
-			require.Equal(t, remappedState, remappedStateFromWaitUpdate)
+			ignoreFilter.requireEqual(t, remappedState, remappedStateFromWaitUpdate,
+				"unexpected differences between remappedState and remappedStateFromWaitUpdate")
 		}
 	}
 
@@ -603,6 +813,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			// testserver can set field to backend-generated value
 			return
 		}
+		// Skip fields configured in ignore_remote_changes.
+		if ignoreFilter.shouldIgnore(path.String()) {
+			return
+		}
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
@@ -612,11 +826,13 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID)
 	require.NoError(t, err)
 
-	p, err := structpath.Parse("name")
+	p, err := structpath.ParsePath("name")
 	require.NoError(t, err)
 
-	err = adapter.OverrideChangeDesc(ctx, p, &deployplan.ChangeDesc{}, nil)
-	require.NoError(t, err)
+	if adapter.HasOverrideChangeDesc() {
+		err = adapter.OverrideChangeDesc(ctx, p, &deployplan.ChangeDesc{}, nil)
+		require.NoError(t, err)
+	}
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 
@@ -629,53 +845,54 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 }
 
-// validateFields uses structwalk to generate all valid field paths and checks membership.
-func validateFields(t *testing.T, configType reflect.Type, fields map[string]deployplan.ActionType) {
-	validPaths := make(map[string]struct{})
-
-	err := structwalk.WalkType(configType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
-		validPaths[path.String()] = struct{}{}
-		return true // continue walking
-	})
-	require.NoError(t, err)
-
-	for fieldPath := range fields {
-		if _, exists := validPaths[fieldPath]; !exists {
-			t.Errorf("invalid field '%s' for %s", fieldPath, configType)
-		}
-	}
-}
-
-// TestFieldTriggers validates that all trigger keys
-// exist in the corresponding ConfigType for each resource.
-func TestFieldTriggers(t *testing.T) {
-	for resourceName, resource := range SupportedResources {
-		adapter, err := NewAdapter(resource, nil)
+// TestResourceConfig validates that all field patterns in resource config
+// exist in the corresponding StateType for each resource.
+func TestResourceConfig(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
-		t.Run(resourceName+"_local", func(t *testing.T) {
-			validateFields(t, adapter.StateType(), adapter.FieldTriggers())
-		})
-	}
-}
-
-// TestFieldTriggersNoUpdateWhenNotImplemented validates that resources without
-// DoUpdate implementation don't produce update actions in their FieldTriggers.
-func TestFieldTriggersNoUpdateWhenNotImplemented(t *testing.T) {
-	for resourceName, resource := range SupportedResources {
-		adapter, err := NewAdapter(resource, nil)
-		require.NoError(t, err)
-
-		if adapter.HasDoUpdate() {
+		cfg := adapter.ResourceConfig()
+		if cfg == nil {
 			continue
 		}
 
-		t.Run(resourceName+"_local", func(t *testing.T) {
-			for field, action := range adapter.FieldTriggers() {
-				assert.NotEqual(t, deployplan.Update, action,
-					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
-			}
+		t.Run(resourceType, func(t *testing.T) {
+			validateResourceConfig(t, adapter.StateType(), cfg)
 		})
+	}
+}
+
+// TestGeneratedResourceConfig validates that all field patterns in generated resource config
+// exist in the corresponding StateType for each resource.
+func TestGeneratedResourceConfig(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+
+		cfg := adapter.GeneratedResourceConfig()
+		if cfg == nil {
+			continue
+		}
+
+		t.Run(resourceType, func(t *testing.T) {
+			validateResourceConfig(t, adapter.StateType(), cfg)
+		})
+	}
+}
+
+func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceLifecycleConfig) {
+	for _, p := range cfg.RecreateOnChanges {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
+	}
+	for _, p := range cfg.UpdateIDOnChanges {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdateIDOnChanges: %s", p.Field)
+	}
+	for _, p := range cfg.IgnoreRemoteChanges {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)
+	}
+	for _, p := range cfg.BackendDefaults {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "BackendDefaults: %s", p.Field)
 	}
 }
 

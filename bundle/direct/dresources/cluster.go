@@ -44,6 +44,7 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 		DockerImage:                input.DockerImage,
 		DriverInstancePoolId:       input.DriverInstancePoolId,
 		DriverNodeTypeId:           input.DriverNodeTypeId,
+		DriverNodeTypeFlexibility:  input.DriverNodeTypeFlexibility,
 		EnableElasticDisk:          input.EnableElasticDisk,
 		EnableLocalDiskEncryption:  input.EnableLocalDiskEncryption,
 		GcpAttributes:              input.GcpAttributes,
@@ -64,6 +65,7 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 		TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               input.UseMlRuntime,
 		WorkloadType:               input.WorkloadType,
+		WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
 		ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
 	}
 	if input.Spec != nil {
@@ -120,6 +122,11 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 }
 
 func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *compute.ClusterDetails) error {
+	// We're only interested in downgrading some updates to skips. Changes that already skipped or cause recreation should remain unchanged.
+	if change.Action != deployplan.Update {
+		return nil
+	}
+
 	path := p.Prefix(1).String()
 	switch path {
 	case "data_security_mode":
@@ -159,6 +166,7 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		DockerImage:                config.DockerImage,
 		DriverInstancePoolId:       config.DriverInstancePoolId,
 		DriverNodeTypeId:           config.DriverNodeTypeId,
+		DriverNodeTypeFlexibility:  config.DriverNodeTypeFlexibility,
 		EnableElasticDisk:          config.EnableElasticDisk,
 		EnableLocalDiskEncryption:  config.EnableLocalDiskEncryption,
 		GcpAttributes:              config.GcpAttributes,
@@ -179,6 +187,7 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               config.UseMlRuntime,
 		WorkloadType:               config.WorkloadType,
+		WorkerNodeTypeFlexibility:  config.WorkerNodeTypeFlexibility,
 		ForceSendFields:            utils.FilterFields[compute.CreateCluster](config.ForceSendFields),
 	}
 
@@ -206,6 +215,7 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		DockerImage:                config.DockerImage,
 		DriverInstancePoolId:       config.DriverInstancePoolId,
 		DriverNodeTypeId:           config.DriverNodeTypeId,
+		DriverNodeTypeFlexibility:  config.DriverNodeTypeFlexibility,
 		EnableElasticDisk:          config.EnableElasticDisk,
 		EnableLocalDiskEncryption:  config.EnableLocalDiskEncryption,
 		GcpAttributes:              config.GcpAttributes,
@@ -226,6 +236,7 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               config.UseMlRuntime,
 		WorkloadType:               config.WorkloadType,
+		WorkerNodeTypeFlexibility:  config.WorkerNodeTypeFlexibility,
 		ForceSendFields:            utils.FilterFields[compute.EditCluster](config.ForceSendFields),
 	}
 

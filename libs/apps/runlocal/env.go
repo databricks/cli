@@ -18,7 +18,7 @@ func GetBaseEnvVars(config *Config) []EnvVar {
 		{Name: "PYTHONUNBUFFERED", Value: "1"},
 		{Name: "DATABRICKS_APP_NAME", Value: config.AppName},
 		{Name: "DATABRICKS_APP_URL", Value: config.AppURL},
-		{Name: "DATABRICKS_WORKSPACE_ID", Value: strconv.FormatInt(config.WorkspaceId, 10)},
+		{Name: "DATABRICKS_WORKSPACE_ID", Value: strconv.FormatInt(config.WorkspaceID, 10)},
 		{Name: "DATABRICKS_HOST", Value: config.WorkspaceHost},
 		{Name: "DATABRICKS_APP_PORT", Value: strconv.Itoa(config.Port)},
 		{Name: "GRADIO_SERVER_NAME", Value: config.ServerName},

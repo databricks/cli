@@ -1,11 +1,13 @@
 package exec
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"os"
 	osexec "os/exec"
+	"sync"
 )
 
 type ExecutableType string
@@ -151,6 +153,55 @@ func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
 	}
 	defer ec.cleanup()
 	return cmd.CombinedOutput()
+}
+
+// ExecOutput holds the result of command execution with separate output streams.
+type ExecOutput struct {
+	Stdout   []byte
+	Stderr   []byte
+	ExitCode int
+}
+
+// ExecAndCapture runs a command and captures stdout and stderr separately.
+func (e *Executor) ExecAndCapture(ctx context.Context, command string) (*ExecOutput, error) {
+	cmd, err := e.StartCommand(ctx, command)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read stdout and stderr concurrently to avoid pipe buffer deadlock
+	var stdout, stderr bytes.Buffer
+	var wg sync.WaitGroup
+
+	wg.Go(func() {
+		if cmd.Stdout() != nil {
+			_, _ = io.Copy(&stdout, cmd.Stdout())
+		}
+	})
+
+	wg.Go(func() {
+		if cmd.Stderr() != nil {
+			_, _ = io.Copy(&stderr, cmd.Stderr())
+		}
+	})
+
+	wg.Wait()
+
+	err = cmd.Wait()
+	exitCode := 0
+	if err != nil {
+		if exitErr, ok := err.(*osexec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			return nil, err
+		}
+	}
+
+	return &ExecOutput{
+		Stdout:   stdout.Bytes(),
+		Stderr:   stderr.Bytes(),
+		ExitCode: exitCode,
+	}, nil
 }
 
 func (e *Executor) ShellType() ExecutableType {

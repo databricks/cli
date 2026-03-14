@@ -1,0 +1,10 @@
+
+>>> errcode [CLI] bundle plan -o json
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.quality_monitors.monitor1": {
+      "action": "update"
+    }
+  }
+}

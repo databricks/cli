@@ -1,0 +1,2 @@
+Badness = "Terraform provider doesn't wait for endpoint reconciliation to complete after delete, causing subsequent create to fail with 'endpoint reconciliation still in progress'"
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

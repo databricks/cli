@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/jsonschema/test_types"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -518,4 +519,29 @@ func TestTypePath(t *testing.T) {
 	assert.PanicsWithValue(t, "found map with non-string key: int", func() {
 		typePath(reflect.TypeOf(map[int]int{}))
 	})
+}
+
+func TestFromTypeDuration(t *testing.T) {
+	type myStruct struct {
+		Timeout *duration.Duration `json:"timeout,omitempty"`
+	}
+
+	s, err := FromType(reflect.TypeOf(myStruct{}), nil)
+	require.NoError(t, err)
+
+	// The schema should have a property for timeout with a $ref
+	assert.NotNil(t, s.Properties["timeout"])
+	assert.NotNil(t, s.Properties["timeout"].Reference)
+
+	// The $defs should contain a string type for duration.Duration
+	defs := s.Definitions
+	require.NotNil(t, defs)
+
+	// Navigate to the duration definition
+	durDef := defs["github.com"].(map[string]any)["databricks"].(map[string]any)["databricks-sdk-go"].(map[string]any)["common"].(map[string]any)["types"].(map[string]any)["duration.Duration"]
+	require.NotNil(t, durDef)
+
+	// duration.Duration should be represented as a string type
+	durSchema := durDef.(Schema)
+	assert.Equal(t, StringType, durSchema.Type)
 }

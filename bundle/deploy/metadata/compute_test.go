@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"context"
 	"runtime"
 	"testing"
 
@@ -66,6 +65,18 @@ func TestComputeMetadataMutator(t *testing.T) {
 						},
 					},
 				},
+				Dashboards: map[string]*resources.Dashboard{
+					"my-dashboard-1": {
+						BaseResource:    resources.BaseResource{ID: "5555"},
+						DashboardConfig: resources.DashboardConfig{},
+						FilePath:        "i/h/g",
+					},
+					"my-dashboard-2": {
+						BaseResource:    resources.BaseResource{ID: "6666"},
+						DashboardConfig: resources.DashboardConfig{},
+						FilePath:        "l/k/j",
+					},
+				},
 			},
 		},
 	}
@@ -74,6 +85,8 @@ func TestComputeMetadataMutator(t *testing.T) {
 	bundletest.SetLocation(b, "resources.jobs.my-job-2", []dyn.Location{{File: "d/e/f"}})
 	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-1", []dyn.Location{{File: "x/y/z"}})
 	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-2", []dyn.Location{{File: "u/v/w"}})
+	bundletest.SetLocation(b, "resources.dashboards.my-dashboard-1", []dyn.Location{{File: "g/h/i"}})
+	bundletest.SetLocation(b, "resources.dashboards.my-dashboard-2", []dyn.Location{{File: "j/k/l"}})
 
 	expectedMetadata := metadata.Metadata{
 		Version: metadata.Version,
@@ -113,11 +126,23 @@ func TestComputeMetadataMutator(t *testing.T) {
 						ID:           "4444",
 					},
 				},
+				Dashboards: map[string]*metadata.DashboardResource{
+					"my-dashboard-1": {
+						RelativePath: "g/h/i",
+						ID:           "5555",
+						FilePath:     "i/h/g",
+					},
+					"my-dashboard-2": {
+						RelativePath: "j/k/l",
+						ID:           "6666",
+						FilePath:     "l/k/j",
+					},
+				},
 			},
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, expectedMetadata, b.Metadata)
@@ -138,7 +163,7 @@ func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, syncRootPath, b.Metadata.Config.Workspace.FilePath)
@@ -158,7 +183,7 @@ func TestComputeMetadataMutatorGitFolderPath(t *testing.T) {
 		WorktreeRoot: path,
 	}
 
-	diags := bundle.Apply(context.Background(), b, Compute())
+	diags := bundle.Apply(t.Context(), b, Compute())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, gitFolderPath, b.Metadata.Extra.GitFolderPath)

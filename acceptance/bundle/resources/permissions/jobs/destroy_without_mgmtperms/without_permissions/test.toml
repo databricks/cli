@@ -3,5 +3,6 @@ Cloud = true
 RecordRequests = false
 CloudEnvs.gcp = false
 CloudEnvs.azure = false
+RunsOnDbr = false # Requires TEST_SP_TOKEN to be set which is not available on DBR
 
 Ignore = ["take_ownership.json", "databricks.yml"]

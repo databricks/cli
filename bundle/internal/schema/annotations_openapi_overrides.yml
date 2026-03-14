@@ -14,17 +14,6 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "schedule":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AlertPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_READ
-      - |-
-        CAN_RUN
 github.com/databricks/cli/bundle/config/resources.App:
   "app_status":
     "description": |-
@@ -45,6 +34,9 @@ github.com/databricks/cli/bundle/config/resources.App:
     "description": |-
       PLACEHOLDER
   "effective_usage_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "git_source":
     "description": |-
       PLACEHOLDER
   "lifecycle":
@@ -71,19 +63,22 @@ github.com/databricks/cli/bundle/config/resources.App:
   "source_code_path":
     "description": |-
       PLACEHOLDER
+  "telemetry_export_destinations":
+    "description": |-
+      PLACEHOLDER
   "usage_policy_id":
     "description": |-
       PLACEHOLDER
   "user_api_scopes":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.AppPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_USE
+github.com/databricks/cli/bundle/config/resources.Catalog:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "_":
     "markdown_description": |-
@@ -135,15 +130,6 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "workload_type":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ClusterPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_RESTART
-      - |-
-        CAN_ATTACH_TO
 github.com/databricks/cli/bundle/config/resources.Dashboard:
   "_":
     "markdown_description": |-
@@ -216,17 +202,6 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
   "warehouse_id":
     "description": |-
       The warehouse ID used to run the dashboard.
-github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_READ
-      - |-
-        CAN_RUN
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_MANAGE
 github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
   "create_database_if_not_exists":
     "description": |-
@@ -244,15 +219,13 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "permissions":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_CREATE
-      - |-
-        CAN_USE
-      - |-
-        CAN_MANAGE
+github.com/databricks/cli/bundle/config/resources.ExternalLocation:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Job:
   "_":
     "markdown_description": |-
@@ -284,17 +257,6 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "run_as":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.JobPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_MANAGE_RUN
-      - |-
-        CAN_VIEW
-      - |-
-        IS_OWNER
 github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
   "_":
     "markdown_description": |-
@@ -318,15 +280,6 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
   "permissions":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_READ
 github.com/databricks/cli/bundle/config/resources.MlflowModel:
   "_":
     "markdown_description": |-
@@ -337,19 +290,6 @@ github.com/databricks/cli/bundle/config/resources.MlflowModel:
   "permissions":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.MlflowModelPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_EDIT
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_MANAGE_STAGING_VERSIONS
-      - |-
-        CAN_MANAGE_PRODUCTION_VERSIONS
-      - |-
-        CAN_READ
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "_":
     "markdown_description": |-
@@ -385,15 +325,6 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
   "permissions":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_QUERY
-      - |-
-        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.Pipeline:
   "_":
     "markdown_description": |-
@@ -433,17 +364,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
   "trigger":
     "deprecation_message": |-
       Use continuous instead
-github.com/databricks/cli/bundle/config/resources.PipelinePermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        IS_OWNER
-      - |-
-        CAN_RUN
-      - |-
-        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "_":
     "markdown_description": |-
@@ -587,35 +507,6 @@ github.com/databricks/cli/bundle/config/resources.Schema:
   "properties":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        CREATE_FUNCTION
-      - |-
-        CREATE_TABLE
-      - |-
-        CREATE_VOLUME
-      - |-
-        MANAGE
-      - |-
-        USE_SCHEMA
-      - |-
-        EXECUTE
-      - |-
-        MODIFY
-      - |-
-        REFRESH
-      - |-
-        SELECT
-      - |-
-        READ_VOLUME
-      - |-
-        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
   "_":
     "enum":
@@ -643,17 +534,6 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
   "warehouse_type":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
-  "_":
-    "enum":
-      - |-
-        CAN_MANAGE
-      - |-
-        CAN_USE
-      - |-
-        CAN_MONITOR
-      - |-
-        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "lifecycle":
     "description": |-
@@ -688,19 +568,6 @@ github.com/databricks/cli/bundle/config/resources.Volume:
   "volume_type":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege:
-  "_":
-    "enum":
-      - |-
-        ALL_PRIVILEGES
-      - |-
-        APPLY_TAG
-      - |-
-        MANAGE
-      - |-
-        READ_VOLUME
-      - |-
-        WRITE_VOLUME
 github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "create_time":
     "description": |-
@@ -738,6 +605,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "app":
+    "description": |-
+      PLACEHOLDER
   "database":
     "description": |-
       PLACEHOLDER
@@ -748,6 +618,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
     "description": |-
       PLACEHOLDER
   "job":
+    "description": |-
+      PLACEHOLDER
+  "postgres":
     "description": |-
       PLACEHOLDER
   "secret":
@@ -791,6 +664,16 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
   "id":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgres:
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "database":
     "description": |-
       PLACEHOLDER
   "permission":
@@ -842,6 +725,56 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
     "description": |-
       PLACEHOLDER
   "state": {}
+github.com/databricks/databricks-sdk-go/service/catalog.AwsSqsQueue:
+  "managed_resource_id":
+    "description": |-
+      PLACEHOLDER
+  "queue_url":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.AzureQueueStorage:
+  "managed_resource_id":
+    "description": |-
+      PLACEHOLDER
+  "queue_url":
+    "description": |-
+      PLACEHOLDER
+  "resource_group":
+    "description": |-
+      PLACEHOLDER
+  "subscription_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.EncryptionDetails:
+  "sse_encryption_details":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.FileEventQueue:
+  "managed_aqs":
+    "description": |-
+      PLACEHOLDER
+  "managed_pubsub":
+    "description": |-
+      PLACEHOLDER
+  "managed_sqs":
+    "description": |-
+      PLACEHOLDER
+  "provided_aqs":
+    "description": |-
+      PLACEHOLDER
+  "provided_pubsub":
+    "description": |-
+      PLACEHOLDER
+  "provided_sqs":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.GcpPubsub:
+  "managed_resource_id":
+    "description": |-
+      PLACEHOLDER
+  "subscription_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
   "granularities":
     "description": |-
@@ -863,6 +796,22 @@ github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias:
   "schema_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetails:
+  "algorithm":
+    "description": |-
+      PLACEHOLDER
+  "aws_kms_key_arn":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetailsAlgorithm:
+  "_":
+    "description": |-
+      SSE algorithm to use for encrypting S3 objects
+    "enum":
+      - |-
+        AWS_SSE_KMS
+      - |-
+        AWS_SSE_S3
 github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
   "availability":
     "description": |-
@@ -938,6 +887,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
   "git_snapshot":
+    "description": |-
+      PLACEHOLDER
+  "sparse_checkout":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:

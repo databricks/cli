@@ -1,0 +1,109 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+
+title "Modify c_task, remove d_task, add e_task"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "c_task":
+        task["new_cluster"]["num_workers"] = 5
+        task["timeout_seconds"] = 3600
+        task["depends_on"] = [{"task_key": "b_task"}]
+
+r["tasks"] = [task for task in r["tasks"] if task["task_key"] != "d_task"]
+
+r["tasks"].append({
+    "task_key": "e_task",
+    "notebook_task": {
+        "notebook_path": "/Users/${CURRENT_USER_NAME}/e_task"
+    },
+    "new_cluster": {
+        "spark_version": "${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "${NODE_TYPE_ID}",
+        "num_workers": 1
+    }
+})
+EOF
+
+no_tasks_job_id="$(read_id.py no_tasks_job)"
+edit_resource.py jobs $no_tasks_job_id <<EOF
+r.setdefault("tasks", [])
+r["tasks"].append({
+    "task_key": "new_task",
+    "notebook_task": {
+        "notebook_path": "/Users/${CURRENT_USER_NAME}/new_task"
+    },
+    "new_cluster": {
+        "spark_version": "${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "${NODE_TYPE_ID}",
+        "num_workers": 1
+    }
+})
+EOF
+
+title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+# Resolve environment variables that may have been added by config-remote-sync
+envsubst < databricks.yml > databricks.yml.resolved
+mv databricks.yml.resolved databricks.yml
+
+# Deploy the updated configuration to sync state
+$CLI bundle deploy
+
+title "Rename b_task, replace a_task notebook_path, add synced_task"
+rename_job_id="$(read_id.py rename_task_job)"
+edit_resource.py jobs $rename_job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "b_task":
+        task["task_key"] = "b_task_renamed"
+    if "depends_on" in task:
+        for dep in task["depends_on"]:
+            if dep["task_key"] == "b_task":
+                dep["task_key"] = "b_task_renamed"
+
+# Replace a_task's notebook_path with sync-root path (tests Replace operation)
+for task in r["tasks"]:
+    if task["task_key"] == "a_task":
+        task["notebook_task"]["notebook_path"] = "${PWD}/synced_notebook"
+
+# Add synced_task with path inside sync root
+r["tasks"].append({
+    "task_key": "synced_task",
+    "notebook_task": {
+        "notebook_path": "${PWD}/synced_notebook"
+    },
+    "new_cluster": {
+        "spark_version": "${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "${NODE_TYPE_ID}",
+        "num_workers": 1
+    }
+})
+EOF
+
+title "Detect task key rename"
+echo
+cp databricks.yml databricks.yml.backup2
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes for task key rename"
+echo
+trace diff.py databricks.yml.backup2 databricks.yml
+rm databricks.yml.backup2

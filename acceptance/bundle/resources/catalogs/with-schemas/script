@@ -1,0 +1,45 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+CATALOG_NAME="test_catalog_${UNIQUE_NAME}"
+SCHEMA_FULL_NAME="${CATALOG_NAME}.schema1"
+
+cleanup() {
+  title "Test cleanup"
+  trace $CLI bundle destroy --auto-approve
+
+  title "Assert schema is deleted"
+  trace errcode $CLI schemas get "${SCHEMA_FULL_NAME}" 2>/dev/null
+
+  title "Assert the catalog is deleted"
+  trace errcode $CLI catalogs get "${CATALOG_NAME}" 2>/dev/null
+}
+trap cleanup EXIT
+
+title "Deploy bundle with catalog and schema"
+trace $CLI bundle deploy
+
+title "Assert the catalog is created"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment, properties}"
+
+title "Assert schema is created in the custom catalog"
+trace $CLI schemas get "${SCHEMA_FULL_NAME}" | jq "{full_name, catalog_name, comment}"
+
+title "Verify schema belongs to the test catalog"
+SCHEMA_CATALOG=$($CLI schemas get "${SCHEMA_FULL_NAME}" | jq -r ".catalog_name")
+
+if [ "$SCHEMA_CATALOG" != "$CATALOG_NAME" ]; then
+  echo "Error: Schema catalog_name is $SCHEMA_CATALOG, expected $CATALOG_NAME"
+  exit 1
+fi
+
+title "Update catalog comment"
+update_file.py databricks.yml "Catalog created from DABs" "Updated catalog comment"
+
+title "Redeploy with updated catalog"
+trace $CLI bundle deploy
+
+title "Assert catalog comment is updated"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment}"
+
+title "Assert schema still exists after catalog update"
+trace $CLI schemas get "${SCHEMA_FULL_NAME}" | jq "{full_name}"

@@ -24,9 +24,6 @@ func log(ctx context.Context, logger *slog.Logger, level slog.Level, msg string)
 	// skip [runtime.Callers, this function, this function's caller].
 	runtime.Callers(3, pcs[:])
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	_ = logger.Handler().Handle(ctx, r)
 }
 

@@ -19,9 +19,11 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "quality-monitor-v2",
-		Short:   `Manage data quality of UC objects (currently support schema).`,
-		Long:    `Manage data quality of UC objects (currently support schema)`,
+		Use:   "quality-monitor-v2",
+		Short: `Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).`,
+		Long: `Deprecated: Please use the Data Quality Monitoring API instead (REST:
+  /api/data-quality/v1/monitors). Manage data quality of UC objects (currently
+  support schema).`,
 		GroupID: "qualitymonitor",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -60,12 +62,14 @@ func newCreateQualityMonitor() *cobra.Command {
 	cmd.Flags().Var(&createQualityMonitorJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: anomaly_detection_config
+	// TODO: array: validity_check_configurations
 
 	cmd.Use = "create-quality-monitor OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `Create a quality monitor.`
 	cmd.Long = `Create a quality monitor.
 
-  Create a quality monitor on UC object
+  Deprecated: Use Data Quality Monitoring API instead
+  (/api/data-quality/v1/monitors). Create a quality monitor on UC object.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema.
@@ -96,7 +100,7 @@ func newCreateQualityMonitor() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -146,7 +150,8 @@ func newDeleteQualityMonitor() *cobra.Command {
 	cmd.Short = `Delete a quality monitor.`
 	cmd.Long = `Delete a quality monitor.
 
-  Delete a quality monitor on UC object
+  Deprecated: Use Data Quality Monitoring API instead
+  (/api/data-quality/v1/monitors). Delete a quality monitor on UC object.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema.
@@ -204,7 +209,8 @@ func newGetQualityMonitor() *cobra.Command {
 	cmd.Short = `Read a quality monitor.`
 	cmd.Long = `Read a quality monitor.
 
-  Read a quality monitor on UC object
+  Deprecated: Use Data Quality Monitoring API instead
+  (/api/data-quality/v1/monitors). Read a quality monitor on UC object.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema.
@@ -265,7 +271,8 @@ func newListQualityMonitor() *cobra.Command {
 	cmd.Short = `List quality monitors.`
 	cmd.Long = `List quality monitors.
 
-  (Unimplemented) List quality monitors`
+  Deprecated: Use Data Quality Monitoring API instead
+  (/api/data-quality/v1/monitors). (Unimplemented) List quality monitors.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -314,12 +321,15 @@ func newUpdateQualityMonitor() *cobra.Command {
 	cmd.Flags().Var(&updateQualityMonitorJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: anomaly_detection_config
+	// TODO: array: validity_check_configurations
 
 	cmd.Use = "update-quality-monitor OBJECT_TYPE OBJECT_ID OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `Update a quality monitor.`
 	cmd.Long = `Update a quality monitor.
 
-  (Unimplemented) Update a quality monitor on UC object
+  Deprecated: Use Data Quality Monitoring API instead
+  (/api/data-quality/v1/monitors). (Unimplemented) Update a quality monitor on
+  UC object.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema.
@@ -352,7 +362,7 @@ func newUpdateQualityMonitor() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

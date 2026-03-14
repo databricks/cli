@@ -1,6 +1,7 @@
 package selftest
 
 import (
+	"github.com/databricks/cli/cmd/selftest/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -14,5 +15,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newSendTelemetry())
 	cmd.AddCommand(newPanic())
 	cmd.AddCommand(newPatchWhl())
+	cmd.AddCommand(tui.New())
 	return cmd
 }

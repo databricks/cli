@@ -122,14 +122,14 @@ func (e *Entrypoint) preparePython(ctx context.Context, environment map[string]s
 }
 
 func (e *Entrypoint) ensureRunningCluster(ctx context.Context, cfg *config.Config) error {
-	feedback := cmdio.Spinner(ctx)
-	defer close(feedback)
+	sp := cmdio.NewSpinner(ctx)
+	defer sp.Close()
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
 		return fmt.Errorf("workspace client: %w", err)
 	}
 	// TODO: add in-progress callback to EnsureClusterIsRunning() in SDK
-	feedback <- "Ensuring the cluster is running..."
+	sp.Update("Ensuring the cluster is running...")
 	err = w.Clusters.EnsureClusterIsRunning(ctx, cfg.ClusterID)
 	if err != nil {
 		return fmt.Errorf("ensure running: %w", err)
@@ -185,7 +185,7 @@ func (e *Entrypoint) getLoginConfig(cmd *cobra.Command) (*loginConfig, *config.C
 	if err != nil {
 		return nil, nil, err
 	}
-	if isNoLoginConfig && !e.IsBundleAware && e.isAuthConfigured(defaultConfig) {
+	if isNoLoginConfig && !e.IsBundleAware && e.isAuthConfigured(ctx, defaultConfig) {
 		log.Debugf(ctx, "Login is configured via environment variables")
 		return &loginConfig{}, defaultConfig, nil
 	}
@@ -248,8 +248,7 @@ func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {
 	// an account profile during installation (anymore) and just prompt for it, when context
 	// does require it. This also means that we always prompt for account-level commands, unless
 	// users specify a `--profile` flag.
-	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
-	isACC := cfg.IsAccountClient()
+	isACC := cfg.ConfigType() == config.AccountConfig
 	if e.IsAccountLevel && cfg.Profile == "" {
 		if !cmdio.IsPromptSupported(ctx) {
 			return nil, config.ErrCannotConfigureDefault
@@ -292,8 +291,8 @@ func (e *Entrypoint) environmentFromConfig(cfg *config.Config) map[string]string
 	return env
 }
 
-func (e *Entrypoint) isAuthConfigured(cfg *config.Config) bool {
+func (e *Entrypoint) isAuthConfigured(ctx context.Context, cfg *config.Config) bool {
 	r := &http.Request{Header: http.Header{}}
-	err := cfg.Authenticate(r.WithContext(context.Background()))
+	err := cfg.Authenticate(r.WithContext(ctx))
 	return err == nil
 }

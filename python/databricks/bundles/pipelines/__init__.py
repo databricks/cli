@@ -2,6 +2,9 @@ __all__ = [
     "Adlsgen2Info",
     "Adlsgen2InfoDict",
     "Adlsgen2InfoParam",
+    "AutoFullRefreshPolicy",
+    "AutoFullRefreshPolicyDict",
+    "AutoFullRefreshPolicyParam",
     "AwsAttributes",
     "AwsAttributesDict",
     "AwsAttributesParam",
@@ -81,6 +84,9 @@ __all__ = [
     "Notifications",
     "NotificationsDict",
     "NotificationsParam",
+    "OperationTimeWindow",
+    "OperationTimeWindowDict",
+    "OperationTimeWindowParam",
     "PathPattern",
     "PathPatternDict",
     "PathPatternParam",
@@ -154,6 +160,11 @@ from databricks.bundles.pipelines._models.adlsgen2_info import (
     Adlsgen2Info,
     Adlsgen2InfoDict,
     Adlsgen2InfoParam,
+)
+from databricks.bundles.pipelines._models.auto_full_refresh_policy import (
+    AutoFullRefreshPolicy,
+    AutoFullRefreshPolicyDict,
+    AutoFullRefreshPolicyParam,
 )
 from databricks.bundles.pipelines._models.aws_attributes import (
     AwsAttributes,
@@ -286,6 +297,11 @@ from databricks.bundles.pipelines._models.notifications import (
     Notifications,
     NotificationsDict,
     NotificationsParam,
+)
+from databricks.bundles.pipelines._models.operation_time_window import (
+    OperationTimeWindow,
+    OperationTimeWindowDict,
+    OperationTimeWindowParam,
 )
 from databricks.bundles.pipelines._models.path_pattern import (
     PathPattern,

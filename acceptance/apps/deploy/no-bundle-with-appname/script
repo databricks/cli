@@ -1,0 +1,3 @@
+# Test: apps deploy with APP_NAME but without databricks.yml
+# Expected: Normal API deploy using apps deploy API
+trace $CLI apps deploy test-app --no-wait

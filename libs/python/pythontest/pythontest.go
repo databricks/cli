@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/require"
 )
 
@@ -102,6 +103,6 @@ func RequireActivatedPythonEnv(t *testing.T, ctx context.Context, opts *VenvOpts
 	require.NoError(t, err)
 	require.DirExists(t, opts.BinPath)
 
-	newPath := fmt.Sprintf("%s%c%s", opts.BinPath, os.PathListSeparator, os.Getenv("PATH"))
+	newPath := fmt.Sprintf("%s%c%s", opts.BinPath, os.PathListSeparator, env.Get(ctx, "PATH"))
 	t.Setenv("PATH", newPath)
 }

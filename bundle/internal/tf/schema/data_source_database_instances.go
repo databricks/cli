@@ -28,6 +28,10 @@ type DataSourceDatabaseInstancesDatabaseInstancesParentInstanceRef struct {
 	Uid          string `json:"uid,omitempty"`
 }
 
+type DataSourceDatabaseInstancesDatabaseInstancesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceDatabaseInstancesDatabaseInstances struct {
 	Capacity                           string                                                            `json:"capacity,omitempty"`
 	ChildInstanceRefs                  []DataSourceDatabaseInstancesDatabaseInstancesChildInstanceRefs   `json:"child_instance_refs,omitempty"`
@@ -48,6 +52,7 @@ type DataSourceDatabaseInstancesDatabaseInstances struct {
 	NodeCount                          int                                                               `json:"node_count,omitempty"`
 	ParentInstanceRef                  *DataSourceDatabaseInstancesDatabaseInstancesParentInstanceRef    `json:"parent_instance_ref,omitempty"`
 	PgVersion                          string                                                            `json:"pg_version,omitempty"`
+	ProviderConfig                     *DataSourceDatabaseInstancesDatabaseInstancesProviderConfig       `json:"provider_config,omitempty"`
 	ReadOnlyDns                        string                                                            `json:"read_only_dns,omitempty"`
 	ReadWriteDns                       string                                                            `json:"read_write_dns,omitempty"`
 	RetentionWindowInDays              int                                                               `json:"retention_window_in_days,omitempty"`
@@ -57,7 +62,12 @@ type DataSourceDatabaseInstancesDatabaseInstances struct {
 	UsagePolicyId                      string                                                            `json:"usage_policy_id,omitempty"`
 }
 
+type DataSourceDatabaseInstancesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceDatabaseInstances struct {
 	DatabaseInstances []DataSourceDatabaseInstancesDatabaseInstances `json:"database_instances,omitempty"`
 	PageSize          int                                            `json:"page_size,omitempty"`
+	ProviderConfig    *DataSourceDatabaseInstancesProviderConfig     `json:"provider_config,omitempty"`
 }

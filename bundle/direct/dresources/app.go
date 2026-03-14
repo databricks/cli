@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -69,32 +68,33 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *
 	return app.Name, nil, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, _ Changes) (*apps.App, error) {
-	request := apps.UpdateAppRequest{
-		App:  *config,
-		Name: id,
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, changes Changes) (*apps.App, error) {
+	updateMask := strings.Join(collectUpdatePathsWithPrefix(changes, ""), ",")
+
+	request := apps.AsyncUpdateAppRequest{
+		App:        config,
+		AppName:    id,
+		UpdateMask: updateMask,
 	}
-	response, err := r.client.Apps.Update(ctx, request)
+	updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
 	if err != nil {
 		return nil, err
 	}
 
-	if response.Name != id {
-		log.Warnf(ctx, "apps: response contains unexpected name=%#v (expected %#v)", response.Name, id)
+	response, err := updateWaiter.Get()
+	if err != nil {
+		return nil, err
 	}
 
+	if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
+		return nil, fmt.Errorf("failed to update app %s: %s", id, response.Status.Message)
+	}
 	return nil, nil
 }
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
 	return err
-}
-
-func (*ResourceApp) FieldTriggers() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"name": deployplan.Recreate,
-	}
 }
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {

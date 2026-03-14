@@ -137,7 +137,8 @@ type ResourcePipelineDeployment struct {
 }
 
 type ResourcePipelineEnvironment struct {
-	Dependencies []string `json:"dependencies,omitempty"`
+	Dependencies       []string `json:"dependencies,omitempty"`
+	EnvironmentVersion string   `json:"environment_version,omitempty"`
 }
 
 type ResourcePipelineEventLog struct {
@@ -162,6 +163,17 @@ type ResourcePipelineGatewayDefinition struct {
 	GatewayStorageName    string                                                 `json:"gateway_storage_name,omitempty"`
 	GatewayStorageSchema  string                                                 `json:"gateway_storage_schema"`
 	ConnectionParameters  *ResourcePipelineGatewayDefinitionConnectionParameters `json:"connection_parameters,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionFullRefreshWindow struct {
+	DaysOfWeek []string `json:"days_of_week,omitempty"`
+	StartHour  int      `json:"start_hour"`
+	TimeZoneId string   `json:"time_zone_id,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationAutoFullRefreshPolicy struct {
+	Enabled          bool `json:"enabled"`
+	MinIntervalHours int  `json:"min_interval_hours,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBasedConnectorConfig struct {
@@ -189,6 +201,7 @@ type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
+	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
 }
@@ -199,6 +212,11 @@ type ResourcePipelineIngestionDefinitionObjectsReport struct {
 	DestinationTable   string                                                              `json:"destination_table,omitempty"`
 	SourceUrl          string                                                              `json:"source_url"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration `json:"table_configuration,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationAutoFullRefreshPolicy struct {
+	Enabled          bool `json:"enabled"`
+	MinIntervalHours int  `json:"min_interval_hours,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationQueryBasedConnectorConfig struct {
@@ -226,6 +244,7 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
+	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
 }
@@ -236,6 +255,11 @@ type ResourcePipelineIngestionDefinitionObjectsSchema struct {
 	SourceCatalog      string                                                              `json:"source_catalog,omitempty"`
 	SourceSchema       string                                                              `json:"source_schema"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration `json:"table_configuration,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationAutoFullRefreshPolicy struct {
+	Enabled          bool `json:"enabled"`
+	MinIntervalHours int  `json:"min_interval_hours,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationQueryBasedConnectorConfig struct {
@@ -263,6 +287,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                                        `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                      `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                    `json:"sequence_by,omitempty"`
+	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
 }
@@ -301,6 +326,11 @@ type ResourcePipelineIngestionDefinitionSourceConfigurations struct {
 	Catalog *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalog `json:"catalog,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionTableConfigurationAutoFullRefreshPolicy struct {
+	Enabled          bool `json:"enabled"`
+	MinIntervalHours int  `json:"min_interval_hours,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorConfig struct {
 	CursorColumns                        []string `json:"cursor_columns,omitempty"`
 	DeletionCondition                    string   `json:"deletion_condition,omitempty"`
@@ -326,6 +356,7 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 	SalesforceIncludeFormulaFields bool                                                                            `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                          `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                        `json:"sequence_by,omitempty"`
+	AutoFullRefreshPolicy          *ResourcePipelineIngestionDefinitionTableConfigurationAutoFullRefreshPolicy     `json:"auto_full_refresh_policy,omitempty"`
 	QueryBasedConnectorConfig      *ResourcePipelineIngestionDefinitionTableConfigurationQueryBasedConnectorConfig `json:"query_based_connector_config,omitempty"`
 	WorkdayReportParameters        *ResourcePipelineIngestionDefinitionTableConfigurationWorkdayReportParameters   `json:"workday_report_parameters,omitempty"`
 }
@@ -336,6 +367,7 @@ type ResourcePipelineIngestionDefinition struct {
 	IngestionGatewayId         string                                                    `json:"ingestion_gateway_id,omitempty"`
 	NetsuiteJarPath            string                                                    `json:"netsuite_jar_path,omitempty"`
 	SourceType                 string                                                    `json:"source_type,omitempty"`
+	FullRefreshWindow          *ResourcePipelineIngestionDefinitionFullRefreshWindow     `json:"full_refresh_window,omitempty"`
 	Objects                    []ResourcePipelineIngestionDefinitionObjects              `json:"objects,omitempty"`
 	SourceConfigurations       []ResourcePipelineIngestionDefinitionSourceConfigurations `json:"source_configurations,omitempty"`
 	TableConfiguration         *ResourcePipelineIngestionDefinitionTableConfiguration    `json:"table_configuration,omitempty"`
@@ -377,6 +409,10 @@ type ResourcePipelineLibrary struct {
 type ResourcePipelineNotification struct {
 	Alerts          []string `json:"alerts,omitempty"`
 	EmailRecipients []string `json:"email_recipients,omitempty"`
+}
+
+type ResourcePipelineProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourcePipelineRestartWindow struct {
@@ -441,6 +477,7 @@ type ResourcePipeline struct {
 	LatestUpdates        []ResourcePipelineLatestUpdates      `json:"latest_updates,omitempty"`
 	Library              []ResourcePipelineLibrary            `json:"library,omitempty"`
 	Notification         []ResourcePipelineNotification       `json:"notification,omitempty"`
+	ProviderConfig       *ResourcePipelineProviderConfig      `json:"provider_config,omitempty"`
 	RestartWindow        *ResourcePipelineRestartWindow       `json:"restart_window,omitempty"`
 	RunAs                *ResourcePipelineRunAs               `json:"run_as,omitempty"`
 	Trigger              *ResourcePipelineTrigger             `json:"trigger,omitempty"`

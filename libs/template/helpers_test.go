@@ -1,7 +1,6 @@
 package template
 
 import (
-	"context"
 	"os"
 	"strconv"
 	"strings"
@@ -17,7 +16,7 @@ import (
 )
 
 func TestTemplatePrintStringWithoutProcessing(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
@@ -33,7 +32,7 @@ func TestTemplatePrintStringWithoutProcessing(t *testing.T) {
 }
 
 func TestTemplateBundleUuidFunction(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
@@ -56,7 +55,7 @@ func TestTemplateBundleUuidFunction(t *testing.T) {
 }
 
 func TestTemplateRegexpCompileFunction(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
@@ -73,7 +72,7 @@ func TestTemplateRegexpCompileFunction(t *testing.T) {
 }
 
 func TestTemplateRandIntFunction(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
@@ -90,7 +89,7 @@ func TestTemplateRandIntFunction(t *testing.T) {
 }
 
 func TestTemplateUuidFunction(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
@@ -106,7 +105,7 @@ func TestTemplateUuidFunction(t *testing.T) {
 }
 
 func TestTemplateUrlFunction(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
@@ -122,7 +121,7 @@ func TestTemplateUrlFunction(t *testing.T) {
 }
 
 func TestTemplateMapPairFunction(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
@@ -138,7 +137,7 @@ func TestTemplateMapPairFunction(t *testing.T) {
 }
 
 func TestWorkspaceHost(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	w := &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{
@@ -161,7 +160,7 @@ func TestWorkspaceHost(t *testing.T) {
 }
 
 func TestWorkspaceHostNotConfigured(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "template")
 	ctx = cmdio.InContext(ctx, cmd)
 

@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/cmd/auth"
 	"github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/cache"
+	"github.com/databricks/cli/cmd/completion"
 	"github.com/databricks/cli/cmd/configure"
 	"github.com/databricks/cli/cmd/experimental"
 	"github.com/databricks/cli/cmd/fs"
@@ -94,6 +95,7 @@ func New(ctx context.Context) *cobra.Command {
 	// Add other subcommands.
 	cli.AddCommand(api.New())
 	cli.AddCommand(auth.New())
+	cli.AddCommand(completion.New())
 	cli.AddCommand(bundle.New())
 	cli.AddCommand(cache.New())
 	cli.AddCommand(experimental.New())
@@ -104,7 +106,6 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
-	cli.AddCommand(pipelines.InstallPipelinesCLI())
 	cli.AddCommand(ssh.New())
 
 	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.

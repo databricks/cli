@@ -1,0 +1,8 @@
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.test_job": {
+      "action": "skip"
+    }
+  }
+}

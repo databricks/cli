@@ -60,9 +60,11 @@ Deployment complete!
   "creator":"[USERNAME]",
   "id":"[UUID]",
   "name":"[ORIGINAL_ENDPOINT_ID]",
+  "permission_level":"CAN_MANAGE",
   "route_optimized":true,
   "state": {
-    "config_update":"NOT_UPDATING"
+    "config_update":"NOT_UPDATING",
+    "ready":"NOT_READY"
   }
 }
 

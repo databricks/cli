@@ -11,6 +11,8 @@ trace $CLI secrets create-scope --scope-backend-type AZURE_KEYVAULT --json '{
   }
 }'
 
+trace $CLI secrets delete-scope xxxxxxxx-xxx
+
 trace $CLI secrets create-scope --scope-backend-type AZURE_KEYVAULT --json '{
   "scope": "xxxxxxxx-xxx",
   "scope_backend_type": "AZURE_KEYVAULT"

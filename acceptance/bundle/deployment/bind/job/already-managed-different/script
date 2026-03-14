@@ -1,5 +1,6 @@
 # Bind job that is already bound to another ID
 trace $CLI bundle deploy
+replace_ids.py
 
 new_job_id=$(trace $CLI jobs create --json '{"name": "My Job"}' | jq -r '.job_id')
 add_repl.py $new_job_id NEW_JOB_ID

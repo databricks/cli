@@ -1,0 +1,15 @@
+Cloud = true
+
+RecordRequests = false
+Ignore = [".databricks", "databricks.yml"]
+
+[Env]
+DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+
+# Normalize ls error messages across platforms
+[[Repls]]
+Old = "ls: cannot access '\\.databricks': No such file or directory"
+New = "ls: .databricks: No such file or directory"

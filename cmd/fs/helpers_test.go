@@ -17,7 +17,7 @@ import (
 
 func TestFilerForPathForLocalPaths(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	f, path, err := filerForPath(ctx, tmpDir)
 	assert.NoError(t, err)
@@ -29,7 +29,7 @@ func TestFilerForPathForLocalPaths(t *testing.T) {
 }
 
 func TestFilerForPathForInvalidScheme(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, _, err := filerForPath(ctx, "dbf:/a")
 	assert.ErrorContains(t, err, "invalid scheme")
@@ -58,7 +58,7 @@ func TestFilerForWindowsLocalPaths(t *testing.T) {
 		t.SkipNow()
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	testWindowsFilerForPath(t, ctx, `c:\abc`)
 	testWindowsFilerForPath(t, ctx, `c:abc`)
 	testWindowsFilerForPath(t, ctx, `d:\abc`)
@@ -72,7 +72,7 @@ func mockMustWorkspaceClientFunc(cmd *cobra.Command, args []string) error {
 
 func setupCommand(t *testing.T) (*cobra.Command, *mocks.MockWorkspaceClient) {
 	m := mocks.NewMockWorkspaceClient(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
 	cmd := &cobra.Command{}

@@ -10,12 +10,13 @@ import (
 type B struct{ S string }
 
 type A struct {
-	XX int            `json:"xx"`
-	X  int            `json:"x,omitempty"`
-	B  B              `json:"b,omitempty"`
-	P  *B             `json:"p,omitempty"`
-	M  map[string]int `json:"m,omitempty"`
-	L  []string       `json:"l,omitempty"`
+	XX      int            `json:"xx"`
+	X       int            `json:"x,omitempty"`
+	B       B              `json:"b,omitempty"`
+	P       *B             `json:"p,omitempty"`
+	M       map[string]int `json:"m,omitempty"`
+	L       []string       `json:"l,omitempty"`
+	Ignored string         `json:"-"`
 }
 
 type C struct {
@@ -154,6 +155,12 @@ func TestGetStructDiff(t *testing.T) {
 			a:    A{L: []string{"a"}},
 			b:    A{L: []string{"a", "b"}},
 			want: []ResolvedChange{{Field: "l", Old: []string{"a"}, New: []string{"a", "b"}}},
+		},
+		{
+			name: "ignored field change",
+			a:    A{X: 5, Ignored: "old"},
+			b:    A{X: 5, Ignored: "new"},
+			want: nil,
 		},
 
 		// ForceSendFields with non-empty fields (omitempty)

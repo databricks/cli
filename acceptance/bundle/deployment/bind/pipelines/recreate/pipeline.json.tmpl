@@ -1,0 +1,17 @@
+{
+    "name": "lakeflow-pipeline-$UNIQUE_NAME",
+    "storage": "/Shared/old_storage",
+    "libraries": [
+        {
+            "glob": {
+                "include": "/Workspace/Users/someuser@databricks.com/lakeflow_pipeline/transformations/**"
+            }
+        },
+        {
+            "glob": {
+                "include": "/Workspace/Users/foo@databricks.com/another/**"
+            }
+        }
+    ],
+    "root_path": "/Workspace/Users/someuser@databricks.com/lakeflow_pipeline"
+}

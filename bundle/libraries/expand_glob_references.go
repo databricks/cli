@@ -201,7 +201,7 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			v, err = dyn.MapByPattern(v, expander.pattern, func(p dyn.Path, lv dyn.Value) (dyn.Value, error) {
 				d, output := expander.fn(ctx, b, p, lv)
 				diags = diags.Extend(d)
-				return dyn.V(output), nil
+				return dyn.NewValue(output, lv.Locations()), nil
 			})
 			if err != nil {
 				return dyn.InvalidValue, err

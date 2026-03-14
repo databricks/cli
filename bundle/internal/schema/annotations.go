@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	yaml3 "gopkg.in/yaml.v3"
+	yaml3 "go.yaml.in/yaml/v3"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/libs/dyn"

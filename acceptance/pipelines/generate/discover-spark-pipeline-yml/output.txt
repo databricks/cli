@@ -1,0 +1,2 @@
+Generated pipeline configuration: resources/my_pipeline.pipeline.yml
+

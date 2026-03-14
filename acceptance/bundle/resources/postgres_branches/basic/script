@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+
+trace $CLI bundle summary
+
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+# Get branch details
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+branch_name="${project_name}/branches/main"
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
+
+trace $CLI bundle summary
+
+# Filter requests to only show postgres operations (exclude workspace, telemetry, and operation polling)
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

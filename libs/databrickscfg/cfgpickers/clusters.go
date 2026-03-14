@@ -129,9 +129,9 @@ func WithoutSystemClusters() func(*compute.ClusterDetails, *iam.User) bool {
 }
 
 func loadInteractiveClusters(ctx context.Context, w *databricks.WorkspaceClient, filters []clusterFilter) ([]compatibleCluster, error) {
-	promptSpinner := cmdio.Spinner(ctx)
-	promptSpinner <- "Loading list of clusters to select from"
-	defer close(promptSpinner)
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Loading list of clusters to select from")
+	defer sp.Close()
 	all, err := w.Clusters.ListAll(ctx, compute.ListClustersRequest{
 		// Maximum page size to optimize for load time.
 		PageSize: 100,

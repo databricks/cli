@@ -58,7 +58,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 
 	// One or more DLT pipelines is being recreated.
 	if len(dltActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDltMessage)
+		cmdio.LogString(ctx, deleteOrRecreatePipelineMessage)
 		for _, action := range dltActions {
 			cmdio.Log(ctx, action)
 		}
@@ -103,7 +103,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if targetEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(false))
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
@@ -118,6 +118,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		statemgmt.Load(targetEngine),
 		metadata.Compute(),
 		metadata.Upload(),
+		statemgmt.UploadStateForYamlSync(targetEngine),
 	)
 
 	if !logdiag.HasError(ctx) {

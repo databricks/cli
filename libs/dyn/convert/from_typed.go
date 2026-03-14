@@ -59,7 +59,12 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 	var err error
 	switch srcv.Kind() {
 	case reflect.Struct:
-		v, err = fromTypedStruct(srcv, ref, options...)
+		// Handle SDK native types using JSON marshaling.
+		if slices.Contains(sdkNativeTypes, srcv.Type()) {
+			v, err = fromTypedSDKNative(srcv, ref, options...)
+		} else {
+			v, err = fromTypedStruct(srcv, ref, options...)
+		}
 	case reflect.Map:
 		v, err = fromTypedMap(srcv, ref)
 	case reflect.Slice:

@@ -12,13 +12,18 @@ type ResourceSqlAlertOptions struct {
 	Value            string `json:"value"`
 }
 
+type ResourceSqlAlertProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceSqlAlert struct {
-	CreatedAt string                   `json:"created_at,omitempty"`
-	Id        string                   `json:"id,omitempty"`
-	Name      string                   `json:"name"`
-	Parent    string                   `json:"parent,omitempty"`
-	QueryId   string                   `json:"query_id"`
-	Rearm     int                      `json:"rearm,omitempty"`
-	UpdatedAt string                   `json:"updated_at,omitempty"`
-	Options   *ResourceSqlAlertOptions `json:"options,omitempty"`
+	CreatedAt      string                          `json:"created_at,omitempty"`
+	Id             string                          `json:"id,omitempty"`
+	Name           string                          `json:"name"`
+	Parent         string                          `json:"parent,omitempty"`
+	QueryId        string                          `json:"query_id"`
+	Rearm          int                             `json:"rearm,omitempty"`
+	UpdatedAt      string                          `json:"updated_at,omitempty"`
+	Options        *ResourceSqlAlertOptions        `json:"options,omitempty"`
+	ProviderConfig *ResourceSqlAlertProviderConfig `json:"provider_config,omitempty"`
 }

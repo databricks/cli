@@ -1,5 +1,5 @@
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/experiments/1000",
+  "path": "/api/2.0/permissions/experiments/[NUMID]",
   "body": {}
 }

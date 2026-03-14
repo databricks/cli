@@ -1,7 +1,6 @@
 package resourcemutator
 
 import (
-	"context"
 	"slices"
 	"testing"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,15 +34,20 @@ func allResourceTypes(t *testing.T) []string {
 	require.Equal(t, []string{
 		"alerts",
 		"apps",
+		"catalogs",
 		"clusters",
 		"dashboards",
 		"database_catalogs",
 		"database_instances",
 		"experiments",
+		"external_locations",
 		"jobs",
 		"model_serving_endpoints",
 		"models",
 		"pipelines",
+		"postgres_branches",
+		"postgres_endpoints",
+		"postgres_projects",
 		"quality_monitors",
 		"registered_models",
 		"schemas",
@@ -99,6 +104,13 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 			Pipelines: map[string]*resources.Pipeline{
 				"pipeline_one": {},
 			},
+			Alerts: map[string]*resources.Alert{
+				"alert_one": {
+					AlertV2: sql.AlertV2{
+						DisplayName: "alert",
+					},
+				},
+			},
 		},
 	}
 
@@ -106,11 +118,15 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 		Config: config,
 	}
 
-	diags := bundle.Apply(context.Background(), b, SetRunAs())
+	diags := bundle.Apply(t.Context(), b, SetRunAs())
 	assert.NoError(t, diags.Error())
 
 	for _, job := range b.Config.Resources.Jobs {
 		assert.Equal(t, "bob", job.RunAs.UserName)
+	}
+
+	for _, alert := range b.Config.Resources.Alerts {
+		assert.Equal(t, "bob", alert.RunAs.UserName)
 	}
 }
 
@@ -145,13 +161,19 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // some point in the future. These resources are (implicitly) on the deny list, since
 // they are not on the allow list below.
 var allowList = []string{
+	"alerts",
+	"catalogs",
 	"clusters",
 	"database_catalogs",
 	"database_instances",
+	"external_locations",
 	"synced_database_tables",
 	"jobs",
 	"pipelines",
 	"models",
+	"postgres_branches",
+	"postgres_endpoints",
+	"postgres_projects",
 	"registered_models",
 	"experiments",
 	"schemas",
@@ -206,7 +228,7 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		b := &bundle.Bundle{
 			Config: *r,
 		}
-		diags := bundle.Apply(context.Background(), b, SetRunAs())
+		diags := bundle.Apply(t.Context(), b, SetRunAs())
 		require.Error(t, diags.Error())
 		assert.Contains(t, diags.Error().Error(), "do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: alice. Run as identity: bob.\n"+
@@ -260,7 +282,7 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 		b := &bundle.Bundle{
 			Config: *r,
 		}
-		diags := bundle.Apply(context.Background(), b, SetRunAs())
+		diags := bundle.Apply(t.Context(), b, SetRunAs())
 		require.NoError(t, diags.Error())
 	}
 }

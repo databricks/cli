@@ -8,12 +8,15 @@ var EnumFields = map[string][]string{
 	"artifacts.*.executable": {"bash", "sh", "cmd"},
 	"artifacts.*.type":       {"whl", "jar"},
 
+	"permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
+
 	"resources.alerts.*.evaluation.comparison_operator":          {"EQUAL", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "IS_NOT_NULL", "IS_NULL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.alerts.*.evaluation.empty_result_state":           {"ERROR", "OK", "TRIGGERED", "UNKNOWN"},
 	"resources.alerts.*.evaluation.source.aggregation":           {"AVG", "COUNT", "COUNT_DISTINCT", "MAX", "MEDIAN", "MIN", "STDDEV", "SUM"},
 	"resources.alerts.*.evaluation.state":                        {"ERROR", "OK", "TRIGGERED", "UNKNOWN"},
 	"resources.alerts.*.evaluation.threshold.column.aggregation": {"AVG", "COUNT", "COUNT_DISTINCT", "MAX", "MEDIAN", "MIN", "STDDEV", "SUM"},
 	"resources.alerts.*.lifecycle_state":                         {"ACTIVE", "DELETED"},
+	"resources.alerts.*.permissions[*].level":                    {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 	"resources.alerts.*.schedule.pause_status":                   {"PAUSED", "UNPAUSED"},
 
 	"resources.apps.*.active_deployment.mode":                   {"AUTO_SYNC", "SNAPSHOT"},
@@ -23,15 +26,19 @@ var EnumFields = map[string][]string{
 	"resources.apps.*.compute_status.state":                     {"ACTIVE", "DELETING", "ERROR", "STARTING", "STOPPED", "STOPPING", "UPDATING"},
 	"resources.apps.*.pending_deployment.mode":                  {"AUTO_SYNC", "SNAPSHOT"},
 	"resources.apps.*.pending_deployment.status.state":          {"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"},
+	"resources.apps.*.permissions[*].level":                     {"CAN_MANAGE", "CAN_USE"},
 	"resources.apps.*.resources[*].database.permission":         {"CAN_CONNECT_AND_CREATE"},
 	"resources.apps.*.resources[*].experiment.permission":       {"CAN_EDIT", "CAN_MANAGE", "CAN_READ"},
 	"resources.apps.*.resources[*].genie_space.permission":      {"CAN_EDIT", "CAN_MANAGE", "CAN_RUN", "CAN_VIEW"},
 	"resources.apps.*.resources[*].job.permission":              {"CAN_MANAGE", "CAN_MANAGE_RUN", "CAN_VIEW", "IS_OWNER"},
+	"resources.apps.*.resources[*].postgres.permission":         {"CAN_CONNECT_AND_CREATE"},
 	"resources.apps.*.resources[*].secret.permission":           {"MANAGE", "READ", "WRITE"},
 	"resources.apps.*.resources[*].serving_endpoint.permission": {"CAN_MANAGE", "CAN_QUERY", "CAN_VIEW"},
 	"resources.apps.*.resources[*].sql_warehouse.permission":    {"CAN_MANAGE", "CAN_USE", "IS_OWNER"},
-	"resources.apps.*.resources[*].uc_securable.permission":     {"EXECUTE", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"},
+	"resources.apps.*.resources[*].uc_securable.permission":     {"EXECUTE", "MODIFY", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"},
 	"resources.apps.*.resources[*].uc_securable.securable_type": {"CONNECTION", "FUNCTION", "TABLE", "VOLUME"},
+
+	"resources.catalogs.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
 	"resources.clusters.*.aws_attributes.availability":    {"ON_DEMAND", "SPOT", "SPOT_WITH_FALLBACK"},
 	"resources.clusters.*.aws_attributes.ebs_volume_type": {"GENERAL_PURPOSE_SSD", "THROUGHPUT_OPTIMIZED_HDD"},
@@ -39,15 +46,23 @@ var EnumFields = map[string][]string{
 	"resources.clusters.*.data_security_mode":             {"DATA_SECURITY_MODE_AUTO", "DATA_SECURITY_MODE_DEDICATED", "DATA_SECURITY_MODE_STANDARD", "LEGACY_PASSTHROUGH", "LEGACY_SINGLE_USER", "LEGACY_SINGLE_USER_STANDARD", "LEGACY_TABLE_ACL", "NONE", "SINGLE_USER", "USER_ISOLATION"},
 	"resources.clusters.*.gcp_attributes.availability":    {"ON_DEMAND_GCP", "PREEMPTIBLE_GCP", "PREEMPTIBLE_WITH_FALLBACK_GCP"},
 	"resources.clusters.*.kind":                           {"CLASSIC_PREVIEW"},
+	"resources.clusters.*.permissions[*].level":           {"CAN_ATTACH_TO", "CAN_MANAGE", "CAN_RESTART"},
 	"resources.clusters.*.runtime_engine":                 {"NULL", "PHOTON", "STANDARD"},
 
-	"resources.dashboards.*.lifecycle_state": {"ACTIVE", "TRASHED"},
+	"resources.dashboards.*.lifecycle_state":      {"ACTIVE", "TRASHED"},
+	"resources.dashboards.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 
-	"resources.database_instances.*.state": {"AVAILABLE", "DELETING", "FAILING_OVER", "STARTING", "STOPPED", "UPDATING"},
+	"resources.database_instances.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
+	"resources.database_instances.*.state":                {"AVAILABLE", "DELETING", "FAILING_OVER", "STARTING", "STOPPED", "UPDATING"},
+
+	"resources.experiments.*.permissions[*].level": {"CAN_EDIT", "CAN_MANAGE", "CAN_READ"},
+
+	"resources.external_locations.*.encryption_details.sse_encryption_details.algorithm": {"AWS_SSE_KMS", "AWS_SSE_S3"},
+	"resources.external_locations.*.grants[*].privileges[*]":                             {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
 	"resources.jobs.*.continuous.pause_status":                                                        {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.continuous.task_retry_mode":                                                     {"NEVER", "ON_FAILURE"},
-	"resources.jobs.*.deployment.kind":                                                                {"BUNDLE"},
+	"resources.jobs.*.deployment.kind":                                                                {"BUNDLE", "SYSTEM_MANAGED"},
 	"resources.jobs.*.edit_mode":                                                                      {"EDITABLE", "UI_LOCKED"},
 	"resources.jobs.*.format":                                                                         {"MULTI_TASK", "SINGLE_TASK"},
 	"resources.jobs.*.git_source.git_provider":                                                        {"awsCodeCommit", "azureDevOpsServices", "bitbucketCloud", "bitbucketServer", "gitHub", "gitHubEnterprise", "gitLab", "gitLabEnterpriseEdition"},
@@ -62,9 +77,12 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.job_clusters[*].new_cluster.kind":                                               {"CLASSIC_PREVIEW"},
 	"resources.jobs.*.job_clusters[*].new_cluster.runtime_engine":                                     {"NULL", "PHOTON", "STANDARD"},
 	"resources.jobs.*.performance_target":                                                             {"PERFORMANCE_OPTIMIZED", "STANDARD"},
+	"resources.jobs.*.permissions[*].level":                                                           {"CAN_MANAGE", "CAN_MANAGE_RUN", "CAN_VIEW", "IS_OWNER"},
 	"resources.jobs.*.schedule.pause_status":                                                          {"PAUSED", "UNPAUSED"},
+	"resources.jobs.*.tasks[*].compute.hardware_accelerator":                                          {"GPU_1xA10", "GPU_8xH100"},
 	"resources.jobs.*.tasks[*].condition_task.op":                                                     {"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.jobs.*.tasks[*].dbt_task.source":                                                       {"GIT", "WORKSPACE"},
+	"resources.jobs.*.tasks[*].for_each_task.task.compute.hardware_accelerator":                       {"GPU_1xA10", "GPU_8xH100"},
 	"resources.jobs.*.tasks[*].for_each_task.task.condition_task.op":                                  {"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.jobs.*.tasks[*].for_each_task.task.dbt_task.source":                                    {"GIT", "WORKSPACE"},
 	"resources.jobs.*.tasks[*].for_each_task.task.gen_ai_compute_task.source":                         {"GIT", "WORKSPACE"},
@@ -114,8 +132,11 @@ var EnumFields = map[string][]string{
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.provider":                               {"ai21labs", "amazon-bedrock", "anthropic", "cohere", "custom", "databricks-model-serving", "google-cloud-vertex-ai", "openai", "palm"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].workload_type":                                         {"CPU", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "MULTIGPU_MEDIUM"},
 	"resources.model_serving_endpoints.*.config.served_models[*].workload_type":                                           {"CPU", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "MULTIGPU_MEDIUM"},
+	"resources.model_serving_endpoints.*.permissions[*].level":                                                            {"CAN_MANAGE", "CAN_QUERY", "CAN_VIEW"},
 	"resources.model_serving_endpoints.*.rate_limits[*].key":                                                              {"endpoint", "user"},
 	"resources.model_serving_endpoints.*.rate_limits[*].renewal_period":                                                   {"minute"},
+
+	"resources.models.*.permissions[*].level": {"CAN_EDIT", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_STAGING_VERSIONS", "CAN_READ"},
 
 	"resources.pipelines.*.clusters[*].autoscale.mode":                                          {"ENHANCED", "LEGACY"},
 	"resources.pipelines.*.clusters[*].aws_attributes.availability":                             {"ON_DEMAND", "SPOT", "SPOT_WITH_FALLBACK"},
@@ -123,22 +144,31 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.clusters[*].azure_attributes.availability":                           {"ON_DEMAND_AZURE", "SPOT_AZURE", "SPOT_WITH_FALLBACK_AZURE"},
 	"resources.pipelines.*.clusters[*].gcp_attributes.availability":                             {"ON_DEMAND_GCP", "PREEMPTIBLE_GCP", "PREEMPTIBLE_WITH_FALLBACK_GCP"},
 	"resources.pipelines.*.deployment.kind":                                                     {"BUNDLE"},
+	"resources.pipelines.*.ingestion_definition.full_refresh_window.days_of_week[*]":            {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type":  {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.source_type":                                    {"BIGQUERY", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "MANAGED_POSTGRESQL", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SQLSERVER", "TERADATA", "WORKDAY_RAAS"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type":                   {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
+	"resources.pipelines.*.permissions[*].level":                                                {"CAN_MANAGE", "CAN_RUN", "CAN_VIEW", "IS_OWNER"},
 	"resources.pipelines.*.restart_window.days_of_week[*]":                                      {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
+
+	"resources.postgres_endpoints.*.endpoint_type": {"ENDPOINT_TYPE_READ_ONLY", "ENDPOINT_TYPE_READ_WRITE"},
+
+	"resources.postgres_projects.*.permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 
 	"resources.quality_monitors.*.custom_metrics[*].type":     {"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"},
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},
 	"resources.quality_monitors.*.schedule.pause_status":      {"PAUSED", "UNPAUSED", "UNSPECIFIED"},
 
-	"resources.schemas.*.grants[*].privileges[*]": {"ALL_PRIVILEGES", "APPLY_TAG", "CREATE_FUNCTION", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_TABLE", "CREATE_VOLUME", "EXECUTE", "EXTERNAL_USE_SCHEMA", "MANAGE", "MODIFY", "READ_VOLUME", "REFRESH", "SELECT", "USE_SCHEMA", "WRITE_VOLUME"},
+	"resources.registered_models.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
+
+	"resources.schemas.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
 	"resources.secret_scopes.*.backend_type": {"AZURE_KEYVAULT", "DATABRICKS"},
 
 	"resources.sql_warehouses.*.channel.name":         {"CHANNEL_NAME_CURRENT", "CHANNEL_NAME_CUSTOM", "CHANNEL_NAME_PREVIEW", "CHANNEL_NAME_PREVIOUS"},
+	"resources.sql_warehouses.*.permissions[*].level": {"CAN_MANAGE", "CAN_MONITOR", "CAN_USE", "CAN_VIEW", "IS_OWNER"},
 	"resources.sql_warehouses.*.spot_instance_policy": {"COST_OPTIMIZED", "POLICY_UNSPECIFIED", "RELIABILITY_OPTIMIZED"},
 	"resources.sql_warehouses.*.warehouse_type":       {"CLASSIC", "PRO", "TYPE_UNSPECIFIED"},
 
@@ -149,7 +179,7 @@ var EnumFields = map[string][]string{
 	"resources.synced_database_tables.*.spec.scheduling_policy":                                                                                 {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
 	"resources.synced_database_tables.*.unity_catalog_provisioning_state":                                                                       {"ACTIVE", "DEGRADED", "DELETING", "FAILED", "PROVISIONING", "UPDATING"},
 
-	"resources.volumes.*.grants[*].privileges[*]": {"ALL_PRIVILEGES", "APPLY_TAG", "MANAGE", "READ_VOLUME", "WRITE_VOLUME"},
+	"resources.volumes.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 	"resources.volumes.*.volume_type":             {"EXTERNAL", "MANAGED"},
 
 	"variables.*.type": {"complex"},

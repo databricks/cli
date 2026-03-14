@@ -32,18 +32,20 @@ func (m *script) Name() string {
 }
 
 func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	command := getCommand(b, m.scriptHook)
+	if command == "" {
+		log.Debugf(ctx, "No script defined for %s, skipping", m.scriptHook)
+		return nil
+	}
+
 	executor, err := exec.NewCommandExecutor(b.BundleRootPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	cmd, out, err := executeHook(ctx, executor, b, m.scriptHook)
+	cmd, out, err := executeHook(ctx, executor, command)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to execute script: %w", err))
-	}
-	if cmd == nil {
-		log.Debugf(ctx, "No script defined for %s, skipping", m.scriptHook)
-		return nil
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Executing '%s' script", m.scriptHook))
@@ -63,12 +65,7 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle, hook config.ScriptHook) (exec.Command, io.Reader, error) {
-	command := getCommmand(b, hook)
-	if command == "" {
-		return nil, nil, nil
-	}
-
+func executeHook(ctx context.Context, executor *exec.Executor, command config.Command) (exec.Command, io.Reader, error) {
 	// Don't run any arbitrary code when restricted execution is enabled.
 	if _, ok := env.RestrictedExecution(ctx); ok {
 		return nil, nil, errors.New("running scripts is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
@@ -82,7 +79,7 @@ func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle,
 	return cmd, io.MultiReader(cmd.Stdout(), cmd.Stderr()), nil
 }
 
-func getCommmand(b *bundle.Bundle, hook config.ScriptHook) config.Command {
+func getCommand(b *bundle.Bundle, hook config.ScriptHook) config.Command {
 	if b.Config.Experimental == nil || b.Config.Experimental.Scripts == nil {
 		return ""
 	}

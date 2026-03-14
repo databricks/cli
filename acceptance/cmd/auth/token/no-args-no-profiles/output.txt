@@ -1,0 +1,3 @@
+Error: no profiles configured. Run 'databricks auth login' to create a profile
+
+Exit code: 1

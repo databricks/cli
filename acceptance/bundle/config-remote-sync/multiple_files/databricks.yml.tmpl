@@ -1,0 +1,20 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+include:
+  - "resources/*.yml"
+
+targets:
+  dev:
+    resources:
+      jobs:
+        job_one:
+          max_concurrent_runs: 1
+          tasks:
+            - task_key: b_task
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/b_task
+              new_cluster:
+                spark_version: $DEFAULT_SPARK_VERSION
+                node_type_id: $NODE_TYPE_ID
+                num_workers: 1

@@ -84,6 +84,25 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	}
 	b.Metadata.Config.Resources.Pipelines = pipelinesMetadata
 
+	// Set dashboard config and file paths in metadata
+	dashboardsMetadata := make(map[string]*metadata.DashboardResource)
+	for name, dashboard := range b.Config.Resources.Dashboards {
+		// Compute config file path the dashboard is defined in, relative to the bundle
+		// root
+		l := b.Config.GetLocation("resources.dashboards." + name)
+		relativePath, err := filepath.Rel(b.BundleRootPath, l.File)
+		if err != nil {
+			return diag.Errorf("failed to compute relative path for dashboard %s: %v", name, err)
+		}
+		// Metadata for the dashboard
+		dashboardsMetadata[name] = &metadata.DashboardResource{
+			ID:           dashboard.ID,
+			RelativePath: filepath.ToSlash(relativePath),
+			FilePath:     dashboard.FilePath,
+		}
+	}
+	b.Metadata.Config.Resources.Dashboards = dashboardsMetadata
+
 	// Set file upload destination of the bundle in metadata
 	b.Metadata.Config.Workspace.FilePath = b.Config.Workspace.FilePath
 	// In source-linked deployment files are not copied and resources use source files, therefore we use sync path as file path in metadata
