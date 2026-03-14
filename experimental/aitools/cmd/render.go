@@ -4,16 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
-	"text/tabwriter"
 
 	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go/service/sql"
-)
-
-const (
-	// maxColumnWidth is the maximum display width for any single column in static table output.
-	maxColumnWidth = 40
 )
 
 // extractColumns returns column names from the query result manifest.
@@ -53,42 +46,7 @@ func renderJSON(w io.Writer, columns []string, rows [][]string) error {
 
 // renderStaticTable writes query results as a formatted text table.
 func renderStaticTable(w io.Writer, columns []string, rows [][]string) error {
-	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-
-	// Header row.
-	fmt.Fprintln(tw, strings.Join(columns, "\t"))
-
-	// Separator.
-	seps := make([]string, len(columns))
-	for i, col := range columns {
-		width := len(col)
-		for _, row := range rows {
-			if i < len(row) {
-				width = max(width, len(row[i]))
-			}
-		}
-		width = min(width, maxColumnWidth)
-		seps[i] = strings.Repeat("-", width)
-	}
-	fmt.Fprintln(tw, strings.Join(seps, "\t"))
-
-	// Data rows.
-	for _, row := range rows {
-		vals := make([]string, len(columns))
-		for i := range columns {
-			if i < len(row) {
-				vals[i] = row[i]
-			}
-		}
-		fmt.Fprintln(tw, strings.Join(vals, "\t"))
-	}
-
-	if err := tw.Flush(); err != nil {
-		return err
-	}
-
-	fmt.Fprintf(w, "\n%d rows\n", len(rows))
-	return nil
+	return tableview.RenderStaticTable(w, columns, rows)
 }
 
 // renderInteractiveTable displays query results in the interactive table browser.

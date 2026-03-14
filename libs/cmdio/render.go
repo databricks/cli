@@ -15,6 +15,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/fatih/color"
 	"github.com/nwidger/jsoncolor"
@@ -265,6 +266,32 @@ func Render(ctx context.Context, v any) error {
 
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
+
+	// Only launch TUI when an explicit TableConfig is registered.
+	// AutoDetect is available but opt-in from the override layer.
+	if c.outputFormat == flags.OutputText && c.capabilities.SupportsTUI() {
+		cmd := CommandFromContext(ctx)
+		if cmd != nil {
+			if cfg := tableview.GetConfig(cmd); cfg != nil {
+				iter := tableview.WrapIterator(i, cfg.Columns)
+				maxItems := GetMaxItems(ctx)
+				p := tableview.NewPaginatedProgram(ctx, c.out, cfg, iter, maxItems)
+				c.acquireTeaProgram(p)
+				defer c.releaseTeaProgram()
+				finalModel, err := p.Run()
+				if err != nil {
+					return err
+				}
+				if pm, ok := finalModel.(tableview.FinalModel); ok {
+					if modelErr := pm.Err(); modelErr != nil {
+						return modelErr
+					}
+				}
+				return nil
+			}
+		}
+	}
+
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
