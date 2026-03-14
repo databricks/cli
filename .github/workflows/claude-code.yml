@@ -1,0 +1,135 @@
+name: Claude Code
+
+# AI-assisted PR reviews and interactive @claude mentions.
+#
+# The actual Claude Code execution runs in eng-dev-ecosystem on
+# protected runners whose IPs are allowlisted by the Databricks
+# account IP ACL. This workflow is a thin trigger that dispatches
+# to eng-dev-ecosystem via the DECO workflow trigger GitHub App.
+
+on:
+  # Triggers automatic review when a PR is first opened.
+  pull_request:
+    types: [opened]
+
+  # Enables @claude mentions in PR conversation comments.
+  # (GitHub fires issue_comment for top-level PR comments.)
+  issue_comment:
+    types: [created]
+
+  # Enables @claude mentions in inline review comments.
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  # Automatic review on PR open. For re-reviews, comment "@claude review".
+  # Restrict to org members/owners to prevent untrusted users (e.g. external
+  # fork PRs) from consuming model serving resources. See:
+  # https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+  review:
+    if: |
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.head.repo.fork &&
+      contains(fromJson('["MEMBER","OWNER"]'), github.event.pull_request.author_association)
+    concurrency:
+      group: claude-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+    environment: test-trigger-is
+    permissions:
+      contents: read
+
+    steps:
+      - name: Generate GitHub App token
+        id: token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: databricks-eng
+          repositories: eng-dev-ecosystem
+
+      - name: Trigger Claude Code review
+        run: |
+          gh workflow run cli-claude-code.yml \
+            -R databricks-eng/eng-dev-ecosystem \
+            --ref main \
+            -F pull_request_number=${{ github.event.pull_request.number }} \
+            -F event_type=review
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+
+  # Interactive @claude mentions (PRs only, trusted authors only).
+  # Restrict to org members/owners to prevent untrusted users from triggering
+  # Claude with write access to the repo. See:
+  # https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+  assist:
+    if: |
+      github.event.comment.user.type != 'Bot' &&
+      contains(fromJson('["MEMBER","OWNER"]'), github.event.comment.author_association) &&
+      (
+        (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+      )
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+    environment: test-trigger-is
+    permissions:
+      contents: read
+
+    steps:
+      - name: Generate GitHub App token
+        id: token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: databricks-eng
+          repositories: eng-dev-ecosystem
+
+      - name: Determine PR number
+        id: pr
+        run: |
+          if [ -n "$ISSUE_NUMBER" ]; then
+            echo "number=$ISSUE_NUMBER" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+
+      # Skip fork PRs to avoid running Claude against untrusted code.
+      # Comment events don't expose fork info in the `if` condition,
+      # so we check via API.
+      - name: Check if fork PR
+        id: fork-check
+        run: |
+          IS_FORK=$(gh pr view "$PR_NUMBER" --json isCrossRepository --jq '.isCrossRepository')
+          echo "is_fork=$IS_FORK" >> "$GITHUB_OUTPUT"
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Trigger Claude Code assist
+        if: steps.fork-check.outputs.is_fork != 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.token.outputs.token }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'databricks-eng',
+              repo: 'eng-dev-ecosystem',
+              workflow_id: 'cli-claude-code.yml',
+              ref: 'main',
+              inputs: {
+                pull_request_number: '${{ steps.pr.outputs.number }}',
+                event_type: 'assist',
+                comment_body: process.env.COMMENT_BODY
+              }
+            });
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
