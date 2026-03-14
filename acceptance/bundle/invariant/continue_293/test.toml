@@ -1,0 +1,5 @@
+Cloud = false
+
+# Cross-resource permission references don't work in terraform mode.
+EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]
+EnvMatrixExclude.no_cross_resource_ref = ["INPUT_CONFIG=job_cross_resource_ref.yml.tmpl"]

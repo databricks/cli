@@ -186,9 +186,9 @@
       "action": "skip",
       "remote_state": {
         "object_id": "/jobs/[NUMID]",
-        "permissions": [
+        "_": [
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           }
         ]
@@ -239,9 +239,9 @@
       "action": "skip",
       "remote_state": {
         "object_id": "/pipelines/[UUID]",
-        "permissions": [
+        "_": [
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           }
         ]

@@ -10,6 +10,7 @@ Ignore = [
     "plan.json",
     "*.py",
     "*.json",
+    "*.err",
     "app",
 ]
 
@@ -32,6 +33,8 @@ EnvMatrix.INPUT_CONFIG = [
     "job.yml.tmpl",
     "job_pydabs_10_tasks.yml.tmpl",
     "job_pydabs_1000_tasks.yml.tmpl",
+    "job_cross_resource_ref.yml.tmpl",
+    "job_permission_ref.yml.tmpl",
     "job_with_task.yml.tmpl",
     "model.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",

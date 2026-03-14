@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -119,8 +120,15 @@ func walkTypeStruct(path *structpath.PatternNode, st reflect.Type, visit VisitTy
 		}
 
 		// Skip fields marked as "-" in json tag
-		jsonTagName := structtag.JSONTag(jsonTag).Name()
+		jsonTagParsed := structtag.JSONTag(jsonTag)
+		jsonTagName := jsonTagParsed.Name()
 		if jsonTagName == "-" {
+			continue
+		}
+
+		// EmbeddedSlice: walk at parent path level without adding field name.
+		if sf.Name == structaccess.EmbeddedSliceFieldName {
+			walkTypeValue(path, sf.Type, &sf, visit, visitedCount)
 			continue
 		}
 
