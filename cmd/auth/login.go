@@ -302,6 +302,8 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		}
 	}
 
+	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
+
 	// Determine the host type and handle account ID / workspace ID accordingly
 	cfg := &config.Config{
 		Host:                       authArguments.Host,

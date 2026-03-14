@@ -4,14 +4,16 @@ import (
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/databricks/cli/libs/env"
 )
 
 // CleanupEnvironment sets up a pristine environment containing only $PATH and $HOME.
 // The original environment is restored upon test completion.
 // Note: use of this function is incompatible with parallel execution.
 func CleanupEnvironment(t TestingT) {
-	path := os.Getenv("PATH") //nolint:forbidigo // import cycle: libs/env tests import internal/testutil
-	pwd := os.Getenv("PWD")   //nolint:forbidigo // import cycle: libs/env tests import internal/testutil
+	path := env.Get(t.Context(), "PATH")
+	pwd := env.Get(t.Context(), "PWD")
 
 	// Clear all environment variables.
 	NullEnvironment(t)

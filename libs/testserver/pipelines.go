@@ -44,6 +44,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.Name = r.Spec.Name
 	r.RunAsUserName = "tester@databricks.com"
 	r.State = "IDLE"
+	r.EffectivePublishingMode = pipelines.PublishingModeDefaultPublishingMode
 
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r

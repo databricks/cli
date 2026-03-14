@@ -88,7 +88,8 @@ func TestAccountClientOrPrompt(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	t.Setenv("PATH", "/nothing")
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	t.Run("Prompt if nothing is specified", func(t *testing.T) {
 		expectPrompts(t, accountPromptFn, &config.Config{})
@@ -157,7 +158,8 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	t.Setenv("PATH", "/nothing")
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	t.Run("Prompt if nothing is specified", func(t *testing.T) {
 		expectPrompts(t, workspacePromptFn, &config.Config{})
@@ -248,6 +250,8 @@ func TestMustAccountClientErrorsWithNoDatabricksCfg(t *testing.T) {
 
 func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
@@ -276,6 +280,8 @@ func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 
 func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
@@ -305,6 +311,8 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 
 func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
@@ -322,4 +330,115 @@ func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 
 	_, err = MustAnyClient(cmd, []string{})
 	require.ErrorContains(t, err, "does not contain account profiles")
+}
+
+func TestMustWorkspaceClientDefaultProfilePrecedence(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[__settings__]
+default_profile = settings-profile
+
+[DEFAULT]
+host = https://default.cloud.databricks.com
+token = default-token
+
+[settings-profile]
+host = https://settings.cloud.databricks.com
+token = settings-token
+
+[env-profile]
+host = https://env.cloud.databricks.com
+token = env-token
+
+[flag-profile]
+host = https://flag.cloud.databricks.com
+token = flag-token
+`), 0o600)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name        string
+		profileFlag string
+		envProfile  string
+		wantProfile string
+		wantHost    string
+	}{
+		{
+			name:        "settings default is used when flag and env are unset",
+			wantProfile: "settings-profile",
+			wantHost:    "https://settings.cloud.databricks.com",
+		},
+		{
+			name:        "env var takes precedence over settings default",
+			envProfile:  "env-profile",
+			wantProfile: "env-profile",
+			wantHost:    "https://env.cloud.databricks.com",
+		},
+		{
+			name:        "profile flag takes precedence over env var",
+			profileFlag: "flag-profile",
+			envProfile:  "env-profile",
+			wantProfile: "flag-profile",
+			wantHost:    "https://flag.cloud.databricks.com",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
+			t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+			if tc.envProfile != "" {
+				t.Setenv("DATABRICKS_CONFIG_PROFILE", tc.envProfile)
+			}
+
+			ctx := cmdio.MockDiscard(t.Context())
+			ctx = SkipLoadBundle(ctx)
+			cmd := New(ctx)
+
+			if tc.profileFlag != "" {
+				err := cmd.Flag("profile").Value.Set(tc.profileFlag)
+				require.NoError(t, err)
+			}
+
+			err := MustWorkspaceClient(cmd, []string{})
+			require.NoError(t, err)
+
+			w := cmdctx.WorkspaceClient(cmd.Context())
+			require.NotNil(t, w)
+			assert.Equal(t, tc.wantProfile, w.Config.Profile)
+			assert.Equal(t, tc.wantHost, w.Config.Host)
+		})
+	}
+}
+
+func TestMustWorkspaceClientWithoutConfiguredDefaultFallsBackToDefaultSection(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[DEFAULT]
+host = https://default.cloud.databricks.com
+token = default-token
+
+[named-profile]
+host = https://named.cloud.databricks.com
+token = named-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	assert.Equal(t, "", w.Config.Profile)
+	assert.Equal(t, "https://default.cloud.databricks.com", w.Config.Host)
 }
