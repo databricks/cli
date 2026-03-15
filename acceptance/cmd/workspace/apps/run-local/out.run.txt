@@ -4,17 +4,17 @@ Using CPython 3.11.12
 Creating virtual environment at: .venv
 Activate with: source .venv/bin/activate
 Using Python 3.13.3 environment at: /Users/denis.bilenko/.venv313
-Resolved 131 packages in 48ms
-Uninstalled 2 packages in 36ms
-Installed 2 packages in 20ms
+Resolved 131 packages in 90ms
+Uninstalled 2 packages in 28ms
+Installed 2 packages in 8ms
  - flask==3.1.1
  + flask==3.0.3
  - werkzeug==3.1.6
  + werkzeug==3.0.6
 Using Python 3.13.3 environment at: /Users/denis.bilenko/.venv313
-Resolved 7 packages in 3ms
-Uninstalled 2 packages in 35ms
-Installed 2 packages in 10ms
+Resolved 7 packages in 4ms
+Uninstalled 2 packages in 31ms
+Installed 2 packages in 18ms
  - flask==3.0.3
  + flask==3.1.1
  - werkzeug==3.0.6
