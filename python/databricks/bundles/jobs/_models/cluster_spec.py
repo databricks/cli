@@ -119,8 +119,33 @@ class ClusterSpec:
     """
 
     data_security_mode: VariableOrOptional[DataSecurityMode] = None
+    """
+    Data security mode decides what data governance model to use when accessing data
+    from a cluster.
+    
+    The following modes can only be used when `kind = CLASSIC_PREVIEW`.
+    * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
+    * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
+    * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
+    
+    The following modes can be used regardless of `kind`.
+    * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
+    * `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
+    * `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+    
+    The following modes are deprecated starting with Databricks Runtime 15.0 and
+    will be removed for future Databricks Runtime versions:
+    
+    * `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.
+    * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
+    * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
+    * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
+    """
 
     docker_image: VariableOrOptional[DockerImage] = None
+    """
+    Custom docker image BYOC
+    """
 
     driver_instance_pool_id: VariableOrOptional[str] = None
     """
@@ -181,6 +206,18 @@ class ClusterSpec:
     """
 
     kind: VariableOrOptional[Kind] = None
+    """
+    The kind of compute described by this compute specification.
+    
+    Depending on `kind`, different validations and default values will be applied.
+    
+    Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
+    * [is_single_node](/api/workspace/clusters/create#is_single_node)
+    * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
+    * [data_security_mode](/api/workspace/clusters/create#data_security_mode) set to `DATA_SECURITY_MODE_AUTO`, `DATA_SECURITY_MODE_DEDICATED`, or `DATA_SECURITY_MODE_STANDARD`
+    
+    By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
+    """
 
     node_type_id: VariableOrOptional[str] = None
     """
@@ -213,6 +250,15 @@ class ClusterSpec:
     """
 
     runtime_engine: VariableOrOptional[RuntimeEngine] = None
+    """
+    Determines the cluster's runtime engine, either standard or Photon.
+    
+    This field is not compatible with legacy `spark_version` values that contain `-photon-`.
+    Remove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.
+    
+    If left unspecified, the runtime engine defaults to standard unless the spark_version
+    contains -photon-, in which case Photon will be used.
+    """
 
     single_user_name: VariableOrOptional[str] = None
     """
@@ -273,6 +319,9 @@ class ClusterSpec:
     """
 
     workload_type: VariableOrOptional[WorkloadType] = None
+    """
+    Cluster Attributes showing for clusters workload types.
+    """
 
     @classmethod
     def from_dict(cls, value: "ClusterSpecDict") -> "Self":
@@ -343,8 +392,33 @@ class ClusterSpecDict(TypedDict, total=False):
     """
 
     data_security_mode: VariableOrOptional[DataSecurityModeParam]
+    """
+    Data security mode decides what data governance model to use when accessing data
+    from a cluster.
+    
+    The following modes can only be used when `kind = CLASSIC_PREVIEW`.
+    * `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.
+    * `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.
+    * `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.
+    
+    The following modes can be used regardless of `kind`.
+    * `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
+    * `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.
+    * `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.
+    
+    The following modes are deprecated starting with Databricks Runtime 15.0 and
+    will be removed for future Databricks Runtime versions:
+    
+    * `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.
+    * `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.
+    * `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.
+    * `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.
+    """
 
     docker_image: VariableOrOptional[DockerImageParam]
+    """
+    Custom docker image BYOC
+    """
 
     driver_instance_pool_id: VariableOrOptional[str]
     """
@@ -405,6 +479,18 @@ class ClusterSpecDict(TypedDict, total=False):
     """
 
     kind: VariableOrOptional[KindParam]
+    """
+    The kind of compute described by this compute specification.
+    
+    Depending on `kind`, different validations and default values will be applied.
+    
+    Clusters with `kind = CLASSIC_PREVIEW` support the following fields, whereas clusters with no specified `kind` do not.
+    * [is_single_node](/api/workspace/clusters/create#is_single_node)
+    * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
+    * [data_security_mode](/api/workspace/clusters/create#data_security_mode) set to `DATA_SECURITY_MODE_AUTO`, `DATA_SECURITY_MODE_DEDICATED`, or `DATA_SECURITY_MODE_STANDARD`
+    
+    By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
+    """
 
     node_type_id: VariableOrOptional[str]
     """
@@ -437,6 +523,15 @@ class ClusterSpecDict(TypedDict, total=False):
     """
 
     runtime_engine: VariableOrOptional[RuntimeEngineParam]
+    """
+    Determines the cluster's runtime engine, either standard or Photon.
+    
+    This field is not compatible with legacy `spark_version` values that contain `-photon-`.
+    Remove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.
+    
+    If left unspecified, the runtime engine defaults to standard unless the spark_version
+    contains -photon-, in which case Photon will be used.
+    """
 
     single_user_name: VariableOrOptional[str]
     """
@@ -497,6 +592,9 @@ class ClusterSpecDict(TypedDict, total=False):
     """
 
     workload_type: VariableOrOptional[WorkloadTypeParam]
+    """
+    Cluster Attributes showing for clusters workload types.
+    """
 
 
 ClusterSpecParam = ClusterSpecDict | ClusterSpec

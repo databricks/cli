@@ -20,6 +20,10 @@ class JobEnvironment:
     """
 
     spec: VariableOrOptional[Environment] = None
+    """
+    The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
+    In this minimal environment spec, only pip dependencies are supported.
+    """
 
     @classmethod
     def from_dict(cls, value: "JobEnvironmentDict") -> "Self":
@@ -38,6 +42,10 @@ class JobEnvironmentDict(TypedDict, total=False):
     """
 
     spec: VariableOrOptional[EnvironmentParam]
+    """
+    The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
+    In this minimal environment spec, only pip dependencies are supported.
+    """
 
 
 JobEnvironmentParam = JobEnvironmentDict | JobEnvironment

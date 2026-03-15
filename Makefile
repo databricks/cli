@@ -136,8 +136,10 @@ schema:
 schema-for-docs:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs
 
-docs:
-	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
+# Regenerate schema with OpenAPI spec descriptions persisted into annotations.yml.
+# Requires .codegen/openapi.json (downloaded via `make .codegen/openapi.json`).
+schema-openapi: .codegen/openapi.json
+	DATABRICKS_OPENAPI_SPEC=.codegen/openapi.json go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
 INTEGRATION = go run -modfile=tools/go.mod ./tools/testrunner/main.go ${GO_TOOL} gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
 
@@ -203,7 +205,7 @@ bundle/direct/dresources/apitypes.generated.yml: ./bundle/direct/tools/generate_
 bundle/direct/dresources/resources.generated.yml: ./bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt
 	python3 $^ > $@
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema schema-for-docs integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates generate-out-test-toml test-update-aws test-update-all generate-validation
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema schema-for-docs schema-openapi integration integration-short acc-cover acc-showcover ws wsfix links checks test-update test-update-templates generate-out-test-toml test-update-aws test-update-all generate-validation
 
 test-exp-aitools:
 	make test TEST_PACKAGES="./experimental/aitools/..." ACCEPTANCE_TEST_FILTER="TestAccept/apps"

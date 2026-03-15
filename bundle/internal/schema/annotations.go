@@ -1,9 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"os"
+	"maps"
 	"reflect"
 	"regexp"
 	"slices"
@@ -14,30 +13,62 @@ import (
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/merge"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
 type annotationHandler struct {
-	// Annotations read from all annotation files including all overrides
+	// Annotations read from the annotations.yml file
 	parsedAnnotations annotation.File
-	// Missing annotations for fields that are found in config that need to be added to the annotation file
-	missingAnnotations annotation.File
+	// OpenAPI parser for reading descriptions directly from the spec
+	openapi *openapiParser
+	// Annotations derived from the OpenAPI spec that should be persisted back to annotations.yml.
+	// This ensures annotations.yml is self-contained and the schema can be reproduced without the spec.
+	openapiAnnotations annotation.File
+	// Path mapping for converting between Go type paths and bundle paths
+	pathMap *pathMapping
 }
 
-// Adds annotations to the JSON schema reading from the annotation files.
-// More details https://json-schema.org/understanding-json-schema/reference/annotations
-func newAnnotationHandler(sources []string) (*annotationHandler, error) {
-	data, err := annotation.LoadAndMerge(sources)
+// Adds annotations to the JSON schema reading from the OpenAPI spec and
+// the annotations.yml override file. OpenAPI descriptions are used as the base,
+// and annotations.yml entries override them.
+func newAnnotationHandler(annotationsPath string, openapi *openapiParser) (*annotationHandler, error) {
+	data, err := annotation.LoadAndMerge([]string{annotationsPath})
 	if err != nil {
 		return nil, err
 	}
-	d := &annotationHandler{}
-	d.parsedAnnotations = data
-	d.missingAnnotations = annotation.File{}
-	return d, nil
+
+	pathMap := buildPathMapping()
+
+	// Convert bundle path keys in annotations to Go type path keys.
+	resolved := annotation.File{}
+	for key, fields := range data {
+		// If the key is a bundle path, resolve it to a Go type path.
+		if tp, ok := pathMap.bundlePathToType[key]; ok {
+			key = tp
+		}
+		if existing, ok := resolved[key]; ok {
+			// Merge fields from both entries (Go path and bundle path).
+			// Use mergeDescriptor to properly combine descriptors rather
+			// than maps.Copy which would overwrite entire descriptors.
+			for fieldName, desc := range fields {
+				if existingDesc, ok := existing[fieldName]; ok {
+					existing[fieldName] = mergeDescriptor(existingDesc, desc)
+				} else {
+					existing[fieldName] = desc
+				}
+			}
+		} else {
+			resolved[key] = fields
+		}
+	}
+
+	return &annotationHandler{
+		parsedAnnotations:  resolved,
+		openapi:            openapi,
+		openapiAnnotations: annotation.File{},
+		pathMap:            pathMap,
+	}, nil
 }
 
 func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
@@ -47,72 +78,220 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 		return s
 	}
 
-	annotations := d.parsedAnnotations[refPath]
-	if annotations == nil {
-		annotations = map[string]annotation.Descriptor{}
+	// Step 1: Get base annotations from the OpenAPI spec
+	openapiAnnotations := d.getOpenApiAnnotations(typ, s)
+
+	// Track OpenAPI annotations so they can be persisted to annotations.yml.
+	// This ensures the schema is reproducible without the spec.
+	for k, v := range openapiAnnotations {
+		// Skip if annotations.yml already has a real description for this field.
+		if existing, inFile := d.parsedAnnotations[refPath]; inFile {
+			if fileDesc, ok := existing[k]; ok {
+				if fileDesc.Description != "" && fileDesc.Description != annotation.Placeholder {
+					continue
+				}
+			}
+		}
+		if d.openapiAnnotations[refPath] == nil {
+			d.openapiAnnotations[refPath] = map[string]annotation.Descriptor{}
+		}
+		d.openapiAnnotations[refPath][k] = v
 	}
 
-	rootTypeAnnotation, ok := annotations[RootTypeKey]
+	// Step 2: Get override annotations from annotations.yml
+	overrideAnnotations := d.parsedAnnotations[refPath]
+	if overrideAnnotations == nil {
+		overrideAnnotations = map[string]annotation.Descriptor{}
+	}
+
+	// Step 3: Merge. Start with OpenAPI base, apply overrides on top.
+	merged := map[string]annotation.Descriptor{}
+	maps.Copy(merged, openapiAnnotations)
+	for k, v := range overrideAnnotations {
+		if existing, ok := merged[k]; ok {
+			merged[k] = mergeDescriptor(existing, v)
+		} else {
+			merged[k] = v
+		}
+	}
+
+	rootTypeAnnotation, ok := merged[RootTypeKey]
 	if ok {
 		assignAnnotation(&s, rootTypeAnnotation)
 	}
 
 	for k, v := range s.Properties {
-		item := annotations[k]
-		if item.Description == "" {
-			item.Description = annotation.Placeholder
-
-			emptyAnnotations := d.missingAnnotations[refPath]
-			if emptyAnnotations == nil {
-				emptyAnnotations = map[string]annotation.Descriptor{}
-				d.missingAnnotations[refPath] = emptyAnnotations
-			}
-			emptyAnnotations[k] = item
-		}
+		item := merged[k]
 		assignAnnotation(v, item)
 	}
 	return s
 }
 
-// Writes missing annotations with placeholder values back to the annotation file
-func (d *annotationHandler) syncWithMissingAnnotations(outputPath string) error {
-	existingFile, err := os.ReadFile(outputPath)
-	if err != nil {
-		return err
-	}
-	existing, err := yamlloader.LoadYAML("", bytes.NewBuffer(existingFile))
-	if err != nil {
-		return err
+// getOpenApiAnnotations reads annotations for the given type directly from
+// the OpenAPI spec. This replaces the previous approach of pre-extracting
+// annotations into a separate YAML file.
+func (d *annotationHandler) getOpenApiAnnotations(typ reflect.Type, s jsonschema.Schema) map[string]annotation.Descriptor {
+	result := map[string]annotation.Descriptor{}
+
+	if d.openapi == nil {
+		return result
 	}
 
-	for k := range d.missingAnnotations {
-		if !isCliPath(k) {
-			delete(d.missingAnnotations, k)
-			fmt.Printf("Missing annotations for `%s` that are not in CLI package, try to fetch latest OpenAPI spec and regenerate annotations\n", k)
+	// Also check embedded (anonymous) struct types for promoted field descriptions.
+	// For example, resources.Dashboard embeds dashboards.Dashboard from the SDK,
+	// and promoted fields should get descriptions from the embedded type's OpenAPI entry.
+	derefTyp := typ
+	for derefTyp.Kind() == reflect.Pointer {
+		derefTyp = derefTyp.Elem()
+	}
+	if derefTyp.Kind() == reflect.Struct {
+		for i := range derefTyp.NumField() {
+			field := derefTyp.Field(i)
+			if !field.Anonymous {
+				continue
+			}
+			embeddedResult := d.getOpenApiAnnotations(field.Type, s)
+			for k, v := range embeddedResult {
+				if k == RootTypeKey {
+					continue // Don't inherit root type annotations from embedded types
+				}
+				if _, exists := result[k]; !exists {
+					result[k] = v
+				}
+			}
 		}
 	}
 
-	missingAnnotations, err := convert.FromTyped(d.missingAnnotations, dyn.NilValue)
+	ref, ok := d.openapi.findRef(typ)
+	if !ok {
+		return result
+	}
+
+	// Root type annotation
+	preview := ref.Preview
+	if preview == "PUBLIC" {
+		preview = ""
+	}
+	outputOnly := isOutputOnly(ref)
+	if ref.Description != "" || ref.Enum != nil || ref.Deprecated || ref.DeprecationMessage != "" || preview != "" || outputOnly != "" {
+		if ref.Deprecated && ref.DeprecationMessage == "" {
+			ref.DeprecationMessage = "This field is deprecated"
+		}
+		result[RootTypeKey] = annotation.Descriptor{
+			Description:        ref.Description,
+			Enum:               ref.Enum,
+			DeprecationMessage: ref.DeprecationMessage,
+			Preview:            preview,
+			OutputOnly:         outputOnly,
+		}
+	}
+
+	// Property annotations
+	for k := range s.Properties {
+		if refProp, ok := ref.Properties[k]; ok {
+			propPreview := refProp.Preview
+			if propPreview == "PUBLIC" {
+				propPreview = ""
+			}
+			if refProp.Deprecated && refProp.DeprecationMessage == "" {
+				refProp.DeprecationMessage = "This field is deprecated"
+			}
+
+			description := refProp.Description
+
+			// If the field doesn't have a description, try to find the referenced type
+			// and use its description.
+			if description == "" && refProp.Reference != nil {
+				refRefPath := *refProp.Reference
+				refTypeName := strings.TrimPrefix(refRefPath, "#/components/schemas/")
+				if refType, ok := d.openapi.ref[refTypeName]; ok {
+					description = refType.Description
+				}
+			}
+
+			result[k] = annotation.Descriptor{
+				Description:        description,
+				Enum:               refProp.Enum,
+				Preview:            propPreview,
+				DeprecationMessage: refProp.DeprecationMessage,
+				OutputOnly:         isOutputOnly(*refProp),
+			}
+		}
+	}
+
+	return result
+}
+
+// mergeDescriptor merges an override descriptor on top of a base descriptor.
+// Non-empty, non-PLACEHOLDER fields in the override take precedence.
+func mergeDescriptor(base, override annotation.Descriptor) annotation.Descriptor {
+	result := base
+	if override.Description != "" && override.Description != annotation.Placeholder {
+		result.Description = override.Description
+	}
+	if override.MarkdownDescription != "" {
+		result.MarkdownDescription = override.MarkdownDescription
+	}
+	if override.Title != "" {
+		result.Title = override.Title
+	}
+	if override.Default != nil {
+		result.Default = override.Default
+	}
+	if override.Enum != nil {
+		result.Enum = override.Enum
+	}
+	if override.MarkdownExamples != "" {
+		result.MarkdownExamples = override.MarkdownExamples
+	}
+	if override.DeprecationMessage != "" {
+		result.DeprecationMessage = override.DeprecationMessage
+	}
+	if override.Preview != "" {
+		result.Preview = override.Preview
+	}
+	if override.OutputOnly != "" {
+		result.OutputOnly = override.OutputOnly
+	}
+	return result
+}
+
+// syncAnnotations persists OpenAPI-derived annotations back to the annotation file.
+// This ensures annotations.yml is self-contained and the schema can be
+// reproduced without the OpenAPI spec. Annotations are stored with Go type
+// path keys internally, so we convert them to bundle path keys before writing.
+func (d *annotationHandler) syncAnnotations(outputPath string) error {
+	if len(d.openapiAnnotations) == 0 {
+		return nil
+	}
+
+	// Load existing annotations at the typed level.
+	existingData, err := annotation.LoadAndMerge([]string{outputPath})
 	if err != nil {
 		return err
 	}
 
-	output, err := merge.Merge(existing, missingAnnotations)
-	if err != nil {
-		return err
+	// Convert OpenAPI annotations from Go type paths to bundle paths and
+	// merge them into the existing annotations.
+	for goPath, fields := range d.openapiAnnotations {
+		if bundlePath, ok := d.pathMap.typeToBundlePath[goPath]; ok {
+			goPath = bundlePath
+		}
+		if existingData[goPath] == nil {
+			existingData[goPath] = map[string]annotation.Descriptor{}
+		}
+		for fieldName, desc := range fields {
+			existing, exists := existingData[goPath][fieldName]
+			if !exists {
+				existingData[goPath][fieldName] = desc
+				continue
+			}
+			// Merge OpenAPI data into existing entry, preserving hand-written fields.
+			existingData[goPath][fieldName] = mergeDescriptor(existing, desc)
+		}
 	}
 
-	var outputTyped annotation.File
-	err = convert.ToTyped(&outputTyped, output)
-	if err != nil {
-		return err
-	}
-
-	err = saveYamlWithStyle(outputPath, outputTyped)
-	if err != nil {
-		return err
-	}
-	return nil
+	return saveYamlWithStyle(outputPath, existingData)
 }
 
 func getPath(typ reflect.Type) string {
@@ -138,7 +317,7 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.Preview = a.Preview
 	}
 
-	if a.OutputOnly != nil && *a.OutputOnly {
+	if a.OutputOnly == "true" {
 		s.FieldBehaviors = []string{"OUTPUT_ONLY"}
 	}
 
@@ -235,8 +414,4 @@ func convertLinksToAbsoluteUrl(s string) string {
 	})
 
 	return result
-}
-
-func isCliPath(path string) bool {
-	return !strings.HasPrefix(path, "github.com/databricks/databricks-sdk-go")
 }

@@ -26,8 +26,3 @@ python/databricks/bundles/*/_models/*.py
 
 # Developed elsewhere:
 internal/genkit/tagging.py
-
-# Docsgen:
-bundle/docsgen/output/resources.md
-bundle/docsgen/output/reference.md
-bundle/docsgen/testdata/anchors.md
