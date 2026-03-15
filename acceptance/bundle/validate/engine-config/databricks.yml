@@ -1,4 +1,3 @@
 bundle:
   name: test-engine-config
-  deployment:
-    engine: invalid_engine
+  engine: invalid_engine

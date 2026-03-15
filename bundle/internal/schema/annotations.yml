@@ -42,6 +42,9 @@ github.com/databricks/cli/bundle/config.Bundle:
       The definition of the bundle deployment
     "markdown_description": |-
       The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
+  "engine":
+    "description": |-
+      The deployment engine to use. Valid values are `terraform` and `direct`. Can be overridden with the `DATABRICKS_BUNDLE_ENGINE` environment variable.
   "git":
     "description": |-
       The Git version control details that are associated with your bundle.
@@ -54,9 +57,6 @@ github.com/databricks/cli/bundle/config.Bundle:
     "description": |-
       Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
 github.com/databricks/cli/bundle/config.Deployment:
-  "engine":
-    "description": |-
-      The deployment engine to use. Valid values are `terraform` and `direct`. Can be overridden with the `DATABRICKS_BUNDLE_ENGINE` environment variable.
   "fail_on_active_runs":
     "description": |-
       Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.

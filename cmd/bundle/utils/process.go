@@ -186,7 +186,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.deployment.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
+			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		opts.Build = false
@@ -301,12 +301,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 // ResolveEngineRequest combines the env var engine with the bundle config engine setting.
 func ResolveEngineRequest(b *bundle.Bundle, envReq engine.EngineRequest) engine.EngineRequest {
-	configEngine := b.Config.Bundle.Deployment.Engine
-	configSource := "bundle.deployment.engine setting"
+	configEngine := b.Config.Bundle.Engine
+	configSource := "bundle.engine setting"
 	if configEngine != engine.EngineNotSet {
-		v := dyn.GetValue(b.Config.Value(), "bundle.deployment.engine")
+		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
 		if locs := v.Locations(); len(locs) > 0 {
-			configSource = fmt.Sprintf("bundle.deployment.engine setting at %s", locs[0])
+			configSource = fmt.Sprintf("bundle.engine setting at %s", locs[0])
 		}
 	}
 	return engine.Resolve(envReq, configEngine, configSource)

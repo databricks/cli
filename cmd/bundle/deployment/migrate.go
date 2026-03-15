@@ -162,7 +162,7 @@ WARNING: Both direct deployment engine and this command are experimental and not
 		if stateDesc.Lineage == "" {
 			cmdio.LogString(ctx, `Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
 
-To start using direct engine, set "engine: direct" under bundle.deployment in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.`)
+To start using direct engine, set "engine: direct" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.`)
 			return root.ErrAlreadyPrinted
 		}
 
