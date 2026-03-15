@@ -2,11 +2,11 @@ package browser
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	osexec "os/exec"
 	"runtime"
-	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -29,8 +29,11 @@ var openDefaultBrowserURL = func(targetURL string) error {
 	return browserpkg.OpenURL(targetURL)
 }
 
-var runBrowserCommand = func(ctx context.Context, workingDirectory string, browserCommand []string, targetURL string) error {
-	cmd := osexec.CommandContext(ctx, browserCommand[0], append(browserCommand[1:], targetURL)...)
+var runBrowserCommand = func(ctx context.Context, workingDirectory, browserRaw, targetURL string) error {
+	// Always execute through the system shell. This is necessary on Windows
+	// where scripts (.py, .bat, etc.) cannot be executed directly via exec.
+	fullCmd := fmt.Sprintf("%s %q", browserRaw, targetURL)
+	cmd := osexec.CommandContext(ctx, shellName(), shellFlag(), fullCmd)
 	cmd.Dir = workingDirectory
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -54,22 +57,11 @@ func shellFlag() string {
 	return "-c"
 }
 
-// containsQuotes reports whether s contains single or double quote characters.
-func containsQuotes(s string) bool {
-	return strings.ContainsAny(s, `"'`)
-}
-
-// parseBrowserCommand splits the BROWSER env var into a command slice.
-// If the value contains quotes it delegates to the system shell so that
-// values like `open -a "Google Chrome"` are handled correctly.
-func parseBrowserCommand(raw string) []string {
-	if raw == "" {
-		return nil
-	}
-	if containsQuotes(raw) {
-		return []string{shellName(), shellFlag(), raw}
-	}
-	return strings.Fields(raw)
+// parseBrowserCommand returns the raw BROWSER value if set, or empty string
+// if unset. The raw value is passed to the system shell for execution, so
+// quoting and multi-word commands are handled by the shell.
+func parseBrowserCommand(raw string) string {
+	return raw
 }
 
 // IsDisabled reports whether browser launching is disabled for the context.
@@ -102,10 +94,10 @@ func NewOpener(ctx context.Context, workingDirectory string, opts ...OpenerOptio
 
 	raw := env.Get(ctx, browserEnvVar)
 	browserCommand := parseBrowserCommand(raw)
-	switch {
-	case len(browserCommand) == 0:
+	switch browserCommand {
+	case "":
 		return openDefaultBrowserURL
-	case raw == disabledBrowser:
+	case disabledBrowser:
 		return func(targetURL string) error {
 			cmdio.LogString(ctx, cfg.disabledMessage+targetURL)
 			return nil
