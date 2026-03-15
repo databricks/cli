@@ -12,7 +12,11 @@
           "bundle": {
             "config": {
               "engine.EngineType": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "terraform",
+                  "direct"
+                ]
               },
               "resources.Alert": {
                 "type": "object",
@@ -2146,6 +2150,10 @@
                   "markdownDescription": "The definition of the bundle deployment. For supported attributes see [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html).",
                   "x-since-version": "v0.229.0"
                 },
+                "engine": {
+                  "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Can be overridden with the `DATABRICKS_BUNDLE_ENGINE` environment variable.",
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config/engine.EngineType"
+                },
                 "git": {
                   "description": "The Git version control details that are associated with your bundle.",
                   "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
@@ -2174,9 +2182,6 @@
             "config.Deployment": {
               "type": "object",
               "properties": {
-                "engine": {
-                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config/engine.EngineType"
-                },
                 "fail_on_active_runs": {
                   "description": "Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.",
                   "$ref": "#/$defs/bool",
