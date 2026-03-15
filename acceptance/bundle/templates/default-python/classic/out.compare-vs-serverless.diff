@@ -1,3 +1,7 @@
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/dev/sync-snapshots/25d9dc7a9f929cc3.json
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/dev/terraform/.terraform.lock.hcl
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/prod/sync-snapshots/[NUMID]f05bdd9a.json
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/prod/terraform/.terraform.lock.hcl
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/databricks.yml
 +++ output/my_default_python/databricks.yml
 @@ -34,4 +34,6 @@

@@ -1,0 +1,1388 @@
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/script",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "errcode() {\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\n    set +e\n    # Execute the provided command with all arguments\n    \"$@\"\n    local exit_code=$?\n    # Re-enable 'set -e' if it was previously set\n    set -e\n    if [ $exit_code -ne 0 ]; then\n        \u003e\u00262 printf \"\\nExit code: $exit_code\\n\"\n    fi\n}\n\nmusterr() {\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\n    set +e\n    # Execute the provided command with all arguments\n    \"$@\"\n    local exit_code=$?\n    # Re-enable 'set -e'\n    set -e\n    if [ $exit_code -eq 0 ]; then\n        \u003e\u00262 printf \"\\nUnexpected success\\n\"\n        exit 1\n    fi\n}\n\ntrace() {\n    \u003e\u00262 printf \"\\n\u003e\u003e\u003e %s\\n\" \"$*\"\n\n    if [[ \"$1\" == *\"=\"* ]]; then\n        # If the first argument contains '=', collect all env vars\n        local env_vars=()\n        while [[ \"$1\" == *\"=\"* ]]; do\n            env_vars+=(\"$1\")\n            shift\n        done\n        # Export environment variables in a subshell and execute the command\n        (\n            export \"${env_vars[@]}\"\n            \"$@\"\n        )\n    else\n        # Execute the command normally\n        \"$@\"\n    fi\n\n    return $?\n}\n\ngit-repo-init() {\n    git init -qb main\n    git config core.autocrlf false\n    git config user.name \"Tester\"\n    git config user.email \"[USERNAME]\"\n    git config core.hooksPath no-hooks\n    git add databricks.yml\n    git commit -qm 'Add databricks.yml'\n}\n\ntitle() {\n    local label=\"$1\"\n    printf \"\\n=== %b\" \"$label\"\n}\n\nwithdir() {\n    local dir=\"$1\"\n    shift\n    local orig_dir=\"$(pwd)\"\n    cd \"$dir\" || return $?\n    \"$@\"\n    local exit_code=$?\n    cd \"$orig_dir\" || return $?\n    return $exit_code\n}\n\nuuid() {\n    python3 -c 'import uuid; print(uuid.uuid4())'\n}\n\nvenv_activate() {\n    if [[ \"$OSTYPE\" == \"msys\" || \"$OSTYPE\" == \"cygwin\" || \"$OSTYPE\" == \"win32\" ]]; then\n        source .venv/Scripts/activate\n    else\n        source .venv/bin/activate\n    fi\n}\n\nenvsubst() {\n    # We need to disable MSYS_NO_PATHCONV when running the python script.\n    # This is because the python interpreter is otherwise unable to find the python script\n    # when MSYS_NO_PATHCONV is enabled.\n    env -u MSYS_NO_PATHCONV envsubst.py\n}\n\nprint_telemetry_bool_values() {\n    jq -r 'select(.path? == \"/telemetry-ext\") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map(\"\\(.key) \\(.value)\") | .[]' out.requests.txt | sort\n}\n\nsethome() {\n    local home=\"$1\"\n    mkdir -p \"$home\"\n\n    # For macOS and Linux, use HOME.\n    export HOME=\"$home\"\n\n    # For Windows, use USERPROFILE.\n    export USERPROFILE=\"$home\"\n}\n\nas-test-sp() {\n    if [[ -z \"$TEST_SP_TOKEN\" ]]; then\n        echo \"Error: TEST_SP_TOKEN is not set.\" \u003e\u00262\n        return 1\n    fi\n\n    DATABRICKS_TOKEN=\"$TEST_SP_TOKEN\" \\\n    DATABRICKS_CLIENT_SECRET=\"\" \\\n    DATABRICKS_CLIENT_ID=\"\" \\\n    DATABRICKS_AUTH_TYPE=\"\" \\\n    \"$@\"\n}\n\nreadplanarg() {\n    # Expands into \"--plan \u003cfilename\u003e\" based on READPLAN env var\n    # Use it with \"bundle deploy\" to configure two runs: once with saved plan and one without.\n    # Note: READPLAN is specially handled in test runner so that engine=terraform/readplan is set combination is skipped.\n    if [[ -n \"$READPLAN\" ]]; then\n        printf -- \"--plan %s\" \"$1\"\n    else\n        printf \"\"\n    fi\n}\n\n(\nexport DATABRICKS_BUNDLE_ENGINE=\ntrace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy\nprint_state.py \u003e out.original_state.json\n\ntrace $CLI bundle deployment migrate 2\u003e\u00261 | contains.py 'Migrated 6 resources'\nprint_state.py \u003e out.new_state.json\n\n# this is expected to fail because state does not match env var\ntrace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle plan\ntrace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle deploy\n\nrm out.requests.txt\n# Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work\ntrace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py \"6 unchanged\"\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py \"6 unchanged\"\ntrace print_requests.py --get //unity-catalog/permissions | contains.py 'engine/direct' \u003e /dev/null\n\ntrace DATABRICKS_BUNDLE_ENGINE=\"\" $CLI bundle deploy\ntrace print_requests.py --get //unity-catalog/permissions | jq '.headers[\"User-Agent\"][0]' | contains.py 'engine/direct' \u003e LOG.requests_deploy.txt\n\ntitle \"Should show that it's already migrated\"\ntrace musterr $CLI bundle deployment migrate\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull\n\nrm out.requests.txt\n)\n\nrm -fr .databricks .gitignore\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/preview/scim/v2/Me\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files\"\n  }\n}\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "bundle:\n  name: test-bundle\n\nresources:\n  schemas:\n    my_schema:\n      catalog_name: main\n      name: schema_grants\n      grants:\n        - principal: deco-test-user@databricks.com\n          privileges:\n            - CREATE_TABLE\n            - USE_SCHEMA\n\n  volumes:\n    my_volume:\n      catalog_name: main\n      schema_name: schema_grants\n      name: volume_name\n      grants:\n        - principal: deco-test-user@databricks.com\n          privileges:\n            - READ_VOLUME\n            - WRITE_VOLUME\n\n  registered_models:\n    my_registered_model:\n      name: mymodel\n      comment: mycomment\n      catalog_name: main\n      schema_name: ${resources.schemas.my_schema.name}\n      grants:\n        - principal: deco-test-user@databricks.com\n          privileges: [\"APPLY_TAG\"]\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/repls.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": [
+    {
+      "Old": "/Users/denis\\.bilenko/work/cli-main-bundle-engine-config/acceptance/build/darwin_arm64/\\.terraformrc",
+      "New": "[DATABRICKS_TF_CLI_CONFIG_FILE]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/Users/denis\\.bilenko/work/cli-main-bundle-engine-config/acceptance/build/darwin_arm64/terraform",
+      "New": "[TERRAFORM]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/Users/denis\\.bilenko/work/cli-main-bundle-engine-config/acceptance/build/darwin_arm64/databricks_bundles-0\\.294\\.0-py3-none-any\\.whl",
+      "New": "[DATABRICKS_BUNDLES_WHEEL]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/Users/denis\\.bilenko/work/cli-main-bundle-engine-config/acceptance/build/darwin_arm64/databricks",
+      "New": "[CLI]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_DEFAULT_WAREHOUSE_ID]",
+      "New": "[TEST_DEFAULT_WAREHOUSE_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_DEFAULT_CLUSTER_ID]",
+      "New": "[TEST_DEFAULT_CLUSTER_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_INSTANCE_POOL_ID]",
+      "New": "[TEST_INSTANCE_POOL_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/Users/denis\\.bilenko/work/cli-main-bundle-engine-config/acceptance/build/darwin_arm64",
+      "New": "[BUILD_DIR]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "0\\.0\\.0-dev(\\+[a-f0-9]{10,16})?",
+      "New": "[DEV_VERSION]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "databricks-sdk-go/[0-9]+\\.[0-9]+\\.[0-9]+",
+      "New": "databricks-sdk-go/[SDK_VERSION]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "1\\.25\\.7",
+      "New": "[GO_VERSION]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/Users/denis\\.bilenko/work/cli-main-bundle-engine-config/acceptance",
+      "New": "[TESTROOT]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "dbapi[0-9a-f]+",
+      "New": "[DATABRICKS_TOKEN]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "i3\\.xlarge",
+      "New": "[NODE_TYPE_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[UNIQUE_NAME]",
+      "New": "[UNIQUE_NAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_TMP_DIR]",
+      "New": "[TEST_TMP_DIR]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_TMP_DIR]",
+      "New": "[TEST_TMP_DIR]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_TMP_DIR]_PARENT",
+      "New": "[TEST_TMP_DIR]_PARENT",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_TMP_DIR]_PARENT",
+      "New": "[TEST_TMP_DIR]_PARENT",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[USERNAME]@databricks\\.com",
+      "New": "[USERNAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[USERNAME]",
+      "New": "[USERNAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[USERID]",
+      "New": "[USERID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "https://127\\.0\\.0\\.1:56866",
+      "New": "[DATABRICKS_URL]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "http://127\\.0\\.0\\.1:56866",
+      "New": "[DATABRICKS_URL]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "127\\.0\\.0\\.1:56866",
+      "New": "[DATABRICKS_HOST]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}",
+      "New": "[UUID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "\\d{20,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "1[78]\\d{17}",
+      "New": "[UNIX_TIME_NANOS]",
+      "Order": 10,
+      "Distinct": true
+    },
+    {
+      "Old": "\\d{17,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "\\d{14,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "1[78]\\d{11}",
+      "New": "[UNIX_TIME_MILLIS]",
+      "Order": 10,
+      "Distinct": true
+    },
+    {
+      "Old": "\\d{11,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "1[78]\\d{8}",
+      "New": "[UNIX_TIME_S]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "\\d{8,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "2\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d\\d:\\d\\d:\\d\\d\\.\\d+(Z|\\+\\d\\d:\\d\\d)?",
+      "New": "[TIMESTAMP]",
+      "Order": 9,
+      "Distinct": false
+    },
+    {
+      "Old": "2\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d\\d:\\d\\d:\\d\\dZ?",
+      "New": "[TIMESTAMP]",
+      "Order": 9,
+      "Distinct": false
+    },
+    {
+      "Old": "os/[OS]",
+      "New": "os/[OS]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "os/[OS]",
+      "New": "os/[OS]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "os/[OS]",
+      "New": "os/[OS]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "",
+      "New": "",
+      "Order": 0,
+      "Distinct": false
+    }
+  ]
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "seq": 1,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": [
+      {
+        "local_path": "repls.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.requests.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "output.txt",
+        "is_notebook": false
+      }
+    ],
+    "id": "[UUID]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "name": "schema_grants"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/volume auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/volumes",
+  "body": {
+    "catalog_name": "main",
+    "name": "volume_name",
+    "schema_name": "schema_grants",
+    "volume_type": "MANAGED"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/volume auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.schema_grants.volume_name"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/registered_model auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/models",
+  "body": {
+    "catalog_name": "main",
+    "comment": "mycomment",
+    "name": "mymodel",
+    "schema_name": "schema_grants"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "CREATE_TABLE",
+          "USE_SCHEMA"
+        ],
+        "principal": "deco-test-user@databricks.com"
+      }
+    ]
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/registered_model auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/models/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/volume/main.schema_grants.volume_name"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/volume/main.schema_grants.volume_name",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "READ_VOLUME",
+          "WRITE_VOLUME"
+        ],
+        "principal": "deco-test-user@databricks.com"
+      }
+    ]
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/volume/main.schema_grants.volume_name"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.schema_grants.mymodel",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "APPLY_TAG"
+        ],
+        "principal": "deco-test-user@databricks.com"
+      }
+    ]
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/volume/main.schema_grants.volume_name"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 4,
+    "terraform_version": "1.5.5",
+    "serial": 7,
+    "lineage": "[UUID]",
+    "outputs": {},
+    "resources": [
+      {
+        "mode": "managed",
+        "type": "databricks_grants",
+        "name": "registered_model_my_registered_model",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "catalog": null,
+              "credential": null,
+              "external_location": null,
+              "foreign_connection": null,
+              "function": "main.schema_grants.mymodel",
+              "grant": [
+                {
+                  "principal": "deco-test-user@databricks.com",
+                  "privileges": [
+                    "APPLY_TAG"
+                  ]
+                }
+              ],
+              "id": "function/main.schema_grants.mymodel",
+              "metastore": null,
+              "model": null,
+              "pipeline": null,
+              "provider_config": [],
+              "recipient": null,
+              "schema": null,
+              "share": null,
+              "storage_credential": null,
+              "table": null,
+              "volume": null
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA==",
+            "dependencies": [
+              "databricks_registered_model.my_registered_model",
+              "databricks_schema.my_schema"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "managed",
+        "type": "databricks_grants",
+        "name": "schema_my_schema",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "catalog": null,
+              "credential": null,
+              "external_location": null,
+              "foreign_connection": null,
+              "function": null,
+              "grant": [
+                {
+                  "principal": "deco-test-user@databricks.com",
+                  "privileges": [
+                    "CREATE_TABLE",
+                    "USE_SCHEMA"
+                  ]
+                }
+              ],
+              "id": "schema/main.schema_grants",
+              "metastore": null,
+              "model": null,
+              "pipeline": null,
+              "provider_config": [],
+              "recipient": null,
+              "schema": "main.schema_grants",
+              "share": null,
+              "storage_credential": null,
+              "table": null,
+              "volume": null
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA==",
+            "dependencies": [
+              "databricks_schema.my_schema"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "managed",
+        "type": "databricks_grants",
+        "name": "volume_my_volume",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "catalog": null,
+              "credential": null,
+              "external_location": null,
+              "foreign_connection": null,
+              "function": null,
+              "grant": [
+                {
+                  "principal": "deco-test-user@databricks.com",
+                  "privileges": [
+                    "READ_VOLUME",
+                    "WRITE_VOLUME"
+                  ]
+                }
+              ],
+              "id": "volume/main.schema_grants.volume_name",
+              "metastore": null,
+              "model": null,
+              "pipeline": null,
+              "provider_config": [],
+              "recipient": null,
+              "schema": null,
+              "share": null,
+              "storage_credential": null,
+              "table": null,
+              "volume": "main.schema_grants.volume_name"
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA==",
+            "dependencies": [
+              "databricks_schema.my_schema",
+              "databricks_volume.my_volume"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "managed",
+        "type": "databricks_registered_model",
+        "name": "my_registered_model",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "aliases": [],
+              "browse_only": false,
+              "catalog_name": "main",
+              "comment": "mycomment",
+              "created_at": [UNIX_TIME_MILLIS][0],
+              "created_by": "[USERNAME]",
+              "full_name": "main.schema_grants.mymodel",
+              "id": "main.schema_grants.mymodel",
+              "metastore_id": "[UUID]",
+              "name": "mymodel",
+              "owner": "[USERNAME]",
+              "provider_config": [],
+              "schema_name": "schema_grants",
+              "storage_location": null,
+              "updated_at": [UNIX_TIME_MILLIS][0],
+              "updated_by": "[USERNAME]"
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA==",
+            "dependencies": [
+              "databricks_schema.my_schema"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "managed",
+        "type": "databricks_schema",
+        "name": "my_schema",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "catalog_name": "main",
+              "comment": null,
+              "enable_predictive_optimization": null,
+              "force_destroy": true,
+              "id": "main.schema_grants",
+              "metastore_id": null,
+              "name": "schema_grants",
+              "owner": "[USERNAME]",
+              "properties": null,
+              "provider_config": [],
+              "schema_id": "",
+              "storage_root": null
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA=="
+          }
+        ]
+      },
+      {
+        "mode": "managed",
+        "type": "databricks_volume",
+        "name": "my_volume",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "catalog_name": "main",
+              "comment": null,
+              "id": "main.schema_grants.volume_name",
+              "name": "volume_name",
+              "owner": "[USERNAME]",
+              "provider_config": [],
+              "schema_name": "schema_grants",
+              "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+              "volume_path": "/Volumes/main/schema_grants/volume_name",
+              "volume_type": "MANAGED"
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA==",
+            "dependencies": [
+              "databricks_schema.my_schema"
+            ]
+          }
+        ]
+      }
+    ],
+    "check_results": null
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "config": {
+      "bundle": {
+        "name": "test-bundle",
+        "target": "default",
+        "git": {
+          "bundle_root_path": "."
+        }
+      },
+      "workspace": {
+        "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+      },
+      "resources": {},
+      "presets": {
+        "source_linked_deployment": false
+      }
+    },
+    "extra": {}
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/telemetry-ext",
+  "body": {
+    "uploadTime": [UNIX_TIME_MILLIS][1],
+    "items": [],
+    "protoLogs": [
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"darwin\",\"execution_time_ms\":2564,\"exit_code\":0},\"bundle_deploy_event\":{\"bundle_uuid\":\"[UUID]\",\"deployment_id\":\"[UUID]\",\"resource_count\":3,\"resource_job_count\":0,\"resource_pipeline_count\":0,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":1,\"resource_quality_monitor_count\":0,\"resource_schema_count\":1,\"resource_volume_count\":1,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0,\"experimental\":{\"configuration_file_count\":1,\"variable_count\":0,\"complex_variable_count\":0,\"lookup_variable_count\":0,\"target_count\":1,\"bool_values\":[{\"key\":\"local.cache.attempt\",\"value\":true},{\"key\":\"local.cache.miss\",\"value\":true},{\"key\":\"resref_schemas.name\",\"value\":true},{\"key\":\"experimental.use_legacy_run_as\",\"value\":false},{\"key\":\"run_as_set\",\"value\":false},{\"key\":\"presets_name_prefix_is_set\",\"value\":false},{\"key\":\"python_wheel_wrapper_is_set\",\"value\":false},{\"key\":\"skip_artifact_cleanup\",\"value\":false},{\"key\":\"has_serverless_compute\",\"value\":false},{\"key\":\"has_classic_job_compute\",\"value\":false},{\"key\":\"has_classic_interactive_compute\",\"value\":false}],\"bundle_mode\":\"TYPE_UNSPECIFIED\",\"workspace_artifact_path_type\":\"WORKSPACE_FILE_SYSTEM\",\"bundle_mutator_execution_time_ms\":[{\"key\":\"terraform.(plan)\",\"value\":1330},{\"key\":\"terraform.(apply)\",\"value\":590},{\"key\":\"phases.Initialize\",\"value\":10},{\"key\":\"files.(upload)\",\"value\":7},{\"key\":\"lock.(acquire)\",\"value\":4},{\"key\":\"resourcemutator.(processStaticResources)\",\"value\":3},{\"key\":\"phases.Build\",\"value\":2},{\"key\":\"mutator.(populateCurrentUser)\",\"value\":2},{\"key\":\"mutator.(initializeCache)\",\"value\":1},{\"key\":\"artifacts.(cleanUp)\",\"value\":1},{\"key\":\"deploy.(statePush)\",\"value\":1},{\"key\":\"terraform.(write)\",\"value\":1},{\"key\":\"metadata.(upload)\",\"value\":1},{\"key\":\"validate.FastValidate\",\"value\":0}],\"local_cache_measurements_ms\":[{\"key\":\"local.cache.compute_duration\",\"value\":0}]}}}}}"
+    ]
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/volume auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.schema_grants.volume_name"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/registered_model auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/models/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/volume/main.schema_grants.volume_name"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/grants auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.schema_grants.volume_name"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/models/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/volume/main.schema_grants.volume_name"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.schema_grants.volume_name"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deployment_migrate cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/models/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/models/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.schema_grants.volume_name"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/function/main.schema_grants.mymodel"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/volume/main.schema_grants.volume_name"
+}
