@@ -11,6 +11,9 @@
         "cli": {
           "bundle": {
             "config": {
+              "engine.EngineType": {
+                "type": "string"
+              },
               "resources.Alert": {
                 "type": "object",
                 "properties": {
@@ -2171,6 +2174,9 @@
             "config.Deployment": {
               "type": "object",
               "properties": {
+                "engine": {
+                  "$ref": "#/$defs/github.com/databricks/cli/bundle/config/engine.EngineType"
+                },
                 "fail_on_active_runs": {
                   "description": "Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.",
                   "$ref": "#/$defs/bool",
