@@ -359,10 +359,60 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 	return m, nil
 }
 
-func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
+// ClassifyChange applies the full per-field classification to a single change
+// using resources.yml rules. It handles skip checks, recreate/updateID,
+// and adapter-specific overrides.
+func ClassifyChange(ctx context.Context, adapter *dresources.Adapter, path *structpath.PathNode, ch *deployplan.ChangeDesc, remoteState any) error {
 	cfg := adapter.ResourceConfig()
 	generatedCfg := adapter.GeneratedResourceConfig()
 
+	if structdiff.IsEqual(ch.Remote, ch.New) {
+		ch.Action = deployplan.Skip
+		ch.Reason = deployplan.ReasonRemoteAlreadySet
+	} else if allEmpty(ch.Old, ch.New, ch.Remote) {
+		ch.Action = deployplan.Skip
+		ch.Reason = deployplan.ReasonEmpty
+	} else if reason, ok := shouldSkip(cfg, path, ch); ok {
+		ch.Action = deployplan.Skip
+		ch.Reason = reason
+	} else if reason, ok := shouldSkip(generatedCfg, path, ch); ok {
+		ch.Action = deployplan.Skip
+		ch.Reason = reason
+	} else if reason, ok := shouldSkipBackendDefault(cfg, path, ch); ok {
+		ch.Action = deployplan.Skip
+		ch.Reason = reason
+	} else if reason, ok := shouldSkipBackendDefault(generatedCfg, path, ch); ok {
+		ch.Action = deployplan.Skip
+		ch.Reason = reason
+	} else if action, reason := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
+		ch.Action = action
+		ch.Reason = reason
+	} else if action, reason := shouldUpdateOrRecreate(generatedCfg, path); action != deployplan.Undefined {
+		ch.Action = action
+		ch.Reason = reason
+	} else {
+		ch.Action = deployplan.Update
+	}
+
+	if adapter.HasOverrideChangeDesc() {
+		savedAction := ch.Action
+		savedReason := ch.Reason
+
+		err := adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
+		if err != nil {
+			return fmt.Errorf("internal error: failed to classify change: %w", err)
+		}
+
+		if savedAction != ch.Action && savedReason == ch.Reason {
+			// ch.Action was changed but not Reason field; set it to "custom"
+			ch.Reason = deployplan.ReasonCustom
+		}
+	}
+
+	return nil
+}
+
+func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
 	var toDrop []string
 
 	for pathString, ch := range changes {
@@ -371,47 +421,8 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			return err
 		}
 
-		if structdiff.IsEqual(ch.Remote, ch.New) {
-			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonRemoteAlreadySet
-		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
-			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonEmpty
-		} else if reason, ok := shouldSkip(cfg, path, ch); ok {
-			ch.Action = deployplan.Skip
-			ch.Reason = reason
-		} else if reason, ok := shouldSkip(generatedCfg, path, ch); ok {
-			ch.Action = deployplan.Skip
-			ch.Reason = reason
-		} else if reason, ok := shouldSkipBackendDefault(cfg, path, ch); ok {
-			ch.Action = deployplan.Skip
-			ch.Reason = reason
-		} else if reason, ok := shouldSkipBackendDefault(generatedCfg, path, ch); ok {
-			ch.Action = deployplan.Skip
-			ch.Reason = reason
-		} else if action, reason := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
-			ch.Action = action
-			ch.Reason = reason
-		} else if action, reason := shouldUpdateOrRecreate(generatedCfg, path); action != deployplan.Undefined {
-			ch.Action = action
-			ch.Reason = reason
-		} else {
-			ch.Action = deployplan.Update
-		}
-
-		if adapter.HasOverrideChangeDesc() {
-			savedAction := ch.Action
-			savedReason := ch.Reason
-
-			err = adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
-			if err != nil {
-				return fmt.Errorf("internal error: failed to classify change: %w", err)
-			}
-
-			if savedAction != ch.Action && savedReason == ch.Reason {
-				// ch.Action was changed but not Reason field; set it to "custom"
-				ch.Reason = deployplan.ReasonCustom
-			}
+		if err := ClassifyChange(ctx, adapter, path, ch, remoteState); err != nil {
+			return err
 		}
 
 		if ch.Reason == deployplan.ReasonDrop {
