@@ -151,6 +151,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	varPath := dyn.NewPath(dyn.Key("var"))
 
 	var diags diag.Diagnostics
+
 	maxRounds := 1 + m.extraRounds
 
 	for round := range maxRounds {
@@ -202,6 +203,38 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		//
 		normalized, _ := convert.Normalize(b.Config, root, convert.IncludeMissingFields)
 
+		suggestFn := dynvar.WithSuggestFn(func(p dyn.Path) string {
+			// Rewrite var.X -> variables.X.value for suggestion lookup,
+			// then convert the suggestion back to var.X form.
+			isVar := p.HasPrefix(varPath)
+			if isVar {
+				newPath := dyn.NewPath(dyn.Key("variables"), p[1], dyn.Key("value"))
+				if len(p) > 2 {
+					newPath = newPath.Append(p[2:]...)
+				}
+				p = newPath
+			}
+			suggestion := dynvar.SuggestPath(normalized, p)
+			if suggestion == "" {
+				return ""
+			}
+			// Convert variables.X.value back to var.X for user-facing messages.
+			if isVar {
+				sp, err := dyn.NewPathFromString(suggestion)
+				if err != nil {
+					return suggestion
+				}
+				variablesPrefix := dyn.NewPath(dyn.Key("variables"))
+				valueSuffix := dyn.NewPath(dyn.Key("value"))
+				if rest, ok := sp.CutPrefix(variablesPrefix); ok {
+					if rest, ok := rest.CutSuffix(valueSuffix); ok {
+						return dyn.NewPath(dyn.Key("var")).Append(rest...).String()
+					}
+				}
+			}
+			return suggestion
+		})
+
 		// If the pattern is nil, we resolve references in the entire configuration.
 		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// Resolve variable references in all values.
@@ -236,7 +269,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				}
 
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
-			})
+			}, suggestFn)
 		})
 		if err != nil {
 			return dyn.InvalidValue, err
