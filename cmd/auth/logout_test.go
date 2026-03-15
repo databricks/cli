@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -259,4 +260,61 @@ func TestLogoutNoTokensWithDelete(t *testing.T) {
 	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName("my-workspace"))
 	require.NoError(t, err)
 	assert.Empty(t, profiles)
+}
+
+func TestLogoutDeleteClearsDefaultProfile(t *testing.T) {
+	configWithDefault := `[DEFAULT]
+[my-workspace]
+host = https://my-workspace.cloud.databricks.com
+auth_type  = databricks-cli
+
+[other-workspace]
+host = https://other-workspace.cloud.databricks.com
+auth_type  = databricks-cli
+
+[__settings__]
+default_profile = my-workspace
+`
+	cases := []struct {
+		name        string
+		profileName string
+		wantDefault string
+	}{
+		{
+			name:        "deleting default profile clears default",
+			profileName: "my-workspace",
+			wantDefault: "",
+		},
+		{
+			name:        "deleting non-default profile preserves default",
+			profileName: "other-workspace",
+			wantDefault: "my-workspace",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := cmdio.MockDiscard(t.Context())
+			configPath := writeTempConfig(t, configWithDefault)
+			t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+			tokenCache := &inMemoryTokenCache{
+				Tokens: copyTokens(logoutTestTokensCacheConfig),
+			}
+
+			err := runLogout(ctx, logoutArgs{
+				profileName:    tc.profileName,
+				force:          true,
+				deleteProfile:  true,
+				profiler:       profile.DefaultProfiler,
+				tokenCache:     tokenCache,
+				configFilePath: configPath,
+			})
+			require.NoError(t, err)
+
+			got, err := databrickscfg.GetConfiguredDefaultProfile(ctx, configPath)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantDefault, got)
+		})
+	}
 }

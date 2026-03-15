@@ -178,6 +178,12 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 
 			return fmt.Errorf("failed to delete profile. Re-run with --delete to retry. If this error persists, please check the state of the config file: %w", err)
 		}
+
+		// If the deleted profile was the configured default, clear the pointer.
+		err = databrickscfg.ClearDefaultProfile(ctx, args.profileName, args.configFilePath)
+		if err != nil {
+			return fmt.Errorf("profile deleted, but failed to clear default profile setting: %w", err)
+		}
 	}
 
 	if isCreatedByLogin && args.deleteProfile {

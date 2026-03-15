@@ -52,6 +52,7 @@ View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",
+  "effective_publishing_mode":"DEFAULT_PUBLISHING_MODE",
   "last_modified":[UNIX_TIME_MILLIS],
   "name":"[dev [USERNAME]] lakeflow_project_etl_2",
   "pipeline_id":"[UUID]",

@@ -141,7 +141,8 @@
                     "x-since-version": "v0.290.0"
                   },
                   "telemetry_export_destinations": {
-                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination"
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination",
+                    "x-since-version": "v0.294.0"
                   },
                   "usage_policy_id": {
                     "$ref": "#/$defs/string",
@@ -1439,7 +1440,8 @@
                     "x-since-version": "v0.287.0"
                   },
                   "enable_pg_native_login": {
-                    "$ref": "#/$defs/bool"
+                    "$ref": "#/$defs/bool",
+                    "x-since-version": "v0.294.0"
                   },
                   "history_retention_duration": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration",
@@ -2800,7 +2802,8 @@
                 "postgres": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgres",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v0.294.0"
                 },
                 "secret": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret",
@@ -2948,17 +2951,20 @@
                 "branch": {
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v0.294.0"
                 },
                 "database": {
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v0.294.0"
                 },
                 "permission": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourcePostgresPostgresPermission",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v0.294.0"
                 }
               },
               "additionalProperties": false
@@ -3207,7 +3213,8 @@
               "properties": {
                 "unity_catalog": {
                   "description": "Unity Catalog Destinations for OTEL telemetry export.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.UnityCatalog"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.UnityCatalog",
+                  "x-since-version": "v0.294.0"
                 }
               },
               "additionalProperties": false
@@ -3218,15 +3225,18 @@
               "properties": {
                 "logs_table": {
                   "description": "Unity Catalog table for OTEL logs.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.294.0"
                 },
                 "metrics_table": {
                   "description": "Unity Catalog table for OTEL metrics.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.294.0"
                 },
                 "traces_table": {
                   "description": "Unity Catalog table for OTEL traces (spans).",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.294.0"
                 }
               },
               "additionalProperties": false,
@@ -3579,11 +3589,13 @@
               "properties": {
                 "principal": {
                   "description": "The principal (user email address or group name).\nFor deleted principals, `principal` is empty while `principal_id` is populated.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.294.0"
                 },
                 "privileges": {
                   "description": "The privileges assigned to the principal.",
-                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.Privilege"
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.Privilege",
+                  "x-since-version": "v0.294.0"
                 }
               },
               "additionalProperties": false
@@ -7132,7 +7144,8 @@
                   "description": "The environment version of the serverless Python environment used to execute\ncustomer Python code. Each environment version includes a specific Python\nversion and a curated set of pre-installed libraries with defined versions,\nproviding a stable and reproducible execution environment.\n\nDatabricks supports a three-year lifecycle for each environment version.\nFor available versions and their included packages, see\nhttps://docs.databricks.com/aws/en/release-notes/serverless/environment-version/\n\nThe value should be a string representing the environment version number, for example: `\"4\"`.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v0.294.0"
                 }
               },
               "additionalProperties": false
