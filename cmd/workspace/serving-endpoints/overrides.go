@@ -1,29 +1,29 @@
-package instance_pools
+package serving_endpoints
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/tableview"
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/spf13/cobra"
 )
 
 func listOverride(listCmd *cobra.Command) {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{range .}}{{.InstancePoolId|green}}	{{.InstancePoolName}}	{{.NodeTypeId}}	{{.State}}
+	{{range .}}{{green "%s" .Name}}	{{if .State}}{{.State.Ready}}{{end}}	{{.Creator}}
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Pool ID", Extract: func(v any) string {
-			return v.(compute.InstancePoolAndStats).InstancePoolId
-		}},
 		{Header: "Name", Extract: func(v any) string {
-			return v.(compute.InstancePoolAndStats).InstancePoolName
-		}},
-		{Header: "Node Type", Extract: func(v any) string {
-			return v.(compute.InstancePoolAndStats).NodeTypeId
+			return v.(serving.ServingEndpoint).Name
 		}},
 		{Header: "State", Extract: func(v any) string {
-			return string(v.(compute.InstancePoolAndStats).State)
+			if v.(serving.ServingEndpoint).State != nil {
+				return string(v.(serving.ServingEndpoint).State.Ready)
+			}
+			return ""
+		}},
+		{Header: "Creator", Extract: func(v any) string {
+			return v.(serving.ServingEndpoint).Creator
 		}},
 	}
 
