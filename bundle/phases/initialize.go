@@ -94,6 +94,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// searches for strings with variable references in them.
 		mutator.RewriteWorkspacePrefix(),
 
+		// Walks the config tree and emits warnings for malformed variable references
+		// (e.g. "${foo.bar-}") before variable resolution occurs.
+		mutator.WarnMalformedReferences(),
+
 		// Reads (dynamic): variables.* (checks if there's a value assigned to variable already or if it has lookup reference)
 		// Updates (dynamic): variables.*.value (sets values from environment variables, variable files, or defaults)
 		// Resolves and sets values for bundle variables in the following order: from environment variables, from variable files and then defaults
