@@ -46,6 +46,7 @@ Error: The specified pipeline [FOO_ID] was not found.
 >>> [CLI] pipelines get [FOO_ID_2]
 {
   "creator_user_name":"[USERNAME]",
+  "effective_publishing_mode":"DEFAULT_PUBLISHING_MODE",
   "last_modified":[UNIX_TIME_MILLIS][0],
   "name":"pipeline foo",
   "pipeline_id":"[FOO_ID_2]",

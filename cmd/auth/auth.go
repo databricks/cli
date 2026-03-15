@@ -34,6 +34,7 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	cmd.AddCommand(newProfilesCommand())
 	cmd.AddCommand(newTokenCommand(&authArguments))
 	cmd.AddCommand(newDescribeCommand())
+	cmd.AddCommand(newSwitchCommand())
 	return cmd
 }
 
