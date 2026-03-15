@@ -10,7 +10,9 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
@@ -29,6 +31,8 @@ func canonicalHost(host string) (string, error) {
 }
 
 var ErrNoMatchingProfiles = errors.New("no matching profiles found")
+
+const shellQuotedSpecialChars = " \t\n\r\"\\$`!#&|;(){}[]<>?*~'"
 
 func resolveSection(cfg *config.Config, iniFile *config.File) (*ini.Section, error) {
 	var candidates []*ini.Section
@@ -122,16 +126,22 @@ func newEnvCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		vars := map[string]string{}
-		for _, a := range config.ConfigAttributes {
-			if a.IsZero(cfg) {
-				continue
+		// Output KEY=VALUE lines when the user explicitly passes --output text.
+		if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
+			w := cmd.OutOrStdout()
+			for _, a := range config.ConfigAttributes {
+				if a.IsZero(cfg) {
+					continue
+				}
+				v := a.GetString(cfg)
+				for _, envName := range a.EnvVars {
+					fmt.Fprintf(w, "%s=%s\n", envName, quoteEnvValue(v))
+				}
 			}
-			envValue := a.GetString(cfg)
-			for _, envName := range a.EnvVars {
-				vars[envName] = envValue
-			}
+			return nil
 		}
+
+		vars := collectEnvVars(cfg)
 		raw, err := json.MarshalIndent(map[string]any{
 			"env": vars,
 		}, "", "  ")
@@ -143,4 +153,34 @@ func newEnvCommand() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// collectEnvVars returns the environment variables for the given config
+// as a map from env var name to value.
+func collectEnvVars(cfg *config.Config) map[string]string {
+	vars := map[string]string{}
+	for _, a := range config.ConfigAttributes {
+		if a.IsZero(cfg) {
+			continue
+		}
+		v := a.GetString(cfg)
+		for _, envName := range a.EnvVars {
+			vars[envName] = v
+		}
+	}
+	return vars
+}
+
+// quoteEnvValue quotes a value for KEY=VALUE output if it contains spaces or
+// shell-special characters. Single quotes prevent shell expansion, and
+// embedded single quotes use the POSIX-compatible '\” sequence.
+func quoteEnvValue(v string) string {
+	if v == "" {
+		return `''`
+	}
+	needsQuoting := strings.ContainsAny(v, shellQuotedSpecialChars)
+	if !needsQuoting {
+		return v
+	}
+	return "'" + strings.ReplaceAll(v, "'", "'\\''") + "'"
 }
