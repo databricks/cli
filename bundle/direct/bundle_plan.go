@@ -1046,6 +1046,72 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 	return adapter, nil
 }
 
+// buildBindConflictError builds an actionable error message for bind conflicts.
+// It identifies which fields are causing the conflict and provides guidance on how to resolve it.
+func buildBindConflictError(errorPrefix string, action deployplan.ActionType, changes deployplan.Changes, resourceKey string) error {
+	// Find all fields that have the conflicting action
+	var problematicFields []string
+	for fieldPath, change := range changes {
+		if change.Action == action {
+			problematicFields = append(problematicFields, fieldPath)
+		}
+	}
+	slices.Sort(problematicFields)
+
+	// Extract resource type and name for YAML guidance
+	resourceType, resourceName := getResourceTypeAndName(resourceKey)
+
+	var msg strings.Builder
+
+	switch action {
+	case deployplan.Recreate:
+		msg.WriteString(errorPrefix + ": cannot recreate resource with bind block\n\n")
+		msg.WriteString("This would destroy and recreate the existing workspace resource, changing its ID.\n\n")
+	case deployplan.UpdateWithID:
+		msg.WriteString(errorPrefix + ": cannot update resource ID with bind block\n\n")
+		msg.WriteString("This would replace the existing workspace resource with a new ID.\n\n")
+	}
+
+	if len(problematicFields) > 0 {
+		msg.WriteString("The following fields cannot be modified because they require ")
+		if action == deployplan.Recreate {
+			msg.WriteString("resource recreation:\n")
+		} else {
+			msg.WriteString("ID changes:\n")
+		}
+		for _, field := range problematicFields {
+			reason := changes[field].Reason
+			if reason != "" {
+				msg.WriteString(fmt.Sprintf("  - %s (%s)\n", field, reason))
+			} else {
+				msg.WriteString(fmt.Sprintf("  - %s\n", field))
+			}
+		}
+		msg.WriteString("\n")
+	}
+
+	msg.WriteString("To resolve this issue, you have two options:\n\n")
+	msg.WriteString("1. Remove the problematic fields from your configuration to make this a bind-only operation:\n\n")
+	msg.WriteString("   resources:\n")
+	msg.WriteString(fmt.Sprintf("     %s:\n", resourceType))
+	msg.WriteString(fmt.Sprintf("       %s:\n", resourceName))
+	msg.WriteString("         # Remove or comment out these fields:\n")
+	for _, field := range problematicFields {
+		msg.WriteString(fmt.Sprintf("         # %s: ...\n", field))
+	}
+	msg.WriteString("\n")
+	msg.WriteString("2. Remove the bind block if you want to allow the resource to be recreated/updated:\n\n")
+	msg.WriteString("   targets:\n")
+	msg.WriteString("     <target_name>:\n")
+	msg.WriteString("       # Remove the bind block:\n")
+	msg.WriteString("       # bind:\n")
+	msg.WriteString(fmt.Sprintf("       #   %s:\n", resourceType))
+	msg.WriteString(fmt.Sprintf("       #     %s:\n", resourceName))
+	msg.WriteString("       #       id: <resource_id>\n")
+
+	return errors.New(msg.String())
+}
+
 // handleBindPlan handles planning for resources that should be bound from the workspace.
 // This is called when a resource has a bind block defined and is not yet in the state.
 func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, adapter *dresources.Adapter, errorPrefix string) bool {
@@ -1107,10 +1173,10 @@ func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey strin
 	case deployplan.Update, deployplan.Resize:
 		entry.Action = deployplan.BindAndUpdate
 	case deployplan.Recreate:
-		logdiag.LogError(ctx, fmt.Errorf("%s: cannot recreate resource with bind block; this would destroy the existing workspace resource. Remove the bind block to allow recreation", errorPrefix))
+		logdiag.LogError(ctx, buildBindConflictError(errorPrefix, deployplan.Recreate, entry.Changes, resourceKey))
 		return false
 	case deployplan.UpdateWithID:
-		logdiag.LogError(ctx, fmt.Errorf("%s: cannot update resource ID with bind block; this would replace the existing workspace resource. Remove the bind block to allow ID update", errorPrefix))
+		logdiag.LogError(ctx, buildBindConflictError(errorPrefix, deployplan.UpdateWithID, entry.Changes, resourceKey))
 		return false
 	default:
 		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: unexpected action %q during bind planning", errorPrefix, maxAction))

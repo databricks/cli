@@ -1,6 +1,32 @@
 
 >>> musterr [CLI] bundle plan
-Error: cannot plan resources.pipelines.foo: cannot recreate resource with bind block; this would destroy the existing workspace resource. Remove the bind block to allow recreation
+Error: cannot plan resources.pipelines.foo: cannot recreate resource with bind block
+
+This would destroy and recreate the existing workspace resource, changing its ID.
+
+The following fields cannot be modified because they require resource recreation:
+  - storage (immutable)
+
+To resolve this issue, you have two options:
+
+1. Remove the problematic fields from your configuration to make this a bind-only operation:
+
+   resources:
+     pipelines:
+       foo:
+         # Remove or comment out these fields:
+         # storage: ...
+
+2. Remove the bind block if you want to allow the resource to be recreated/updated:
+
+   targets:
+     <target_name>:
+       # Remove the bind block:
+       # bind:
+       #   pipelines:
+       #     foo:
+       #       id: <resource_id>
+
 
 Error: planning failed
 
