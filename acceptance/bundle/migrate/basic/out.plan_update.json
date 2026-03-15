@@ -1,0 +1,247 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 8,
+  "plan": {
+    "resources.jobs.test_job": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "Test Migrated Job",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook"
+              },
+              "task_key": "main"
+            }
+          ]
+        }
+      },
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][0],
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {},
+        "format": "MULTI_TASK",
+        "job_id": [NUMID],
+        "max_concurrent_runs": 1,
+        "name": "Test Migration Job",
+        "queue": {
+          "enabled": true
+        },
+        "run_as_user_name": "[USERNAME]",
+        "tasks": [
+          {
+            "email_notifications": {},
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook",
+              "source": "WORKSPACE"
+            },
+            "run_if": "ALL_SUCCESS",
+            "task_key": "main",
+            "timeout_seconds": 0
+          }
+        ],
+        "timeout_seconds": 0,
+        "webhook_notifications": {}
+      },
+      "changes": {
+        "email_notifications": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": {}
+        },
+        "name": {
+          "action": "update",
+          "old": "Test Migration Job",
+          "new": "Test Migrated Job",
+          "remote": "Test Migration Job"
+        },
+        "tasks[task_key='main'].email_notifications": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": {}
+        },
+        "tasks[task_key='main'].notebook_task.source": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "WORKSPACE"
+        },
+        "tasks[task_key='main'].run_if": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='main'].timeout_seconds": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": 0
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": {}
+        }
+      }
+    },
+    "resources.pipelines.test_pipeline": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.test_job",
+          "label": "${resources.jobs.test_job.id}"
+        },
+        {
+          "node": "resources.jobs.test_job",
+          "label": "${resources.jobs.test_job.name}"
+        },
+        {
+          "node": "resources.jobs.test_job",
+          "label": "${resources.jobs.test_job.timeout_seconds}"
+        },
+        {
+          "node": "resources.volumes.test_volume",
+          "label": "${resources.volumes.test_volume.catalog_name}"
+        },
+        {
+          "node": "resources.volumes.test_volume",
+          "label": "${resources.volumes.test_volume.id}"
+        },
+        {
+          "node": "resources.volumes.test_volume",
+          "label": "${resources.volumes.test_volume.storage_location}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "value": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "libraries": [
+            {
+              "notebook": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+              }
+            }
+          ],
+          "name": "Test Migrated Pipeline",
+          "tags": {
+            "myjob_id": "[NUMID]",
+            "myjob_name": "Test Migrated Job",
+            "myjob_timeout": "${resources.jobs.test_job.timeout_seconds}",
+            "myvolume_id": "mycat.myschema.myvol",
+            "volume_catalog_name": "mycat",
+            "volume_storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+          }
+        },
+        "vars": {
+          "tags.myjob_timeout": "${resources.jobs.test_job.timeout_seconds}"
+        }
+      },
+      "remote_state": {
+        "channel": "CURRENT",
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "id": "[UUID]",
+        "last_modified": [UNIX_TIME_MILLIS][1],
+        "libraries": [
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+            }
+          }
+        ],
+        "name": "Test Migration Pipeline",
+        "pipeline_id": "[UUID]",
+        "run_as_user_name": "[USERNAME]",
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[UUID]",
+        "tags": {
+          "myjob_id": "[NUMID]",
+          "myjob_name": "Test Migration Job",
+          "myjob_timeout": "0",
+          "myvolume_id": "mycat.myschema.myvol",
+          "volume_catalog_name": "mycat",
+          "volume_storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+        }
+      },
+      "changes": {
+        "name": {
+          "action": "update",
+          "old": "Test Migration Pipeline",
+          "new": "Test Migrated Pipeline",
+          "remote": "Test Migration Pipeline"
+        },
+        "storage": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "dbfs:/pipelines/[UUID]"
+        },
+        "tags['myjob_name']": {
+          "action": "update",
+          "old": "Test Migration Job",
+          "new": "Test Migrated Job",
+          "remote": "Test Migration Job"
+        },
+        "tags['myjob_timeout']": {
+          "action": "update",
+          "old": "0",
+          "new": "${resources.jobs.test_job.timeout_seconds}",
+          "remote": "0"
+        }
+      }
+    },
+    "resources.volumes.test_volume": {
+      "action": "skip",
+      "remote_state": {
+        "catalog_name": "mycat",
+        "created_at": [UNIX_TIME_MILLIS][2],
+        "created_by": "[USERNAME]",
+        "full_name": "mycat.myschema.myvol",
+        "name": "myvol",
+        "owner": "[USERNAME]",
+        "schema_name": "myschema",
+        "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+        "updated_at": [UNIX_TIME_MILLIS][2],
+        "volume_id": "[UUID]",
+        "volume_type": "MANAGED"
+      },
+      "changes": {
+        "storage_location": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+        }
+      }
+    }
+  }
+}
