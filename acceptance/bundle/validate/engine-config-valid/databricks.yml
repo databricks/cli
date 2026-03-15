@@ -1,0 +1,12 @@
+bundle:
+  name: test-engine-config-valid
+  deployment:
+    engine: direct
+
+targets:
+  default:
+    default: true
+  terraform-target:
+    bundle:
+      deployment:
+        engine: terraform
