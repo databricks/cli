@@ -406,3 +406,20 @@ func TestResolveEscapedRef(t *testing.T) {
 	// Escaped reference should produce literal ${a}.
 	assert.Equal(t, "${a}", getByPath(t, out, "b").MustString())
 }
+
+func TestResolveSuggestFn(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"cluster": dyn.V(map[string]dyn.Value{
+			"name": dyn.V("hello"),
+		}),
+		"ref": dyn.V("${cluster.nme}"),
+	})
+
+	suggest := dynvar.WithSuggestFn(func(p dyn.Path) string {
+		return dynvar.SuggestPath(in, p)
+	})
+
+	_, err := dynvar.Resolve(in, dynvar.DefaultLookup(in), suggest)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "did you mean ${cluster.name}?")
+}

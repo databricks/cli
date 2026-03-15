@@ -11,6 +11,21 @@ import (
 	"github.com/databricks/cli/libs/utils"
 )
 
+// SuggestFn is a function that returns a suggested correction for a reference path.
+// It returns an empty string if no suggestion is available.
+type SuggestFn func(path dyn.Path) string
+
+// ResolveOption configures optional behavior for [Resolve].
+type ResolveOption func(*resolver)
+
+// WithSuggestFn configures a suggestion function that is called when a
+// reference does not exist. The suggestion is appended to the error message.
+func WithSuggestFn(fn SuggestFn) ResolveOption {
+	return func(r *resolver) {
+		r.suggestFn = fn
+	}
+}
+
 // Resolve resolves variable references in the given input value using the provided lookup function.
 // It returns the resolved output value and any error encountered during the resolution process.
 //
@@ -34,8 +49,12 @@ import (
 // If a cycle is detected in the variable references, an error is returned.
 // If for some path the resolution function returns [ErrSkipResolution], the variable reference is left in place.
 // This is useful when some variable references are not yet ready to be interpolated.
-func Resolve(in dyn.Value, fn Lookup) (out dyn.Value, err error) {
-	return resolver{in: in, fn: fn}.run()
+func Resolve(in dyn.Value, fn Lookup, opts ...ResolveOption) (out dyn.Value, err error) {
+	r := resolver{in: in, fn: fn}
+	for _, opt := range opts {
+		opt(&r)
+	}
+	return r.run()
 }
 
 type lookupResult struct {
@@ -46,6 +65,8 @@ type lookupResult struct {
 type resolver struct {
 	in dyn.Value
 	fn Lookup
+
+	suggestFn SuggestFn
 
 	refs     map[string]Ref
 	resolved map[string]dyn.Value
@@ -208,7 +229,13 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 	v, err := r.fn(p)
 	if err != nil {
 		if dyn.IsNoSuchKeyError(err) {
-			err = fmt.Errorf("reference does not exist: ${%s}", key)
+			msg := fmt.Sprintf("reference does not exist: ${%s}", key)
+			if r.suggestFn != nil {
+				if suggestion := r.suggestFn(p); suggestion != "" {
+					msg += fmt.Sprintf(". did you mean ${%s}?", suggestion)
+				}
+			}
+			err = errors.New(msg)
 		}
 
 		// Cache the return value and return to the caller.
