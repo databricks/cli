@@ -1,0 +1,19 @@
+bundle:
+  name: test-bind-duplicate-id
+
+resources:
+  jobs:
+    foo:
+      name: test-bind-dup-job
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+      tasks:
+        - task_key: my_task
+          environment_key: default
+          spark_python_task:
+            python_file: ./hello.py
+
+targets:
+  default:

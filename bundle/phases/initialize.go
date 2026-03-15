@@ -181,6 +181,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validates that when using a shared workspace path, appropriate permissions are configured
 		permissions.ValidateSharedRootPermissions(),
 
+		// Validate that bind blocks only contain valid resource types (not permissions or grants)
+		mutator.ValidateBindResources(),
+
 		// Annotate resources with "deployment" metadata.
 		//
 		// We don't include this step into initializeResources because these mutators set fields that are

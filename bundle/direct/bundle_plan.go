@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
@@ -110,7 +111,7 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string, bindConfig config.Bind) (*deployplan.Plan, error) {
 	err := b.StateDB.Open(statePath)
 	if err != nil {
 		return nil, fmt.Errorf("reading state from %s: %w", statePath, err)
@@ -121,9 +122,54 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, err
 	}
 
-	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data)
+	plan, err := b.makePlan(ctx, configRoot, &b.StateDB.Data, bindConfig)
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
+	}
+
+	// Validate bind entries when a bind config is provided.
+	if !bindConfig.IsEmpty() {
+		var hasBindErrors bool
+		targetName := configRoot.Bundle.Target
+
+		// Validate all bind entries reference resources defined in config.
+		bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+			key := "resources." + resourceType + "." + resourceName
+			if _, ok := plan.Plan[key]; !ok {
+				bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+				logdiag.LogDiag(ctx, diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf("bind block references undefined resource %q; define it in the resources section or remove the bind block", key),
+					Locations: configRoot.GetLocations(bindPath.String()),
+					Paths:     []dyn.Path{bindPath},
+				})
+				hasBindErrors = true
+			}
+		})
+
+		// Validate that no bind ID conflicts with an existing resource in state.
+		// Deletes, recreates, and update_ids are not allowed when a bind block
+		// references the same resource ID under a different resource key.
+		bindConfig.ForEach(func(resourceType, resourceName, bindID string) {
+			bindKey := "resources." + resourceType + "." + resourceName
+			for stateKey, stateEntry := range b.StateDB.Data.State {
+				if stateKey == bindKey || stateEntry.ID != bindID {
+					continue
+				}
+				bindPath := dyn.NewPath(dyn.Key("targets"), dyn.Key(targetName), dyn.Key("bind"), dyn.Key(resourceType), dyn.Key(resourceName))
+				logdiag.LogDiag(ctx, diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf("bind block for %q has the same ID %q as existing resource %q; remove the bind block or the conflicting resource", bindKey, bindID, stateKey),
+					Locations: configRoot.GetLocations(bindPath.String()),
+					Paths:     []dyn.Path{bindPath},
+				})
+				hasBindErrors = true
+			}
+		})
+
+		if hasBindErrors {
+			return nil, errors.New("bind validation failed")
+		}
 	}
 
 	b.Plan = plan
@@ -197,6 +243,22 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
+
+		// Handle bind block: if BindID is set, this resource should be bound
+		if entry.BindID != "" {
+			if hasEntry {
+				// Resource is already in state - check if IDs match
+				if dbentry.ID != entry.BindID {
+					logdiag.LogError(ctx, fmt.Errorf("%s: resource already bound to ID %q, cannot bind as %q; remove the bind block or unbind the existing resource", errorPrefix, dbentry.ID, entry.BindID))
+					return false
+				}
+				// IDs match - proceed with normal planning (resource was previously bound)
+			} else {
+				// Not in state - this is a new bind
+				return b.handleBindPlan(ctx, resourceKey, entry, adapter, errorPrefix)
+			}
+		}
+
 		if !hasEntry {
 			entry.Action = deployplan.Create
 			return true
@@ -743,7 +805,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 	return true
 }
 
-func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database, bindConfig config.Bind) (*deployplan.Plan, error) {
 	p := deployplan.NewPlanDirect()
 
 	// Copy state metadata to plan for validation during apply
@@ -905,9 +967,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)
 		}
 
+		// Check if this resource has a bind block defined
+		resourceType, resourceName := getResourceTypeAndName(node)
+		bindID := bindConfig.GetBindID(resourceType, resourceName)
+
 		e := deployplan.PlanEntry{
 			DependsOn: dependsOn,
 			NewState:  newStateJSON,
+			BindID:    bindID,
 		}
 
 		p.Plan[node] = &e
@@ -977,4 +1044,167 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 	}
 
 	return adapter, nil
+}
+
+// buildBindConflictError builds an actionable error message for bind conflicts.
+// It identifies which fields are causing the conflict and provides guidance on how to resolve it.
+func buildBindConflictError(errorPrefix string, action deployplan.ActionType, changes deployplan.Changes, resourceKey string) error {
+	// Find all fields that have the conflicting action
+	var problematicFields []string
+	for fieldPath, change := range changes {
+		if change.Action == action {
+			problematicFields = append(problematicFields, fieldPath)
+		}
+	}
+	slices.Sort(problematicFields)
+
+	// Extract resource type and name for YAML guidance
+	resourceType, resourceName := getResourceTypeAndName(resourceKey)
+
+	var msg strings.Builder
+
+	switch action {
+	case deployplan.Recreate:
+		msg.WriteString(errorPrefix + ": cannot recreate resource with bind block\n\n")
+		msg.WriteString("This would destroy and recreate the existing workspace resource, changing its ID.\n\n")
+	case deployplan.UpdateWithID:
+		msg.WriteString(errorPrefix + ": cannot update resource ID with bind block\n\n")
+		msg.WriteString("This would replace the existing workspace resource with a new ID.\n\n")
+	default:
+		// This function is only called for Recreate or UpdateWithID actions
+		msg.WriteString(fmt.Sprintf("%s: internal error: unexpected action %q in buildBindConflictError\n\n", errorPrefix, action))
+	}
+
+	if len(problematicFields) > 0 {
+		msg.WriteString("The following fields cannot be modified because they require ")
+		if action == deployplan.Recreate {
+			msg.WriteString("resource recreation:\n")
+		} else {
+			msg.WriteString("ID changes:\n")
+		}
+		for _, field := range problematicFields {
+			reason := changes[field].Reason
+			if reason != "" {
+				msg.WriteString(fmt.Sprintf("  - %s (%s)\n", field, reason))
+			} else {
+				msg.WriteString(fmt.Sprintf("  - %s\n", field))
+			}
+		}
+		msg.WriteString("\n")
+	}
+
+	msg.WriteString("To resolve this issue, you have two options:\n\n")
+	msg.WriteString("1. Remove the problematic fields from your configuration to make this a bind-only operation:\n\n")
+	msg.WriteString("   resources:\n")
+	msg.WriteString(fmt.Sprintf("     %s:\n", resourceType))
+	msg.WriteString(fmt.Sprintf("       %s:\n", resourceName))
+	msg.WriteString("         # Remove or comment out these fields:\n")
+	for _, field := range problematicFields {
+		msg.WriteString(fmt.Sprintf("         # %s: ...\n", field))
+	}
+	msg.WriteString("\n")
+	msg.WriteString("2. Remove the bind block if you want to allow the resource to be recreated/updated:\n\n")
+	msg.WriteString("   targets:\n")
+	msg.WriteString("     <target_name>:\n")
+	msg.WriteString("       # Remove the bind block:\n")
+	msg.WriteString("       # bind:\n")
+	msg.WriteString(fmt.Sprintf("       #   %s:\n", resourceType))
+	msg.WriteString(fmt.Sprintf("       #     %s:\n", resourceName))
+	msg.WriteString("       #       id: <resource_id>\n")
+
+	return errors.New(msg.String())
+}
+
+// handleBindPlan handles planning for resources that should be bound from the workspace.
+// This is called when a resource has a bind block defined and is not yet in the state.
+func (b *DeploymentBundle) handleBindPlan(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, adapter *dresources.Adapter, errorPrefix string) bool {
+	bindID := entry.BindID
+
+	// Read the remote resource to verify it exists and get current state
+	remoteState, err := adapter.DoRead(ctx, bindID)
+	if err != nil {
+		if isResourceGone(err) {
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource with ID %q does not exist in workspace", errorPrefix, bindID))
+		} else {
+			logdiag.LogError(ctx, fmt.Errorf("%s: reading remote resource id=%q: %w", errorPrefix, bindID, err))
+		}
+		return false
+	}
+
+	entry.RemoteState = remoteState
+	b.RemoteStateCache.Store(resourceKey, remoteState)
+
+	// Get the new state config
+	sv, ok := b.StateCache.Load(resourceKey)
+	if !ok {
+		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry", errorPrefix))
+		return false
+	}
+
+	// Compare remote state with config to determine if update needed
+	remoteStateComparable, err := adapter.RemapState(remoteState)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state: %w", errorPrefix, err))
+		return false
+	}
+
+	remoteDiff, err := structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
+		return false
+	}
+
+	// For binds, there's no "saved state" so we compare remote directly with config
+	entry.Changes, err = prepareChanges(ctx, adapter, nil, remoteDiff, nil, remoteStateComparable)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+		return false
+	}
+
+	err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
+		return false
+	}
+
+	// Determine action based on changes
+	maxAction := getMaxAction(entry.Changes)
+
+	switch maxAction {
+	case deployplan.Skip, deployplan.Undefined:
+		entry.Action = deployplan.Bind
+	case deployplan.Update, deployplan.Resize:
+		entry.Action = deployplan.BindAndUpdate
+	case deployplan.Recreate:
+		logdiag.LogError(ctx, buildBindConflictError(errorPrefix, deployplan.Recreate, entry.Changes, resourceKey))
+		return false
+	case deployplan.UpdateWithID:
+		logdiag.LogError(ctx, buildBindConflictError(errorPrefix, deployplan.UpdateWithID, entry.Changes, resourceKey))
+		return false
+	default:
+		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: unexpected action %q during bind planning", errorPrefix, maxAction))
+		return false
+	}
+
+	return true
+}
+
+// getResourceTypeAndName extracts the resource type and name from a resource key.
+// For example, "resources.jobs.my_job" returns ("jobs", "my_job").
+// For child resources like "resources.jobs.my_job.permissions", returns ("jobs.permissions", "my_job").
+func getResourceTypeAndName(resourceKey string) (resourceType, resourceName string) {
+	dp, err := dyn.NewPathFromString(resourceKey)
+	if err != nil || len(dp) < 3 {
+		return "", ""
+	}
+
+	resourceType = dp[1].Key()
+	resourceName = dp[2].Key()
+
+	// Handle child resources (permissions, grants)
+	if len(dp) >= 4 && (dp[3].Key() == "permissions" || dp[3].Key() == "grants") {
+		resourceType = dp[1].Key() + "." + dp[3].Key()
+	}
+
+	return resourceType, resourceName
 }

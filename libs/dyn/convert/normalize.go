@@ -116,6 +116,18 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 						}
 					}
 
+					// Special case: "bind" at root level should be an error, not a warning
+					if fieldName == "bind" && len(path) == 0 {
+						diags = diags.Append(diag.Diagnostic{
+							Severity:  diag.Error,
+							Summary:   "bind blocks are not allowed at the root level",
+							Detail:    "bind blocks must be defined within a target. Move the bind configuration under targets.<target_name>.bind",
+							Locations: pk.Locations(),
+							Paths:     []dyn.Path{path},
+						})
+						continue
+					}
+
 					diags = diags.Append(diag.Diagnostic{
 						Severity:  diag.Warning,
 						Summary:   "unknown field: " + fieldName,
