@@ -39,7 +39,6 @@ func newImportCommand() *cobra.Command {
 	var outputDir string
 	var cleanup bool
 	var forceImport bool
-	var quiet bool
 
 	cmd := &cobra.Command{
 		Use:   "import",
@@ -82,6 +81,7 @@ Examples:
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			quiet := cmdio.IsQuiet(ctx)
 			w := cmdctx.WorkspaceClient(ctx)
 
 			// Get current user to filter apps
@@ -217,7 +217,6 @@ Examples:
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to output the bundle to (defaults to app name)")
 	cmd.Flags().BoolVar(&cleanup, "cleanup", false, "Clean up the previous app folder and all its contents")
 	cmd.Flags().BoolVar(&forceImport, "force-import", false, "Force re-import of an app that was already imported (only works for apps you own)")
-	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress informational messages (only show errors and prompts)")
 
 	return cmd
 }

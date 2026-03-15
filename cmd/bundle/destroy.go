@@ -46,9 +46,9 @@ Typical use cases:
 }
 
 func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceDestroy bool) error {
-	// We require auto-approve for non-interactive terminals since prompts are not possible.
-	if !cmdio.IsPromptSupported(cmd.Context()) && !autoApprove {
-		return errors.New("please specify --auto-approve since terminal does not support interactive prompts")
+	// We require auto-approve or --yes for non-interactive terminals since prompts are not possible.
+	if !cmdio.IsPromptSupported(cmd.Context()) && !autoApprove && !cmdio.IsYes(cmd.Context()) {
+		return errors.New("please specify --auto-approve or --yes since terminal does not support interactive prompts")
 	}
 
 	// Check if context is already initialized (e.g., when called from apps delete override)

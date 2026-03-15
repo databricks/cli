@@ -46,6 +46,7 @@ func New(ctx context.Context) *cobra.Command {
 	// Initialize flags
 	logFlags := initLogFlags(cmd)
 	outputFlag := initOutputFlag(cmd)
+	interactionFlags := initInteractionFlags(cmd)
 	initProfileFlag(cmd)
 	initEnvironmentFlag(cmd)
 	initTargetFlag(cmd)
@@ -63,6 +64,10 @@ func New(ctx context.Context) *cobra.Command {
 		if err != nil {
 			return err
 		}
+
+		// Apply interaction flags (--quiet, --no-input, --yes) to cmdio context.
+		ctx = interactionFlags.applyToContext(ctx)
+		cmd.SetContext(ctx)
 
 		// Configure default logger.
 		ctx, err = logFlags.initializeContext(ctx)

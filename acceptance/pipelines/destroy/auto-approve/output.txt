@@ -8,7 +8,7 @@ Deployment complete!
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 >>> errcode [CLI] pipelines destroy
-Error: please specify --auto-approve since terminal does not support interactive prompts
+Error: please specify --auto-approve or --yes since terminal does not support interactive prompts
 
 Exit code: 1
 

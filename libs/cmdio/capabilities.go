@@ -18,6 +18,11 @@ type Capabilities struct {
 	// Environment flags
 	color     bool // Color output is enabled (NO_COLOR not set and TERM not dumb)
 	isGitBash bool // Git Bash on Windows
+
+	// User-controlled interaction flags (set via CLI flags or env vars)
+	quiet   bool // Suppress non-essential output (spinners, logs, non-error diagnostics)
+	noInput bool // Disable all interactive prompts
+	yes     bool // Auto-approve all yes/no confirmation prompts
 }
 
 // newCapabilities detects terminal capabilities from context and I/O streams.
@@ -38,6 +43,8 @@ func (c Capabilities) SupportsInteractive() bool {
 
 // SupportsPrompt returns true if terminal supports user prompting.
 // Prompts write to stderr and read from stdin, so we only need those to be TTYs.
+// Note: this only reflects terminal capability. The --no-input flag is checked
+// directly in prompt functions (Ask, AskYesOrNo, etc.) rather than here.
 func (c Capabilities) SupportsPrompt() bool {
 	return c.SupportsInteractive() && c.stdinIsTTY && !c.isGitBash
 }

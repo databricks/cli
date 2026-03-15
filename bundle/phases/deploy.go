@@ -84,8 +84,8 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		return true, nil
 	}
 
-	if !cmdio.IsPromptSupported(ctx) {
-		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+	if !cmdio.IsPromptSupported(ctx) && !cmdio.IsYes(ctx) {
+		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve or --yes if you would like to skip prompts and proceed")
 	}
 
 	cmdio.LogString(ctx, "")
