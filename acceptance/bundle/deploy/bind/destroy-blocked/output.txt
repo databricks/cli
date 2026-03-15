@@ -8,6 +8,7 @@ Deployment complete!
 >>> musterr [CLI] bundle destroy --auto-approve
 Error: cannot destroy with bind blocks that reference resources in the deployment state: resources.jobs.foo; remove the bind blocks from the target configuration or run 'bundle deployment unbind' before destroying
 
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.foo

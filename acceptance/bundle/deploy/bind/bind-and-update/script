@@ -25,7 +25,20 @@ trace $CLI bundle deploy --auto-approve
 trace $CLI jobs get $NEW_JOB_ID | jq -r .settings.name
 
 # Remove bind block before destroy (destroy blocks on active bind blocks)
-python3 -c "open('databricks.yml', 'w').write(open('databricks.yml').read().split('\ntargets:')[0] + '\n')"
+python3 << 'PYSCRIPT'
+import re
+with open('databricks.yml', 'r') as f:
+    content = f.read()
+
+# Remove the bind block from the target (everything from "bind:" until the next top-level key or EOF)
+content = re.sub(r'\n    bind:.*', '', content, flags=re.DOTALL)
+
+with open('databricks.yml', 'w') as f:
+    f.write(content)
+PYSCRIPT
+
+# Remove .databricks directory that might cache old config
+rm -rf .databricks
 
 # Cleanup
 trace $CLI bundle destroy --auto-approve
