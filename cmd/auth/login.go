@@ -4,21 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"runtime"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
 
@@ -172,9 +174,7 @@ depends on the existing profiles you have set in your configuration file
 		}
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
-			u2m.WithBrowser(browser.NewOpener(cmd.Context(), ".",
-				browser.WithDisabledMessage("Please complete authentication by opening this link in your browser:\n"),
-			)),
+			u2m.WithBrowser(getBrowserFunc(cmd)),
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -400,9 +400,60 @@ func loadProfileByName(ctx context.Context, profileName string, profiler profile
 	return nil, nil
 }
 
+// openURLSuppressingStderr opens a URL in the browser while suppressing stderr output.
+// This prevents xdg-open error messages from being displayed to the user.
+func openURLSuppressingStderr(url string) error {
+	// Save the original stderr from the browser package
+	originalStderr := browserpkg.Stderr
+	defer func() {
+		browserpkg.Stderr = originalStderr
+	}()
+
+	// Redirect stderr to discard to suppress xdg-open errors
+	browserpkg.Stderr = io.Discard
+
+	// Call the browser open function
+	return browserpkg.OpenURL(url)
+}
+
 // oauthLoginClearKeys returns profile keys that should be explicitly removed
 // when performing an OAuth login. Derives auth credential fields dynamically
 // from the SDK's ConfigAttributes to stay in sync as new auth methods are added.
 func oauthLoginClearKeys() []string {
 	return databrickscfg.AuthCredentialKeys()
+}
+
+// getBrowserFunc returns a function that opens the given URL in the browser.
+// It respects the BROWSER environment variable:
+// - empty string: uses the default browser
+// - "none": prints the URL to stdout without opening a browser
+// - custom command: executes the specified command with the URL as argument
+func getBrowserFunc(cmd *cobra.Command) func(url string) error {
+	browser := env.Get(cmd.Context(), "BROWSER")
+	switch browser {
+	case "":
+		return openURLSuppressingStderr
+	case "none":
+		return func(url string) error {
+			cmdio.LogString(cmd.Context(), "Please complete authentication by opening this link in your browser:\n"+url)
+			return nil
+		}
+	default:
+		return func(url string) error {
+			// Run the browser command via a shell.
+			// It can be a script or a binary and scripts cannot be executed directly on Windows.
+			e, err := exec.NewCommandExecutor(".")
+			if err != nil {
+				return err
+			}
+
+			e.WithInheritOutput()
+			cmd, err := e.StartCommand(cmd.Context(), fmt.Sprintf("%q %q", browser, url))
+			if err != nil {
+				return err
+			}
+
+			return cmd.Wait()
+		}
+	}
 }

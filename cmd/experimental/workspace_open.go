@@ -3,16 +3,19 @@ package experimental
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
+	browserpkg "github.com/pkg/browser"
 )
 
 var supportedOpenResourceTypes = []string{
@@ -36,10 +39,30 @@ var currentWorkspaceID = func(ctx context.Context) (int64, error) {
 }
 
 var openWorkspaceURL = func(ctx context.Context, targetURL string) error {
-	opener := browser.NewOpener(ctx, ".",
-		browser.WithDisabledMessage("Open this URL in your browser to view the resource:\n"),
-	)
-	return opener(targetURL)
+	browserCmd := env.Get(ctx, "BROWSER")
+	switch browserCmd {
+	case "":
+		originalStderr := browserpkg.Stderr
+		defer func() {
+			browserpkg.Stderr = originalStderr
+		}()
+		browserpkg.Stderr = io.Discard
+		return browserpkg.OpenURL(targetURL)
+	case "none":
+		cmdio.LogString(ctx, "Open this URL in your browser to view the resource:\n"+targetURL)
+		return nil
+	default:
+		e, err := exec.NewCommandExecutor(".")
+		if err != nil {
+			return err
+		}
+		e.WithInheritOutput()
+		cmd, err := e.StartCommand(ctx, fmt.Sprintf("%q %q", browserCmd, targetURL))
+		if err != nil {
+			return err
+		}
+		return cmd.Wait()
+	}
 }
 
 func resourceTypeNames() []string {
@@ -104,7 +127,7 @@ Examples:
 				return err
 			}
 
-			if !browser.IsDisabled(ctx) {
+			if env.Get(ctx, "BROWSER") != "none" {
 				cmdio.LogString(ctx, fmt.Sprintf("Opening %s %s in the browser...", resourceType, id))
 			}
 
