@@ -1,3 +1,6 @@
+Warning: invalid variable reference ${resources.volumes.bar.bad..syntax}: invalid path
+  in databricks.yml:11:21
+
 create volumes.bar
 create volumes.foo
 

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/interpolation"
 	"github.com/databricks/cli/libs/utils"
 )
 
@@ -156,30 +157,39 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 		return dyn.NewValue(resolved[0].Value(), ref.Value.Locations()), nil
 	}
 
-	// Not pure; perform string interpolation.
-	for j := range ref.Matches {
-		// The value is invalid if resolution returned [ErrSkipResolution].
-		// We must skip those and leave the original variable reference in place.
-		if !resolved[j].IsValid() {
-			continue
-		}
-
-		// Try to turn the resolved value into a string.
-		s, ok := resolved[j].AsString()
-		if !ok {
-			// Only allow primitive types to be converted to string.
-			switch resolved[j].Kind() {
-			case dyn.KindString, dyn.KindBool, dyn.KindInt, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
-				s = fmt.Sprint(resolved[j].AsAny())
-			default:
-				return dyn.InvalidValue, fmt.Errorf("cannot interpolate non-primitive value of type %s into string", resolved[j].Kind())
+	// Not pure; perform token-based string interpolation.
+	var buf strings.Builder
+	refIdx := 0
+	for _, tok := range ref.Tokens {
+		switch tok.Kind {
+		case interpolation.TokenLiteral:
+			buf.WriteString(tok.Value)
+		case interpolation.TokenRef:
+			// The value is invalid if resolution returned [ErrSkipResolution].
+			// We must skip those and leave the original variable reference in place.
+			if !resolved[refIdx].IsValid() {
+				buf.WriteString("${")
+				buf.WriteString(tok.Value)
+				buf.WriteByte('}')
+			} else {
+				// Try to turn the resolved value into a string.
+				s, ok := resolved[refIdx].AsString()
+				if !ok {
+					// Only allow primitive types to be converted to string.
+					switch resolved[refIdx].Kind() {
+					case dyn.KindString, dyn.KindBool, dyn.KindInt, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
+						s = fmt.Sprint(resolved[refIdx].AsAny())
+					default:
+						return dyn.InvalidValue, fmt.Errorf("cannot interpolate non-primitive value of type %s into string", resolved[refIdx].Kind())
+					}
+				}
+				buf.WriteString(s)
 			}
+			refIdx++
 		}
-
-		ref.Str = strings.Replace(ref.Str, ref.Matches[j][0], s, 1)
 	}
 
-	return dyn.NewValue(ref.Str, ref.Value.Locations()), nil
+	return dyn.NewValue(buf.String(), ref.Value.Locations()), nil
 }
 
 func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
