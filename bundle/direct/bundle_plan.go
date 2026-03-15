@@ -1070,6 +1070,9 @@ func buildBindConflictError(errorPrefix string, action deployplan.ActionType, ch
 	case deployplan.UpdateWithID:
 		msg.WriteString(errorPrefix + ": cannot update resource ID with bind block\n\n")
 		msg.WriteString("This would replace the existing workspace resource with a new ID.\n\n")
+	default:
+		// This function is only called for Recreate or UpdateWithID actions
+		msg.WriteString(fmt.Sprintf("%s: internal error: unexpected action %q in buildBindConflictError\n\n", errorPrefix, action))
 	}
 
 	if len(problematicFields) > 0 {
