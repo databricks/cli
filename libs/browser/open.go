@@ -35,7 +35,6 @@ var runBrowserCommand = func(ctx context.Context, workingDirectory, browserRaw, 
 	fullCmd := fmt.Sprintf("%s %q", browserRaw, targetURL)
 	cmd := osexec.CommandContext(ctx, shellName(), shellFlag(), fullCmd)
 	cmd.Dir = workingDirectory
-	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
