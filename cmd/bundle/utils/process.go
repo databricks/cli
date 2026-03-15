@@ -92,7 +92,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		cmd.SetContext(ctx)
 	}
 
-	envEngine, err := engine.RequestFromEnv(ctx)
+	envEngine, err := engine.SettingFromEnv(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -157,7 +157,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
-		requiredEngine := ResolveEngineRequest(b, envEngine)
+		requiredEngine := ResolveEngineSetting(b, envEngine)
 
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
@@ -299,17 +299,22 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	return b, stateDesc, nil
 }
 
-// ResolveEngineRequest combines the env var engine with the bundle config engine setting.
-func ResolveEngineRequest(b *bundle.Bundle, envReq engine.EngineRequest) engine.EngineRequest {
+// ResolveEngineSetting combines the env var engine with the bundle config engine setting.
+// Environment variable takes priority over config.
+func ResolveEngineSetting(b *bundle.Bundle, envSetting engine.EngineSetting) engine.EngineSetting {
+	if envSetting.Type != engine.EngineNotSet {
+		return envSetting
+	}
 	configEngine := b.Config.Bundle.Engine
-	configSource := "bundle.engine setting"
 	if configEngine != engine.EngineNotSet {
+		source := "bundle.engine setting"
 		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
 		if locs := v.Locations(); len(locs) > 0 {
-			configSource = fmt.Sprintf("bundle.engine setting at %s", locs[0])
+			source = fmt.Sprintf("bundle.engine setting at %s", locs[0])
 		}
+		return engine.EngineSetting{Type: configEngine, Source: source}
 	}
-	return engine.Resolve(envReq, configEngine, configSource)
+	return engine.EngineSetting{}
 }
 
 func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {

@@ -374,7 +374,7 @@ func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
-	envEngine, err := engine.RequestFromEnv(ctx)
+	envEngine, err := engine.SettingFromEnv(ctx)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -385,7 +385,7 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	requiredEngine := utils.ResolveEngineRequest(b, envEngine)
+	requiredEngine := utils.ResolveEngineSetting(b, envEngine)
 	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
 	if logdiag.HasError(ctx) {
 		return

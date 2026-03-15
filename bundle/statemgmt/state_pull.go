@@ -119,7 +119,7 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 
 // PullResourcesState determines correct state to use by reading all 4 states (terraform/direct, local/remote).
 // If state is present and the requested engine disagrees, a warning is issued and the state's engine is used.
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineRequest) (context.Context, *StateDesc) {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineSetting) (context.Context, *StateDesc) {
 	var err error
 
 	// We read all 4 possible states: terraform/direct X local/remote and then use env var to validate that correct one is used.

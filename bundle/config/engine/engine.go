@@ -44,31 +44,19 @@ func FromEnv(ctx context.Context) (EngineType, error) {
 	return engine, nil
 }
 
-// EngineRequest represents a requested engine type along with the source of the request.
-type EngineRequest struct {
+// EngineSetting represents a requested engine type along with the source of the request.
+type EngineSetting struct {
 	Type   EngineType
 	Source string // human-readable source, e.g. "DATABRICKS_BUNDLE_ENGINE env var" or config file location
 }
 
-// RequestFromEnv returns an EngineRequest from the environment variable.
-func RequestFromEnv(ctx context.Context) (EngineRequest, error) {
+// SettingFromEnv returns an EngineSetting from the environment variable.
+func SettingFromEnv(ctx context.Context) (EngineSetting, error) {
 	e, err := FromEnv(ctx)
 	if err != nil {
-		return EngineRequest{}, err
+		return EngineSetting{}, err
 	}
-	return EngineRequest{Type: e, Source: EnvVar + " environment variable"}, nil
-}
-
-// Resolve combines the environment variable engine with a config engine setting.
-// Environment variable takes priority over config.
-func Resolve(envReq EngineRequest, configEngine EngineType, configSource string) EngineRequest {
-	if envReq.Type != EngineNotSet {
-		return envReq
-	}
-	if configEngine != EngineNotSet {
-		return EngineRequest{Type: configEngine, Source: configSource}
-	}
-	return EngineRequest{}
+	return EngineSetting{Type: e, Source: EnvVar + " environment variable"}, nil
 }
 
 func (e EngineType) ThisOrDefault() EngineType {
