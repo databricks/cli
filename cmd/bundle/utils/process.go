@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -91,7 +92,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		cmd.SetContext(ctx)
 	}
 
-	requiredEngine, err := engine.FromEnv(ctx)
+	envEngine, err := engine.RequestFromEnv(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -156,6 +157,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
+		requiredEngine := ResolveEngineRequest(b, envEngine)
+
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
 		if logdiag.HasError(ctx) {
@@ -294,6 +297,19 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	}
 
 	return b, stateDesc, nil
+}
+
+// ResolveEngineRequest combines the env var engine with the bundle config engine setting.
+func ResolveEngineRequest(b *bundle.Bundle, envReq engine.EngineRequest) engine.EngineRequest {
+	configEngine := b.Config.Bundle.Deployment.Engine
+	configSource := "bundle.deployment.engine setting"
+	if configEngine != engine.EngineNotSet {
+		v := dyn.GetValue(b.Config.Value(), "bundle.deployment.engine")
+		if locs := v.Locations(); len(locs) > 0 {
+			configSource = fmt.Sprintf("bundle.deployment.engine setting at %s", locs[0])
+		}
+	}
+	return engine.Resolve(envReq, configEngine, configSource)
 }
 
 func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {

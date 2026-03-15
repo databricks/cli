@@ -34,7 +34,7 @@ func Parse(engine string) (EngineType, bool) {
 	}
 }
 
-// FromEnv returns engine setting from environment
+// FromEnv returns engine setting from environment variable.
 func FromEnv(ctx context.Context) (EngineType, error) {
 	value := env.Get(ctx, EnvVar)
 	engine, ok := Parse(value)
@@ -42,6 +42,33 @@ func FromEnv(ctx context.Context) (EngineType, error) {
 		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'terraform' or 'direct')", EnvVar, value)
 	}
 	return engine, nil
+}
+
+// EngineRequest represents a requested engine type along with the source of the request.
+type EngineRequest struct {
+	Type   EngineType
+	Source string // human-readable source, e.g. "DATABRICKS_BUNDLE_ENGINE env var" or config file location
+}
+
+// RequestFromEnv returns an EngineRequest from the environment variable.
+func RequestFromEnv(ctx context.Context) (EngineRequest, error) {
+	e, err := FromEnv(ctx)
+	if err != nil {
+		return EngineRequest{}, err
+	}
+	return EngineRequest{Type: e, Source: EnvVar + " environment variable"}, nil
+}
+
+// Resolve combines the environment variable engine with a config engine setting.
+// Environment variable takes priority over config.
+func Resolve(envReq EngineRequest, configEngine EngineType, configSource string) EngineRequest {
+	if envReq.Type != EngineNotSet {
+		return envReq
+	}
+	if configEngine != EngineNotSet {
+		return EngineRequest{Type: configEngine, Source: configSource}
+	}
+	return EngineRequest{}
 }
 
 func (e EngineType) ThisOrDefault() EngineType {
