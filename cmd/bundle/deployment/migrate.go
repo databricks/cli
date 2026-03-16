@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle"
+
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -151,6 +154,12 @@ WARNING: Both direct deployment engine and this command are experimental and not
 			// Same options as regular deploy, to ensure bundle config is in the same state
 			FastValidate: true,
 			Build:        true,
+			PostInitFunc: func(_ context.Context, b *bundle.Bundle) error {
+				if b.Config.Bundle.Engine == engine.EngineTerraform {
+					return fmt.Errorf("bundle.engine is set to %q. Migration requires \"engine: direct\" or no engine setting. Change the setting to \"engine: direct\" and retry.", engine.EngineTerraform)
+				}
+				return nil
+			},
 		}
 
 		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
