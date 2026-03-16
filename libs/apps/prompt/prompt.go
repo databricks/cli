@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 // DefaultAppDescription is the default description for new apps.
@@ -220,17 +219,6 @@ func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, e
 	return deploy, RunMode(runModeStr), nil
 }
 
-// ListSQLWarehouses fetches all SQL warehouses the user has access to.
-func ListSQLWarehouses(ctx context.Context) ([]sql.EndpointInfo, error) {
-	w := cmdctx.WorkspaceClient(ctx)
-	if w == nil {
-		return nil, errors.New("no workspace client available")
-	}
-
-	iter := w.Warehouses.List(ctx, sql.ListWarehousesRequest{})
-	return listing.ToSlice(ctx, iter)
-}
-
 // PromptFromList shows a picker for items and returns the selected ID.
 // If required is false and items are empty, returns ("", nil). If required is true and items are empty, returns an error.
 func PromptFromList(ctx context.Context, title, emptyMessage string, items []ListItem, required bool) (string, error) {
@@ -353,26 +341,27 @@ func promptFromPagedFetcher(ctx context.Context, title, emptyMessage string, fet
 	theme := AppkitTheme()
 
 	for {
-		options := make([]huh.Option[string], 0, len(fetcher.Items)+1)
+		options := make([]huh.Option[string], 0, len(fetcher.Items)+2)
 		labels := make(map[string]string, len(fetcher.Items))
-		for _, it := range fetcher.Items {
-			options = append(options, huh.NewOption(it.Label, it.ID))
-			labels[it.ID] = it.Label
-		}
 
 		var desc string
 		if fetcher.HasMore && !fetcher.Capped {
-			desc = fmt.Sprintf("%d fetched — / to filter, ↓ load more", len(fetcher.Items))
-			options = append(options, huh.NewOption("↓ Load more...", moreID))
+			desc = fmt.Sprintf("%d results loaded — / to search", len(fetcher.Items))
+			options = append(options, huh.NewOption("+ Load more results", moreID))
 		} else if fetcher.Capped {
-			desc = fmt.Sprintf("%d fetched — / to filter", len(fetcher.Items))
-			manualLabel := "Can't find it? Enter name/ID manually..."
+			desc = fmt.Sprintf("%d results loaded — / to search", len(fetcher.Items))
+			manualLabel := "Not listed? Enter ID manually..."
 			if searchFn != nil {
-				manualLabel = "Can't find it? Search by name..."
+				manualLabel = "Not listed? Search by name..."
 			}
 			options = append(options, huh.NewOption(manualLabel, manualID))
 		} else {
-			desc = fmt.Sprintf("%d available — / to filter", len(fetcher.Items))
+			desc = fmt.Sprintf("%d available — / to search", len(fetcher.Items))
+		}
+
+		for _, it := range fetcher.Items {
+			options = append(options, huh.NewOption(it.Label, it.ID))
+			labels[it.ID] = it.Label
 		}
 
 		var selected string
@@ -566,7 +555,7 @@ const backID = "__back__"
 
 // promptUCCatalog shows a picker for UC catalogs (shared first step for volume/function pickers).
 func promptUCCatalog(ctx context.Context, required bool) (string, error) {
-	f, err := getFetcherByKey(ctx, cacheKeyCatalogs, "Fetching catalogs...", NewPagedCatalogs)
+	f, err := getFetcherByKey(ctx, cacheKeyCatalogs, "Fetching catalogs...", ListCatalogs)
 	if err != nil {
 		return "", err
 	}
@@ -654,9 +643,35 @@ func PromptForServingEndpoint(ctx context.Context, r manifest.Resource, required
 	return promptForPagedResource(ctx, r, required, title, "no serving endpoints found", "Fetching serving endpoints...", nil)
 }
 
+// volumePathToSecurableName converts a volume path (/Volumes/catalog/schema/vol)
+// to the securable_full_name format (catalog.schema.vol) used by DABs.
+func volumePathToSecurableName(path string) string {
+	trimmed := strings.TrimPrefix(path, "/Volumes/")
+	if trimmed == path {
+		return path
+	}
+	return strings.ReplaceAll(trimmed, "/", ".")
+}
+
 // PromptForVolume shows a three-step picker for UC volumes: catalog -> schema -> volume.
+// Stores two values: the volume path for .env and the dot-separated securable
+// name for the DABs YAML securable_full_name field.
 func PromptForVolume(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptUCResource(ctx, r, required, "Volume", "Fetching volumes...", ListVolumesInSchema)
+	result, err := promptUCResource(ctx, r, required, "Volume", "Fetching volumes...", ListVolumesInSchema)
+	if err != nil || result == nil {
+		return result, err
+	}
+	// promptUCResource stores the volume path (/Volumes/cat/schema/vol) under
+	// the first manifest field (e.g., "path"). The DABs spec also needs the
+	// securable_full_name (cat.schema.vol) under "id".
+	idKey := r.Key() + ".id"
+	if _, exists := result[idKey]; !exists {
+		for _, v := range result {
+			result[idKey] = volumePathToSecurableName(v)
+			break
+		}
+	}
+	return result, nil
 }
 
 // PromptForVectorSearchIndex shows a picker for vector search indexes.
@@ -679,7 +694,7 @@ func PromptForUCConnection(ctx context.Context, r manifest.Resource, required bo
 // PromptForDatabase shows a two-step picker for database instance and database name.
 func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	// Step 1: pick a Lakebase instance
-	f, err := getFetcherByKey(ctx, cacheKeyDatabaseInstances, "Fetching database instances...", NewPagedDatabaseInstances)
+	f, err := getFetcherByKey(ctx, cacheKeyDatabaseInstances, "Fetching database instances...", ListDatabaseInstances)
 	if err != nil {
 		return nil, err
 	}
@@ -718,7 +733,7 @@ func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) 
 // PromptForPostgres shows a three-step picker for Lakebase Autoscaling (V2): project, branch, then database.
 func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	// Step 1: pick a project
-	f, err := getFetcherByKey(ctx, cacheKeyPostgresProjects, "Fetching Postgres projects...", NewPagedPostgresProjects)
+	f, err := getFetcherByKey(ctx, cacheKeyPostgresProjects, "Fetching Postgres projects...", ListPostgresProjects)
 	if err != nil {
 		return nil, err
 	}

@@ -742,6 +742,15 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		subdirForClone = appkitTemplateDir
 	}
 	templateCh := resolveTemplateAsync(ctx, templateSrc, branchForClone, subdirForClone)
+	defer func() {
+		select {
+		case res := <-templateCh:
+			if res.cleanup != nil {
+				res.cleanup()
+			}
+		default:
+		}
+	}()
 
 	// Step 1: Get project name (clone runs in parallel for remote templates)
 	destDir := opts.name

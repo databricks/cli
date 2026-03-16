@@ -12,13 +12,13 @@ type pagedConstructor func(ctx context.Context) (*PagedFetcher, error)
 
 // pagedConstructors maps resource types to their paged lister constructor.
 var pagedConstructors = map[string]pagedConstructor{
-	ResourceTypeSQLWarehouse:      NewPagedSQLWarehouses,
-	ResourceTypeJob:               NewPagedJobs,
-	ResourceTypeServingEndpoint:   NewPagedServingEndpoints,
-	ResourceTypeGenieSpace:        NewPagedGenieSpaces,
-	ResourceTypeExperiment:        NewPagedExperiments,
-	ResourceTypeUCConnection:      NewPagedConnections,
-	ResourceTypeVectorSearchIndex: NewPagedVectorSearchIndexes,
+	ResourceTypeSQLWarehouse:      ListSQLWarehouses,
+	ResourceTypeJob:               ListJobs,
+	ResourceTypeServingEndpoint:   ListServingEndpoints,
+	ResourceTypeGenieSpace:        ListGenieSpaces,
+	ResourceTypeExperiment:        ListExperiments,
+	ResourceTypeUCConnection:      ListConnections,
+	ResourceTypeVectorSearchIndex: ListVectorSearchIndexes,
 }
 
 // Internal cache keys for first-step fetchers used by multi-step prompts.
@@ -34,10 +34,10 @@ var firstStepPrefetch = map[string]struct {
 	cacheKey string
 	ctor     pagedConstructor
 }{
-	ResourceTypeVolume:     {cacheKeyCatalogs, NewPagedCatalogs},
-	ResourceTypeUCFunction: {cacheKeyCatalogs, NewPagedCatalogs},
-	ResourceTypeDatabase:   {cacheKeyDatabaseInstances, NewPagedDatabaseInstances},
-	ResourceTypePostgres:   {cacheKeyPostgresProjects, NewPagedPostgresProjects},
+	ResourceTypeVolume:     {cacheKeyCatalogs, ListCatalogs},
+	ResourceTypeUCFunction: {cacheKeyCatalogs, ListCatalogs},
+	ResourceTypeDatabase:   {cacheKeyDatabaseInstances, ListDatabaseInstances},
+	ResourceTypePostgres:   {cacheKeyPostgresProjects, ListPostgresProjects},
 }
 
 // PrefetchResources kicks off a background goroutine for every resource type
