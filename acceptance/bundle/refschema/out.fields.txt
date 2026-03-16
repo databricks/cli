@@ -122,7 +122,6 @@ resources.apps.*.git_source.resolved_commit	string	INPUT	STATE
 resources.apps.*.git_source.source_code_path	string	INPUT	STATE
 resources.apps.*.git_source.tag	string	INPUT	STATE
 resources.apps.*.id	string	ALL
-resources.apps.*.lifecycle	resources.Lifecycle	INPUT
 resources.apps.*.lifecycle	resources.LifecycleWithStarted	INPUT
 resources.apps.*.lifecycle.prevent_destroy	bool	INPUT
 resources.apps.*.lifecycle.started	*bool	INPUT
@@ -377,7 +376,6 @@ resources.clusters.*.jdbc_port	int	REMOTE
 resources.clusters.*.kind	compute.Kind	ALL
 resources.clusters.*.last_restarted_time	int64	REMOTE
 resources.clusters.*.last_state_loss_time	int64	REMOTE
-resources.clusters.*.lifecycle	resources.Lifecycle	INPUT
 resources.clusters.*.lifecycle	resources.LifecycleWithStarted	INPUT
 resources.clusters.*.lifecycle.prevent_destroy	bool	INPUT
 resources.clusters.*.lifecycle.started	*bool	INPUT
@@ -2793,7 +2791,6 @@ resources.sql_warehouses.*.health.summary	string	REMOTE
 resources.sql_warehouses.*.id	string	INPUT	REMOTE
 resources.sql_warehouses.*.instance_profile_arn	string	ALL
 resources.sql_warehouses.*.jdbc_url	string	REMOTE
-resources.sql_warehouses.*.lifecycle	resources.Lifecycle	INPUT
 resources.sql_warehouses.*.lifecycle	resources.LifecycleWithStarted	INPUT
 resources.sql_warehouses.*.lifecycle.prevent_destroy	bool	INPUT
 resources.sql_warehouses.*.lifecycle.started	*bool	INPUT

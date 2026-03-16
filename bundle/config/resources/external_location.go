@@ -63,7 +63,7 @@ func (e *ExternalLocation) GetName() string {
 }
 
 // GetLifecycle returns the lifecycle settings for the resource.
-func (e *ExternalLocation) GetLifecycle() ILifecycle {
+func (e *ExternalLocation) GetLifecycle() LifecycleConfig {
 	return e.Lifecycle
 }
 

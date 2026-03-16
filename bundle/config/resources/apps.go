@@ -57,7 +57,7 @@ type App struct {
 }
 
 // GetLifecycle returns the lifecycle settings, using LifecycleWithStarted.
-func (a *App) GetLifecycle() ILifecycle {
+func (a *App) GetLifecycle() LifecycleConfig {
 	return a.Lifecycle
 }
 

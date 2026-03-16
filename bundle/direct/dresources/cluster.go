@@ -121,7 +121,28 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 		}
 		return nil, retries.Halt(err)
 	})
-	return nil, err
+	if err != nil {
+		return nil, err
+	}
+
+	// With lifecycle.started=true, ensure the cluster is running after the update.
+	if config.Started {
+		details, err := r.client.Clusters.GetByClusterId(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get cluster %s: %w", id, err)
+		}
+		if details.State == compute.StateTerminated {
+			startWait, err := r.client.Clusters.Start(ctx, compute.StartCluster{ClusterId: id})
+			if err != nil {
+				return nil, fmt.Errorf("failed to start cluster %s: %w", id, err)
+			}
+			if _, err = startWait.Get(); err != nil {
+				return nil, fmt.Errorf("failed to wait for cluster %s to start: %w", id, err)
+			}
+		}
+	}
+
+	return nil, nil
 }
 
 func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *ClusterState) error {

@@ -48,7 +48,7 @@ func TestCheckPreventDestroyForApp(t *testing.T) {
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
 					"test_resource": {
-						Lifecycle: resources.LifecycleWithStarted{PreventDestroy: true},
+						Lifecycle: resources.LifecycleWithStarted{Lifecycle: resources.Lifecycle{PreventDestroy: true}},
 					},
 				},
 			},
@@ -108,7 +108,7 @@ func TestCheckForPreventDestroyWhenFirstHasNoPreventDestroy(t *testing.T) {
 						App: apps.App{
 							Name: "Test App",
 						},
-						Lifecycle: resources.LifecycleWithStarted{PreventDestroy: true},
+						Lifecycle: resources.LifecycleWithStarted{Lifecycle: resources.Lifecycle{PreventDestroy: true}},
 					},
 				},
 			},

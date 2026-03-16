@@ -21,7 +21,7 @@ type SqlWarehouse struct {
 }
 
 // GetLifecycle returns the lifecycle settings, using LifecycleWithStarted.
-func (sw *SqlWarehouse) GetLifecycle() ILifecycle {
+func (sw *SqlWarehouse) GetLifecycle() LifecycleConfig {
 	return sw.Lifecycle
 }
 

@@ -9,6 +9,6 @@ type BaseResource struct {
 }
 
 // GetLifecycle returns the lifecycle settings for the resource.
-func (b *BaseResource) GetLifecycle() ILifecycle {
+func (b *BaseResource) GetLifecycle() LifecycleConfig {
 	return b.Lifecycle
 }

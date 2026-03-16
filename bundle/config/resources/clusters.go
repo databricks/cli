@@ -21,7 +21,7 @@ type Cluster struct {
 }
 
 // GetLifecycle returns the lifecycle settings, using LifecycleWithStarted.
-func (s *Cluster) GetLifecycle() ILifecycle {
+func (s *Cluster) GetLifecycle() LifecycleConfig {
 	return s.Lifecycle
 }
 

@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -103,6 +104,23 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 
 	if waiter.Id != id {
 		log.Warnf(ctx, "sql_warehouses: response contains unexpected id=%#v (expected %#v)", waiter.Id, id)
+	}
+
+	// With lifecycle.started=true, ensure the warehouse is running after the update.
+	if config.Started {
+		warehouse, err := r.client.Warehouses.GetById(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get warehouse %s: %w", id, err)
+		}
+		if warehouse.State == sql.StateStopped {
+			startWait, err := r.client.Warehouses.Start(ctx, sql.StartRequest{Id: id})
+			if err != nil {
+				return nil, fmt.Errorf("failed to start warehouse %s: %w", id, err)
+			}
+			if _, err = startWait.Get(); err != nil {
+				return nil, fmt.Errorf("failed to wait for warehouse %s to start: %w", id, err)
+			}
+		}
 	}
 
 	return nil, nil
