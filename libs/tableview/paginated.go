@@ -479,11 +479,14 @@ func (m paginatedModel) View() string {
 	if len(m.rows) == 0 && m.exhausted {
 		return "No results found."
 	}
-	if m.err != nil {
+	if m.err != nil && len(m.rows) == 0 {
 		return fmt.Sprintf("Error: %v", m.err)
 	}
 
 	footer := m.renderFooter()
+	if m.err != nil {
+		footer = footerStyle.Render(fmt.Sprintf("Error: %v", m.err))
+	}
 	return m.viewport.View() + "\n" + footer
 }
 
