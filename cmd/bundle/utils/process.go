@@ -59,9 +59,6 @@ type ProcessOptions struct {
 	// If true, configure outputHandler for phases.Deploy
 	Verbose bool
 
-	// If true, do not read DATABRICKS_BUNDLE_ENGINE env var (for migrate command, which ignores this env var)
-	SkipEngineEnvVar bool
-
 	// If true, call corresponding phase:
 	FastValidate    bool
 	Validate        bool
@@ -96,11 +93,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	requiredEngine := engine.EngineNotSet
 
-	if !opts.SkipEngineEnvVar {
-		requiredEngine, err = engine.FromEnv(ctx)
-		if err != nil {
-			return nil, nil, err
-		}
+	requiredEngine, err = engine.FromEnv(ctx)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Load bundle config and apply target
