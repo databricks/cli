@@ -7,6 +7,7 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -453,14 +454,16 @@ func (m paginatedModel) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "backspace":
 		if len(m.searchInput) > 0 {
-			m.searchInput = m.searchInput[:len(m.searchInput)-1]
+			_, size := utf8.DecodeLastRuneInString(m.searchInput)
+			m.searchInput = m.searchInput[:len(m.searchInput)-size]
 		}
 		return m, m.scheduleSearchDebounce()
 	default:
-		if len(msg.String()) == 1 || msg.Type == tea.KeyRunes {
+		if msg.Type == tea.KeyRunes {
 			m.searchInput += msg.String()
+			return m, m.scheduleSearchDebounce()
 		}
-		return m, m.scheduleSearchDebounce()
+		return m, nil
 	}
 }
 
