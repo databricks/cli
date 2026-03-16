@@ -157,7 +157,11 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 
 	if requiredEngine.Type != engine.EngineNotSet && requiredEngine.Type != winner.Engine {
 		msg := fmt.Sprintf("Deployment engine %q configured in %s does not match the existing state (engine %q). Using %q engine from the existing state.", requiredEngine.Type, requiredEngine.Source, winner.Engine, winner.Engine)
-		logStatesWarning(ctx, msg, states)
+		if requiredEngine.IsEnvVar {
+			log.Infof(ctx, "%s", msg)
+		} else {
+			logStatesWarning(ctx, msg, states)
+		}
 	}
 
 	// Set the engine in the user agent

@@ -1,0 +1,20 @@
+
+=== Config mismatch with state: warning expected
+
+>>> [CLI] bundle debug states
+Warning: Deployment engine "direct" configured in bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 does not match the existing state (engine "terraform"). Using "terraform" engine from the existing state.
+
+Available state files:
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
+
+[TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
+
+=== Env var mismatch with state: no warning expected
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle debug states
+[TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
+
+=== Invalid env var: error expected
+
+>>> musterr [CLI] bundle debug states
+Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="bla" (expected 'terraform' or 'direct')
