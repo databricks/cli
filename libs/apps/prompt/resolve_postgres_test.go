@@ -1,4 +1,4 @@
-package prompt
+package prompt_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/manifest"
+	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -62,7 +63,7 @@ func TestResolvePostgresValuesHappyPath(t *testing.T) {
 		Return(&databases).Once()
 
 	r := newPostgresResource()
-	result, err := ResolvePostgresValues(ctx, r, branchName, dbName, "")
+	result, err := prompt.ResolvePostgresValues(ctx, r, branchName, dbName, "")
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]string{
@@ -103,7 +104,7 @@ func TestResolvePostgresValuesNoReadWriteEndpoint(t *testing.T) {
 		Return(&databases).Once()
 
 	r := newPostgresResource()
-	result, err := ResolvePostgresValues(ctx, r, branchName, dbName, "")
+	result, err := prompt.ResolvePostgresValues(ctx, r, branchName, dbName, "")
 	require.NoError(t, err)
 
 	// host and endpointPath should be empty since no ReadWrite endpoint found.
@@ -146,7 +147,7 @@ func TestResolvePostgresValuesDatabaseNotFound(t *testing.T) {
 		Return(&databases).Once()
 
 	r := newPostgresResource()
-	result, err := ResolvePostgresValues(ctx, r, branchName, dbName, "")
+	result, err := prompt.ResolvePostgresValues(ctx, r, branchName, dbName, "")
 	require.NoError(t, err)
 
 	// databaseName should be empty since no match.
@@ -180,7 +181,7 @@ func TestResolvePostgresValuesSkipsDatabaseListWhenNameProvided(t *testing.T) {
 	// ListDatabases should NOT be called since pgDatabaseName is pre-provided.
 
 	r := newPostgresResource()
-	result, err := ResolvePostgresValues(ctx, r, branchName, dbName, "my_pg_db")
+	result, err := prompt.ResolvePostgresValues(ctx, r, branchName, dbName, "my_pg_db")
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]string{
@@ -204,7 +205,7 @@ func TestResolvePostgresValuesEndpointAPIError(t *testing.T) {
 		}).Once()
 
 	r := newPostgresResource()
-	_, err := ResolvePostgresValues(ctx, r, branchName, "some-db", "")
+	_, err := prompt.ResolvePostgresValues(ctx, r, branchName, "some-db", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "resolving endpoint details")
 }
@@ -237,7 +238,7 @@ func TestResolvePostgresValuesDatabaseAPIError(t *testing.T) {
 		}).Once()
 
 	r := newPostgresResource()
-	_, err := ResolvePostgresValues(ctx, r, branchName, "some-db", "")
+	_, err := prompt.ResolvePostgresValues(ctx, r, branchName, "some-db", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "resolving database name")
 }

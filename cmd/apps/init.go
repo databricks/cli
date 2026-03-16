@@ -722,6 +722,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		resources := m.CollectResources(selectedPlugins)
 
 		// Resolve derived values for resources that support it.
+		if resourceValues == nil {
+			resourceValues = make(map[string]string)
+		}
 		for _, r := range resources {
 			resolveFn, ok := prompt.GetResolveFunc(r.Type)
 			if !ok {
