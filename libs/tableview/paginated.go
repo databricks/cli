@@ -212,9 +212,11 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.exhausted = true
 		}
 
-		if isFirstBatch && len(m.rows) > 0 {
+		if len(m.rows) > 0 {
 			m.computeWidths()
-			m.cursor = 0
+			if isFirstBatch {
+				m.cursor = 0
+			}
 		}
 
 		if m.ready {
