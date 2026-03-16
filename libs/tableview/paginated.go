@@ -73,7 +73,6 @@ type paginatedModel struct {
 	savedIter      RowIterator
 	savedExhaust   bool
 
-
 	// Limits
 	maxItems     int
 	limitReached bool
