@@ -1,1 +1,4 @@
-# All configuration inherited from parent test.toml
+# Skip terraform variant: TF provider includes invalid 'initial_endpoint_spec' in
+# update_mask, causing "Unknown field path" error. Tracked in:
+# https://github.com/databricks/terraform-provider-databricks/issues/5481
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

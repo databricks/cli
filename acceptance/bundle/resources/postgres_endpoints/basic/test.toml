@@ -1,1 +1,4 @@
-# All configuration inherited from parent test.toml
+# Skip terraform variant: TF provider doesn't retry on 409 "endpoint reconciliation
+# in progress" during delete. Tracked in:
+# https://github.com/databricks/terraform-provider-databricks/issues/5482
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
