@@ -152,8 +152,16 @@ func NewPaginatedProgram(ctx context.Context, w io.Writer, cfg *TableConfig, ite
 // RunPaginated launches the paginated TUI table.
 func RunPaginated(ctx context.Context, w io.Writer, cfg *TableConfig, iter RowIterator, maxItems int) error {
 	p := NewPaginatedProgram(ctx, w, cfg, iter, maxItems)
-	_, err := p.Run()
-	return err
+	finalModel, err := p.Run()
+	if err != nil {
+		return err
+	}
+	if pm, ok := finalModel.(FinalModel); ok {
+		if modelErr := pm.Err(); modelErr != nil {
+			return modelErr
+		}
+	}
+	return nil
 }
 
 // Err returns any error that occurred during data fetching.
