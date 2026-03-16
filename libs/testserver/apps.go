@@ -102,7 +102,7 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 		return Response{StatusCode: 500, Body: fmt.Sprintf("internal error: %s", err)}
 	}
 
-	deployment.DeploymentId = "deploy-1"
+	deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
 	deployment.Status = &apps.AppDeploymentStatus{
 		State:   apps.AppDeploymentStateSucceeded,
 		Message: "Deployment succeeded.",

@@ -65,7 +65,7 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *apps.App, error) {
 	// Start app compute only when lifecycle.started=true is explicit.
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
-	noCompute := !(config.Started != nil && *config.Started)
+	noCompute := config.Started == nil || !*config.Started
 	request := apps.CreateAppRequest{
 		App:             config.App,
 		NoCompute:       noCompute,
