@@ -717,7 +717,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
-	// In flags/non-interactive mode, resolve derived postgres values and validate resources.
+	// In flags/non-interactive mode, resolve derived values and validate resources.
 	if flagsMode || !isInteractive {
 		resources := m.CollectResources(selectedPlugins)
 

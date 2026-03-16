@@ -590,7 +590,12 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 	}
 
 	// Resolve derived values (host, databaseName, endpointPath) — non-fatal.
-	resolved, resolveErr := ResolvePostgresValues(ctx, r, branchName, dbName, pgDatabaseName)
+	var resolved map[string]string
+	resolveErr := RunWithSpinnerCtx(ctx, "Resolving connection details...", func() error {
+		var err error
+		resolved, err = ResolvePostgresValues(ctx, r, branchName, dbName, pgDatabaseName)
+		return err
+	})
 	if resolveErr != nil {
 		log.Warnf(ctx, "Could not resolve connection details: %v", resolveErr)
 	}

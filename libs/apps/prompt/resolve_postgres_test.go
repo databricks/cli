@@ -209,6 +209,39 @@ func TestResolvePostgresValuesEndpointAPIError(t *testing.T) {
 	assert.Contains(t, err.Error(), "resolving endpoint details")
 }
 
+func TestResolvePostgresValuesDatabaseAPIError(t *testing.T) {
+	m := mocks.NewMockWorkspaceClient(t)
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), m.WorkspaceClient)
+
+	branchName := "projects/p1/branches/main"
+
+	// Endpoints succeed.
+	endpoints := listing.SliceIterator[postgres.Endpoint]{
+		{
+			Name: "projects/p1/branches/main/endpoints/ep1",
+			Status: &postgres.EndpointStatus{
+				EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+				Hosts:        &postgres.EndpointHosts{Host: "my-host.example.com"},
+			},
+		},
+	}
+	m.GetMockPostgresAPI().EXPECT().
+		ListEndpoints(mock.Anything, postgres.ListEndpointsRequest{Parent: branchName}).
+		Return(&endpoints).Once()
+
+	// ListDatabases returns an error.
+	m.GetMockPostgresAPI().EXPECT().
+		ListDatabases(mock.Anything, postgres.ListDatabasesRequest{Parent: branchName}).
+		RunAndReturn(func(_ context.Context, _ postgres.ListDatabasesRequest) listing.Iterator[postgres.Database] {
+			return &errorIterator[postgres.Database]{err: errors.New("API unavailable")}
+		}).Once()
+
+	r := newPostgresResource()
+	_, err := ResolvePostgresValues(ctx, r, branchName, "some-db", "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "resolving database name")
+}
+
 // errorIterator is a test helper that always returns an error.
 type errorIterator[T any] struct {
 	err error
