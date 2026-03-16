@@ -52,6 +52,11 @@ func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 			return true
 		}
 
+		// Anonymous embedded structs are transparent in JSON; skip them as standalone fields.
+		if field.Anonymous {
+			return true
+		}
+
 		// Do not generate required validation code for fields that are internal or readonly.
 		bundleTag := structtag.BundleTag(field.Tag.Get("bundle"))
 		if bundleTag.Internal() || bundleTag.ReadOnly() {
