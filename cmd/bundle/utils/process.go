@@ -310,7 +310,8 @@ func ResolveEngineSetting(b *bundle.Bundle, envSetting engine.EngineSetting) eng
 		source := "bundle.engine setting"
 		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
 		if locs := v.Locations(); len(locs) > 0 {
-			source = fmt.Sprintf("bundle.engine setting at %s", locs[0])
+			loc := locs[0]
+			source = fmt.Sprintf("bundle.engine setting at %s:%d:%d", filepath.ToSlash(loc.File), loc.Line, loc.Column)
 		}
 		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}
 	}
