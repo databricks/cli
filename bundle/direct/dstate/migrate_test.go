@@ -94,6 +94,16 @@ func TestMigrateState_CurrentVersion(t *testing.T) {
 	assert.Equal(t, currentStateVersion, db.StateVersion)
 }
 
+func TestMigrateState_FutureVersion(t *testing.T) {
+	db := Database{
+		StateVersion: currentStateVersion + 1,
+		State:        map[string]ResourceEntry{},
+	}
+
+	err := migrateState(&db)
+	require.ErrorContains(t, err, "newer than supported")
+}
+
 func TestMigrateState_Version0(t *testing.T) {
 	// Version 0 means state_version was absent; should be treated like version 1.
 	db := Database{
