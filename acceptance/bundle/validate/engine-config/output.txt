@@ -5,9 +5,6 @@ Error: invalid value "invalid_engine" for bundle.engine (expected "terraform" or
 
 Name: test-engine-config
 Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-engine-config/default
 
 Found 1 error
 
