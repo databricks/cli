@@ -59,6 +59,21 @@
         "cli": {
           "bundle": {
             "config": {
+              "engine.EngineType": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "terraform",
+                      "direct"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Alert": {
                 "oneOf": [
                   {
@@ -2142,6 +2157,10 @@
                       "description": "The definition of the bundle deployment",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
                       "markdownDescription": "The definition of the bundle deployment. For supported attributes see [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
+                    },
+                    "engine": {
+                      "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Can be overridden with the `DATABRICKS_BUNDLE_ENGINE` environment variable.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config/engine.EngineType"
                     },
                     "git": {
                       "description": "The Git version control details that are associated with your bundle.",

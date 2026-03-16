@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +10,9 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
+
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -151,6 +154,12 @@ WARNING: Both direct deployment engine and this command are experimental and not
 			// Same options as regular deploy, to ensure bundle config is in the same state
 			FastValidate: true,
 			Build:        true,
+			PostInitFunc: func(_ context.Context, b *bundle.Bundle) error {
+				if b.Config.Bundle.Engine == engine.EngineTerraform {
+					return fmt.Errorf("bundle.engine is set to %q. Migration requires \"engine: direct\" or no engine setting. Change the setting to \"engine: direct\" and retry", engine.EngineTerraform)
+				}
+				return nil
+			},
 		}
 
 		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
@@ -160,10 +169,9 @@ WARNING: Both direct deployment engine and this command are experimental and not
 		ctx := cmd.Context()
 
 		if stateDesc.Lineage == "" {
-			// TODO: mention bundle.engine once it's there
 			cmdio.LogString(ctx, `Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
 
-To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.`)
+To start using direct engine, set "engine: direct" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.`)
 			return root.ErrAlreadyPrinted
 		}
 

@@ -1,0 +1,3 @@
+bundle:
+  name: test-engine-config
+  engine: invalid_engine
