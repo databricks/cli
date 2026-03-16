@@ -52,9 +52,7 @@ func (vr *ValidateResult) String() string {
 }
 
 // ValidateOptions configures validation behavior.
-type ValidateOptions struct {
-	SkipTests bool // Skip running tests for faster validation
-}
+type ValidateOptions struct{}
 
 // Validation defines the interface for project validation strategies.
 type Validation interface {
