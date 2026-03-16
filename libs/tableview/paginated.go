@@ -325,9 +325,8 @@ func (m paginatedModel) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.cfg.Search != nil {
 			m.searching = true
 			m.searchInput = ""
-			// Prevent maybeFetch from starting new fetches against the old iterator
-			// while we're in search mode. Any in-flight fetch will be discarded
-			// via generation check when it returns.
+			// Block maybeFetch while search UI is visible. In-flight fetches from
+			// the original iterator will still be accepted (same generation).
 			m.loading = true
 			m.viewport.Height--
 			return m, nil
@@ -400,8 +399,10 @@ func (m *paginatedModel) scheduleSearchDebounce() tea.Cmd {
 // loading so that maybeFetch is unblocked. Safe to call even when there is
 // no saved search state.
 func (m *paginatedModel) restorePreSearchState() {
-	m.fetchGeneration++
 	if m.hasSearchState {
+		// Bump generation to discard any in-flight search fetch, since we're
+		// switching back to the original iterator.
+		m.fetchGeneration++
 		m.rows = m.savedRows
 		m.rowIter = m.savedIter
 		m.exhausted = m.savedExhaust

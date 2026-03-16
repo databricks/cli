@@ -832,7 +832,7 @@ func TestPaginatedFetchErrorClearedOnSuccess(t *testing.T) {
 	assert.Len(t, pm.rows, 1)
 }
 
-func TestPaginatedSearchEscWithoutSearchStateBumpsFetchGeneration(t *testing.T) {
+func TestPaginatedSearchEscWithoutSearchStateKeepsGeneration(t *testing.T) {
 	m := newTestModel(t, nil, 0)
 	m.searching = true
 	m.searchInput = ""
@@ -843,8 +843,63 @@ func TestPaginatedSearchEscWithoutSearchStateBumpsFetchGeneration(t *testing.T) 
 	result, _ := m.updateSearch(tea.KeyMsg{Type: tea.KeyEscape})
 	pm := result.(paginatedModel)
 
-	assert.Equal(t, 6, pm.fetchGeneration, "fetchGeneration should be bumped even without search state")
+	assert.Equal(t, 5, pm.fetchGeneration, "fetchGeneration should NOT be bumped without search state")
 	assert.False(t, pm.loading)
+}
+
+func TestPaginatedSearchEscBeforeFetchCompletesKeepsRows(t *testing.T) {
+	ctx := t.Context()
+	cfg := &TableConfig{
+		Columns: []ColumnDef{{Header: "Name"}},
+		Search: &SearchConfig{
+			Placeholder: "search...",
+			NewIterator: func(_ context.Context, _ string) RowIterator {
+				return &stringRowIterator{}
+			},
+		},
+	}
+
+	iter := &stringRowIterator{rows: [][]string{{"row1"}, {"row2"}}}
+	m := paginatedModel{
+		cfg:            cfg,
+		headers:        []string{"Name"},
+		rowIter:        iter,
+		makeFetchCmd:   newFetchCmdFunc(ctx),
+		makeSearchIter: newSearchIterFunc(ctx, cfg.Search),
+		widths:         []int{4},
+		ready:          true,
+	}
+	m.viewport.Width = 80
+	m.viewport.Height = 20
+
+	// Simulate: a fetch is in-flight at generation 0.
+	m.loading = true
+	startGen := m.fetchGeneration
+
+	// User enters search mode (pressing "/").
+	m.searching = true
+	m.searchInput = ""
+
+	// User immediately cancels with esc (no search executed).
+	result, _ := m.updateSearch(tea.KeyMsg{Type: tea.KeyEscape})
+	pm := result.(paginatedModel)
+
+	// Generation must be unchanged so the in-flight fetch is accepted.
+	assert.Equal(t, startGen, pm.fetchGeneration)
+	assert.False(t, pm.hasSearchState)
+
+	// Simulate the in-flight fetch completing with the original generation.
+	fetched := rowsFetchedMsg{
+		rows:       [][]string{{"fetched-row"}},
+		exhausted:  true,
+		generation: startGen,
+	}
+	result2, _ := pm.Update(fetched)
+	pm2 := result2.(paginatedModel)
+
+	// The rows must be accepted, not silently dropped.
+	assert.Equal(t, [][]string{{"fetched-row"}}, pm2.rows)
+	assert.True(t, pm2.exhausted)
 }
 
 func TestPaginatedSearchDebounceEmptyQueryRestores(t *testing.T) {
