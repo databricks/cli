@@ -18,21 +18,9 @@ To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/default/resource
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan
-Warning: Deployment engine "terraform" configured in DATABRICKS_BUNDLE_ENGINE environment variable does not match the existing state (engine "direct"). Using "direct" engine from the existing state.
-
-Available state files:
-- terraform.tfstate: remote terraform state serial=1 lineage="[UUID]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=3 lineage="[UUID]"
-
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Warning: Deployment engine "terraform" configured in DATABRICKS_BUNDLE_ENGINE environment variable does not match the existing state (engine "direct"). Using "direct" engine from the existing state.
-
-Available state files:
-- terraform.tfstate: remote terraform state serial=1 lineage="[UUID]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=3 lineage="[UUID]"
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...

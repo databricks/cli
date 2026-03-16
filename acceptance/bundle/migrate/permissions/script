@@ -4,22 +4,20 @@ print_state.py > out.original_state.json
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 4 resources'
 print_state.py > out.new_state.json
 
-# this is expected to warn because state does not match env var, but still succeed using state engine
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+export DATABRICKS_BUNDLE_ENGINE=
 
 rm out.requests.txt
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "4 unchanged"
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "4 unchanged"
+trace $CLI bundle plan | contains.py "4 unchanged"
 trace print_requests.py --get //jobs/get | contains.py 'engine/direct'
 
-trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy
+trace $CLI bundle deploy
 trace print_requests.py --get //jobs/get | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct'
 
 title "Should show that it's already migrated"
 trace musterr $CLI bundle deployment migrate
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
+trace $CLI bundle debug states
+trace $CLI bundle debug states --force-pull
 
 rm out.requests.txt
