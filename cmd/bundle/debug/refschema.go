@@ -67,8 +67,12 @@ func dumpRemoteSchemas(out io.Writer) error {
 				if path == nil {
 					return true
 				}
-				p := path.String()
-				p = strings.TrimPrefix(p, ".")
+				p := strings.TrimPrefix(path.String(), ".")
+				// permissions and grants are separate sub-resource adapters; skip them here.
+				if p == "permissions" || strings.HasPrefix(p, "permissions.") || strings.HasPrefix(p, "permissions[") ||
+					p == "grants" || strings.HasPrefix(p, "grants.") || strings.HasPrefix(p, "grants[") {
+					return false
+				}
 				t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
 				byType, ok := pathTypes[p]
 				if !ok {

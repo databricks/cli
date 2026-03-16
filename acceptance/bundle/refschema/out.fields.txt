@@ -38,12 +38,6 @@ resources.alerts.*.lifecycle_state	sql.AlertLifecycleState	ALL
 resources.alerts.*.modified_status	string	INPUT
 resources.alerts.*.owner_user_name	string	ALL
 resources.alerts.*.parent_path	string	ALL
-resources.alerts.*.permissions	[]resources.Permission	INPUT
-resources.alerts.*.permissions[*]	resources.Permission	INPUT
-resources.alerts.*.permissions[*].group_name	string	INPUT
-resources.alerts.*.permissions[*].level	iam.PermissionLevel	INPUT
-resources.alerts.*.permissions[*].service_principal_name	string	INPUT
-resources.alerts.*.permissions[*].user_name	string	INPUT
 resources.alerts.*.query_text	string	ALL
 resources.alerts.*.run_as	*sql.AlertV2RunAs	ALL
 resources.alerts.*.run_as.service_principal_name	string	ALL
@@ -162,12 +156,6 @@ resources.apps.*.pending_deployment.status	*apps.AppDeploymentStatus	ALL
 resources.apps.*.pending_deployment.status.message	string	ALL
 resources.apps.*.pending_deployment.status.state	apps.AppDeploymentState	ALL
 resources.apps.*.pending_deployment.update_time	string	ALL
-resources.apps.*.permissions	[]resources.AppPermission	INPUT
-resources.apps.*.permissions[*]	resources.AppPermission	INPUT
-resources.apps.*.permissions[*].group_name	string	INPUT
-resources.apps.*.permissions[*].level	apps.AppPermissionLevel	INPUT
-resources.apps.*.permissions[*].service_principal_name	string	INPUT
-resources.apps.*.permissions[*].user_name	string	INPUT
 resources.apps.*.resources	[]apps.AppResource	ALL
 resources.apps.*.resources[*]	apps.AppResource	ALL
 resources.apps.*.resources[*].app	*apps.AppResourceApp	ALL
@@ -241,11 +229,6 @@ resources.catalogs.*.effective_predictive_optimization_flag.inherited_from_type	
 resources.catalogs.*.effective_predictive_optimization_flag.value	catalog.EnablePredictiveOptimization	REMOTE
 resources.catalogs.*.enable_predictive_optimization	catalog.EnablePredictiveOptimization	REMOTE
 resources.catalogs.*.full_name	string	REMOTE
-resources.catalogs.*.grants	[]catalog.PrivilegeAssignment	INPUT
-resources.catalogs.*.grants[*]	catalog.PrivilegeAssignment	INPUT
-resources.catalogs.*.grants[*].principal	string	INPUT
-resources.catalogs.*.grants[*].privileges	[]catalog.Privilege	INPUT
-resources.catalogs.*.grants[*].privileges[*]	catalog.Privilege	INPUT
 resources.catalogs.*.id	string	INPUT
 resources.catalogs.*.isolation_mode	catalog.CatalogIsolationMode	REMOTE
 resources.catalogs.*.lifecycle	resources.Lifecycle	INPUT
@@ -269,11 +252,6 @@ resources.catalogs.*.updated_at	int64	REMOTE
 resources.catalogs.*.updated_by	string	REMOTE
 resources.catalogs.*.url	string	INPUT
 resources.catalogs.*.grants.full_name	string	ALL
-resources.catalogs.*.grants.grants	[]catalog.PrivilegeAssignment	ALL
-resources.catalogs.*.grants.grants[*]	catalog.PrivilegeAssignment	ALL
-resources.catalogs.*.grants.grants[*].principal	string	ALL
-resources.catalogs.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
-resources.catalogs.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.catalogs.*.grants.securable_type	string	ALL
 resources.clusters.*.apply_policy_default_values	bool	INPUT	STATE
 resources.clusters.*.autoscale	*compute.AutoScale	ALL
@@ -398,12 +376,6 @@ resources.clusters.*.lifecycle.prevent_destroy	bool	INPUT
 resources.clusters.*.modified_status	string	INPUT
 resources.clusters.*.node_type_id	string	ALL
 resources.clusters.*.num_workers	int	ALL
-resources.clusters.*.permissions	[]resources.ClusterPermission	INPUT
-resources.clusters.*.permissions[*]	resources.ClusterPermission	INPUT
-resources.clusters.*.permissions[*].group_name	string	INPUT
-resources.clusters.*.permissions[*].level	compute.ClusterPermissionLevel	INPUT
-resources.clusters.*.permissions[*].service_principal_name	string	INPUT
-resources.clusters.*.permissions[*].user_name	string	INPUT
 resources.clusters.*.policy_id	string	ALL
 resources.clusters.*.remote_disk_throughput	int	ALL
 resources.clusters.*.runtime_engine	compute.RuntimeEngine	ALL
@@ -564,12 +536,6 @@ resources.dashboards.*.lifecycle_state	dashboards.LifecycleState	ALL
 resources.dashboards.*.modified_status	string	INPUT
 resources.dashboards.*.parent_path	string	ALL
 resources.dashboards.*.path	string	ALL
-resources.dashboards.*.permissions	[]resources.Permission	INPUT
-resources.dashboards.*.permissions[*]	resources.Permission	INPUT
-resources.dashboards.*.permissions[*].group_name	string	INPUT
-resources.dashboards.*.permissions[*].level	iam.PermissionLevel	INPUT
-resources.dashboards.*.permissions[*].service_principal_name	string	INPUT
-resources.dashboards.*.permissions[*].user_name	string	INPUT
 resources.dashboards.*.published	bool	REMOTE	STATE
 resources.dashboards.*.serialized_dashboard	any	ALL
 resources.dashboards.*.update_time	string	ALL
@@ -630,12 +596,6 @@ resources.database_instances.*.parent_instance_ref.effective_lsn	string	ALL
 resources.database_instances.*.parent_instance_ref.lsn	string	ALL
 resources.database_instances.*.parent_instance_ref.name	string	ALL
 resources.database_instances.*.parent_instance_ref.uid	string	ALL
-resources.database_instances.*.permissions	[]resources.Permission	INPUT
-resources.database_instances.*.permissions[*]	resources.Permission	INPUT
-resources.database_instances.*.permissions[*].group_name	string	INPUT
-resources.database_instances.*.permissions[*].level	iam.PermissionLevel	INPUT
-resources.database_instances.*.permissions[*].service_principal_name	string	INPUT
-resources.database_instances.*.permissions[*].user_name	string	INPUT
 resources.database_instances.*.pg_version	string	ALL
 resources.database_instances.*.read_only_dns	string	ALL
 resources.database_instances.*.read_write_dns	string	ALL
@@ -661,12 +621,6 @@ resources.experiments.*.lifecycle.prevent_destroy	bool	INPUT
 resources.experiments.*.lifecycle_stage	string	REMOTE
 resources.experiments.*.modified_status	string	INPUT
 resources.experiments.*.name	string	ALL
-resources.experiments.*.permissions	[]resources.MlflowExperimentPermission	INPUT
-resources.experiments.*.permissions[*]	resources.MlflowExperimentPermission	INPUT
-resources.experiments.*.permissions[*].group_name	string	INPUT
-resources.experiments.*.permissions[*].level	ml.ExperimentPermissionLevel	INPUT
-resources.experiments.*.permissions[*].service_principal_name	string	INPUT
-resources.experiments.*.permissions[*].user_name	string	INPUT
 resources.experiments.*.tags	[]ml.ExperimentTag	ALL
 resources.experiments.*.tags[*]	ml.ExperimentTag	ALL
 resources.experiments.*.tags[*].key	string	ALL
@@ -714,11 +668,6 @@ resources.external_locations.*.file_event_queue.provided_pubsub.subscription_nam
 resources.external_locations.*.file_event_queue.provided_sqs	*catalog.AwsSqsQueue	ALL
 resources.external_locations.*.file_event_queue.provided_sqs.managed_resource_id	string	ALL
 resources.external_locations.*.file_event_queue.provided_sqs.queue_url	string	ALL
-resources.external_locations.*.grants	[]catalog.PrivilegeAssignment	INPUT
-resources.external_locations.*.grants[*]	catalog.PrivilegeAssignment	INPUT
-resources.external_locations.*.grants[*].principal	string	INPUT
-resources.external_locations.*.grants[*].privileges	[]catalog.Privilege	INPUT
-resources.external_locations.*.grants[*].privileges[*]	catalog.Privilege	INPUT
 resources.external_locations.*.id	string	INPUT
 resources.external_locations.*.isolation_mode	catalog.IsolationMode	REMOTE
 resources.external_locations.*.lifecycle	resources.Lifecycle	INPUT
@@ -733,11 +682,6 @@ resources.external_locations.*.updated_at	int64	REMOTE
 resources.external_locations.*.updated_by	string	REMOTE
 resources.external_locations.*.url	string	ALL
 resources.external_locations.*.grants.full_name	string	ALL
-resources.external_locations.*.grants.grants	[]catalog.PrivilegeAssignment	ALL
-resources.external_locations.*.grants.grants[*]	catalog.PrivilegeAssignment	ALL
-resources.external_locations.*.grants.grants[*].principal	string	ALL
-resources.external_locations.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
-resources.external_locations.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.external_locations.*.grants.securable_type	string	ALL
 resources.jobs.*.budget_policy_id	string	ALL
 resources.jobs.*.continuous	*jobs.Continuous	ALL
@@ -923,12 +867,6 @@ resources.jobs.*.parameters[*]	jobs.JobParameterDefinition	ALL
 resources.jobs.*.parameters[*].default	string	ALL
 resources.jobs.*.parameters[*].name	string	ALL
 resources.jobs.*.performance_target	jobs.PerformanceTarget	ALL
-resources.jobs.*.permissions	[]resources.JobPermission	INPUT
-resources.jobs.*.permissions[*]	resources.JobPermission	INPUT
-resources.jobs.*.permissions[*].group_name	string	INPUT
-resources.jobs.*.permissions[*].level	jobs.JobPermissionLevel	INPUT
-resources.jobs.*.permissions[*].service_principal_name	string	INPUT
-resources.jobs.*.permissions[*].user_name	string	INPUT
 resources.jobs.*.queue	*jobs.QueueSettings	ALL
 resources.jobs.*.queue.enabled	bool	ALL
 resources.jobs.*.run_as	*jobs.JobRunAs	ALL
@@ -2099,12 +2037,6 @@ resources.model_serving_endpoints.*.lifecycle	resources.Lifecycle	INPUT
 resources.model_serving_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
 resources.model_serving_endpoints.*.modified_status	string	INPUT
 resources.model_serving_endpoints.*.name	string	INPUT	STATE
-resources.model_serving_endpoints.*.permissions	[]resources.ModelServingEndpointPermission	INPUT
-resources.model_serving_endpoints.*.permissions[*]	resources.ModelServingEndpointPermission	INPUT
-resources.model_serving_endpoints.*.permissions[*].group_name	string	INPUT
-resources.model_serving_endpoints.*.permissions[*].level	serving.ServingEndpointPermissionLevel	INPUT
-resources.model_serving_endpoints.*.permissions[*].service_principal_name	string	INPUT
-resources.model_serving_endpoints.*.permissions[*].user_name	string	INPUT
 resources.model_serving_endpoints.*.rate_limits	[]serving.RateLimit	INPUT	STATE
 resources.model_serving_endpoints.*.rate_limits[*]	serving.RateLimit	INPUT	STATE
 resources.model_serving_endpoints.*.rate_limits[*].calls	int64	INPUT	STATE
@@ -2149,12 +2081,6 @@ resources.models.*.lifecycle.prevent_destroy	bool	INPUT
 resources.models.*.modified_status	string	INPUT
 resources.models.*.name	string	ALL
 resources.models.*.permission_level	ml.PermissionLevel	REMOTE
-resources.models.*.permissions	[]resources.MlflowModelPermission	INPUT
-resources.models.*.permissions[*]	resources.MlflowModelPermission	INPUT
-resources.models.*.permissions[*].group_name	string	INPUT
-resources.models.*.permissions[*].level	ml.RegisteredModelPermissionLevel	INPUT
-resources.models.*.permissions[*].service_principal_name	string	INPUT
-resources.models.*.permissions[*].user_name	string	INPUT
 resources.models.*.tags	[]ml.ModelTag	ALL
 resources.models.*.tags[*]	ml.ModelTag	ALL
 resources.models.*.tags[*].key	string	ALL
@@ -2473,12 +2399,6 @@ resources.pipelines.*.notifications[*].alerts	[]string	ALL
 resources.pipelines.*.notifications[*].alerts[*]	string	ALL
 resources.pipelines.*.notifications[*].email_recipients	[]string	ALL
 resources.pipelines.*.notifications[*].email_recipients[*]	string	ALL
-resources.pipelines.*.permissions	[]resources.PipelinePermission	INPUT
-resources.pipelines.*.permissions[*]	resources.PipelinePermission	INPUT
-resources.pipelines.*.permissions[*].group_name	string	INPUT
-resources.pipelines.*.permissions[*].level	pipelines.PipelinePermissionLevel	INPUT
-resources.pipelines.*.permissions[*].service_principal_name	string	INPUT
-resources.pipelines.*.permissions[*].user_name	string	INPUT
 resources.pipelines.*.photon	bool	ALL
 resources.pipelines.*.pipeline_id	string	REMOTE
 resources.pipelines.*.restart_window	*pipelines.RestartWindow	ALL
@@ -2630,12 +2550,6 @@ resources.postgres_projects.*.lifecycle	resources.Lifecycle	INPUT
 resources.postgres_projects.*.lifecycle.prevent_destroy	bool	INPUT
 resources.postgres_projects.*.modified_status	string	INPUT
 resources.postgres_projects.*.name	string	REMOTE
-resources.postgres_projects.*.permissions	[]resources.Permission	INPUT
-resources.postgres_projects.*.permissions[*]	resources.Permission	INPUT
-resources.postgres_projects.*.permissions[*].group_name	string	INPUT
-resources.postgres_projects.*.permissions[*].level	iam.PermissionLevel	INPUT
-resources.postgres_projects.*.permissions[*].service_principal_name	string	INPUT
-resources.postgres_projects.*.permissions[*].user_name	string	INPUT
 resources.postgres_projects.*.pg_version	int	INPUT	STATE
 resources.postgres_projects.*.project_id	string	INPUT	STATE
 resources.postgres_projects.*.spec	*postgres.ProjectSpec	REMOTE
@@ -2752,11 +2666,6 @@ resources.registered_models.*.comment	string	ALL
 resources.registered_models.*.created_at	int64	ALL
 resources.registered_models.*.created_by	string	ALL
 resources.registered_models.*.full_name	string	ALL
-resources.registered_models.*.grants	[]catalog.PrivilegeAssignment	INPUT
-resources.registered_models.*.grants[*]	catalog.PrivilegeAssignment	INPUT
-resources.registered_models.*.grants[*].principal	string	INPUT
-resources.registered_models.*.grants[*].privileges	[]catalog.Privilege	INPUT
-resources.registered_models.*.grants[*].privileges[*]	catalog.Privilege	INPUT
 resources.registered_models.*.id	string	INPUT
 resources.registered_models.*.lifecycle	resources.Lifecycle	INPUT
 resources.registered_models.*.lifecycle.prevent_destroy	bool	INPUT
@@ -2770,11 +2679,6 @@ resources.registered_models.*.updated_at	int64	ALL
 resources.registered_models.*.updated_by	string	ALL
 resources.registered_models.*.url	string	INPUT
 resources.registered_models.*.grants.full_name	string	ALL
-resources.registered_models.*.grants.grants	[]catalog.PrivilegeAssignment	ALL
-resources.registered_models.*.grants.grants[*]	catalog.PrivilegeAssignment	ALL
-resources.registered_models.*.grants.grants[*].principal	string	ALL
-resources.registered_models.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
-resources.registered_models.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.registered_models.*.grants.securable_type	string	ALL
 resources.schemas.*.browse_only	bool	REMOTE
 resources.schemas.*.catalog_name	string	ALL
@@ -2788,11 +2692,6 @@ resources.schemas.*.effective_predictive_optimization_flag.inherited_from_type	c
 resources.schemas.*.effective_predictive_optimization_flag.value	catalog.EnablePredictiveOptimization	REMOTE
 resources.schemas.*.enable_predictive_optimization	catalog.EnablePredictiveOptimization	REMOTE
 resources.schemas.*.full_name	string	REMOTE
-resources.schemas.*.grants	[]catalog.PrivilegeAssignment	INPUT
-resources.schemas.*.grants[*]	catalog.PrivilegeAssignment	INPUT
-resources.schemas.*.grants[*].principal	string	INPUT
-resources.schemas.*.grants[*].privileges	[]catalog.Privilege	INPUT
-resources.schemas.*.grants[*].privileges[*]	catalog.Privilege	INPUT
 resources.schemas.*.id	string	INPUT
 resources.schemas.*.lifecycle	resources.Lifecycle	INPUT
 resources.schemas.*.lifecycle.prevent_destroy	bool	INPUT
@@ -2809,11 +2708,6 @@ resources.schemas.*.updated_at	int64	REMOTE
 resources.schemas.*.updated_by	string	REMOTE
 resources.schemas.*.url	string	INPUT
 resources.schemas.*.grants.full_name	string	ALL
-resources.schemas.*.grants.grants	[]catalog.PrivilegeAssignment	ALL
-resources.schemas.*.grants.grants[*]	catalog.PrivilegeAssignment	ALL
-resources.schemas.*.grants.grants[*].principal	string	ALL
-resources.schemas.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
-resources.schemas.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.schemas.*.grants.securable_type	string	ALL
 resources.secret_scopes.*.backend_azure_keyvault	*workspace.AzureKeyVaultSecretScopeMetadata	STATE
 resources.secret_scopes.*.backend_azure_keyvault.dns_name	string	STATE
@@ -2828,12 +2722,6 @@ resources.secret_scopes.*.lifecycle	resources.Lifecycle	INPUT
 resources.secret_scopes.*.lifecycle.prevent_destroy	bool	INPUT
 resources.secret_scopes.*.modified_status	string	INPUT
 resources.secret_scopes.*.name	string	INPUT	REMOTE
-resources.secret_scopes.*.permissions	[]resources.SecretScopePermission	INPUT
-resources.secret_scopes.*.permissions[*]	resources.SecretScopePermission	INPUT
-resources.secret_scopes.*.permissions[*].group_name	string	INPUT
-resources.secret_scopes.*.permissions[*].level	resources.SecretScopePermissionLevel	INPUT
-resources.secret_scopes.*.permissions[*].service_principal_name	string	INPUT
-resources.secret_scopes.*.permissions[*].user_name	string	INPUT
 resources.secret_scopes.*.scope	string	STATE
 resources.secret_scopes.*.scope_backend_type	workspace.ScopeBackendType	STATE
 resources.secret_scopes.*.url	string	INPUT
@@ -2876,12 +2764,6 @@ resources.sql_warehouses.*.odbc_params.hostname	string	REMOTE
 resources.sql_warehouses.*.odbc_params.path	string	REMOTE
 resources.sql_warehouses.*.odbc_params.port	int	REMOTE
 resources.sql_warehouses.*.odbc_params.protocol	string	REMOTE
-resources.sql_warehouses.*.permissions	[]resources.SqlWarehousePermission	INPUT
-resources.sql_warehouses.*.permissions[*]	resources.SqlWarehousePermission	INPUT
-resources.sql_warehouses.*.permissions[*].group_name	string	INPUT
-resources.sql_warehouses.*.permissions[*].level	sql.WarehousePermissionLevel	INPUT
-resources.sql_warehouses.*.permissions[*].service_principal_name	string	INPUT
-resources.sql_warehouses.*.permissions[*].user_name	string	INPUT
 resources.sql_warehouses.*.spot_instance_policy	sql.SpotInstancePolicy	ALL
 resources.sql_warehouses.*.state	sql.State	REMOTE
 resources.sql_warehouses.*.tags	*sql.EndpointTags	ALL
@@ -2973,11 +2855,6 @@ resources.volumes.*.encryption_details.sse_encryption_details	*catalog.SseEncryp
 resources.volumes.*.encryption_details.sse_encryption_details.algorithm	catalog.SseEncryptionDetailsAlgorithm	REMOTE
 resources.volumes.*.encryption_details.sse_encryption_details.aws_kms_key_arn	string	REMOTE
 resources.volumes.*.full_name	string	REMOTE
-resources.volumes.*.grants	[]catalog.PrivilegeAssignment	INPUT
-resources.volumes.*.grants[*]	catalog.PrivilegeAssignment	INPUT
-resources.volumes.*.grants[*].principal	string	INPUT
-resources.volumes.*.grants[*].privileges	[]catalog.Privilege	INPUT
-resources.volumes.*.grants[*].privileges[*]	catalog.Privilege	INPUT
 resources.volumes.*.id	string	INPUT
 resources.volumes.*.lifecycle	resources.Lifecycle	INPUT
 resources.volumes.*.lifecycle.prevent_destroy	bool	INPUT
@@ -2993,9 +2870,4 @@ resources.volumes.*.url	string	INPUT
 resources.volumes.*.volume_id	string	REMOTE
 resources.volumes.*.volume_type	catalog.VolumeType	ALL
 resources.volumes.*.grants.full_name	string	ALL
-resources.volumes.*.grants.grants	[]catalog.PrivilegeAssignment	ALL
-resources.volumes.*.grants.grants[*]	catalog.PrivilegeAssignment	ALL
-resources.volumes.*.grants.grants[*].principal	string	ALL
-resources.volumes.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
-resources.volumes.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.volumes.*.grants.securable_type	string	ALL
