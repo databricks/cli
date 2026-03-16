@@ -26,6 +26,17 @@ acceptance TestAccept/ssh/connection
 
 * TestAccept/bundle/resources/postgres_endpoints/recreate/
 
+# TF provider doesn't retry on 409 "endpoint reconciliation in progress" during delete.
+# Direct deployer handles this with a 2-minute retry loop. TF provider has no retry logic.
+# https://github.com/databricks/terraform-provider-databricks/issues/5482
+* TestAccept/bundle/resources/postgres_endpoints/basic/DATABRICKS_BUNDLE_ENGINE=terraform
+
+# TF provider includes invalid 'initial_endpoint_spec' in update_mask, causing
+# "Unknown field path" error. Direct deployer sets InitialEndpointSpec to nil and
+# computes the update mask dynamically from only changed spec.* fields.
+# https://github.com/databricks/terraform-provider-databricks/issues/5481
+* TestAccept/bundle/resources/postgres_projects/update_display_name/DATABRICKS_BUNDLE_ENGINE=terraform
+
 # Fails with this diff:
 #        -    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
 #        +    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
