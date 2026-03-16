@@ -844,7 +844,7 @@ func TestPaginatedSearchEscWithoutSearchStateKeepsGeneration(t *testing.T) {
 	pm := result.(paginatedModel)
 
 	assert.Equal(t, 5, pm.fetchGeneration, "fetchGeneration should NOT be bumped without search state")
-	assert.False(t, pm.loading)
+	assert.True(t, pm.loading, "loading should be preserved when hasSearchState is false and a fetch was in-flight")
 }
 
 func TestPaginatedSearchEscBeforeFetchCompletesKeepsRows(t *testing.T) {

@@ -410,8 +410,8 @@ func (m *paginatedModel) restorePreSearchState() {
 		m.savedRows = nil
 		m.savedIter = nil
 		m.savedExhaust = false
+		m.loading = false
 	}
-	m.loading = false
 	m.cursor = 0
 	if m.ready {
 		m.viewport.SetContent(m.renderContent())
