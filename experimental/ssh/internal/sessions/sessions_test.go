@@ -90,32 +90,41 @@ func TestFindMatching(t *testing.T) {
 
 	ctx := t.Context()
 	host := "https://test.databricks.com"
+	user := "alice@example.com"
 
 	now := time.Now()
 
-	err := Add(ctx, Session{Name: "s1", Accelerator: "GPU_1xA10", WorkspaceHost: host, CreatedAt: now})
+	err := Add(ctx, Session{Name: "s1", Accelerator: "GPU_1xA10", WorkspaceHost: host, UserName: user, CreatedAt: now})
 	require.NoError(t, err)
-	err = Add(ctx, Session{Name: "s2", Accelerator: "GPU_8xH100", WorkspaceHost: host, CreatedAt: now})
+	err = Add(ctx, Session{Name: "s2", Accelerator: "GPU_8xH100", WorkspaceHost: host, UserName: user, CreatedAt: now})
 	require.NoError(t, err)
-	err = Add(ctx, Session{Name: "s3", Accelerator: "GPU_1xA10", WorkspaceHost: "https://other.com", CreatedAt: now})
+	err = Add(ctx, Session{Name: "s3", Accelerator: "GPU_1xA10", WorkspaceHost: "https://other.com", UserName: user, CreatedAt: now})
 	require.NoError(t, err)
-	err = Add(ctx, Session{Name: "s4", Accelerator: "GPU_1xA10", WorkspaceHost: host, CreatedAt: now})
+	err = Add(ctx, Session{Name: "s4", Accelerator: "GPU_1xA10", WorkspaceHost: host, UserName: user, CreatedAt: now})
+	require.NoError(t, err)
+	err = Add(ctx, Session{Name: "s5", Accelerator: "GPU_1xA10", WorkspaceHost: host, UserName: "bob@example.com", CreatedAt: now})
 	require.NoError(t, err)
 
-	matches, err := FindMatching(ctx, host, "GPU_1xA10")
+	matches, err := FindMatching(ctx, host, "GPU_1xA10", user)
 	require.NoError(t, err)
 	assert.Len(t, matches, 2)
 	assert.Equal(t, "s1", matches[0].Name)
 	assert.Equal(t, "s4", matches[1].Name)
 
-	matches, err = FindMatching(ctx, host, "GPU_8xH100")
+	matches, err = FindMatching(ctx, host, "GPU_8xH100", user)
 	require.NoError(t, err)
 	assert.Len(t, matches, 1)
 	assert.Equal(t, "s2", matches[0].Name)
 
-	matches, err = FindMatching(ctx, host, "GPU_4xA100")
+	matches, err = FindMatching(ctx, host, "GPU_4xA100", user)
 	require.NoError(t, err)
 	assert.Empty(t, matches)
+
+	// Different user should not see alice's sessions
+	matches, err = FindMatching(ctx, host, "GPU_1xA10", "bob@example.com")
+	require.NoError(t, err)
+	assert.Len(t, matches, 1)
+	assert.Equal(t, "s5", matches[0].Name)
 }
 
 func TestFindMatchingExpiresOldSessions(t *testing.T) {
@@ -125,16 +134,22 @@ func TestFindMatchingExpiresOldSessions(t *testing.T) {
 
 	ctx := t.Context()
 	host := "https://test.databricks.com"
+	user := "alice@example.com"
 
-	err := Add(ctx, Session{Name: "old", Accelerator: "GPU_1xA10", WorkspaceHost: host, CreatedAt: time.Now().Add(-25 * time.Hour)})
+	err := Add(ctx, Session{Name: "old", Accelerator: "GPU_1xA10", WorkspaceHost: host, UserName: user, CreatedAt: time.Now().Add(-25 * time.Hour)})
 	require.NoError(t, err)
-	err = Add(ctx, Session{Name: "recent", Accelerator: "GPU_1xA10", WorkspaceHost: host, CreatedAt: time.Now()})
+	err = Add(ctx, Session{Name: "recent", Accelerator: "GPU_1xA10", WorkspaceHost: host, UserName: user, CreatedAt: time.Now()})
 	require.NoError(t, err)
 
-	matches, err := FindMatching(ctx, host, "GPU_1xA10")
+	matches, err := FindMatching(ctx, host, "GPU_1xA10", user)
 	require.NoError(t, err)
 	require.Len(t, matches, 1)
 	assert.Equal(t, "recent", matches[0].Name)
+
+	// Verify expired sessions were pruned from disk.
+	store, err := Load(ctx)
+	require.NoError(t, err)
+	assert.Len(t, store.Sessions, 1, "expired sessions should be pruned from disk")
 }
 
 func TestStateFilePath(t *testing.T) {
@@ -151,6 +166,7 @@ func TestStateFilePath(t *testing.T) {
 var connectionNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 
 func TestGenerateSessionName(t *testing.T) {
+	host := "https://test.databricks.com"
 	tests := []struct {
 		accelerator    string
 		wantPrefix     string
@@ -163,7 +179,7 @@ func TestGenerateSessionName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.accelerator, func(t *testing.T) {
-			name := GenerateSessionName(tt.accelerator)
+			name := GenerateSessionName(tt.accelerator, host)
 			assert.Greater(t, len(name), len(tt.wantPrefix), "name should be longer than prefix")
 			assert.Equal(t, tt.wantPrefix, name[:len(tt.wantPrefix)])
 			// Verify date component is present (starts with "20" for 2000s dates).
@@ -173,10 +189,20 @@ func TestGenerateSessionName(t *testing.T) {
 	}
 }
 
+func TestGenerateSessionNameDiffersByWorkspace(t *testing.T) {
+	name1 := GenerateSessionName("GPU_1xA10", "https://workspace-a.databricks.com")
+	name2 := GenerateSessionName("GPU_1xA10", "https://workspace-b.databricks.com")
+	// The workspace hash portion (after the date-) should differ.
+	// Names have format: databricks-gpu-a10-YYYYMMDD-<wshash><random>
+	// Extract after the date prefix to compare workspace hash parts.
+	assert.NotEqual(t, name1, name2, "names for different workspaces should differ")
+}
+
 func TestGenerateSessionNameUniqueness(t *testing.T) {
+	host := "https://test.databricks.com"
 	seen := make(map[string]bool)
 	for range 100 {
-		name := GenerateSessionName("GPU_1xA10")
+		name := GenerateSessionName("GPU_1xA10", host)
 		assert.False(t, seen[name], "duplicate name generated: %s", name)
 		seen[name] = true
 	}
