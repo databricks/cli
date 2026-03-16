@@ -1,8 +1,16 @@
 
 >>> [CLI] bundle plan
-Error: cannot plan resources.schemas.schema_a.grants: cannot resolve "${resources.schemas.schema_b.grants[0].principal}": schema mismatch: [0]: cannot index struct; [0]: cannot index struct
+create schemas.schema_a
+create schemas.schema_a.grants
+create schemas.schema_b
+create schemas.schema_b.grants
 
-Error: planning failed
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
+>>> [CLI] bundle plan -o json
 
-Exit code: 1
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

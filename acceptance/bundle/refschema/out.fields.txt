@@ -253,6 +253,10 @@ resources.catalogs.*.updated_by	string	REMOTE
 resources.catalogs.*.url	string	INPUT
 resources.catalogs.*.grants.full_name	string	ALL
 resources.catalogs.*.grants.securable_type	string	ALL
+resources.catalogs.*.grants[*]	catalog.PrivilegeAssignment	ALL
+resources.catalogs.*.grants[*].principal	string	ALL
+resources.catalogs.*.grants[*].privileges	[]catalog.Privilege	ALL
+resources.catalogs.*.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.clusters.*.apply_policy_default_values	bool	INPUT	STATE
 resources.clusters.*.autoscale	*compute.AutoScale	ALL
 resources.clusters.*.autoscale.max_workers	int	ALL
@@ -683,6 +687,10 @@ resources.external_locations.*.updated_by	string	REMOTE
 resources.external_locations.*.url	string	ALL
 resources.external_locations.*.grants.full_name	string	ALL
 resources.external_locations.*.grants.securable_type	string	ALL
+resources.external_locations.*.grants[*]	catalog.PrivilegeAssignment	ALL
+resources.external_locations.*.grants[*].principal	string	ALL
+resources.external_locations.*.grants[*].privileges	[]catalog.Privilege	ALL
+resources.external_locations.*.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.jobs.*.budget_policy_id	string	ALL
 resources.jobs.*.continuous	*jobs.Continuous	ALL
 resources.jobs.*.continuous.pause_status	jobs.PauseStatus	ALL
@@ -2680,6 +2688,10 @@ resources.registered_models.*.updated_by	string	ALL
 resources.registered_models.*.url	string	INPUT
 resources.registered_models.*.grants.full_name	string	ALL
 resources.registered_models.*.grants.securable_type	string	ALL
+resources.registered_models.*.grants[*]	catalog.PrivilegeAssignment	ALL
+resources.registered_models.*.grants[*].principal	string	ALL
+resources.registered_models.*.grants[*].privileges	[]catalog.Privilege	ALL
+resources.registered_models.*.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.schemas.*.browse_only	bool	REMOTE
 resources.schemas.*.catalog_name	string	ALL
 resources.schemas.*.catalog_type	catalog.CatalogType	REMOTE
@@ -2709,6 +2721,10 @@ resources.schemas.*.updated_by	string	REMOTE
 resources.schemas.*.url	string	INPUT
 resources.schemas.*.grants.full_name	string	ALL
 resources.schemas.*.grants.securable_type	string	ALL
+resources.schemas.*.grants[*]	catalog.PrivilegeAssignment	ALL
+resources.schemas.*.grants[*].principal	string	ALL
+resources.schemas.*.grants[*].privileges	[]catalog.Privilege	ALL
+resources.schemas.*.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.secret_scopes.*.backend_azure_keyvault	*workspace.AzureKeyVaultSecretScopeMetadata	STATE
 resources.secret_scopes.*.backend_azure_keyvault.dns_name	string	STATE
 resources.secret_scopes.*.backend_azure_keyvault.resource_id	string	STATE
@@ -2871,3 +2887,7 @@ resources.volumes.*.volume_id	string	REMOTE
 resources.volumes.*.volume_type	catalog.VolumeType	ALL
 resources.volumes.*.grants.full_name	string	ALL
 resources.volumes.*.grants.securable_type	string	ALL
+resources.volumes.*.grants[*]	catalog.PrivilegeAssignment	ALL
+resources.volumes.*.grants[*].principal	string	ALL
+resources.volumes.*.grants[*].privileges	[]catalog.Privilege	ALL
+resources.volumes.*.grants[*].privileges[*]	catalog.Privilege	ALL

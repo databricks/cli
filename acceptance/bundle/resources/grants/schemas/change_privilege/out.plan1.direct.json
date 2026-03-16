@@ -23,7 +23,7 @@
         "value": {
           "securable_type": "schema",
           "full_name": "",
-          "grants": [
+          "_": [
             {
               "principal": "deco-test-user@databricks.com",
               "privileges": [

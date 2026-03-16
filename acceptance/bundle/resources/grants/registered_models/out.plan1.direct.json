@@ -31,7 +31,7 @@
         "value": {
           "securable_type": "function",
           "full_name": "",
-          "grants": [
+          "_": [
             {
               "principal": "deco-test-user@databricks.com",
               "privileges": [

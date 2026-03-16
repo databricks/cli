@@ -1,5 +1,5 @@
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[DEV_VERSION]",
  "lineage": "[UUID]",
  "serial": 9,
@@ -24,7 +24,7 @@
    "state": {
     "securable_type": "function",
     "full_name": "main.schema_grants.mymodel",
-    "grants": [
+    "_": [
      {
       "principal": "deco-test-user@databricks.com",
       "privileges": [
@@ -52,7 +52,7 @@
    "state": {
     "securable_type": "schema",
     "full_name": "main.schema_grants",
-    "grants": [
+    "_": [
      {
       "principal": "deco-test-user@databricks.com",
       "privileges": [
@@ -89,7 +89,7 @@
    "state": {
     "securable_type": "volume",
     "full_name": "main.schema_grants.volume_name",
-    "grants": [
+    "_": [
      {
       "principal": "deco-test-user@databricks.com",
       "privileges": [

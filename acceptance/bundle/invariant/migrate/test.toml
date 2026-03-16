@@ -13,3 +13,6 @@ EnvMatrixExclude.no_secret_scope = ["INPUT_CONFIG=secret_scope.yml.tmpl"]
 # ends up as the permission level value.
 EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]
 EnvMatrixExclude.no_cross_resource_ref = ["INPUT_CONFIG=job_cross_resource_ref.yml.tmpl"]
+
+# Grant cross-references require the EmbeddedSlice pattern not present in terraform mode.
+EnvMatrixExclude.no_grant_ref = ["INPUT_CONFIG=schema_grant_ref.yml.tmpl"]

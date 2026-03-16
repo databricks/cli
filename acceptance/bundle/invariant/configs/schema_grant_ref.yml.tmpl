@@ -1,0 +1,28 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  schemas:
+    schema_b:
+      catalog_name: main
+      name: test-schema-b-$UNIQUE_NAME
+      grants:
+        - principal: account users
+          privileges:
+            - USE_SCHEMA
+        - principal: admins
+          privileges:
+            - CREATE_TABLE
+            - USE_SCHEMA
+
+    schema_a:
+      catalog_name: main
+      name: test-schema-a-$UNIQUE_NAME
+      grants:
+        # Reference principal and privileges from schema_b by index
+        - principal: ${resources.schemas.schema_b.grants[0].principal}
+          privileges:
+            - USE_SCHEMA
+        - principal: ${resources.schemas.schema_b.grants[1].principal}
+          privileges:
+            - CREATE_TABLE
