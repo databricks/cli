@@ -35,6 +35,8 @@ func listOverride(listCmd *cobra.Command, listReq *jobs.ListJobsRequest) {
 			NewIterator: func(ctx context.Context, query string) tableview.RowIterator {
 				req := *listReq
 				req.Name = query
+				req.PageToken = ""
+				req.Offset = 0
 				w := cmdctx.WorkspaceClient(ctx)
 				return tableview.WrapIterator(w.Jobs.List(ctx, req), columns)
 			},
