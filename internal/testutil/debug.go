@@ -6,6 +6,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/databricks/cli/libs/env"
 )
 
 // Detects if test is run from "debug test" feature in VS Code.
@@ -19,7 +21,7 @@ func LoadDebugEnvIfRunFromIDE(t TestingT, key string) {
 	if !isInDebug() {
 		return
 	}
-	home, err := os.UserHomeDir() //nolint:forbidigo // import cycle: libs/env tests import internal/testutil
+	home, err := env.UserHomeDir(t.Context())
 	if err != nil {
 		t.Fatalf("cannot find user home: %s", err)
 	}

@@ -11,6 +11,10 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] experiments get-experiment [NUMID]
+{
+  "name": "/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
+  "lifecycle_stage": "active"
+}
 
 >>> [CLI] bundle deployment unbind experiment1
 Updating deployment state...
@@ -22,6 +26,10 @@ Deleting files...
 Destroy complete!
 
 >>> [CLI] experiments get-experiment [NUMID]
+{
+  "name": "/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
+  "lifecycle_stage": "active"
+}
 
 === Test cleanup:
 === Delete the pre-defined experiment: 0
