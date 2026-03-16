@@ -23,9 +23,9 @@ resources:
       no_expiry: true
 
   postgres_endpoints:
-    primary:
+    custom:
       parent: ${resources.postgres_branches.main.id}
-      endpoint_id: primary
+      endpoint_id: custom
       endpoint_type: ENDPOINT_TYPE_READ_ONLY
       autoscaling_limit_min_cu: 0.5
       autoscaling_limit_max_cu: 2
