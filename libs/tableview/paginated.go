@@ -72,7 +72,7 @@ type paginatedModel struct {
 	savedRows      [][]string
 	savedIter      RowIterator
 	savedExhaust   bool
-	savedLoading   bool
+
 
 	// Limits
 	maxItems     int
@@ -326,10 +326,6 @@ func (m paginatedModel) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.cfg.Search != nil {
 			m.searching = true
 			m.searchInput = ""
-			// Block maybeFetch while search UI is visible. In-flight fetches from
-			// the original iterator will still be accepted (same generation).
-			m.savedLoading = m.loading
-			m.loading = true
 			m.viewport.Height--
 			return m, nil
 		}
@@ -378,7 +374,7 @@ func (m *paginatedModel) moveCursor(delta int) {
 }
 
 func maybeFetch(m paginatedModel) (paginatedModel, tea.Cmd) {
-	if m.loading || m.exhausted {
+	if m.loading || m.exhausted || m.searching {
 		return m, nil
 	}
 	if len(m.rows)-m.cursor <= fetchThresholdFromBottom {
@@ -413,10 +409,6 @@ func (m *paginatedModel) restorePreSearchState() {
 		m.savedIter = nil
 		m.savedExhaust = false
 		m.loading = false
-	} else {
-		// No search was executed; restore the loading state from before
-		// entering search mode so maybeFetch isn't permanently blocked.
-		m.loading = m.savedLoading
 	}
 	m.cursor = 0
 	if m.ready {
