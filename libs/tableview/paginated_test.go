@@ -836,6 +836,7 @@ func TestPaginatedSearchEscWithoutSearchStateKeepsGeneration(t *testing.T) {
 	m := newTestModel(t, nil, 0)
 	m.searching = true
 	m.searchInput = ""
+	m.savedLoading = true // fetch was in-flight before entering search
 	m.loading = true
 	m.viewport.Height = 20
 	m.fetchGeneration = 5
@@ -845,6 +846,52 @@ func TestPaginatedSearchEscWithoutSearchStateKeepsGeneration(t *testing.T) {
 
 	assert.Equal(t, 5, pm.fetchGeneration, "fetchGeneration should NOT be bumped without search state")
 	assert.True(t, pm.loading, "loading should be preserved when hasSearchState is false and a fetch was in-flight")
+}
+
+func TestPaginatedSearchEscWithoutExecutingRestoresLoading(t *testing.T) {
+	cfg := &TableConfig{
+		Columns: []ColumnDef{{Header: "Name"}},
+		Search: &SearchConfig{
+			Placeholder: "search...",
+			NewIterator: func(_ context.Context, _ string) RowIterator {
+				return &stringRowIterator{}
+			},
+		},
+	}
+
+	ctx := t.Context()
+	m := paginatedModel{
+		cfg:            cfg,
+		headers:        []string{"Name"},
+		rowIter:        &stringRowIterator{rows: make([][]string, 20)},
+		makeFetchCmd:   newFetchCmdFunc(ctx),
+		makeSearchIter: newSearchIterFunc(ctx, cfg.Search),
+		rows:           make([][]string, 15),
+		widths:         []int{4},
+		ready:          true,
+		loading:        false,
+		exhausted:      false,
+	}
+	m.viewport.Width = 80
+	m.viewport.Height = 20
+
+	// Enter search mode via "/".
+	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
+	pm := result.(paginatedModel)
+	assert.True(t, pm.loading, "loading should be true while in search mode")
+	assert.False(t, pm.savedLoading, "savedLoading should capture the pre-search value (false)")
+
+	// Cancel immediately with esc (no search executed).
+	result, _ = pm.updateSearch(tea.KeyMsg{Type: tea.KeyEscape})
+	pm = result.(paginatedModel)
+
+	assert.False(t, pm.searching)
+	assert.False(t, pm.loading, "loading should be restored to false after esc without search")
+
+	// Verify maybeFetch can fire again.
+	pm.cursor = len(pm.rows) - 1
+	pm, cmd := maybeFetch(pm)
+	assert.NotNil(t, cmd, "maybeFetch should trigger after loading is restored")
 }
 
 func TestPaginatedSearchEscBeforeFetchCompletesKeepsRows(t *testing.T) {
