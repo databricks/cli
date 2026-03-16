@@ -66,7 +66,7 @@ func listPipelineEventsOverride(listCmd *cobra.Command, _ *pipelines.ListPipelin
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Timestamp"}}	{{header "Level"}}	{{header "Event Type"}}	{{header "Message"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{range .}}{{.Timestamp}}	{{.Level}}	{{.EventType}}	{{.Message}}
+	{{range .}}{{.Timestamp}}	{{.Level}}	{{.EventType}}	{{.Message | sanitize}}
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
@@ -79,8 +79,8 @@ func listPipelineEventsOverride(listCmd *cobra.Command, _ *pipelines.ListPipelin
 		{Header: "Event Type", Extract: func(v any) string {
 			return v.(pipelines.PipelineEvent).EventType
 		}},
-		{Header: "Message", MaxWidth: 60, Extract: func(v any) string {
-			return v.(pipelines.PipelineEvent).Message
+		{Header: "Message", MaxWidth: 200, Extract: func(v any) string {
+			return sanitizeWhitespace(v.(pipelines.PipelineEvent).Message)
 		}},
 	}
 
@@ -159,6 +159,14 @@ func disableSearchIfFilterSet(cmd *cobra.Command) {
 			cfg.Search = nil
 		}
 	}
+}
+
+var controlWhitespaceReplacer = strings.NewReplacer("\n", " ", "\r", " ", "\t", " ")
+
+// sanitizeWhitespace replaces control whitespace (newlines, tabs) with spaces
+// to prevent corrupting tab-delimited or TUI table output.
+func sanitizeWhitespace(s string) string {
+	return controlWhitespaceReplacer.Replace(s)
 }
 
 var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
