@@ -35,14 +35,17 @@ func TestJSONTagMethods(t *testing.T) {
 	for _, tt := range tests {
 		tag := JSONTag(tt.tag)
 
+		// Test Name method
 		if gotName := tag.Name(); gotName != tt.wantName {
 			t.Errorf("JSONTag(%q).Name() = %q; want %q", tt.tag, gotName, tt.wantName)
 		}
 
+		// Test OmitEmpty method
 		if gotOmitEmpty := tag.OmitEmpty(); gotOmitEmpty != tt.wantOmitempty {
 			t.Errorf("JSONTag(%q).OmitEmpty() = %v; want %v", tt.tag, gotOmitEmpty, tt.wantOmitempty)
 		}
 
+		// Test OmitZero method
 		if gotOmitZero := tag.OmitZero(); gotOmitZero != tt.wantOmitzero {
 			t.Errorf("JSONTag(%q).OmitZero() = %v; want %v", tt.tag, gotOmitZero, tt.wantOmitzero)
 		}
