@@ -18,7 +18,7 @@ import (
 
 type ClusterState struct {
 	compute.ClusterSpec
-	Started bool `json:"started,omitempty"`
+	Started *bool `json:"started,omitempty"`
 }
 
 type ResourceCluster struct {
@@ -32,10 +32,9 @@ func (r *ResourceCluster) New(client *databricks.WorkspaceClient) any {
 }
 
 func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
-	started := input.Lifecycle.Started != nil && *input.Lifecycle.Started
 	return &ClusterState{
 		ClusterSpec: input.ClusterSpec,
-		Started:     started,
+		Started:     input.Lifecycle.Started,
 	}
 }
 
@@ -80,7 +79,7 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *ClusterStat
 	if input.Spec != nil {
 		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
 	}
-	return &ClusterState{ClusterSpec: *spec, Started: false}
+	return &ClusterState{ClusterSpec: *spec, Started: nil}
 }
 
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.ClusterDetails, error) {
@@ -92,15 +91,32 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, config *ClusterState) (s
 	if err != nil {
 		return "", nil, err
 	}
-	// With lifecycle.started=true, wait for the cluster to reach the running state.
-	if config.Started {
+	switch {
+	case config.Started != nil && *config.Started:
+		// lifecycle.started=true: wait for the cluster to reach the running state.
 		details, err := wait.Get()
 		if err != nil {
 			return "", nil, err
 		}
 		return details.ClusterId, details, nil
+	case config.Started != nil && !*config.Started:
+		// lifecycle.started=false: wait for running, then terminate to reach stopped state.
+		details, err := wait.Get()
+		if err != nil {
+			return "", nil, err
+		}
+		terminateWait, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: details.ClusterId})
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to terminate cluster %s: %w", details.ClusterId, err)
+		}
+		if _, err = terminateWait.Get(); err != nil {
+			return "", nil, fmt.Errorf("failed to wait for cluster %s to terminate: %w", details.ClusterId, err)
+		}
+		return details.ClusterId, nil, nil
+	default:
+		// lifecycle.started omitted: default behaviour, return immediately without waiting.
+		return wait.ClusterId, nil, nil
 	}
-	return wait.ClusterId, nil, nil
 }
 
 func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *ClusterState, _ Changes) (*compute.ClusterDetails, error) {
@@ -125,12 +141,17 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 		return nil, err
 	}
 
-	// With lifecycle.started=true, ensure the cluster is running after the update.
-	if config.Started {
-		details, err := r.client.Clusters.GetByClusterId(ctx, id)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get cluster %s: %w", id, err)
-		}
+	if config.Started == nil {
+		return nil, nil
+	}
+
+	details, err := r.client.Clusters.GetByClusterId(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cluster %s: %w", id, err)
+	}
+
+	if *config.Started {
+		// lifecycle.started=true: ensure the cluster is running.
 		if details.State == compute.StateTerminated {
 			startWait, err := r.client.Clusters.Start(ctx, compute.StartCluster{ClusterId: id})
 			if err != nil {
@@ -138,6 +159,17 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 			}
 			if _, err = startWait.Get(); err != nil {
 				return nil, fmt.Errorf("failed to wait for cluster %s to start: %w", id, err)
+			}
+		}
+	} else {
+		// lifecycle.started=false: ensure the cluster is stopped.
+		if details.State != compute.StateTerminated && details.State != compute.StateTerminating {
+			terminateWait, err := r.client.Clusters.Delete(ctx, compute.DeleteCluster{ClusterId: id})
+			if err != nil {
+				return nil, fmt.Errorf("failed to terminate cluster %s: %w", id, err)
+			}
+			if _, err = terminateWait.Get(); err != nil {
+				return nil, fmt.Errorf("failed to wait for cluster %s to terminate: %w", id, err)
 			}
 		}
 	}

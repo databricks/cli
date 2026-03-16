@@ -1,0 +1,6 @@
+
+>>> errcode [CLI] bundle plan
+Error: lifecycle.started is only supported in direct deployment mode
+
+
+Exit code: 1

@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] bundle plan
+create clusters.my_cluster
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

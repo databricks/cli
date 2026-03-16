@@ -1,0 +1,10 @@
+bundle:
+  name: test_lifecycle_started_validation
+
+resources:
+  clusters:
+    my_cluster:
+      cluster_name: my_cluster
+      spark_version: 14.3.x-scala2.12
+      lifecycle:
+        started: true

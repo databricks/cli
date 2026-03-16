@@ -15,7 +15,7 @@ import (
 
 type SqlWarehouseState struct {
 	sql.CreateWarehouseRequest
-	Started bool `json:"started,omitempty"`
+	Started *bool `json:"started,omitempty"`
 }
 
 type ResourceSqlWarehouse struct {
@@ -29,15 +29,14 @@ func (*ResourceSqlWarehouse) New(client *databricks.WorkspaceClient) *ResourceSq
 
 // PrepareState converts bundle config to the SDK type.
 func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWarehouseState {
-	started := input.Lifecycle.Started != nil && *input.Lifecycle.Started
 	return &SqlWarehouseState{
 		CreateWarehouseRequest: input.CreateWarehouseRequest,
-		Started:                started,
+		Started:                input.Lifecycle.Started,
 	}
 }
 
 func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *SqlWarehouseState {
-	return &SqlWarehouseState{Started: false, CreateWarehouseRequest: sql.CreateWarehouseRequest{
+	return &SqlWarehouseState{Started: nil, CreateWarehouseRequest: sql.CreateWarehouseRequest{
 		AutoStopMins:            warehouse.AutoStopMins,
 		Channel:                 warehouse.Channel,
 		ClusterSize:             warehouse.ClusterSize,
@@ -66,15 +65,32 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *SqlWarehous
 	if err != nil {
 		return "", nil, err
 	}
-	// With lifecycle.started=true, wait for the warehouse to reach the running state.
-	if config.Started {
+	switch {
+	case config.Started != nil && *config.Started:
+		// lifecycle.started=true: wait for the warehouse to reach the running state.
 		warehouse, err := waiter.Get()
 		if err != nil {
 			return "", nil, err
 		}
 		return warehouse.Id, warehouse, nil
+	case config.Started != nil && !*config.Started:
+		// lifecycle.started=false: wait for running, then stop to reach stopped state.
+		warehouse, err := waiter.Get()
+		if err != nil {
+			return "", nil, err
+		}
+		stopWait, err := r.client.Warehouses.Stop(ctx, sql.StopRequest{Id: warehouse.Id})
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to stop warehouse %s: %w", warehouse.Id, err)
+		}
+		if _, err = stopWait.Get(); err != nil {
+			return "", nil, fmt.Errorf("failed to wait for warehouse %s to stop: %w", warehouse.Id, err)
+		}
+		return warehouse.Id, nil, nil
+	default:
+		// lifecycle.started omitted: default behaviour, return immediately without waiting.
+		return waiter.Id, nil, nil
 	}
-	return waiter.Id, nil, nil
 }
 
 // DoUpdate updates the warehouse in place.
@@ -106,12 +122,17 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 		log.Warnf(ctx, "sql_warehouses: response contains unexpected id=%#v (expected %#v)", waiter.Id, id)
 	}
 
-	// With lifecycle.started=true, ensure the warehouse is running after the update.
-	if config.Started {
-		warehouse, err := r.client.Warehouses.GetById(ctx, id)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get warehouse %s: %w", id, err)
-		}
+	if config.Started == nil {
+		return nil, nil
+	}
+
+	warehouse, err := r.client.Warehouses.GetById(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get warehouse %s: %w", id, err)
+	}
+
+	if *config.Started {
+		// lifecycle.started=true: ensure the warehouse is running.
 		if warehouse.State == sql.StateStopped {
 			startWait, err := r.client.Warehouses.Start(ctx, sql.StartRequest{Id: id})
 			if err != nil {
@@ -119,6 +140,17 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 			}
 			if _, err = startWait.Get(); err != nil {
 				return nil, fmt.Errorf("failed to wait for warehouse %s to start: %w", id, err)
+			}
+		}
+	} else {
+		// lifecycle.started=false: ensure the warehouse is stopped.
+		if warehouse.State != sql.StateStopped && warehouse.State != sql.StateStopping {
+			stopWait, err := r.client.Warehouses.Stop(ctx, sql.StopRequest{Id: id})
+			if err != nil {
+				return nil, fmt.Errorf("failed to stop warehouse %s: %w", id, err)
+			}
+			if _, err = stopWait.Get(); err != nil {
+				return nil, fmt.Errorf("failed to wait for warehouse %s to stop: %w", id, err)
 			}
 		}
 	}

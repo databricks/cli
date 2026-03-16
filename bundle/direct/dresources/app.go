@@ -24,7 +24,7 @@ type AppState struct {
 	SourceCodePath string               `json:"source_code_path,omitempty"`
 	Config         *resources.AppConfig `json:"config,omitempty"`
 	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
-	Started        bool                 `json:"started,omitempty"`
+	Started        *bool                `json:"started,omitempty"`
 }
 
 type ResourceApp struct {
@@ -36,13 +36,12 @@ func (*ResourceApp) New(client *databricks.WorkspaceClient) *ResourceApp {
 }
 
 func (*ResourceApp) PrepareState(input *resources.App) *AppState {
-	started := input.Lifecycle.Started != nil && *input.Lifecycle.Started
 	return &AppState{
 		App:            input.App,
 		SourceCodePath: input.SourceCodePath,
 		Config:         input.Config,
 		GitSource:      input.GitSource,
-		Started:        started,
+		Started:        input.Lifecycle.Started,
 	}
 }
 
@@ -55,7 +54,7 @@ func (*ResourceApp) RemapState(remote *apps.App) *AppState {
 		SourceCodePath: "",
 		Config:         nil,
 		GitSource:      nil,
-		Started:        false,
+		Started:        nil,
 	}
 }
 
@@ -64,9 +63,9 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) 
 }
 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *apps.App, error) {
-	// With lifecycle.started=true, start the app compute (no_compute=false).
-	// Otherwise, skip compute startup during creation.
-	noCompute := !config.Started
+	// Start app compute only when lifecycle.started=true is explicit.
+	// For nil (omitted) or false, use no_compute=true (do not start compute).
+	noCompute := !(config.Started != nil && *config.Started)
 	request := apps.CreateAppRequest{
 		App:             config.App,
 		NoCompute:       noCompute,
@@ -126,13 +125,17 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		return nil, fmt.Errorf("failed to update app %s: %s", id, response.Status.Message)
 	}
 
-	// With lifecycle.started=true, ensure the app compute is running and deploy the latest code.
-	if config.Started {
-		// Start compute if it is stopped (mirrors bundle run behavior).
-		app, err := r.client.Apps.GetByName(ctx, id)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get app %s: %w", id, err)
-		}
+	if config.Started == nil {
+		return nil, nil
+	}
+
+	app, err := r.client.Apps.GetByName(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get app %s: %w", id, err)
+	}
+
+	if *config.Started {
+		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
 		if isComputeStopped(app) {
 			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
 			if err != nil {
@@ -149,6 +152,17 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		deployment := appdeploy.BuildDeployment(config.SourceCodePath, config.Config, config.GitSource)
 		if err := appdeploy.Deploy(ctx, r.client, id, deployment); err != nil {
 			return nil, err
+		}
+	} else {
+		// lifecycle.started=false: ensure the app compute is stopped.
+		if !isComputeStopped(app) {
+			stopWaiter, err := r.client.Apps.Stop(ctx, apps.StopAppRequest{Name: id})
+			if err != nil {
+				return nil, fmt.Errorf("failed to stop app %s: %w", id, err)
+			}
+			if _, err = stopWaiter.Get(); err != nil {
+				return nil, fmt.Errorf("failed to wait for app %s to stop: %w", id, err)
+			}
 		}
 	}
 

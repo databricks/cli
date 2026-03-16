@@ -30,7 +30,7 @@ func (m *validateLifecycleStarted) Apply(_ context.Context, b *bundle.Bundle) di
 	for _, group := range b.Config.Resources.AllResources() {
 		for _, resource := range group.Resources {
 			lws, ok := resource.GetLifecycle().(resources.LifecycleWithStarted)
-			if !ok || lws.Started == nil || !*lws.Started {
+			if !ok || lws.Started == nil {
 				continue
 			}
 
