@@ -717,9 +717,32 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
-	// In flags/non-interactive mode, validate that all required resources are provided.
+	// In flags/non-interactive mode, resolve derived values and validate resources.
 	if flagsMode || !isInteractive {
 		resources := m.CollectResources(selectedPlugins)
+
+		// Resolve derived values for resources that support it.
+		if resourceValues == nil {
+			resourceValues = make(map[string]string)
+		}
+		for _, r := range resources {
+			resolveFn, ok := prompt.GetResolveFunc(r.Type)
+			if !ok {
+				continue
+			}
+			resolved, err := resolveFn(ctx, r, resourceValues)
+			if err != nil {
+				log.Warnf(ctx, "Could not resolve derived values for %s: %v", r.Alias, err)
+				continue
+			}
+			for k, v := range resolved {
+				if resourceValues[k] == "" {
+					resourceValues[k] = v
+				}
+			}
+		}
+
+		// Validate that all required resources are provided.
 		for _, r := range resources {
 			found := false
 			for k := range resourceValues {
