@@ -25,7 +25,7 @@ import (
 )
 
 func promptForProfile(ctx context.Context, defaultValue string) (string, error) {
-	if !cmdio.IsPromptSupported(ctx) {
+	if !cmdio.IsPromptSupported(ctx) || cmdio.IsNoInput(ctx) {
 		return "", nil
 	}
 

@@ -89,8 +89,8 @@ the profile is an error.
 		}
 
 		if profileName == "" {
-			if !cmdio.IsPromptSupported(ctx) {
-				return errors.New("the command is being run in a non-interactive environment, please specify a profile using the PROFILE argument or --profile flag")
+			if !cmdio.IsPromptSupported(ctx) || cmdio.IsNoInput(ctx) {
+				return errors.New("prompting is disabled, please specify a profile to log out of using --profile")
 			}
 			allProfiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
 			if err != nil {

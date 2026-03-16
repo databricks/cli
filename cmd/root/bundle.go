@@ -109,7 +109,7 @@ func resolveProfileAmbiguity(cmd *cobra.Command, b *bundle.Bundle, originalErr e
 	// Multiple workspace-compatible profiles — need interactive selection.
 	_, hasProfileFlag := profileFlagValue(cmd)
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(ctx)
-	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+	if !allowPrompt || !cmdio.IsPromptSupported(ctx) || cmdio.IsNoInput(ctx) {
 		return "", fmt.Errorf(
 			"%w\n\nMatching workspace profiles: %s\n\n"+
 				"Fix (pick one):\n"+
