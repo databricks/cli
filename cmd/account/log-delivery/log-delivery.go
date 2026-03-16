@@ -225,10 +225,10 @@ func newGet() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No LOG_DELIVERY_CONFIGURATION_ID argument specified. Loading names for Log Delivery drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No LOG_DELIVERY_CONFIGURATION_ID argument specified. Loading names for Log Delivery drop-down.")
 			names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Log Delivery drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

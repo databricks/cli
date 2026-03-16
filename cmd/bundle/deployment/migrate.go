@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -16,6 +17,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -140,9 +142,12 @@ WARNING: Both direct deployment engine and this command are experimental and not
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		extraArgs, extraArgsStr := getCommonArgs(cmd)
 
+		// Clear the engine env var so migrate always uses terraform engine to read existing state,
+		// regardless of what the user may have set in their environment.
+		cmd.SetContext(env.Set(cmd.Context(), engine.EnvVar, ""))
+
 		opts := utils.ProcessOptions{
-			SkipEngineEnvVar: true,
-			AlwaysPull:       true,
+			AlwaysPull: true,
 			// Same options as regular deploy, to ensure bundle config is in the same state
 			FastValidate: true,
 			Build:        true,

@@ -213,13 +213,13 @@ func newCreate() *cobra.Command {
 		if createSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
 			status := i.State.ConfigUpdate
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -299,13 +299,13 @@ func newCreateProvisionedThroughputEndpoint() *cobra.Command {
 		if createProvisionedThroughputEndpointSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
 			status := i.State.ConfigUpdate
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createProvisionedThroughputEndpointTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -1298,13 +1298,13 @@ func newUpdateConfig() *cobra.Command {
 		if updateConfigSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
 			status := i.State.ConfigUpdate
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(updateConfigTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -1540,13 +1540,13 @@ func newUpdateProvisionedThroughputEndpointConfig() *cobra.Command {
 		if updateProvisionedThroughputEndpointConfigSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
 			status := i.State.ConfigUpdate
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(updateProvisionedThroughputEndpointConfigTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
