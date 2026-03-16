@@ -3,6 +3,7 @@ package tableview
 import (
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -53,6 +54,18 @@ func TestFindMatchesEmptyQuery(t *testing.T) {
 	lines := []string{"alice", "bob"}
 	matches := findMatches(lines, "")
 	assert.Nil(t, matches)
+}
+
+func TestSearchSpaceCharacterInput(t *testing.T) {
+	m := model{
+		searching:   true,
+		searchInput: "my",
+	}
+
+	result, _ := m.updateSearch(tea.KeyMsg{Type: tea.KeySpace})
+	rm := result.(model)
+
+	assert.Equal(t, "my ", rm.searchInput)
 }
 
 func TestHighlightSearchEmptyQuery(t *testing.T) {

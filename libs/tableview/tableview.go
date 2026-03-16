@@ -187,6 +187,8 @@ func (m model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	default:
 		if msg.Type == tea.KeyRunes {
 			m.searchInput += msg.String()
+		} else if msg.Type == tea.KeySpace {
+			m.searchInput += " "
 		}
 		return m, nil
 	}

@@ -799,6 +799,54 @@ func TestPaginatedModelErr(t *testing.T) {
 	assert.Equal(t, "test error", m.Err().Error())
 }
 
+func TestPaginatedSearchSpaceCharacterInput(t *testing.T) {
+	m := newTestModel(t, nil, 0)
+	m.searching = true
+	m.searchInput = "my"
+
+	result, cmd := m.updateSearch(tea.KeyMsg{Type: tea.KeySpace})
+	pm := result.(paginatedModel)
+
+	assert.Equal(t, "my ", pm.searchInput)
+	assert.NotNil(t, cmd, "space should schedule a debounce tick")
+}
+
+func TestPaginatedFetchErrorClearedOnSuccess(t *testing.T) {
+	m := newTestModel(t, nil, 0)
+	m.ready = true
+	m.viewport.Width = 80
+	m.viewport.Height = 20
+
+	// Simulate a fetch error.
+	errMsg := rowsFetchedMsg{err: errors.New("transient network error")}
+	result, _ := m.Update(errMsg)
+	pm := result.(paginatedModel)
+	require.Error(t, pm.err)
+
+	// Simulate a successful fetch afterward.
+	successMsg := rowsFetchedMsg{rows: [][]string{{"alice", "30"}}, exhausted: true}
+	result, _ = pm.Update(successMsg)
+	pm = result.(paginatedModel)
+
+	assert.NoError(t, pm.err, "error should be cleared after successful fetch")
+	assert.Len(t, pm.rows, 1)
+}
+
+func TestPaginatedSearchEscWithoutSearchStateBumpsFetchGeneration(t *testing.T) {
+	m := newTestModel(t, nil, 0)
+	m.searching = true
+	m.searchInput = ""
+	m.loading = true
+	m.viewport.Height = 20
+	m.fetchGeneration = 5
+
+	result, _ := m.updateSearch(tea.KeyMsg{Type: tea.KeyEscape})
+	pm := result.(paginatedModel)
+
+	assert.Equal(t, 6, pm.fetchGeneration, "fetchGeneration should be bumped even without search state")
+	assert.False(t, pm.loading)
+}
+
 func TestPaginatedSearchDebounceEmptyQueryRestores(t *testing.T) {
 	cfg := &TableConfig{
 		Columns: []ColumnDef{{Header: "Name"}},

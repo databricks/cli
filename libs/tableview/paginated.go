@@ -202,6 +202,7 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			return m, nil
 		}
+		m.err = nil
 
 		isFirstBatch := len(m.rows) == 0
 		m.rows = append(m.rows, msg.rows...)
@@ -399,8 +400,8 @@ func (m *paginatedModel) scheduleSearchDebounce() tea.Cmd {
 // loading so that maybeFetch is unblocked. Safe to call even when there is
 // no saved search state.
 func (m *paginatedModel) restorePreSearchState() {
+	m.fetchGeneration++
 	if m.hasSearchState {
-		m.fetchGeneration++
 		m.rows = m.savedRows
 		m.rowIter = m.savedIter
 		m.exhausted = m.savedExhaust
@@ -463,6 +464,10 @@ func (m paginatedModel) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	default:
 		if msg.Type == tea.KeyRunes {
 			m.searchInput += msg.String()
+			return m, m.scheduleSearchDebounce()
+		}
+		if msg.Type == tea.KeySpace {
+			m.searchInput += " "
 			return m, m.scheduleSearchDebounce()
 		}
 		return m, nil
