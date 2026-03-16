@@ -167,5 +167,12 @@ Warning: unknown field: permissions
   at resources.jobs.job_with_permissions.permissions[1]
   in databricks.yml:18:11
 
+The following resources will be deleted:
+  delete resources.jobs.job_with_permissions
 
-Error: Test script killed due to a timeout (30s)
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
