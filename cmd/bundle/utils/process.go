@@ -91,9 +91,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		cmd.SetContext(ctx)
 	}
 
-	requiredEngine := engine.EngineNotSet
-
-	requiredEngine, err = engine.FromEnv(ctx)
+	requiredEngine, err := engine.FromEnv(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
