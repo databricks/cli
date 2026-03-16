@@ -108,6 +108,8 @@ class TableSpecificConfig:
     ] = None
     """
     :meta private: [EXPERIMENTAL]
+    
+    (Optional) Additional custom parameters for Workday Report
     """
 
     @classmethod
@@ -200,6 +202,8 @@ class TableSpecificConfigDict(TypedDict, total=False):
     ]
     """
     :meta private: [EXPERIMENTAL]
+    
+    (Optional) Additional custom parameters for Workday Report
     """
 
 

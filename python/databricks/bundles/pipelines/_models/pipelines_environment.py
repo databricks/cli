@@ -24,20 +24,6 @@ class PipelinesEnvironment:
     """
 
     environment_version: VariableOrOptional[str] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    The environment version of the serverless Python environment used to execute
-    customer Python code. Each environment version includes a specific Python
-    version and a curated set of pre-installed libraries with defined versions,
-    providing a stable and reproducible execution environment.
-    
-    Databricks supports a three-year lifecycle for each environment version.
-    For available versions and their included packages, see
-    https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/
-    
-    The value should be a string representing the environment version number, for example: `"4"`.
-    """
 
     @classmethod
     def from_dict(cls, value: "PipelinesEnvironmentDict") -> "Self":
@@ -58,20 +44,6 @@ class PipelinesEnvironmentDict(TypedDict, total=False):
     """
 
     environment_version: VariableOrOptional[str]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    The environment version of the serverless Python environment used to execute
-    customer Python code. Each environment version includes a specific Python
-    version and a curated set of pre-installed libraries with defined versions,
-    providing a stable and reproducible execution environment.
-    
-    Databricks supports a three-year lifecycle for each environment version.
-    For available versions and their included packages, see
-    https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/
-    
-    The value should be a string representing the environment version number, for example: `"4"`.
-    """
 
 
 PipelinesEnvironmentParam = PipelinesEnvironmentDict | PipelinesEnvironment
