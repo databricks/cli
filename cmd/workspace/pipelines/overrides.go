@@ -38,20 +38,28 @@ func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipeli
 			Placeholder: "Filter by name...",
 			NewIterator: func(ctx context.Context, query string) tableview.RowIterator {
 				req := *listReq
-				escaped := strings.ReplaceAll(query, "'", "''")
-				escaped = strings.ReplaceAll(escaped, "%", "\\%")
-				escaped = strings.ReplaceAll(escaped, "_", "\\_")
-				nameFilter := fmt.Sprintf("name LIKE '%%%s%%'", escaped)
-				if req.Filter != "" {
-					req.Filter = "(" + req.Filter + ") AND " + nameFilter
-				} else {
-					req.Filter = nameFilter
-				}
+				req.PageToken = ""
+				escaped := strings.ReplaceAll(query, `\`, `\\`)
+				escaped = strings.ReplaceAll(escaped, "'", "''")
+				escaped = strings.ReplaceAll(escaped, "%", `\%`)
+				escaped = strings.ReplaceAll(escaped, "_", `\_`)
+				req.Filter = fmt.Sprintf("name LIKE '%%%s%%'", escaped)
 				w := cmdctx.WorkspaceClient(ctx)
 				return tableview.WrapIterator(w.Pipelines.ListPipelines(ctx, req), columns)
 			},
 		},
 	})
+
+	// The pipelines API does not support composite filters, so disable
+	// TUI search when the user passes --filter on the command line.
+	origPreRunE := listCmd.PreRunE
+	listCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		disableSearchIfFilterSet(cmd)
+		if origPreRunE != nil {
+			return origPreRunE(cmd, args)
+		}
+		return nil
+	}
 }
 
 func init() {
@@ -116,6 +124,15 @@ If there is only one pipeline in the bundle, KEY is optional.
 
 With a PIPELINE_ID: Stops the pipeline identified by the UUID using the API.`
 	})
+}
+
+// disableSearchIfFilterSet clears the TUI search config when --filter is active.
+func disableSearchIfFilterSet(cmd *cobra.Command) {
+	if cmd.Flags().Changed("filter") {
+		if cfg := tableview.GetConfig(cmd); cfg != nil {
+			cfg.Search = nil
+		}
+	}
 }
 
 var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)

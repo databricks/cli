@@ -57,10 +57,9 @@ func TestListPipelinesSearchEscapesLikeWildcards(t *testing.T) {
 	assert.NotNil(t, cfg.Search.NewIterator(ctx, "foo'%_bar"))
 }
 
-func TestListPipelinesSearchPreservesExistingFilter(t *testing.T) {
+func TestListPipelinesSearchDisabledWhenFilterSet(t *testing.T) {
 	cmd := newListPipelines()
 
-	// Simulate the user passing --filter on the command line.
 	err := cmd.Flags().Set("filter", "state = 'RUNNING'")
 	require.NoError(t, err)
 
@@ -68,34 +67,19 @@ func TestListPipelinesSearchPreservesExistingFilter(t *testing.T) {
 	require.NotNil(t, cfg)
 	require.NotNil(t, cfg.Search)
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockPipelinesAPI().EXPECT().
-		ListPipelines(mock.Anything, sdkpipelines.ListPipelinesRequest{
-			Filter: "(state = 'RUNNING') AND name LIKE '%myquery%'",
-		}).
-		Return(nil)
-
-	ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
-	assert.NotNil(t, cfg.Search.NewIterator(ctx, "myquery"))
+	// The pipelines API does not support composite filters, so the
+	// PreRunE hook calls disableSearchIfFilterSet to nil out search.
+	disableSearchIfFilterSet(cmd)
+	assert.Nil(t, cfg.Search)
 }
 
-func TestListPipelinesSearchWrapsORFilterInParens(t *testing.T) {
+func TestListPipelinesSearchNotDisabledWithoutFilter(t *testing.T) {
 	cmd := newListPipelines()
-
-	err := cmd.Flags().Set("filter", "state = 'RUNNING' OR state = 'IDLE'")
-	require.NoError(t, err)
 
 	cfg := tableview.GetConfig(cmd)
 	require.NotNil(t, cfg)
 	require.NotNil(t, cfg.Search)
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.GetMockPipelinesAPI().EXPECT().
-		ListPipelines(mock.Anything, sdkpipelines.ListPipelinesRequest{
-			Filter: "(state = 'RUNNING' OR state = 'IDLE') AND name LIKE '%myquery%'",
-		}).
-		Return(nil)
-
-	ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
-	assert.NotNil(t, cfg.Search.NewIterator(ctx, "myquery"))
+	disableSearchIfFilterSet(cmd)
+	assert.NotNil(t, cfg.Search)
 }
