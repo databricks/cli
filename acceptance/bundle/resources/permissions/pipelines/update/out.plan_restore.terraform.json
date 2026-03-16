@@ -1,10 +1,10 @@
 {
   "cli_version": "[DEV_VERSION]",
   "plan": {
-    "resources.jobs.job_with_permissions": {
+    "resources.pipelines.foo": {
       "action": "skip"
     },
-    "resources.jobs.job_with_permissions.permissions": {
+    "resources.pipelines.foo.permissions": {
       "action": "create"
     }
   }

@@ -5,7 +5,7 @@
       "action": "skip"
     },
     "resources.jobs.job_with_permissions.permissions": {
-      "action": "create"
+      "action": "skip"
     }
   }
 }

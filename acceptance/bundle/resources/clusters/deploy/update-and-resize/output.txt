@@ -121,5 +121,10 @@ Deployment complete!
 }
 
 >>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.test_cluster
 
-Error: Test script killed due to a timeout (30s)
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
