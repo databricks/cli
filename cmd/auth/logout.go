@@ -50,14 +50,13 @@ will need to run "databricks auth login" to re-authenticate. The profile
 remains in the configuration file (~/.databrickscfg by default) unless
 you also specify --delete.
 
-This behavior applies only to profiles created with "databricks auth login"
-(auth_type set to "databricks-cli"). Profiles that use other authentication
-methods, such as personal access tokens or machine-to-machine credentials, do
-not store cached OAuth tokens, so there is nothing to clear. If multiple
-profiles share the same cached token, the command removes only the selected
-profile's cache entry and preserves the shared token.
-
-Command behavior:
+This behavior applies only to profiles created with "databricks auth login".
+Profiles that use other authentication methods, such as personal access
+tokens or machine-to-machine credentials, do not store cached OAuth tokens,
+so there is nothing to clear. If multiple profiles share the same cached
+token, the command removes only the selected profile's cache entry and
+preserves the shared host-based token as long as other profiles still
+reference it.
 
 1. If you specify --profile, the command logs out of that profile. In an
    interactive terminal, it asks for confirmation unless you also specify
@@ -68,11 +67,10 @@ Command behavior:
    account ID. After you select a profile, the command asks for confirmation
    unless you also specify --force.
 
-3. If you omit --profile in a non-interactive environment, the command fails
-   and asks you to specify --profile.
+3. In a non-interactive environment, both --profile and --force are required.
 
-4. In a non-interactive environment, use --profile together with --force to
-   skip confirmation.`,
+4. Use --delete to also remove the selected profile from the configuration
+   file.`,
 	}
 
 	var force bool
