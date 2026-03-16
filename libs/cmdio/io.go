@@ -195,9 +195,9 @@ func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error
 //
 // The spinner automatically degrades in non-interactive terminals (no output).
 // Context cancellation will automatically close the spinner.
-func NewSpinner(ctx context.Context) *spinner {
+func NewSpinner(ctx context.Context, opts ...SpinnerOption) *spinner {
 	c := fromContext(ctx)
-	return c.NewSpinner(ctx)
+	return c.NewSpinner(ctx, opts...)
 }
 
 type cmdIOType int

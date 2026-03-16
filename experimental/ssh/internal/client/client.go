@@ -279,8 +279,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	if opts.ServerMetadata == "" {
 		cmdio.LogString(ctx, "Uploading binaries...")
-		sp := cmdio.NewSpinner(ctx)
-		sp.TrackElapsedTime()
+		sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 		sp.Update("Uploading binaries...")
 		err := UploadTunnelReleases(ctx, client, version, opts.ReleasesDir)
 		sp.Close()
@@ -582,8 +581,7 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 }
 
 func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, autoStart bool) error {
-	sp := cmdio.NewSpinner(ctx)
-	sp.TrackElapsedTime()
+	sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 	defer sp.Close()
 	if autoStart {
 		sp.Update("Ensuring the cluster is running...")
@@ -607,8 +605,7 @@ func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, 
 // waitForJobToStart polls the task status until the SSH server task is in RUNNING state or terminates.
 // Returns an error if the task fails to start or if polling times out.
 func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, runID int64, taskStartupTimeout time.Duration) error {
-	sp := cmdio.NewSpinner(ctx)
-	sp.TrackElapsedTime()
+	sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 	defer sp.Close()
 	sp.Update("Starting SSH server...")
 	var prevState jobs.RunLifecycleStateV2State
@@ -677,9 +674,8 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 			return "", 0, "", fmt.Errorf("failed to submit and start ssh server job: %w", err)
 		}
 
-		sp := cmdio.NewSpinner(ctx)
+		sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 		defer sp.Close()
-		sp.TrackElapsedTime()
 		sp.Update("Waiting for the SSH server to start...")
 		maxRetries := 30
 		for retries := range maxRetries {

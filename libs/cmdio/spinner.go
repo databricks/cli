@@ -21,13 +21,22 @@ type spinnerModel struct {
 
 // Message types for spinner updates.
 type (
-	suffixMsg      string
-	quitMsg        struct{}
-	elapsedTimeMsg struct{ startTime time.Time }
+	suffixMsg string
+	quitMsg   struct{}
 )
 
+// SpinnerOption configures spinner behavior.
+type SpinnerOption func(*spinnerModel)
+
+// WithElapsedTime enables an elapsed time prefix (MM:SS) on the spinner.
+func WithElapsedTime() SpinnerOption {
+	return func(m *spinnerModel) {
+		m.startTime = time.Now()
+	}
+}
+
 // newSpinnerModel creates a new spinner model.
-func newSpinnerModel() spinnerModel {
+func newSpinnerModel(opts ...SpinnerOption) spinnerModel {
 	s := bubblespinner.New()
 	// Braille spinner frames with 200ms timing
 	s.Spinner = bubblespinner.Spinner{
@@ -36,11 +45,13 @@ func newSpinnerModel() spinnerModel {
 	}
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("10")) // Green
 
-	return spinnerModel{
-		spinner:  s,
-		suffix:   "",
-		quitting: false,
+	m := spinnerModel{
+		spinner: s,
 	}
+	for _, opt := range opts {
+		opt(&m)
+	}
+	return m
 }
 
 func (m spinnerModel) Init() tea.Cmd {
@@ -51,10 +62,6 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case suffixMsg:
 		m.suffix = string(msg)
-		return m, nil
-
-	case elapsedTimeMsg:
-		m.startTime = msg.startTime
 		return m, nil
 
 	case quitMsg:
@@ -76,13 +83,14 @@ func (m spinnerModel) View() string {
 		return ""
 	}
 
-	result := m.spinner.View()
-	if m.suffix != "" {
-		result += " " + m.suffix
-	}
+	var result string
 	if !m.startTime.IsZero() {
 		elapsed := time.Since(m.startTime)
-		result += fmt.Sprintf(" %02d:%02d", int(elapsed.Minutes()), int(elapsed.Seconds())%60)
+		result += fmt.Sprintf("%02d:%02d ", int(elapsed.Minutes()), int(elapsed.Seconds())%60)
+	}
+	result += m.spinner.View()
+	if m.suffix != "" {
+		result += " " + m.suffix
 	}
 	return result
 }
@@ -99,13 +107,6 @@ type spinner struct {
 	ctx  context.Context
 	once sync.Once
 	done chan struct{} // Closed when tea.Program finishes
-}
-
-// TrackElapsedTime enables an elapsed time display (MM:SS) next to the spinner message.
-func (sp *spinner) TrackElapsedTime() {
-	if sp.p != nil {
-		sp.p.Send(elapsedTimeMsg{startTime: time.Now()})
-	}
 }
 
 // Update sends a status message to the spinner.
@@ -139,14 +140,18 @@ func (sp *spinner) Close() {
 //	sp := cmdio.NewSpinner(ctx)
 //	defer sp.Close()
 //	sp.Update("processing files")
-func (c *cmdIO) NewSpinner(ctx context.Context) *spinner {
+//
+// Use WithElapsedTime() to show a running MM:SS prefix:
+//
+//	sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
+func (c *cmdIO) NewSpinner(ctx context.Context, opts ...SpinnerOption) *spinner {
 	// Don't show spinner if not interactive
 	if !c.capabilities.SupportsInteractive() {
 		return &spinner{p: nil, c: c, ctx: ctx}
 	}
 
 	// Create model and program
-	m := newSpinnerModel()
+	m := newSpinnerModel(opts...)
 	p := tea.NewProgram(
 		m,
 		tea.WithInput(nil),
