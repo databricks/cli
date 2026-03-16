@@ -41,10 +41,6 @@ type searchDebounceMsg struct {
 	seq int
 }
 
-// PaginatedModel is the exported alias used by callers (e.g. RenderIterator)
-// to inspect the final model returned by tea.Program.Run().
-type PaginatedModel = paginatedModel
-
 type paginatedModel struct {
 	cfg     *TableConfig
 	headers []string
@@ -165,9 +161,9 @@ func RunPaginated(ctx context.Context, w io.Writer, cfg *TableConfig, iter RowIt
 	if err != nil {
 		return err
 	}
-	if pm, ok := finalModel.(FinalModel); ok {
-		if modelErr := pm.Err(); modelErr != nil {
-			return modelErr
+	if m, ok := finalModel.(FinalModel); ok {
+		if fetchErr := m.Err(); fetchErr != nil {
+			return fetchErr
 		}
 	}
 	return nil
@@ -280,11 +276,7 @@ func (m paginatedModel) renderContent() string {
 	fmt.Fprintln(tw, strings.Join(seps, "\t"))
 
 	// Data rows.
-	// NOTE: MaxWidth truncation here is destructive, not display wrapping.
-	// Values exceeding MaxWidth are cut and suffixed with "..." in the
-	// rendered output. Horizontal scrolling cannot recover the hidden tail.
-	// A future improvement could store full values and only truncate the
-	// visible slice, but that requires per-cell width tracking.
+	// MaxWidth truncation is destructive; horizontal scroll won't recover hidden text.
 	for _, row := range m.rows {
 		vals := make([]string, len(m.headers))
 		for i := range m.headers {

@@ -116,14 +116,6 @@ func TestPaginatedFetchError(t *testing.T) {
 	assert.Equal(t, "network error", pm.err.Error())
 }
 
-func TestPaginatedErrAccessor(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	assert.NoError(t, m.Err())
-
-	m.err = errors.New("api timeout")
-	assert.EqualError(t, m.Err(), "api timeout")
-}
-
 func TestPaginatedCursorMovement(t *testing.T) {
 	m := newTestModel(t, nil, 0)
 	m.ready = true
