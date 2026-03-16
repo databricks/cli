@@ -1,5 +1,6 @@
 Cloud = false
 
-# Cross-resource permission references don't work in terraform mode.
+# Cross-resource permission references (${resources.jobs.X.permissions[N].field}) require
+# permissions to be part of the job schema, which was added after v0.293.0.
 EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]
 EnvMatrixExclude.no_cross_resource_ref = ["INPUT_CONFIG=job_cross_resource_ref.yml.tmpl"]
