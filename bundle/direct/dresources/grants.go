@@ -23,7 +23,7 @@ var grantResourceToSecurableType = map[string]string{
 type GrantsState struct {
 	SecurableType string                        `json:"securable_type"`
 	FullName      string                        `json:"full_name"`
-	Grants        []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+	EmbeddedSlice []catalog.PrivilegeAssignment `json:"_,omitempty"`
 }
 
 func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -56,7 +56,7 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 		Value: &GrantsState{
 			SecurableType: securableType,
 			FullName:      "",
-			Grants:        *grantsPtr,
+			EmbeddedSlice: *grantsPtr,
 		},
 		Refs: map[string]string{
 			"full_name": "${" + baseNode + ".id}",
@@ -90,7 +90,7 @@ func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, e
 	return &GrantsState{
 		SecurableType: securableType,
 		FullName:      fullName,
-		Grants:        assignments,
+		EmbeddedSlice: assignments,
 	}, nil
 }
 
@@ -121,7 +121,7 @@ func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) er
 	var changes []catalog.PermissionsChange
 
 	// For each principal in the config, add their grants and remove everything else
-	for _, grantAssignment := range state.Grants {
+	for _, grantAssignment := range state.EmbeddedSlice {
 		changes = append(changes, catalog.PermissionsChange{
 			Principal:       grantAssignment.Principal,
 			Add:             grantAssignment.Privileges,

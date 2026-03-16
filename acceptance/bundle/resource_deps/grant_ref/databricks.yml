@@ -1,0 +1,31 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    # schema_b has grants that schema_a references
+    schema_b:
+      catalog_name: main
+      name: schema B
+      grants:
+        - principal: viewers
+          privileges:
+            - USE_SCHEMA
+        - principal: editors
+          privileges:
+            - CREATE_TABLE
+            - USE_SCHEMA
+
+    # schema_a references schema_b's grant principals
+    schema_a:
+      catalog_name: main
+      name: schema A
+      grants:
+        # Reference by integer index
+        - principal: ${resources.schemas.schema_b.grants[0].principal}
+          privileges:
+            - USE_SCHEMA
+        # Reference by integer index (second entry)
+        - principal: ${resources.schemas.schema_b.grants[1].principal}
+          privileges:
+            - CREATE_TABLE

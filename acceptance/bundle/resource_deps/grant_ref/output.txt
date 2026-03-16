@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle plan
+Error: cannot plan resources.schemas.schema_a.grants: cannot resolve "${resources.schemas.schema_b.grants[0].principal}": schema mismatch: [0]: cannot index struct; [0]: cannot index struct
+
+Error: planning failed
+
+
+Exit code: 1
