@@ -2,11 +2,6 @@
 === Terraform state is present, env var mismatch warns but uses state engine
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Warning: Deployment engine "direct" configured in DATABRICKS_BUNDLE_ENGINE environment variable does not match the existing state (engine "terraform"). Using "terraform" engine from the existing state.
-
-Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
@@ -26,12 +21,6 @@ Deployment complete!
 
 === Adding resources.json with lower serial does not change anything
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
-Warning: Deployment engine "direct" configured in DATABRICKS_BUNDLE_ENGINE environment variable does not match the existing state (engine "terraform"). Using "terraform" engine from the existing state.
-
-Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage="test-lineage"
-- terraform.tfstate: remote terraform state serial=3 lineage="test-lineage"
-
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan
@@ -48,38 +37,17 @@ create schemas.foo
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan
-Warning: Deployment engine "terraform" configured in DATABRICKS_BUNDLE_ENGINE environment variable does not match the existing state (engine "direct"). Using "direct" engine from the existing state.
-
-Available state files:
-- terraform.tfstate: remote terraform state serial=3 lineage="test-lineage"
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage="test-lineage"
-
 create schemas.foo
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Warning: Deployment engine "terraform" configured in DATABRICKS_BUNDLE_ENGINE environment variable does not match the existing state (engine "direct"). Using "direct" engine from the existing state.
-
-Available state files:
-- terraform.tfstate: remote terraform state serial=3 lineage="test-lineage"
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage="test-lineage"
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle destroy --auto-approve
-Warning: Deployment engine "terraform" configured in DATABRICKS_BUNDLE_ENGINE environment variable does not match the existing state (engine "direct"). Using "direct" engine from the existing state.
-
-Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
-- resources.json: remote direct state serial=11 lineage="test-lineage"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=11 lineage="test-lineage"
-
 The following resources will be deleted:
   delete resources.schemas.foo
 
@@ -106,13 +74,6 @@ Deployment complete!
 contains error: '11' not found in the output.
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Warning: Deployment engine "terraform" configured in DATABRICKS_BUNDLE_ENGINE environment variable does not match the existing state (engine "direct"). Using "direct" engine from the existing state.
-
-Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
-- resources.json: remote direct state serial=13 lineage="test-lineage"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=13 lineage="test-lineage"
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
