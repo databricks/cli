@@ -201,6 +201,7 @@ resources.apps.*.service_principal_id	int64	ALL
 resources.apps.*.service_principal_name	string	ALL
 resources.apps.*.source_code_path	string	INPUT	STATE
 resources.apps.*.space	string	ALL
+resources.apps.*.started	*bool	STATE
 resources.apps.*.telemetry_export_destinations	[]apps.TelemetryExportDestination	ALL
 resources.apps.*.telemetry_export_destinations[*]	apps.TelemetryExportDestination	ALL
 resources.apps.*.telemetry_export_destinations[*].unity_catalog	*apps.UnityCatalog	ALL
@@ -505,7 +506,7 @@ resources.clusters.*.spec.workload_type.clients.notebooks	bool	REMOTE
 resources.clusters.*.ssh_public_keys	[]string	ALL
 resources.clusters.*.ssh_public_keys[*]	string	ALL
 resources.clusters.*.start_time	int64	REMOTE
-resources.clusters.*.started	bool	STATE
+resources.clusters.*.started	*bool	STATE
 resources.clusters.*.state	compute.State	REMOTE
 resources.clusters.*.state_message	string	REMOTE
 resources.clusters.*.terminated_time	int64	REMOTE
@@ -2809,7 +2810,7 @@ resources.sql_warehouses.*.odbc_params.path	string	REMOTE
 resources.sql_warehouses.*.odbc_params.port	int	REMOTE
 resources.sql_warehouses.*.odbc_params.protocol	string	REMOTE
 resources.sql_warehouses.*.spot_instance_policy	sql.SpotInstancePolicy	ALL
-resources.sql_warehouses.*.started	bool	STATE
+resources.sql_warehouses.*.started	*bool	STATE
 resources.sql_warehouses.*.state	sql.State	REMOTE
 resources.sql_warehouses.*.tags	*sql.EndpointTags	ALL
 resources.sql_warehouses.*.tags.custom_tags	[]sql.EndpointTagPair	ALL
