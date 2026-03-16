@@ -1,13 +1,9 @@
 
 >>> [CLI] bundle validate
-Warning: invalid value "${resources.jobs.my_job.id}" for enum field. Valid values are [GIT WORKSPACE]
-  at resources.jobs.my_job.tasks[1].notebook_task.source
-  in databricks.yml:22:21
-
 Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 1 warning
+Validation OK!
