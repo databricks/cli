@@ -42,17 +42,17 @@
       "new_state": {
         "value": {
           "object_id": "/pipelines/[FOO_ID]",
-          "permissions": [
+          "_": [
             {
-              "permission_level": "CAN_MANAGE",
+              "level": "CAN_MANAGE",
               "user_name": "viewer@example.com"
             },
             {
-              "group_name": "data-team",
-              "permission_level": "CAN_MANAGE"
+              "level": "CAN_MANAGE",
+              "group_name": "data-team"
             },
             {
-              "permission_level": "IS_OWNER",
+              "level": "IS_OWNER",
               "user_name": "[USERNAME]"
             }
           ]
@@ -60,23 +60,23 @@
       },
       "remote_state": {
         "object_id": "/pipelines/[FOO_ID]",
-        "permissions": [
+        "_": [
           {
-            "permission_level": "CAN_VIEW",
+            "level": "CAN_VIEW",
             "user_name": "viewer@example.com"
           },
           {
-            "group_name": "data-team",
-            "permission_level": "CAN_MANAGE"
+            "level": "CAN_MANAGE",
+            "group_name": "data-team"
           },
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           }
         ]
       },
       "changes": {
-        "permissions[user_name='viewer@example.com'].permission_level": {
+        "[user_name='viewer@example.com'].level": {
           "action": "update",
           "old": "CAN_VIEW",
           "new": "CAN_MANAGE",

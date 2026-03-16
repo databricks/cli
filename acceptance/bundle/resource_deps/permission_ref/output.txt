@@ -1,11 +1,5 @@
 
 >>> [CLI] bundle plan
-Warning: invalid value "${resources.jobs.job_b.permissions[0].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
-  at resources.jobs.job_a.permissions[0].level
-
-Warning: invalid value "${resources.jobs.job_b.permissions[1].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
-  at resources.jobs.job_a.permissions[1].level
-
 create jobs.job_a
 create jobs.job_a.permissions
 create jobs.job_b
@@ -14,20 +8,8 @@ create jobs.job_b.permissions
 Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
-Warning: invalid value "${resources.jobs.job_b.permissions[0].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
-  at resources.jobs.job_a.permissions[0].level
-
-Warning: invalid value "${resources.jobs.job_b.permissions[1].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
-  at resources.jobs.job_a.permissions[1].level
-
 
 >>> [CLI] bundle deploy
-Warning: invalid value "${resources.jobs.job_b.permissions[0].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
-  at resources.jobs.job_a.permissions[0].level
-
-Warning: invalid value "${resources.jobs.job_b.permissions[1].level}" for enum field. Valid values are [CAN_MANAGE CAN_MANAGE_RUN CAN_VIEW IS_OWNER]
-  at resources.jobs.job_a.permissions[1].level
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
