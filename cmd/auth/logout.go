@@ -92,7 +92,7 @@ the profile is an error.
 			if !cmdio.IsPromptSupported(ctx) {
 				return errors.New("the command is being run in a non-interactive environment, please specify a profile using the PROFILE argument or --profile flag")
 			}
-			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			allProfiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
 			if err != nil {
 				return err
 			}
@@ -119,7 +119,7 @@ the profile is an error.
 			profileName:    profileName,
 			force:          force,
 			deleteProfile:  deleteProfile,
-			profiler:       profile.DefaultProfiler,
+			profiler:       profiler,
 			tokenCache:     tokenCache,
 			configFilePath: env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		})
