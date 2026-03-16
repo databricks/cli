@@ -286,7 +286,6 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		if err != nil {
 			return fmt.Errorf("failed to upload ssh-tunnel binaries: %w", err)
 		}
-		sp.Close()
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
@@ -530,7 +529,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return fmt.Errorf("failed to submit job: %w", err)
 	}
 
-	log.Infof(ctx, "Job submitted successfully with run ID: %d", waiter.RunId)
+	cmdio.LogString(ctx, fmt.Sprintf("Job submitted successfully with run ID: %d", waiter.RunId))
 
 	return waitForJobToStart(ctx, client, waiter.RunId, opts.TaskStartupTimeout)
 }
@@ -675,11 +674,12 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 			return "", 0, "", fmt.Errorf("failed to submit and start ssh server job: %w", err)
 		}
 
-		cmdio.LogString(ctx, "Waiting for the ssh server to start...")
+		sp := cmdio.NewSpinner(ctx)
+		defer sp.Close()
+		sp.Update("Waiting for the SSH server to start...")
 		maxRetries := 30
 		for retries := range maxRetries {
 			if ctx.Err() != nil {
-				sp.Close()
 				return "", 0, "", ctx.Err()
 			}
 			serverPort, userName, effectiveClusterID, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
@@ -689,7 +689,6 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 			} else if retries < maxRetries-1 {
 				time.Sleep(2 * time.Second)
 			} else {
-				sp.Close()
 				return "", 0, "", fmt.Errorf("failed to start the ssh server: %w", err)
 			}
 		}
