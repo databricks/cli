@@ -163,10 +163,10 @@ func newDelete() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Account Groups drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Account Groups drop-down.")
 			names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Groups drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -231,10 +231,10 @@ func newGet() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Account Groups drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Account Groups drop-down.")
 			names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Groups drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -375,10 +375,10 @@ func newPatch() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Account Groups drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Account Groups drop-down.")
 			names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Groups drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -468,10 +468,10 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Account Groups drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Account Groups drop-down.")
 			names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Groups drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

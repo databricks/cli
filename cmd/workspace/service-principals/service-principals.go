@@ -161,10 +161,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Service Principals drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Service Principals drop-down.")
 			names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Service Principals drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -230,10 +230,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Service Principals drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Service Principals drop-down.")
 			names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Service Principals drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -373,10 +373,10 @@ func newPatch() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Service Principals drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Service Principals drop-down.")
 			names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Service Principals drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -468,10 +468,10 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Service Principals drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Service Principals drop-down.")
 			names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Service Principals drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
