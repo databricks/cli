@@ -235,6 +235,8 @@ func (nopWriteCloser) Close() error {
 	return nil
 }
 
+// Prompt returns a new promptui.Prompt wired to the context's stdin/stderr.
+// Callers must check IsNoInput(ctx) before calling Run() on the returned prompt.
 func Prompt(ctx context.Context) *promptui.Prompt {
 	c := fromContext(ctx)
 	return &promptui.Prompt{
