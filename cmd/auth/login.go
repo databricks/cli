@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -541,15 +540,8 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 		return fmt.Errorf("retrieving token after login: %w", err)
 	}
 
-	// Best-effort introspection for metadata. Build the HTTP client from a
-	// resolved SDK config so that TLS settings (InsecureSkipVerify, custom
-	// transport) from environment variables are respected.
-	introspectCfg := &config.Config{
-		Host:  discoveredHost,
-		Token: tok.AccessToken,
-	}
-	_ = introspectCfg.EnsureResolved()
-	httpClient := httpClientFromConfig(introspectCfg)
+	// Best-effort introspection for metadata.
+	httpClient := httpClientForIntrospection()
 	var workspaceID string
 	introspection, err := introspectToken(ctx, discoveredHost, tok.AccessToken, httpClient)
 	if err != nil {
@@ -661,17 +653,10 @@ func getBrowserFunc(cmd *cobra.Command) func(url string) error {
 	}
 }
 
-// httpClientFromConfig builds an *http.Client that respects the TLS settings
-// from a resolved SDK config. This picks up InsecureSkipVerify from environment
-// variables and any custom transport set on the config.
-func httpClientFromConfig(cfg *config.Config) *http.Client {
-	c := &http.Client{}
-	if t, ok := cfg.HTTPTransport.(*http.Transport); ok && t != nil {
-		c.Transport = t.Clone()
-	} else if cfg.InsecureSkipVerify {
-		c.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
-		}
-	}
-	return c
+// httpClientForIntrospection returns an *http.Client suitable for the
+// best-effort token introspection call. It clones http.DefaultTransport
+// to inherit system CA certs, proxy settings, and timeouts.
+func httpClientForIntrospection() *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	return &http.Client{Transport: transport}
 }

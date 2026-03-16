@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -885,26 +884,11 @@ auth_type = databricks-cli
 	assert.Equal(t, "222222", savedProfile.WorkspaceID, "workspace_id should be updated to fresh introspection value")
 }
 
-func TestHttpClientFromConfig_DefaultTransport(t *testing.T) {
-	cfg := &config.Config{Host: "https://example.com"}
-	c := httpClientFromConfig(cfg)
-	assert.Nil(t, c.Transport, "default config should produce nil transport (uses http.DefaultTransport)")
-}
-
-func TestHttpClientFromConfig_InsecureSkipVerify(t *testing.T) {
-	cfg := &config.Config{Host: "https://example.com", InsecureSkipVerify: true}
-	c := httpClientFromConfig(cfg)
+func TestHttpClientForIntrospection(t *testing.T) {
+	c := httpClientForIntrospection()
 	require.NotNil(t, c.Transport)
 	transport, ok := c.Transport.(*http.Transport)
 	require.True(t, ok)
-	assert.True(t, transport.TLSClientConfig.InsecureSkipVerify)
-}
-
-func TestHttpClientFromConfig_CustomTransport(t *testing.T) {
-	custom := &http.Transport{}
-	cfg := &config.Config{Host: "https://example.com", HTTPTransport: custom}
-	c := httpClientFromConfig(cfg)
-	require.NotNil(t, c.Transport)
-	// Should be a clone, not the same pointer.
-	assert.NotSame(t, custom, c.Transport)
+	// Should be a clone of DefaultTransport, not the same pointer.
+	assert.NotSame(t, http.DefaultTransport, transport)
 }
