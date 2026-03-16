@@ -37,6 +37,7 @@ jobs:
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
+    timeout-minutes: 30
     environment: test-trigger-is
     permissions:
       contents: read
@@ -61,6 +62,18 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.token.outputs.token }}
 
+      - name: Track remote run
+        run: |
+          sleep 10
+          RUN_ID=$(gh run list -R databricks-eng/eng-dev-ecosystem \
+            --workflow cli-claude-code.yml --limit 1 \
+            --json databaseId -q '.[0].databaseId')
+          echo "## Claude Code Review" >> "$GITHUB_STEP_SUMMARY"
+          echo "[View run](https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/$RUN_ID)" >> "$GITHUB_STEP_SUMMARY"
+          gh run watch "$RUN_ID" -R databricks-eng/eng-dev-ecosystem --exit-status
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+
   # Interactive @claude mentions (PRs only, trusted authors only).
   # Restrict to org members/owners to prevent untrusted users from triggering
   # Claude with write access to the repo. See:
@@ -76,6 +89,7 @@ jobs:
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
+    timeout-minutes: 30
     environment: test-trigger-is
     permissions:
       contents: read
@@ -133,3 +147,16 @@ jobs:
             });
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
+
+      - name: Track remote run
+        if: steps.fork-check.outputs.is_fork != 'true'
+        run: |
+          sleep 10
+          RUN_ID=$(gh run list -R databricks-eng/eng-dev-ecosystem \
+            --workflow cli-claude-code.yml --limit 1 \
+            --json databaseId -q '.[0].databaseId')
+          echo "## Claude Code Assist" >> "$GITHUB_STEP_SUMMARY"
+          echo "[View run](https://github.com/databricks-eng/eng-dev-ecosystem/actions/runs/$RUN_ID)" >> "$GITHUB_STEP_SUMMARY"
+          gh run watch "$RUN_ID" -R databricks-eng/eng-dev-ecosystem --exit-status
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
