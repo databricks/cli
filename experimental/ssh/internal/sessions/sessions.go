@@ -23,6 +23,7 @@ type Session struct {
 	Name          string    `json:"name"`
 	Accelerator   string    `json:"accelerator"`
 	WorkspaceHost string    `json:"workspace_host"`
+	UserName      string    `json:"user_name,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
 	ClusterID     string    `json:"cluster_id,omitempty"`
 }
@@ -129,17 +130,35 @@ func Remove(ctx context.Context, name string) error {
 	return Save(ctx, store)
 }
 
-// FindMatching returns non-expired sessions that match the given workspace host and accelerator.
-func FindMatching(ctx context.Context, workspaceHost, accelerator string) ([]Session, error) {
+// FindMatching returns non-expired sessions that match the given workspace host, accelerator,
+// and user name. Expired sessions are pruned from the store on disk.
+func FindMatching(ctx context.Context, workspaceHost, accelerator, userName string) ([]Session, error) {
 	store, err := Load(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	cutoff := time.Now().Add(-sessionMaxAge)
-	var result []Session
+
+	// Prune expired sessions from the store.
+	active := store.Sessions[:0]
+	pruned := false
 	for _, s := range store.Sessions {
-		if s.WorkspaceHost == workspaceHost && s.Accelerator == accelerator && s.CreatedAt.After(cutoff) {
+		if s.CreatedAt.After(cutoff) {
+			active = append(active, s)
+		} else {
+			pruned = true
+		}
+	}
+	if pruned {
+		store.Sessions = active
+		// Best-effort save; don't fail the operation if pruning fails.
+		_ = Save(ctx, store)
+	}
+
+	var result []Session
+	for _, s := range active {
+		if s.WorkspaceHost == workspaceHost && s.Accelerator == accelerator && s.UserName == userName {
 			result = append(result, s)
 		}
 	}

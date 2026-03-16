@@ -205,8 +205,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	// For serverless without explicit --name: auto-generate or reconnect to existing session.
 	if opts.IsServerlessMode() && opts.ConnectionName == "" && !opts.ProxyMode {
-		err := resolveServerlessSession(ctx, client, &opts)
-		if err != nil {
+		if err := opts.resolveServerlessSession(ctx, client); err != nil {
 			return err
 		}
 	}
@@ -344,10 +343,16 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	// Persist the session for future reconnects.
 	if opts.IsServerlessMode() && !opts.ProxyMode {
+		currentUser, userErr := client.CurrentUser.Me(ctx)
+		sessionUserName := ""
+		if userErr == nil {
+			sessionUserName = currentUser.UserName
+		}
 		err = sessions.Add(ctx, sessions.Session{
 			Name:          opts.ConnectionName,
 			Accelerator:   opts.Accelerator,
 			WorkspaceHost: client.Config.Host,
+			UserName:      sessionUserName,
 			CreatedAt:     time.Now(),
 			ClusterID:     clusterID,
 		})
@@ -408,12 +413,7 @@ func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, k
 		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
 
-	var hostConfig string
-	if opts.IsServerlessMode() {
-		hostConfig = sshconfig.GenerateServerlessHostConfig(hostName, userName, keyPath, proxyCommand)
-	} else {
-		hostConfig = sshconfig.GenerateHostConfig(hostName, userName, keyPath, proxyCommand)
-	}
+	hostConfig := sshconfig.GenerateHostConfig(hostName, userName, keyPath, proxyCommand)
 
 	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, hostName, hostConfig, true)
 	if err != nil {
@@ -581,22 +581,15 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 
 	hostName := opts.SessionIdentifier()
 
-	hostKeyChecking := "StrictHostKeyChecking=accept-new"
-	if opts.IsServerlessMode() {
-		hostKeyChecking = "StrictHostKeyChecking=no"
-	}
-
 	sshArgs := []string{
 		"-l", userName,
 		"-i", privateKeyPath,
 		"-o", "IdentitiesOnly=yes",
-		"-o", hostKeyChecking,
+		"-o", "StrictHostKeyChecking=accept-new",
 		"-o", "ConnectTimeout=360",
 		"-o", "ProxyCommand=" + proxyCommand,
 	}
-	if opts.IsServerlessMode() {
-		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile=/dev/null")
-	} else if opts.UserKnownHostsFile != "" {
+	if opts.UserKnownHostsFile != "" {
 		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
 	}
 	sshArgs = append(sshArgs, hostName)
@@ -742,12 +735,17 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 }
 
 // resolveServerlessSession handles auto-generation and reconnection for serverless sessions.
-// It checks local state for existing sessions matching the workspace and accelerator,
+// It checks local state for existing sessions matching the workspace, accelerator, and user,
 // probes them to see if they're still alive, and prompts the user to reconnect or create new.
-func resolveServerlessSession(ctx context.Context, client *databricks.WorkspaceClient, opts *ClientOptions) error {
+func (opts *ClientOptions) resolveServerlessSession(ctx context.Context, client *databricks.WorkspaceClient) error {
 	version := build.GetInfo().Version
 
-	matching, err := sessions.FindMatching(ctx, client.Config.Host, opts.Accelerator)
+	me, err := client.CurrentUser.Me(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get current user: %w", err)
+	}
+
+	matching, err := sessions.FindMatching(ctx, client.Config.Host, opts.Accelerator, me.UserName)
 	if err != nil {
 		log.Warnf(ctx, "Failed to load session state: %v", err)
 	}
@@ -763,8 +761,12 @@ func resolveServerlessSession(ctx context.Context, client *databricks.WorkspaceC
 		_, _, _, probeErr := getServerMetadata(ctx, client, s.Name, s.ClusterID, version, opts.Liteswap)
 		if probeErr == nil {
 			alive = append(alive, s)
-		} else {
+		} else if errors.Is(probeErr, errServerMetadata) {
+			// Only clean up when the server is definitively gone (metadata endpoint returns not-found).
+			// Transient errors (network, auth) should not trigger cleanup.
 			cleanupStaleSession(ctx, client, s, version)
+		} else {
+			log.Warnf(ctx, "Transient error probing session %s, skipping: %v", s.Name, probeErr)
 		}
 	}
 
@@ -790,7 +792,7 @@ func resolveServerlessSession(ctx context.Context, client *databricks.WorkspaceC
 	}
 
 	// No alive session selected — generate a new name.
-	opts.ConnectionName = sessions.GenerateSessionName(opts.Accelerator)
+	opts.ConnectionName = sessions.GenerateSessionName(opts.Accelerator, client.Config.Host)
 	cmdio.LogString(ctx, "Creating new session: "+opts.ConnectionName)
 	return nil
 }

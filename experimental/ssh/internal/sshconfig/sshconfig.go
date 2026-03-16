@@ -214,30 +214,13 @@ func RemoveHostConfig(ctx context.Context, hostName string) error {
 
 // GenerateHostConfig generates an SSH host config block.
 func GenerateHostConfig(hostName, userName, identityFile, proxyCommand string) string {
-	return generateHostConfig(hostName, userName, identityFile, proxyCommand, false)
-}
-
-// GenerateServerlessHostConfig generates an SSH host config block for serverless compute.
-// It disables strict host key checking since serverless containers generate fresh keys each time,
-// and identity is already verified through Databricks authentication and Driver Proxy.
-func GenerateServerlessHostConfig(hostName, userName, identityFile, proxyCommand string) string {
-	return generateHostConfig(hostName, userName, identityFile, proxyCommand, true)
-}
-
-func generateHostConfig(hostName, userName, identityFile, proxyCommand string, serverless bool) string {
-	hostKeyChecking := "StrictHostKeyChecking accept-new"
-	knownHostsLine := ""
-	if serverless {
-		hostKeyChecking = "StrictHostKeyChecking no"
-		knownHostsLine = "    UserKnownHostsFile /dev/null\n"
-	}
 	return fmt.Sprintf(`
 Host %s
     User %s
     ConnectTimeout 360
-    %s
-%s    IdentitiesOnly yes
+    StrictHostKeyChecking accept-new
+    IdentitiesOnly yes
     IdentityFile %q
     ProxyCommand %s
-`, hostName, userName, hostKeyChecking, knownHostsLine, identityFile, proxyCommand)
+`, hostName, userName, identityFile, proxyCommand)
 }
