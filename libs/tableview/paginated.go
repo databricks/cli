@@ -395,26 +395,33 @@ func (m *paginatedModel) scheduleSearchDebounce() tea.Cmd {
 	})
 }
 
+// restorePreSearchState restores the original (pre-search) data and resets
+// loading so that maybeFetch is unblocked. Safe to call even when there is
+// no saved search state.
+func (m *paginatedModel) restorePreSearchState() {
+	if m.hasSearchState {
+		m.fetchGeneration++
+		m.rows = m.savedRows
+		m.rowIter = m.savedIter
+		m.exhausted = m.savedExhaust
+		m.hasSearchState = false
+		m.savedRows = nil
+		m.savedIter = nil
+		m.savedExhaust = false
+	}
+	m.loading = false
+	m.cursor = 0
+	if m.ready {
+		m.viewport.SetContent(m.renderContent())
+		m.viewport.GotoTop()
+	}
+}
+
 // executeSearch triggers a server-side search for the given query.
 // If query is empty, it restores the original (pre-search) state.
 func (m paginatedModel) executeSearch(query string) (tea.Model, tea.Cmd) {
 	if query == "" {
-		if m.hasSearchState {
-			m.fetchGeneration++
-			m.rows = m.savedRows
-			m.rowIter = m.savedIter
-			m.exhausted = m.savedExhaust
-			m.loading = false
-			m.hasSearchState = false
-			m.savedRows = nil
-			m.savedIter = nil
-			m.savedExhaust = false
-			m.cursor = 0
-			if m.ready {
-				m.viewport.SetContent(m.renderContent())
-				m.viewport.GotoTop()
-			}
-		}
+		m.restorePreSearchState()
 		return m, nil
 	}
 
@@ -445,22 +452,7 @@ func (m paginatedModel) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.searching = false
 		m.searchInput = ""
 		m.viewport.Height++
-		if m.hasSearchState {
-			m.fetchGeneration++
-			m.rows = m.savedRows
-			m.rowIter = m.savedIter
-			m.exhausted = m.savedExhaust
-			m.loading = false
-			m.hasSearchState = false
-			m.savedRows = nil
-			m.savedIter = nil
-			m.savedExhaust = false
-			m.cursor = 0
-			if m.ready {
-				m.viewport.SetContent(m.renderContent())
-				m.viewport.GotoTop()
-			}
-		}
+		m.restorePreSearchState()
 		return m, nil
 	case "backspace":
 		if len(m.searchInput) > 0 {
