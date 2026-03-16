@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -485,7 +486,7 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 		}, nil
 	}
 
-	introspectToken = func(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
+	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
 		assert.Equal(t, "https://workspace.example.com", host)
 		assert.Equal(t, "test-token", accessToken)
 		return nil, errors.New("introspection failed")
@@ -535,7 +536,7 @@ func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
 		}, nil
 	}
 
-	introspectToken = func(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
+	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
 		return &auth.IntrospectionResult{
 			AccountID:   "new-account-id",
 			WorkspaceID: "12345",
@@ -599,7 +600,7 @@ func TestDiscoveryLogin_NoWarningWhenAccountIDsMatch(t *testing.T) {
 		}, nil
 	}
 
-	introspectToken = func(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
+	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
 		return &auth.IntrospectionResult{
 			AccountID:   "same-account-id",
 			WorkspaceID: "12345",
@@ -646,4 +647,239 @@ func TestDiscoveryLogin_EmptyDiscoveredHostReturnsError(t *testing.T) {
 	err := discoveryLogin(ctx, "DISCOVERY", time.Second, "", nil, func(string) error { return nil })
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no workspace host was discovered")
+}
+
+func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	originalIntrospectToken := introspectToken
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+		introspectToken = originalIntrospectToken
+	})
+
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+		if err != nil {
+			return nil, err
+		}
+		arg.SetDiscoveredHost("https://workspace.example.com")
+		return arg, nil
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
+		return nil, errors.New("introspection failed")
+	}
+
+	existingProfile := &profile.Profile{
+		Name:   "DISCOVERY",
+		Host:   "https://old-workspace.example.com",
+		Scopes: "sql,clusters",
+	}
+
+	// No --scopes flag (empty string), should fall back to existing profile scopes.
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "https://workspace.example.com", savedProfile.Host)
+	assert.Equal(t, "sql,clusters", savedProfile.Scopes)
+}
+
+func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	originalIntrospectToken := introspectToken
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+		introspectToken = originalIntrospectToken
+	})
+
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+		if err != nil {
+			return nil, err
+		}
+		arg.SetDiscoveredHost("https://workspace.example.com")
+		return arg, nil
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
+		return nil, errors.New("introspection failed")
+	}
+
+	existingProfile := &profile.Profile{
+		Name:   "DISCOVERY",
+		Host:   "https://old-workspace.example.com",
+		Scopes: "sql,clusters",
+	}
+
+	// Explicit --scopes flag should override existing profile scopes.
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "all-apis", existingProfile, func(string) error { return nil })
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "all-apis", savedProfile.Scopes)
+}
+
+func TestDiscoveryLogin_ClearsStaleRoutingFieldsFromUnifiedProfile(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+
+	// Pre-populate a profile that looks like an older hostless/unified login.
+	initialConfig := `[DISCOVERY]
+host = https://old-unified.databricks.com
+account_id = old-account
+workspace_id = 999999
+experimental_is_unified_host = true
+auth_type = databricks-cli
+`
+	err := os.WriteFile(configPath, []byte(initialConfig), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	originalIntrospectToken := introspectToken
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+		introspectToken = originalIntrospectToken
+	})
+
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+		if err != nil {
+			return nil, err
+		}
+		arg.SetDiscoveredHost("https://new-workspace.example.com")
+		return arg, nil
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	// Introspection fails, so workspace_id should be cleared (not left stale).
+	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
+		return nil, errors.New("introspection unavailable")
+	}
+
+	existingProfile := &profile.Profile{
+		Name:          "DISCOVERY",
+		Host:          "https://old-unified.databricks.com",
+		AccountID:     "old-account",
+		WorkspaceID:   "999999",
+		IsUnifiedHost: true,
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "https://new-workspace.example.com", savedProfile.Host)
+	// Stale routing fields must be cleared.
+	assert.Empty(t, savedProfile.AccountID, "stale account_id should be cleared")
+	assert.Empty(t, savedProfile.WorkspaceID, "stale workspace_id should be cleared on introspection failure")
+	assert.False(t, savedProfile.IsUnifiedHost, "stale experimental_is_unified_host should be cleared")
+}
+
+func TestDiscoveryLogin_IntrospectionWritesFreshWorkspaceID(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+
+	// Pre-populate with stale workspace_id.
+	initialConfig := `[DISCOVERY]
+host = https://old.example.com
+workspace_id = 111111
+auth_type = databricks-cli
+`
+	err := os.WriteFile(configPath, []byte(initialConfig), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
+	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
+	originalIntrospectToken := introspectToken
+	t.Cleanup(func() {
+		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
+		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
+		introspectToken = originalIntrospectToken
+	})
+
+	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
+		if err != nil {
+			return nil, err
+		}
+		arg.SetDiscoveredHost("https://new-workspace.example.com")
+		return arg, nil
+	}
+
+	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+		return &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		}, nil
+	}
+
+	// Introspection succeeds with a fresh workspace_id.
+	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
+		return &auth.IntrospectionResult{
+			AccountID:   "fresh-account",
+			WorkspaceID: "222222",
+		}, nil
+	}
+
+	existingProfile := &profile.Profile{
+		Name:        "DISCOVERY",
+		Host:        "https://old.example.com",
+		WorkspaceID: "111111",
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "https://new-workspace.example.com", savedProfile.Host)
+	assert.Equal(t, "222222", savedProfile.WorkspaceID, "workspace_id should be updated to fresh introspection value")
 }

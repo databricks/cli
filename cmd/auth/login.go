@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"runtime"
 	"strings"
 	"time"
@@ -49,6 +50,15 @@ const (
 	authTypeDatabricksCLI   = "databricks-cli"
 	discoveryFallbackTip    = "\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>"
 )
+
+// discoveryErr wraps an error (or creates a new one) and appends the
+// discovery fallback tip so users know they can bypass login.databricks.com.
+func discoveryErr(msg string, err error) error {
+	if err != nil {
+		return fmt.Errorf("%s: %w%s", msg, err, discoveryFallbackTip)
+	}
+	return fmt.Errorf("%s%s", msg, discoveryFallbackTip)
+}
 
 type discoveryPersistentAuth interface {
 	Challenge() error
@@ -487,10 +497,13 @@ func openURLSuppressingStderr(url string) error {
 func discoveryLogin(ctx context.Context, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
 	arg, err := newDiscoveryOAuthArgument(profileName)
 	if err != nil {
-		return fmt.Errorf("setting up login.databricks.com: %w"+discoveryFallbackTip, err)
+		return discoveryErr("setting up login.databricks.com", err)
 	}
 
 	scopesList := splitScopes(scopes)
+	if len(scopesList) == 0 && existingProfile != nil && existingProfile.Scopes != "" {
+		scopesList = splitScopes(existingProfile.Scopes)
+	}
 
 	opts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(arg),
@@ -507,18 +520,18 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 
 	persistentAuth, err := newDiscoveryPersistentAuth(ctx, opts...)
 	if err != nil {
-		return fmt.Errorf("setting up login.databricks.com: %w"+discoveryFallbackTip, err)
+		return discoveryErr("setting up login.databricks.com", err)
 	}
 	defer persistentAuth.Close()
 
 	cmdio.LogString(ctx, "Opening login.databricks.com in your browser...")
 	if err := persistentAuth.Challenge(); err != nil {
-		return fmt.Errorf("login via login.databricks.com failed: %w"+discoveryFallbackTip, err)
+		return discoveryErr("login via login.databricks.com failed", err)
 	}
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {
-		return errors.New("login succeeded but no workspace host was discovered" + discoveryFallbackTip)
+		return discoveryErr("login succeeded but no workspace host was discovered", nil)
 	}
 
 	// Get the token for introspection
@@ -527,9 +540,15 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 		return fmt.Errorf("retrieving token after login: %w", err)
 	}
 
-	// Best-effort introspection for metadata
+	// Best-effort introspection for metadata. Use a dedicated HTTP client
+	// (not http.DefaultClient) so corporate proxy and custom CA settings
+	// from the default transport are inherited without sharing global state.
+	httpClient := &http.Client{}
+	if t, ok := http.DefaultTransport.(*http.Transport); ok {
+		httpClient.Transport = t.Clone()
+	}
 	var workspaceID string
-	introspection, err := introspectToken(ctx, discoveredHost, tok.AccessToken)
+	introspection, err := introspectToken(ctx, discoveredHost, tok.AccessToken, httpClient)
 	if err != nil {
 		log.Debugf(ctx, "token introspection failed (non-fatal): %v", err)
 	} else {
@@ -547,6 +566,18 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 	}
 
 	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	clearKeys := oauthLoginClearKeys()
+	// Clear stale routing fields that may exist from a previous login to a
+	// different host type. Discovery always produces a workspace-level profile.
+	// workspace_id is cleared and re-written only if introspection returned a
+	// fresh value, preventing stale IDs from surviving failed introspection.
+	clearKeys = append(clearKeys,
+		"account_id",
+		"workspace_id",
+		"experimental_is_unified_host",
+		"cluster_id",
+		"serverless_compute_id",
+	)
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     profileName,
 		Host:        discoveredHost,
@@ -554,7 +585,7 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 		WorkspaceID: workspaceID,
 		Scopes:      scopesList,
 		ConfigFile:  configFile,
-	}, oauthLoginClearKeys()...)
+	}, clearKeys...)
 	if err != nil {
 		if configFile != "" {
 			return fmt.Errorf("saving profile %q to %s: %w", profileName, configFile, err)
