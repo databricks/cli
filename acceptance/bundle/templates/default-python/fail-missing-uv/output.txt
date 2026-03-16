@@ -1,5 +1,5 @@
 
->>> [CLI] bundle init default-python --config-file ./input.json --output-dir output
+>>> [CLI] bundle init default-python --config-file ./input.json --output-dir tmp
 Welcome to the default Python template for Declarative Automation Bundles!
 
 Answer the following questions to customize your project.
