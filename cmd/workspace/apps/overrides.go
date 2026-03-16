@@ -19,20 +19,24 @@ func listOverride(listCmd *cobra.Command, listReq *apps.ListAppsRequest) {
 
 	columns := []tableview.ColumnDef{
 		{Header: "Name", Extract: func(v any) string {
-			return v.(apps.App).Name
+			a := v.(apps.App)
+			return a.Name
 		}},
 		{Header: "URL", Extract: func(v any) string {
-			return v.(apps.App).Url
+			a := v.(apps.App)
+			return a.Url
 		}},
 		{Header: "Compute Status", Extract: func(v any) string {
-			if v.(apps.App).ComputeStatus != nil {
-				return string(v.(apps.App).ComputeStatus.State)
+			a := v.(apps.App)
+			if a.ComputeStatus != nil {
+				return string(a.ComputeStatus.State)
 			}
 			return ""
 		}},
 		{Header: "Deploy Status", Extract: func(v any) string {
-			if v.(apps.App).ActiveDeployment != nil && v.(apps.App).ActiveDeployment.Status != nil {
-				return string(v.(apps.App).ActiveDeployment.Status.State)
+			a := v.(apps.App)
+			if a.ActiveDeployment != nil && a.ActiveDeployment.Status != nil {
+				return string(a.ActiveDeployment.Status.State)
 			}
 			return ""
 		}},
