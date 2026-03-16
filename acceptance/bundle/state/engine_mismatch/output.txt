@@ -9,9 +9,19 @@ Available state files:
 
 [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
 
-=== Env var mismatch with state: no warning expected
+=== Env var confirms config, both mismatch state: warning expected
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle debug states
+Warning: Deployment engine "direct" configured in DATABRICKS_BUNDLE_ENGINE environment variable does not match the existing state (engine "terraform"). Using "terraform" engine from the existing state.
+
+Available state files:
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
+
+[TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
+
+=== Env var overrides config to match state: no warning expected
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle debug states
 [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
 
 === Invalid env var: error expected

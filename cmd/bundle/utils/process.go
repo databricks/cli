@@ -300,19 +300,19 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 }
 
 // ResolveEngineSetting combines the env var engine with the bundle config engine setting.
-// Environment variable takes priority over config.
+// Environment variable takes priority over config. ConfigType always reflects the config value.
 func ResolveEngineSetting(b *bundle.Bundle, envSetting engine.EngineSetting) engine.EngineSetting {
-	if envSetting.Type != engine.EngineNotSet {
-		return envSetting
-	}
 	configEngine := b.Config.Bundle.Engine
+	if envSetting.Type != engine.EngineNotSet {
+		return engine.EngineSetting{Type: envSetting.Type, Source: envSetting.Source, ConfigType: configEngine}
+	}
 	if configEngine != engine.EngineNotSet {
 		source := "bundle.engine setting"
 		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
 		if locs := v.Locations(); len(locs) > 0 {
 			source = fmt.Sprintf("bundle.engine setting at %s", locs[0])
 		}
-		return engine.EngineSetting{Type: configEngine, Source: source}
+		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}
 	}
 	return engine.EngineSetting{}
 }
