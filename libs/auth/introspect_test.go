@@ -82,3 +82,31 @@ func TestIntrospectToken_VerifyRequestDetails(t *testing.T) {
 	_, err := IntrospectToken(t.Context(), server.URL, "my-secret-token", nil)
 	require.NoError(t, err)
 }
+
+// roundTripFunc adapts a function into an http.RoundTripper.
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestIntrospectToken_UsesSuppliedHTTPClient(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"principal_context":{"authentication_scope":{"account_id":"x","workspace_id":1}}}`))
+	}))
+	defer server.Close()
+
+	var transportUsed bool
+	customClient := &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			transportUsed = true
+			return http.DefaultTransport.RoundTrip(req)
+		}),
+	}
+
+	result, err := IntrospectToken(t.Context(), server.URL, "test-token", customClient)
+	require.NoError(t, err)
+	assert.True(t, transportUsed, "expected IntrospectToken to use the supplied HTTP client")
+	assert.Equal(t, "x", result.AccountID)
+}

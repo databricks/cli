@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -540,13 +541,15 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 		return fmt.Errorf("retrieving token after login: %w", err)
 	}
 
-	// Best-effort introspection for metadata. Use a dedicated HTTP client
-	// (not http.DefaultClient) so corporate proxy and custom CA settings
-	// from the default transport are inherited without sharing global state.
-	httpClient := &http.Client{}
-	if t, ok := http.DefaultTransport.(*http.Transport); ok {
-		httpClient.Transport = t.Clone()
+	// Best-effort introspection for metadata. Build the HTTP client from a
+	// resolved SDK config so that TLS settings (InsecureSkipVerify, custom
+	// transport) from environment variables are respected.
+	introspectCfg := &config.Config{
+		Host:  discoveredHost,
+		Token: tok.AccessToken,
 	}
+	_ = introspectCfg.EnsureResolved()
+	httpClient := httpClientFromConfig(introspectCfg)
 	var workspaceID string
 	introspection, err := introspectToken(ctx, discoveredHost, tok.AccessToken, httpClient)
 	if err != nil {
@@ -656,4 +659,19 @@ func getBrowserFunc(cmd *cobra.Command) func(url string) error {
 			return cmd.Wait()
 		}
 	}
+}
+
+// httpClientFromConfig builds an *http.Client that respects the TLS settings
+// from a resolved SDK config. This picks up InsecureSkipVerify from environment
+// variables and any custom transport set on the config.
+func httpClientFromConfig(cfg *config.Config) *http.Client {
+	c := &http.Client{}
+	if t, ok := cfg.HTTPTransport.(*http.Transport); ok && t != nil {
+		c.Transport = t.Clone()
+	} else if cfg.InsecureSkipVerify {
+		c.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
+		}
+	}
+	return c
 }
