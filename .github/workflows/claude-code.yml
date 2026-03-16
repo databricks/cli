@@ -45,7 +45,7 @@ jobs:
     steps:
       - name: Generate GitHub App token
         id: token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
         with:
           app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
           private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
@@ -86,6 +86,9 @@ jobs:
         (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@claude')) ||
         (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
       )
+    concurrency:
+      group: claude-assist-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: true
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -97,7 +100,7 @@ jobs:
     steps:
       - name: Generate GitHub App token
         id: token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
         with:
           app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
           private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
@@ -130,7 +133,7 @@ jobs:
 
       - name: Trigger Claude Code assist
         if: steps.fork-check.outputs.is_fork != 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           github-token: ${{ steps.token.outputs.token }}
           script: |
@@ -140,13 +143,14 @@ jobs:
               workflow_id: 'cli-claude-code.yml',
               ref: 'main',
               inputs: {
-                pull_request_number: '${{ steps.pr.outputs.number }}',
+                pull_request_number: process.env.PR_NUMBER,
                 event_type: 'assist',
                 comment_body: process.env.COMMENT_BODY
               }
             });
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
 
       - name: Track remote run
         if: steps.fork-check.outputs.is_fork != 'true'
