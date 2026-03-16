@@ -31,7 +31,10 @@ type IntrospectionResult struct {
 // account_id and workspace_id for the given access token. Returns an error
 // if the request fails or the response cannot be parsed. Callers should treat
 // errors as non-fatal (best-effort metadata enrichment).
-func IntrospectToken(ctx context.Context, host, accessToken string) (*IntrospectionResult, error) {
+func IntrospectToken(ctx context.Context, host, accessToken string, httpClient *http.Client) (*IntrospectionResult, error) {
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
 	endpoint := strings.TrimSuffix(host, "/") + "/api/2.0/tokens/introspect"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -39,7 +42,7 @@ func IntrospectToken(ctx context.Context, host, accessToken string) (*Introspect
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("calling introspection endpoint: %w", err)
 	}

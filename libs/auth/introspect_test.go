@@ -23,7 +23,7 @@ func TestIntrospectToken_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	result, err := IntrospectToken(t.Context(), server.URL, "test-token")
+	result, err := IntrospectToken(t.Context(), server.URL, "test-token", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "a1b1c234-5678-90ab-cdef-1234567890ab", result.AccountID)
 	assert.Equal(t, "2548836972759138", result.WorkspaceID)
@@ -43,7 +43,7 @@ func TestIntrospectToken_ZeroWorkspaceID(t *testing.T) {
 	}))
 	defer server.Close()
 
-	result, err := IntrospectToken(t.Context(), server.URL, "test-token")
+	result, err := IntrospectToken(t.Context(), server.URL, "test-token", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "abc-123", result.AccountID)
 	assert.Empty(t, result.WorkspaceID)
@@ -55,7 +55,7 @@ func TestIntrospectToken_HTTPError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := IntrospectToken(t.Context(), server.URL, "test-token")
+	_, err := IntrospectToken(t.Context(), server.URL, "test-token", nil)
 	assert.ErrorContains(t, err, "status 403")
 }
 
@@ -66,7 +66,7 @@ func TestIntrospectToken_MalformedJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := IntrospectToken(t.Context(), server.URL, "test-token")
+	_, err := IntrospectToken(t.Context(), server.URL, "test-token", nil)
 	assert.ErrorContains(t, err, "decoding introspection response")
 }
 
@@ -79,6 +79,6 @@ func TestIntrospectToken_VerifyRequestDetails(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := IntrospectToken(t.Context(), server.URL, "my-secret-token")
+	_, err := IntrospectToken(t.Context(), server.URL, "my-secret-token", nil)
 	require.NoError(t, err)
 }
