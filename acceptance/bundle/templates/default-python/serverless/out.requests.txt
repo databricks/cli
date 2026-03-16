@@ -1,0 +1,32 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/deployment.json"
+}

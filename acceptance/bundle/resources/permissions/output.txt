@@ -279,27 +279,8 @@ DIFF  jobs/update/out.requests_delete_all.direct.json
 +    "path": "/api/2.0/permissions/jobs/[JOB_WITH_PERMISSIONS_ID]"
 +  }
 +]
-DIFF  jobs/update/out.requests_destroy.direct.json
---- jobs/update/out.requests_destroy.direct.json
-+++ jobs/update/out.requests_destroy.terraform.json
-@@ -1,4 +1,16 @@
- [
-+  {
-+    "body": {
-+      "access_control_list": [
-+        {
-+          "permission_level": "IS_OWNER",
-+          "user_name": "[USERNAME]"
-+        }
-+      ]
-+    },
-+    "method": "PUT",
-+    "path": "/api/2.0/permissions/jobs/[JOB_WITH_PERMISSIONS_ID]"
-+  },
-   {
-     "body": {
-       "job_id": "[JOB_WITH_PERMISSIONS_ID]"
-EXACT jobs/update/out.requests_set_empty.direct.json
+ERROR jobs/update/out.requests_destroy.direct.json: Missing terraform file jobs/update/out.requests_destroy.terraform.json
+ERROR jobs/update/out.requests_set_empty.direct.json: Missing terraform file jobs/update/out.requests_set_empty.terraform.json
 MATCH jobs/viewers/out.requests.deploy.direct.json
 DIFF  jobs/viewers/out.requests.destroy.direct.json
 --- jobs/viewers/out.requests.destroy.direct.json
