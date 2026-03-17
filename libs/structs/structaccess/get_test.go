@@ -690,8 +690,9 @@ func TestGet_PointerToStructWithZeroValues(t *testing.T) {
 		NestedNoOmit: &NestedStruct{ID: 0, Name: "", Count: 0},
 	}
 
-	// The pointer was explicitly set, so it should return the struct even with zero values
-	testGet(t, obj, "nested_omit", &NestedStruct{ID: 0, Name: "", Count: 0})
+	// The pointer was explicitly set; it should return the dereferenced struct (not nil).
+	// JSON omitempty only omits nil pointers, not pointers to zero values.
+	testGet(t, obj, "nested_omit", NestedStruct{ID: 0, Name: "", Count: 0})
 	testGet(t, obj, "nested_omit.id", int64(0))
 	testGet(t, obj, "nested_omit.name", "")
 	testGet(t, obj, "nested_omit.count", 0)
@@ -725,7 +726,7 @@ func TestGetJobSettings(t *testing.T) {
 		},
 	}
 
-	testGet(t, &jobSettings, "tasks[0].run_job_task", &jobs.RunJobTask{})
+	testGet(t, &jobSettings, "tasks[0].run_job_task", jobs.RunJobTask{})
 	testGet(t, &jobSettings, "tasks[0].run_job_task.job_id", int64(0))
 }
 

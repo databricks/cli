@@ -177,8 +177,8 @@ func TestSet(t *testing.T) {
 			expectedChanges: []structdiff.Change{
 				{
 					Path: structpath.MustParsePath("count"),
-					Old:  nil, // structdiff reports this as interface{}(nil)
-					New:  intPtr(42),
+					Old:  nil,
+					New:  42, // diffValues dereferences non-nil pointers when the other side is nil/omitted
 				},
 			},
 		},
@@ -492,10 +492,6 @@ func TestSet(t *testing.T) {
 			assert.Equal(t, tt.expectedChanges, changes)
 		})
 	}
-}
-
-func intPtr(i int) *int {
-	return &i
 }
 
 // testSet sets a value and gets it back, asserting they're equal (roundtrip)
