@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -213,10 +214,11 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			continue
 		}
 
-		if fieldName == "" {
+		isEmbed := sf.Name == structaccess.EmbeddedSliceFieldName
+
+		if fieldName == "" || isEmbed {
 			fieldName = sf.Name
 		}
-		node := structpath.NewDotString(path, fieldName)
 
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
@@ -237,6 +239,14 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 					}
 				}
 			}
+		}
+
+		// EmbeddedSlice: diff at parent path level without adding field name.
+		var node *structpath.PathNode
+		if isEmbed {
+			node = path
+		} else {
+			node = structpath.NewDotString(path, fieldName)
 		}
 
 		if err := diffValues(ctx, node, v1Field, v2Field, changes); err != nil {

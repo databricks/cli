@@ -10,6 +10,7 @@
 
 ### Bundles
 * engine/direct: Fix permanent drift on experiment name field ([#4627](https://github.com/databricks/cli/pull/4627))
+* engine/direct: Fix permissions state path to match input config schema ([#4703](https://github.com/databricks/cli/pull/4703))
 
 ### Dependency updates
 
