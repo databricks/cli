@@ -12,7 +12,18 @@ has_manage_run() {
 }
 
 title "After first deploy"
-trace has_manage_run
+trace has_manage_run > out.after_first_deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+# This is flaky on direct, because there are (at least) two ways to complete deployment:
+# sequence 1:
+#  job is deployed
+#  job permissions are deployed
+#  app is deployed
+# sequence 2:
+#  job is deployed
+#  app is deployed, updates job permissions
+#  job permissions are deployed
+# (It does not appear flaky on TF, maybe there is enough delay in one of the resources)
+rm -f out.after_first_deploy.direct.txt
 
 title "After second deploy"
 trace $CLI bundle deploy

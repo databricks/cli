@@ -173,10 +173,10 @@ func newDelete() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No TOKEN_ID argument specified. Loading names for Tokens drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No TOKEN_ID argument specified. Loading names for Tokens drop-down.")
 				names, err := w.Tokens.PublicTokenInfoCommentToTokenIdMap(ctx)
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Tokens drop-down. Please manually specify required arguments. Original error: %w", err)
 				}

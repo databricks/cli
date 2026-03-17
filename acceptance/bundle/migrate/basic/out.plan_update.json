@@ -2,7 +2,7 @@
   "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
-  "serial": 7,
+  "serial": 8,
   "plan": {
     "resources.jobs.test_job": {
       "action": "update",
@@ -170,6 +170,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS][1],
         "libraries": [

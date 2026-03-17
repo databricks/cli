@@ -27,9 +27,12 @@ type DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig struct {
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource struct {
-	EntityColumns    []string `json:"entity_columns"`
-	FullName         string   `json:"full_name"`
-	TimeseriesColumn string   `json:"timeseries_column"`
+	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
+	EntityColumns     []string `json:"entity_columns"`
+	FilterCondition   string   `json:"filter_condition,omitempty"`
+	FullName          string   `json:"full_name"`
+	TimeseriesColumn  string   `json:"timeseries_column"`
+	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceEntityColumnIdentifiers struct {

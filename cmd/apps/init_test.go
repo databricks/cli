@@ -500,6 +500,102 @@ func TestParseSetValues(t *testing.T) {
 	}
 }
 
+func TestParseSetValuesBundleIgnoreSkipped(t *testing.T) {
+	m := &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"lakebase": {
+				Name: "lakebase",
+				Resources: manifest.Resources{
+					Required: []manifest.Resource{
+						{
+							Type:        "postgres",
+							Alias:       "Postgres",
+							ResourceKey: "postgres",
+							Fields: map[string]manifest.ResourceField{
+								"branch":       {Description: "branch path"},
+								"database":     {Description: "database name"},
+								"endpointPath": {Env: "LAKEBASE_ENDPOINT", BundleIgnore: true},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	rv, err := parseSetValues([]string{
+		"lakebase.postgres.branch=projects/p1/branches/main",
+		"lakebase.postgres.database=mydb",
+	}, m)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"postgres.branch":   "projects/p1/branches/main",
+		"postgres.database": "mydb",
+	}, rv)
+
+	// Setting only one non-bundleIgnore field should still fail.
+	_, err = parseSetValues([]string{"lakebase.postgres.branch=br"}, m)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `incomplete resource "postgres"`)
+
+	// bundleIgnore field can still be set explicitly via --set.
+	rv, err = parseSetValues([]string{
+		"lakebase.postgres.branch=br",
+		"lakebase.postgres.database=db",
+		"lakebase.postgres.endpointPath=ep",
+	}, m)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"postgres.branch":       "br",
+		"postgres.database":     "db",
+		"postgres.endpointPath": "ep",
+	}, rv)
+}
+
+func TestParseSetValuesLocalOnlySkipped(t *testing.T) {
+	m := &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"lakebase": {
+				Name: "lakebase",
+				Resources: manifest.Resources{
+					Required: []manifest.Resource{
+						{
+							Type:        "postgres",
+							Alias:       "Postgres",
+							ResourceKey: "postgres",
+							Fields: map[string]manifest.ResourceField{
+								"branch":       {Description: "branch path"},
+								"database":     {Description: "database name"},
+								"host":         {Env: "PGHOST", LocalOnly: true, Resolve: "postgres:host"},
+								"databaseName": {Env: "PGDATABASE", LocalOnly: true, Resolve: "postgres:databaseName"},
+								"endpointPath": {Env: "LAKEBASE_ENDPOINT", BundleIgnore: true, Resolve: "postgres:endpointPath"},
+								"port":         {Env: "PGPORT", LocalOnly: true, Value: "5432"},
+								"sslmode":      {Env: "PGSSLMODE", LocalOnly: true, Value: "require"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Setting only branch+database should succeed — localOnly and bundleIgnore fields are exempt.
+	rv, err := parseSetValues([]string{
+		"lakebase.postgres.branch=projects/p1/branches/main",
+		"lakebase.postgres.database=mydb",
+	}, m)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"postgres.branch":   "projects/p1/branches/main",
+		"postgres.database": "mydb",
+	}, rv)
+
+	// Setting only branch should still fail (database is also required).
+	_, err = parseSetValues([]string{"lakebase.postgres.branch=br"}, m)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `incomplete resource "postgres"`)
+}
+
 func TestPluginHasResourceField(t *testing.T) {
 	m := testManifest()
 	p := m.GetPluginByName("analytics")

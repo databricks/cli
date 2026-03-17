@@ -23,7 +23,7 @@ func newInstallCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			shell, err := libcompletion.DetectShell(shellFlag)
+			shell, err := libcompletion.DetectShell(ctx, shellFlag)
 			if err != nil {
 				return err
 			}
@@ -37,7 +37,7 @@ func newInstallCmd() *cobra.Command {
 			displayPath := filepath.ToSlash(filePath)
 
 			// Check if already installed — no confirmation needed.
-			result, err := libcompletion.Status(shell, home)
+			result, err := libcompletion.Status(ctx, shell, home)
 			if err != nil {
 				return err
 			}
@@ -78,7 +78,7 @@ func newInstallCmd() *cobra.Command {
 				}
 			}
 
-			_, alreadyInstalled, err := libcompletion.Install(shell, home)
+			_, alreadyInstalled, err := libcompletion.Install(ctx, shell, home)
 			if err != nil {
 				return err
 			}

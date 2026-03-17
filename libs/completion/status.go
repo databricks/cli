@@ -1,6 +1,7 @@
 package completion
 
 import (
+	"context"
 	"os"
 	"strings"
 )
@@ -13,7 +14,7 @@ type StatusResult struct {
 }
 
 // Status checks whether shell completion is currently available.
-func Status(shell Shell, homeDir string) (*StatusResult, error) {
+func Status(ctx context.Context, shell Shell, homeDir string) (*StatusResult, error) {
 	filePath := TargetFilePath(shell, homeDir)
 	result := &StatusResult{FilePath: filePath}
 
@@ -37,7 +38,7 @@ func Status(shell Shell, homeDir string) (*StatusResult, error) {
 
 	// For zsh: check Homebrew completions.
 	if shell == Zsh {
-		if p := homebrewCompletionPath(); p != "" {
+		if p := homebrewCompletionPath(ctx); p != "" {
 			if _, err := os.Stat(p); err == nil {
 				result.Installed = true
 				result.Method = "homebrew"

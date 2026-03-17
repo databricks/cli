@@ -76,6 +76,11 @@ func (m *MockApiClient) GetUnifiedOAuthEndpoints(ctx context.Context, host, acco
 	}, nil
 }
 
+// GetEndpointsFromURL implements u2m.OAuthEndpointSupplier.
+func (m *MockApiClient) GetEndpointsFromURL(_ context.Context, _ string) (*u2m.OAuthAuthorizationServer, error) {
+	return nil, u2m.ErrOAuthNotSupported
+}
+
 var _ u2m.OAuthEndpointSupplier = (*MockApiClient)(nil)
 
 func TestToken_loadToken(t *testing.T) {
@@ -281,6 +286,22 @@ func TestToken_loadToken(t *testing.T) {
 			name: "succeeds with host",
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{Host: "https://accounts.cloud.databricks.com", AccountID: "active"},
+				profileName:   "",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "host with trailing slash is stripped",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{Host: "https://accounts.cloud.databricks.com/", AccountID: "active"},
 				profileName:   "",
 				args:          []string{},
 				tokenTimeout:  1 * time.Hour,
@@ -580,6 +601,26 @@ func TestToken_loadToken(t *testing.T) {
 			name: "no args, DATABRICKS_HOST env resolves",
 			setupCtx: func(ctx context.Context) context.Context {
 				ctx = env.Set(ctx, "DATABRICKS_HOST", "https://workspace-a.cloud.databricks.com")
+				return ctx
+			},
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "no args, DATABRICKS_HOST env with trailing slash resolves",
+			setupCtx: func(ctx context.Context) context.Context {
+				ctx = env.Set(ctx, "DATABRICKS_HOST", "https://workspace-a.cloud.databricks.com/")
 				return ctx
 			},
 			args: loadTokenArgs{

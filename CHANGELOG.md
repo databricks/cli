@@ -1,5 +1,22 @@
 # Version changelog
 
+## Release v0.294.0 (2026-03-12)
+
+### Bundles
+* Modify grants to use SDK types ([#4666](https://github.com/databricks/cli/pull/4666))
+* Modify permissions to use SDK types where available. This makes DABs validate permission levels, producing a warning on the unknown ones ([#4686](https://github.com/databricks/cli/pull/4686))
+
+### Dependency updates
+* Bump databricks-sdk-go from v0.112.0 to v0.119.0 ([#4631](https://github.com/databricks/cli/pull/4631), [#4695](https://github.com/databricks/cli/pull/4695))
+
+
+## Release v0.293.0 (2026-03-12)
+
+⚠️ v0.293.0 (2026-03-12) is the same as v0.292.0 (2026-03-05) ⚠️
+
+An issue in our release pipeline caused v0.293.0 to be released off the same Git commit as v0.292.0.
+
+
 ## Release v0.292.0 (2026-03-05)
 
 ### Bundles

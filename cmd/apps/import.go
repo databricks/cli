@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/bundle/run"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -202,9 +203,10 @@ Examples:
 			}
 
 			if !quiet {
-				cmdio.LogString(ctx, fmt.Sprintf("\n✓ App '%s' has been successfully imported to %s", name, outputDir))
+				cmdio.LogString(ctx, "")
+				prompt.PrintDone(ctx, fmt.Sprintf("App '%s' imported to %s", name, outputDir))
 				if cleanup && oldSourceCodePath != "" {
-					cmdio.LogString(ctx, "✓ Previous app folder has been cleaned up")
+					prompt.PrintDone(ctx, "Previous app folder cleaned up")
 				}
 				cmdio.LogString(ctx, "\nYou can now deploy changes with: databricks bundle deploy")
 			}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -249,7 +248,7 @@ depends on the existing profiles you have set in your configuration file
 				WorkspaceID:                authArguments.WorkspaceID,
 				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 				ClusterID:                  clusterID,
-				ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
+				ConfigFile:                 env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 				ServerlessComputeID:        serverlessComputeID,
 				Scopes:                     scopesList,
 			}, clearKeys...)
@@ -302,6 +301,8 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 			authArguments.Host = hostName
 		}
 	}
+
+	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
 
 	// Determine the host type and handle account ID / workspace ID accordingly
 	cfg := &config.Config{

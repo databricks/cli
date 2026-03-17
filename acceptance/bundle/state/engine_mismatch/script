@@ -1,0 +1,16 @@
+mkdir -p .databricks/bundle/default/terraform
+echo '{"serial": 1, "lineage": "test-lineage"}' > .databricks/bundle/default/terraform/terraform.tfstate
+
+title 'Config mismatch with state: warning expected\n'
+unset DATABRICKS_BUNDLE_ENGINE
+trace $CLI bundle debug states
+
+title 'Env var confirms config, both mismatch state: warning expected\n'
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle debug states
+
+title 'Env var overrides config to match state: no warning expected\n'
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle debug states
+
+title 'Invalid env var: error expected\n'
+export DATABRICKS_BUNDLE_ENGINE=bla
+trace musterr $CLI bundle debug states

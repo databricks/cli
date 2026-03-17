@@ -22,22 +22,12 @@ const (
 	remotePlatform       = "linux"
 	pythonExtension      = "ms-python.python"
 	jupyterExtension     = "ms-toolsai.jupyter"
+	databricksExtension  = "databricks.databricks"
 	serverPickPortsKey   = "remote.SSH.serverPickPortsFromRange"
 	remotePlatformKey    = "remote.SSH.remotePlatform"
 	defaultExtensionsKey = "remote.SSH.defaultExtensions"
 	listenOnSocketKey    = "remote.SSH.remoteServerListenOnSocket"
-	vscodeIDE            = "vscode"
-	cursorIDE            = "cursor"
-	vscodeName           = "VS Code"
-	cursorName           = "Cursor"
 )
-
-func getIDEName(ide string) string {
-	if ide == cursorIDE {
-		return cursorName
-	}
-	return vscodeName
-}
 
 type missingSettings struct {
 	portRange      bool
@@ -118,7 +108,7 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 		return fmt.Errorf("failed to save settings: %w", err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Updated %s settings for '%s'", getIDEName(ide), connectionName))
+	cmdio.LogString(ctx, fmt.Sprintf("Updated %s settings for '%s'", getIDE(ide).Name, connectionName))
 	return nil
 }
 
@@ -128,10 +118,7 @@ func getDefaultSettingsPath(ctx context.Context, ide string) (string, error) {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	appName := "Code"
-	if ide == cursorIDE {
-		appName = "Cursor"
-	}
+	appName := getIDE(ide).AppName
 
 	var settingsDir string
 	switch runtime.GOOS {
@@ -192,7 +179,7 @@ func hasCorrectListenOnSocket(v hujson.Value) bool {
 }
 
 func getMissingExtensions(v hujson.Value) []string {
-	required := []string{pythonExtension, jupyterExtension}
+	required := []string{pythonExtension, jupyterExtension, databricksExtension}
 	found := v.Find(jsonPtr(defaultExtensionsKey))
 	if found == nil {
 		return required
@@ -249,7 +236,7 @@ func settingsMessage(connectionName string, missing *missingSettings) string {
 func promptUserForUpdate(ctx context.Context, ide, connectionName string, missing *missingSettings) (bool, error) {
 	question := fmt.Sprintf(
 		"The following settings will be applied to %s for '%s':\n%s\nApply these settings?",
-		getIDEName(ide), connectionName, settingsMessage(connectionName, missing))
+		getIDE(ide).Name, connectionName, settingsMessage(connectionName, missing))
 	return cmdio.AskYesOrNo(ctx, question)
 }
 
@@ -258,7 +245,7 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension},
+		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
 	}
 	shouldCreate, err := promptUserForUpdate(ctx, ide, connectionName, missing)
 	if err != nil {
@@ -286,7 +273,7 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 		return fmt.Errorf("failed to save settings: %w", err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Created %s settings at %s", getIDEName(ide), filepath.ToSlash(settingsPath)))
+	cmdio.LogString(ctx, fmt.Sprintf("Created %s settings at %s", getIDE(ide).Name, filepath.ToSlash(settingsPath)))
 	return nil
 }
 
@@ -303,11 +290,11 @@ func backupSettings(ctx context.Context, path string) error {
 	latestBak := path + ".latest.bak"
 
 	if _, err := os.Stat(originalBak); os.IsNotExist(err) {
-		cmdio.LogString(ctx, "Backing up settings to "+filepath.ToSlash(originalBak))
+		log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(originalBak))
 		return os.WriteFile(originalBak, data, 0o600)
 	}
 
-	cmdio.LogString(ctx, "Backing up settings to "+filepath.ToSlash(latestBak))
+	log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(latestBak))
 	return os.WriteFile(latestBak, data, 0o600)
 }
 
@@ -362,9 +349,9 @@ func GetManualInstructions(ide, connectionName string) string {
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension},
+		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
 	}
 	return fmt.Sprintf(
 		"To ensure the remote connection works as expected, manually add these settings to your %s settings.json:\n%s",
-		getIDEName(ide), settingsMessage(connectionName, missing))
+		getIDE(ide).Name, settingsMessage(connectionName, missing))
 }

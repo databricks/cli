@@ -20,7 +20,11 @@ func (i *inMemoryTokenCache) Lookup(key string) (*oauth2.Token, error) {
 
 // Store implements TokenCache.
 func (i *inMemoryTokenCache) Store(key string, t *oauth2.Token) error {
-	i.Tokens[key] = t
+	if t == nil {
+		delete(i.Tokens, key)
+	} else {
+		i.Tokens[key] = t
+	}
 	return nil
 }
 

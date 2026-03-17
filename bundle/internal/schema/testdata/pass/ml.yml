@@ -65,4 +65,4 @@ resources:
         - principal: abcd
           privileges:
             - SELECT
-            - INSERT
+            - MODIFY

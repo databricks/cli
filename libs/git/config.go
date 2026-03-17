@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/vfs"
 	"gopkg.in/ini.v1"
 )
@@ -25,19 +27,28 @@ import (
 //
 // Also see: https://git-scm.com/docs/git-config.
 type config struct {
-	home      string
-	variables map[string]string
+	home          string
+	xdgConfigHome string
+	variables     map[string]string
 }
 
-func newConfig() (*config, error) {
-	home, err := os.UserHomeDir() //nolint:forbidigo // no ctx available in git config loading
+func newConfig(ctx context.Context) (*config, error) {
+	home, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	xdgConfigHome := env.Get(ctx, "XDG_CONFIG_HOME")
+	if xdgConfigHome == "" {
+		// If $XDG_CONFIG_HOME is either not set or empty,
+		// $HOME/.config is used instead.
+		xdgConfigHome = filepath.Join(home, ".config")
+	}
+
 	return &config{
-		home:      home,
-		variables: make(map[string]string),
+		home:          home,
+		xdgConfigHome: xdgConfigHome,
+		variables:     make(map[string]string),
 	}, nil
 }
 
@@ -112,14 +123,7 @@ func (c config) loadFile(root vfs.Path, path string) error {
 
 func (c config) defaultCoreExcludesFile() string {
 	// Defaults to $XDG_CONFIG_HOME/git/ignore.
-	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
-	if xdgConfigHome == "" {
-		// If $XDG_CONFIG_HOME is either not set or empty,
-		// $HOME/.config/git/ignore is used instead.
-		xdgConfigHome = filepath.Join(c.home, ".config")
-	}
-
-	return filepath.Join(xdgConfigHome, "git/ignore")
+	return filepath.Join(c.xdgConfigHome, "git/ignore")
 }
 
 func (c config) coreExcludesFile() (string, error) {
@@ -139,14 +143,10 @@ func (c config) coreExcludesFile() (string, error) {
 	return path, nil
 }
 
-func globalGitConfig() (*config, error) {
-	config, err := newConfig()
+func globalGitConfig(ctx context.Context) (*config, error) {
+	config, err := newConfig(ctx)
 	if err != nil {
 		return nil, err
-	}
-	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
-	if xdgConfigHome == "" {
-		xdgConfigHome = filepath.Join(config.home, ".config")
 	}
 
 	// From https://git-scm.com/docs/git-config#FILES:
@@ -155,7 +155,7 @@ func globalGitConfig() (*config, error) {
 	// > are missing or unreadable they will be ignored.
 	//
 	// We therefore ignore the error return value for the calls below.
-	_ = config.loadFile(vfs.MustNew(xdgConfigHome), "git/config")
+	_ = config.loadFile(vfs.MustNew(config.xdgConfigHome), "git/config")
 	_ = config.loadFile(vfs.MustNew(config.home), ".gitconfig")
 
 	return config, nil

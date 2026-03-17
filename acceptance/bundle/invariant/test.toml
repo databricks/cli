@@ -1,13 +1,16 @@
 Local = true
 Cloud = true
 RequiresUnityCatalog = true
+Timeout = '10m'
 
 Ignore = [
     ".databricks",
+    ".venv",
     "databricks.yml",
     "plan.json",
     "*.py",
     "*.json",
+    "*.err",
     "app",
 ]
 
@@ -28,6 +31,11 @@ EnvMatrix.INPUT_CONFIG = [
     "experiment.yml.tmpl",
     "external_location.yml.tmpl",
     "job.yml.tmpl",
+    "job_pydabs_10_tasks.yml.tmpl",
+    "job_pydabs_1000_tasks.yml.tmpl",
+    "job_cross_resource_ref.yml.tmpl",
+    "job_permission_ref.yml.tmpl",
+    "job_with_permissions.yml.tmpl",
     "job_with_task.yml.tmpl",
     "model.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",

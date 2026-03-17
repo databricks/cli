@@ -55,7 +55,7 @@ func TestGetDefaultSettingsPath_VSCode_Linux(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/home/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
+	path, err := getDefaultSettingsPath(ctx, VSCodeOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/home/testuser/.config/Code/User/settings.json", path)
 }
@@ -68,7 +68,7 @@ func TestGetDefaultSettingsPath_Cursor_Linux(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/home/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, cursorIDE)
+	path, err := getDefaultSettingsPath(ctx, CursorOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/home/testuser/.config/Cursor/User/settings.json", path)
 }
@@ -81,7 +81,7 @@ func TestGetDefaultSettingsPath_VSCode_Darwin(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/Users/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
+	path, err := getDefaultSettingsPath(ctx, VSCodeOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/Users/testuser/Library/Application Support/Code/User/settings.json", path)
 }
@@ -94,7 +94,7 @@ func TestGetDefaultSettingsPath_Cursor_Darwin(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "HOME", "/Users/testuser")
 
-	path, err := getDefaultSettingsPath(ctx, cursorIDE)
+	path, err := getDefaultSettingsPath(ctx, CursorOption)
 	require.NoError(t, err)
 	assert.Equal(t, "/Users/testuser/Library/Application Support/Cursor/User/settings.json", path)
 }
@@ -107,7 +107,7 @@ func TestGetDefaultSettingsPath_VSCode_Windows(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "APPDATA", `C:\Users\testuser\AppData\Roaming`)
 
-	path, err := getDefaultSettingsPath(ctx, vscodeIDE)
+	path, err := getDefaultSettingsPath(ctx, VSCodeOption)
 	require.NoError(t, err)
 	assert.Equal(t, `C:\Users\testuser\AppData\Roaming\Code\User\settings.json`, path)
 }
@@ -120,7 +120,7 @@ func TestGetDefaultSettingsPath_Cursor_Windows(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "APPDATA", `C:\Users\testuser\AppData\Roaming`)
 
-	path, err := getDefaultSettingsPath(ctx, cursorIDE)
+	path, err := getDefaultSettingsPath(ctx, CursorOption)
 	require.NoError(t, err)
 	assert.Equal(t, `C:\Users\testuser\AppData\Roaming\Cursor\User\settings.json`, path)
 }
@@ -199,7 +199,7 @@ func TestValidateSettings_Complete(t *testing.T) {
 		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
 		"remote.SSH.remotePlatform": {"test-conn": "linux"},
 		"remote.SSH.remoteServerListenOnSocket": true,
-		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"]
 	}`)
 
 	missing := validateSettings(v, "test-conn")
@@ -213,7 +213,7 @@ func TestValidateSettings_Missing(t *testing.T) {
 	assert.False(t, missing.isEmpty())
 	assert.True(t, missing.portRange)
 	assert.True(t, missing.platform)
-	assert.Equal(t, []string{"ms-python.python", "ms-toolsai.jupyter"}, missing.extensions)
+	assert.Equal(t, []string{"ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"}, missing.extensions)
 }
 
 func TestValidateSettings_IncorrectValues(t *testing.T) {
@@ -227,7 +227,7 @@ func TestValidateSettings_IncorrectValues(t *testing.T) {
 	assert.False(t, missing.isEmpty())
 	assert.True(t, missing.portRange)
 	assert.True(t, missing.platform)
-	assert.Equal(t, []string{"ms-toolsai.jupyter"}, missing.extensions)
+	assert.Equal(t, []string{"ms-toolsai.jupyter", "databricks.databricks"}, missing.extensions)
 }
 
 func TestValidateSettings_DuplicateExtensionsNotReported(t *testing.T) {
@@ -235,7 +235,7 @@ func TestValidateSettings_DuplicateExtensionsNotReported(t *testing.T) {
 		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
 		"remote.SSH.remotePlatform": {"test-conn": "linux"},
 		"remote.SSH.remoteServerListenOnSocket": true,
-		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-python.python", "ms-toolsai.jupyter"]
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"]
 	}`)
 
 	missing := validateSettings(v, "test-conn")
@@ -246,7 +246,7 @@ func TestValidateSettings_MissingConnection(t *testing.T) {
 	v := parseTestValue(t, `{
 		"remote.SSH.serverPickPortsFromRange": {"other-conn": "29500-29505"},
 		"remote.SSH.remotePlatform": {"other-conn": "linux"},
-		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"]
 	}`)
 
 	// Validating for a different connection should show port and platform as missing
@@ -273,7 +273,7 @@ func TestUpdateSettings_PreserveExistingConnections(t *testing.T) {
 	missing := &missingSettings{
 		portRange:  true,
 		platform:   true,
-		extensions: []string{"ms-python.python", "ms-toolsai.jupyter"},
+		extensions: []string{"ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"},
 	}
 
 	err := updateSettings(&v, "conn-c", missing)
@@ -307,10 +307,11 @@ func TestUpdateSettings_PreserveExistingConnections(t *testing.T) {
 
 	// Check that extensions were merged
 	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
-	assert.Len(t, exts, 3)
+	assert.Len(t, exts, 4)
 	assert.Contains(t, exts, "other.extension")
 	assert.Contains(t, exts, "ms-python.python")
 	assert.Contains(t, exts, "ms-toolsai.jupyter")
+	assert.Contains(t, exts, "databricks.databricks")
 }
 
 func TestUpdateSettings_NewConnection(t *testing.T) {
@@ -319,7 +320,7 @@ func TestUpdateSettings_NewConnection(t *testing.T) {
 	missing := &missingSettings{
 		portRange:  true,
 		platform:   true,
-		extensions: []string{"ms-python.python", "ms-toolsai.jupyter"},
+		extensions: []string{"ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"},
 	}
 
 	err := updateSettings(&v, "new-conn", missing)
@@ -334,9 +335,10 @@ func TestUpdateSettings_NewConnection(t *testing.T) {
 	assert.Equal(t, "linux", val)
 
 	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
-	assert.Len(t, exts, 2)
+	assert.Len(t, exts, 3)
 	assert.Contains(t, exts, "ms-python.python")
 	assert.Contains(t, exts, "ms-toolsai.jupyter")
+	assert.Contains(t, exts, "databricks.databricks")
 }
 
 func TestUpdateSettings_GlobalExtensions(t *testing.T) {
@@ -536,7 +538,7 @@ func TestMissingSettings_IsEmpty(t *testing.T) {
 }
 
 func TestGetManualInstructions_VSCode(t *testing.T) {
-	instructions := GetManualInstructions(vscodeIDE, "test-conn")
+	instructions := GetManualInstructions(VSCodeOption, "test-conn")
 
 	assert.Contains(t, instructions, "VS Code")
 	assert.Contains(t, instructions, "test-conn")
@@ -544,6 +546,7 @@ func TestGetManualInstructions_VSCode(t *testing.T) {
 	assert.Contains(t, instructions, "linux")
 	assert.Contains(t, instructions, "ms-python.python")
 	assert.Contains(t, instructions, "ms-toolsai.jupyter")
+	assert.Contains(t, instructions, "databricks.databricks")
 	assert.Contains(t, instructions, "remote.SSH.serverPickPortsFromRange")
 	assert.Contains(t, instructions, "remote.SSH.remotePlatform")
 	assert.Contains(t, instructions, "remote.SSH.defaultExtensions")

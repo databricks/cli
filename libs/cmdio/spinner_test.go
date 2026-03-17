@@ -103,18 +103,6 @@ func TestSpinnerStructNonInteractive(t *testing.T) {
 	// Should complete without error in non-interactive mode
 }
 
-func TestSpinnerBackwardCompatibility(t *testing.T) {
-	ctx := t.Context()
-	ctx, _ = NewTestContextWithStderr(ctx)
-
-	// Old API should still work
-	spinner := Spinner(ctx)
-	spinner <- "old api message"
-	close(spinner)
-
-	// No panics = success
-}
-
 func TestSpinnerStructContextCancellation(t *testing.T) {
 	ctx := t.Context()
 	ctx, _ = NewTestContextWithStderr(ctx)

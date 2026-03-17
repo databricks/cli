@@ -4,55 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
+	"strings"
 
-	"github.com/databricks/cli/experimental/aitools/lib/mcp"
-	"github.com/databricks/cli/experimental/aitools/lib/prompts"
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/httpclient"
 )
 
 const (
-	DatabricksClientKey  = "databricks_client"
-	DatabricksProfileKey = "databricks_profile"
+	DatabricksClientKey = "databricks_client"
 )
-
-func NewDatabricksClientMiddleware(unauthorizedToolNames []string) mcp.Middleware {
-	return mcp.NewMiddleware(func(ctx *mcp.MiddlewareContext, next mcp.NextFunc) (*mcp.CallToolResult, error) {
-		if slices.Contains(unauthorizedToolNames, ctx.Request.Tool.Name) {
-			return next()
-		}
-
-		_, ok := ctx.Session.Get(DatabricksClientKey)
-		if !ok {
-			w, err := checkAuth(ctx.Ctx)
-			if err != nil {
-				return mcp.CreateNewTextContentResultError(err), nil
-			}
-			ctx.Session.Set(DatabricksClientKey, w)
-
-			// Start background warehouse loading once client is initialized
-			go loadWarehouseInBackground(ctx.Ctx)
-		}
-
-		return next()
-	})
-}
-
-func GetDatabricksProfile(ctx context.Context) string {
-	sess, err := session.GetSession(ctx)
-	if err != nil {
-		return ""
-	}
-	profile, ok := sess.Get(DatabricksProfileKey)
-	if !ok {
-		return ""
-	}
-	return profile.(string)
-}
 
 // GetAvailableProfiles returns all available profiles from ~/.databrickscfg.
 func GetAvailableProfiles(ctx context.Context) profile.Profiles {
@@ -62,34 +23,6 @@ func GetAvailableProfiles(ctx context.Context) profile.Profiles {
 		return profile.Profiles{}
 	}
 	return profiles
-}
-
-func MustGetApiClient(ctx context.Context) *httpclient.ApiClient {
-	client, err := GetApiClient(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return client
-}
-
-func GetApiClient(ctx context.Context) (*httpclient.ApiClient, error) {
-	w, err := GetDatabricksClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP client config: %w", err)
-	}
-	return httpclient.NewApiClient(clientCfg), nil
-}
-
-func MustGetDatabricksClient(ctx context.Context) *databricks.WorkspaceClient {
-	w, err := GetDatabricksClient(ctx)
-	if err != nil {
-		panic(err)
-	}
-	return w
 }
 
 func GetDatabricksClient(ctx context.Context) (*databricks.WorkspaceClient, error) {
@@ -104,47 +37,21 @@ func GetDatabricksClient(ctx context.Context) (*databricks.WorkspaceClient, erro
 	return w.(*databricks.WorkspaceClient), nil
 }
 
-func checkAuth(ctx context.Context) (*databricks.WorkspaceClient, error) {
-	w, err := databricks.NewWorkspaceClient()
-	if err != nil {
-		return nil, WrapAuthError(ctx, err)
-	}
-
-	_, err = w.CurrentUser.Me(ctx)
-	if err != nil {
-		return nil, WrapAuthError(ctx, err)
-	}
-
-	return w, nil
-}
-
-func WrapAuthError(ctx context.Context, err error) error {
-	if errors.Is(err, config.ErrCannotConfigureDefault) {
-		return newAuthError(ctx)
-	}
-	return err
-}
-
 func newAuthError(ctx context.Context) error {
-	// Prepare template data
-	data := map[string]any{
-		"Profiles": GetAvailableProfiles(ctx),
-	}
-	return errors.New(prompts.MustExecuteTemplate("auth_error.tmpl", data))
+	return errors.New(formatAuthError(GetAvailableProfiles(ctx)))
 }
 
-// GetDefaultCatalog fetches the workspace default catalog name.
-// Returns empty string if Unity Catalog is not available or on error.
-func GetDefaultCatalog(ctx context.Context) string {
-	w, err := GetDatabricksClient(ctx)
-	if err != nil {
-		return ""
+func formatAuthError(profiles profile.Profiles) string {
+	var b strings.Builder
+	b.WriteString("Not authenticated to Databricks\n\n")
+	b.WriteString("I need to know either the Databricks workspace URL or the Databricks profile name.\n\n")
+	b.WriteString("The available profiles are:\n\n")
+	for _, p := range profiles {
+		fmt.Fprintf(&b, "- %s (%s)\n", p.Name, p.Host)
 	}
-
-	metastore, err := w.Metastores.Current(ctx)
-	if err != nil {
-		return "" // gracefully handle any error (no UC, permission denied, etc.)
-	}
-
-	return metastore.DefaultCatalogName
+	b.WriteString("\n")
+	b.WriteString("IMPORTANT: YOU MUST ASK the user which of the configured profiles or databricks workspace URL they want to use.\n")
+	b.WriteString("Then set the DATABRICKS_HOST and DATABRICKS_TOKEN environment variables, or use a named profile via DATABRICKS_CONFIG_PROFILE.\n\n")
+	b.WriteString("Do not run anything else before authenticating successfully.\n")
+	return b.String()
 }

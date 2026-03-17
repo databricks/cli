@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -59,9 +60,6 @@ type ProcessOptions struct {
 	// If true, configure outputHandler for phases.Deploy
 	Verbose bool
 
-	// If true, do not read DATABRICKS_BUNDLE_ENGINE env var (for migrate command, which ignores this env var)
-	SkipEngineEnvVar bool
-
 	// If true, call corresponding phase:
 	FastValidate    bool
 	Validate        bool
@@ -94,13 +92,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		cmd.SetContext(ctx)
 	}
 
-	requiredEngine := engine.EngineNotSet
-
-	if !opts.SkipEngineEnvVar {
-		requiredEngine, err = engine.FromEnv(ctx)
-		if err != nil {
-			return nil, nil, err
-		}
+	envEngine, err := engine.SettingFromEnv(ctx)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Load bundle config and apply target
@@ -163,6 +157,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
+		requiredEngine := ResolveEngineSetting(b, envEngine)
+
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
 		if logdiag.HasError(ctx) {
@@ -190,7 +186,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set DATABRICKS_BUNDLE_ENGINE=direct)"))
+			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		opts.Build = false
@@ -301,6 +297,25 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	}
 
 	return b, stateDesc, nil
+}
+
+// ResolveEngineSetting combines the env var engine with the bundle config engine setting.
+// Environment variable takes priority over config. ConfigType always reflects the config value.
+func ResolveEngineSetting(b *bundle.Bundle, envSetting engine.EngineSetting) engine.EngineSetting {
+	configEngine := b.Config.Bundle.Engine
+	if envSetting.Type != engine.EngineNotSet {
+		return engine.EngineSetting{Type: envSetting.Type, Source: envSetting.Source, ConfigType: configEngine}
+	}
+	if configEngine != engine.EngineNotSet {
+		source := "bundle.engine setting"
+		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
+		if locs := v.Locations(); len(locs) > 0 {
+			loc := locs[0]
+			source = fmt.Sprintf("bundle.engine setting at %s:%d:%d", filepath.ToSlash(loc.File), loc.Line, loc.Column)
+		}
+		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}
+	}
+	return engine.EngineSetting{}
 }
 
 func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {

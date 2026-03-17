@@ -238,10 +238,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -301,10 +301,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -369,10 +369,10 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -438,10 +438,10 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -569,10 +569,10 @@ func newListPipelineEvents() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -691,10 +691,10 @@ func newListUpdates() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -778,10 +778,10 @@ func newSetPermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -846,6 +846,7 @@ func newStartUpdate() *cobra.Command {
 	// TODO: map via StringToStringVar: parameters
 	// TODO: array: refresh_selection
 	// TODO: array: replace_where_overrides
+	// TODO: array: reset_checkpoint_selection
 	// TODO: complex arg: rewind_spec
 	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 
@@ -876,10 +877,10 @@ func newStartUpdate() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -948,10 +949,10 @@ func newStop() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -973,12 +974,12 @@ func newStop() *cobra.Command {
 		if stopSkipWait {
 			return nil
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *pipelines.GetPipelineResponse) {
 			statusMessage := i.Cause
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(stopTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -1075,10 +1076,10 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -1161,10 +1162,10 @@ func newUpdatePermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PIPELINE_ID argument specified. Loading names for Pipelines drop-down.")
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

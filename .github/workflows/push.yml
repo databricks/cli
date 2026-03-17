@@ -145,6 +145,14 @@ jobs:
       - name: Analyze slow tests
         run: make slowest
 
+      - name: Check out.test.toml files are up to date
+        shell: bash
+        run: |
+          if ! git diff --exit-code; then
+            echo "ERROR: detected changed files in the repository; Most likely you have out.test.toml files that are out of date. Run 'make generate-out-test-toml' to update."
+            exit 1
+          fi
+
   test-exp-aitools:
     needs:
       - cleanups
@@ -386,6 +394,19 @@ jobs:
           owner: ${{ secrets.ORG_NAME }}
           repositories: ${{ secrets.REPO_NAME }}
 
+      - name: Generate GitHub App Token (check runs)
+        if: >-
+          (github.event_name == 'merge_group') ||
+          (github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test'))
+        id: generate-check-token
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        with:
+          app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
+          private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
+          # DECO_TEST_APPROVAL is installed on the databricks org (not databricks-eng).
+          owner: databricks
+          repositories: cli
+
       # Trigger integration tests if the primary "test" target is triggered by this change.
       - name: Trigger integration tests (pull request)
         if: ${{ github.event_name == 'pull_request' && (contains(fromJSON(needs.testmask.outputs.targets), 'test') || contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh')) }}
@@ -403,6 +424,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
         uses: actions/github-script@v8
         with:
+          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -423,6 +445,7 @@ jobs:
         if: ${{ github.event_name == 'merge_group' }}
         uses: actions/github-script@v8
         with:
+          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,

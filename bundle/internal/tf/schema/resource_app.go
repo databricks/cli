@@ -108,6 +108,9 @@ type ResourceAppProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type ResourceAppResourcesApp struct {
+}
+
 type ResourceAppResourcesDatabase struct {
 	DatabaseName string `json:"database_name"`
 	InstanceName string `json:"instance_name"`
@@ -130,6 +133,12 @@ type ResourceAppResourcesJob struct {
 	Permission string `json:"permission"`
 }
 
+type ResourceAppResourcesPostgres struct {
+	Branch     string `json:"branch,omitempty"`
+	Database   string `json:"database,omitempty"`
+	Permission string `json:"permission,omitempty"`
+}
+
 type ResourceAppResourcesSecret struct {
 	Key        string `json:"key"`
 	Permission string `json:"permission"`
@@ -149,51 +158,65 @@ type ResourceAppResourcesSqlWarehouse struct {
 type ResourceAppResourcesUcSecurable struct {
 	Permission        string `json:"permission"`
 	SecurableFullName string `json:"securable_full_name"`
+	SecurableKind     string `json:"securable_kind,omitempty"`
 	SecurableType     string `json:"securable_type"`
 }
 
 type ResourceAppResources struct {
+	App             *ResourceAppResourcesApp             `json:"app,omitempty"`
 	Database        *ResourceAppResourcesDatabase        `json:"database,omitempty"`
 	Description     string                               `json:"description,omitempty"`
 	Experiment      *ResourceAppResourcesExperiment      `json:"experiment,omitempty"`
 	GenieSpace      *ResourceAppResourcesGenieSpace      `json:"genie_space,omitempty"`
 	Job             *ResourceAppResourcesJob             `json:"job,omitempty"`
 	Name            string                               `json:"name"`
+	Postgres        *ResourceAppResourcesPostgres        `json:"postgres,omitempty"`
 	Secret          *ResourceAppResourcesSecret          `json:"secret,omitempty"`
 	ServingEndpoint *ResourceAppResourcesServingEndpoint `json:"serving_endpoint,omitempty"`
 	SqlWarehouse    *ResourceAppResourcesSqlWarehouse    `json:"sql_warehouse,omitempty"`
 	UcSecurable     *ResourceAppResourcesUcSecurable     `json:"uc_securable,omitempty"`
 }
 
+type ResourceAppTelemetryExportDestinationsUnityCatalog struct {
+	LogsTable    string `json:"logs_table"`
+	MetricsTable string `json:"metrics_table"`
+	TracesTable  string `json:"traces_table"`
+}
+
+type ResourceAppTelemetryExportDestinations struct {
+	UnityCatalog *ResourceAppTelemetryExportDestinationsUnityCatalog `json:"unity_catalog,omitempty"`
+}
+
 type ResourceApp struct {
-	ActiveDeployment         *ResourceAppActiveDeployment  `json:"active_deployment,omitempty"`
-	AppStatus                *ResourceAppAppStatus         `json:"app_status,omitempty"`
-	BudgetPolicyId           string                        `json:"budget_policy_id,omitempty"`
-	ComputeSize              string                        `json:"compute_size,omitempty"`
-	ComputeStatus            *ResourceAppComputeStatus     `json:"compute_status,omitempty"`
-	CreateTime               string                        `json:"create_time,omitempty"`
-	Creator                  string                        `json:"creator,omitempty"`
-	DefaultSourceCodePath    string                        `json:"default_source_code_path,omitempty"`
-	Description              string                        `json:"description,omitempty"`
-	EffectiveBudgetPolicyId  string                        `json:"effective_budget_policy_id,omitempty"`
-	EffectiveUsagePolicyId   string                        `json:"effective_usage_policy_id,omitempty"`
-	EffectiveUserApiScopes   []string                      `json:"effective_user_api_scopes,omitempty"`
-	GitRepository            *ResourceAppGitRepository     `json:"git_repository,omitempty"`
-	Id                       string                        `json:"id,omitempty"`
-	Name                     string                        `json:"name"`
-	NoCompute                bool                          `json:"no_compute,omitempty"`
-	Oauth2AppClientId        string                        `json:"oauth2_app_client_id,omitempty"`
-	Oauth2AppIntegrationId   string                        `json:"oauth2_app_integration_id,omitempty"`
-	PendingDeployment        *ResourceAppPendingDeployment `json:"pending_deployment,omitempty"`
-	ProviderConfig           *ResourceAppProviderConfig    `json:"provider_config,omitempty"`
-	Resources                []ResourceAppResources        `json:"resources,omitempty"`
-	ServicePrincipalClientId string                        `json:"service_principal_client_id,omitempty"`
-	ServicePrincipalId       int                           `json:"service_principal_id,omitempty"`
-	ServicePrincipalName     string                        `json:"service_principal_name,omitempty"`
-	Space                    string                        `json:"space,omitempty"`
-	UpdateTime               string                        `json:"update_time,omitempty"`
-	Updater                  string                        `json:"updater,omitempty"`
-	Url                      string                        `json:"url,omitempty"`
-	UsagePolicyId            string                        `json:"usage_policy_id,omitempty"`
-	UserApiScopes            []string                      `json:"user_api_scopes,omitempty"`
+	ActiveDeployment            *ResourceAppActiveDeployment             `json:"active_deployment,omitempty"`
+	AppStatus                   *ResourceAppAppStatus                    `json:"app_status,omitempty"`
+	BudgetPolicyId              string                                   `json:"budget_policy_id,omitempty"`
+	ComputeSize                 string                                   `json:"compute_size,omitempty"`
+	ComputeStatus               *ResourceAppComputeStatus                `json:"compute_status,omitempty"`
+	CreateTime                  string                                   `json:"create_time,omitempty"`
+	Creator                     string                                   `json:"creator,omitempty"`
+	DefaultSourceCodePath       string                                   `json:"default_source_code_path,omitempty"`
+	Description                 string                                   `json:"description,omitempty"`
+	EffectiveBudgetPolicyId     string                                   `json:"effective_budget_policy_id,omitempty"`
+	EffectiveUsagePolicyId      string                                   `json:"effective_usage_policy_id,omitempty"`
+	EffectiveUserApiScopes      []string                                 `json:"effective_user_api_scopes,omitempty"`
+	GitRepository               *ResourceAppGitRepository                `json:"git_repository,omitempty"`
+	Id                          string                                   `json:"id,omitempty"`
+	Name                        string                                   `json:"name"`
+	NoCompute                   bool                                     `json:"no_compute,omitempty"`
+	Oauth2AppClientId           string                                   `json:"oauth2_app_client_id,omitempty"`
+	Oauth2AppIntegrationId      string                                   `json:"oauth2_app_integration_id,omitempty"`
+	PendingDeployment           *ResourceAppPendingDeployment            `json:"pending_deployment,omitempty"`
+	ProviderConfig              *ResourceAppProviderConfig               `json:"provider_config,omitempty"`
+	Resources                   []ResourceAppResources                   `json:"resources,omitempty"`
+	ServicePrincipalClientId    string                                   `json:"service_principal_client_id,omitempty"`
+	ServicePrincipalId          int                                      `json:"service_principal_id,omitempty"`
+	ServicePrincipalName        string                                   `json:"service_principal_name,omitempty"`
+	Space                       string                                   `json:"space,omitempty"`
+	TelemetryExportDestinations []ResourceAppTelemetryExportDestinations `json:"telemetry_export_destinations,omitempty"`
+	UpdateTime                  string                                   `json:"update_time,omitempty"`
+	Updater                     string                                   `json:"updater,omitempty"`
+	Url                         string                                   `json:"url,omitempty"`
+	UsagePolicyId               string                                   `json:"usage_policy_id,omitempty"`
+	UserApiScopes               []string                                 `json:"user_api_scopes,omitempty"`
 }

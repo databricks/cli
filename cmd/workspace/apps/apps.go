@@ -100,6 +100,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
 	cmd.Flags().StringVar(&createReq.App.Space, "space", createReq.App.Space, `Name of the space this app belongs to.`)
+	// TODO: array: telemetry_export_destinations
 	cmd.Flags().StringVar(&createReq.App.UsagePolicyId, "usage-policy-id", createReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
@@ -155,7 +156,7 @@ func newCreate() *cobra.Command {
 		if createSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *apps.App) {
 			if i.ComputeStatus == nil {
 				return
@@ -165,9 +166,9 @@ func newCreate() *cobra.Command {
 			if i.ComputeStatus != nil {
 				statusMessage = i.ComputeStatus.Message
 			}
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -295,8 +296,8 @@ func newCreateSpace() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			spinner := cmdio.Spinner(ctx)
-			spinner <- "Waiting for create-space to complete..."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for create-space to complete...")
 
 			// Wait for completion.
 			opts := api.WithTimeout(createSpaceTimeout)
@@ -304,7 +305,7 @@ func newCreateSpace() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			close(spinner)
+			sp.Close()
 			return cmdio.Render(ctx, response)
 		}
 	}
@@ -411,7 +412,7 @@ func newCreateUpdate() *cobra.Command {
 		if createUpdateSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *apps.AppUpdate) {
 			if i.Status == nil {
 				return
@@ -421,9 +422,9 @@ func newCreateUpdate() *cobra.Command {
 			if i.Status != nil {
 				statusMessage = i.Status.Message
 			}
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createUpdateTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -573,8 +574,8 @@ func newDeleteSpace() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			spinner := cmdio.Spinner(ctx)
-			spinner <- "Waiting for delete-space to complete..."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for delete-space to complete...")
 
 			// Wait for completion.
 			opts := api.WithTimeout(deleteSpaceTimeout)
@@ -583,7 +584,7 @@ func newDeleteSpace() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			close(spinner)
+			sp.Close()
 			return nil
 		}
 	}
@@ -675,7 +676,7 @@ func newDeploy() *cobra.Command {
 		if deploySkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *apps.AppDeployment) {
 			if i.Status == nil {
 				return
@@ -685,9 +686,9 @@ func newDeploy() *cobra.Command {
 			if i.Status != nil {
 				statusMessage = i.Status.Message
 			}
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(deployTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -1395,7 +1396,7 @@ func newStart() *cobra.Command {
 		if startSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *apps.App) {
 			if i.ComputeStatus == nil {
 				return
@@ -1405,9 +1406,9 @@ func newStart() *cobra.Command {
 			if i.ComputeStatus != nil {
 				statusMessage = i.ComputeStatus.Message
 			}
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(startTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -1476,7 +1477,7 @@ func newStop() *cobra.Command {
 		if stopSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *apps.App) {
 			if i.ComputeStatus == nil {
 				return
@@ -1486,9 +1487,9 @@ func newStop() *cobra.Command {
 			if i.ComputeStatus != nil {
 				statusMessage = i.ComputeStatus.Message
 			}
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(stopTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -1536,6 +1537,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
 	cmd.Flags().StringVar(&updateReq.App.Space, "space", updateReq.App.Space, `Name of the space this app belongs to.`)
+	// TODO: array: telemetry_export_destinations
 	cmd.Flags().StringVar(&updateReq.App.UsagePolicyId, "usage-policy-id", updateReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
@@ -1784,8 +1786,8 @@ func newUpdateSpace() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			spinner := cmdio.Spinner(ctx)
-			spinner <- "Waiting for update-space to complete..."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for update-space to complete...")
 
 			// Wait for completion.
 			opts := api.WithTimeout(updateSpaceTimeout)
@@ -1793,7 +1795,7 @@ func newUpdateSpace() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			close(spinner)
+			sp.Close()
 			return cmdio.Render(ctx, response)
 		}
 	}

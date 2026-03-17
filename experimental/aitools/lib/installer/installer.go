@@ -21,11 +21,11 @@ const (
 	skillsRepoOwner      = "databricks"
 	skillsRepoName       = "databricks-agent-skills"
 	skillsRepoPath       = "skills"
-	defaultSkillsRepoRef = "v0.1.1"
+	defaultSkillsRepoRef = "v0.1.2"
 )
 
-func getSkillsRef() string {
-	if ref := os.Getenv("DATABRICKS_SKILLS_REF"); ref != "" {
+func getSkillsRef(ctx context.Context) string {
+	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref
 	}
 	return defaultSkillsRepoRef
@@ -47,7 +47,7 @@ type SkillMeta struct {
 
 // FetchManifest fetches the skills manifest from the skills repo.
 func FetchManifest(ctx context.Context) (*Manifest, error) {
-	ref := getSkillsRef()
+	ref := getSkillsRef(ctx)
 	log.Infof(ctx, "Fetching skills manifest from %s/%s@%s", skillsRepoOwner, skillsRepoName, ref)
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/manifest.json",
 		skillsRepoOwner, skillsRepoName, ref)
@@ -77,7 +77,7 @@ func FetchManifest(ctx context.Context) (*Manifest, error) {
 
 func fetchSkillFile(ctx context.Context, skillName, filePath string) ([]byte, error) {
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s/%s/%s",
-		skillsRepoOwner, skillsRepoName, getSkillsRef(), skillsRepoPath, skillName, filePath)
+		skillsRepoOwner, skillsRepoName, getSkillsRef(ctx), skillsRepoPath, skillName, filePath)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

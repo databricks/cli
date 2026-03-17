@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -279,9 +278,9 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "IS_OWNER",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "IS_OWNER",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -296,9 +295,9 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/pipelines/" + resp.PipelineId,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -314,9 +313,9 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/registered-models/" + resp.RegisteredModel.Name,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -331,9 +330,9 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/experiments/" + resp.ExperimentId,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -341,9 +340,9 @@ var testDeps = map[string]prepareWorkspace{
 	"clusters.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/clusters/cluster-permissions",
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -360,9 +359,9 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/apps/" + waiter.Response.Name,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -370,9 +369,9 @@ var testDeps = map[string]prepareWorkspace{
 	"sql_warehouses.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/sql/warehouses/warehouse-permissions",
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -389,9 +388,9 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/database-instances/" + waiter.Response.Name,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -411,9 +410,9 @@ var testDeps = map[string]prepareWorkspace{
 		components, _ := ParsePostgresName(result.Name)
 		return &PermissionsState{
 			ObjectID: "/database-projects/" + components.ProjectID,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -440,9 +439,9 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/dashboards/" + resp.DashboardId,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -467,9 +466,9 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -498,9 +497,9 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/alertsv2/" + resp.Id,
-			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
-				UserName:        "user@example.com",
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
 			}},
 		}, nil
 	},
@@ -509,7 +508,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "catalog",
 			FullName:      "mycatalog",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
 				Principal:  "user@example.com",
 			}},
@@ -520,7 +519,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "external_location",
 			FullName:      "myexternallocation",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeReadFiles},
 				Principal:  "user@example.com",
 			}},
@@ -531,7 +530,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "schema",
 			FullName:      "main.myschema",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
@@ -542,7 +541,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "volume",
 			FullName:      "main.myschema.myvolume",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
@@ -553,7 +552,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "registered-model",
 			FullName:      "modelid",
-			Grants: []GrantAssignment{{
+			Grants: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},

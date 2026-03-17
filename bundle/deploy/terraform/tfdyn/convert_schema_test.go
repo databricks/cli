@@ -24,18 +24,14 @@ func TestConvertSchema(t *testing.T) {
 			},
 			StorageRoot: "root",
 		},
-		Grants: []resources.SchemaGrant{
+		Grants: []catalog.PrivilegeAssignment{
 			{
-				Privileges: []resources.SchemaGrantPrivilege{
-					resources.SchemaGrantPrivilegeExecute,
-				},
-				Principal: "jack@gmail.com",
+				Privileges: []catalog.Privilege{catalog.PrivilegeExecute},
+				Principal:  "jack@gmail.com",
 			},
 			{
-				Privileges: []resources.SchemaGrantPrivilege{
-					resources.SchemaGrantPrivilegeSelect,
-				},
-				Principal: "jane@gmail.com",
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+				Principal:  "jane@gmail.com",
 			},
 		},
 	}

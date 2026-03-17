@@ -249,6 +249,8 @@ resources:
         reason: spec:input_only
       - field: display_name
         reason: spec:input_only
+      - field: enable_pg_native_login
+        reason: spec:input_only
       - field: history_retention_duration
         reason: spec:input_only
       - field: pg_version
