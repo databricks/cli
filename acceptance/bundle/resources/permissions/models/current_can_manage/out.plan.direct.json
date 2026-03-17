@@ -21,7 +21,7 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "_": [
+          "__embed__": [
             {
               "level": "CAN_READ",
               "user_name": "viewer@example.com"

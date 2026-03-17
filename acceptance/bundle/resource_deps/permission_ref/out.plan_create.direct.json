@@ -39,7 +39,7 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "_": [
+          "__embed__": [
             {
               "level": "CAN_VIEW",
               "group_name": "team-alpha"
@@ -88,7 +88,7 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "_": [
+          "__embed__": [
             {
               "level": "CAN_VIEW",
               "group_name": "viewers"

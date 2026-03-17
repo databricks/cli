@@ -42,7 +42,7 @@
       "new_state": {
         "value": {
           "object_id": "/pipelines/[FOO_ID]",
-          "_": [
+          "__embed__": [
             {
               "level": "CAN_MANAGE",
               "user_name": "viewer@example.com"
@@ -60,7 +60,7 @@
       },
       "remote_state": {
         "object_id": "/pipelines/[FOO_ID]",
-        "_": [
+        "__embed__": [
           {
             "level": "CAN_VIEW",
             "user_name": "viewer@example.com"

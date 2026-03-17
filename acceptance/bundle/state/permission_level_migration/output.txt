@@ -37,7 +37,7 @@ Deployment complete!
    "__id__": "/jobs/123",
    "state": {
     "object_id": "/jobs/[NUMID]",
-    "_": [
+    "__embed__": [
      {
       "level": "CAN_VIEW",
       "group_name": "viewers"

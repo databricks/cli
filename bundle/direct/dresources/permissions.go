@@ -42,7 +42,7 @@ type StatePermission struct {
 
 type PermissionsState struct {
 	ObjectID      string            `json:"object_id"`
-	EmbeddedSlice []StatePermission `json:"_,omitempty"`
+	EmbeddedSlice []StatePermission `json:"__embed__,omitempty"`
 }
 
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {

@@ -40,7 +40,7 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "_": [
+          "__embed__": [
             {
               "level": "IS_OWNER",
               "user_name": "[USERNAME]"

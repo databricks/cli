@@ -33,7 +33,7 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "_": [
+          "__embed__": [
             {
               "level": "CAN_VIEW",
               "group_name": "viewers"
@@ -56,7 +56,7 @@
           "action": "update",
           "old": {
             "object_id": "/jobs/123",
-            "_": [
+            "__embed__": [
               {
                 "level": "CAN_VIEW",
                 "group_name": "viewers"
