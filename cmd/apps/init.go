@@ -37,7 +37,7 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
-	appkitDefaultVersion = "template-v0.20.2"
+	appkitDefaultVersion = "template-v0.20.3"
 	defaultProfile       = "DEFAULT"
 )
 
