@@ -7,6 +7,7 @@
 - Add `bundle.engine` config setting to select the deployment engine (`terraform` or `direct`). The `DATABRICKS_BUNDLE_ENGINE` environment variable takes precedence over this setting. When the configured engine doesn't match existing deployment state, a warning is issued and the existing engine is used ([#4749](https://github.com/databricks/cli/pull/4749)).
 
 ### CLI
+* Add `--force-refresh` flag to `databricks auth token` to force a token refresh even when the cached token is still valid ([#4564](https://github.com/databricks/cli/issues/4564)).
 
 ### Bundles
 * engine/direct: Fix permanent drift on experiment name field ([#4627](https://github.com/databricks/cli/pull/4627))

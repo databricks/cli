@@ -1,0 +1,4 @@
+setup_test_profile
+setup_test_token_cache
+
+trace $CLI auth token --profile test-profile --force-refresh | jq .access_token

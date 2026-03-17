@@ -55,14 +55,19 @@ func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 		Use:   "token [HOST_OR_PROFILE]",
 		Short: "Get authentication token",
 		Long: `Get authentication token from the local cache in ~/.databricks/token-cache.json.
-Refresh the access token if it is expired. Note: This command only works with
-U2M authentication (using the 'databricks auth login' command). M2M authentication
-using a client ID and secret is not supported.`,
+Refresh the access token if it is expired or close to expiry. Use --force-refresh
+to always refresh regardless of the token's remaining lifetime. Note: This command
+only works with U2M authentication (using the 'databricks auth login' command).
+M2M authentication using a client ID and secret is not supported.`,
 	}
 
 	var tokenTimeout time.Duration
 	cmd.Flags().DurationVar(&tokenTimeout, "timeout", defaultTimeout,
 		"Timeout for acquiring a token.")
+
+	var forceRefresh bool
+	cmd.Flags().BoolVar(&forceRefresh, "force-refresh", false,
+		"Force a token refresh even if the cached token is still valid.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -77,6 +82,7 @@ using a client ID and secret is not supported.`,
 			profileName:        profileName,
 			args:               args,
 			tokenTimeout:       tokenTimeout,
+			forceRefresh:       forceRefresh,
 			profiler:           profile.DefaultProfiler,
 			persistentAuthOpts: nil,
 		})
@@ -106,6 +112,9 @@ type loadTokenArgs struct {
 
 	// tokenTimeout is the timeout for retrieving (and potentially refreshing) an OAuth token.
 	tokenTimeout time.Duration
+
+	// forceRefresh forces a token refresh even if the cached token is still valid.
+	forceRefresh bool
 
 	// profiler is the profiler to use for reading the host and account ID from the .databrickscfg file.
 	profiler profile.Profiler
@@ -253,7 +262,12 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
 		return nil, fmt.Errorf("%w. %s", err, helpMsg)
 	}
-	t, err := persistentAuth.Token()
+	var t *oauth2.Token
+	if args.forceRefresh {
+		t, err = persistentAuth.ForceRefreshToken()
+	} else {
+		t, err = persistentAuth.Token()
+	}
 	if err != nil {
 		if errors.Is(err, cache.ErrNotFound) {
 			// The error returned by the SDK when the token cache doesn't exist or doesn't contain a token
