@@ -35,8 +35,8 @@ func TestAppStateMarshalUnmarshal(t *testing.T) {
 	var restored AppState
 	require.NoError(t, json.Unmarshal(data, &restored))
 
-	assert.Equal(t, original.App.Name, restored.App.Name)
-	assert.Equal(t, original.App.Description, restored.App.Description)
+	assert.Equal(t, original.Name, restored.Name)
+	assert.Equal(t, original.Description, restored.Description)
 	assert.Equal(t, original.SourceCodePath, restored.SourceCodePath)
 	assert.Equal(t, original.Config, restored.Config)
 	assert.Equal(t, original.Started, restored.Started)

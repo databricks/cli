@@ -246,7 +246,6 @@ var localOnlyFields = map[string]bool{
 	"started":          true,
 }
 
-
 func isComputeStopped(app *apps.App) bool {
 	return app.ComputeStatus == nil ||
 		app.ComputeStatus.State == apps.ComputeStateStopped ||
