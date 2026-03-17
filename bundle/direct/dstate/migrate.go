@@ -99,4 +99,3 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 
 	return json.MarshalIndent(newState, "  ", " ")
 }
-
