@@ -22,7 +22,7 @@
       "new_state": {
         "value": {
           "full_name": "",
-          "_": [
+          "__embed__": [
             {
               "principal": "deco-test-user@databricks.com",
               "privileges": [

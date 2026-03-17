@@ -25,7 +25,7 @@
       "new_state": {
         "value": {
           "full_name": "catalog_grants_[UNIQUE_NAME]",
-          "_": [
+          "__embed__": [
             {
               "principal": "deco-test-user@databricks.com",
               "privileges": [
@@ -38,7 +38,7 @@
       },
       "remote_state": {
         "full_name": "catalog_grants_[UNIQUE_NAME]",
-        "_": [
+        "__embed__": [
           {
             "principal": "deco-test-user@databricks.com",
             "privileges": [
