@@ -403,7 +403,9 @@ jobs:
         with:
           app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
           private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
+          # DECO_TEST_APPROVAL is installed on the databricks org (not databricks-eng).
           owner: databricks
+          repositories: cli
 
       # Trigger integration tests if the primary "test" target is triggered by this change.
       - name: Trigger integration tests (pull request)
