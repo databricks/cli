@@ -136,7 +136,7 @@ func TestGetStructDiff(t *testing.T) {
 			name: "pointer nil vs value",
 			a:    A{P: b1},
 			b:    A{},
-			want: []ResolvedChange{{Field: "p", Old: b1, New: nil}},
+			want: []ResolvedChange{{Field: "p", Old: B{S: "one"}, New: nil}},
 		},
 		{
 			name: "pointer nested value diff",

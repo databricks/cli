@@ -177,8 +177,8 @@ func TestSet(t *testing.T) {
 			expectedChanges: []structdiff.Change{
 				{
 					Path: structpath.MustParsePath("count"),
-					Old:  nil, // structdiff reports this as interface{}(nil)
-					New:  intPtr(42),
+					Old:  nil,
+					New:  42, // diffValues dereferences non-nil pointers when the other side is nil/omitted
 				},
 			},
 		},

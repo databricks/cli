@@ -107,11 +107,18 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 		if !v2.IsValid() {
 			return nil
 		}
-
+		// Dereference non-nil pointers for consistency with the both-non-nil case,
+		// where pointers are recursively dereferenced via "case reflect.Pointer".
+		for v2.Kind() == reflect.Pointer && !v2.IsNil() {
+			v2 = v2.Elem()
+		}
 		*changes = append(*changes, Change{Path: path, Old: nil, New: v2.Interface()})
 		return nil
 	} else if !v2.IsValid() {
 		// v1 is valid
+		for v1.Kind() == reflect.Pointer && !v1.IsNil() {
+			v1 = v1.Elem()
+		}
 		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: nil})
 		return nil
 	}
