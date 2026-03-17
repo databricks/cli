@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -74,18 +74,6 @@ func (*ResourceGrants) New(client *databricks.WorkspaceClient) *ResourceGrants {
 
 func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
 	return state
-}
-
-func grantKey(x catalog.PrivilegeAssignment) (string, string) {
-	return "principal", x.Principal
-}
-
-func (*ResourceGrants) KeyedSlices() map[string]any {
-	// Empty key because EmbeddedSlice appears at the root path of
-	// GrantsState (no "grants" prefix in struct walker paths).
-	return map[string]any{
-		"": grantKey,
-	}
 }
 
 func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, error) {
@@ -186,9 +174,7 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 }
 
 func sortPriviliges(privileges []catalog.Privilege) {
-	sort.Slice(privileges, func(i, j int) bool {
-		return privileges[i] < privileges[j]
-	})
+	slices.Sort(privileges)
 }
 
 func extractGrantResourceType(node string) (string, error) {

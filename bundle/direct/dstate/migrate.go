@@ -38,6 +38,7 @@ func migrateState(db *Database) error {
 var migrations = map[int]func(*Database) error{
 	0: migrateV1ToV2,
 	1: migrateV1ToV2,
+	2: migrateV2ToV3,
 }
 
 // migrateV1ToV2 migrates permissions entries from the old format
@@ -95,6 +96,56 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 			ServicePrincipalName: p.ServicePrincipalName,
 			GroupName:            p.GroupName,
 		})
+	}
+
+	return json.MarshalIndent(newState, "  ", " ")
+}
+
+// migrateV2ToV3 migrates grants entries from the old format
+// ("grants" key) to the new format ("__embed__" key).
+func migrateV2ToV3(db *Database) error {
+	for key, entry := range db.State {
+		if !strings.HasSuffix(key, ".grants") {
+			continue
+		}
+		if len(entry.State) == 0 {
+			continue
+		}
+		migrated, err := migrateGrantsEntry(entry.State)
+		if err != nil {
+			return fmt.Errorf("migrating %s: %w", key, err)
+		}
+		entry.State = migrated
+		db.State[key] = entry
+	}
+	return nil
+}
+
+// oldGrantsStateV2 is the grants state format before v3.
+type oldGrantsStateV2 struct {
+	SecurableType string          `json:"securable_type"`
+	FullName      string          `json:"full_name"`
+	Grants        json.RawMessage `json:"grants,omitempty"`
+}
+
+func migrateGrantsEntry(raw json.RawMessage) (json.RawMessage, error) {
+	var old oldGrantsStateV2
+	if err := json.Unmarshal(raw, &old); err != nil {
+		return nil, err
+	}
+
+	// If old format had no grants, it might already be migrated.
+	if len(old.Grants) == 0 {
+		return raw, nil
+	}
+
+	// Re-serialize with __embed__ key.
+	newState := dresources.GrantsState{
+		SecurableType: old.SecurableType,
+		FullName:      old.FullName,
+	}
+	if err := json.Unmarshal(old.Grants, &newState.EmbeddedSlice); err != nil {
+		return nil, err
 	}
 
 	return json.MarshalIndent(newState, "  ", " ")
