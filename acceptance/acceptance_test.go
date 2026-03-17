@@ -43,7 +43,6 @@ var (
 	Forcerun        bool
 	LogRequests     bool
 	LogConfig       bool
-	SkipLocal       bool
 	UseVersion      string
 	WorkspaceTmpDir bool
 	OnlyOutTestToml bool
@@ -72,7 +71,6 @@ func init() {
 	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
-	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
 	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
 
 	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
@@ -211,6 +209,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
+	if !inprocessMode {
+		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
+		t.Setenv("CLI_293", cli293Path)
+		repls.SetPath(cli293Path, "[CLI_293]")
+	}
+
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
@@ -240,6 +244,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		}
 		if os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
 			t.Setenv("TEST_DEFAULT_CLUSTER_ID", testserver.TestDefaultClusterId)
+		}
+		if os.Getenv("TEST_INSTANCE_POOL_ID") == "" {
+			t.Setenv("TEST_INSTANCE_POOL_ID", testserver.TestDefaultInstancePoolId)
 		}
 	}
 
@@ -295,13 +302,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
-			if testdiff.OverwriteMode || OnlyOutTestToml {
-				// Generate materialized config for this test
-				// We do this before skipping the test, so the configs are generated for all tests.
-				materializedConfig, err := internal.GenerateMaterializedConfig(config)
-				require.NoError(t, err)
-				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
-			}
+			// Generate materialized config for this test.
+			// We do this before skipping the test, so the configs are generated for all tests.
+			materializedConfig, err := internal.GenerateMaterializedConfig(config)
+			require.NoError(t, err)
+			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
 
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
@@ -407,8 +412,8 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		config.Cloud = config.CloudSlow
 	}
 
-	if SkipLocal && isTruePtr(config.Local) {
-		return "Disabled via SkipLocal setting in " + configPath
+	if os.Getenv("DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
+		return "Disabled via DATABRICKS_TEST_SKIPLOCAL environment variable in " + configPath
 	}
 
 	if Forcerun {
@@ -485,6 +490,13 @@ func runTest(t *testing.T,
 	customEnv []string,
 	envFilters []string,
 ) {
+	// Check env filters early, before creating any resources like directories on the file system.
+	// Creating / deleting too many directories causes this error on the workspace FUSE mount:
+	// unlinkat <workspace_path>: directory not empty. Thus avoiding unnecessary directory creation
+	// is important.
+	testEnv := buildTestEnv(config.Env, customEnv)
+	checkEnvFilters(t, testEnv, envFilters)
+
 	if LogConfig {
 		configBytes, err := json.MarshalIndent(config, "", "  ")
 		require.NoError(t, err)
@@ -531,17 +543,13 @@ func runTest(t *testing.T,
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
 	// Generate materialized config for this test
-	materializedConfig, err := internal.GenerateMaterializedConfig(config)
-	require.NoError(t, err)
-	testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
-
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
-	// Add materialized config to outputs for comparison
-	outputs[internal.MaterializedConfigFile] = true
+	// out.test.toml is written to the source dir during test discovery, not compared.
+	delete(outputs, internal.MaterializedConfigFile)
 
 	timeout := config.Timeout
 
@@ -559,7 +567,7 @@ func runTest(t *testing.T,
 		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	ctx, cancelFunc := context.WithTimeout(t.Context(), timeout)
 	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
@@ -616,38 +624,12 @@ func runTest(t *testing.T,
 	uniqueCacheDir := filepath.Join(t.TempDir(), ".cache")
 	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_DIR="+uniqueCacheDir)
 
-	for _, key := range utils.SortedKeys(config.Env) {
-		if hasKey(customEnv, key) {
-			// We want EnvMatrix to take precedence.
-			// Skip rather than relying on cmd.Env order, because this might interfere with replacements and substitutions.
-			continue
-		}
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key], config.EnvRepl, false)
-	}
-
-	for _, keyvalue := range customEnv {
-		items := strings.SplitN(keyvalue, "=", 2)
-		require.Len(t, items, 2)
-		key := items[0]
-		value := items[1]
+	for _, kv := range testEnv {
+		key, value, _ := strings.Cut(kv, "=")
 		// Only add replacement by default if value is part of EnvMatrix with more than 1 option and length is 4 or more chars
 		// (to avoid matching "yes" and "no" values from template input parameters)
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1 && len(value) >= 4)
-	}
-
-	for filterInd, filterEnv := range envFilters {
-		filterEnvKey := strings.Split(filterEnv, "=")[0]
-		for ind := range cmd.Env {
-			// Search backwards, because the latest settings is what is actually applicable.
-			envPair := cmd.Env[len(cmd.Env)-1-ind]
-			if strings.Split(envPair, "=")[0] == filterEnvKey {
-				if envPair == filterEnv {
-					break
-				} else {
-					t.Skipf("Skipping because test environment %s does not match ENVFILTER#%d: %s", envPair, filterInd, filterEnv)
-				}
-			}
-		}
+		defaultRepl := hasKey(customEnv, key) && len(config.EnvMatrix[key]) > 1 && len(value) >= 4
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, defaultRepl)
 	}
 
 	absDir, err := filepath.Abs(dir)
@@ -684,11 +666,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		skipRepls := false
-		if relPath == internal.MaterializedConfigFile {
-			skipRepls = true
-		}
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, skipRepls)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -722,7 +700,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, false)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
@@ -731,10 +709,44 @@ func runTest(t *testing.T,
 	}
 }
 
+// checkEnvFilters skips the test if any env filter doesn't match testEnv.
+func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
+	envMap := make(map[string]string, len(testEnv))
+	for _, kv := range testEnv {
+		key, value, _ := strings.Cut(kv, "=")
+		envMap[key] = value
+	}
+	for i, filter := range envFilters {
+		key, expected, _ := strings.Cut(filter, "=")
+		if actual, ok := envMap[key]; ok && actual != expected {
+			t.Skipf("Skipping because test environment %s=%s does not match ENVFILTER#%d: %s", key, actual, i, filter)
+		}
+	}
+}
+
+// buildTestEnv builds the test environment from config.Env and customEnv.
+// customEnv (from EnvMatrix) takes precedence over config.Env.
+func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
+	env := make([]string, 0, len(configEnv)+len(customEnv))
+
+	// Add config.Env first (but skip keys that exist in customEnv)
+	for _, key := range utils.SortedKeys(configEnv) {
+		if hasKey(customEnv, key) {
+			continue
+		}
+		env = append(env, key+"="+configEnv[key])
+	}
+
+	// Add customEnv second (takes precedence)
+	env = append(env, customEnv...)
+
+	return env
+}
+
 func hasKey(env []string, key string) bool {
-	for _, keyvalue := range env {
-		items := strings.SplitN(keyvalue, "=", 2)
-		if len(items) == 2 && items[0] == key {
+	for _, kv := range env {
+		k, _, ok := strings.Cut(kv, "=")
+		if ok && k == key {
 			return true
 		}
 	}
@@ -761,7 +773,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, skipRepls bool) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -776,7 +788,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
-	if !NoRepl && !skipRepls {
+	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
 	}
 

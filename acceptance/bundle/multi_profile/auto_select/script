@@ -1,0 +1,21 @@
+# Set up .databrickscfg with two profiles for the same host:
+# one workspace profile and one account profile.
+envsubst < .databrickscfg > out && mv out .databrickscfg
+
+# Write databricks.yml with the actual host URL.
+cat > databricks.yml << EOF
+bundle:
+  name: multi-profile-auto-select
+
+workspace:
+  host: $DATABRICKS_HOST
+EOF
+
+export DATABRICKS_CONFIG_FILE=.databrickscfg
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+
+# Only one workspace-compatible profile exists (ws-profile).
+# The account-only profile (acc-profile) is filtered out.
+# Auto-select happens silently and validate succeeds.
+trace $CLI bundle validate -o json | jq '{name: .bundle.name}'

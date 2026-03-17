@@ -8,6 +8,10 @@ type ResourceQualityMonitorV2AnomalyDetectionConfig struct {
 	LatestRunStatus        string   `json:"latest_run_status,omitempty"`
 }
 
+type ResourceQualityMonitorV2ProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceQualityMonitorV2ValidityCheckConfigurationsPercentNullValidityCheck struct {
 	ColumnNames []string `json:"column_names,omitempty"`
 	UpperBound  int      `json:"upper_bound,omitempty"`
@@ -34,5 +38,6 @@ type ResourceQualityMonitorV2 struct {
 	AnomalyDetectionConfig      *ResourceQualityMonitorV2AnomalyDetectionConfig       `json:"anomaly_detection_config,omitempty"`
 	ObjectId                    string                                                `json:"object_id"`
 	ObjectType                  string                                                `json:"object_type"`
+	ProviderConfig              *ResourceQualityMonitorV2ProviderConfig               `json:"provider_config,omitempty"`
 	ValidityCheckConfigurations []ResourceQualityMonitorV2ValidityCheckConfigurations `json:"validity_check_configurations,omitempty"`
 }

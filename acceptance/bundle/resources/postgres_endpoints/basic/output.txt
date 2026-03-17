@@ -20,7 +20,7 @@ Resources:
       Name: 
       URL:  (not deployed)
   Postgres endpoints:
-    primary:
+    custom:
       Name: 
       URL:  (not deployed)
   Postgres projects:
@@ -34,9 +34,9 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/primary
+>>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom
 {
-  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/primary",
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
     "autoscaling_limit_max_cu": 2,
@@ -44,8 +44,14 @@ Deployment complete!
     "current_state": "ACTIVE",
     "disabled": false,
     "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+    "group": {
+      "enable_readable_secondaries": true,
+      "max": 1,
+      "min": 1
+    },
     "hosts": {
-      "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
+      "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com",
+      "read_only_host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
     },
     "settings": {},
     "suspend_timeout_duration": "300s"
@@ -65,7 +71,7 @@ Resources:
       Name: 
       URL:  (not deployed)
   Postgres endpoints:
-    primary:
+    custom:
       Name: 
       URL:  (not deployed)
   Postgres projects:
@@ -78,7 +84,7 @@ Resources:
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_branches.main
-  delete resources.postgres_endpoints.primary
+  delete resources.postgres_endpoints.custom
   delete resources.postgres_projects.my_project
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default

@@ -1,7 +1,6 @@
 package filer
 
 import (
-	"context"
 	"io"
 	"io/fs"
 	"testing"
@@ -35,7 +34,7 @@ func TestFsDirImplementsFsReadDirFile(t *testing.T) {
 	var _ fs.ReadDirFile = &fsDir{}
 }
 
-func fakeFS() fs.FS {
+func fakeFS(t *testing.T) fs.FS {
 	fakeFiler := NewFakeFiler(map[string]fakefs.FileInfo{
 		".":     {FakeName: "root", FakeDir: true},
 		"dirA":  {FakeDir: true},
@@ -43,18 +42,18 @@ func fakeFS() fs.FS {
 		"fileA": {FakeSize: 3},
 	})
 
-	return NewFS(context.Background(), fakeFiler)
+	return NewFS(t.Context(), fakeFiler)
 }
 
 func TestFsGlob(t *testing.T) {
-	fakeFS := fakeFS()
+	fakeFS := fakeFS(t)
 	matches, err := fs.Glob(fakeFS, "*")
 	require.NoError(t, err)
 	assert.Equal(t, []string{"dirA", "dirB", "fileA"}, matches)
 }
 
 func TestFsOpenFile(t *testing.T) {
-	fakeFS := fakeFS()
+	fakeFS := fakeFS(t)
 	fakeFile, err := fakeFS.Open("fileA")
 	require.NoError(t, err)
 
@@ -84,7 +83,7 @@ func TestFsOpenFile(t *testing.T) {
 }
 
 func TestFsOpenDir(t *testing.T) {
-	fakeFS := fakeFS()
+	fakeFS := fakeFS(t)
 	fakeFile, err := fakeFS.Open(".")
 	require.NoError(t, err)
 
@@ -144,7 +143,7 @@ func TestFsOpenDir(t *testing.T) {
 }
 
 func TestFsReadDir(t *testing.T) {
-	fakeFS := fakeFS().(fs.ReadDirFS)
+	fakeFS := fakeFS(t).(fs.ReadDirFS)
 	entries, err := fakeFS.ReadDir(".")
 	require.NoError(t, err)
 	assert.Len(t, entries, 3)
@@ -154,14 +153,14 @@ func TestFsReadDir(t *testing.T) {
 }
 
 func TestFsReadFile(t *testing.T) {
-	fakeFS := fakeFS().(fs.ReadFileFS)
+	fakeFS := fakeFS(t).(fs.ReadFileFS)
 	buf, err := fakeFS.ReadFile("fileA")
 	require.NoError(t, err)
 	assert.Equal(t, []byte("foo"), buf)
 }
 
 func TestFsStat(t *testing.T) {
-	fakeFS := fakeFS().(fs.StatFS)
+	fakeFS := fakeFS(t).(fs.StatFS)
 	info, err := fakeFS.Stat("fileA")
 	require.NoError(t, err)
 	assert.Equal(t, "fileA", info.Name())

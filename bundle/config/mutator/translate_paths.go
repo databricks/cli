@@ -84,6 +84,14 @@ type translateContext struct {
 	// It is equal to ${workspace.file_path} for regular deployments.
 	// It points to the source root path for source-linked deployments.
 	remoteRoot string
+
+	// skipLocalFileValidation makes path translation tolerant of missing local files.
+	// When set, paths are translated without verifying files exist on the local filesystem.
+	// This is used by config-remote-sync: a user may rename a resource's root folder
+	// in the workspace UI, and the updated path may not exist locally. Path translation
+	// is still needed to produce fully resolved paths for comparison with remote state,
+	// but local file validation would incorrectly fail.
+	skipLocalFileValidation bool
 }
 
 // rewritePath converts a given relative path from the loaded config to a new path based on the passed rewriting function
@@ -178,35 +186,32 @@ func (t *translateContext) rewritePath(
 }
 
 func (t *translateContext) translateNotebookPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		localRelPathNoExt := strings.TrimSuffix(localRelPath, path.Ext(localRelPath))
+		return path.Join(t.remoteRoot, localRelPathNoExt), nil
+	}
+
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		if path.Ext(localFullPath) != notebook.ExtensionNone {
 			return "", fmt.Errorf("notebook %s not found", literal)
 		}
 
-		extensions := []string{
-			notebook.ExtensionPython,
-			notebook.ExtensionR,
-			notebook.ExtensionScala,
-			notebook.ExtensionSql,
-			notebook.ExtensionJupyter,
-		}
-
 		// Check whether a file with a notebook extension already exists. This
 		// way we can provide a more targeted error message.
-		for _, ext := range extensions {
+		for _, ext := range notebook.Extensions {
 			literalWithExt := literal + ext
 			localRelPathWithExt := localRelPath + ext
 			if _, err := fs.Stat(t.b.SyncRoot, localRelPathWithExt); err == nil {
 				return "", fmt.Errorf(`notebook %q not found. Did you mean %q?
 Local notebook references are expected to contain one of the following
-file extensions: [%s]`, literal, literalWithExt, strings.Join(extensions, ", "))
+file extensions: [%s]`, literal, literalWithExt, strings.Join(notebook.Extensions, ", "))
 			}
 		}
 
 		// Return a generic error message if no matching possible file is found.
 		return "", fmt.Errorf(`notebook %q not found. Local notebook references are expected
-to contain one of the following file extensions: [%s]`, literal, strings.Join(extensions, ", "))
+to contain one of the following file extensions: [%s]`, literal, strings.Join(notebook.Extensions, ", "))
 	}
 	if err != nil {
 		return "", fmt.Errorf("unable to determine if %s is a notebook: %w", localFullPath, err)
@@ -221,6 +226,10 @@ to contain one of the following file extensions: [%s]`, literal, strings.Join(ex
 }
 
 func (t *translateContext) translateFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		return path.Join(t.remoteRoot, localRelPath), nil
+	}
+
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
@@ -235,6 +244,10 @@ func (t *translateContext) translateFilePath(ctx context.Context, literal, local
 }
 
 func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		return path.Join(t.remoteRoot, localRelPath), nil
+	}
+
 	info, err := t.b.SyncRoot.Stat(localRelPath)
 	if err != nil {
 		return "", err
@@ -250,6 +263,10 @@ func (t *translateContext) translateGlobPath(ctx context.Context, literal, local
 }
 
 func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {
+	if t.skipLocalFileValidation {
+		return localFullPath, nil
+	}
+
 	info, err := os.Stat(filepath.FromSlash(localFullPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("directory %s not found", literal)
@@ -319,8 +336,9 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 
 func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
-		b:    b,
-		seen: make(map[string]string),
+		b:                       b,
+		seen:                    make(map[string]string),
+		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
@@ -335,8 +353,9 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
-		b:    b,
-		seen: make(map[string]string),
+		b:                       b,
+		seen:                    make(map[string]string),
+		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){

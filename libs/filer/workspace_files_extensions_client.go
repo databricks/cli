@@ -166,22 +166,9 @@ func (e ReadOnlyError) Error() string {
 // errors for namespace clashes (e.g. a file and a notebook or a directory and a notebook).
 // Thus users of these methods should be careful to avoid such clashes.
 func NewWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	return newWorkspaceFilesExtensionsClient(w, root, false)
-}
-
-func NewReadOnlyWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	return newWorkspaceFilesExtensionsClient(w, root, true)
-}
-
-func newWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root string, readonly bool) (Filer, error) {
 	filer, err := NewWorkspaceFilesClient(w, root)
 	if err != nil {
 		return nil, err
-	}
-
-	if readonly {
-		// Wrap in a readahead cache to avoid making unnecessary calls to the workspace.
-		filer = newWorkspaceFilesReadaheadCache(filer)
 	}
 
 	return &WorkspaceFilesExtensionsClient{
@@ -189,7 +176,25 @@ func newWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root strin
 
 		wsfs:     filer,
 		root:     root,
-		readonly: readonly,
+		readonly: false,
+	}, nil
+}
+
+func NewReadOnlyWorkspaceFilesExtensionsClient(ctx context.Context, w *databricks.WorkspaceClient, root string) (Filer, error) {
+	filer, err := NewWorkspaceFilesClient(w, root)
+	if err != nil {
+		return nil, err
+	}
+
+	// Wrap in a readahead cache to avoid making unnecessary calls to the workspace.
+	filer = newWorkspaceFilesReadaheadCache(ctx, filer)
+
+	return &WorkspaceFilesExtensionsClient{
+		workspaceClient: w,
+
+		wsfs:     filer,
+		root:     root,
+		readonly: true,
 	}, nil
 }
 

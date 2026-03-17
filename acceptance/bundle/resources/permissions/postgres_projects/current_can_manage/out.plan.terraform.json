@@ -1,0 +1,11 @@
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.postgres_projects.foo": {
+      "action": "create"
+    },
+    "resources.postgres_projects.foo.permissions": {
+      "action": "create"
+    }
+  }
+}

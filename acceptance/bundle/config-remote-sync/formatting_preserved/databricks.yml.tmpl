@@ -2,18 +2,29 @@
 bundle:
   name: test-bundle-$UNIQUE_NAME
 
-# Resources section with extra spacing
+
+# Resources section with extra spacing (consecutive blank lines above)
 resources:
   jobs:
     my_job:
       # Comment about max concurrent runs
       max_concurrent_runs: 1
 
+      description: |
+        Main ETL job for data processing.
+
+        Runs daily at 2am UTC.
+
       # Task configuration
       tasks:
         - task_key: main
+
+          description: >-
+            Main processing task
+            that runs the notebook.
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
+
           new_cluster:
             spark_version: $DEFAULT_SPARK_VERSION
             node_type_id: $NODE_TYPE_ID

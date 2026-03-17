@@ -13,6 +13,7 @@ type Resources struct {
 	Alert                                        map[string]any `json:"databricks_alert,omitempty"`
 	AlertV2                                      map[string]any `json:"databricks_alert_v2,omitempty"`
 	App                                          map[string]any `json:"databricks_app,omitempty"`
+	AppSpace                                     map[string]any `json:"databricks_app_space,omitempty"`
 	AppsSettingsCustomTemplate                   map[string]any `json:"databricks_apps_settings_custom_template,omitempty"`
 	ArtifactAllowlist                            map[string]any `json:"databricks_artifact_allowlist,omitempty"`
 	AutomaticClusterUpdateWorkspaceSetting       map[string]any `json:"databricks_automatic_cluster_update_workspace_setting,omitempty"`
@@ -31,6 +32,7 @@ type Resources struct {
 	Credential                                   map[string]any `json:"databricks_credential,omitempty"`
 	CustomAppIntegration                         map[string]any `json:"databricks_custom_app_integration,omitempty"`
 	Dashboard                                    map[string]any `json:"databricks_dashboard,omitempty"`
+	DataClassificationCatalogConfig              map[string]any `json:"databricks_data_classification_catalog_config,omitempty"`
 	DataQualityMonitor                           map[string]any `json:"databricks_data_quality_monitor,omitempty"`
 	DataQualityRefresh                           map[string]any `json:"databricks_data_quality_refresh,omitempty"`
 	DatabaseDatabaseCatalog                      map[string]any `json:"databricks_database_database_catalog,omitempty"`
@@ -42,6 +44,7 @@ type Resources struct {
 	DisableLegacyAccessSetting                   map[string]any `json:"databricks_disable_legacy_access_setting,omitempty"`
 	DisableLegacyDbfsSetting                     map[string]any `json:"databricks_disable_legacy_dbfs_setting,omitempty"`
 	DisableLegacyFeaturesSetting                 map[string]any `json:"databricks_disable_legacy_features_setting,omitempty"`
+	Endpoint                                     map[string]any `json:"databricks_endpoint,omitempty"`
 	EnhancedSecurityMonitoringWorkspaceSetting   map[string]any `json:"databricks_enhanced_security_monitoring_workspace_setting,omitempty"`
 	Entitlements                                 map[string]any `json:"databricks_entitlements,omitempty"`
 	EntityTagAssignment                          map[string]any `json:"databricks_entity_tag_assignment,omitempty"`
@@ -63,6 +66,8 @@ type Resources struct {
 	InstanceProfile                              map[string]any `json:"databricks_instance_profile,omitempty"`
 	IpAccessList                                 map[string]any `json:"databricks_ip_access_list,omitempty"`
 	Job                                          map[string]any `json:"databricks_job,omitempty"`
+	KnowledgeAssistant                           map[string]any `json:"databricks_knowledge_assistant,omitempty"`
+	KnowledgeAssistantKnowledgeSource            map[string]any `json:"databricks_knowledge_assistant_knowledge_source,omitempty"`
 	LakehouseMonitor                             map[string]any `json:"databricks_lakehouse_monitor,omitempty"`
 	Library                                      map[string]any `json:"databricks_library,omitempty"`
 	MaterializedFeaturesFeatureTag               map[string]any `json:"databricks_materialized_features_feature_tag,omitempty"`
@@ -97,6 +102,7 @@ type Resources struct {
 	Pipeline                                     map[string]any `json:"databricks_pipeline,omitempty"`
 	PolicyInfo                                   map[string]any `json:"databricks_policy_info,omitempty"`
 	PostgresBranch                               map[string]any `json:"databricks_postgres_branch,omitempty"`
+	PostgresDatabase                             map[string]any `json:"databricks_postgres_database,omitempty"`
 	PostgresEndpoint                             map[string]any `json:"databricks_postgres_endpoint,omitempty"`
 	PostgresProject                              map[string]any `json:"databricks_postgres_project,omitempty"`
 	Provider                                     map[string]any `json:"databricks_provider,omitempty"`
@@ -158,6 +164,7 @@ func NewResources() *Resources {
 		Alert:                                  make(map[string]any),
 		AlertV2:                                make(map[string]any),
 		App:                                    make(map[string]any),
+		AppSpace:                               make(map[string]any),
 		AppsSettingsCustomTemplate:             make(map[string]any),
 		ArtifactAllowlist:                      make(map[string]any),
 		AutomaticClusterUpdateWorkspaceSetting: make(map[string]any),
@@ -172,21 +179,23 @@ func NewResources() *Resources {
 		Cluster:                                make(map[string]any),
 		ClusterPolicy:                          make(map[string]any),
 		ComplianceSecurityProfileWorkspaceSetting: make(map[string]any),
-		Connection:                   make(map[string]any),
-		Credential:                   make(map[string]any),
-		CustomAppIntegration:         make(map[string]any),
-		Dashboard:                    make(map[string]any),
-		DataQualityMonitor:           make(map[string]any),
-		DataQualityRefresh:           make(map[string]any),
-		DatabaseDatabaseCatalog:      make(map[string]any),
-		DatabaseInstance:             make(map[string]any),
-		DatabaseSyncedDatabaseTable:  make(map[string]any),
-		DbfsFile:                     make(map[string]any),
-		DefaultNamespaceSetting:      make(map[string]any),
-		Directory:                    make(map[string]any),
-		DisableLegacyAccessSetting:   make(map[string]any),
-		DisableLegacyDbfsSetting:     make(map[string]any),
-		DisableLegacyFeaturesSetting: make(map[string]any),
+		Connection:                      make(map[string]any),
+		Credential:                      make(map[string]any),
+		CustomAppIntegration:            make(map[string]any),
+		Dashboard:                       make(map[string]any),
+		DataClassificationCatalogConfig: make(map[string]any),
+		DataQualityMonitor:              make(map[string]any),
+		DataQualityRefresh:              make(map[string]any),
+		DatabaseDatabaseCatalog:         make(map[string]any),
+		DatabaseInstance:                make(map[string]any),
+		DatabaseSyncedDatabaseTable:     make(map[string]any),
+		DbfsFile:                        make(map[string]any),
+		DefaultNamespaceSetting:         make(map[string]any),
+		Directory:                       make(map[string]any),
+		DisableLegacyAccessSetting:      make(map[string]any),
+		DisableLegacyDbfsSetting:        make(map[string]any),
+		DisableLegacyFeaturesSetting:    make(map[string]any),
+		Endpoint:                        make(map[string]any),
 		EnhancedSecurityMonitoringWorkspaceSetting: make(map[string]any),
 		Entitlements:                          make(map[string]any),
 		EntityTagAssignment:                   make(map[string]any),
@@ -208,6 +217,8 @@ func NewResources() *Resources {
 		InstanceProfile:                       make(map[string]any),
 		IpAccessList:                          make(map[string]any),
 		Job:                                   make(map[string]any),
+		KnowledgeAssistant:                    make(map[string]any),
+		KnowledgeAssistantKnowledgeSource:     make(map[string]any),
 		LakehouseMonitor:                      make(map[string]any),
 		Library:                               make(map[string]any),
 		MaterializedFeaturesFeatureTag:        make(map[string]any),
@@ -242,6 +253,7 @@ func NewResources() *Resources {
 		Pipeline:                              make(map[string]any),
 		PolicyInfo:                            make(map[string]any),
 		PostgresBranch:                        make(map[string]any),
+		PostgresDatabase:                      make(map[string]any),
 		PostgresEndpoint:                      make(map[string]any),
 		PostgresProject:                       make(map[string]any),
 		Provider:                              make(map[string]any),

@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -20,7 +19,7 @@ func TestDefaultWorkspaceRoot(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.DefineDefaultWorkspaceRoot())
+	diags := bundle.Apply(t.Context(), b, mutator.DefineDefaultWorkspaceRoot())
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "~/.bundle/name/environment", b.Config.Workspace.RootPath)

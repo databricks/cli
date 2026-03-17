@@ -2,6 +2,7 @@ package dresources
 
 import (
 	_ "embed"
+	"encoding/json"
 	"sync"
 
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -12,6 +13,36 @@ import (
 type FieldRule struct {
 	Field  *structpath.PatternNode `yaml:"field"`
 	Reason string                  `yaml:"reason"`
+}
+
+// BackendDefaultRule represents a field that may be set by the backend as a default.
+// When old and new are nil but remote is set, and the field matches, the change is skipped.
+// If Values is non-empty, the remote value must match one of the allowed values.
+type BackendDefaultRule struct {
+	Field  *structpath.PatternNode `yaml:"field"`
+	Values []json.RawMessage       `yaml:"values,omitempty"`
+}
+
+// UnmarshalYAML implements custom YAML unmarshaling for BackendDefaultRule.
+// Values are parsed from native YAML types and stored as JSON bytes.
+func (b *BackendDefaultRule) UnmarshalYAML(unmarshal func(any) error) error {
+	type helper struct {
+		Field  *structpath.PatternNode `yaml:"field"`
+		Values []any                   `yaml:"values,omitempty"`
+	}
+	var h helper
+	if err := unmarshal(&h); err != nil {
+		return err
+	}
+	b.Field = h.Field
+	for _, v := range h.Values {
+		raw, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		b.Values = append(b.Values, json.RawMessage(raw))
+	}
+	return nil
 }
 
 // ResourceLifecycleConfig defines lifecycle behavior for a resource type.
@@ -27,6 +58,10 @@ type ResourceLifecycleConfig struct {
 
 	// UpdateIDOnChanges: field patterns that trigger UpdateWithID when changed.
 	UpdateIDOnChanges []FieldRule `yaml:"update_id_on_changes,omitempty"`
+
+	// BackendDefaults: fields where the backend may set defaults.
+	// When old and new are nil but remote is set, and the remote value matches allowed values (if specified), the change is skipped.
+	BackendDefaults []BackendDefaultRule `yaml:"backend_defaults,omitempty"`
 }
 
 // Config is the root configuration structure for resource lifecycle behavior.
@@ -50,6 +85,7 @@ var (
 		IgnoreLocalChanges:  nil,
 		RecreateOnChanges:   nil,
 		UpdateIDOnChanges:   nil,
+		BackendDefaults:     nil,
 	}
 )
 

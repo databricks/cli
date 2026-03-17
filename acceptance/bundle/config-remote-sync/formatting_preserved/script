@@ -11,9 +11,11 @@ touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
-title "Modify max_concurrent_runs from 1 to 5"
+title "Modify max_concurrent_runs, description, and add timeout"
 edit_resource.py jobs $job_id <<EOF
 r["max_concurrent_runs"] = 5
+r["description"] = "Updated ETL job.\n\nRuns hourly."
+r["timeout_seconds"] = 3600
 EOF
 
 title "Detect and save changes"

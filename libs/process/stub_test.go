@@ -1,7 +1,6 @@
 package process_test
 
 import (
-	"context"
 	"errors"
 	"os/exec"
 	"testing"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestStubOutput(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, stub := process.WithStub(ctx)
 	stub.WithStdout("meeee")
 
@@ -30,7 +29,7 @@ func TestStubOutput(t *testing.T) {
 }
 
 func TestStubFailure(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, stub := process.WithStub(ctx)
 	stub.WithFailure(errors.New("nope"))
 
@@ -40,7 +39,7 @@ func TestStubFailure(t *testing.T) {
 }
 
 func TestStubCallback(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, stub := process.WithStub(ctx)
 	stub.WithCallback(func(cmd *exec.Cmd) error {
 		_, err := cmd.Stderr.Write([]byte("something..."))
@@ -65,7 +64,7 @@ func TestStubCallback(t *testing.T) {
 }
 
 func TestStubResponses(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, stub := process.WithStub(ctx)
 	stub.
 		WithStdoutFor("qux 1", "first").

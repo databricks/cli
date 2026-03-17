@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  external_locations:
+    test_location:
+      name: test_location_$UNIQUE_NAME
+      url: s3://test-bucket/path
+      credential_name: test_storage_credential
+      comment: "Test external location from DABs"

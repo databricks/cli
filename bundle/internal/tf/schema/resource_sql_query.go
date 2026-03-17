@@ -93,6 +93,10 @@ type ResourceSqlQueryParameter struct {
 	Text             *ResourceSqlQueryParameterText             `json:"text,omitempty"`
 }
 
+type ResourceSqlQueryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceSqlQueryScheduleContinuous struct {
 	IntervalSeconds int    `json:"interval_seconds"`
 	UntilDate       string `json:"until_date,omitempty"`
@@ -118,16 +122,17 @@ type ResourceSqlQuerySchedule struct {
 }
 
 type ResourceSqlQuery struct {
-	CreatedAt    string                      `json:"created_at,omitempty"`
-	DataSourceId string                      `json:"data_source_id"`
-	Description  string                      `json:"description,omitempty"`
-	Id           string                      `json:"id,omitempty"`
-	Name         string                      `json:"name"`
-	Parent       string                      `json:"parent,omitempty"`
-	Query        string                      `json:"query"`
-	RunAsRole    string                      `json:"run_as_role,omitempty"`
-	Tags         []string                    `json:"tags,omitempty"`
-	UpdatedAt    string                      `json:"updated_at,omitempty"`
-	Parameter    []ResourceSqlQueryParameter `json:"parameter,omitempty"`
-	Schedule     *ResourceSqlQuerySchedule   `json:"schedule,omitempty"`
+	CreatedAt      string                          `json:"created_at,omitempty"`
+	DataSourceId   string                          `json:"data_source_id"`
+	Description    string                          `json:"description,omitempty"`
+	Id             string                          `json:"id,omitempty"`
+	Name           string                          `json:"name"`
+	Parent         string                          `json:"parent,omitempty"`
+	Query          string                          `json:"query"`
+	RunAsRole      string                          `json:"run_as_role,omitempty"`
+	Tags           []string                        `json:"tags,omitempty"`
+	UpdatedAt      string                          `json:"updated_at,omitempty"`
+	Parameter      []ResourceSqlQueryParameter     `json:"parameter,omitempty"`
+	ProviderConfig *ResourceSqlQueryProviderConfig `json:"provider_config,omitempty"`
+	Schedule       *ResourceSqlQuerySchedule       `json:"schedule,omitempty"`
 }

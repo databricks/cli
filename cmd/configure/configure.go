@@ -7,10 +7,20 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
+
+// patConfigureExtraClearKeys lists non-credential profile keys that should also
+// be cleared when saving a PAT-based profile. Auth credential keys are derived
+// dynamically from config.ConfigAttributes via databrickscfg.AuthCredentialKeys().
+var patConfigureExtraClearKeys = []string{
+	"auth_type",
+	"scopes",
+	"databricks_cli_path",
+}
 
 func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config.Config) error {
 	ctx := cmd.Context()
@@ -141,14 +151,29 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		// This is relevant for OAuth only.
 		cfg.DatabricksCliPath = ""
 
-		// Save profile to config file.
-		return databrickscfg.SaveToProfile(ctx, &config.Config{
+		// Save profile to config file. PAT-based configure clears all
+		// non-PAT auth credentials and OAuth metadata to prevent
+		// multi-auth conflicts in the profile.
+		clearKeys := append(databrickscfg.AuthCredentialKeys(), patConfigureExtraClearKeys...)
+
+		// Cluster and serverless are mutually exclusive. Clear serverless
+		// when a cluster is being set (via flag or env var).
+		if cfg.ClusterID != "" {
+			clearKeys = append(clearKeys, "serverless_compute_id")
+		}
+
+		// Clear stale unified-host metadata — PAT profiles don't use it,
+		// and leaving it can change HostType() routing.
+		clearKeys = append(clearKeys, "experimental_is_unified_host")
+
+		err = databrickscfg.SaveToProfile(ctx, &config.Config{
 			Profile:    cfg.Profile,
 			Host:       cfg.Host,
 			Token:      cfg.Token,
 			ClusterID:  cfg.ClusterID,
-			ConfigFile: cfg.ConfigFile,
-		})
+			ConfigFile: env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
+		}, clearKeys...)
+		return err
 	}
 
 	return cmd

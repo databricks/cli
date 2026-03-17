@@ -9,7 +9,7 @@ Deployment complete!
 "{\n  \"uiSettings\": {\n    \"theme\": {\n      \"widgetHeaderAlignment\": \"ALIGNMENT_UNSPECIFIED\"\n    }\n  }\n}\n"
 
 === Update dashboard
-"{}\n"
+"{\n  \"uiSettings\": {\n    \"theme\": {\n      \"widgetHeaderAlignment\": \"ALIGNMENT_UNSPECIFIED\"\n    }\n  }\n}\n"
 
 >>> [CLI] bundle generate dashboard --resource already_exists
 Error: dashboard.lvdash.json already exists. Use --force to overwrite
@@ -27,10 +27,16 @@ Exit code: 1
 }
 
 >>> [CLI] bundle generate dashboard --resource already_exists --force
-Writing dashboard to "dashboard.lvdash.json"
+Writing dashboard to dashboard.lvdash.json
 
 >>> cat dashboard.lvdash.json
-{}
+{
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    }
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

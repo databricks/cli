@@ -14,6 +14,10 @@ type DataSourceRfaAccessRequestDestinationsDestinations struct {
 	SpecialDestination string `json:"special_destination,omitempty"`
 }
 
+type DataSourceRfaAccessRequestDestinationsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceRfaAccessRequestDestinationsSecurable struct {
 	FullName      string `json:"full_name,omitempty"`
 	ProviderShare string `json:"provider_share,omitempty"`
@@ -25,6 +29,7 @@ type DataSourceRfaAccessRequestDestinations struct {
 	DestinationSourceSecurable *DataSourceRfaAccessRequestDestinationsDestinationSourceSecurable `json:"destination_source_securable,omitempty"`
 	Destinations               []DataSourceRfaAccessRequestDestinationsDestinations              `json:"destinations,omitempty"`
 	FullName                   string                                                            `json:"full_name"`
+	ProviderConfig             *DataSourceRfaAccessRequestDestinationsProviderConfig             `json:"provider_config,omitempty"`
 	Securable                  *DataSourceRfaAccessRequestDestinationsSecurable                  `json:"securable,omitempty"`
 	SecurableType              string                                                            `json:"securable_type"`
 }

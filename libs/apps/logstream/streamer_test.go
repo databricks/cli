@@ -48,7 +48,7 @@ func TestLogStreamerTailBufferFlushes(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	require.Len(t, lines, 2, "expected only last two log lines")
 	assert.Contains(t, lines[0], "msg2")
@@ -81,7 +81,7 @@ func TestLogStreamerTailFlushErrorPropagates(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	err := streamer.Run(context.Background())
+	err := streamer.Run(t.Context())
 	require.Error(t, err)
 	assert.Equal(t, writerErr, err)
 }
@@ -106,7 +106,7 @@ func TestLogStreamerTrimsCRLFInStructuredEntries(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	output := buf.String()
 	assert.Contains(t, output, "line with crlf")
 	assert.NotContains(t, output, "\r")
@@ -129,7 +129,7 @@ func TestLogStreamerDialErrorIncludesResponseBody(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	err := streamer.Run(context.Background())
+	err := streamer.Run(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "HTTP 403 Forbidden")
 	assert.Contains(t, err.Error(), "token invalid")
@@ -156,7 +156,7 @@ func TestLogStreamerRetriesOnDialFailure(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 300*time.Millisecond)
 	defer cancel()
 
 	require.ErrorIs(t, streamer.Run(ctx), context.DeadlineExceeded)
@@ -186,7 +186,7 @@ func TestLogStreamerSendsSearchTerm(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	assert.Contains(t, buf.String(), "boom")
 }
 
@@ -214,7 +214,7 @@ func TestLogStreamerFiltersSources(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	output := strings.TrimSpace(buf.String())
 	assert.Contains(t, output, "app")
 	assert.NotContains(t, output, "sys")
@@ -259,7 +259,7 @@ func TestLogStreamerOutputsNDJSON(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputJSON),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	require.Len(t, lines, 2, "expected two NDJSON lines")
@@ -307,7 +307,7 @@ func TestTailWithoutPrefetchRespectsTailSize(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
 	require.Len(t, lines, 2)
 	assert.Contains(t, lines[0], "line3")
@@ -331,7 +331,7 @@ func TestCloseErrorPropagatesWhenAbnormal(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	err := streamer.Run(context.Background())
+	err := streamer.Run(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "log stream closed with code 4403")
 	assert.Contains(t, err.Error(), "auth failed")
@@ -421,7 +421,7 @@ func TestLogStreamerTailFlushesWithoutFollow(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 
 	done := make(chan error, 1)
@@ -462,7 +462,7 @@ func TestLogStreamerFollowTailWithoutPrefetchEmitsRequestedLines(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	done := make(chan error, 1)
@@ -488,7 +488,7 @@ func TestLogStreamerFollowTailWithoutPrefetchEmitsRequestedLines(t *testing.T) {
 func TestLogStreamerFollowTailDoesNotReplayAfterReconnect(t *testing.T) {
 	t.Parallel()
 
-	stopCtx, stop := context.WithCancel(context.Background())
+	stopCtx, stop := context.WithCancel(t.Context())
 	defer stop()
 
 	server := newTestLogServer(t, func(id int, conn *websocket.Conn) {
@@ -520,7 +520,7 @@ func TestLogStreamerFollowTailDoesNotReplayAfterReconnect(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	done := make(chan error, 1)
@@ -601,7 +601,7 @@ func TestLogStreamerRefreshesTokenAfterAuthClose(t *testing.T) {
 		formatter:     newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	done := make(chan error, 1)
@@ -640,14 +640,14 @@ func TestLogStreamerEmitsPlainTextFrames(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	require.NoError(t, streamer.Run(context.Background()))
+	require.NoError(t, streamer.Run(t.Context()))
 	assert.Contains(t, buf.String(), "plain text line")
 }
 
 func TestLogStreamerTimeoutStopsQuietFollowStream(t *testing.T) {
 	t.Parallel()
 
-	stopCtx, stop := context.WithCancel(context.Background())
+	stopCtx, stop := context.WithCancel(t.Context())
 	defer stop()
 
 	server := newTestLogServer(t, func(id int, conn *websocket.Conn) {
@@ -665,7 +665,7 @@ func TestLogStreamerTimeoutStopsQuietFollowStream(t *testing.T) {
 		formatter: newLogFormatter(false, flags.OutputText),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 	defer cancel()
 
 	done := make(chan error, 1)
@@ -758,7 +758,7 @@ func TestAppStatusCheckerStopsFollowing(t *testing.T) {
 		formatter:        newLogFormatter(false, flags.OutputText),
 	}
 
-	err := streamer.Run(context.Background())
+	err := streamer.Run(t.Context())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "app is no longer available")
 	assert.Contains(t, err.Error(), "app stopped")

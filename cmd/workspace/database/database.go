@@ -235,13 +235,13 @@ func newCreateDatabaseInstance() *cobra.Command {
 		if createDatabaseInstanceSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *database.DatabaseInstance) {
 			status := i.State
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createDatabaseInstanceTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}

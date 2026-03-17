@@ -15,6 +15,10 @@ type ResourceFeatureEngineeringMaterializedFeatureOnlineStoreConfig struct {
 	TableNamePrefix string `json:"table_name_prefix"`
 }
 
+type ResourceFeatureEngineeringMaterializedFeatureProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceFeatureEngineeringMaterializedFeature struct {
 	CronSchedule            string                                                           `json:"cron_schedule,omitempty"`
 	FeatureName             string                                                           `json:"feature_name"`
@@ -23,5 +27,6 @@ type ResourceFeatureEngineeringMaterializedFeature struct {
 	OfflineStoreConfig      *ResourceFeatureEngineeringMaterializedFeatureOfflineStoreConfig `json:"offline_store_config,omitempty"`
 	OnlineStoreConfig       *ResourceFeatureEngineeringMaterializedFeatureOnlineStoreConfig  `json:"online_store_config,omitempty"`
 	PipelineScheduleState   string                                                           `json:"pipeline_schedule_state,omitempty"`
+	ProviderConfig          *ResourceFeatureEngineeringMaterializedFeatureProviderConfig     `json:"provider_config,omitempty"`
 	TableName               string                                                           `json:"table_name,omitempty"`
 }

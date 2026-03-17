@@ -73,7 +73,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, ``)
-	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud name.`)
+	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `DEPRECATED: This field is being ignored by the server and will be removed in the future.`)
 	// TODO: complex arg: cloud_resource_container
 	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS]`)
 	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
@@ -171,12 +171,12 @@ func newCreate() *cobra.Command {
 		if createSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
 			statusMessage := i.WorkspaceStatusMessage
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -454,12 +454,12 @@ func newUpdate() *cobra.Command {
 		if updateSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
 			statusMessage := i.WorkspaceStatusMessage
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(updateTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}

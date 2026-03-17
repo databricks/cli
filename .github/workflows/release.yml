@@ -44,7 +44,15 @@ jobs:
       # QEMU is required to build cross platform docker images using buildx.
       # It allows virtualization of the CPU architecture at the application level.
       - name: Set up QEMU dependency
-        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+
+      # Pin Docker to 28.0.4 because Docker 29.x changed how buildx pushes
+      # images (they become manifest lists), which breaks goreleaser's
+      # docker manifest create step with "is a manifest list" error.
+      - name: Set up Docker
+        uses: docker/setup-docker-action@e43656e248c0bd0647d3f5c195d116aacf6fcaf4 # v4.7.0
+        with:
+          version: v28.0.4
 
       - name: Run GoReleaser for Unix
         id: releaser
@@ -298,7 +306,7 @@ jobs:
           fetch-tags: true
 
       - name: Install uv
-        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+        uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b # v7.3.0
         with:
           version: "0.6.5"
 

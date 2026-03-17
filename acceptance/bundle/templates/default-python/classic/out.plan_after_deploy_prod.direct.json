@@ -135,12 +135,12 @@
         },
         "tasks[task_key='notebook_task'].notebook_task.source": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "WORKSPACE"
         },
         "tasks[task_key='notebook_task'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='notebook_task'].timeout_seconds": {
@@ -155,7 +155,7 @@
         },
         "tasks[task_key='python_wheel_task'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='python_wheel_task'].timeout_seconds": {
@@ -170,7 +170,7 @@
         },
         "tasks[task_key='refresh_pipeline'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='refresh_pipeline'].timeout_seconds": {
@@ -200,9 +200,9 @@
       "action": "skip",
       "remote_state": {
         "object_id": "/jobs/[NUMID]",
-        "permissions": [
+        "__embed__": [
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           }
         ]
@@ -218,6 +218,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "environment": {
           "dependencies": [
             "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files"
@@ -243,7 +244,7 @@
       "changes": {
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "dbfs:/pipelines/[UUID]"
         }
       }
@@ -258,9 +259,9 @@
       "action": "skip",
       "remote_state": {
         "object_id": "/pipelines/[UUID]",
-        "permissions": [
+        "__embed__": [
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           }
         ]

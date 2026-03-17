@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -16,7 +15,7 @@ import (
 
 type MigrateMode bool
 
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, plan *deployplan.Plan, migrateMode MigrateMode) {
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan, migrateMode MigrateMode) {
 	if plan == nil {
 		panic("Planning is not done")
 	}
@@ -161,9 +160,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
-	targetResourceKey := path.Prefix(3).String()
-	fieldPath := path.SkipPrefix(3)
+	targetResourceKey, fieldPath := splitResourcePath(path)
 	fieldPathS := fieldPath.String()
 
 	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)

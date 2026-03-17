@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -29,8 +30,13 @@ type ServerOptions struct {
 	MaxClients int
 	// Delay before shutting down the server when there are no active connections
 	ShutdownDelay time.Duration
-	// The cluster ID that the client started this server on
+	// The cluster ID that the client started this server on (required for Driver Proxy connections)
 	ClusterID string
+	// SessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
+	// Used for metadata storage path. Defaults to ClusterID if not set.
+	SessionID string
+	// Serverless indicates whether the server is running on serverless compute.
+	Serverless bool
 	// The directory to store sshd configuration
 	ConfigDir string
 	// The name of the secrets scope to use for client and server keys
@@ -56,7 +62,12 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	listenAddr := fmt.Sprintf("0.0.0.0:%d", port)
 	log.Info(ctx, "Starting server on "+listenAddr)
 
-	err = workspace.SaveWorkspaceMetadata(ctx, client, opts.Version, opts.ClusterID, port)
+	// Save metadata including ClusterID (required for Driver Proxy connections in serverless mode)
+	metadata := &workspace.WorkspaceMetadata{
+		Port:      port,
+		ClusterID: opts.ClusterID,
+	}
+	err = workspace.SaveWorkspaceMetadata(ctx, client, opts.Version, opts.SessionID, metadata)
 	if err != nil {
 		return fmt.Errorf("failed to save metadata to the workspace: %w", err)
 	}
@@ -77,9 +88,17 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	connections := proxy.NewConnectionsManager(opts.MaxClients, opts.ShutdownDelay)
 	http.Handle("/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
 	http.HandleFunc("/metadata", serveMetadata)
+
+	http.Handle("/driver-proxy-http/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
+	http.HandleFunc("/driver-proxy-http/metadata", serveMetadata)
+
 	go handleTimeout(ctx, connections.TimedOut, opts.ShutdownDelay)
 
-	return http.ListenAndServe(listenAddr, nil)
+	return http.ListenAndServe(listenAddr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Normalize double slashes from the driver proxy (e.g. //metadata -> /metadata)
+		r.URL.Path = path.Clean(r.URL.Path)
+		http.DefaultServeMux.ServeHTTP(w, r)
+	}))
 }
 
 func serveMetadata(w http.ResponseWriter, r *http.Request) {

@@ -20,7 +20,7 @@ func loadTestProfile(t *testing.T, ctx context.Context, profileName string) *pro
 }
 
 func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./imaginary-file/databrickscfg")
 
 	existingProfile, err := loadProfileByName(ctx, "foo", profile.DefaultProfiler)
@@ -33,7 +33,7 @@ func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
 func TestSetHost(t *testing.T) {
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 
 	profile1 := loadTestProfile(t, ctx, "profile-1")
 	profile2 := loadTestProfile(t, ctx, "profile-2")
@@ -49,11 +49,23 @@ func TestSetHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "val from --host", authArguments.Host)
 
+	// Test setting host from flag with trailing slash is stripped
+	authArguments.Host = "https://www.host1.com/"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://www.host1.com", authArguments.Host)
+
 	// Test setting host from argument
 	authArguments.Host = ""
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"val from [HOST]"})
 	assert.NoError(t, err)
 	assert.Equal(t, "val from [HOST]", authArguments.Host)
+
+	// Test setting host from argument with trailing slash is stripped
+	authArguments.Host = ""
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"https://www.host1.com/"})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://www.host1.com", authArguments.Host)
 
 	// Test setting host from profile
 	authArguments.Host = ""
@@ -76,7 +88,7 @@ func TestSetHost(t *testing.T) {
 func TestSetAccountId(t *testing.T) {
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 
 	accountProfile := loadTestProfile(t, ctx, "account-profile")
 
@@ -101,10 +113,10 @@ func TestSetAccountId(t *testing.T) {
 	assert.EqualError(t, err, "the command is being run in a non-interactive environment, please specify an account ID using --account-id")
 }
 
-func TestSetWorkspaceIdForUnifiedHost(t *testing.T) {
+func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 	var authArguments auth.AuthArguments
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 
 	unifiedWorkspaceProfile := loadTestProfile(t, ctx, "unified-workspace")
 	unifiedAccountProfile := loadTestProfile(t, ctx, "unified-account")
@@ -113,14 +125,14 @@ func TestSetWorkspaceIdForUnifiedHost(t *testing.T) {
 	authArguments = auth.AuthArguments{
 		Host:          "https://unified.databricks.com",
 		AccountID:     "test-unified-account",
-		WorkspaceId:   "val from --workspace-id",
+		WorkspaceID:   "val from --workspace-id",
 		IsUnifiedHost: true,
 	}
 	err := setHostAndAccountId(ctx, unifiedWorkspaceProfile, &authArguments, []string{})
 	assert.NoError(t, err)
 	assert.Equal(t, "https://unified.databricks.com", authArguments.Host)
 	assert.Equal(t, "test-unified-account", authArguments.AccountID)
-	assert.Equal(t, "val from --workspace-id", authArguments.WorkspaceId)
+	assert.Equal(t, "val from --workspace-id", authArguments.WorkspaceID)
 
 	// Test setting workspace_id from profile for unified host
 	authArguments = auth.AuthArguments{
@@ -132,7 +144,7 @@ func TestSetWorkspaceIdForUnifiedHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://unified.databricks.com", authArguments.Host)
 	assert.Equal(t, "test-unified-account", authArguments.AccountID)
-	assert.Equal(t, "123456789", authArguments.WorkspaceId)
+	assert.Equal(t, "123456789", authArguments.WorkspaceID)
 
 	// Test workspace_id is optional - should default to empty in non-interactive mode
 	authArguments = auth.AuthArguments{
@@ -144,7 +156,7 @@ func TestSetWorkspaceIdForUnifiedHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://unified.databricks.com", authArguments.Host)
 	assert.Equal(t, "test-unified-account", authArguments.AccountID)
-	assert.Equal(t, "", authArguments.WorkspaceId) // Empty is valid for account-level access
+	assert.Equal(t, "", authArguments.WorkspaceID) // Empty is valid for account-level access
 
 	// Test workspace_id is optional - should default to empty when no profile exists
 	authArguments = auth.AuthArguments{
@@ -156,12 +168,12 @@ func TestSetWorkspaceIdForUnifiedHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://unified.databricks.com", authArguments.Host)
 	assert.Equal(t, "test-unified-account", authArguments.AccountID)
-	assert.Equal(t, "", authArguments.WorkspaceId) // Empty is valid for account-level access
+	assert.Equal(t, "", authArguments.WorkspaceID) // Empty is valid for account-level access
 }
 
-func TestPromptForWorkspaceIdInNonInteractiveMode(t *testing.T) {
+func TestPromptForWorkspaceIDInNonInteractiveMode(t *testing.T) {
 	// Setup non-interactive context
-	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
 
 	// Test that promptForWorkspaceID returns empty string (no error) in non-interactive mode
 	workspaceID, err := promptForWorkspaceID(ctx)
@@ -231,7 +243,7 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			if tc.configFileEnv != "" {
 				t.Setenv("DATABRICKS_CONFIG_FILE", tc.configFileEnv)

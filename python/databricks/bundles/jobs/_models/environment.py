@@ -16,6 +16,12 @@ class Environment:
     In this minimal environment spec, only pip dependencies are supported.
     """
 
+    base_environment: VariableOrOptional[str] = None
+    """
+    The `base_environment` key refers to an `env.yaml` file that specifies an environment version and a collection of dependencies required for the environment setup.
+    This `env.yaml` file may itself include a `base_environment` reference pointing to another `env_1.yaml` file. However, when used as a base environment, `env_1.yaml` (or further nested references) will not be processed or included in the final environment, meaning that the resolution of `base_environment` references is not recursive.
+    """
+
     client: VariableOrOptional[str] = None
     """
     [DEPRECATED] Use `environment_version` instead.
@@ -45,6 +51,12 @@ class Environment:
 
 class EnvironmentDict(TypedDict, total=False):
     """"""
+
+    base_environment: VariableOrOptional[str]
+    """
+    The `base_environment` key refers to an `env.yaml` file that specifies an environment version and a collection of dependencies required for the environment setup.
+    This `env.yaml` file may itself include a `base_environment` reference pointing to another `env_1.yaml` file. However, when used as a base environment, `env_1.yaml` (or further nested references) will not be processed or included in the final environment, meaning that the resolution of `base_environment` references is not recursive.
+    """
 
     client: VariableOrOptional[str]
     """

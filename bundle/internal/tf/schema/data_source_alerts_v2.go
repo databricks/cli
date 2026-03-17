@@ -53,6 +53,10 @@ type DataSourceAlertsV2AlertsEvaluation struct {
 	Threshold          *DataSourceAlertsV2AlertsEvaluationThreshold    `json:"threshold,omitempty"`
 }
 
+type DataSourceAlertsV2AlertsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceAlertsV2AlertsRunAs struct {
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 	UserName             string `json:"user_name,omitempty"`
@@ -75,6 +79,7 @@ type DataSourceAlertsV2Alerts struct {
 	LifecycleState    string                                  `json:"lifecycle_state,omitempty"`
 	OwnerUserName     string                                  `json:"owner_user_name,omitempty"`
 	ParentPath        string                                  `json:"parent_path,omitempty"`
+	ProviderConfig    *DataSourceAlertsV2AlertsProviderConfig `json:"provider_config,omitempty"`
 	QueryText         string                                  `json:"query_text,omitempty"`
 	RunAs             *DataSourceAlertsV2AlertsRunAs          `json:"run_as,omitempty"`
 	RunAsUserName     string                                  `json:"run_as_user_name,omitempty"`
@@ -83,7 +88,12 @@ type DataSourceAlertsV2Alerts struct {
 	WarehouseId       string                                  `json:"warehouse_id,omitempty"`
 }
 
+type DataSourceAlertsV2ProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceAlertsV2 struct {
-	Alerts   []DataSourceAlertsV2Alerts `json:"alerts,omitempty"`
-	PageSize int                        `json:"page_size,omitempty"`
+	Alerts         []DataSourceAlertsV2Alerts        `json:"alerts,omitempty"`
+	PageSize       int                               `json:"page_size,omitempty"`
+	ProviderConfig *DataSourceAlertsV2ProviderConfig `json:"provider_config,omitempty"`
 }

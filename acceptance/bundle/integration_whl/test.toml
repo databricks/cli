@@ -1,4 +1,4 @@
-Local = false
+Local = true
 CloudSlow = true
 
 # Workspace file system does not allow initializing python envs on it.

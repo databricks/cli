@@ -1,0 +1,43 @@
+{
+  "body": {
+    "description": "my_app_description",
+    "name": "myappname"
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  }
+}
+{
+  "body": {
+    "app": {
+      "description": "MY_APP_DESCRIPTION",
+      "name": "myappname"
+    },
+    "update_mask": "description"
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps/myappname/update"
+}
+{
+  "body": {},
+  "method": "DELETE",
+  "path": "/api/2.0/apps/myappname"
+}
+{
+  "body": {
+    "description": "MY_APP_DESCRIPTION",
+    "name": "mynewappname"
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  }
+}
+{
+  "body": {},
+  "method": "DELETE",
+  "path": "/api/2.0/apps/mynewappname"
+}

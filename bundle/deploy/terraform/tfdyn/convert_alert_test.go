@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -22,7 +21,7 @@ func TestConvertAlert(t *testing.T) {
 			CustomSummary:     "Test alert summary",
 			CustomDescription: "Test alert description",
 		},
-		Permissions: []resources.AlertPermission{
+		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",
@@ -37,7 +36,7 @@ func TestConvertAlert(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = alertConverter{}.Convert(ctx, "test_alert", vin, out)
 	require.NoError(t, err)
@@ -50,6 +49,7 @@ func TestConvertAlert(t *testing.T) {
 		"warehouse_id":       "test_warehouse_id",
 		"custom_summary":     "Test alert summary",
 		"custom_description": "Test alert description",
+		"purge_on_delete":    true,
 	}, alert)
 
 	// Assert equality on the permissions
@@ -66,4 +66,42 @@ func TestConvertAlert(t *testing.T) {
 			},
 		},
 	}, out.Permissions["alert_test_alert"])
+}
+
+func TestConvertAlertWithThresholdDoubleValue(t *testing.T) {
+	src := resources.Alert{
+		AlertV2: sql.AlertV2{
+			DisplayName: "test_alert",
+			QueryText:   "SELECT 1",
+			WarehouseId: "test_warehouse_id",
+			Evaluation: sql.AlertV2Evaluation{
+				ComparisonOperator: "EQUAL",
+				Source: sql.AlertV2OperandColumn{
+					Name: "1",
+				},
+				Threshold: &sql.AlertV2Operand{
+					Value: &sql.AlertV2OperandValue{
+						DoubleValue: 1.3,
+					},
+				},
+			},
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := t.Context()
+	out := schema.NewResources()
+	err = alertConverter{}.Convert(ctx, "test_alert", vin, out)
+	require.NoError(t, err)
+
+	alert := out.AlertV2["test_alert"]
+	alertMap := alert.(map[string]any)
+	evaluation := alertMap["evaluation"].(map[string]any)
+	threshold := evaluation["threshold"].(map[string]any)
+	value := threshold["value"].(map[string]any)
+
+	// Assert the fractional double_value is preserved after normalization.
+	assert.InDelta(t, 1.3, value["double_value"], 0.0001)
 }

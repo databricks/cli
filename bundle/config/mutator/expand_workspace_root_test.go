@@ -1,7 +1,6 @@
 package mutator_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -25,7 +24,7 @@ func TestExpandWorkspaceRoot(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
+	diags := bundle.Apply(t.Context(), b, mutator.ExpandWorkspaceRoot())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "/Workspace/Users/jane@doe.com/foo", b.Config.Workspace.RootPath)
 }
@@ -43,7 +42,7 @@ func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
+	diags := bundle.Apply(t.Context(), b, mutator.ExpandWorkspaceRoot())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "/Users/charly@doe.com/foo", b.Config.Workspace.RootPath)
 }
@@ -60,7 +59,7 @@ func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
+	diags := bundle.Apply(t.Context(), b, mutator.ExpandWorkspaceRoot())
 	require.True(t, diags.HasError())
 }
 
@@ -72,6 +71,6 @@ func TestExpandWorkspaceRootWithoutCurrentUser(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
+	diags := bundle.Apply(t.Context(), b, mutator.ExpandWorkspaceRoot())
 	require.True(t, diags.HasError())
 }

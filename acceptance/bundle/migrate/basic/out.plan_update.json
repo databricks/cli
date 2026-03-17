@@ -2,7 +2,7 @@
   "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
-  "serial": 7,
+  "serial": 8,
   "plan": {
     "resources.jobs.test_job": {
       "action": "update",
@@ -80,12 +80,12 @@
         },
         "tasks[task_key='main'].notebook_task.source": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "WORKSPACE"
         },
         "tasks[task_key='main'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='main'].timeout_seconds": {
@@ -170,6 +170,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS][1],
         "libraries": [
@@ -202,7 +203,7 @@
         },
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "dbfs:/pipelines/[UUID]"
         },
         "tags['myjob_name']": {
@@ -237,7 +238,7 @@
       "changes": {
         "storage_location": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
         }
       }

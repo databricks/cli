@@ -8,7 +8,7 @@ Deployment complete!
     {
       "path": "[TEST_TMP_DIR]/databricks.yml",
       "originalContent": "bundle:\n  name: test-bundle-[UNIQUE_NAME]\n\nresources:\n  jobs:\n    test_job:\n      max_concurrent_runs: 1\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: /Users/{{workspace_user_name}}/notebook\n          new_cluster:\n            spark_version: 13.3.x-snapshot-scala2.12\n            node_type_id: [NODE_TYPE_ID]\n            num_workers: 1\n",
-      "modifiedContent": "bundle:\n  name: test-bundle-[UNIQUE_NAME]\nresources:\n  jobs:\n    test_job:\n      max_concurrent_runs: 3\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: /Users/{{workspace_user_name}}/notebook\n          new_cluster:\n            spark_version: 13.3.x-snapshot-scala2.12\n            node_type_id: [NODE_TYPE_ID]\n            num_workers: 1\n      tags:\n        env: test\n"
+      "modifiedContent": "bundle:\n  name: test-bundle-[UNIQUE_NAME]\n\nresources:\n  jobs:\n    test_job:\n      max_concurrent_runs: 3\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: /Users/{{workspace_user_name}}/notebook\n          new_cluster:\n            spark_version: 13.3.x-snapshot-scala2.12\n            node_type_id: [NODE_TYPE_ID]\n            num_workers: 1\n      tags:\n        env: test\n"
     }
   ],
   "changes": {

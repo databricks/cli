@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -12,11 +11,12 @@ import (
 
 func TestConvertLifecycleForAllResources(t *testing.T) {
 	supportedResources := config.SupportedResources()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Resources that are only supported in direct mode and should not be converted to Terraform
 	ignoredResources := []string{
 		"catalogs",
+		"external_locations",
 	}
 
 	for resourceType := range supportedResources {

@@ -1,7 +1,6 @@
 package statemgmt
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -35,6 +34,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.quality_monitors.test_monitor":                     {ID: "1"},
 		"resources.catalogs.test_catalog":                             {ID: "1"},
 		"resources.schemas.test_schema":                               {ID: "1"},
+		"resources.external_locations.test_external_location":         {ID: "1"},
 		"resources.volumes.test_volume":                               {ID: "1"},
 		"resources.clusters.test_cluster":                             {ID: "1"},
 		"resources.dashboards.test_dashboard":                         {ID: "1"},
@@ -49,7 +49,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_branches.test_postgres_branch":            {ID: "projects/test-project/branches/main"},
 		"resources.postgres_endpoints.test_postgres_endpoint":         {ID: "projects/test-project/branches/main/endpoints/primary"},
 	}
-	err := StateToBundle(context.Background(), state, &config)
+	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)
@@ -78,6 +78,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Schemas["test_schema"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.ExternalLocations["test_external_location"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ExternalLocations["test_external_location"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Volumes["test_volume"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Volumes["test_volume"].ModifiedStatus)
@@ -182,6 +185,14 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			ExternalLocations: map[string]*resources.ExternalLocation{
+				"test_external_location": {
+					CreateExternalLocation: catalog.CreateExternalLocation{
+						Name: "test_external_location",
+						Url:  "s3://test-bucket/path",
+					},
+				},
+			},
 			Volumes: map[string]*resources.Volume{
 				"test_volume": {
 					CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
@@ -279,7 +290,7 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 		},
 	}
 
-	err := StateToBundle(context.Background(), nil, &config)
+	err := StateToBundle(t.Context(), nil, &config)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "", config.Resources.Jobs["test_job"].ID)
@@ -308,6 +319,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Schemas["test_schema"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.ExternalLocations["test_external_location"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ExternalLocations["test_external_location"].ModifiedStatus)
 
 	assert.Equal(t, "", config.Resources.Volumes["test_volume"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Volumes["test_volume"].ModifiedStatus)
@@ -459,6 +473,14 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_schema_new": {
 					CreateSchema: catalog.CreateSchema{
 						Name: "test_schema_new",
+					},
+				},
+			},
+			ExternalLocations: map[string]*resources.ExternalLocation{
+				"test_external_location": {
+					CreateExternalLocation: catalog.CreateExternalLocation{
+						Name: "test_external_location",
+						Url:  "s3://test-bucket/path",
 					},
 				},
 			},
@@ -668,7 +690,7 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.postgres_endpoints.test_postgres_endpoint":      {ID: "projects/test-project/branches/main/endpoints/primary"},
 		"resources.postgres_endpoints.test_postgres_endpoint_old":  {ID: "projects/test-project/branches/main/endpoints/old"},
 	}
-	err := StateToBundle(context.Background(), state, &config)
+	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)

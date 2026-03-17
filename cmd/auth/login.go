@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -144,7 +143,7 @@ depends on the existing profiles you have set in your configuration file
 			authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
 		}
 		if !cmd.Flag("workspace-id").Changed && existingProfile != nil {
-			authArguments.WorkspaceId = existingProfile.WorkspaceId
+			authArguments.WorkspaceID = existingProfile.WorkspaceID
 		}
 
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
@@ -152,9 +151,19 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
+		authArguments.Profile = profileName
+
 		var scopesList []string
-		if scopes != "" {
+		switch {
+		case scopes != "":
+			// Explicit --scopes flag takes precedence.
 			for _, s := range strings.Split(scopes, ",") {
+				scopesList = append(scopesList, strings.TrimSpace(s))
+			}
+		case existingProfile != nil && existingProfile.Scopes != "":
+			// Preserve scopes from the existing profile so re-login
+			// uses the same scopes the user previously configured.
+			for _, s := range strings.Split(existingProfile.Scopes, ",") {
 				scopesList = append(scopesList, strings.TrimSpace(s))
 			}
 		}
@@ -188,6 +197,18 @@ depends on the existing profiles you have set in your configuration file
 		// 2. Saving the profile.
 
 		var clusterID, serverlessComputeID string
+
+		// Keys to explicitly remove from the profile. OAuth login always
+		// clears incompatible credential fields (PAT, basic auth, M2M).
+		clearKeys := oauthLoginClearKeys()
+
+		// Boolean false is zero-valued and skipped by SaveToProfile's IsZero
+		// check. Explicitly clear experimental_is_unified_host when false so
+		// it doesn't remain sticky from a previous login.
+		if !authArguments.IsUnifiedHost {
+			clearKeys = append(clearKeys, "experimental_is_unified_host")
+		}
+
 		switch {
 		case configureCluster:
 			// Create a workspace client to list clusters for interactive selection.
@@ -196,7 +217,7 @@ depends on the existing profiles you have set in your configuration file
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{
 				Host:                       authArguments.Host,
 				AccountID:                  authArguments.AccountID,
-				WorkspaceId:                authArguments.WorkspaceId,
+				WorkspaceID:                authArguments.WorkspaceID,
 				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 				Credentials:                config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
 			})
@@ -208,20 +229,14 @@ depends on the existing profiles you have set in your configuration file
 			if err != nil {
 				return err
 			}
+			// Cluster and serverless are mutually exclusive.
+			clearKeys = append(clearKeys, "serverless_compute_id")
 		case configureServerless:
 			serverlessComputeID = "auto"
+			// Cluster and serverless are mutually exclusive.
+			clearKeys = append(clearKeys, "cluster_id")
 		default:
-			// Respect the existing profile if it exists, even if it has
-			// both cluster and serverless configured. Tools relying on
-			// these fields from the profile will need to handle this case.
-			//
-			// TODO: consider whether we should use this an an opportunity
-			// to clean up the profile under the assumption that serverless
-			// is the preferred option.
-			if existingProfile != nil {
-				clusterID = existingProfile.ClusterID
-				serverlessComputeID = existingProfile.ServerlessComputeID
-			}
+			// Neither flag: preserve both from existing profile via merge semantics.
 		}
 
 		if profileName != "" {
@@ -230,13 +245,13 @@ depends on the existing profiles you have set in your configuration file
 				Host:                       authArguments.Host,
 				AuthType:                   authTypeDatabricksCLI,
 				AccountID:                  authArguments.AccountID,
-				WorkspaceId:                authArguments.WorkspaceId,
+				WorkspaceID:                authArguments.WorkspaceID,
 				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 				ClusterID:                  clusterID,
-				ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
+				ConfigFile:                 env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 				ServerlessComputeID:        serverlessComputeID,
 				Scopes:                     scopesList,
-			})
+			}, clearKeys...)
 			if err != nil {
 				return err
 			}
@@ -287,11 +302,13 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		}
 	}
 
+	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
+
 	// Determine the host type and handle account ID / workspace ID accordingly
 	cfg := &config.Config{
 		Host:                       authArguments.Host,
 		AccountID:                  authArguments.AccountID,
-		WorkspaceId:                authArguments.WorkspaceId,
+		WorkspaceID:                authArguments.WorkspaceID,
 		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 	}
 
@@ -327,17 +344,17 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		// - With workspace ID: workspace-level APIs
 		// - Without workspace ID: account-level APIs
 		// If neither is provided via flags, prompt for workspace ID (most common case)
-		hasWorkspaceID := authArguments.WorkspaceId != ""
+		hasWorkspaceID := authArguments.WorkspaceID != ""
 		if !hasWorkspaceID {
-			if existingProfile != nil && existingProfile.WorkspaceId != "" {
-				authArguments.WorkspaceId = existingProfile.WorkspaceId
+			if existingProfile != nil && existingProfile.WorkspaceID != "" {
+				authArguments.WorkspaceID = existingProfile.WorkspaceID
 			} else {
 				// Prompt for workspace ID for workspace-level access
 				workspaceId, err := promptForWorkspaceID(ctx)
 				if err != nil {
 					return err
 				}
-				authArguments.WorkspaceId = workspaceId
+				authArguments.WorkspaceID = workspaceId
 			}
 		}
 	case config.WorkspaceHost:
@@ -397,6 +414,13 @@ func openURLSuppressingStderr(url string) error {
 
 	// Call the browser open function
 	return browserpkg.OpenURL(url)
+}
+
+// oauthLoginClearKeys returns profile keys that should be explicitly removed
+// when performing an OAuth login. Derives auth credential fields dynamically
+// from the SDK's ConfigAttributes to stay in sync as new auth methods are added.
+func oauthLoginClearKeys() []string {
+	return databrickscfg.AuthCredentialKeys()
 }
 
 // getBrowserFunc returns a function that opens the given URL in the browser.

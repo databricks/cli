@@ -1,5 +1,15 @@
 # Error: Catalog resources are only supported with direct deployment mode
 EnvMatrixExclude.no_catalog = ["INPUT_CONFIG=catalog.yml.tmpl"]
+EnvMatrixExclude.no_external_location = ["INPUT_CONFIG=external_location.yml.tmpl"]
 
 # Unexpected action='create' for resources.secret_scopes.foo.permissions
 EnvMatrixExclude.no_secret_scope = ["INPUT_CONFIG=secret_scope.yml.tmpl"]
+
+# Cross-resource permission references (e.g. ${resources.jobs.job_b.permissions[0].level})
+# don't work in terraform mode: the terraform interpolator converts the path to
+# ${databricks_job.job_b.permissions[0].level}, but Terraform's databricks_job resource
+# does not expose permissions as output attributes (permissions are a separate
+# databricks_permissions resource in terraform), so the literal unresolved string
+# ends up as the permission level value.
+EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]
+EnvMatrixExclude.no_cross_resource_ref = ["INPUT_CONFIG=job_cross_resource_ref.yml.tmpl"]

@@ -19,6 +19,9 @@ var knownMissingInRemoteType = map[string][]string{
 	"clusters": {
 		"apply_policy_default_values",
 	},
+	"external_locations": {
+		"skip_validation",
+	},
 	"model_serving_endpoints": {
 		"ai_gateway",
 		"budget_policy_id",
@@ -56,13 +59,17 @@ var knownMissingInRemoteType = map[string][]string{
 		"disabled",
 		"endpoint_id",
 		"endpoint_type",
+		"group",
 		"no_suspension",
 		"settings",
 		"suspend_timeout_duration",
 	},
 	"postgres_projects": {
+		"budget_policy_id",
+		"custom_tags",
 		"default_endpoint_settings",
 		"display_name",
+		"enable_pg_native_login",
 		"history_retention_duration",
 		"pg_version",
 		"project_id",
@@ -87,6 +94,7 @@ var knownMissingInStateType = map[string][]string{
 	"apps": {
 		"config",
 		"source_code_path",
+		"git_source",
 	},
 	"dashboards": {
 		"file_path",

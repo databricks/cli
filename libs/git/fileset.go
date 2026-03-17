@@ -1,6 +1,8 @@
 package git
 
 import (
+	"context"
+
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/vfs"
 )
@@ -14,9 +16,9 @@ type FileSet struct {
 }
 
 // NewFileSet returns [FileSet] for the directory `root` which is contained within Git worktree located at `worktreeRoot`.
-func NewFileSet(worktreeRoot, root vfs.Path, paths ...[]string) (*FileSet, error) {
+func NewFileSet(ctx context.Context, worktreeRoot, root vfs.Path, paths ...[]string) (*FileSet, error) {
 	fs := fileset.New(root, paths...)
-	v, err := NewView(worktreeRoot, root)
+	v, err := NewView(ctx, worktreeRoot, root)
 	if err != nil {
 		return nil, err
 	}
@@ -27,8 +29,8 @@ func NewFileSet(worktreeRoot, root vfs.Path, paths ...[]string) (*FileSet, error
 	}, nil
 }
 
-func NewFileSetAtRoot(root vfs.Path, paths ...[]string) (*FileSet, error) {
-	return NewFileSet(root, root, paths...)
+func NewFileSetAtRoot(ctx context.Context, root vfs.Path, paths ...[]string) (*FileSet, error) {
+	return NewFileSet(ctx, root, root, paths...)
 }
 
 func (f *FileSet) IgnoreFile(file string) (bool, error) {

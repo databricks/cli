@@ -17,24 +17,38 @@ import sys
 
 DEFAULT_FILES = ("NEXT_CHANGELOG.md", "CHANGELOG.md")
 
-# Regex that matches an *already converted* link, e.g.:
-#   ([#1234](https://github.com/databricks/cli/pull/1234))
-# The groups capture the PR number in the text and in the URL respectively so
-# they can be compared for consistency.
+# Canonical form: ([#1234](https://github.com/databricks/cli/pull/1234))
 CONVERTED_LINK_RE = re.compile(
     r"\(\[#(?P<num_text>\d+)\]\("  # ([#1234](
     r"https://github\.com/databricks/cli/pull/(?P<num_url>\d+)"  # …/pull/1234
     r"\)\)"  # ))
 )
 
-# Regex that matches a *raw* reference, `#1234`, that is **not** already inside
-# a converted link.  The negative look-behind ensures the # is not preceded by
-# a literal '[' which would indicate an already converted link.
-RAW_REF_RE = re.compile(r"(?<!\[)#(?P<num>\d+)\b")
+# Double-paren form produced by a previous incorrect run:
+#   (([#1234](https://github.com/databricks/cli/pull/1234)))
+DOUBLE_PAREN_LINK_RE = re.compile(
+    r"\(\(\[#(?P<num>\d+)\]\("
+    r"https://github\.com/databricks/cli/pull/\d+"
+    r"\)\)\)"
+)
+
+# Raw reference already wrapped in parens: (#1234)
+PAREN_RAW_REF_RE = re.compile(r"\(#(?P<num>\d+)\)")
+
+# Bare raw reference not already part of a converted link or paren-wrapped ref.
+# Negative look-behinds: '[' means it's inside a converted link; '(' means
+# it will be handled by PAREN_RAW_REF_RE above.
+RAW_REF_RE = re.compile(r"(?<!\[)(?<!\()#(?P<num>\d+)\b")
 
 
 def find_mismatched_links(text):
-    """Return texts of mismatching converted links."""
+    """Return texts of mismatching converted links.
+
+    >>> find_mismatched_links("([#1234](https://github.com/databricks/cli/pull/1234))")
+    []
+    >>> find_mismatched_links("([#1234](https://github.com/databricks/cli/pull/9999))")
+    ['Converted link numbers differ: text #1234 vs URL #9999 — …([#1234](https://github.com/databricks/cli/pull/9999))…']
+    """
     mismatches = []
     for m in CONVERTED_LINK_RE.finditer(text):
         num_text, num_url = m.group("num_text"), m.group("num_url")
@@ -45,13 +59,48 @@ def find_mismatched_links(text):
 
 
 def convert_raw_references(text):
-    """Convert raw `#1234` references to markdown links."""
+    """Convert raw `#1234` references to markdown links.
 
-    def _repl(match):
-        num = match.group("num")
+    Already-converted single-paren links are left unchanged:
+
+    >>> convert_raw_references("([#1234](https://github.com/databricks/cli/pull/1234))")
+    '([#1234](https://github.com/databricks/cli/pull/1234))'
+
+    Double-paren links from a previous incorrect run are collapsed to single-paren:
+
+    >>> convert_raw_references("(([#1234](https://github.com/databricks/cli/pull/1234)))")
+    '([#1234](https://github.com/databricks/cli/pull/1234))'
+
+    A raw reference with surrounding parens becomes a single-paren link (not double):
+
+    >>> convert_raw_references("(#3456)")
+    '([#3456](https://github.com/databricks/cli/pull/3456))'
+
+    A bare raw reference gets wrapped in a single-paren link:
+
+    >>> convert_raw_references("#3456")
+    '([#3456](https://github.com/databricks/cli/pull/3456))'
+
+    Idempotent: running twice produces the same result:
+
+    >>> t = "(#3456) and #7890"
+    >>> convert_raw_references(convert_raw_references(t)) == convert_raw_references(t)
+    True
+    """
+
+    def _make_link(num):
         return f"([#{num}](https://github.com/databricks/cli/pull/{num}))"
 
-    return RAW_REF_RE.sub(_repl, text)
+    # Fix existing double-paren links produced by a previous incorrect run.
+    text = DOUBLE_PAREN_LINK_RE.sub(lambda m: _make_link(m.group("num")), text)
+
+    # Convert (#1234) — parens already present, replace the whole token.
+    text = PAREN_RAW_REF_RE.sub(lambda m: _make_link(m.group("num")), text)
+
+    # Convert bare #1234 — not preceded by [ (converted) or ( (paren-wrapped).
+    text = RAW_REF_RE.sub(lambda m: _make_link(m.group("num")), text)
+
+    return text
 
 
 def process_file(path):

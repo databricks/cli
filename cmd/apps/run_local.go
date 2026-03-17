@@ -28,7 +28,7 @@ const SHUTDOWN_TIMEOUT = 15 * time.Second
 func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int) (*runlocal.Config, *runlocal.AppSpec, error) {
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
-	workspaceId, err := w.CurrentWorkspaceID(ctx)
+	workspaceID, err := w.CurrentWorkspaceID(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -38,7 +38,7 @@ func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int)
 		return nil, nil, err
 	}
 
-	config := runlocal.NewConfig(w.Config.Host, workspaceId, cwd, runlocal.DEFAULT_HOST, appPort)
+	config := runlocal.NewConfig(w.Config.Host, workspaceID, cwd, runlocal.DEFAULT_HOST, appPort)
 	if entryPoint != "" {
 		config.AppSpecFiles = []string{entryPoint}
 	}
@@ -53,7 +53,7 @@ func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int)
 func setupApp(cmd *cobra.Command, config *runlocal.Config, spec *runlocal.AppSpec, customEnv []string, prepareEnvironment bool) (runlocal.App, []string, error) {
 	ctx := cmd.Context()
 	cfg := cmdctx.ConfigUsed(ctx)
-	app, err := runlocal.NewApp(ctx, config, spec)
+	app, err := runlocal.NewApp(config, spec)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -70,7 +70,7 @@ func setupApp(cmd *cobra.Command, config *runlocal.Config, spec *runlocal.AppSpe
 	env = append(env, appEnv...)
 
 	if prepareEnvironment {
-		err := app.PrepareEnvironment()
+		err := app.PrepareEnvironment(ctx)
 		if err != nil {
 			return app, nil, err
 		}
@@ -81,7 +81,7 @@ func setupApp(cmd *cobra.Command, config *runlocal.Config, spec *runlocal.AppSpe
 
 func startAppProcess(cmd *cobra.Command, config *runlocal.Config, app runlocal.App, env []string, debug bool) (*exec.Cmd, error) {
 	ctx := cmd.Context()
-	specCommand, err := app.GetCommand(debug)
+	specCommand, cmdEnv, err := app.GetCommand(ctx, debug)
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +98,7 @@ func startAppProcess(cmd *cobra.Command, config *runlocal.Config, app runlocal.A
 		appCmdEnv = append(appCmdEnv, envVar.String())
 	}
 	appCmdEnv = append(appCmdEnv, env...)
+	appCmdEnv = append(appCmdEnv, cmdEnv...)
 	appCmd.Env = appCmdEnv
 	appCmd.Dir = config.AppPath
 

@@ -26,7 +26,7 @@ func runSparkJarTests(t *testing.T, testCases []sparkJarTestCase, testRunner fun
 	testCanRun := make(map[string]bool)
 	atLeastOneCanRun := false
 	for _, tc := range testCases {
-		if testutil.HasJDK(t, context.Background(), tc.requiredJavaVersion) {
+		if testutil.HasJDK(t, t.Context(), tc.requiredJavaVersion) {
 			testCanRun[tc.name] = true
 			atLeastOneCanRun = true
 			continue
@@ -70,7 +70,7 @@ func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, arti
 	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		destroyBundle(t, ctx, bundleRoot)
+		destroyBundle(t, context.WithoutCancel(ctx), bundleRoot)
 	})
 
 	if testing.Short() {

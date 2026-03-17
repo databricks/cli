@@ -1,0 +1,90 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "test-lineage",
+  "serial": 1,
+  "plan": {
+    "resources.jobs.my_job": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "my job",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "resources.jobs.my_job.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.my_job",
+          "label": "${resources.jobs.my_job.id}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "value": {
+          "object_id": "",
+          "__embed__": [
+            {
+              "level": "CAN_VIEW",
+              "group_name": "viewers"
+            },
+            {
+              "level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/jobs/${resources.jobs.my_job.id}"
+        }
+      },
+      "remote_state": {
+        "object_id": "/jobs/123"
+      },
+      "changes": {
+        "": {
+          "action": "update",
+          "old": {
+            "object_id": "/jobs/123",
+            "__embed__": [
+              {
+                "level": "CAN_VIEW",
+                "group_name": "viewers"
+              },
+              {
+                "level": "IS_OWNER",
+                "user_name": "[USERNAME]"
+              }
+            ]
+          },
+          "new": [
+            {
+              "level": "CAN_VIEW",
+              "group_name": "viewers"
+            },
+            {
+              "level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "object_id": {
+          "action": "update",
+          "old": "/jobs/123",
+          "new": "",
+          "remote": "/jobs/123"
+        }
+      }
+    }
+  }
+}

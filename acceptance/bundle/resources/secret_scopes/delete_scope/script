@@ -15,4 +15,4 @@ trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 rm out.requests.txt
 
 trace $CLI bundle deploy
-trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' &> out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' &> out.deploy.requests.txt

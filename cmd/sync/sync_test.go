@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -59,7 +58,7 @@ func TestSyncOptionsFromArgs(t *testing.T) {
 
 	f := syncFlags{}
 	cmd := New()
-	cmd.SetContext(cmdctx.SetWorkspaceClient(context.Background(), nil))
+	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), nil))
 	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
 	require.NoError(t, err)
 	assert.Equal(t, local, opts.LocalRoot.Native())
@@ -85,7 +84,7 @@ func TestExcludeFromFlag(t *testing.T) {
 	// Set up the flags
 	f := syncFlags{excludeFrom: excludeFromPath}
 	cmd := New()
-	cmd.SetContext(cmdctx.SetWorkspaceClient(context.Background(), nil))
+	cmd.SetContext(cmdctx.SetWorkspaceClient(t.Context(), nil))
 
 	// Test with both exclude flag and exclude-from flag
 	f.exclude = []string{"node_modules/"}

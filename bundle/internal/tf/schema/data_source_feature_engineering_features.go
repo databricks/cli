@@ -22,10 +22,17 @@ type DataSourceFeatureEngineeringFeaturesFeaturesLineageContext struct {
 	NotebookId int                                                                   `json:"notebook_id,omitempty"`
 }
 
+type DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource struct {
-	EntityColumns    []string `json:"entity_columns"`
-	FullName         string   `json:"full_name"`
-	TimeseriesColumn string   `json:"timeseries_column"`
+	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
+	EntityColumns     []string `json:"entity_columns"`
+	FilterCondition   string   `json:"filter_condition,omitempty"`
+	FullName          string   `json:"full_name"`
+	TimeseriesColumn  string   `json:"timeseries_column"`
+	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceEntityColumnIdentifiers struct {
@@ -74,11 +81,17 @@ type DataSourceFeatureEngineeringFeaturesFeatures struct {
 	Function        *DataSourceFeatureEngineeringFeaturesFeaturesFunction       `json:"function,omitempty"`
 	Inputs          []string                                                    `json:"inputs,omitempty"`
 	LineageContext  *DataSourceFeatureEngineeringFeaturesFeaturesLineageContext `json:"lineage_context,omitempty"`
+	ProviderConfig  *DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig `json:"provider_config,omitempty"`
 	Source          *DataSourceFeatureEngineeringFeaturesFeaturesSource         `json:"source,omitempty"`
 	TimeWindow      *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindow     `json:"time_window,omitempty"`
 }
 
+type DataSourceFeatureEngineeringFeaturesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceFeatureEngineeringFeatures struct {
-	Features []DataSourceFeatureEngineeringFeaturesFeatures `json:"features,omitempty"`
-	PageSize int                                            `json:"page_size,omitempty"`
+	Features       []DataSourceFeatureEngineeringFeaturesFeatures      `json:"features,omitempty"`
+	PageSize       int                                                 `json:"page_size,omitempty"`
+	ProviderConfig *DataSourceFeatureEngineeringFeaturesProviderConfig `json:"provider_config,omitempty"`
 }

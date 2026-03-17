@@ -1,0 +1,18 @@
+name: Changelog Guard
+
+on:
+  pull_request:
+    paths:
+      - CHANGELOG.md
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block direct CHANGELOG.md edits
+        if: "!contains(github.event.pull_request.labels.*.name, 'override-changelog-guard')"
+        run: |-
+          echo "::error::CHANGELOG.md should not be modified directly by PRs."
+          echo "The release workflow manages CHANGELOG.md automatically from NEXT_CHANGELOG.md."
+          echo "If this is intentional, add the 'override-changelog-guard' label to this PR."
+          exit 1

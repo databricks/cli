@@ -74,10 +74,8 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create a credential entry.`
 	cmd.Long = `Create a credential entry.
 
-  Creates a Git credential entry for the user. Only one Git credential per user
-  is supported, so any attempts to create credentials if an entry already exists
-  will fail. Use the PATCH endpoint to update existing credentials, or the
-  DELETE endpoint to delete existing credentials.
+  Creates a Git credential entry for the user. Use the PATCH endpoint to update
+  existing credentials, or the DELETE endpoint to delete existing credentials.
 
   Arguments:
     GIT_PROVIDER: Git provider. This field is case-insensitive. The available Git providers
@@ -172,10 +170,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down.")
 			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx, workspace.ListCredentialsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -245,10 +243,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down.")
 			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx, workspace.ListCredentialsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

@@ -2,6 +2,10 @@
 
 package schema
 
+type ResourcePostgresBranchProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourcePostgresBranchSpec struct {
 	ExpireTime       string `json:"expire_time,omitempty"`
 	IsProtected      bool   `json:"is_protected,omitempty"`
@@ -26,12 +30,13 @@ type ResourcePostgresBranchStatus struct {
 }
 
 type ResourcePostgresBranch struct {
-	BranchId   string                        `json:"branch_id"`
-	CreateTime string                        `json:"create_time,omitempty"`
-	Name       string                        `json:"name,omitempty"`
-	Parent     string                        `json:"parent"`
-	Spec       *ResourcePostgresBranchSpec   `json:"spec,omitempty"`
-	Status     *ResourcePostgresBranchStatus `json:"status,omitempty"`
-	Uid        string                        `json:"uid,omitempty"`
-	UpdateTime string                        `json:"update_time,omitempty"`
+	BranchId       string                                `json:"branch_id"`
+	CreateTime     string                                `json:"create_time,omitempty"`
+	Name           string                                `json:"name,omitempty"`
+	Parent         string                                `json:"parent"`
+	ProviderConfig *ResourcePostgresBranchProviderConfig `json:"provider_config,omitempty"`
+	Spec           *ResourcePostgresBranchSpec           `json:"spec,omitempty"`
+	Status         *ResourcePostgresBranchStatus         `json:"status,omitempty"`
+	Uid            string                                `json:"uid,omitempty"`
+	UpdateTime     string                                `json:"update_time,omitempty"`
 }

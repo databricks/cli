@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type OperationType string
@@ -48,20 +47,20 @@ func normalizeValue(v any) (any, error) {
 	return dynValue.AsAny(), nil
 }
 
-func isEntityPath(path string) bool {
-	pathNode, err := structpath.ParsePath(path)
-	if err != nil {
-		return false
-	}
-
-	if _, _, ok := pathNode.KeyValue(); ok {
-		return true
-	}
-
-	return false
-}
-
 func filterEntityDefaults(basePath string, value any) any {
+	if value == nil {
+		return nil
+	}
+
+	if arr, ok := value.([]any); ok {
+		result := make([]any, 0, len(arr))
+		for i, elem := range arr {
+			elementPath := fmt.Sprintf("%s[%d]", basePath, i)
+			result = append(result, filterEntityDefaults(elementPath, elem))
+		}
+		return result
+	}
+
 	m, ok := value.(map[string]any)
 	if !ok {
 		return value
@@ -98,6 +97,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		}, nil
 	}
 
+	normalizedValue = filterEntityDefaults(path, normalizedValue)
 	normalizedValue = resetValueIfNeeded(path, normalizedValue)
 
 	var op OperationType
@@ -109,10 +109,6 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		op = OperationAdd
 	} else {
 		op = OperationSkip
-	}
-
-	if (op == OperationAdd || op == OperationReplace) && isEntityPath(path) {
-		normalizedValue = filterEntityDefaults(path, normalizedValue)
 	}
 
 	return &ConfigChangeDesc{
@@ -149,13 +145,11 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				// TODO: as for now in bundle plan all remote-side changes are considered as server-side defaults.
-				// Once it is solved - stop skipping server-side defaults in these checks and remove hardcoded default.
-				if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonServerSideDefault {
+				if changeDesc.Action == deployplan.Skip {
 					continue
 				}
 
-				change, err := convertChangeDesc(path, changeDesc)
+				change, err := convertChangeDesc(resourceKey+"."+path, changeDesc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -69,13 +70,14 @@ func TestConfig(t *testing.T) {
 	url = https://example.com/git
 `
 
-	c, err := newConfig()
+	ctx := t.Context()
+	c, err := newConfig(ctx)
 	require.NoError(t, err)
 
 	err = c.load(bytes.NewBufferString(raw))
 	require.NoError(t, err)
 
-	home, err := os.UserHomeDir()
+	home, err := env.UserHomeDir(ctx)
 	require.NoError(t, err)
 
 	assert.Equal(t, "false", c.variables["core.filemode"])
@@ -86,7 +88,8 @@ func TestConfig(t *testing.T) {
 }
 
 func TestCoreExcludesFile(t *testing.T) {
-	config, err := globalGitConfig()
+	ctx := t.Context()
+	config, err := globalGitConfig(ctx)
 	require.NoError(t, err)
 	path, err := config.coreExcludesFile()
 	require.NoError(t, err)
@@ -118,7 +121,8 @@ func (h *testCoreExcludesHelper) initialize(t *testing.T) {
 }
 
 func (h *testCoreExcludesHelper) coreExcludesFile() (string, error) {
-	config, err := globalGitConfig()
+	ctx := h.Context()
+	config, err := globalGitConfig(ctx)
 	require.NoError(h.T, err)
 	return config.coreExcludesFile()
 }

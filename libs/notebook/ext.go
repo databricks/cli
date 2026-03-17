@@ -11,6 +11,15 @@ const (
 	ExtensionJupyter string = ".ipynb"
 )
 
+// Extensions lists all notebook file extensions.
+var Extensions = []string{
+	ExtensionPython,
+	ExtensionR,
+	ExtensionScala,
+	ExtensionSql,
+	ExtensionJupyter,
+}
+
 var ExtensionToLanguage = map[string]workspace.Language{
 	ExtensionPython: workspace.LanguagePython,
 	ExtensionR:      workspace.LanguageR,

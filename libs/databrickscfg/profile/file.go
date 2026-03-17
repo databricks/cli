@@ -57,7 +57,7 @@ func (f FileProfilerImpl) Get(ctx context.Context) (*config.File, error) {
 	configFile, err := config.LoadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		// downstreams depend on ErrNoConfiguration. TODO: expose this error through SDK
-		return nil, fmt.Errorf("%w at %s; please create one by running 'databricks configure'", ErrNoConfiguration, path)
+		return nil, fmt.Errorf("%w at %s; please create one by running 'databricks auth login'", ErrNoConfiguration, path)
 	} else if err != nil {
 		return nil, err
 	}
@@ -79,13 +79,16 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 			continue
 		}
 		profile := Profile{
-			Name:                v.Name(),
-			Host:                host,
-			AccountID:           all["account_id"],
-			WorkspaceId:         all["workspace_id"],
-			IsUnifiedHost:       all["experimental_is_unified_host"] == "true",
-			ClusterID:           all["cluster_id"],
-			ServerlessComputeID: all["serverless_compute_id"],
+			Name:                 v.Name(),
+			Host:                 host,
+			AccountID:            all["account_id"],
+			WorkspaceID:          all["workspace_id"],
+			IsUnifiedHost:        all["experimental_is_unified_host"] == "true",
+			ClusterID:            all["cluster_id"],
+			ServerlessComputeID:  all["serverless_compute_id"],
+			HasClientCredentials: all["client_id"] != "" && all["client_secret"] != "",
+			Scopes:               all["scopes"],
+			AuthType:             all["auth_type"],
 		}
 		if fn(profile) {
 			profiles = append(profiles, profile)

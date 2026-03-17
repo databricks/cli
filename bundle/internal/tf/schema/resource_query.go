@@ -63,22 +63,27 @@ type ResourceQueryParameter struct {
 	TextValue        *ResourceQueryParameterTextValue        `json:"text_value,omitempty"`
 }
 
+type ResourceQueryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceQuery struct {
-	ApplyAutoLimit       bool                     `json:"apply_auto_limit,omitempty"`
-	Catalog              string                   `json:"catalog,omitempty"`
-	CreateTime           string                   `json:"create_time,omitempty"`
-	Description          string                   `json:"description,omitempty"`
-	DisplayName          string                   `json:"display_name"`
-	Id                   string                   `json:"id,omitempty"`
-	LastModifierUserName string                   `json:"last_modifier_user_name,omitempty"`
-	LifecycleState       string                   `json:"lifecycle_state,omitempty"`
-	OwnerUserName        string                   `json:"owner_user_name,omitempty"`
-	ParentPath           string                   `json:"parent_path,omitempty"`
-	QueryText            string                   `json:"query_text"`
-	RunAsMode            string                   `json:"run_as_mode,omitempty"`
-	Schema               string                   `json:"schema,omitempty"`
-	Tags                 []string                 `json:"tags,omitempty"`
-	UpdateTime           string                   `json:"update_time,omitempty"`
-	WarehouseId          string                   `json:"warehouse_id"`
-	Parameter            []ResourceQueryParameter `json:"parameter,omitempty"`
+	ApplyAutoLimit       bool                         `json:"apply_auto_limit,omitempty"`
+	Catalog              string                       `json:"catalog,omitempty"`
+	CreateTime           string                       `json:"create_time,omitempty"`
+	Description          string                       `json:"description,omitempty"`
+	DisplayName          string                       `json:"display_name"`
+	Id                   string                       `json:"id,omitempty"`
+	LastModifierUserName string                       `json:"last_modifier_user_name,omitempty"`
+	LifecycleState       string                       `json:"lifecycle_state,omitempty"`
+	OwnerUserName        string                       `json:"owner_user_name,omitempty"`
+	ParentPath           string                       `json:"parent_path,omitempty"`
+	QueryText            string                       `json:"query_text"`
+	RunAsMode            string                       `json:"run_as_mode,omitempty"`
+	Schema               string                       `json:"schema,omitempty"`
+	Tags                 []string                     `json:"tags,omitempty"`
+	UpdateTime           string                       `json:"update_time,omitempty"`
+	WarehouseId          string                       `json:"warehouse_id"`
+	Parameter            []ResourceQueryParameter     `json:"parameter,omitempty"`
+	ProviderConfig       *ResourceQueryProviderConfig `json:"provider_config,omitempty"`
 }

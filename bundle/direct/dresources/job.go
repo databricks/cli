@@ -70,7 +70,13 @@ func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error)
 	if err != nil {
 		return nil, err
 	}
-	job, err := r.client.Jobs.GetByJobId(ctx, idInt)
+	// GetByJobId only fetches the first page (100 tasks). Jobs.Get handles
+	// pagination and returns the complete job with all tasks merged.
+	job, err := r.client.Jobs.Get(ctx, jobs.GetJobRequest{
+		JobId:           idInt,
+		PageToken:       "",
+		ForceSendFields: nil,
+	})
 	if err != nil {
 		return nil, err
 	}

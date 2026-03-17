@@ -14,6 +14,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo1 name",
@@ -25,7 +26,7 @@
       "changes": {
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "dbfs:/pipelines/[UUID]"
         }
       }
@@ -46,6 +47,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo2 foo1.creator_user_name=[USERNAME]",
@@ -57,7 +59,7 @@
       "changes": {
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "dbfs:/pipelines/[UUID]"
         }
       }
@@ -78,6 +80,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo3 foo2.state=IDLE",
@@ -89,7 +92,7 @@
       "changes": {
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "dbfs:/pipelines/[UUID]"
         }
       }
@@ -110,6 +113,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo4 foo3.last_modified=[UNIX_TIME_MILLIS]",
@@ -121,7 +125,7 @@
       "changes": {
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "dbfs:/pipelines/[UUID]"
         }
       }

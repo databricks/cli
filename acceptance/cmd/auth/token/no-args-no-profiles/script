@@ -1,0 +1,8 @@
+sethome "./home"
+
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+
+# No config file, non-interactive: should error with login hint
+errcode $CLI auth token

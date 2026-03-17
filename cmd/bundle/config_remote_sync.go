@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -46,6 +47,9 @@ Examples:
 			ReadState:  true,
 			Build:      true,
 			AlwaysPull: true,
+			InitFunc: func(b *bundle.Bundle) {
+				b.SkipLocalFileValidation = true
+			},
 		})
 		if err != nil {
 			return err

@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -382,13 +383,12 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkip(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
-		} else if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
-			// The field was not set by us, but comes from the remote state.
-			// This could either be server-side default or a policy.
-			// In any case, this is not a change we should react to.
-			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
+		} else if reason, ok := shouldSkipBackendDefault(cfg, path, ch); ok {
 			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonServerSideDefault
+			ch.Reason = reason
+		} else if reason, ok := shouldSkipBackendDefault(generatedCfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
 		} else if action, reason := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = reason
@@ -459,6 +459,43 @@ func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *struc
 		return deployplan.UpdateWithID, reason
 	}
 	return deployplan.Undefined, ""
+}
+
+// shouldSkipBackendDefault checks if a change should be skipped because the remote value
+// is a known backend default. Applies when old and new are nil but remote is set.
+// If the rule has allowed values, the remote value must match one of them.
+func shouldSkipBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
+	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
+		return "", false
+	}
+	for _, rule := range cfg.BackendDefaults {
+		if !path.HasPatternPrefix(rule.Field) {
+			continue
+		}
+		if len(rule.Values) == 0 {
+			return deployplan.ReasonBackendDefault, true
+		}
+		if matchesAllowedValue(ch.Remote, rule.Values) {
+			return deployplan.ReasonBackendDefault, true
+		}
+	}
+	return "", false
+}
+
+// matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
+// Each json.RawMessage is unmarshaled into the same type as remote for comparison.
+func matchesAllowedValue(remote any, values []json.RawMessage) bool {
+	remoteType := reflect.TypeOf(remote)
+	for _, raw := range values {
+		candidate := reflect.New(remoteType).Interface()
+		if err := json.Unmarshal(raw, candidate); err != nil {
+			continue
+		}
+		if structdiff.IsEqual(remote, reflect.ValueOf(candidate).Elem().Interface()) {
+			return true
+		}
+	}
+	return false
 }
 
 func allEmpty(values ...any) bool {
@@ -532,11 +569,22 @@ func isEmptyStruct(rv reflect.Value) bool {
 	return true
 }
 
-func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
-	targetResourceKey := path.Prefix(3).String()
+// splitResourcePath splits a reference path into resource key and field path.
+// For regular resources like "resources.jobs.foo.name", returns ("resources.jobs.foo", "name").
+// For sub-resources like "resources.jobs.foo.permissions[0].level", returns ("resources.jobs.foo.permissions", "[0].level").
+func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode) {
+	// Check if the 4th component is "permissions" or "grants" (sub-resource)
+	if path.Len() > 4 {
+		first := path.SkipPrefix(3).Prefix(1)
+		if key, ok := first.StringKey(); ok && (key == "permissions" || key == "grants") {
+			return path.Prefix(4).String(), path.SkipPrefix(4)
+		}
+	}
+	return path.Prefix(3).String(), path.SkipPrefix(3)
+}
 
-	fieldPath := path.SkipPrefix(3)
+func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	targetResourceKey, fieldPath := splitResourcePath(path)
 	fieldPathS := fieldPath.String()
 
 	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)

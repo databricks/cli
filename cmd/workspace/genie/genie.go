@@ -39,6 +39,11 @@ func New() *cobra.Command {
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
 	cmd.AddCommand(newExecuteMessageQuery())
 	cmd.AddCommand(newGenerateDownloadFullQueryResult())
+	cmd.AddCommand(newGenieCreateEvalRun())
+	cmd.AddCommand(newGenieGetEvalResultDetails())
+	cmd.AddCommand(newGenieGetEvalRun())
+	cmd.AddCommand(newGenieListEvalResults())
+	cmd.AddCommand(newGenieListEvalRuns())
 	cmd.AddCommand(newGetDownloadFullQueryResult())
 	cmd.AddCommand(newGetMessage())
 	cmd.AddCommand(newGetMessageAttachmentQueryResult())
@@ -141,13 +146,13 @@ func newCreateMessage() *cobra.Command {
 		if createMessageSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *dashboards.GenieMessage) {
 			status := i.Status
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createMessageTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -521,13 +526,29 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 	cmd.Short = `Generate full query result download.`
 	cmd.Long = `Generate full query result download.
 
-  Initiates a new SQL execution and returns a download_id that you can use to
-  track the progress of the download. The query result is stored in an external
-  link and can be retrieved using the [Get Download Full Query
-  Result](:method:genie/getdownloadfullqueryresult) API. Warning: Databricks
-  strongly recommends that you protect the URLs that are returned by the
-  EXTERNAL_LINKS disposition. See [Execute
-  Statement](:method:statementexecution/executestatement) for more details.
+  Initiates a new SQL execution and returns a download_id and
+  download_id_signature that you can use to track the progress of the
+  download. The query result is stored in an external link and can be retrieved
+  using the [Get Download Full Query
+  Result](:method:genie/getdownloadfullqueryresult) API. Both download_id and
+  download_id_signature must be provided when calling the Get endpoint.
+
+  ----
+
+  ### **Warning: Databricks strongly recommends that you protect the URLs that
+  are returned by the EXTERNAL_LINKS disposition.**
+
+  When you use the EXTERNAL_LINKS disposition, a short-lived, URL is
+  generated, which can be used to download the results directly from . As a
+  short-lived is embedded in this URL, you should protect the URL.
+
+  Because URLs are already generated with embedded temporary s, you must not set
+  an Authorization header in the download requests.
+
+  See [Execute Statement](:method:statementexecution/executestatement) for more
+  details.
+
+  ----
 
   Arguments:
     SPACE_ID: Genie space ID
@@ -571,6 +592,337 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 	return cmd
 }
 
+// start genie-create-eval-run command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieCreateEvalRunOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieCreateEvalRunRequest,
+)
+
+func newGenieCreateEvalRun() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieCreateEvalRunReq dashboards.GenieCreateEvalRunRequest
+	var genieCreateEvalRunJson flags.JsonFlag
+
+	cmd.Flags().Var(&genieCreateEvalRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: benchmark_question_ids
+
+	cmd.Use = "genie-create-eval-run SPACE_ID"
+	cmd.Short = `Create eval run for benchmarks.`
+	cmd.Long = `Create eval run for benchmarks.
+
+  Create and run evaluations for multiple benchmark questions in a Genie space.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the evaluations will be
+      executed.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := genieCreateEvalRunJson.Unmarshal(&genieCreateEvalRunReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		genieCreateEvalRunReq.SpaceId = args[0]
+
+		response, err := w.Genie.GenieCreateEvalRun(ctx, genieCreateEvalRunReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieCreateEvalRunOverrides {
+		fn(cmd, &genieCreateEvalRunReq)
+	}
+
+	return cmd
+}
+
+// start genie-get-eval-result-details command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieGetEvalResultDetailsOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGetEvalResultDetailsRequest,
+)
+
+func newGenieGetEvalResultDetails() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieGetEvalResultDetailsReq dashboards.GenieGetEvalResultDetailsRequest
+
+	cmd.Use = "genie-get-eval-result-details SPACE_ID EVAL_RUN_ID RESULT_ID"
+	cmd.Short = `Get benchmark evaluation result details.`
+	cmd.Long = `Get benchmark evaluation result details.
+
+  Get details for evaluation results.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the evaluation run is
+      located.
+    EVAL_RUN_ID: The unique identifier for the evaluation run.
+    RESULT_ID: The unique identifier for the evaluation result.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		genieGetEvalResultDetailsReq.SpaceId = args[0]
+		genieGetEvalResultDetailsReq.EvalRunId = args[1]
+		genieGetEvalResultDetailsReq.ResultId = args[2]
+
+		response, err := w.Genie.GenieGetEvalResultDetails(ctx, genieGetEvalResultDetailsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieGetEvalResultDetailsOverrides {
+		fn(cmd, &genieGetEvalResultDetailsReq)
+	}
+
+	return cmd
+}
+
+// start genie-get-eval-run command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieGetEvalRunOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieGetEvalRunRequest,
+)
+
+func newGenieGetEvalRun() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieGetEvalRunReq dashboards.GenieGetEvalRunRequest
+
+	cmd.Use = "genie-get-eval-run SPACE_ID EVAL_RUN_ID"
+	cmd.Short = `Get benchmark evaluation run.`
+	cmd.Long = `Get benchmark evaluation run.
+
+  Get evaluation run details.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the evaluation run is
+      located.
+    EVAL_RUN_ID: `
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		genieGetEvalRunReq.SpaceId = args[0]
+		genieGetEvalRunReq.EvalRunId = args[1]
+
+		response, err := w.Genie.GenieGetEvalRun(ctx, genieGetEvalRunReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieGetEvalRunOverrides {
+		fn(cmd, &genieGetEvalRunReq)
+	}
+
+	return cmd
+}
+
+// start genie-list-eval-results command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieListEvalResultsOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieListEvalResultsRequest,
+)
+
+func newGenieListEvalResults() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieListEvalResultsReq dashboards.GenieListEvalResultsRequest
+
+	cmd.Flags().IntVar(&genieListEvalResultsReq.PageSize, "page-size", genieListEvalResultsReq.PageSize, `Maximum number of eval results to return per page.`)
+	cmd.Flags().StringVar(&genieListEvalResultsReq.PageToken, "page-token", genieListEvalResultsReq.PageToken, `Opaque token to retrieve the next page of results.`)
+
+	cmd.Use = "genie-list-eval-results SPACE_ID EVAL_RUN_ID"
+	cmd.Short = `List benchmark evaluation results.`
+	cmd.Long = `List benchmark evaluation results.
+
+  List evaluation results for a specific evaluation run.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the evaluation run is
+      located.
+    EVAL_RUN_ID: The unique identifier for the evaluation run.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		genieListEvalResultsReq.SpaceId = args[0]
+		genieListEvalResultsReq.EvalRunId = args[1]
+
+		response, err := w.Genie.GenieListEvalResults(ctx, genieListEvalResultsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieListEvalResultsOverrides {
+		fn(cmd, &genieListEvalResultsReq)
+	}
+
+	return cmd
+}
+
+// start genie-list-eval-runs command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var genieListEvalRunsOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieListEvalRunsRequest,
+)
+
+func newGenieListEvalRuns() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var genieListEvalRunsReq dashboards.GenieListEvalRunsRequest
+
+	cmd.Flags().IntVar(&genieListEvalRunsReq.PageSize, "page-size", genieListEvalRunsReq.PageSize, `Maximum number of evaluation runs to return per page.`)
+	cmd.Flags().StringVar(&genieListEvalRunsReq.PageToken, "page-token", genieListEvalRunsReq.PageToken, `Token to get the next page of results.`)
+
+	cmd.Use = "genie-list-eval-runs SPACE_ID"
+	cmd.Short = `List all evaluation runs in the space.`
+	cmd.Long = `List all evaluation runs in the space.
+
+  Lists all evaluation runs in a space.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space where the evaluation run is
+      located.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		genieListEvalRunsReq.SpaceId = args[0]
+
+		response, err := w.Genie.GenieListEvalRuns(ctx, genieListEvalRunsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range genieListEvalRunsOverrides {
+		fn(cmd, &genieListEvalRunsReq)
+	}
+
+	return cmd
+}
+
 // start get-download-full-query-result command
 
 // Slice with functions to override default command behavior.
@@ -585,22 +937,34 @@ func newGetDownloadFullQueryResult() *cobra.Command {
 
 	var getDownloadFullQueryResultReq dashboards.GenieGetDownloadFullQueryResultRequest
 
-	cmd.Flags().StringVar(&getDownloadFullQueryResultReq.DownloadIdSignature, "download-id-signature", getDownloadFullQueryResultReq.DownloadIdSignature, `JWT signature for the download_id to ensure secure access to query results.`)
-
-	cmd.Use = "get-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID DOWNLOAD_ID"
+	cmd.Use = "get-download-full-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID DOWNLOAD_ID DOWNLOAD_ID_SIGNATURE"
 	cmd.Short = `Get download full query result.`
 	cmd.Long = `Get download full query result.
 
   After [Generating a Full Query Result
-  Download](:method:genie/getdownloadfullqueryresult) and successfully receiving
-  a download_id, use this API to poll the download progress. When the download
-  is complete, the API returns one or more external links to the query result
-  files. Warning: Databricks strongly recommends that you protect the URLs that
-  are returned by the EXTERNAL_LINKS disposition. You must not set an
-  Authorization header in download requests. When using the EXTERNAL_LINKS
-  disposition, Databricks returns presigned URLs that grant temporary access to
-  data. See [Execute Statement](:method:statementexecution/executestatement) for
-  more details.
+  Download](:method:genie/generatedownloadfullqueryresult) and successfully
+  receiving a download_id and download_id_signature, use this API to poll
+  the download progress. Both download_id and download_id_signature are
+  required to call this endpoint. When the download is complete, the API returns
+  the result in the EXTERNAL_LINKS disposition, containing one or more
+  external links to the query result files.
+
+  ----
+
+  ### **Warning: Databricks strongly recommends that you protect the URLs that
+  are returned by the EXTERNAL_LINKS disposition.**
+
+  When you use the EXTERNAL_LINKS disposition, a short-lived, URL is
+  generated, which can be used to download the results directly from . As a
+  short-lived is embedded in this URL, you should protect the URL.
+
+  Because URLs are already generated with embedded temporary s, you must not set
+  an Authorization header in the download requests.
+
+  See [Execute Statement](:method:statementexecution/executestatement) for more
+  details.
+
+  ----
 
   Arguments:
     SPACE_ID: Genie space ID
@@ -608,12 +972,13 @@ func newGetDownloadFullQueryResult() *cobra.Command {
     MESSAGE_ID: Message ID
     ATTACHMENT_ID: Attachment ID
     DOWNLOAD_ID: Download ID. This ID is provided by the [Generate Download
-      endpoint](:method:genie/generateDownloadFullQueryResult)`
+      endpoint](:method:genie/generateDownloadFullQueryResult)
+    DOWNLOAD_ID_SIGNATURE: JWT signature for the download_id to ensure secure access to query results`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(5)
+		check := root.ExactArgs(6)
 		return check(cmd, args)
 	}
 
@@ -627,6 +992,7 @@ func newGetDownloadFullQueryResult() *cobra.Command {
 		getDownloadFullQueryResultReq.MessageId = args[2]
 		getDownloadFullQueryResultReq.AttachmentId = args[3]
 		getDownloadFullQueryResultReq.DownloadId = args[4]
+		getDownloadFullQueryResultReq.DownloadIdSignature = args[5]
 
 		response, err := w.Genie.GetDownloadFullQueryResult(ctx, getDownloadFullQueryResultReq)
 		if err != nil {
@@ -1304,13 +1670,13 @@ func newStartConversation() *cobra.Command {
 		if startConversationSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *dashboards.GenieMessage) {
 			status := i.Status
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(startConversationTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}

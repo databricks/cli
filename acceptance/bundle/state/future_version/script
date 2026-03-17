@@ -1,0 +1,4 @@
+mkdir -p .databricks/bundle/default
+cp resources.future.json .databricks/bundle/default/resources.json
+
+trace $CLI bundle plan 2>&1 | grep -o 'state version.*'

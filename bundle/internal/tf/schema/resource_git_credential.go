@@ -2,14 +2,19 @@
 
 package schema
 
+type ResourceGitCredentialProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceGitCredential struct {
-	Force                bool   `json:"force,omitempty"`
-	GitEmail             string `json:"git_email,omitempty"`
-	GitProvider          string `json:"git_provider"`
-	GitUsername          string `json:"git_username,omitempty"`
-	Id                   string `json:"id,omitempty"`
-	IsDefaultForProvider bool   `json:"is_default_for_provider,omitempty"`
-	Name                 string `json:"name,omitempty"`
-	PersonalAccessToken  string `json:"personal_access_token,omitempty"`
-	PrincipalId          int    `json:"principal_id,omitempty"`
+	Force                bool                                 `json:"force,omitempty"`
+	GitEmail             string                               `json:"git_email,omitempty"`
+	GitProvider          string                               `json:"git_provider"`
+	GitUsername          string                               `json:"git_username,omitempty"`
+	Id                   string                               `json:"id,omitempty"`
+	IsDefaultForProvider bool                                 `json:"is_default_for_provider,omitempty"`
+	Name                 string                               `json:"name,omitempty"`
+	PersonalAccessToken  string                               `json:"personal_access_token,omitempty"`
+	PrincipalId          int                                  `json:"principal_id,omitempty"`
+	ProviderConfig       *ResourceGitCredentialProviderConfig `json:"provider_config,omitempty"`
 }

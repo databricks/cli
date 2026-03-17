@@ -1,4 +1,4 @@
-package mcp
+package aitools
 
 import (
 	"context"
@@ -29,8 +29,8 @@ For each table, returns:
 - Sample data (5 rows)
 - Null counts per column
 - Total row count`,
-		Example: `  databricks experimental aitools discover-schema samples.nyctaxi.trips
-  databricks experimental aitools discover-schema catalog.schema.table1 catalog.schema.table2`,
+		Example: `  databricks experimental aitools tools discover-schema samples.nyctaxi.trips
+  databricks experimental aitools tools discover-schema catalog.schema.table1 catalog.schema.table2`,
 		Args:    cobra.MinimumNArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -50,7 +50,7 @@ For each table, returns:
 			sess.Set(middlewares.DatabricksClientKey, w)
 			ctx = session.WithSession(ctx, sess)
 
-			warehouseID, err := middlewares.GetWarehouseID(ctx)
+			warehouseID, err := middlewares.GetWarehouseID(ctx, true)
 			if err != nil {
 				return err
 			}

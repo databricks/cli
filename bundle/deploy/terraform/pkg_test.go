@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -45,7 +44,7 @@ func downloadAndChecksum(t *testing.T, url, expectedChecksum string) {
 }
 
 func TestTerraformArchiveChecksums(t *testing.T) {
-	tv, isDefault, err := GetTerraformVersion(context.Background())
+	tv, isDefault, err := GetTerraformVersion(t.Context())
 	require.NoError(t, err)
 	assert.True(t, isDefault)
 	armUrl := fmt.Sprintf("https://releases.hashicorp.com/terraform/%s/terraform_%s_linux_arm64.zip", tv.Version.String(), tv.Version.String())
@@ -57,7 +56,7 @@ func TestTerraformArchiveChecksums(t *testing.T) {
 
 func TestGetTerraformVersionDefault(t *testing.T) {
 	// Verify that the default version is used
-	tv, isDefault, err := GetTerraformVersion(context.Background())
+	tv, isDefault, err := GetTerraformVersion(t.Context())
 	require.NoError(t, err)
 	assert.True(t, isDefault)
 	assert.Equal(t, defaultTerraformVersion.Version.String(), tv.Version.String())
@@ -68,7 +67,7 @@ func TestGetTerraformVersionDefault(t *testing.T) {
 func TestGetTerraformVersionOverride(t *testing.T) {
 	// Set the override version
 	overrideVersion := "1.12.2"
-	ctx := env.Set(context.Background(), TerraformVersionEnv, overrideVersion)
+	ctx := env.Set(t.Context(), TerraformVersionEnv, overrideVersion)
 
 	// Verify that the override version is used
 	tv, isDefault, err := GetTerraformVersion(ctx)

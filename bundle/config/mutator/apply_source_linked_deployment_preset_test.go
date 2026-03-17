@@ -20,7 +20,7 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
 	}
 
-	testContext := context.Background()
+	testContext := t.Context()
 	enabled := true
 	disabled := false
 	workspacePath := "/Workspace/user.name@company.com"

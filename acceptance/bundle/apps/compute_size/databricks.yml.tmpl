@@ -1,0 +1,13 @@
+bundle:
+  name: app-git-source-$UNIQUE_NAME
+
+workspace:
+  root_path: "~/.bundle/app-compute-size-$UNIQUE_NAME"
+
+resources:
+  apps:
+    my_app:
+      name: app-$UNIQUE_NAME
+      description: "App with compute size"
+      compute_size: LARGE
+      source_code_path: ./app

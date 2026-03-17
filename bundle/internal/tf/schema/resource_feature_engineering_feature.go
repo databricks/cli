@@ -22,10 +22,17 @@ type ResourceFeatureEngineeringFeatureLineageContext struct {
 	NotebookId int                                                        `json:"notebook_id,omitempty"`
 }
 
+type ResourceFeatureEngineeringFeatureProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceFeatureEngineeringFeatureSourceDeltaTableSource struct {
-	EntityColumns    []string `json:"entity_columns"`
-	FullName         string   `json:"full_name"`
-	TimeseriesColumn string   `json:"timeseries_column"`
+	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
+	EntityColumns     []string `json:"entity_columns"`
+	FilterCondition   string   `json:"filter_condition,omitempty"`
+	FullName          string   `json:"full_name"`
+	TimeseriesColumn  string   `json:"timeseries_column"`
+	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
 type ResourceFeatureEngineeringFeatureSourceKafkaSourceEntityColumnIdentifiers struct {
@@ -74,6 +81,7 @@ type ResourceFeatureEngineeringFeature struct {
 	Function        *ResourceFeatureEngineeringFeatureFunction       `json:"function,omitempty"`
 	Inputs          []string                                         `json:"inputs"`
 	LineageContext  *ResourceFeatureEngineeringFeatureLineageContext `json:"lineage_context,omitempty"`
+	ProviderConfig  *ResourceFeatureEngineeringFeatureProviderConfig `json:"provider_config,omitempty"`
 	Source          *ResourceFeatureEngineeringFeatureSource         `json:"source,omitempty"`
 	TimeWindow      *ResourceFeatureEngineeringFeatureTimeWindow     `json:"time_window,omitempty"`
 }

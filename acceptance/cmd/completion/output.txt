@@ -1,0 +1,37 @@
+
+>>> [CLI] completion install --shell zsh --auto-approve
+Databricks CLI completions installed for zsh.
+Restart your shell or run 'source home/.zshrc' to activate.
+
+Warning: zsh completions require the completion system to be initialized.
+Add the following to your home/.zshrc:
+  autoload -U compinit && compinit
+
+>>> [CLI] completion status --shell zsh
+Shell:   zsh
+File:    home/.zshrc
+Status:  installed
+
+Warning: zsh completions require the completion system to be initialized.
+Add the following to your home/.zshrc:
+  autoload -U compinit && compinit
+
+>>> [CLI] completion install --shell zsh --auto-approve
+Databricks CLI completions are already installed for zsh in home/.zshrc.
+
+Warning: zsh completions require the completion system to be initialized.
+Add the following to your home/.zshrc:
+  autoload -U compinit && compinit
+
+>>> [CLI] completion uninstall --shell zsh --auto-approve
+Databricks CLI completions removed for zsh from home/.zshrc.
+
+>>> [CLI] completion status --shell zsh
+Shell:   zsh
+File:    home/.zshrc
+Status:  not installed
+# bash completion V2 for databricks                           -*- shell-script -*-
+#compdef databricks
+# fish completion for databricks                           -*- shell-script -*-
+# powershell completion for databricks                           -*- shell-script -*-
+# bash completion V2 for databricks                           -*- shell-script -*-

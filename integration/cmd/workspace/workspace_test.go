@@ -20,7 +20,7 @@ import (
 )
 
 func TestWorkspaceList(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "workspace", "list", "/")
 	outStr := stdout.String()
 	assert.Contains(t, outStr, "ID")
@@ -31,13 +31,13 @@ func TestWorkspaceList(t *testing.T) {
 }
 
 func TestWorkpaceListErrorWhenNoArguments(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "list")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 
 func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "get-status")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
@@ -377,8 +377,9 @@ func TestImportFileFormatSource(t *testing.T) {
 	assertFilerFileContents(t, ctx, workspaceFiler, "scalaNotebook", "// Databricks notebook source\nprintln(\"scala\")")
 	assertWorkspaceFileType(t, ctx, workspaceFiler, "scalaNotebook", workspace.ObjectTypeNotebook)
 
-	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "import", path.Join(targetDir, "scalaNotebook"), "--file", "./testdata/import_dir/scalaNotebook.scala")
-	assert.ErrorContains(t, err, "The zip file may not be valid or may be an unsupported version. Hint: Objects imported using format=SOURCE are expected to be zip encoded databricks source notebook(s) by default. Please specify a language using the --language flag if you are trying to import a single uncompressed notebook")
+	// Upload a non-zip archive without a specifying a format: expect API to throw an error that the uploaded item is not a zip archive
+	_, _, err := testcli.RequireErrorRun(t, ctx, "workspace", "import", path.Join(targetDir, "scalaNotebook-error"), "--file", "./testdata/import_dir/scalaNotebook.scala")
+	assert.ErrorContains(t, err, "The zip archive contains no items.")
 }
 
 func TestImportFileFormatAuto(t *testing.T) {

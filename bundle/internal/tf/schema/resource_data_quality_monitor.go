@@ -68,9 +68,14 @@ type ResourceDataQualityMonitorDataProfilingConfig struct {
 	WarehouseId                 string                                                             `json:"warehouse_id,omitempty"`
 }
 
+type ResourceDataQualityMonitorProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceDataQualityMonitor struct {
 	AnomalyDetectionConfig *ResourceDataQualityMonitorAnomalyDetectionConfig `json:"anomaly_detection_config,omitempty"`
 	DataProfilingConfig    *ResourceDataQualityMonitorDataProfilingConfig    `json:"data_profiling_config,omitempty"`
 	ObjectId               string                                            `json:"object_id"`
 	ObjectType             string                                            `json:"object_type"`
+	ProviderConfig         *ResourceDataQualityMonitorProviderConfig         `json:"provider_config,omitempty"`
 }

@@ -3,12 +3,14 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Modify max_concurrent_runs from 1 to 5
+=== Modify max_concurrent_runs, description, and add timeout
 === Detect and save changes
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
+  description: replace
   max_concurrent_runs: replace
+  timeout_seconds: add
 
 
 
@@ -17,31 +19,33 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -2,5 +2,4 @@
- bundle:
-   name: test-bundle-[UNIQUE_NAME]
--
- # Resources section with extra spacing
- resources:
-@@ -8,6 +7,5 @@
+@@ -9,10 +9,10 @@
      my_job:
        # Comment about max concurrent runs
 -      max_concurrent_runs: 1
--
 +      max_concurrent_runs: 5
+
+-      description: |
+-        Main ETL job for data processing.
++      description: |-
++        Updated ETL job.
+
+-        Runs daily at 2am UTC.
++        Runs hourly.
+
        # Task configuration
-       tasks:
-@@ -19,10 +17,8 @@
-             node_type_id: [NODE_TYPE_ID]
-             num_workers: 1 # inline comment about workers
--
-       # Tags for categorization
-       tags:
-         env: dev # environment tag
-         team: data-eng
--
-       # Flow-style formatting (should be preserved)
-       parameters:
+@@ -21,6 +21,5 @@
+
+           description: >-
+-            Main processing task
+-            that runs the notebook.
++            Main processing task that runs the notebook.
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+@@ -40,2 +39,3 @@
+         - {name: catalog, default: main}
+         - {name: schema, default: dev}
++      timeout_seconds: 3600
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

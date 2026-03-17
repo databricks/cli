@@ -1,0 +1,47 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.postgres_projects.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "display_name": "Test Postgres Project",
+          "project_id": "test-project"
+        }
+      }
+    },
+    "resources.postgres_projects.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.postgres_projects.foo",
+          "label": "${resources.postgres_projects.foo.project_id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "/database-projects/test-project",
+          "__embed__": [
+            {
+              "level": "CAN_USE",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "group_name": "data-team"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "service_principal_name": "[UUID]"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
