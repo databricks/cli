@@ -38,21 +38,30 @@ func migrateState(db *Database) error {
 var migrations = map[int]func(*Database) error{
 	0: migrateV1ToV2,
 	1: migrateV1ToV2,
-	2: migrateV2ToV3,
 }
 
-// migrateV1ToV2 migrates permissions entries from the old format
-// (iam.AccessControlRequest with "permissions" key and "permission_level" field)
-// to the new format (StatePermission with "_" key and "level" field).
+// migrateV1ToV2 migrates permissions and grants entries from the old format
+// to the new format using __embed__ keys.
 func migrateV1ToV2(db *Database) error {
 	for key, entry := range db.State {
-		if !strings.HasSuffix(key, ".permissions") {
-			continue
-		}
 		if len(entry.State) == 0 {
 			continue
 		}
-		migrated, err := migratePermissionsEntry(entry.State)
+
+		var (
+			migrated json.RawMessage
+			err      error
+		)
+
+		switch {
+		case strings.HasSuffix(key, ".permissions"):
+			migrated, err = migratePermissionsEntry(entry.State)
+		case strings.HasSuffix(key, ".grants"):
+			migrated, err = migrateGrantsEntry(entry.State)
+		default:
+			continue
+		}
+
 		if err != nil {
 			return fmt.Errorf("migrating %s: %w", key, err)
 		}
@@ -101,35 +110,15 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 	return json.MarshalIndent(newState, "  ", " ")
 }
 
-// migrateV2ToV3 migrates grants entries from the old format
-// ("grants" key) to the new format ("__embed__" key).
-func migrateV2ToV3(db *Database) error {
-	for key, entry := range db.State {
-		if !strings.HasSuffix(key, ".grants") {
-			continue
-		}
-		if len(entry.State) == 0 {
-			continue
-		}
-		migrated, err := migrateGrantsEntry(entry.State)
-		if err != nil {
-			return fmt.Errorf("migrating %s: %w", key, err)
-		}
-		entry.State = migrated
-		db.State[key] = entry
-	}
-	return nil
-}
-
-// oldGrantsStateV2 is the grants state format before v3.
-type oldGrantsStateV2 struct {
+// oldGrantsStateV1 is the grants state format before v2.
+type oldGrantsStateV1 struct {
 	SecurableType string          `json:"securable_type"`
 	FullName      string          `json:"full_name"`
 	Grants        json.RawMessage `json:"grants,omitempty"`
 }
 
 func migrateGrantsEntry(raw json.RawMessage) (json.RawMessage, error) {
-	var old oldGrantsStateV2
+	var old oldGrantsStateV1
 	if err := json.Unmarshal(raw, &old); err != nil {
 		return nil, err
 	}

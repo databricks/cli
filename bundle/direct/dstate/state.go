@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const currentStateVersion = 3
+const currentStateVersion = 2
 
 type DeploymentState struct {
 	Path string

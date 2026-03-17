@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMigrateV2ToV3GrantsEntry(t *testing.T) {
+func TestMigrateV1ToV2GrantsEntry(t *testing.T) {
 	input := json.RawMessage(`{
 		"securable_type": "catalog",
 		"full_name": "main",
@@ -29,7 +29,7 @@ func TestMigrateV2ToV3GrantsEntry(t *testing.T) {
 	assert.NotNil(t, parsed["__embed__"], "'__embed__' key should be present")
 }
 
-func TestMigrateV2ToV3AlreadyMigrated(t *testing.T) {
+func TestMigrateV1ToV2GrantsAlreadyMigrated(t *testing.T) {
 	input := json.RawMessage(`{
 		"securable_type": "catalog",
 		"full_name": "main",
@@ -47,9 +47,9 @@ func TestMigrateV2ToV3AlreadyMigrated(t *testing.T) {
 	assert.NotNil(t, parsed["__embed__"])
 }
 
-func TestMigrateV2ToV3FullDatabase(t *testing.T) {
+func TestMigrateV1ToV2FullDatabase(t *testing.T) {
 	db := &Database{
-		StateVersion: 2,
+		StateVersion: 1,
 		State: map[string]ResourceEntry{
 			"resources.catalogs.my_cat.grants": {
 				ID: "catalog/main",
