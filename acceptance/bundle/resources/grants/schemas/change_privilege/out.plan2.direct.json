@@ -29,7 +29,7 @@
         "value": {
           "securable_type": "schema",
           "full_name": "main.schema_grants_[UNIQUE_NAME]",
-          "grants": [
+          "__embed__": [
             {
               "principal": "deco-test-user@databricks.com",
               "privileges": [
@@ -43,7 +43,7 @@
       "remote_state": {
         "securable_type": "schema",
         "full_name": "main.schema_grants_[UNIQUE_NAME]",
-        "grants": [
+        "__embed__": [
           {
             "principal": "deco-test-user@databricks.com",
             "privileges": [
