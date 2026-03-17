@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -246,6 +247,12 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+					"vs_endpoint1": {CreateEndpoint: vectorsearch.CreateEndpoint{Name: "vs_endpoint1"}},
+				},
+				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+					"vs_index1": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "vs_index1", EndpointName: "vs_endpoint1"}},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -407,12 +414,14 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	// UC resources should not have a prefix added to their name. Right now
-	// this list only contains the Volume, Catalog, and ExternalLocation resources since we have yet to remove
+	// this list only contains the Volume, Catalog, ExternalLocation, and Vector Search resources since we have yet to remove
 	// prefixing support for UC schemas and registered models.
 	ucFields := []reflect.Type{
 		reflect.TypeOf(&resources.Catalog{}),
 		reflect.TypeOf(&resources.ExternalLocation{}),
 		reflect.TypeOf(&resources.Volume{}),
+		reflect.TypeOf(&resources.VectorSearchEndpoint{}),
+		reflect.TypeOf(&resources.VectorSearchIndex{}),
 	}
 
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())

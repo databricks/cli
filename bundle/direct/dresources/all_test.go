@@ -28,6 +28,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -238,6 +239,22 @@ var testConfig map[string]any = map[string]any{
 
 			DatasetCatalog: "main",
 			DatasetSchema:  "myschema",
+		},
+	},
+
+	"vector_search_endpoints": &resources.VectorSearchEndpoint{
+		CreateEndpoint: vectorsearch.CreateEndpoint{
+			Name:         "my-vector-search-endpoint",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		},
+	},
+
+	"vector_search_indexes": &resources.VectorSearchIndex{
+		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+			Name:         "my-vector-search-index",
+			EndpointName: "my-vector-search-endpoint",
+			PrimaryKey:   "id",
+			IndexType:    vectorsearch.VectorIndexType("DELTA_SYNC"),
 		},
 	},
 }

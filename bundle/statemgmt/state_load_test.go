@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,6 +49,8 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_projects.test_postgres_project":           {ID: "projects/test-project"},
 		"resources.postgres_branches.test_postgres_branch":            {ID: "projects/test-project/branches/main"},
 		"resources.postgres_endpoints.test_postgres_endpoint":         {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.vector_search_endpoints.test_vs_endpoint":          {ID: "test_vs_endpoint"},
+		"resources.vector_search_indexes.test_vs_index":              {ID: "test_vs_index"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -115,6 +118,11 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "projects/test-project/branches/main/endpoints/primary", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "test_vs_endpoint", config.Resources.VectorSearchEndpoints["test_vs_endpoint"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vs_endpoint"].ModifiedStatus)
+	assert.Equal(t, "test_vs_index", config.Resources.VectorSearchIndexes["test_vs_index"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchIndexes["test_vs_index"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -287,6 +295,23 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+				"test_vs_endpoint": {
+					CreateEndpoint: vectorsearch.CreateEndpoint{
+						Name: "test_vs_endpoint",
+					},
+				},
+			},
+			VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+				"test_vs_index": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name:         "test_vs_index",
+						EndpointName: "test_vs_endpoint",
+						PrimaryKey:   "id",
+						IndexType:    vectorsearch.VectorIndexType("DELTA_SYNC"),
+					},
+				},
+			},
 		},
 	}
 
@@ -361,6 +386,11 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vs_endpoint"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vs_endpoint"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.VectorSearchIndexes["test_vs_index"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchIndexes["test_vs_index"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -646,6 +676,36 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+				"test_vs_endpoint": {
+					CreateEndpoint: vectorsearch.CreateEndpoint{
+						Name: "test_vs_endpoint",
+					},
+				},
+				"test_vs_endpoint_new": {
+					CreateEndpoint: vectorsearch.CreateEndpoint{
+						Name: "test_vs_endpoint_new",
+					},
+				},
+			},
+			VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+				"test_vs_index": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name:         "test_vs_index",
+						EndpointName: "test_vs_endpoint",
+						PrimaryKey:   "id",
+						IndexType:    vectorsearch.VectorIndexType("DELTA_SYNC"),
+					},
+				},
+				"test_vs_index_new": {
+					CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name:         "test_vs_index_new",
+						EndpointName: "test_vs_endpoint",
+						PrimaryKey:   "id",
+						IndexType:    vectorsearch.VectorIndexType("DELTA_SYNC"),
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
@@ -689,6 +749,10 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.postgres_branches.test_postgres_branch_old":     {ID: "projects/test-project/branches/old"},
 		"resources.postgres_endpoints.test_postgres_endpoint":      {ID: "projects/test-project/branches/main/endpoints/primary"},
 		"resources.postgres_endpoints.test_postgres_endpoint_old":  {ID: "projects/test-project/branches/main/endpoints/old"},
+		"resources.vector_search_endpoints.test_vs_endpoint":       {ID: "test_vs_endpoint"},
+		"resources.vector_search_endpoints.test_vs_endpoint_old":   {ID: "test_vs_endpoint_old"},
+		"resources.vector_search_indexes.test_vs_index":            {ID: "test_vs_index"},
+		"resources.vector_search_indexes.test_vs_index_old":        {ID: "test_vs_index_old"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -834,6 +898,19 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint_old"].ModifiedStatus)
 	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ModifiedStatus)
+
+	assert.Equal(t, "test_vs_endpoint", config.Resources.VectorSearchEndpoints["test_vs_endpoint"].ID)
+	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vs_endpoint"].ModifiedStatus)
+	assert.Equal(t, "test_vs_endpoint_old", config.Resources.VectorSearchEndpoints["test_vs_endpoint_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vs_endpoint_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vs_endpoint_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vs_endpoint_new"].ModifiedStatus)
+	assert.Equal(t, "test_vs_index", config.Resources.VectorSearchIndexes["test_vs_index"].ID)
+	assert.Equal(t, "", config.Resources.VectorSearchIndexes["test_vs_index"].ModifiedStatus)
+	assert.Equal(t, "test_vs_index_old", config.Resources.VectorSearchIndexes["test_vs_index_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchIndexes["test_vs_index_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.VectorSearchIndexes["test_vs_index_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchIndexes["test_vs_index_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -170,6 +171,9 @@ type FakeWorkspace struct {
 	PostgresEndpoints  map[string]postgres.Endpoint
 	PostgresOperations map[string]postgres.Operation
 
+	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
+	VectorSearchIndexes   map[string]vectorsearch.VectorIndex
+
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
@@ -294,9 +298,11 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
 		PostgresProjects:     map[string]postgres.Project{},
 		PostgresBranches:     map[string]postgres.Branch{},
-		PostgresEndpoints:    map[string]postgres.Endpoint{},
-		PostgresOperations:   map[string]postgres.Operation{},
-		clusterVenvs:         map[string]*clusterEnv{},
+		PostgresEndpoints:     map[string]postgres.Endpoint{},
+		PostgresOperations:    map[string]postgres.Operation{},
+		VectorSearchEndpoints: map[string]vectorsearch.EndpointInfo{},
+		VectorSearchIndexes:   map[string]vectorsearch.VectorIndex{},
+		clusterVenvs:          map[string]*clusterEnv{},
 		Alerts:               map[string]sql.AlertV2{},
 		Experiments:          map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:  map[string]ml.Model{},

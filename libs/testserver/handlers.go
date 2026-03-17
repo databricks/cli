@@ -905,4 +905,26 @@ func AddDefaultHandlers(server *Server) {
 			},
 		}
 	})
+
+	// Vector Search Endpoints:
+	server.Handle("GET", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.VectorSearchEndpoints, req.Vars["endpoint_name"])
+	})
+	server.Handle("POST", "/api/2.0/vector-search/endpoints", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointCreate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.VectorSearchEndpoints, req.Vars["endpoint_name"])
+	})
+
+	// Vector Search Indexes:
+	server.Handle("GET", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
+	})
+	server.Handle("POST", "/api/2.0/vector-search/indexes", func(req Request) any {
+		return req.Workspace.VectorSearchIndexCreate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
+	})
 }

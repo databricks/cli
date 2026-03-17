@@ -28,6 +28,8 @@ var unsupportedResources = []string{
 	"synced_database_tables",
 	"postgres_branches",
 	"postgres_endpoints",
+	"vector_search_endpoints",
+	"vector_search_indexes",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {

@@ -1903,6 +1903,80 @@
                   }
                 ]
               },
+              "resources.VectorSearchEndpoint": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "budget_policy_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "endpoint_type": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "min_qps": {
+                        "$ref": "#/$defs/int64"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "endpoint_type",
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.VectorSearchIndex": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "delta_sync_index_spec": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DeltaSyncVectorIndexSpecRequest"
+                      },
+                      "direct_access_index_spec": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DirectAccessVectorIndexSpec"
+                      },
+                      "endpoint_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "index_type": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "primary_key": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "endpoint_name",
+                      "index_type",
+                      "name",
+                      "primary_key"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Volume": {
                 "oneOf": [
                   {
@@ -2487,6 +2561,12 @@
                     },
                     "synced_database_tables": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable"
+                    },
+                    "vector_search_endpoints": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint"
+                    },
+                    "vector_search_indexes": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.VectorSearchIndex"
                     },
                     "volumes": {
                       "description": "The volume definitions for the bundle, where each key is the name of the volume.",
@@ -10426,6 +10506,113 @@
                 }
               ]
             },
+            "vectorsearch.DeltaSyncVectorIndexSpecRequest": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "columns_to_sync": {
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "embedding_source_columns": {
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn"
+                    },
+                    "embedding_vector_columns": {
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn"
+                    },
+                    "embedding_writeback_table": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "pipeline_type": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.PipelineType"
+                    },
+                    "source_table": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "vectorsearch.DirectAccessVectorIndexSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "embedding_source_columns": {
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn"
+                    },
+                    "embedding_vector_columns": {
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn"
+                    },
+                    "schema_json": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "vectorsearch.EmbeddingSourceColumn": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "embedding_model_endpoint_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "model_endpoint_name_for_query": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "vectorsearch.EmbeddingVectorColumn": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "embedding_dimension": {
+                      "$ref": "#/$defs/int"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "vectorsearch.EndpointType": {
+              "type": "string"
+            },
+            "vectorsearch.PipelineType": {
+              "type": "string"
+            },
+            "vectorsearch.VectorIndexType": {
+              "type": "string"
+            },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "oneOf": [
                 {
@@ -10834,6 +11021,34 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.VectorSearchEndpoint": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.VectorSearchIndex": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchIndex"
                       }
                     },
                     {
@@ -11677,6 +11892,34 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "vectorsearch.EmbeddingSourceColumn": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "vectorsearch.EmbeddingVectorColumn": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn"
                     }
                   },
                   {

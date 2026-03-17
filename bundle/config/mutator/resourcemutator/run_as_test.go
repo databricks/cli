@@ -54,6 +54,8 @@ func allResourceTypes(t *testing.T) []string {
 		"secret_scopes",
 		"sql_warehouses",
 		"synced_database_tables",
+		"vector_search_endpoints",
+		"vector_search_indexes",
 		"volumes",
 	},
 		resourceTypes,
@@ -179,6 +181,8 @@ var allowList = []string{
 	"schemas",
 	"secret_scopes",
 	"sql_warehouses",
+	"vector_search_endpoints",
+	"vector_search_indexes",
 	"volumes",
 }
 

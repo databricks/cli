@@ -490,3 +490,15 @@ resources:
         reason: immutable
       - field: endpoint_id
         reason: immutable
+
+  vector_search_endpoints:
+    recreate_on_changes:
+      - field: name
+        reason: id_changes
+
+  vector_search_indexes:
+    recreate_on_changes:
+      - field: endpoint_name
+        reason: immutable
+      - field: name
+        reason: id_changes

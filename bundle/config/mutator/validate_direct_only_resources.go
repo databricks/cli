@@ -42,6 +42,30 @@ var directOnlyResources = []directOnlyResource{
 			return result
 		},
 	},
+	{
+		resourceType: "vector_search_endpoints",
+		pluralName:   "Vector Search Endpoint",
+		singularName: "vector search endpoint",
+		getResources: func(b *bundle.Bundle) map[string]any {
+			result := make(map[string]any)
+			for k, v := range b.Config.Resources.VectorSearchEndpoints {
+				result[k] = v
+			}
+			return result
+		},
+	},
+	{
+		resourceType: "vector_search_indexes",
+		pluralName:   "Vector Search Index",
+		singularName: "vector search index",
+		getResources: func(b *bundle.Bundle) map[string]any {
+			result := make(map[string]any)
+			for k, v := range b.Config.Resources.VectorSearchIndexes {
+				result[k] = v
+			}
+			return result
+		},
+	},
 }
 
 type validateDirectOnlyResources struct {
