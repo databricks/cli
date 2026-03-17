@@ -105,6 +105,12 @@ func (o *ClientOptions) Validate() error {
 	if o.Accelerator != "" && o.ConnectionName == "" {
 		return errors.New("--accelerator flag can only be used with serverless compute (--name flag)")
 	}
+	// Consider removing this check when we enable serverless CPU connections. Ideally Jobs API should do the validation
+	// for us, but they don't plan on doing it in the nearest future. For now we should not forget to check if there are
+	// any other possible values that can be here.
+	if o.Accelerator != "" && o.Accelerator != "GPU_1xA10" && o.Accelerator != "GPU_8xH100" {
+		return fmt.Errorf("invalid accelerator value: %q, expected %q or %q", o.Accelerator, "GPU_1xA10", "GPU_8xH100")
+	}
 	// TODO: Remove when we add support for serverless CPU
 	if o.ConnectionName != "" && o.Accelerator == "" {
 		return errors.New("--name flag requires --accelerator to be set (for now we only support serverless GPU compute)")
