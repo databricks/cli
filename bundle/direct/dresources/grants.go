@@ -23,7 +23,7 @@ var grantResourceToSecurableType = map[string]string{
 type GrantsState struct {
 	SecurableType string                        `json:"securable_type"`
 	FullName      string                        `json:"full_name"`
-	EmbeddedSlice []catalog.PrivilegeAssignment `json:"__embed__,omitempty"`
+	EmbeddedSlice []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
