@@ -59,7 +59,7 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "_": [
+          "__embed__": [
             {
               "level": "CAN_VIEW",
               "user_name": "deco-test-user@databricks.com"
@@ -76,7 +76,7 @@
       },
       "remote_state": {
         "object_id": "/serving-endpoints/[ENDPOINT_ID_1]",
-        "_": [
+        "__embed__": [
           {
             "level": "CAN_VIEW",
             "user_name": "deco-test-user@databricks.com"
