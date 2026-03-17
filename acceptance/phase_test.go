@@ -1,8 +1,6 @@
 package acceptance_test
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -10,60 +8,54 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCollectTestPhases(t *testing.T) {
-	root := t.TempDir()
-	t.Chdir(root)
-
-	files := map[string]string{
-		"test.toml":        "Phase = 9\n",
-		"alpha/test.toml":  "Local = true\n",
-		"beta/test.toml":   "Phase = 1\n",
-		"gamma/test.toml":  "Phase = 2\n",
-		"zeta/test.toml":   "Local = true\nPhase = 1\n",
-		"nested/test.toml": "Phase = 4\n",
+func TestValidateTestPhase(t *testing.T) {
+	tests := []struct {
+		name    string
+		phase   int
+		wantErr string
+	}{
+		{
+			name:  "phase zero",
+			phase: 0,
+		},
+		{
+			name:  "phase one",
+			phase: 1,
+		},
+		{
+			name:    "negative phase",
+			phase:   -1,
+			wantErr: "Phase must be 0 or 1, got -1",
+		},
+		{
+			name:    "phase two",
+			phase:   2,
+			wantErr: "Phase must be 0 or 1, got 2",
+		},
 	}
 
-	for path, contents := range files {
-		absPath := filepath.Join(root, filepath.FromSlash(path))
-		require.NoError(t, os.MkdirAll(filepath.Dir(absPath), 0o755))
-		require.NoError(t, os.WriteFile(absPath, []byte(contents), 0o644))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateTestPhase(tt.phase)
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+
+			require.EqualError(t, err, tt.wantErr)
+		})
 	}
-	require.NoError(t, os.MkdirAll(filepath.Join(root, "nested", "leaf"), 0o755))
-
-	phases := collectTestPhases(t, []string{"gamma", "beta", "alpha", "zeta", "nested/leaf"})
-
-	assert.Equal(t, []testPhase{
-		{
-			Phase: 0,
-			Dirs:  []string{"alpha", "nested/leaf"},
-		},
-		{
-			Phase: 1,
-			Dirs:  []string{"beta", "zeta"},
-		},
-		{
-			Phase: 2,
-			Dirs:  []string{"gamma"},
-		},
-	}, phases)
-	assert.Equal(t, []string{"alpha", "nested/leaf", "beta", "zeta", "gamma"}, flattenTestPhases(phases))
 }
 
-func TestPhaseSchedulerWaitsForPreviousPhase(t *testing.T) {
-	scheduler := newPhaseScheduler([]testPhase{
-		{
-			Phase: 0,
-			Dirs:  []string{"a", "b"},
-		},
-		{
-			Phase: 1,
-			Dirs:  []string{"c"},
-		},
-	})
+func TestPhaseSemaphoreWaitsForAllPhaseZeroTests(t *testing.T) {
+	semaphore := newPhaseSemaphore()
+	semaphore.Add()
+	semaphore.Add()
+	gate := semaphore.Seal()
 
 	released := make(chan struct{})
 	go func() {
-		scheduler.Wait(1)
+		<-gate
 		close(released)
 	}()
 
@@ -73,7 +65,7 @@ func TestPhaseSchedulerWaitsForPreviousPhase(t *testing.T) {
 	case <-time.After(20 * time.Millisecond):
 	}
 
-	scheduler.Done(0)
+	semaphore.Done()
 
 	select {
 	case <-released:
@@ -81,11 +73,23 @@ func TestPhaseSchedulerWaitsForPreviousPhase(t *testing.T) {
 	case <-time.After(20 * time.Millisecond):
 	}
 
-	scheduler.Done(0)
+	semaphore.Done()
 
 	select {
 	case <-released:
 	case <-time.After(time.Second):
 		t.Fatal("phase 1 was not released")
 	}
+}
+
+func TestPhaseSemaphoreWithoutPhaseZeroTestsIsOpen(t *testing.T) {
+	gate := newPhaseSemaphore().Seal()
+
+	select {
+	case <-gate:
+	default:
+		t.Fatal("phase 1 should be released when there are no phase 0 tests")
+	}
+
+	assert.NotNil(t, gate)
 }
