@@ -44,7 +44,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 >>> cat tmp.app-run
 ✓ Getting the status of the app [APP_NAME]
 ✓ App is in RUNNING state
-✓ App compute is in ACTIVE state
+✓ App compute is in STOPPED state
+✓ Starting the app [APP_NAME]
+✓ App is starting...
+✓ App is started!
 ✓ Deployment succeeded
 You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 

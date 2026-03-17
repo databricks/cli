@@ -379,9 +379,7 @@ resources.clusters.*.kind	compute.Kind	ALL
 resources.clusters.*.last_restarted_time	int64	REMOTE
 resources.clusters.*.last_state_loss_time	int64	REMOTE
 resources.clusters.*.lifecycle	resources.Lifecycle	INPUT
-resources.clusters.*.lifecycle	resources.LifecycleWithStarted	INPUT
 resources.clusters.*.lifecycle.prevent_destroy	bool	INPUT
-resources.clusters.*.lifecycle.started	*bool	INPUT
 resources.clusters.*.modified_status	string	INPUT
 resources.clusters.*.node_type_id	string	ALL
 resources.clusters.*.num_workers	int	ALL
@@ -506,7 +504,6 @@ resources.clusters.*.spec.workload_type.clients.notebooks	bool	REMOTE
 resources.clusters.*.ssh_public_keys	[]string	ALL
 resources.clusters.*.ssh_public_keys[*]	string	ALL
 resources.clusters.*.start_time	int64	REMOTE
-resources.clusters.*.started	*bool	STATE
 resources.clusters.*.state	compute.State	REMOTE
 resources.clusters.*.state_message	string	REMOTE
 resources.clusters.*.terminated_time	int64	REMOTE
@@ -2795,9 +2792,7 @@ resources.sql_warehouses.*.id	string	INPUT	REMOTE
 resources.sql_warehouses.*.instance_profile_arn	string	ALL
 resources.sql_warehouses.*.jdbc_url	string	REMOTE
 resources.sql_warehouses.*.lifecycle	resources.Lifecycle	INPUT
-resources.sql_warehouses.*.lifecycle	resources.LifecycleWithStarted	INPUT
 resources.sql_warehouses.*.lifecycle.prevent_destroy	bool	INPUT
-resources.sql_warehouses.*.lifecycle.started	*bool	INPUT
 resources.sql_warehouses.*.max_num_clusters	int	ALL
 resources.sql_warehouses.*.min_num_clusters	int	ALL
 resources.sql_warehouses.*.modified_status	string	INPUT
@@ -2810,7 +2805,6 @@ resources.sql_warehouses.*.odbc_params.path	string	REMOTE
 resources.sql_warehouses.*.odbc_params.port	int	REMOTE
 resources.sql_warehouses.*.odbc_params.protocol	string	REMOTE
 resources.sql_warehouses.*.spot_instance_policy	sql.SpotInstancePolicy	ALL
-resources.sql_warehouses.*.started	*bool	STATE
 resources.sql_warehouses.*.state	sql.State	REMOTE
 resources.sql_warehouses.*.tags	*sql.EndpointTags	ALL
 resources.sql_warehouses.*.tags.custom_tags	[]sql.EndpointTagPair	ALL
