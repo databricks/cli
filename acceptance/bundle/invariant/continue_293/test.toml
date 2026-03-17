@@ -1,4 +1,5 @@
 Cloud = false
+Slow = true
 
 # Cross-resource permission references (${resources.jobs.X.permissions[N].field}) require
 # permissions to be part of the job schema, which was added after v0.293.0.
