@@ -185,11 +185,8 @@ func (m model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	default:
-		switch msg.Type {
-		case tea.KeyRunes:
+		if msg.Type == tea.KeyRunes || msg.Type == tea.KeySpace {
 			m.searchInput += msg.String()
-		case tea.KeySpace:
-			m.searchInput += " "
 		}
 		return m, nil
 	}
