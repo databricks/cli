@@ -20,6 +20,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -119,6 +120,18 @@ var Scripts = map[string]bool{
 var Ignored = map[string]bool{
 	ReplsFile:                true,
 	userReplacementsFilename: true,
+}
+
+type testPhase struct {
+	Phase int
+	Dirs  []string
+}
+
+type phaseScheduler struct {
+	mu        sync.Mutex
+	remaining map[int]int
+	next      map[int]int
+	gates     map[int]chan struct{}
 }
 
 func TestAccept(t *testing.T) {
@@ -287,6 +300,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
 	}
 
+	testPhases := collectTestPhases(t, testDirs)
+	testDirs = flattenTestPhases(testPhases)
+	scheduler := newPhaseScheduler(testPhases)
+
 	skippedDirs := 0
 	totalDirs := 0
 	selectedDirs := 0
@@ -300,6 +317,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			selectedDirs += 1
 
 			config, configPath := internal.LoadConfig(t, dir)
+			defer scheduler.Done(config.Phase)
 			skipReason := getSkipReason(&config, configPath)
 
 			// Generate materialized config for this test.
@@ -327,6 +345,8 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			if runParallel {
 				t.Parallel()
 			}
+
+			scheduler.Wait(config.Phase)
 
 			// Build extra vars for exclusion matching (config state as env vars)
 			var extraVars []string
@@ -403,6 +423,92 @@ func getTests(t *testing.T) []string {
 
 	sort.Strings(testDirs)
 	return testDirs
+}
+
+func collectTestPhases(t *testing.T, testDirs []string) []testPhase {
+	phaseDirs := make(map[int][]string)
+
+	for _, dir := range testDirs {
+		config, _ := internal.LoadConfig(t, dir)
+		phaseDirs[config.Phase] = append(phaseDirs[config.Phase], dir)
+	}
+
+	phases := make([]int, 0, len(phaseDirs))
+	for phase := range phaseDirs {
+		phases = append(phases, phase)
+	}
+	sort.Ints(phases)
+
+	result := make([]testPhase, 0, len(phases))
+	for _, phase := range phases {
+		dirs := phaseDirs[phase]
+		sort.Strings(dirs)
+		result = append(result, testPhase{
+			Phase: phase,
+			Dirs:  dirs,
+		})
+	}
+
+	return result
+}
+
+func flattenTestPhases(testPhases []testPhase) []string {
+	totalDirs := 0
+	for _, phase := range testPhases {
+		totalDirs += len(phase.Dirs)
+	}
+
+	result := make([]string, 0, totalDirs)
+	for _, phase := range testPhases {
+		result = append(result, phase.Dirs...)
+	}
+
+	return result
+}
+
+func newPhaseScheduler(testPhases []testPhase) *phaseScheduler {
+	remaining := make(map[int]int, len(testPhases))
+	next := make(map[int]int, len(testPhases))
+	gates := make(map[int]chan struct{}, len(testPhases))
+
+	for i, phase := range testPhases {
+		remaining[phase.Phase] = len(phase.Dirs)
+		gates[phase.Phase] = make(chan struct{})
+		if i+1 < len(testPhases) {
+			next[phase.Phase] = testPhases[i+1].Phase
+		}
+	}
+
+	if len(testPhases) > 0 {
+		close(gates[testPhases[0].Phase])
+	}
+
+	return &phaseScheduler{
+		remaining: remaining,
+		next:      next,
+		gates:     gates,
+	}
+}
+
+func (s *phaseScheduler) Wait(phase int) {
+	<-s.gates[phase]
+}
+
+func (s *phaseScheduler) Done(phase int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.remaining[phase]--
+	if s.remaining[phase] != 0 {
+		return
+	}
+
+	next, ok := s.next[phase]
+	if !ok {
+		return
+	}
+
+	close(s.gates[next])
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".

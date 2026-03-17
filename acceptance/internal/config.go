@@ -24,6 +24,10 @@ type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
 	Badness *string
 
+	// Execution phase for this test. Tests run in ascending phase order.
+	// Phase is not inherited from parent test.toml files. Default is 0.
+	Phase int
+
 	// Which OSes the test is enabled on. Each string is compared against runtime.GOOS.
 	// If absent, default to true.
 	GOOS map[string]bool
@@ -194,9 +198,19 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 	}
 
 	result := DoLoadConfig(t, configs[0])
+	leafConfigPath := filepath.Join(dir, configFilename)
+	leafConfig := TestConfig{}
+	hasLeafConfig := configs[0] == leafConfigPath
+	if hasLeafConfig {
+		leafConfig = result
+	}
 
 	for _, cfgName := range configs[1:] {
 		cfg := DoLoadConfig(t, cfgName)
+		if cfgName == leafConfigPath {
+			leafConfig = cfg
+			hasLeafConfig = true
+		}
 		err := mergo.Merge(
 			&result,
 			cfg,
@@ -208,6 +222,12 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 		if err != nil {
 			t.Fatalf("Error during config merge: %s: %s", cfgName, err)
 		}
+	}
+
+	if hasLeafConfig {
+		result.Phase = leafConfig.Phase
+	} else {
+		result.Phase = 0
 	}
 
 	// Always ignore .cache directory (used by local cache)
