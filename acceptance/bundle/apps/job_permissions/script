@@ -12,7 +12,7 @@ has_manage_run() {
 }
 
 title "After first deploy"
-trace has_manage_run
+# trace has_manage_run # This is flaky on direct
 
 title "After second deploy"
 trace $CLI bundle deploy

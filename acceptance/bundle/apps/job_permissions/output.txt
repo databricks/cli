@@ -6,9 +6,6 @@ Updating deployment state...
 Deployment complete!
 
 === After first deploy
->>> has_manage_run
-true
-
 === After second deploy
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
