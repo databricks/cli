@@ -141,10 +141,11 @@ func accessKey(v reflect.Value, key string, path *structpath.PathNode) (reflect.
 				if fv.IsNil() {
 					return reflect.Value{}, nil
 				}
-				// Non-nil pointer: check if the pointed-to value is empty for omitempty
-				if isEmptyForOmitEmpty(fv.Elem()) {
-					return reflect.Value{}, nil
-				}
+				// Non-nil pointer: return the dereferenced value.
+				// JSON omitempty only omits nil pointers, not pointers to zero values.
+				// Returning the dereferenced value is consistent with GetStructDiff,
+				// which recursively dereferences non-nil pointers.
+				return fv.Elem(), nil
 			} else if isEmptyForOmitEmpty(fv) {
 				return reflect.Value{}, nil
 			}
