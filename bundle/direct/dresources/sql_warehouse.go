@@ -5,15 +5,10 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
-
-type SqlWarehouseState struct {
-	sql.CreateWarehouseRequest
-}
 
 type ResourceSqlWarehouse struct {
 	client *databricks.WorkspaceClient
@@ -25,14 +20,12 @@ func (*ResourceSqlWarehouse) New(client *databricks.WorkspaceClient) *ResourceSq
 }
 
 // PrepareState converts bundle config to the SDK type.
-func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWarehouseState {
-	return &SqlWarehouseState{
-		CreateWarehouseRequest: input.CreateWarehouseRequest,
-	}
+func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *sql.CreateWarehouseRequest {
+	return &input.CreateWarehouseRequest
 }
 
-func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *SqlWarehouseState {
-	return &SqlWarehouseState{CreateWarehouseRequest: sql.CreateWarehouseRequest{
+func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sql.CreateWarehouseRequest {
+	return &sql.CreateWarehouseRequest{
 		AutoStopMins:            warehouse.AutoStopMins,
 		Channel:                 warehouse.Channel,
 		ClusterSize:             warehouse.ClusterSize,
@@ -47,7 +40,7 @@ func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *Sq
 		Tags:                    warehouse.Tags,
 		WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
 		ForceSendFields:         utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
-	}}
+	}
 }
 
 // DoRead reads the warehouse by id.
@@ -56,20 +49,16 @@ func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string) (*sql.GetW
 }
 
 // DoCreate creates the warehouse and returns its id.
-func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *SqlWarehouseState) (string, *sql.GetWarehouseResponse, error) {
-	waiter, err := r.client.Warehouses.Create(ctx, config.CreateWarehouseRequest)
+func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateWarehouseRequest) (string, *sql.GetWarehouseResponse, error) {
+	waiter, err := r.client.Warehouses.Create(ctx, *config)
 	if err != nil {
 		return "", nil, err
 	}
-	warehouse, err := waiter.Get()
-	if err != nil {
-		return "", nil, err
-	}
-	return warehouse.Id, warehouse, nil
+	return waiter.Id, nil, nil
 }
 
 // DoUpdate updates the warehouse in place.
-func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *SqlWarehouseState, _ Changes) (*sql.GetWarehouseResponse, error) {
+func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest, _ Changes) (*sql.GetWarehouseResponse, error) {
 	request := sql.EditWarehouseRequest{
 		AutoStopMins:            config.AutoStopMins,
 		Channel:                 config.Channel,
@@ -102,8 +91,4 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 
 func (r *ResourceSqlWarehouse) DoDelete(ctx context.Context, oldID string) error {
 	return r.client.Warehouses.DeleteById(ctx, oldID)
-}
-
-func (*ResourceSqlWarehouse) OverrideChangeDesc(_ context.Context, _ *structpath.PathNode, _ *ChangeDesc, _ *sql.GetWarehouseResponse) error {
-	return nil
 }

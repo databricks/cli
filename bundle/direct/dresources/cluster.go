@@ -16,10 +16,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
-type ClusterState struct {
-	compute.ClusterSpec
-}
-
 type ResourceCluster struct {
 	client *databricks.WorkspaceClient
 }
@@ -30,13 +26,11 @@ func (r *ResourceCluster) New(client *databricks.WorkspaceClient) any {
 	}
 }
 
-func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
-	return &ClusterState{
-		ClusterSpec: input.ClusterSpec,
-	}
+func (r *ResourceCluster) PrepareState(input *resources.Cluster) *compute.ClusterSpec {
+	return &input.ClusterSpec
 }
 
-func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *ClusterState {
+func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.ClusterSpec {
 	spec := &compute.ClusterSpec{
 		ApplyPolicyDefaultValues:   false,
 		Autoscale:                  input.Autoscale,
@@ -77,27 +71,27 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *ClusterStat
 	if input.Spec != nil {
 		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
 	}
-	return &ClusterState{ClusterSpec: *spec}
+	return spec
 }
 
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.ClusterDetails, error) {
 	return r.client.Clusters.GetByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) DoCreate(ctx context.Context, config *ClusterState) (string, *compute.ClusterDetails, error) {
-	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(&config.ClusterSpec))
+func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, *compute.ClusterDetails, error) {
+	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(config))
 	if err != nil {
 		return "", nil, err
 	}
 	return wait.ClusterId, nil, nil
 }
 
-func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *ClusterState, _ Changes) (*compute.ClusterDetails, error) {
+func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec, _ Changes) (*compute.ClusterDetails, error) {
 	// Same retry as in TF provider logic
 	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 	timeout := 15 * time.Minute
 	_, err := retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
-		wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, &config.ClusterSpec))
+		wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, config))
 		if err == nil {
 			return wait, nil
 		}
@@ -110,14 +104,10 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 		}
 		return nil, retries.Halt(err)
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, nil
+	return nil, err
 }
 
-func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *ClusterState) error {
+func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *compute.ClusterSpec) error {
 	_, err := r.client.Clusters.Resize(ctx, compute.ResizeCluster{
 		ClusterId:       id,
 		NumWorkers:      config.NumWorkers,
