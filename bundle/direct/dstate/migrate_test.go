@@ -81,5 +81,5 @@ func TestMigrateV2ToV3FullDatabase(t *testing.T) {
 	// Non-grants entry should be unchanged.
 	var jobState map[string]any
 	require.NoError(t, json.Unmarshal(db.State["resources.jobs.my_job"].State, &jobState))
-	assert.Equal(t, float64(123), jobState["job_id"])
+	assert.InDelta(t, 123, jobState["job_id"], 0)
 }
