@@ -1,11 +1,7 @@
 Cloud = false
 Slow = true
 
-# Cross-resource permission references (${resources.jobs.X.permissions[N].field}) require
-# permissions to be part of the job schema, which was added after v0.293.0.
+# $resources references to permissions and grants are not supported on v0.293.0
 EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]
 EnvMatrixExclude.no_cross_resource_ref = ["INPUT_CONFIG=job_cross_resource_ref.yml.tmpl"]
-
-# Grants with EmbeddedSlice require state migration from v2→v3, which v0.293.0 can't produce.
 EnvMatrixExclude.no_grant_ref = ["INPUT_CONFIG=schema_grant_ref.yml.tmpl"]
-EnvMatrixExclude.no_schema_with_grants = ["INPUT_CONFIG=schema_with_grants.yml.tmpl"]
