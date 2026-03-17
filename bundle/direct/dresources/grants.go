@@ -76,6 +76,18 @@ func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
 	return state
 }
 
+func grantKey(x catalog.PrivilegeAssignment) (string, string) {
+	return "principal", x.Principal
+}
+
+func (*ResourceGrants) KeyedSlices() map[string]any {
+	// Empty key because EmbeddedSlice appears at the root path of
+	// GrantsState (no "grants" prefix in struct walker paths).
+	return map[string]any{
+		"": grantKey,
+	}
+}
+
 func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, error) {
 	securableType, fullName, err := parseGrantsID(id)
 	if err != nil {
