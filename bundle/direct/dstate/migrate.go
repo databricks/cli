@@ -38,7 +38,6 @@ func migrateState(db *Database) error {
 var migrations = map[int]func(*Database) error{
 	0: migrateV1ToV2,
 	1: migrateV1ToV2,
-	2: migrateV2ToV3,
 }
 
 // migrateV1ToV2 migrates permissions entries from the old format
