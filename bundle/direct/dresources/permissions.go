@@ -40,6 +40,13 @@ type StatePermission struct {
 	GroupName            string              `json:"group_name,omitempty"`
 }
 
+// Note __embed__ name is not enforced by libs/structs, it's a convention we follow here.
+// Technically we could keep on using "permissions" or "grants" for this, but this would make it
+// harder for 3rd-party tools that only see JSON and not Golang type to associate state object with the pass from "changes".
+// Alternative to __embed_ would be have a convention that we name this inner field same as outer field.
+// e.g. permissions.permissions or grants.grants. However, there is no guarantee that this convention is not also triggered
+// by unrelated types and it's harder to evaluate that fixed string because it's non-local.
+
 type PermissionsState struct {
 	ObjectID      string            `json:"object_id"`
 	EmbeddedSlice []StatePermission `json:"__embed__,omitempty"`
