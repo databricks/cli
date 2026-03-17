@@ -56,7 +56,7 @@
         "value": {
           "securable_type": "volume",
           "full_name": "main.schema_grants_[UNIQUE_NAME].volume_name",
-          "_": [
+          "grants": [
             {
               "principal": "deco-test-user@databricks.com",
               "privileges": [
@@ -70,7 +70,7 @@
       "remote_state": {
         "securable_type": "volume",
         "full_name": "main.schema_grants_[UNIQUE_NAME].volume_name",
-        "_": [
+        "grants": [
           {
             "principal": "deco-test-user@databricks.com",
             "privileges": [

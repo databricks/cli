@@ -31,7 +31,7 @@
         "value": {
           "securable_type": "schema",
           "full_name": "",
-          "__embed__": [
+          "grants": [
             {
               "principal": "viewers",
               "privileges": [
@@ -72,7 +72,7 @@
         "value": {
           "securable_type": "schema",
           "full_name": "",
-          "__embed__": [
+          "grants": [
             {
               "principal": "viewers",
               "privileges": [
