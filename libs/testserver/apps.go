@@ -206,9 +206,17 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		Message: "Application is running.",
 	}
 
-	app.ComputeStatus = &apps.ComputeStatus{
-		State:   "ACTIVE",
-		Message: "App compute is active.",
+	// Respect no_compute query param: if true, start the app in STOPPED state.
+	if req.URL.Query().Get("no_compute") == "true" {
+		app.ComputeStatus = &apps.ComputeStatus{
+			State:   apps.ComputeStateStopped,
+			Message: "App compute is stopped.",
+		}
+	} else {
+		app.ComputeStatus = &apps.ComputeStatus{
+			State:   "ACTIVE",
+			Message: "App compute is active.",
+		}
 	}
 
 	app.Url = name + "-123.cloud.databricksapps.com"

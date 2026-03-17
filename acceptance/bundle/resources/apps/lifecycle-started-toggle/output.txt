@@ -1,0 +1,81 @@
+
+=== Deploy with started=false: app created without compute (no_compute=true)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_app_requests
+{
+  "body": {
+    "description": "my_app_description",
+    "name": "[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  }
+}
+
+>>> errcode [CLI] apps get [UNIQUE_NAME]
+"STOPPED"
+
+=== Toggle started=false -> started=true: only Start should be called, no Update
+>>> update_file.py databricks.yml started: false started: true
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files...
+Warn: unexpected local and remote diffs (bool, *bool); entry=&{  false true <nil>} ch={started <nil> 0x1400030b4ac}
+Deploying resources...
+✓ Deployment succeeded.
+Updating deployment state...
+Deployment complete!
+
+>>> print_app_requests
+{
+  "body": {},
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/start"
+}
+{
+  "body": {
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files/app"
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments"
+}
+
+>>> errcode [CLI] apps get [UNIQUE_NAME]
+"ACTIVE"
+
+=== Toggle started=true -> started=false: only Stop should be called, no Update
+>>> update_file.py databricks.yml started: true started: false
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default/files...
+Warn: unexpected local and remote diffs (bool, *bool); entry=&{  true false <nil>} ch={started <nil> 0x1400013e4a4}
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_app_requests
+{
+  "body": {},
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/stop"
+}
+
+>>> errcode [CLI] apps get [UNIQUE_NAME]
+"STOPPED"
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.mykey
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-toggle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

@@ -1,7 +1,11 @@
 
 >>> errcode [CLI] bundle plan
+Warning: unknown field: started
+  at resources.jobs.my_job.lifecycle
+  in databricks.yml:9:9
+
 Error: lifecycle.started is only supported in direct deployment mode
-  in databricks.yml:10:18
+  in databricks.yml:16:18
 
 
 Exit code: 1

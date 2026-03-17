@@ -1,14 +1,46 @@
 package dresources
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// TestAppStateMarshalUnmarshal verifies that AppState correctly preserves bundle-only fields
+// (SourceCodePath, Config, GitSource, Started) through a JSON round-trip.
+// apps.App promotes its MarshalJSON/UnmarshalJSON which would otherwise drop these fields.
+func TestAppStateMarshalUnmarshal(t *testing.T) {
+	started := true
+	original := AppState{
+		App: apps.App{
+			Name:        "my-app",
+			Description: "test description",
+		},
+		SourceCodePath: "/Workspace/Users/user/.bundle/app/files",
+		Config: &resources.AppConfig{
+			Command: []string{"python", "app.py"},
+		},
+		Started: &started,
+	}
+
+	data, err := json.Marshal(original)
+	require.NoError(t, err)
+
+	var restored AppState
+	require.NoError(t, json.Unmarshal(data, &restored))
+
+	assert.Equal(t, original.App.Name, restored.App.Name)
+	assert.Equal(t, original.App.Description, restored.App.Description)
+	assert.Equal(t, original.SourceCodePath, restored.SourceCodePath)
+	assert.Equal(t, original.Config, restored.Config)
+	assert.Equal(t, original.Started, restored.Started)
+}
 
 // TestAppDoCreate_RetriesWhenAppIsDeleting verifies that DoCreate retries when
 // an app already exists but is in DELETING state.

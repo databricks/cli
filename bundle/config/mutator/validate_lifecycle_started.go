@@ -14,7 +14,7 @@ type validateLifecycleStarted struct {
 }
 
 // ValidateLifecycleStarted returns a mutator that validates lifecycle.started
-// is only used on supported resource types (apps, clusters, sql_warehouses).
+// is only used on supported resource types (apps).
 // lifecycle.started is only supported in direct deployment mode.
 func ValidateLifecycleStarted(e engine.EngineType) bundle.Mutator {
 	return &validateLifecycleStarted{engine: e}

@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -25,6 +25,65 @@ type AppState struct {
 	Config         *resources.AppConfig `json:"config,omitempty"`
 	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
 	Started        *bool                `json:"started,omitempty"`
+}
+
+// bundleOnlyFields are the AppState fields not present in apps.App.
+// They must be explicitly marshaled/unmarshaled since apps.App's promoted MarshalJSON
+// would otherwise shadow them.
+type bundleOnlyFields struct {
+	SourceCodePath string               `json:"source_code_path,omitempty"`
+	Config         *resources.AppConfig `json:"config,omitempty"`
+	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
+	Started        *bool                `json:"started,omitempty"`
+}
+
+// MarshalJSON merges apps.App fields with bundle-only fields into a single JSON object.
+// apps.App promotes its own MarshalJSON to AppState, which would otherwise omit bundle-only fields.
+func (s AppState) MarshalJSON() ([]byte, error) {
+	appJSON, err := json.Marshal(s.App)
+	if err != nil {
+		return nil, err
+	}
+	extrasJSON, err := json.Marshal(bundleOnlyFields{
+		SourceCodePath: s.SourceCodePath,
+		Config:         s.Config,
+		GitSource:      s.GitSource,
+		Started:        s.Started,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var result, extras map[string]json.RawMessage
+	if err := json.Unmarshal(appJSON, &result); err != nil {
+		return nil, err
+	}
+	if result == nil {
+		result = make(map[string]json.RawMessage)
+	}
+	if err := json.Unmarshal(extrasJSON, &extras); err != nil {
+		return nil, err
+	}
+	for k, v := range extras {
+		result[k] = v
+	}
+	return json.Marshal(result)
+}
+
+// UnmarshalJSON sets apps.App fields and bundle-only fields from a single JSON object.
+// apps.App promotes its own UnmarshalJSON to *AppState, which would otherwise drop bundle-only fields.
+func (s *AppState) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, &s.App); err != nil {
+		return err
+	}
+	var e bundleOnlyFields
+	if err := json.Unmarshal(data, &e); err != nil {
+		return err
+	}
+	s.SourceCodePath = e.SourceCodePath
+	s.Config = e.Config
+	s.GitSource = e.GitSource
+	s.Started = e.Started
+	return nil
 }
 
 type ResourceApp struct {
@@ -104,25 +163,34 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 }
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, changes Changes) (*apps.App, error) {
-	updateMask := strings.Join(collectUpdatePathsWithPrefix(changes, ""), ",")
-
-	request := apps.AsyncUpdateAppRequest{
-		App:        &config.App,
-		AppName:    id,
-		UpdateMask: updateMask,
+	// Build update mask excluding local-only fields that have no counterpart in the API.
+	var maskPaths []string
+	for path, change := range changes {
+		if change.Action == deployplan.Update && !localOnlyFields[path] {
+			maskPaths = append(maskPaths, path)
+		}
 	}
-	updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
-	if err != nil {
-		return nil, err
-	}
+	updateMask := strings.Join(maskPaths, ",")
 
-	response, err := updateWaiter.Get()
-	if err != nil {
-		return nil, err
-	}
+	if updateMask != "" {
+		request := apps.AsyncUpdateAppRequest{
+			App:        &config.App,
+			AppName:    id,
+			UpdateMask: updateMask,
+		}
+		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
+		if err != nil {
+			return nil, err
+		}
 
-	if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
-		return nil, fmt.Errorf("failed to update app %s: %s", id, response.Status.Message)
+		response, err := updateWaiter.Get()
+		if err != nil {
+			return nil, err
+		}
+
+		if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
+			return nil, fmt.Errorf("failed to update app %s: %s", id, response.Status.Message)
+		}
 	}
 
 	if config.Started == nil {
@@ -178,12 +246,6 @@ var localOnlyFields = map[string]bool{
 	"started":          true,
 }
 
-func (*ResourceApp) OverrideChangeDesc(_ context.Context, p *structpath.PathNode, change *ChangeDesc, _ *apps.App) error {
-	if change.Action == deployplan.Update && localOnlyFields[p.Prefix(1).String()] {
-		change.Action = deployplan.Skip
-	}
-	return nil
-}
 
 func isComputeStopped(app *apps.App) bool {
 	return app.ComputeStatus == nil ||

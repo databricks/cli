@@ -375,10 +375,35 @@ resources:
     recreate_on_changes:
       - field: name
         reason: immutable
+    ignore_remote_changes:
+      # source_code_path, config, git_source, and started are bundle-local fields
+      # not stored in remote state. Remote always returns empty; skip the spurious diff
+      # when the local config hasn't changed these fields.
+      - field: source_code_path
+        reason: local_only
+      - field: config
+        reason: local_only
+      - field: git_source
+        reason: local_only
+      - field: started
+        reason: local_only
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/internal/providers/pluginfw/products/app/resource_app.go#L41
       # s["compute_size"] = s["compute_size"].SetComputed()
       - field: compute_size
+      # Output-only fields assigned by the platform; never set by users in bundle config.
+      - field: app_status
+      - field: compute_status
+      - field: url
+      - field: id
+      - field: service_principal_client_id
+      - field: service_principal_id
+      - field: service_principal_name
+      - field: create_time
+      - field: update_time
+      - field: creator
+      - field: updater
+      - field: effective_budget_policy_id
 
   secret_scopes:
     backend_defaults:

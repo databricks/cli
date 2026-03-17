@@ -25,7 +25,6 @@ var knownMissingInRemoteType = map[string][]string{
 	},
 	"clusters": {
 		"apply_policy_default_values",
-		"started",
 	},
 	"external_locations": {
 		"skip_validation",
@@ -40,9 +39,6 @@ var knownMissingInRemoteType = map[string][]string{
 		"rate_limits",
 		"route_optimized",
 		"tags",
-	},
-	"sql_warehouses": {
-		"started",
 	},
 	"quality_monitors": {
 		"skip_builtin_dashboard",
