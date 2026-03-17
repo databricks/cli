@@ -1,5 +1,5 @@
 Cloud = false
-# This test uses fixes ports, so incompatible with parellel testing in different worktrees.
+# This test uses fixed ports, so incompatible with parellel testing in different worktrees.
 # It's also very slow when it does work.
 Local = false
 RecordRequests = false
