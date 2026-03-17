@@ -22,6 +22,7 @@ const (
 	remotePlatform       = "linux"
 	pythonExtension      = "ms-python.python"
 	jupyterExtension     = "ms-toolsai.jupyter"
+	databricksExtension  = "databricks.databricks"
 	serverPickPortsKey   = "remote.SSH.serverPickPortsFromRange"
 	remotePlatformKey    = "remote.SSH.remotePlatform"
 	defaultExtensionsKey = "remote.SSH.defaultExtensions"
@@ -178,7 +179,7 @@ func hasCorrectListenOnSocket(v hujson.Value) bool {
 }
 
 func getMissingExtensions(v hujson.Value) []string {
-	required := []string{pythonExtension, jupyterExtension}
+	required := []string{pythonExtension, jupyterExtension, databricksExtension}
 	found := v.Find(jsonPtr(defaultExtensionsKey))
 	if found == nil {
 		return required
@@ -244,7 +245,7 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension},
+		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
 	}
 	shouldCreate, err := promptUserForUpdate(ctx, ide, connectionName, missing)
 	if err != nil {
@@ -348,7 +349,7 @@ func GetManualInstructions(ide, connectionName string) string {
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension},
+		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
 	}
 	return fmt.Sprintf(
 		"To ensure the remote connection works as expected, manually add these settings to your %s settings.json:\n%s",
