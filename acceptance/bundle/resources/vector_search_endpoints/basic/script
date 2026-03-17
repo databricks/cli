@@ -1,0 +1,21 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+ENDPOINT_NAME="test-vs-endpoint-${UNIQUE_NAME}"
+
+cleanup() {
+  title "Test cleanup"
+  trace $CLI bundle destroy --auto-approve
+
+  title "Assert the endpoint is deleted"
+  trace errcode $CLI vector-search-endpoints get-endpoint "${ENDPOINT_NAME}" 2>/dev/null
+}
+trap cleanup EXIT
+
+title "Deploy bundle with vector search endpoint"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+title "Assert the endpoint is created"
+trace $CLI vector-search-endpoints get-endpoint "${ENDPOINT_NAME}" | jq "{name, endpoint_type}"

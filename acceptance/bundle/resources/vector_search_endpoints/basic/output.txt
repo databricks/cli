@@ -1,0 +1,31 @@
+
+=== Deploy bundle with vector search endpoint
+>>> [CLI] bundle plan
+create vector_search_endpoints.test_endpoint
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the endpoint is created
+>>> [CLI] vector-search-endpoints get-endpoint test-vs-endpoint-[UNIQUE_NAME]
+{
+  "name": "test-vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+=== Test cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.test_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+=== Assert the endpoint is deleted
