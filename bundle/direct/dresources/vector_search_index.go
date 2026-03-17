@@ -24,16 +24,20 @@ func (*ResourceVectorSearchIndex) RemapState(info *vectorsearch.VectorIndex) *ve
 	// Response spec types (DeltaSyncVectorIndexSpecResponse, etc.) differ from request types,
 	// so we only remap the scalar fields for drift comparison.
 	return &vectorsearch.CreateVectorIndexRequest{
-		EndpointName: info.EndpointName,
-		IndexType:    info.IndexType,
-		Name:         info.Name,
-		PrimaryKey:   info.PrimaryKey,
+		DeltaSyncIndexSpec:    nil, // response spec types differ from request; only scalar fields remapped
+		DirectAccessIndexSpec: nil,
+		EndpointName:          info.EndpointName,
+		IndexType:             info.IndexType,
+		Name:                  info.Name,
+		PrimaryKey:            info.PrimaryKey,
 	}
 }
 
 func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*vectorsearch.VectorIndex, error) {
 	return r.client.VectorSearchIndexes.GetIndex(ctx, vectorsearch.GetIndexRequest{
-		IndexName: id,
+		IndexName:                id,
+		EnsureRerankerCompatible: false,
+		ForceSendFields:          nil,
 	})
 }
 

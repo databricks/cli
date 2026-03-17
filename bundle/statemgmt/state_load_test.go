@@ -50,7 +50,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.postgres_branches.test_postgres_branch":            {ID: "projects/test-project/branches/main"},
 		"resources.postgres_endpoints.test_postgres_endpoint":         {ID: "projects/test-project/branches/main/endpoints/primary"},
 		"resources.vector_search_endpoints.test_vs_endpoint":          {ID: "test_vs_endpoint"},
-		"resources.vector_search_indexes.test_vs_index":              {ID: "test_vs_index"},
+		"resources.vector_search_indexes.test_vs_index":               {ID: "test_vs_index"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)

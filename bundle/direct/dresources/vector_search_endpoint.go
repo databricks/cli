@@ -23,9 +23,11 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 
 func (*ResourceVectorSearchEndpoint) RemapState(info *vectorsearch.EndpointInfo) *vectorsearch.CreateEndpoint {
 	return &vectorsearch.CreateEndpoint{
-		BudgetPolicyId: info.EffectiveBudgetPolicyId,
-		EndpointType:   info.EndpointType,
-		Name:           info.Name,
+		BudgetPolicyId:  info.EffectiveBudgetPolicyId,
+		EndpointType:    info.EndpointType,
+		MinQps:          0,
+		Name:            info.Name,
+		ForceSendFields: nil,
 	}
 }
 
