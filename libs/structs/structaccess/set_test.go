@@ -494,10 +494,6 @@ func TestSet(t *testing.T) {
 	}
 }
 
-func intPtr(i int) *int {
-	return &i
-}
-
 // testSet sets a value and gets it back, asserting they're equal (roundtrip)
 func testSet(t *testing.T, obj any, path string, value any) {
 	t.Helper()
