@@ -344,11 +344,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Cleanup(phase0wg.Done)
 			}
 
-			if config.Phase != 0 {
-				t.Logf("Waiting for Phase=%d to start", config.Phase)
+			if runParallel {
 				t.Parallel()
+			}
+
+			if config.Phase != 0 {
 				<-phase1Gate
-				t.Logf("Continue with Phase=%d", config.Phase)
 			}
 
 			// Build extra vars for exclusion matching (config state as env vars)
