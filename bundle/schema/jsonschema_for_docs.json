@@ -2151,7 +2151,7 @@
                   "x-since-version": "v0.229.0"
                 },
                 "engine": {
-                  "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Can be overridden with the `DATABRICKS_BUNDLE_ENGINE` environment variable.",
+                  "description": "The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is \"terraform\".",
                   "$ref": "#/$defs/github.com/databricks/cli/bundle/config/engine.EngineType"
                 },
                 "git": {
