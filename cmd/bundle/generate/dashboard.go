@@ -95,7 +95,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("dashboard %q is a legacy dashboard", path.Base(d.existingPath)),
 				Detail: "" +
-					"Databricks Asset Bundles work exclusively with AI/BI dashboards.\n" +
+					"Declarative Automation Bundles work exclusively with AI/BI dashboards.\n" +
 					"\n" +
 					"Instructions on how to convert a legacy dashboard to an AI/BI dashboard\n" +
 					"can be found at: https://docs.databricks.com/en/dashboards/clone-legacy-to-aibi.html.",
