@@ -53,7 +53,12 @@ rm .databricks/bundle/my_target/resources.json
 
 ### Using on new bundles
 
-For bundles that were never deployed, the migrate command will not work. Instead, deploy with an environment variable set: `DATABRICKS_BUNDLE_ENGINE=direct databricks bundle deploy -t my_target`.
+For bundles that were never deployed, the migrate command will not work. To start using direct engine, you have two options:
+
+- Set bundle.engine OR targets.\*.engine to "direct" in your databricks.yml
+- Set DATABRICKS_BUNDLE_ENGINE=direct env var before the deployment.
+
+If both are provided, the config takes precedence over the env var.
 
 ## Differences from terraform
 
