@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
@@ -298,18 +297,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	return b, stateDesc, nil
 }
 
-// ResolveEngineSetting determines the effective engine setting by combining env vars and bundle config.
-// Priority: DATABRICKS_BUNDLE_ENGINE > bundle.engine config > DATABRICKS_BUNDLE_ENGINE_DEFAULT.
+// ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.
+// Priority: bundle.engine config > DATABRICKS_BUNDLE_ENGINE env var.
 func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineSetting, error) {
 	configEngine := b.Config.Bundle.Engine
-
-	envEngine, err := engine.FromEnv(ctx)
-	if err != nil {
-		return engine.EngineSetting{}, err
-	}
-	if envEngine != engine.EngineNotSet {
-		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable", ConfigType: configEngine}, nil
-	}
 
 	if configEngine != engine.EngineNotSet {
 		source := "bundle.engine setting"
@@ -321,13 +312,12 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}, nil
 	}
 
-	defaultValue := env.Get(ctx, engine.EnvVarDefault)
-	defaultEngine, ok := engine.Parse(defaultValue)
-	if !ok {
-		return engine.EngineSetting{}, fmt.Errorf("unexpected setting for %s=%#v (expected 'terraform' or 'direct')", engine.EnvVarDefault, defaultValue)
+	envEngine, err := engine.FromEnv(ctx)
+	if err != nil {
+		return engine.EngineSetting{}, err
 	}
-	if defaultEngine != engine.EngineNotSet {
-		return engine.EngineSetting{Type: defaultEngine, Source: engine.EnvVarDefault + " environment variable", ConfigType: configEngine}, nil
+	if envEngine != engine.EngineNotSet {
+		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil
 	}
 
 	return engine.EngineSetting{}, nil

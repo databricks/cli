@@ -1,3 +1,0 @@
-unset DATABRICKS_BUNDLE_ENGINE
-trace DATABRICKS_BUNDLE_ENGINE_DEFAULT=terraform $CLI bundle deploy
-find .databricks | grep -E 'resources.json|tfstate' | contains.py "tfstate" "!resources.json"

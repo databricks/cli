@@ -9,10 +9,6 @@ import (
 
 const EnvVar = "DATABRICKS_BUNDLE_ENGINE"
 
-// EnvVarDefault is the environment variable that sets the default engine type.
-// It is only used when neither DATABRICKS_BUNDLE_ENGINE nor the bundle config specifies an engine.
-const EnvVarDefault = "DATABRICKS_BUNDLE_ENGINE_DEFAULT"
-
 type EngineType string
 
 const (

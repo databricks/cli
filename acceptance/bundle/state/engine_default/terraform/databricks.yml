@@ -1,7 +1,0 @@
-bundle:
-  name: test-engine-default
-
-resources:
-  jobs:
-    foo:
-      name: foo
