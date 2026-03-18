@@ -315,6 +315,9 @@ func ResolveEngineSetting(b *bundle.Bundle, envSetting engine.EngineSetting) eng
 		}
 		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}
 	}
+	if envSetting.DefaultType != engine.EngineNotSet {
+		return engine.EngineSetting{Type: envSetting.DefaultType, Source: engine.EnvVarDefault + " environment variable", ConfigType: configEngine}
+	}
 	return engine.EngineSetting{}
 }
 

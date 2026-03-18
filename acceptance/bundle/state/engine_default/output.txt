@@ -1,0 +1,20 @@
+
+=== Default env var matches state: no warning
+
+>>> DATABRICKS_BUNDLE_ENGINE_DEFAULT=terraform [CLI] bundle debug states
+[TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
+
+=== Default env var does not match state: state wins silently
+
+>>> DATABRICKS_BUNDLE_ENGINE_DEFAULT=direct [CLI] bundle debug states
+[TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
+
+=== DATABRICKS_BUNDLE_ENGINE overrides default
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform DATABRICKS_BUNDLE_ENGINE_DEFAULT=direct [CLI] bundle debug states
+[TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
+
+=== Invalid default env var: error expected
+
+>>> musterr [CLI] bundle debug states
+Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE_DEFAULT="bla" (expected 'terraform' or 'direct')
