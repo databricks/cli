@@ -228,6 +228,16 @@ func validateConfig(t *testing.T, config TestConfig, configPath string) {
 		t.Fatalf("Invalid config %s: RunsOnDbr and RecordRequests cannot both be true. "+
 			"Serverless does not allow access to localhost ports, which the test proxy server requires.", configPath)
 	}
+
+	// Reject Ignore patterns that target out* files, since those are generated
+	// output files and must never be ignored.
+	for _, pattern := range config.Ignore {
+		name := strings.TrimLeft(pattern, "!/")
+		if strings.HasPrefix(name, "out") {
+			t.Fatalf("Invalid config %s: Ignore pattern %q targets output files (out*). "+
+				"Output files must not be ignored.", configPath, pattern)
+		}
+	}
 }
 
 func DoLoadConfig(t *testing.T, path string) TestConfig {
