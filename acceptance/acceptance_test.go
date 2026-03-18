@@ -122,24 +122,6 @@ var Ignored = map[string]bool{
 	userReplacementsFilename: true,
 }
 
-type runnableTest struct {
-	dir         string
-	config      internal.TestConfig
-	skipReason  string
-	coverDir    string
-	repls       testdiff.ReplacementsContext
-	envFilters  []string
-	runParallel bool
-	phaseGate   <-chan struct{}
-}
-
-type phaseSemaphore struct {
-	mu        sync.Mutex
-	remaining int
-	sealed    bool
-	gate      chan struct{}
-}
-
 func TestAccept(t *testing.T) {
 	testAccept(t, InprocessMode, "")
 }
@@ -311,63 +293,100 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	selectedDirs := 0
 
 	envFilters := getEnvFilters(t)
-	phase0Semaphore := newPhaseSemaphore()
-	var phase1Tests []runnableTest
+
+	var phase0wg sync.WaitGroup
+	phase1Gate := make(chan struct{})
 
 	for _, dir := range testDirs {
 		totalDirs += 1
 
-		config, configPath := internal.LoadConfig(t, dir)
-		err := validateTestPhase(config.Phase)
-		if err != nil {
-			t.Fatalf("Invalid config %s: %s", configPath, err)
-		}
+		t.Run(dir, func(t *testing.T) {
+			selectedDirs += 1
 
-		// Generate materialized config for this test.
-		// We do this before skipping the test, so the configs are generated for all tests.
-		materializedConfig, err := internal.GenerateMaterializedConfig(config)
-		require.NoError(t, err)
-		testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			config, configPath := internal.LoadConfig(t, dir)
+			err := validateTestPhase(config.Phase)
+			if err != nil {
+				t.Fatalf("Invalid config %s: %s", configPath, err)
+			}
 
-		runParallel := !inprocessMode
-		if benchmarkMode && strings.Contains(dir, "benchmark") {
-			runParallel = false
-		}
-		skipReason := getSkipReason(&config, configPath)
+			// Apply default: CloudSlow implies Cloud. Do this before generating
+			// the materialized config so the implication is visible in out.test.toml.
+			if isTruePtr(config.CloudSlow) {
+				config.Cloud = config.CloudSlow
+			}
 
-		runnable := runnableTest{
-			dir:         dir,
-			config:      config,
-			skipReason:  skipReason,
-			coverDir:    coverDir,
-			repls:       repls.Clone(),
-			envFilters:  envFilters,
-			runParallel: runParallel,
-		}
+			// Generate materialized config for this test.
+			// We do this before skipping the test, so the configs are generated for all tests.
+			materializedConfig, err := internal.GenerateMaterializedConfig(config)
+			require.NoError(t, err)
+			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
 
-		selectedDirs += 1
-		if runnable.skipReason != "" {
-			skippedDirs += 1
-		}
+			// If only regenerating out.test.toml, skip the actual test execution
+			if OnlyOutTestToml {
+				t.Skip("Skipping test execution (only regenerating out.test.toml)")
+			}
 
-		if config.Phase == 0 {
-			t.Run(dir, func(t *testing.T) {
-				phase0Semaphore.Add()
-				defer phase0Semaphore.Done()
-				runnable.run(t)
-			})
-			continue
-		}
+			skipReason := getSkipReason(&config, configPath)
+			if skipReason != "" {
+				skippedDirs += 1
+				t.Skip(skipReason)
+			}
 
-		phase1Tests = append(phase1Tests, runnable)
+			runParallel := !inprocessMode
+			if benchmarkMode && strings.Contains(dir, "benchmark") {
+				runParallel = false
+			}
+
+			// t.Run blocks until t.Parallel() is called, so Add must happen before t.Parallel().
+			// This ensures all phase0 adds are visible before the wait goroutine starts.
+			if config.Phase == 0 {
+				phase0wg.Add(1)
+				t.Cleanup(phase0wg.Done)
+			}
+
+			if runParallel {
+				t.Parallel()
+			}
+
+			if config.Phase != 0 {
+				t.Logf("Waiting for Phase=%d to start", config.Phase)
+				<-phase1Gate
+				t.Logf("Continue with Phase=%d", config.Phase)
+			}
+
+			// Build extra vars for exclusion matching (config state as env vars)
+			var extraVars []string
+			if cloudEnv != "" {
+				extraVars = append(extraVars, "CONFIG_Cloud=true")
+			}
+
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
+
+			if len(expanded) == 1 {
+				// env vars aren't part of the test case name, so log them for debugging
+				if len(expanded[0]) > 0 {
+					t.Logf("Running test with env %v", expanded[0])
+				}
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
+				return
+			}
+
+			for ind, envset := range expanded {
+				envname := strings.Join(envset, "/")
+				t.Run(envname, func(t *testing.T) {
+					if runParallel {
+						t.Parallel()
+					}
+					runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
+				})
+			}
+		})
 	}
 
-	phase1Gate := phase0Semaphore.Seal()
-
-	for _, runnable := range phase1Tests {
-		runnable.phaseGate = phase1Gate
-		t.Run(runnable.dir, runnable.run)
-	}
+	go func() {
+		phase0wg.Wait()
+		close(phase1Gate)
+	}()
 
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
@@ -418,43 +437,6 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-func newPhaseSemaphore() *phaseSemaphore {
-	return &phaseSemaphore{
-		gate: make(chan struct{}),
-	}
-}
-
-func (s *phaseSemaphore) Add() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.remaining++
-}
-
-func (s *phaseSemaphore) Done() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.remaining--
-	if !s.sealed || s.remaining != 0 {
-		return
-	}
-
-	close(s.gate)
-}
-
-func (s *phaseSemaphore) Seal() <-chan struct{} {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.sealed = true
-	if s.remaining == 0 {
-		close(s.gate)
-	}
-
-	return s.gate
-}
-
 func validateTestPhase(phase int) error {
 	if phase == 0 || phase == 1 {
 		return nil
@@ -463,59 +445,8 @@ func validateTestPhase(phase int) error {
 	return fmt.Errorf("Phase must be 0 or 1, got %d", phase)
 }
 
-func (r runnableTest) run(t *testing.T) {
-	// If only regenerating out.test.toml, skip the actual test execution
-	if OnlyOutTestToml {
-		t.Skip("Skipping test execution (only regenerating out.test.toml)")
-	}
-
-	if r.skipReason != "" {
-		t.Skip(r.skipReason)
-	}
-
-	if r.runParallel {
-		t.Parallel()
-	}
-
-	if r.phaseGate != nil {
-		<-r.phaseGate
-	}
-
-	// Build extra vars for exclusion matching (config state as env vars)
-	var extraVars []string
-	if os.Getenv("CLOUD_ENV") != "" {
-		extraVars = append(extraVars, "CONFIG_Cloud=true")
-	}
-
-	expanded := internal.ExpandEnvMatrix(r.config.EnvMatrix, r.config.EnvMatrixExclude, extraVars)
-
-	if len(expanded) == 1 {
-		// env vars aren't part of the test case name, so log them for debugging
-		if len(expanded[0]) > 0 {
-			t.Logf("Running test with env %v", expanded[0])
-		}
-		runTest(t, r.dir, 0, r.coverDir, r.repls.Clone(), r.config, expanded[0], r.envFilters)
-		return
-	}
-
-	for ind, envset := range expanded {
-		envname := strings.Join(envset, "/")
-		t.Run(envname, func(t *testing.T) {
-			if r.runParallel {
-				t.Parallel()
-			}
-			runTest(t, r.dir, ind, r.coverDir, r.repls.Clone(), r.config, envset, r.envFilters)
-		})
-	}
-}
-
 // Return a reason to skip the test. Empty string means "don't skip".
 func getSkipReason(config *internal.TestConfig, configPath string) string {
-	// Apply default first, so that it's visible in out.test.toml
-	if isTruePtr(config.CloudSlow) {
-		config.Cloud = config.CloudSlow
-	}
-
 	if os.Getenv("DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
 		return "Disabled via DATABRICKS_TEST_SKIPLOCAL environment variable in " + configPath
 	}
