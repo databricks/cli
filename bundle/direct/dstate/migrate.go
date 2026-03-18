@@ -132,9 +132,8 @@ func migrateGrantsEntry(raw json.RawMessage) (json.RawMessage, error) {
 	newState := dresources.GrantsState{
 		SecurableType: old.SecurableType,
 		FullName:      old.FullName,
-		EmbeddedSlice: make([]catalog.PrivilegeAssignment, len(old.Grants)),
+		EmbeddedSlice: old.Grants,
 	}
-	copy(newState.EmbeddedSlice, old.Grants)
 
 	return json.Marshal(newState)
 }
