@@ -2,7 +2,7 @@ name: suggest-reviewers
 
 on:
   pull_request:
-    types: [opened, ready_for_review]
+    types: [opened, synchronize, ready_for_review]
 
 permissions:
   contents: read
