@@ -7,7 +7,6 @@ bundle:
 
 include:
   - resources/*.yml
-  - resources/*/*.yml
 
 # Deployment targets.
 # The default schema, catalog, etc. for dbt are defined in dbt_profiles/profiles.yml
