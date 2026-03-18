@@ -101,11 +101,6 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 		return nil, err
 	}
 
-	// If old format had no permissions, try parsing as new format (might already be migrated).
-	if len(old.Permissions) == 0 {
-		return raw, nil
-	}
-
 	newState := dresources.PermissionsState{
 		ObjectID: old.ObjectID,
 	}
@@ -132,11 +127,6 @@ func migrateGrantsEntry(raw json.RawMessage) (json.RawMessage, error) {
 	var old oldGrantsStateV1
 	if err := json.Unmarshal(raw, &old); err != nil {
 		return nil, err
-	}
-
-	// If old format had no grants, it might already be migrated.
-	if len(old.Grants) == 0 {
-		return raw, nil
 	}
 
 	newState := dresources.GrantsState{
