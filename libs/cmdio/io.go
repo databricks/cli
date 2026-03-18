@@ -96,8 +96,6 @@ func (c *cmdIO) clone() *cmdIO {
 		in:             c.in,
 		out:            c.out,
 		err:            c.err,
-		teaProgram:     c.teaProgram,
-		teaDone:        c.teaDone,
 	}
 }
 
