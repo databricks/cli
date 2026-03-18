@@ -8,7 +8,10 @@ updates:
     directory: "/tools"
     schedule:
       interval: "weekly"
+  # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#directories
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/.github/workflows"
+      - "/.github/actions/setup-build-environment"
     schedule:
       interval: "monthly"
