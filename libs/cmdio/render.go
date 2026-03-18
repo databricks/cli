@@ -264,7 +264,6 @@ func Render(ctx context.Context, v any) error {
 }
 
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
-	i = ApplyLimit(ctx, i)
 	c := fromContext(ctx)
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
@@ -278,13 +277,11 @@ func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template str
 }
 
 func RenderIteratorWithTemplate[T any](ctx context.Context, i listing.Iterator[T], headerTemplate, template string) error {
-	i = ApplyLimit(ctx, i)
 	c := fromContext(ctx)
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, headerTemplate, template)
 }
 
 func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error {
-	i = ApplyLimit(ctx, i)
 	c := fromContext(ctx)
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
