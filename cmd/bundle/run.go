@@ -133,7 +133,7 @@ Example usage:
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		engine, err := engine.FromEnv(cmd.Context())
+		envEngine, err := engine.SettingFromEnv(cmd.Context())
 		if err != nil {
 			return err
 		}
@@ -172,7 +172,8 @@ Example usage:
 			return executeScript(content, cmd, b)
 		}
 
-		ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), engine)
+		requiredEngine := utils.ResolveEngineSetting(b, envEngine)
+		ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

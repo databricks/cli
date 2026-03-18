@@ -497,7 +497,7 @@ func TestJobDiff(t *testing.T) {
 
 	// continous is completely deleted from jobExampleResponseNils
 	assert.Equal(t, "continuous", changes[1].Path.String())
-	assert.Equal(t, &jobs.Continuous{PauseStatus: "UNPAUSED"}, changes[1].Old)
+	assert.Equal(t, jobs.Continuous{PauseStatus: "UNPAUSED"}, changes[1].Old)
 	assert.Nil(t, changes[1].New)
 
 	// deployment.kind is not omitempty field, so it does not show up as nil here
@@ -516,7 +516,7 @@ func TestJobDiff(t *testing.T) {
 	assert.Equal(t, "", changes[0].Old)
 	assert.Nil(t, changes[0].New)
 	assert.Equal(t, "continuous", changes[1].Path.String())
-	assert.Equal(t, &jobs.Continuous{}, changes[1].Old)
+	assert.Equal(t, jobs.Continuous{}, changes[1].Old)
 	assert.Nil(t, changes[1].New)
 
 	// deployment.kind is "" in both

@@ -106,9 +106,9 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "permissions": [
+          "__embed__": [
             {
-              "permission_level": "IS_OWNER",
+              "level": "IS_OWNER",
               "user_name": "[USERNAME]"
             }
           ]
@@ -159,9 +159,9 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "permissions": [
+          "__embed__": [
             {
-              "permission_level": "IS_OWNER",
+              "level": "IS_OWNER",
               "user_name": "[USERNAME]"
             }
           ]

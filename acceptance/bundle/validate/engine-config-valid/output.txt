@@ -1,0 +1,18 @@
+
+>>> [CLI] bundle validate
+Name: test-engine-config-valid
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-engine-config-valid/default
+
+Validation OK!
+
+>>> [CLI] bundle validate -t terraform-target
+Name: test-engine-config-valid
+Target: terraform-target
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-engine-config-valid/terraform-target
+
+Validation OK!

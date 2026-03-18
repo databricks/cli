@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/deployment"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -373,7 +374,7 @@ func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
-	engine, err := engine.FromEnv(ctx)
+	envEngine, err := engine.SettingFromEnv(ctx)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -384,7 +385,8 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), engine)
+	requiredEngine := utils.ResolveEngineSetting(b, envEngine)
+	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
 	if logdiag.HasError(ctx) {
 		return
 	}

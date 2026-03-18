@@ -31,6 +31,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.AllResourcesHaveValues(),
 		validate.NoInterpolationInAuthConfig(),
 		validate.NoInterpolationInBundleName(),
+		validate.ValidateEngine(),
 		validate.Scripts(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)

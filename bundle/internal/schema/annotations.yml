@@ -42,6 +42,9 @@ github.com/databricks/cli/bundle/config.Bundle:
       The definition of the bundle deployment
     "markdown_description": |-
       The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
+  "engine":
+    "description": |-
+      The deployment engine to use. Valid values are `terraform` and `direct`. Can be overridden with the `DATABRICKS_BUNDLE_ENGINE` environment variable.
   "git":
     "description": |-
       The Git version control details that are associated with your bundle.
@@ -466,6 +469,13 @@ github.com/databricks/cli/bundle/config.Workspace:
   "workspace_id":
     "description": |-
       The Databricks workspace ID
+github.com/databricks/cli/bundle/config/engine.EngineType:
+  "_":
+    "enum":
+      - |-
+        terraform
+      - |-
+        direct
 github.com/databricks/cli/bundle/config/resources.Alert:
   "create_time":
     "description": |-
