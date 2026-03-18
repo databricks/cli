@@ -2,7 +2,7 @@ This file provides guidance to AI assistants when working with code in this repo
 
 # Project Overview
 
-This is the Databricks CLI, a command-line interface for interacting with Databricks workspaces and managing Databricks Assets Bundles (DABs). The project is written in Go and follows a modular architecture.
+This is the Databricks CLI, a command-line interface for interacting with Databricks workspaces and managing Declarative Automation Bundles (DABs), formerly known as Databricks Asset Bundles. The project is written in Go and follows a modular architecture.
 
 # General Rules
 
