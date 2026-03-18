@@ -131,7 +131,6 @@ type runnableTest struct {
 	envFilters  []string
 	runParallel bool
 	phaseGate   <-chan struct{}
-	phaseDone   func()
 }
 
 type phaseSemaphore struct {
@@ -352,9 +351,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		}
 
 		if config.Phase == 0 {
-			phase0Semaphore.Add()
-			runnable.phaseDone = phase0Semaphore.Done
-			t.Run(dir, runnable.run)
+			t.Run(dir, func(t *testing.T) {
+				phase0Semaphore.Add()
+				defer phase0Semaphore.Done()
+				runnable.run(t)
+			})
 			continue
 		}
 
@@ -463,10 +464,6 @@ func validateTestPhase(phase int) error {
 }
 
 func (r runnableTest) run(t *testing.T) {
-	if r.phaseDone != nil {
-		defer r.phaseDone()
-	}
-
 	// If only regenerating out.test.toml, skip the actual test execution
 	if OnlyOutTestToml {
 		t.Skip("Skipping test execution (only regenerating out.test.toml)")
