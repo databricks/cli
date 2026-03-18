@@ -1,5 +1,5 @@
 ---
-description: 'Learn about resources supported by Declarative Automation Bundles and how to configure them.'
+description: 'Learn about resources supported by DABs and how to configure them.'
 last_update:
   date: {{update_date}}
 ---

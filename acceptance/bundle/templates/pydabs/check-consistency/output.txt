@@ -1,7 +1,7 @@
 == Collecting resources into ./enable_pydabs=yes
 
 >>> [CLI] bundle init pydabs --config-file ./input.json
-Welcome to PyDABs template for Declarative Automation Bundles!
+Welcome to PyDABs template for Declarative Automation Bundles (DABs)!
 
 Answer the following questions to customize your project.
 You can always change your configuration in the databricks.yml file later.
@@ -21,7 +21,7 @@ To get started, refer to the project README.md file and the documentation at htt
 == Collecting resources into ./enable_pydabs=no
 
 >>> [CLI] bundle init pydabs --config-file ./input.json
-Welcome to PyDABs template for Declarative Automation Bundles!
+Welcome to PyDABs template for Declarative Automation Bundles (DABs)!
 
 Answer the following questions to customize your project.
 You can always change your configuration in the databricks.yml file later.

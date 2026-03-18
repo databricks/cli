@@ -1,5 +1,5 @@
 {
-    "welcome_message": "\nWelcome to (EXPERIMENTAL) \"Jobs as code\" template for Declarative Automation Bundles!",
+    "welcome_message": "\nWelcome to (EXPERIMENTAL) \"Jobs as code\" template for Declarative Automation Bundles (DABs)!",
     "properties": {
         "project_name": {
             "type": "string",

@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle --help
-Declarative Automation Bundles let you express data/AI/analytics projects as code.
+Declarative Automation Bundles (DABs, formerly Databricks Asset Bundles) let you express data/AI/analytics projects as code.
 
 Common workflows:
   databricks bundle init default-python      # Initialize new project

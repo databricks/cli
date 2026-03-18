@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle init experimental-jobs-as-code --config-file ./input.json --output-dir output
 
-Welcome to (EXPERIMENTAL) "Jobs as code" template for Declarative Automation Bundles!
+Welcome to (EXPERIMENTAL) "Jobs as code" template for Declarative Automation Bundles (DABs)!
 Workspace to use (auto-detected, edit in 'my_jobs_as_code/databricks.yml'): [DATABRICKS_URL]
 
 ✨ Your new project has been created in the 'my_jobs_as_code' directory!

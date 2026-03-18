@@ -8,8 +8,8 @@ import (
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bundle",
-		Short: "Declarative Automation Bundles let you express data/AI/analytics projects as code.",
-		Long: `Declarative Automation Bundles let you express data/AI/analytics projects as code.
+		Short: "Declarative Automation Bundles (DABs, formerly Databricks Asset Bundles) let you express data/AI/analytics projects as code.",
+		Long: `Declarative Automation Bundles (DABs, formerly Databricks Asset Bundles) let you express data/AI/analytics projects as code.
 
 Common workflows:
   databricks bundle init default-python      # Initialize new project

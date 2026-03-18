@@ -1,6 +1,6 @@
 ---
-name: Bug report for Declarative Automation Bundles
-about: Use this to report an issue with Declarative Automation Bundles.
+name: Bug report for Declarative Automation Bundles (formerly Databricks Asset Bundles)
+about: Use this to report an issue with Declarative Automation Bundles (formerly Databricks Asset Bundles).
 labels: DABs
 title: ''
 ---

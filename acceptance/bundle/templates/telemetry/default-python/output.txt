@@ -1,4 +1,4 @@
-Welcome to the default Python template for Declarative Automation Bundles!
+Welcome to the default Python template for Declarative Automation Bundles (DABs)!
 
 Answer the following questions to customize your project.
 You can always change your configuration in the databricks.yml file later.

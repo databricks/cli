@@ -317,7 +317,7 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
     "markdown_description": |-
-      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Declarative Automation Bundles supported resources, and resource definition reference, see [\_](/dev-tools/bundles/resources.md).
+      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about DABs supported resources, and resource definition reference, see [\_](/dev-tools/bundles/resources.md).
 
       ```yaml
       resources:
@@ -327,9 +327,9 @@ github.com/databricks/cli/bundle/config.Root:
       ```
   "run_as":
     "description": |-
-      The identity to use when running Declarative Automation Bundles workflows.
+      The identity to use when running DABs workflows.
     "markdown_description": |-
-      The identity to use when running Declarative Automation Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
+      The identity to use when running DABs workflows. See [\_](/dev-tools/bundles/run-as.md).
   "scripts":
     "description": |-
       PLACEHOLDER

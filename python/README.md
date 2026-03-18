@@ -1,6 +1,6 @@
 # databricks-bundles
 
-Python for Declarative Automation Bundles extends [Declarative Automation Bundles](https://docs.databricks.com/aws/en/dev-tools/bundles/) so that you can:
+Python for Declarative Automation Bundles (formerly Databricks Asset Bundles) extends [Declarative Automation Bundles](https://docs.databricks.com/aws/en/dev-tools/bundles/) so that you can:
 - Define jobs and pipelines as Python code. These jobs can coexist with jobs defined in YAML.
 - Dynamically create jobs and pipelines using metadata.
 - Modify jobs and pipelines defined in YAML or Python during bundle deployment.

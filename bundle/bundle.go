@@ -1,4 +1,4 @@
-// Package bundle is the top level package for Declarative Automation Bundles.
+// Package bundle is the top level package for DABs.
 //
 // A bundle is represented by the [Bundle] type. It consists of configuration
 // and runtime state, such as a client to a Databricks workspace.

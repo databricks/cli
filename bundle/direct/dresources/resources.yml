@@ -1,4 +1,4 @@
-# Resource lifecycle configuration for Declarative Automation Bundles.
+# Resource lifecycle configuration for DABs.
 # This file defines how field changes affect resource operations.
 #
 # Available options:
