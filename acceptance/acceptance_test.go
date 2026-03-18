@@ -344,12 +344,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Cleanup(phase0wg.Done)
 			}
 
-			if runParallel {
-				t.Parallel()
-			}
-
 			if config.Phase != 0 {
 				t.Logf("Waiting for Phase=%d to start", config.Phase)
+				t.Parallel()
 				<-phase1Gate
 				t.Logf("Continue with Phase=%d", config.Phase)
 			}
@@ -361,15 +358,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			}
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
-
-			if len(expanded) == 1 {
-				// env vars aren't part of the test case name, so log them for debugging
-				if len(expanded[0]) > 0 {
-					t.Logf("Running test with env %v", expanded[0])
-				}
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
-				return
-			}
 
 			for ind, envset := range expanded {
 				envname := strings.Join(envset, "/")
