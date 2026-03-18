@@ -9,6 +9,7 @@
 ### CLI
 
 ### Bundles
+* Standardize `personal_schemas` enum across bundle templates ([#4401](https://github.com/databricks/cli/pull/4401))
 * engine/direct: Fix permanent drift on experiment name field ([#4627](https://github.com/databricks/cli/pull/4627))
 * engine/direct: Fix permissions state path to match input config schema ([#4703](https://github.com/databricks/cli/pull/4703))
 * Add default project name and success message to default-scala template ([#4661](https://github.com/databricks/cli/pull/4661))
