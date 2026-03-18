@@ -177,10 +177,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -248,10 +248,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -319,10 +319,10 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -388,10 +388,10 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -527,10 +527,10 @@ func newSetPermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -615,10 +615,10 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -704,10 +704,10 @@ func newUpdatePermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

@@ -200,10 +200,10 @@ func newDelete() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -304,10 +304,10 @@ func newEdit() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -374,10 +374,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -442,10 +442,10 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -511,10 +511,10 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -649,10 +649,10 @@ func newSetPermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -735,10 +735,10 @@ func newUpdatePermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

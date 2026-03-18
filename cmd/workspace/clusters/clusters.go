@@ -307,12 +307,12 @@ func newCreate() *cobra.Command {
 		if createSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(createTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -397,10 +397,10 @@ func newDelete() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -423,12 +423,12 @@ func newDelete() *cobra.Command {
 		if deleteSkipWait {
 			return nil
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(deleteTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -583,12 +583,12 @@ func newEdit() *cobra.Command {
 		if editSkipWait {
 			return nil
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(editTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -675,10 +675,10 @@ func newEvents() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -743,10 +743,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -811,10 +811,10 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -880,10 +880,10 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -1120,10 +1120,10 @@ func newPermanentDelete() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1214,10 +1214,10 @@ func newPin() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1319,10 +1319,10 @@ func newResize() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1346,12 +1346,12 @@ func newResize() *cobra.Command {
 		if resizeSkipWait {
 			return nil
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(resizeTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -1436,10 +1436,10 @@ func newRestart() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1463,12 +1463,12 @@ func newRestart() *cobra.Command {
 		if restartSkipWait {
 			return nil
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(restartTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -1537,10 +1537,10 @@ func newSetPermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -1686,10 +1686,10 @@ func newStart() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1712,12 +1712,12 @@ func newStart() *cobra.Command {
 		if startSkipWait {
 			return nil
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(startTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -1792,10 +1792,10 @@ func newUnpin() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1932,12 +1932,12 @@ func newUpdate() *cobra.Command {
 		if updateSkipWait {
 			return nil
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(updateTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -2005,10 +2005,10 @@ func newUpdatePermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No CLUSTER_ID argument specified. Loading names for Clusters drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

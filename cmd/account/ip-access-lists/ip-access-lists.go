@@ -198,10 +198,10 @@ func newDelete() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down."
 			names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -266,10 +266,10 @@ func newGet() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down."
 			names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -516,10 +516,10 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down."
 			names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

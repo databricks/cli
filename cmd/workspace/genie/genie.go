@@ -146,13 +146,13 @@ func newCreateMessage() *cobra.Command {
 		if createMessageSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *dashboards.GenieMessage) {
 			status := i.Status
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(createMessageTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -1670,13 +1670,13 @@ func newStartConversation() *cobra.Command {
 		if startConversationSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *dashboards.GenieMessage) {
 			status := i.Status
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(startConversationTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}

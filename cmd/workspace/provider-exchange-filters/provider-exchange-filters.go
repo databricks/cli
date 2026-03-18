@@ -132,10 +132,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Provider Exchange Filters drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Provider Exchange Filters drop-down."
 			names, err := w.ProviderExchangeFilters.ExchangeFilterNameToIdMap(ctx, marketplace.ListExchangeFiltersRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Exchange Filters drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

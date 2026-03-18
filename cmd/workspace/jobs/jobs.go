@@ -209,10 +209,10 @@ func newCancelRun() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -239,7 +239,7 @@ func newCancelRun() *cobra.Command {
 		if cancelRunSkipWait {
 			return nil
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
 			if i.State == nil {
 				return
@@ -249,9 +249,9 @@ func newCancelRun() *cobra.Command {
 			if i.State != nil {
 				statusMessage = i.State.StateMessage
 			}
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(cancelRunTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -389,10 +389,10 @@ func newDelete() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -488,10 +488,10 @@ func newDeleteRun() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -563,10 +563,10 @@ func newExportRun() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -646,10 +646,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -717,10 +717,10 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -786,10 +786,10 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -868,10 +868,10 @@ func newGetRun() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -948,10 +948,10 @@ func newGetRunOutput() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -1181,10 +1181,10 @@ func newRepairRun() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No RUN_ID argument specified. Loading names for Jobs drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1211,7 +1211,7 @@ func newRepairRun() *cobra.Command {
 		if repairRunSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
 			if i.State == nil {
 				return
@@ -1221,9 +1221,9 @@ func newRepairRun() *cobra.Command {
 			if i.State != nil {
 				statusMessage = i.State.StateMessage
 			}
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(repairRunTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -1384,10 +1384,10 @@ func newRunNow() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1414,7 +1414,7 @@ func newRunNow() *cobra.Command {
 		if runNowSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
 			if i.State == nil {
 				return
@@ -1424,9 +1424,9 @@ func newRunNow() *cobra.Command {
 			if i.State != nil {
 				statusMessage = i.State.StateMessage
 			}
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(runNowTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -1495,10 +1495,10 @@ func newSetPermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -1619,7 +1619,7 @@ func newSubmit() *cobra.Command {
 		if submitSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
 			if i.State == nil {
 				return
@@ -1629,9 +1629,9 @@ func newSubmit() *cobra.Command {
 			if i.State != nil {
 				statusMessage = i.State.StateMessage
 			}
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(submitTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -1711,10 +1711,10 @@ func newUpdate() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1802,10 +1802,10 @@ func newUpdatePermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No JOB_ID argument specified. Loading names for Jobs drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

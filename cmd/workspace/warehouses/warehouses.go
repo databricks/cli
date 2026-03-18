@@ -134,7 +134,7 @@ func newCreate() *cobra.Command {
 		if createSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
 			if i.Health == nil {
 				return
@@ -144,9 +144,9 @@ func newCreate() *cobra.Command {
 			if i.Health != nil {
 				statusMessage = i.Health.Summary
 			}
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(createTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -290,10 +290,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -363,10 +363,10 @@ func newDeleteDefaultWarehouseOverride() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No NAME argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -466,10 +466,10 @@ func newEdit() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -491,7 +491,7 @@ func newEdit() *cobra.Command {
 		if editSkipWait {
 			return nil
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
 			if i.Health == nil {
 				return
@@ -501,9 +501,9 @@ func newEdit() *cobra.Command {
 			if i.Health != nil {
 				statusMessage = i.Health.Summary
 			}
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(editTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -553,10 +553,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -626,10 +626,10 @@ func newGetDefaultWarehouseOverride() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No NAME argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -694,10 +694,10 @@ func newGetPermissionLevels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -763,10 +763,10 @@ func newGetPermissions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -997,10 +997,10 @@ func newSetPermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -1150,10 +1150,10 @@ func newStart() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -1175,7 +1175,7 @@ func newStart() *cobra.Command {
 		if startSkipWait {
 			return nil
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
 			if i.Health == nil {
 				return
@@ -1185,9 +1185,9 @@ func newStart() *cobra.Command {
 			if i.Health != nil {
 				statusMessage = i.Health.Summary
 			}
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(startTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -1243,10 +1243,10 @@ func newStop() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -1268,7 +1268,7 @@ func newStop() *cobra.Command {
 		if stopSkipWait {
 			return nil
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
 			if i.Health == nil {
 				return
@@ -1278,9 +1278,9 @@ func newStop() *cobra.Command {
 			if i.Health != nil {
 				statusMessage = i.Health.Summary
 			}
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(stopTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -1368,10 +1368,10 @@ func newUpdateDefaultWarehouseOverride() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				sp := cmdio.NewSpinner(ctx)
-				sp.Update("No TYPE argument specified. Loading names for Warehouses drop-down.")
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No TYPE argument specified. Loading names for Warehouses drop-down."
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-				sp.Close()
+				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -1464,10 +1464,10 @@ func newUpdatePermissions() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down."
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

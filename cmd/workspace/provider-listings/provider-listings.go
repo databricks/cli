@@ -134,10 +134,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Provider Listings drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Provider Listings drop-down."
 			names, err := w.ProviderListings.ListingSummaryNameToIdMap(ctx, marketplace.GetListingsRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Listings drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -199,10 +199,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Provider Listings drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Provider Listings drop-down."
 			names, err := w.ProviderListings.ListingSummaryNameToIdMap(ctx, marketplace.GetListingsRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Listings drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

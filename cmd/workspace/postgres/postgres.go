@@ -176,8 +176,8 @@ func newCreateBranch() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for create-branch to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for create-branch to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(createBranchTimeout)
@@ -185,7 +185,7 @@ func newCreateBranch() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return cmdio.Render(ctx, response)
 		}
 	}
@@ -302,8 +302,8 @@ func newCreateDatabase() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for create-database to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for create-database to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(createDatabaseTimeout)
@@ -311,7 +311,7 @@ func newCreateDatabase() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return cmdio.Render(ctx, response)
 		}
 	}
@@ -427,8 +427,8 @@ func newCreateEndpoint() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for create-endpoint to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for create-endpoint to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(createEndpointTimeout)
@@ -436,7 +436,7 @@ func newCreateEndpoint() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return cmdio.Render(ctx, response)
 		}
 	}
@@ -550,8 +550,8 @@ func newCreateProject() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for create-project to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for create-project to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(createProjectTimeout)
@@ -559,7 +559,7 @@ func newCreateProject() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return cmdio.Render(ctx, response)
 		}
 	}
@@ -673,8 +673,8 @@ func newCreateRole() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for create-role to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for create-role to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(createRoleTimeout)
@@ -682,7 +682,7 @@ func newCreateRole() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return cmdio.Render(ctx, response)
 		}
 	}
@@ -772,8 +772,8 @@ func newDeleteBranch() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for delete-branch to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for delete-branch to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(deleteBranchTimeout)
@@ -782,7 +782,7 @@ func newDeleteBranch() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return nil
 		}
 	}
@@ -873,8 +873,8 @@ func newDeleteDatabase() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for delete-database to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for delete-database to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(deleteDatabaseTimeout)
@@ -883,7 +883,7 @@ func newDeleteDatabase() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return nil
 		}
 	}
@@ -973,8 +973,8 @@ func newDeleteEndpoint() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for delete-endpoint to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for delete-endpoint to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(deleteEndpointTimeout)
@@ -983,7 +983,7 @@ func newDeleteEndpoint() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return nil
 		}
 	}
@@ -1073,8 +1073,8 @@ func newDeleteProject() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for delete-project to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for delete-project to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(deleteProjectTimeout)
@@ -1083,7 +1083,7 @@ func newDeleteProject() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return nil
 		}
 	}
@@ -1178,8 +1178,8 @@ func newDeleteRole() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for delete-role to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for delete-role to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(deleteRoleTimeout)
@@ -1188,7 +1188,7 @@ func newDeleteRole() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return nil
 		}
 	}
@@ -2020,8 +2020,8 @@ func newUpdateBranch() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for update-branch to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for update-branch to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(updateBranchTimeout)
@@ -2029,7 +2029,7 @@ func newUpdateBranch() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return cmdio.Render(ctx, response)
 		}
 	}
@@ -2146,8 +2146,8 @@ func newUpdateDatabase() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for update-database to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for update-database to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(updateDatabaseTimeout)
@@ -2155,7 +2155,7 @@ func newUpdateDatabase() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return cmdio.Render(ctx, response)
 		}
 	}
@@ -2272,8 +2272,8 @@ func newUpdateEndpoint() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for update-endpoint to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for update-endpoint to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(updateEndpointTimeout)
@@ -2281,7 +2281,7 @@ func newUpdateEndpoint() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return cmdio.Render(ctx, response)
 		}
 	}
@@ -2398,8 +2398,8 @@ func newUpdateProject() *cobra.Command {
 			}
 
 			// Show spinner while waiting for completion.
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("Waiting for update-project to complete...")
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for update-project to complete..."
 
 			// Wait for completion.
 			opts := api.WithTimeout(updateProjectTimeout)
@@ -2407,7 +2407,7 @@ func newUpdateProject() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			sp.Close()
+			close(spinner)
 			return cmdio.Render(ctx, response)
 		}
 	}

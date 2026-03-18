@@ -181,10 +181,10 @@ func newGetAlert() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Alerts V2 drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Alerts V2 drop-down."
 			names, err := w.AlertsV2.AlertV2DisplayNameToIdMap(ctx, sql.ListAlertsV2Request{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Alerts V2 drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -301,10 +301,10 @@ func newTrashAlert() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No ID argument specified. Loading names for Alerts V2 drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Alerts V2 drop-down."
 			names, err := w.AlertsV2.AlertV2DisplayNameToIdMap(ctx, sql.ListAlertsV2Request{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Alerts V2 drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

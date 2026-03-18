@@ -205,10 +205,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No NAME argument specified. Loading names for Volumes drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Volumes drop-down."
 			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -354,10 +354,10 @@ func newRead() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No NAME argument specified. Loading names for Volumes drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Volumes drop-down."
 			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -448,10 +448,10 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No NAME argument specified. Loading names for Volumes drop-down.")
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Volumes drop-down."
 			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
-			sp.Close()
+			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

@@ -171,12 +171,12 @@ func newCreate() *cobra.Command {
 		if createSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
 			statusMessage := i.WorkspaceStatusMessage
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(createTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
@@ -454,12 +454,12 @@ func newUpdate() *cobra.Command {
 		if updateSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		sp := cmdio.NewSpinner(ctx)
+		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
 			statusMessage := i.WorkspaceStatusMessage
-			sp.Update(statusMessage)
+			spinner <- statusMessage
 		}).GetWithTimeout(updateTimeout)
-		sp.Close()
+		close(spinner)
 		if err != nil {
 			return err
 		}
