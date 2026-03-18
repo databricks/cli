@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
@@ -92,11 +93,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		cmd.SetContext(ctx)
 	}
 
-	envEngine, err := engine.SettingFromEnv(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	// Load bundle config and apply target
 	b := root.MustConfigureBundle(cmd)
 	if logdiag.HasError(ctx) {
@@ -157,7 +153,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
-		requiredEngine := ResolveEngineSetting(b, envEngine)
+		requiredEngine, err := ResolveEngineSetting(ctx, b)
+		if err != nil {
+			return b, nil, err
+		}
 
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
@@ -299,13 +298,19 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	return b, stateDesc, nil
 }
 
-// ResolveEngineSetting combines the env var engine with the bundle config engine setting.
-// Environment variable takes priority over config. ConfigType always reflects the config value.
-func ResolveEngineSetting(b *bundle.Bundle, envSetting engine.EngineSetting) engine.EngineSetting {
+// ResolveEngineSetting determines the effective engine setting by combining env vars and bundle config.
+// Priority: DATABRICKS_BUNDLE_ENGINE > bundle.engine config > DATABRICKS_BUNDLE_ENGINE_DEFAULT.
+func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineSetting, error) {
 	configEngine := b.Config.Bundle.Engine
-	if envSetting.Type != engine.EngineNotSet {
-		return engine.EngineSetting{Type: envSetting.Type, Source: envSetting.Source, ConfigType: configEngine}
+
+	envEngine, err := engine.FromEnv(ctx)
+	if err != nil {
+		return engine.EngineSetting{}, err
 	}
+	if envEngine != engine.EngineNotSet {
+		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable", ConfigType: configEngine}, nil
+	}
+
 	if configEngine != engine.EngineNotSet {
 		source := "bundle.engine setting"
 		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
@@ -313,12 +318,19 @@ func ResolveEngineSetting(b *bundle.Bundle, envSetting engine.EngineSetting) eng
 			loc := locs[0]
 			source = fmt.Sprintf("bundle.engine setting at %s:%d:%d", filepath.ToSlash(loc.File), loc.Line, loc.Column)
 		}
-		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}
+		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}, nil
 	}
-	if envSetting.DefaultType != engine.EngineNotSet {
-		return engine.EngineSetting{Type: envSetting.DefaultType, Source: engine.EnvVarDefault + " environment variable", ConfigType: configEngine}
+
+	defaultValue := env.Get(ctx, engine.EnvVarDefault)
+	defaultEngine, ok := engine.Parse(defaultValue)
+	if !ok {
+		return engine.EngineSetting{}, fmt.Errorf("unexpected setting for %s=%#v (expected 'terraform' or 'direct')", engine.EnvVarDefault, defaultValue)
 	}
-	return engine.EngineSetting{}
+	if defaultEngine != engine.EngineNotSet {
+		return engine.EngineSetting{Type: defaultEngine, Source: engine.EnvVarDefault + " environment variable", ConfigType: configEngine}, nil
+	}
+
+	return engine.EngineSetting{}, nil
 }
 
 func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
@@ -374,18 +373,16 @@ func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
-	envEngine, err := engine.SettingFromEnv(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-
 	phases.Initialize(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
-	requiredEngine := utils.ResolveEngineSetting(b, envEngine)
+	requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
 	if logdiag.HasError(ctx) {
 		return
