@@ -116,10 +116,10 @@ func newDelete() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No PATH argument specified. Loading names for Workspace drop-down.")
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
@@ -204,10 +204,10 @@ func newExport() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No PATH argument specified. Loading names for Workspace drop-down.")
 			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -639,10 +639,10 @@ func newMkdirs() *cobra.Command {
 			}
 		} else {
 			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
+				sp := cmdio.NewSpinner(ctx)
+				sp.Update("No PATH argument specified. Loading names for Workspace drop-down.")
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-				close(promptSpinner)
+				sp.Close()
 				if err != nil {
 					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
 				}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,25 +20,27 @@ import (
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
-	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 // DefaultAppDescription is the default description for new apps.
 const DefaultAppDescription = "A Databricks App powered by AppKit"
 
+// Brand palette — tuned for legibility on both light and dark terminals.
+var (
+	colorRed    = lipgloss.Color("#E84040") // Bright Databricks red
+	colorGray   = lipgloss.Color("#A1A1AA") // Light gray, legible on dark backgrounds
+	colorYellow = lipgloss.Color("#FFAB00") // Databricks yellow / amber
+	colorOrange = lipgloss.Color("#FF5F40") // Databricks orange (code blocks)
+)
+
 // AppkitTheme returns a custom theme for appkit prompts.
 func AppkitTheme() *huh.Theme {
 	t := huh.ThemeBase()
 
-	// Databricks brand colors
-	red := lipgloss.Color("#BD2B26")
-	gray := lipgloss.Color("#71717A") // Mid-tone gray, readable on light and dark
-	yellow := lipgloss.Color("#FFAB00")
-
-	t.Focused.Title = t.Focused.Title.Foreground(red).Bold(true)
-	t.Focused.Description = t.Focused.Description.Foreground(gray)
-	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(yellow)
-	t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(gray)
+	t.Focused.Title = t.Focused.Title.Foreground(colorRed).Bold(true)
+	t.Focused.Description = t.Focused.Description.Foreground(colorGray)
+	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(colorYellow)
+	t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(colorGray)
 
 	return t
 }
@@ -45,9 +48,9 @@ func AppkitTheme() *huh.Theme {
 // Styles for printing answered prompts.
 var (
 	answeredTitleStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#71717A"))
+				Foreground(colorGray)
 	answeredValueStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FFAB00")).
+				Foreground(colorYellow).
 				Bold(true)
 )
 
@@ -117,11 +120,11 @@ func ValidateProjectName(s string) error {
 // PrintHeader prints the AppKit header banner.
 func PrintHeader(ctx context.Context) {
 	headerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#BD2B26")).
+		Foreground(colorRed).
 		Bold(true)
 
 	subtitleStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#71717A"))
+		Foreground(colorGray)
 
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, headerStyle.Render("◆ Create a new Databricks AppKit project"))
@@ -217,17 +220,6 @@ func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, e
 	return deploy, RunMode(runModeStr), nil
 }
 
-// ListSQLWarehouses fetches all SQL warehouses the user has access to.
-func ListSQLWarehouses(ctx context.Context) ([]sql.EndpointInfo, error) {
-	w := cmdctx.WorkspaceClient(ctx)
-	if w == nil {
-		return nil, errors.New("no workspace client available")
-	}
-
-	iter := w.Warehouses.List(ctx, sql.ListWarehousesRequest{})
-	return listing.ToSlice(ctx, iter)
-}
-
 // PromptFromList shows a picker for items and returns the selected ID.
 // If required is false and items are empty, returns ("", nil). If required is true and items are empty, returns an error.
 func PromptFromList(ctx context.Context, title, emptyMessage string, items []ListItem, required bool) (string, error) {
@@ -253,10 +245,9 @@ func promptFromListWithLabel(ctx context.Context, title, emptyMessage string, it
 	var selected string
 	err := huh.NewSelect[string]().
 		Title(title).
-		Description(fmt.Sprintf("%d available — type to filter", len(items))).
+		Description(fmt.Sprintf("%d available — / to filter", len(items))).
 		Options(options...).
 		Value(&selected).
-		Filtering(true).
 		Height(8).
 		WithTheme(theme).
 		Run()
@@ -265,6 +256,201 @@ func promptFromListWithLabel(ctx context.Context, title, emptyMessage string, it
 	}
 	printAnswered(ctx, title, labels[selected])
 	return selected, labels[selected], nil
+}
+
+// awaitFetcher waits for a background PagedFetcher's first page. If the data
+// is already available it returns immediately; otherwise a spinner is shown.
+func awaitFetcher(ctx context.Context, f *PagedFetcher, spinnerMsg string) error {
+	if f.IsDone() {
+		return f.Err
+	}
+	return RunWithSpinnerCtx(ctx, spinnerMsg, func() error {
+		return f.WaitForFirstPage(ctx)
+	})
+}
+
+// getFetcher returns a PagedFetcher from the cache, waiting for its first page.
+// If the cache has no entry, it creates one synchronously using the paged
+// constructor registered in pagedConstructors.
+func getFetcher(ctx context.Context, resourceType, spinnerMsg string) (*PagedFetcher, error) {
+	ctor := pagedConstructors[resourceType]
+	return getFetcherByKey(ctx, resourceType, spinnerMsg, ctor)
+}
+
+// getFetcherByKey returns a PagedFetcher from the cache under the given key,
+// waiting for its first page. If the cache has no entry, it falls back to
+// creating one synchronously using the provided constructor.
+func getFetcherByKey(ctx context.Context, cacheKey, spinnerMsg string, fallbackCtor pagedConstructor) (*PagedFetcher, error) {
+	if cache := CacheFromContext(ctx); cache != nil {
+		if f := cache.GetFetcher(cacheKey); f != nil {
+			if err := awaitFetcher(ctx, f, spinnerMsg); err != nil {
+				return nil, err
+			}
+			return f, nil
+		}
+	}
+	if fallbackCtor == nil {
+		return nil, fmt.Errorf("no lister registered for cache key %q", cacheKey)
+	}
+	var f *PagedFetcher
+	err := RunWithSpinnerCtx(ctx, spinnerMsg, func() error {
+		var fetchErr error
+		f, fetchErr = fallbackCtor(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
+// promptManualInput shows a text input for the user to type a resource name/ID
+// manually. prefetchedLabels provides tab-complete suggestions.
+func promptManualInput(ctx context.Context, title string, prefetchedLabels []string) (string, error) {
+	theme := AppkitTheme()
+	var value string
+	err := huh.NewInput().
+		Title(title).
+		Placeholder("Type a name or ID").
+		Suggestions(prefetchedLabels).
+		Value(&value).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(value), nil
+}
+
+// promptFromPagedFetcher shows a picker backed by a PagedFetcher. When more
+// pages are available and the total is under maxTotalResults, a "Load more..."
+// option is appended. Once capped (>= maxTotalResults), an "Enter name/ID
+// manually..." option replaces it.
+// SearchFunc performs a server-side search by name/query. When non-nil, the
+// manual input fallback triggers a search instead of accepting raw input.
+// This is currently supported by Jobs (name filter). Other resource types can
+// pass nil until their APIs add server-side filtering support.
+type SearchFunc func(ctx context.Context, query string) ([]ListItem, error)
+
+func promptFromPagedFetcher(ctx context.Context, title, emptyMessage string, fetcher *PagedFetcher, required bool, searchFn SearchFunc) (string, string, error) {
+	if len(fetcher.Items) == 0 && !fetcher.HasMore {
+		if required {
+			return "", "", errors.New(emptyMessage)
+		}
+		return "", "", nil
+	}
+	theme := AppkitTheme()
+
+	for {
+		options := make([]huh.Option[string], 0, len(fetcher.Items)+2)
+		labels := make(map[string]string, len(fetcher.Items))
+
+		var desc string
+		if fetcher.HasMore && !fetcher.Capped {
+			desc = fmt.Sprintf("%d results loaded — / to search", len(fetcher.Items))
+			options = append(options, huh.NewOption("+ Load more results", moreID))
+		} else if fetcher.Capped {
+			desc = fmt.Sprintf("%d results loaded — / to search", len(fetcher.Items))
+			manualLabel := "Not listed? Enter ID manually..."
+			if searchFn != nil {
+				manualLabel = "Not listed? Search by name..."
+			}
+			options = append(options, huh.NewOption(manualLabel, manualID))
+		} else {
+			desc = fmt.Sprintf("%d available — / to search", len(fetcher.Items))
+		}
+
+		for _, it := range fetcher.Items {
+			options = append(options, huh.NewOption(it.Label, it.ID))
+			labels[it.ID] = it.Label
+		}
+
+		var selected string
+		err := huh.NewSelect[string]().
+			Title(title).
+			Description(desc).
+			Options(options...).
+			Value(&selected).
+			Height(8).
+			WithTheme(theme).
+			Run()
+		if err != nil {
+			return "", "", err
+		}
+
+		switch selected {
+		case moreID:
+			if err := RunWithSpinnerCtx(ctx, "Fetching more results...", func() error {
+				return fetcher.LoadMore(ctx)
+			}); err != nil {
+				return "", "", err
+			}
+			continue
+
+		case manualID:
+			suggestions := make([]string, 0, len(fetcher.Items))
+			for _, it := range fetcher.Items {
+				suggestions = append(suggestions, it.Label)
+			}
+			query, inputErr := promptManualInput(ctx, title, suggestions)
+			if inputErr != nil {
+				return "", "", inputErr
+			}
+			if query == "" {
+				if required {
+					continue
+				}
+				return "", "", nil
+			}
+
+			if searchFn == nil {
+				printAnswered(ctx, title, query)
+				return query, query, nil
+			}
+
+			var results []ListItem
+			if searchErr := RunWithSpinnerCtx(ctx, fmt.Sprintf("Searching for %q...", query), func() error {
+				var fetchErr error
+				results, fetchErr = searchFn(ctx, query)
+				return fetchErr
+			}); searchErr != nil {
+				return "", "", searchErr
+			}
+			if len(results) == 0 {
+				printAnswered(ctx, title, query)
+				return query, query, nil
+			}
+			if len(results) == 1 {
+				printAnswered(ctx, title, results[0].Label)
+				return results[0].ID, results[0].Label, nil
+			}
+			id, label, pickErr := promptFromListWithLabel(ctx, title+" — search results", "no matches", results, required)
+			if pickErr != nil {
+				return "", "", pickErr
+			}
+			return id, label, nil
+
+		default:
+			printAnswered(ctx, title, labels[selected])
+			return selected, labels[selected], nil
+		}
+	}
+}
+
+// promptForPagedResource gets a PagedFetcher (from cache or on-demand), then
+// shows the paged picker with Load more / Enter manually support.
+// Pass a non-nil searchFn to enable server-side search in the manual input
+// fallback (currently only Jobs supports this).
+func promptForPagedResource(ctx context.Context, r manifest.Resource, required bool, title, emptyMsg, spinnerMsg string, searchFn SearchFunc) (map[string]string, error) {
+	f, err := getFetcher(ctx, r.Type, spinnerMsg)
+	if err != nil {
+		return nil, err
+	}
+	value, _, promptErr := promptFromPagedFetcher(ctx, title, emptyMsg, f, required, searchFn)
+	if promptErr != nil {
+		return nil, promptErr
+	}
+	return singleValueResult(r, value), nil
 }
 
 // PromptForWarehouse shows a picker to select a SQL warehouse.
@@ -281,6 +467,19 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 	return PromptFromList(ctx, "Select SQL Warehouse", "no SQL warehouses found. Create one in your workspace first", items, true)
 }
 
+// resourceTitle returns a prompt title for a resource, including the plugin name
+// for context when available (e.g. "Select SQL Warehouse for Analytics").
+func resourceTitle(fallback string, r manifest.Resource) string {
+	title := r.Alias
+	if title == "" {
+		title = fallback
+	}
+	if r.PluginDisplayName != "" {
+		title = fmt.Sprintf("%s for %s", title, r.PluginDisplayName)
+	}
+	return title
+}
+
 // singleValueResult wraps a single value into the resource values map.
 // Uses the first field name from Fields for the composite key (resource_key.field),
 // or falls back to the resource key if no Fields are defined.
@@ -293,24 +492,6 @@ func singleValueResult(r manifest.Resource, value string) map[string]string {
 		return map[string]string{r.Key() + "." + names[0]: value}
 	}
 	return map[string]string{r.Key(): value}
-}
-
-// promptForResourceFromLister runs a spinner, fetches items via fn, then shows PromptFromList.
-func promptForResourceFromLister(ctx context.Context, r manifest.Resource, required bool, title, emptyMsg, spinnerMsg string, fn func(context.Context) ([]ListItem, error)) (map[string]string, error) {
-	var items []ListItem
-	err := RunWithSpinnerCtx(ctx, spinnerMsg, func() error {
-		var fetchErr error
-		items, fetchErr = fn(ctx)
-		return fetchErr
-	})
-	if err != nil {
-		return nil, err
-	}
-	value, err := PromptFromList(ctx, title, emptyMsg, items, required)
-	if err != nil {
-		return nil, err
-	}
-	return singleValueResult(r, value), nil
 }
 
 // PromptForSecret shows a two-step picker for secret scope and key.
@@ -357,30 +538,30 @@ func PromptForSecret(ctx context.Context, r manifest.Resource, required bool) (m
 	}, nil
 }
 
-// PromptForJob shows a picker for jobs.
+// PromptForJob shows a picker for jobs. When the user selects "Enter manually"
+// (after the 500-item cap), the input triggers a server-side name search via
+// the Jobs API's Name filter before accepting the value.
 func PromptForJob(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select Job", "no jobs found", "Fetching jobs...", ListJobs)
+	title := resourceTitle("Select Job", r)
+	return promptForPagedResource(ctx, r, required, title, "no jobs found", "Fetching jobs...", SearchJobs)
 }
 
 // PromptForSQLWarehouseResource shows a picker for SQL warehouses (manifest.Resource version).
 func PromptForSQLWarehouseResource(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select SQL Warehouse", "no SQL warehouses found. Create one in your workspace first", "Fetching SQL warehouses...", ListSQLWarehousesItems)
+	title := resourceTitle("Select SQL Warehouse", r)
+	return promptForPagedResource(ctx, r, required, title, "no SQL warehouses found. Create one in your workspace first", "Fetching SQL warehouses...", nil)
 }
 
 const backID = "__back__"
 
 // promptUCCatalog shows a picker for UC catalogs (shared first step for volume/function pickers).
 func promptUCCatalog(ctx context.Context, required bool) (string, error) {
-	var items []ListItem
-	err := RunWithSpinnerCtx(ctx, "Fetching catalogs...", func() error {
-		var fetchErr error
-		items, fetchErr = ListCatalogs(ctx)
-		return fetchErr
-	})
+	f, err := getFetcherByKey(ctx, cacheKeyCatalogs, "Fetching catalogs...", ListCatalogs)
 	if err != nil {
 		return "", err
 	}
-	return PromptFromList(ctx, "Select Catalog", "no catalogs found", items, required)
+	id, _, promptErr := promptFromPagedFetcher(ctx, "Select Catalog", "no catalogs found", f, required, nil)
+	return id, promptErr
 }
 
 // promptFromListWithBack shows a picker with a "← Go back" option prepended.
@@ -459,17 +640,45 @@ func promptUCResource(ctx context.Context, r manifest.Resource, required bool, r
 
 // PromptForServingEndpoint shows a picker for serving endpoints.
 func PromptForServingEndpoint(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select Serving Endpoint", "no serving endpoints found", "Fetching serving endpoints...", ListServingEndpoints)
+	title := resourceTitle("Select Serving Endpoint", r)
+	return promptForPagedResource(ctx, r, required, title, "no serving endpoints found", "Fetching serving endpoints...", nil)
+}
+
+// volumePathToSecurableName converts a volume path (/Volumes/catalog/schema/vol)
+// to the securable_full_name format (catalog.schema.vol) used by DABs.
+func volumePathToSecurableName(path string) string {
+	trimmed := strings.TrimPrefix(path, "/Volumes/")
+	if trimmed == path {
+		return path
+	}
+	return strings.ReplaceAll(trimmed, "/", ".")
 }
 
 // PromptForVolume shows a three-step picker for UC volumes: catalog -> schema -> volume.
+// Stores two values: the volume path for .env and the dot-separated securable
+// name for the DABs YAML securable_full_name field.
 func PromptForVolume(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptUCResource(ctx, r, required, "Volume", "Fetching volumes...", ListVolumesInSchema)
+	result, err := promptUCResource(ctx, r, required, "Volume", "Fetching volumes...", ListVolumesInSchema)
+	if err != nil || result == nil {
+		return result, err
+	}
+	// promptUCResource stores the volume path (/Volumes/cat/schema/vol) under
+	// the first manifest field (e.g., "path"). The DABs spec also needs the
+	// securable_full_name (cat.schema.vol) under "id".
+	idKey := r.Key() + ".id"
+	if _, exists := result[idKey]; !exists {
+		for _, v := range result {
+			result[idKey] = volumePathToSecurableName(v)
+			break
+		}
+	}
+	return result, nil
 }
 
 // PromptForVectorSearchIndex shows a picker for vector search indexes.
 func PromptForVectorSearchIndex(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select Vector Search Index", "no vector search indexes found", "Fetching vector search indexes...", ListVectorSearchIndexes)
+	title := resourceTitle("Select Vector Search Index", r)
+	return promptForPagedResource(ctx, r, required, title, "no vector search indexes found", "Fetching vector search indexes...", nil)
 }
 
 // PromptForUCFunction shows a three-step picker for UC functions: catalog -> schema -> function.
@@ -479,22 +688,18 @@ func PromptForUCFunction(ctx context.Context, r manifest.Resource, required bool
 
 // PromptForUCConnection shows a picker for UC connections.
 func PromptForUCConnection(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select UC Connection", "no connections found", "Fetching connections...", ListConnections)
+	title := resourceTitle("Select UC Connection", r)
+	return promptForPagedResource(ctx, r, required, title, "no connections found", "Fetching connections...", nil)
 }
 
 // PromptForDatabase shows a two-step picker for database instance and database name.
 func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	// Step 1: pick a Lakebase instance
-	var instances []ListItem
-	err := RunWithSpinnerCtx(ctx, "Fetching database instances...", func() error {
-		var fetchErr error
-		instances, fetchErr = ListDatabaseInstances(ctx)
-		return fetchErr
-	})
+	f, err := getFetcherByKey(ctx, cacheKeyDatabaseInstances, "Fetching database instances...", ListDatabaseInstances)
 	if err != nil {
 		return nil, err
 	}
-	instanceName, err := PromptFromList(ctx, "Select Database Instance", "no database instances found", instances, required)
+	instanceName, _, err := promptFromPagedFetcher(ctx, "Select Database Instance", "no database instances found", f, required, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -529,16 +734,11 @@ func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) 
 // PromptForPostgres shows a three-step picker for Lakebase Autoscaling (V2): project, branch, then database.
 func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	// Step 1: pick a project
-	var projects []ListItem
-	err := RunWithSpinnerCtx(ctx, "Fetching Postgres projects...", func() error {
-		var fetchErr error
-		projects, fetchErr = ListPostgresProjects(ctx)
-		return fetchErr
-	})
+	f, err := getFetcherByKey(ctx, cacheKeyPostgresProjects, "Fetching Postgres projects...", ListPostgresProjects)
 	if err != nil {
 		return nil, err
 	}
-	projectName, err := PromptFromList(ctx, "Select Postgres Project", "no Postgres projects found", projects, required)
+	projectName, _, err := promptFromPagedFetcher(ctx, "Select Postgres Project", "no Postgres projects found", f, required, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -564,29 +764,6 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 		return nil, nil
 	}
 
-	// Step 2.5: resolve endpoint details from the branch (non-fatal).
-	var host, endpointPath string
-	endpointErr := RunWithSpinnerCtx(ctx, "Resolving connection details...", func() error {
-		endpoints, fetchErr := ListPostgresEndpoints(ctx, branchName)
-		if fetchErr != nil {
-			return fetchErr
-		}
-		for _, ep := range endpoints {
-			if ep.Status != nil && ep.Status.EndpointType == postgres.EndpointTypeEndpointTypeReadWrite {
-				endpointPath = ep.Name
-				if ep.Status.Hosts != nil && ep.Status.Hosts.Host != "" {
-					host = ep.Status.Hosts.Host
-				}
-				break
-			}
-		}
-		return nil
-	})
-	if endpointErr != nil {
-		log.Warnf(ctx, "Could not resolve endpoint details: %v", endpointErr)
-		// non-fatal: user can fill values manually
-	}
-
 	// Step 3: pick a database within the branch
 	var databases []ListItem
 	err = RunWithSpinnerCtx(ctx, "Fetching databases...", func() error {
@@ -605,22 +782,77 @@ func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) 
 		return nil, nil
 	}
 
-	// Build resolver results map keyed by resolver name.
-	resolvedValues := map[string]string{
-		"postgres:host":         host,
-		"postgres:databaseName": pgDatabaseName,
-		"postgres:endpointPath": endpointPath,
-	}
-
 	// Start with prompted values (fields without resolve).
 	result := map[string]string{
 		r.Key() + ".branch":   branchName,
 		r.Key() + ".database": dbName,
 	}
 
-	// Map resolved values to fields using the manifest's resolve property.
-	applyResolvedValues(r, resolvedValues, result)
+	// Resolve derived values (host, databaseName, endpointPath) — non-fatal.
+	var resolved map[string]string
+	resolveErr := RunWithSpinnerCtx(ctx, "Resolving connection details...", func() error {
+		var err error
+		resolved, err = ResolvePostgresValues(ctx, r, branchName, dbName, pgDatabaseName)
+		return err
+	})
+	if resolveErr != nil {
+		log.Warnf(ctx, "Could not resolve connection details: %v", resolveErr)
+	}
+	maps.Copy(result, resolved)
 
+	return result, nil
+}
+
+// resolvePostgresResource adapts ResolvePostgresValues for the generic ResolveResourceFunc signature.
+func resolvePostgresResource(ctx context.Context, r manifest.Resource, provided map[string]string) (map[string]string, error) {
+	branchName := provided[r.Key()+".branch"]
+	dbName := provided[r.Key()+".database"]
+	if branchName == "" || dbName == "" {
+		return nil, nil
+	}
+	return ResolvePostgresValues(ctx, r, branchName, dbName, "")
+}
+
+// ResolvePostgresValues resolves derived field values (host, databaseName, endpointPath)
+// from a branch and database resource name. If pgDatabaseName is already known
+// (e.g. from a prior prompt), pass it to skip the ListDatabases API call.
+func ResolvePostgresValues(ctx context.Context, r manifest.Resource, branchName, dbName, pgDatabaseName string) (map[string]string, error) {
+	var host, endpointPath string
+	endpoints, err := ListPostgresEndpoints(ctx, branchName)
+	if err != nil {
+		return nil, fmt.Errorf("resolving endpoint details: %w", err)
+	}
+	for _, ep := range endpoints {
+		if ep.Status != nil && ep.Status.EndpointType == postgres.EndpointTypeEndpointTypeReadWrite {
+			endpointPath = ep.Name
+			if ep.Status.Hosts != nil && ep.Status.Hosts.Host != "" {
+				host = ep.Status.Hosts.Host
+			}
+			break
+		}
+	}
+
+	if pgDatabaseName == "" {
+		databases, err := ListPostgresDatabases(ctx, branchName)
+		if err != nil {
+			return nil, fmt.Errorf("resolving database name: %w", err)
+		}
+		for _, db := range databases {
+			if db.ID == dbName {
+				pgDatabaseName = db.Label
+				break
+			}
+		}
+	}
+
+	resolvedValues := map[string]string{
+		"postgres:host":         host,
+		"postgres:databaseName": pgDatabaseName,
+		"postgres:endpointPath": endpointPath,
+	}
+
+	result := make(map[string]string)
+	applyResolvedValues(r, resolvedValues, result)
 	return result, nil
 }
 
@@ -641,16 +873,13 @@ func applyResolvedValues(r manifest.Resource, resolvedValues, result map[string]
 // PromptForGenieSpace shows a picker for Genie spaces.
 // Captures both the space ID and name since the DABs schema requires both fields.
 func PromptForGenieSpace(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	var items []ListItem
-	err := RunWithSpinnerCtx(ctx, "Fetching Genie spaces...", func() error {
-		var fetchErr error
-		items, fetchErr = ListGenieSpaces(ctx)
-		return fetchErr
-	})
+	f, err := getFetcher(ctx, r.Type, "Fetching Genie spaces...")
 	if err != nil {
 		return nil, err
 	}
-	id, name, err := promptFromListWithLabel(ctx, "Select Genie Space", "no Genie spaces found", items, required)
+
+	title := resourceTitle("Select Genie Space", r)
+	id, name, err := promptFromPagedFetcher(ctx, title, "no Genie spaces found", f, required, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -665,7 +894,8 @@ func PromptForGenieSpace(ctx context.Context, r manifest.Resource, required bool
 
 // PromptForExperiment shows a picker for MLflow experiments.
 func PromptForExperiment(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select Experiment", "no experiments found", "Fetching experiments...", ListExperiments)
+	title := resourceTitle("Select Experiment", r)
+	return promptForPagedResource(ctx, r, required, title, "no experiments found", "Fetching experiments...", nil)
 }
 
 // TODO: uncomment when bundles support app as an app resource type.
@@ -674,7 +904,27 @@ func PromptForExperiment(ctx context.Context, r manifest.Resource, required bool
 // 	return promptForResourceFromLister(ctx, r, required, "Select App", "no apps found. Create one first with 'databricks apps create <name>'", "Fetching apps...", ListAppsItems)
 // }
 
+// Styles for consistent status output.
+var (
+	doneStyle = lipgloss.NewStyle().
+			Foreground(colorYellow).
+			Bold(true)
+	doneTextStyle = lipgloss.NewStyle().
+			Foreground(colorGray)
+)
+
+// PrintDone prints a styled "✔ message" completion line.
+func PrintDone(ctx context.Context, msg string) {
+	cmdio.LogString(ctx, fmt.Sprintf("%s %s", doneStyle.Render("✔"), doneTextStyle.Render(msg)))
+}
+
+// stripEllipsis removes a trailing "..." from a string for use in completion messages.
+func stripEllipsis(s string) string {
+	return strings.TrimSuffix(s, "...")
+}
+
 // RunWithSpinnerCtx runs a function while showing a spinner with the given title.
+// On success, prints a styled checkmark completion line.
 // The spinner stops and the function returns early if the context is cancelled.
 // Panics in the action are recovered and returned as errors.
 func RunWithSpinnerCtx(ctx context.Context, title string, action func() error) error {
@@ -694,6 +944,9 @@ func RunWithSpinnerCtx(ctx context.Context, title string, action func() error) e
 	select {
 	case err := <-done:
 		spinner.Close()
+		if err == nil {
+			PrintDone(ctx, stripEllipsis(title))
+		}
 		return err
 	case <-ctx.Done():
 		spinner.Close()
@@ -756,10 +1009,9 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 	var selected string
 	err = huh.NewSelect[string]().
 		Title(title).
-		Description(fmt.Sprintf("%d apps found — type to filter", len(existingApps))).
+		Description(fmt.Sprintf("%d apps found — / to filter", len(existingApps))).
 		Options(options...).
 		Value(&selected).
-		Filtering(true).
 		Height(8).
 		WithTheme(theme).
 		Run()
@@ -775,14 +1027,14 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 // If nextStepsCmd is non-empty, also prints the "Next steps" section with the given command.
 func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount int, nextStepsCmd string) {
 	successStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFAB00")). // Databricks yellow
+		Foreground(colorYellow).
 		Bold(true)
 
 	dimStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#71717A")) // Mid-tone gray
+		Foreground(colorGray)
 
 	codeStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FF3621")) // Databricks orange
+		Foreground(colorOrange)
 
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, successStyle.Render("✔ Project created successfully!"))
@@ -809,15 +1061,15 @@ type SetupNote struct {
 // PrintSetupNotes renders a styled "Setup Notes" section for selected plugins.
 func PrintSetupNotes(ctx context.Context, notes []SetupNote) {
 	headerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFAB00")). // Databricks yellow
+		Foreground(colorYellow).
 		Bold(true)
 
 	nameStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#71717A")). // Mid-tone gray
+		Foreground(colorGray).
 		Bold(true)
 
 	msgStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#71717A")) // Mid-tone gray
+		Foreground(colorGray)
 
 	cmdio.LogString(ctx, headerStyle.Render("  Setup Notes"))
 	cmdio.LogString(ctx, "")

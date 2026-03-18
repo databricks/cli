@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const currentStateVersion = 1
+const currentStateVersion = 2
 
 type DeploymentState struct {
 	Path string
@@ -122,6 +122,10 @@ func (db *DeploymentState) Open(path string) error {
 	err = json.Unmarshal(data, &db.Data)
 	if err != nil {
 		return err
+	}
+
+	if err := migrateState(&db.Data); err != nil {
+		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
 	db.Path = path

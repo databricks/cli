@@ -154,10 +154,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Connections drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No NAME argument specified. Loading names for Connections drop-down.")
 			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx, catalog.ListConnectionsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -222,10 +222,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME argument specified. Loading names for Connections drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No NAME argument specified. Loading names for Connections drop-down.")
 			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx, catalog.ListConnectionsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

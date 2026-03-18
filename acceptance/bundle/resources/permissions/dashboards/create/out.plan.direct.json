@@ -26,13 +26,13 @@
       "new_state": {
         "value": {
           "object_id": "",
-          "permissions": [
+          "__embed__": [
             {
-              "permission_level": "CAN_READ",
+              "level": "CAN_READ",
               "user_name": "deco-test-user@databricks.com"
             },
             {
-              "permission_level": "CAN_MANAGE",
+              "level": "CAN_MANAGE",
               "service_principal_name": "[USERNAME]"
             }
           ]

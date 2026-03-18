@@ -1,0 +1,59 @@
+
+=== Plan with old v1 state
+>>> [CLI] bundle plan -o json
+
+=== Deploy (migrates state)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Print state after deploy
+>>> print_state.py
+{
+ "state_version": 2,
+ "cli_version": "[DEV_VERSION]",
+ "lineage": "test-lineage",
+ "serial": 2,
+ "state": {
+  "resources.jobs.my_job": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "my job",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.my_job.permissions": {
+   "__id__": "/jobs/123",
+   "state": {
+    "object_id": "/jobs/[NUMID]",
+    "__embed__": [
+     {
+      "level": "CAN_VIEW",
+      "group_name": "viewers"
+     },
+     {
+      "level": "IS_OWNER",
+      "user_name": "[USERNAME]"
+     }
+    ]
+   },
+   "depends_on": [
+    {
+     "node": "resources.jobs.my_job",
+     "label": "${resources.jobs.my_job.id}"
+    }
+   ]
+  }
+ }
+}
