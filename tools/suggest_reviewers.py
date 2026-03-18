@@ -20,8 +20,6 @@ def classify_file(path: str) -> float:
     p = Path(path)
     if p.name.startswith("out.") or p.name == "output.txt":
         return 0.0
-    if path.startswith(("cmd/workspace/", "cmd/account/")):
-        return 0.0
     if path.startswith(("acceptance/", "integration/")):
         return 0.2
     if path.endswith("_test.go"):
