@@ -113,7 +113,7 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 		})
 	}
 
-	return json.MarshalIndent(newState, "  ", " ")
+	return json.Marshal(newState)
 }
 
 // oldGrantsStateV1 is the grants state format before v2.
@@ -136,5 +136,5 @@ func migrateGrantsEntry(raw json.RawMessage) (json.RawMessage, error) {
 	}
 	copy(newState.EmbeddedSlice, old.Grants)
 
-	return json.MarshalIndent(newState, "  ", " ")
+	return json.Marshal(newState)
 }
