@@ -737,7 +737,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 // resolveServerlessSession handles auto-generation and reconnection for serverless sessions.
 // It checks local state for existing sessions matching the workspace, accelerator, and user,
 // probes them to see if they're still alive, and prompts the user to reconnect or create new.
-func (opts *ClientOptions) resolveServerlessSession(ctx context.Context, client *databricks.WorkspaceClient) error {
+func (o *ClientOptions) resolveServerlessSession(ctx context.Context, client *databricks.WorkspaceClient) error {
 	version := build.GetInfo().Version
 
 	me, err := client.CurrentUser.Me(ctx)
@@ -745,7 +745,7 @@ func (opts *ClientOptions) resolveServerlessSession(ctx context.Context, client 
 		return fmt.Errorf("failed to get current user: %w", err)
 	}
 
-	matching, err := sessions.FindMatching(ctx, client.Config.Host, opts.Accelerator, me.UserName)
+	matching, err := sessions.FindMatching(ctx, client.Config.Host, o.Accelerator, me.UserName)
 	if err != nil {
 		log.Warnf(ctx, "Failed to load session state: %v", err)
 	}
@@ -758,7 +758,7 @@ func (opts *ClientOptions) resolveServerlessSession(ctx context.Context, client 
 
 	var alive []sessions.Session
 	for _, s := range matching {
-		_, _, _, probeErr := getServerMetadata(ctx, client, s.Name, s.ClusterID, version, opts.Liteswap)
+		_, _, _, probeErr := getServerMetadata(ctx, client, s.Name, s.ClusterID, version, o.Liteswap)
 		if probeErr == nil {
 			alive = append(alive, s)
 		} else if errors.Is(probeErr, errServerMetadata) {
@@ -784,7 +784,7 @@ func (opts *ClientOptions) resolveServerlessSession(ctx context.Context, client 
 
 		for i, s := range alive {
 			if choice == choices[i] {
-				opts.ConnectionName = s.Name
+				o.ConnectionName = s.Name
 				cmdio.LogString(ctx, "Reconnecting to session: "+s.Name)
 				return nil
 			}
@@ -792,8 +792,8 @@ func (opts *ClientOptions) resolveServerlessSession(ctx context.Context, client 
 	}
 
 	// No alive session selected — generate a new name.
-	opts.ConnectionName = sessions.GenerateSessionName(opts.Accelerator, client.Config.Host)
-	cmdio.LogString(ctx, "Creating new session: "+opts.ConnectionName)
+	o.ConnectionName = sessions.GenerateSessionName(o.Accelerator, client.Config.Host)
+	cmdio.LogString(ctx, "Creating new session: "+o.ConnectionName)
 	return nil
 }
 
