@@ -41,7 +41,7 @@ var migrations = map[int]func(*Database) error{
 }
 
 // migrateV1ToV2 migrates permissions and grants entries from the old format
-// to the new format using __embed__ keys.
+// to the new format (__embed__ keys, permission_level -> level).
 func migrateV1ToV2(db *Database) error {
 	for key, entry := range db.State {
 		if len(entry.State) == 0 {
@@ -54,6 +54,7 @@ func migrateV1ToV2(db *Database) error {
 		)
 
 		switch {
+		// AGENT: instead of using HasSuffix, parse the key with structpath and read 4th component
 		case strings.HasSuffix(key, ".permissions"):
 			migrated, err = migratePermissionsEntry(entry.State)
 		case strings.HasSuffix(key, ".grants"):
@@ -112,9 +113,10 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 
 // oldGrantsStateV1 is the grants state format before v2.
 type oldGrantsStateV1 struct {
-	SecurableType string          `json:"securable_type"`
-	FullName      string          `json:"full_name"`
-	Grants        json.RawMessage `json:"grants,omitempty"`
+	SecurableType string `json:"securable_type"`
+	FullName      string `json:"full_name"`
+	// AGENT: replace json.RawMessage with actual struct there and do explicit copy in migrateGrantsEntry like we do in migratePermissionsEntry
+	Grants json.RawMessage `json:"grants,omitempty"`
 }
 
 func migrateGrantsEntry(raw json.RawMessage) (json.RawMessage, error) {
