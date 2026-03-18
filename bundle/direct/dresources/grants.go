@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
+	"sort"
 	"strings"
 
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -174,7 +174,9 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 }
 
 func sortPriviliges(privileges []catalog.Privilege) {
-	slices.Sort(privileges)
+	sort.Slice(privileges, func(i, j int) bool {
+		return privileges[i] < privileges[j]
+	})
 }
 
 func extractGrantResourceType(node string) (string, error) {
