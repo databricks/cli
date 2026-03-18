@@ -3,9 +3,10 @@ package dstate
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -48,16 +49,25 @@ func migrateV1ToV2(db *Database) error {
 			continue
 		}
 
+		path, pathErr := structpath.ParsePath(key)
+		if pathErr != nil || path == nil {
+			continue
+		}
+		// path points to the last node; read its key directly.
+		lastKey, ok := path.StringKey()
+		if !ok {
+			continue
+		}
+
 		var (
 			migrated json.RawMessage
 			err      error
 		)
 
-		switch {
-		// AGENT: instead of using HasSuffix, parse the key with structpath and read 4th component
-		case strings.HasSuffix(key, ".permissions"):
+		switch lastKey {
+		case "permissions":
 			migrated, err = migratePermissionsEntry(entry.State)
-		case strings.HasSuffix(key, ".grants"):
+		case "grants":
 			migrated, err = migrateGrantsEntry(entry.State)
 		default:
 			continue
@@ -113,10 +123,9 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 
 // oldGrantsStateV1 is the grants state format before v2.
 type oldGrantsStateV1 struct {
-	SecurableType string `json:"securable_type"`
-	FullName      string `json:"full_name"`
-	// AGENT: replace json.RawMessage with actual struct there and do explicit copy in migrateGrantsEntry like we do in migratePermissionsEntry
-	Grants json.RawMessage `json:"grants,omitempty"`
+	SecurableType string                        `json:"securable_type"`
+	FullName      string                        `json:"full_name"`
+	Grants        []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 func migrateGrantsEntry(raw json.RawMessage) (json.RawMessage, error) {
@@ -130,14 +139,12 @@ func migrateGrantsEntry(raw json.RawMessage) (json.RawMessage, error) {
 		return raw, nil
 	}
 
-	// Re-serialize with __embed__ key.
 	newState := dresources.GrantsState{
 		SecurableType: old.SecurableType,
 		FullName:      old.FullName,
+		EmbeddedSlice: make([]catalog.PrivilegeAssignment, len(old.Grants)),
 	}
-	if err := json.Unmarshal(old.Grants, &newState.EmbeddedSlice); err != nil {
-		return nil, err
-	}
+	copy(newState.EmbeddedSlice, old.Grants)
 
 	return json.MarshalIndent(newState, "  ", " ")
 }
