@@ -46,7 +46,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 - `cmd/workspace/` - Workspace API commands (auto-generated)
 - `cmd/account/` - Account-level API commands (auto-generated)
 
-**bundle/** - Core bundle functionality for Databricks Asset Bundles
+**bundle/** - Core bundle functionality for Declarative Automation Bundles
 - `bundle/bundle.go` - Main Bundle struct and lifecycle management
 - `bundle/config/` - Configuration loading, validation, and schema
 - `bundle/deploy/` - Deployment logic (Terraform and direct modes)
@@ -227,7 +227,7 @@ A databricks_template_schema.json file is used to configure bundle templates.
 Below is a good reference template:
 
 {
-    "welcome_message": "\nWelcome to the dbt template for Databricks Asset Bundles!\n\nA workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
+    "welcome_message": "\nWelcome to the dbt template for Declarative Automation Bundles!\n\nA workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
     "properties": {
         "project_name": {
             "type": "string",

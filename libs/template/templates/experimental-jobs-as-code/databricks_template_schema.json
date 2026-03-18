@@ -1,5 +1,5 @@
 {
-    "welcome_message": "\nWelcome to (EXPERIMENTAL) \"Jobs as code\" template for Databricks Asset Bundles!",
+    "welcome_message": "\nWelcome to (EXPERIMENTAL) \"Jobs as code\" template for Declarative Automation Bundles!",
     "properties": {
         "project_name": {
             "type": "string",

@@ -1,6 +1,6 @@
 [project]
 name = "databricks-bundles"
-description = "Python support for Databricks Asset Bundles"
+description = "Python support for Declarative Automation Bundles"
 version = "0.294.0"
 
 authors = [

@@ -4,6 +4,7 @@
 
 ### Notable Changes
 
+- Databricks Asset Bundles have been renamed to Declarative Automation Bundles (DABs). This is a non-breaking change; no code or configuration modifications are required. See the [FAQ](https://docs.databricks.com/aws/en/dev-tools/bundles/faqs#why-was-databricks-asset-bundles-renamed-to-declarative-automation-bundles).
 - Add `bundle.engine` config setting to select the deployment engine (`terraform` or `direct`). The `DATABRICKS_BUNDLE_ENGINE` environment variable takes precedence over this setting. When the configured engine doesn't match existing deployment state, a warning is issued and the existing engine is used ([#4749](https://github.com/databricks/cli/pull/4749)).
 
 ### CLI
