@@ -13,8 +13,9 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-// How many parallel operations (API calls) are allowed
-const defaultParallelism = 10
+// How many resources we can work on at the same time
+// Note, SDK calls are already rate limitted.
+const defaultParallelism = 100
 
 // DeploymentUnit holds state + adapter (implementation) for a single resource
 type DeploymentUnit struct {
