@@ -67,8 +67,9 @@ func TestValidate(t *testing.T) {
 			wantErr: `invalid accelerator value: "CPU_1x", expected "GPU_1xA10" or "GPU_8xH100"`,
 		},
 		{
-			name: "both cluster ID and connection name",
-			opts: client.ClientOptions{ClusterID: "abc-123", ConnectionName: "my-conn", Accelerator: "GPU_1xA10"},
+			name:    "both cluster ID and connection name",
+			opts:    client.ClientOptions{ClusterID: "abc-123", ConnectionName: "my-conn", Accelerator: "GPU_1xA10"},
+			wantErr: `--accelerator flag can only be used with serverless compute, not with --cluster`,
 		},
 		{
 			name:    "proxy mode with invalid connection name",
