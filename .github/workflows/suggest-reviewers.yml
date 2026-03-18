@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   suggest-reviewers:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
     if: ${{ !github.event.pull_request.draft && !github.event.pull_request.head.repo.fork }}
 
     steps:
