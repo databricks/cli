@@ -158,24 +158,24 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 	}
 }
 
-// prepareScriptUsesEngineCache caches whether a script.prepare in a given directory
+// helperScriptUsesEngineCache caches whether a _script helper in a given directory
 // (or any of its ancestors) references $DATABRICKS_BUNDLE_ENGINE.
-// Since parent script.prepare files are shared across many tests, caching avoids redundant reads.
-var prepareScriptUsesEngineCache sync.Map
+// Since _script helpers are shared across many tests, caching avoids redundant reads.
+var helperScriptUsesEngineCache sync.Map
 
-// anyPrepareScriptUsesEngine returns true if any script.prepare in dir or its ancestors
+// anyHelperScriptUsesEngine returns true if any _script helper in dir or its ancestors
 // contains $DATABRICKS_BUNDLE_ENGINE.
-func anyPrepareScriptUsesEngine(dir string) bool {
+func anyHelperScriptUsesEngine(dir string) bool {
 	if dir == "" || dir == "." {
 		return false
 	}
-	if v, ok := prepareScriptUsesEngineCache.Load(dir); ok {
+	if v, ok := helperScriptUsesEngineCache.Load(dir); ok {
 		return v.(bool)
 	}
-	content, err := os.ReadFile(filepath.Join(dir, PrepareScript))
+	content, err := os.ReadFile(filepath.Join(dir, "_script"))
 	result := (err == nil && strings.Contains(string(content), "$DATABRICKS_BUNDLE_ENGINE")) ||
-		anyPrepareScriptUsesEngine(filepath.Dir(dir))
-	prepareScriptUsesEngineCache.Store(dir, result)
+		anyHelperScriptUsesEngine(filepath.Dir(dir))
+	helperScriptUsesEngineCache.Store(dir, result)
 	return result
 }
 
@@ -396,7 +396,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			if Subset {
 				scriptContent, _ := os.ReadFile(filepath.Join(dir, EntryPointScript))
 				scriptUsesEngine := strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE") ||
-					anyPrepareScriptUsesEngine(dir)
+					anyHelperScriptUsesEngine(dir)
 				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
 			}
 
