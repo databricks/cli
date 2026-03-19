@@ -1,15 +1,70 @@
 package pipelines
 
 import (
+	"context"
+	"fmt"
 	"regexp"
 	"slices"
+	"strings"
 
 	pipelinesCli "github.com/databricks/cli/cmd/pipelines"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
 
+func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipelinesRequest) {
+	listCmd.Annotations["template"] = cmdio.Heredoc(`
+	{{range .}}{{green "%s" .PipelineId}}	{{.Name}}	{{blue "%s" .State}}
+	{{end}}`)
+
+	columns := []tableview.ColumnDef{
+		{Header: "Pipeline ID", Extract: func(v any) string {
+			return v.(pipelines.PipelineStateInfo).PipelineId
+		}},
+		{Header: "Name", Extract: func(v any) string {
+			return v.(pipelines.PipelineStateInfo).Name
+		}},
+		{Header: "State", Extract: func(v any) string {
+			return string(v.(pipelines.PipelineStateInfo).State)
+		}},
+	}
+
+	tableview.RegisterConfig(listCmd, tableview.TableConfig{
+		Columns: columns,
+		Search: &tableview.SearchConfig{
+			Placeholder: "Filter by name...",
+			NewIterator: func(ctx context.Context, query string) tableview.RowIterator {
+				req := *listReq
+				req.PageToken = ""
+				escaped := strings.ReplaceAll(query, `\`, `\\`)
+				escaped = strings.ReplaceAll(escaped, "'", "''")
+				escaped = strings.ReplaceAll(escaped, "%", `\%`)
+				escaped = strings.ReplaceAll(escaped, "_", `\_`)
+				req.Filter = fmt.Sprintf("name LIKE '%%%s%%'", escaped)
+				w := cmdctx.WorkspaceClient(ctx)
+				return tableview.WrapIterator(w.Pipelines.ListPipelines(ctx, req), columns)
+			},
+		},
+	})
+
+	// The pipelines API does not support composite filters, so disable
+	// TUI search when the user passes --filter on the command line.
+	origPreRunE := listCmd.PreRunE
+	listCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		disableSearchIfFilterSet(cmd)
+		if origPreRunE != nil {
+			return origPreRunE(cmd, args)
+		}
+		return nil
+	}
+}
+
 func init() {
+	listPipelinesOverrides = append(listPipelinesOverrides, listPipelinesOverride)
+
 	cmdOverrides = append(cmdOverrides, func(cli *cobra.Command) {
 		// all auto-generated commands apart from nonManagementCommands go into 'management' group
 		nonManagementCommands := []string{
@@ -69,6 +124,15 @@ If there is only one pipeline in the bundle, KEY is optional.
 
 With a PIPELINE_ID: Stops the pipeline identified by the UUID using the API.`
 	})
+}
+
+// disableSearchIfFilterSet clears the TUI search config when --filter is active.
+func disableSearchIfFilterSet(cmd *cobra.Command) {
+	if cmd.Flags().Changed("filter") {
+		if cfg := tableview.GetConfig(cmd); cfg != nil {
+			cfg.Search = nil
+		}
+	}
 }
 
 var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)

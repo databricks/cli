@@ -5,6 +5,7 @@ import (
 
 	appsCli "github.com/databricks/cli/cmd/apps"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -15,6 +16,33 @@ func listOverride(listCmd *cobra.Command, listReq *apps.ListAppsRequest) {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{.Name | green}}	{{.Url}}	{{if .ComputeStatus}}{{if eq .ComputeStatus.State "ACTIVE"}}{{green "%s" .ComputeStatus.State }}{{else}}{{blue "%s" .ComputeStatus.State}}{{end}}{{end}}	{{if .ActiveDeployment}}{{if eq .ActiveDeployment.Status.State "SUCCEEDED"}}{{green "%s" .ActiveDeployment.Status.State }}{{else}}{{blue "%s" .ActiveDeployment.Status.State}}{{end}}{{end}}
 	{{end}}`)
+
+	columns := []tableview.ColumnDef{
+		{Header: "Name", Extract: func(v any) string {
+			a := v.(apps.App)
+			return a.Name
+		}},
+		{Header: "URL", Extract: func(v any) string {
+			a := v.(apps.App)
+			return a.Url
+		}},
+		{Header: "Compute Status", Extract: func(v any) string {
+			a := v.(apps.App)
+			if a.ComputeStatus != nil {
+				return string(a.ComputeStatus.State)
+			}
+			return ""
+		}},
+		{Header: "Deploy Status", Extract: func(v any) string {
+			a := v.(apps.App)
+			if a.ActiveDeployment != nil && a.ActiveDeployment.Status != nil {
+				return string(a.ActiveDeployment.Status.State)
+			}
+			return ""
+		}},
+	}
+
+	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
 }
 
 func listDeploymentsOverride(listDeploymentsCmd *cobra.Command, listDeploymentsReq *apps.ListAppDeploymentsRequest) {

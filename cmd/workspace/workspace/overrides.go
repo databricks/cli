@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
@@ -22,6 +24,23 @@ func listOverride(listCmd *cobra.Command, listReq *workspace.ListWorkspaceReques
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{green "%d" .ObjectId}}	{{blue "%s" .ObjectType}}	{{cyan "%s" .Language}}	{{.Path|cyan}}
 	{{end}}`)
+
+	columns := []tableview.ColumnDef{
+		{Header: "ID", Extract: func(v any) string {
+			return strconv.FormatInt(v.(workspace.ObjectInfo).ObjectId, 10)
+		}},
+		{Header: "Type", Extract: func(v any) string {
+			return string(v.(workspace.ObjectInfo).ObjectType)
+		}},
+		{Header: "Language", Extract: func(v any) string {
+			return string(v.(workspace.ObjectInfo).Language)
+		}},
+		{Header: "Path", Extract: func(v any) string {
+			return v.(workspace.ObjectInfo).Path
+		}},
+	}
+
+	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
 }
 
 func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest) {

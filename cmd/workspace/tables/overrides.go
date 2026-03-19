@@ -2,6 +2,7 @@ package tables
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/tableview"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -12,6 +13,17 @@ func listOverride(listCmd *cobra.Command, listReq *catalog.ListTablesRequest) {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{.FullName|green}}	{{blue "%s" .TableType}}
 	{{end}}`)
+
+	columns := []tableview.ColumnDef{
+		{Header: "Full Name", Extract: func(v any) string {
+			return v.(catalog.TableInfo).FullName
+		}},
+		{Header: "Table Type", Extract: func(v any) string {
+			return string(v.(catalog.TableInfo).TableType)
+		}},
+	}
+
+	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
 }
 
 func init() {
