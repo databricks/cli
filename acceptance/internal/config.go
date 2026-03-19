@@ -26,7 +26,7 @@ type TestConfig struct {
 
 	// Execution phase for this test. Tests run in ascending phase order.
 	// Phase is not inherited from parent test.toml files. Default is 0.
-	Phase int
+	Phase int `inherit:"false"`
 
 	// Which OSes the test is enabled on. Each string is compared against runtime.GOOS.
 	// If absent, default to true.
@@ -224,11 +224,7 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 		}
 	}
 
-	if hasLeafConfig {
-		result.Phase = leafConfig.Phase
-	} else {
-		result.Phase = 0
-	}
+	restoreNonInheritable(&result, leafConfig, hasLeafConfig)
 
 	// Always ignore .cache directory (used by local cache)
 	result.Ignore = append(result.Ignore, ".cache")
@@ -274,6 +270,24 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	}
 
 	return config
+}
+
+// restoreNonInheritable resets fields tagged with `inherit:"false"` to their leaf config values.
+// If there is no leaf config, those fields are reset to their zero value.
+func restoreNonInheritable(result *TestConfig, leafConfig TestConfig, hasLeafConfig bool) {
+	typ := reflect.TypeFor[TestConfig]()
+	val := reflect.ValueOf(result).Elem()
+	leafVal := reflect.ValueOf(leafConfig)
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		if field.Tag.Get("inherit") == "false" {
+			if hasLeafConfig {
+				val.Field(i).Set(leafVal.Field(i))
+			} else {
+				val.Field(i).SetZero()
+			}
+		}
+	}
 }
 
 // mapTransformer is a mergo transformer that merges two maps
