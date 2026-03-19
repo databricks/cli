@@ -158,6 +158,27 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 	}
 }
 
+// prepareScriptUsesEngineCache caches whether a script.prepare in a given directory
+// (or any of its ancestors) references $DATABRICKS_BUNDLE_ENGINE.
+// Since parent script.prepare files are shared across many tests, caching avoids redundant reads.
+var prepareScriptUsesEngineCache sync.Map
+
+// anyPrepareScriptUsesEngine returns true if any script.prepare in dir or its ancestors
+// contains $DATABRICKS_BUNDLE_ENGINE.
+func anyPrepareScriptUsesEngine(dir string) bool {
+	if dir == "" || dir == "." {
+		return false
+	}
+	if v, ok := prepareScriptUsesEngineCache.Load(dir); ok {
+		return v.(bool)
+	}
+	content, err := os.ReadFile(filepath.Join(dir, PrepareScript))
+	result := (err == nil && strings.Contains(string(content), "$DATABRICKS_BUNDLE_ENGINE")) ||
+		anyPrepareScriptUsesEngine(filepath.Dir(dir))
+	prepareScriptUsesEngineCache.Store(dir, result)
+	return result
+}
+
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if testdiff.OverwriteMode {
 		Subset = true
@@ -374,7 +395,8 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 			if Subset {
 				scriptContent, _ := os.ReadFile(filepath.Join(dir, EntryPointScript))
-				scriptUsesEngine := strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE")
+				scriptUsesEngine := strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE") ||
+					anyPrepareScriptUsesEngine(dir)
 				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
 			}
 
