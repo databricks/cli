@@ -231,9 +231,10 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 	result.CompiledIgnoreObject = ignore.CompileIgnoreLines(result.Ignore...)
 
 	// Validate incompatible configuration combinations
-	validateConfig(t, result, strings.Join(configs, ", "))
+	configDesc := filepath.ToSlash(strings.Join(configs, ", "))
+	validateConfig(t, result, configDesc)
 
-	return result, strings.Join(configs, ", ")
+	return result, configDesc
 }
 
 // validateConfig checks for incompatible configuration combinations.
