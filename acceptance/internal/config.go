@@ -428,16 +428,40 @@ func filterExcludedEnvSets(envSets [][]string, exclude map[string][]string) [][]
 	return filtered
 }
 
-// SubsetExpanded selects one variant from an already-expanded and exclusion-filtered list
-// using weighted consistent hashing. DATABRICKS_BUNDLE_ENGINE=direct has weight 10;
-// all other variants have weight 1.
-func SubsetExpanded(expanded [][]string, testDir string) [][]string {
+// SubsetExpanded selects one variant per DATABRICKS_BUNDLE_ENGINE value (if scriptUsesEngine)
+// or one variant total from an already-expanded and exclusion-filtered list.
+// DATABRICKS_BUNDLE_ENGINE=direct has weight 10; all other variants have weight 1.
+func SubsetExpanded(expanded [][]string, testDir string, scriptUsesEngine bool) [][]string {
 	if len(expanded) <= 1 {
 		return expanded
 	}
-	// Build weighted list: direct variants appear 10 times, others once.
+	if scriptUsesEngine {
+		// Group by engine value and pick one combo per group.
+		groups := make(map[string][][]string)
+		for _, envset := range expanded {
+			engine := ""
+			for _, kv := range envset {
+				if v, ok := strings.CutPrefix(kv, "DATABRICKS_BUNDLE_ENGINE="); ok {
+					engine = v
+					break
+				}
+			}
+			groups[engine] = append(groups[engine], envset)
+		}
+		var result [][]string
+		for _, group := range groups {
+			result = append(result, weightedSelect(group, testDir))
+		}
+		return result
+	}
+	return [][]string{weightedSelect(expanded, testDir)}
+}
+
+// weightedSelect picks one envset using weighted consistent hashing.
+// DATABRICKS_BUNDLE_ENGINE=direct has weight 10; all other envsets have weight 1.
+func weightedSelect(envsets [][]string, testDir string) []string {
 	var weighted [][]string
-	for _, envset := range expanded {
+	for _, envset := range envsets {
 		weight := 1
 		if slices.Contains(envset, "DATABRICKS_BUNDLE_ENGINE=direct") {
 			weight = 10
@@ -448,20 +472,13 @@ func SubsetExpanded(expanded [][]string, testDir string) [][]string {
 	}
 	h := fnv.New64a()
 	h.Write([]byte(testDir))
-	return [][]string{weighted[h.Sum64()%uint64(len(weighted))]}
+	return weighted[h.Sum64()%uint64(len(weighted))]
 }
 
 // matchesExclusionRule returns true if envSet contains all KEY=value pairs from excludeRule.
 func matchesExclusionRule(envSet, excludeRule []string) bool {
 	for _, excludePair := range excludeRule {
-		found := false
-		for _, envPair := range envSet {
-			if envPair == excludePair {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(envSet, excludePair) {
 			return false
 		}
 	}

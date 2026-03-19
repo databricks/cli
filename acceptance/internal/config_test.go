@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -211,13 +212,34 @@ func TestSubsetExpanded_DirectBias(t *testing.T) {
 	directCount := 0
 	total := 1000
 	for i := range total {
-		r := SubsetExpanded(expanded, fmt.Sprintf("test/dir%d", i))
+		r := SubsetExpanded(expanded, fmt.Sprintf("test/dir%d", i), false)
 		if r[0][0] == "DATABRICKS_BUNDLE_ENGINE=direct" {
 			directCount++
 		}
 	}
 	ratio := float64(directCount) / float64(total)
 	assert.InDelta(t, float64(10)/11, ratio, 0.05, "expected ~10/11 direct, got %.1f%%", ratio*100)
+}
+
+func TestSubsetExpanded_ScriptUsesEngine(t *testing.T) {
+	// When script uses $DATABRICKS_BUNDLE_ENGINE, one combo per engine value is returned.
+	expanded := [][]string{
+		{"DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN="},
+		{"DATABRICKS_BUNDLE_ENGINE=direct", "READPLAN="},
+		{"DATABRICKS_BUNDLE_ENGINE=direct", "READPLAN=1"},
+	}
+	result := SubsetExpanded(expanded, "test/dir", true)
+	require.Len(t, result, 2)
+	engines := make(map[string]bool)
+	for _, envset := range result {
+		for _, kv := range envset {
+			if strings.HasPrefix(kv, "DATABRICKS_BUNDLE_ENGINE=") {
+				engines[kv] = true
+			}
+		}
+	}
+	assert.True(t, engines["DATABRICKS_BUNDLE_ENGINE=terraform"])
+	assert.True(t, engines["DATABRICKS_BUNDLE_ENGINE=direct"])
 }
 
 func TestLoadConfigPhaseIsNotInherited(t *testing.T) {

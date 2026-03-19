@@ -373,7 +373,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 			if Subset {
-				expanded = internal.SubsetExpanded(expanded, dir)
+				scriptContent, _ := os.ReadFile(filepath.Join(dir, EntryPointScript))
+				scriptUsesEngine := strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE")
+				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
 			}
 
 			for ind, envset := range expanded {
