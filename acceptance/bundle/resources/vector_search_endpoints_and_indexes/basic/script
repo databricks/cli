@@ -1,10 +1,8 @@
 #!/bin/bash
 
-export VECTOR_INDEX_SOURCE_TABLE="${VECTOR_INDEX_SOURCE_TABLE:-workspace.default.covid_monthly_summary}"
+export ENDPOINT_NAME="test-vector-search-endpoint-${UNIQUE_NAME}"
+export INDEX_NAME="workspace.default.test_vector_search_index_${UNIQUE_NAME}"
 envsubst < databricks.yml.tmpl > databricks.yml
-
-ENDPOINT_NAME="test-vs-endpoint-${UNIQUE_NAME}"
-INDEX_NAME="workspace.default.test_vs_index_${UNIQUE_NAME}"
 
 cleanup() {
   title "Test cleanup"

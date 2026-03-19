@@ -13,17 +13,17 @@ Updating deployment state...
 Deployment complete!
 
 === Assert the endpoint is created
->>> [CLI] vector-search-endpoints get-endpoint test-vs-endpoint-[UNIQUE_NAME]
+>>> [CLI] vector-search-endpoints get-endpoint test-vector-search-endpoint-[UNIQUE_NAME]
 {
-  "name": "test-vs-endpoint-[UNIQUE_NAME]",
+  "name": "test-vector-search-endpoint-[UNIQUE_NAME]",
   "endpoint_type": "STANDARD"
 }
 
 === Assert the index is created
->>> [CLI] vector-search-indexes get-index workspace.default.test_vs_index_[UNIQUE_NAME]
+>>> [CLI] vector-search-indexes get-index workspace.default.test_vector_search_index_[UNIQUE_NAME]
 {
-  "name": "workspace.default.test_vs_index_[UNIQUE_NAME]",
-  "endpoint_name": "test-vs-endpoint-[UNIQUE_NAME]",
+  "name": "workspace.default.test_vector_search_index_[UNIQUE_NAME]",
+  "endpoint_name": "test-vector-search-endpoint-[UNIQUE_NAME]",
   "index_type": "DELTA_SYNC"
 }
 

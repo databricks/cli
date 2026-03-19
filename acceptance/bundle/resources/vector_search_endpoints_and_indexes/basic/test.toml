@@ -1,5 +1,4 @@
 # Tests endpoint + index with interdependence (index depends on endpoint).
-# Index uses DELTA_SYNC; set VECTOR_INDEX_SOURCE_TABLE to a Delta table with embedding config if default (workspace.default.covid_monthly_summary) is not available.
 
 Local = true
 Cloud = true

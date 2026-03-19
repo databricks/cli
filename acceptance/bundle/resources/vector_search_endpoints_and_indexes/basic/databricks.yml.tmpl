@@ -7,16 +7,16 @@ workspace:
 resources:
   vector_search_endpoints:
     test_endpoint:
-      name: test-vs-endpoint-$UNIQUE_NAME
+      name: $ENDPOINT_NAME
       endpoint_type: STANDARD
   vector_search_indexes:
     test_index:
-      name: workspace.default.test_vs_index_$UNIQUE_NAME
+      name: $INDEX_NAME
       endpoint_name: ${resources.vector_search_endpoints.test_endpoint.name}
-      primary_key: continent
+      primary_key: my_pkey
       index_type: DELTA_SYNC
       delta_sync_index_spec:
-        source_table: $VECTOR_INDEX_SOURCE_TABLE
+        source_table: my_table
         pipeline_type: TRIGGERED
 
 targets:

@@ -25,7 +25,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		Creator:      s.CurrentUser().UserName,
 		Id:           fmt.Sprintf("vs-ep-%d", nextID()),
 		EndpointStatus: &vectorsearch.EndpointStatus{
-			State: "ONLINE",
+			State: "ONLINE", // assume it comes online instantly
 		},
 	}
 	s.VectorSearchEndpoints[createRequest.Name] = info
