@@ -8,8 +8,9 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-// Interpolation regex copied from libs/dyn/dynvar/ref.go to avoid coupling LSP to dynvar internals.
-var interpolationRe = regexp.MustCompile(
+// InterpolationRe matches ${...} interpolation expressions in strings.
+// Copied from libs/dyn/dynvar/ref.go to avoid coupling LSP to dynvar internals.
+var InterpolationRe = regexp.MustCompile(
 	fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`,
 		`[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`,
 		`[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`,
@@ -29,7 +30,7 @@ func FindInterpolationAtPosition(lines []string, pos Position) (InterpolationRef
 	}
 
 	line := lines[pos.Line]
-	matches := interpolationRe.FindAllStringSubmatchIndex(line, -1)
+	matches := InterpolationRe.FindAllStringSubmatchIndex(line, -1)
 	for _, m := range matches {
 		// m[0]:m[1] is the full match "${...}"
 		// m[2]:m[3] is the first capture group (the path inside ${})
@@ -98,7 +99,7 @@ func FindInterpolationReferences(tree dyn.Value, resourcePath string) []Interpol
 			return v, nil
 		}
 
-		matches := interpolationRe.FindAllStringSubmatch(s, -1)
+		matches := InterpolationRe.FindAllStringSubmatch(s, -1)
 		for _, m := range matches {
 			refPath := m[1]
 			if refPath == resourcePath || strings.HasPrefix(refPath, resourcePath+".") {

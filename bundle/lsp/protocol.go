@@ -18,6 +18,41 @@ type ServerCapabilities struct {
 	HoverProvider        bool                     `json:"hoverProvider,omitempty"`
 	DocumentLinkProvider *DocumentLinkOptions     `json:"documentLinkProvider,omitempty"`
 	DefinitionProvider   bool                     `json:"definitionProvider,omitempty"`
+	CompletionProvider   *CompletionOptions       `json:"completionProvider,omitempty"`
+}
+
+// CompletionOptions describes options for the completion provider.
+type CompletionOptions struct {
+	TriggerCharacters []string `json:"triggerCharacters,omitempty"`
+}
+
+// CompletionParams holds the parameters for textDocument/completion.
+type CompletionParams struct {
+	TextDocument TextDocumentIdentifier `json:"textDocument"`
+	Position     Position               `json:"position"`
+}
+
+// CompletionItem represents a single completion suggestion.
+type CompletionItem struct {
+	Label         string    `json:"label"`
+	Kind          int       `json:"kind,omitempty"`
+	Detail        string    `json:"detail,omitempty"`
+	Documentation string    `json:"documentation,omitempty"`
+	FilterText    string    `json:"filterText,omitempty"`
+	InsertText    string    `json:"insertText,omitempty"`
+	TextEdit      *TextEdit `json:"textEdit,omitempty"`
+}
+
+// TextEdit represents a text edit to be applied on completion.
+type TextEdit struct {
+	Range   Range  `json:"range"`
+	NewText string `json:"newText"`
+}
+
+// CompletionList represents a collection of completion items.
+type CompletionList struct {
+	IsIncomplete bool             `json:"isIncomplete"`
+	Items        []CompletionItem `json:"items"`
 }
 
 // DefinitionParams holds the parameters for textDocument/definition.
@@ -123,4 +158,60 @@ type Hover struct {
 type MarkupContent struct {
 	Kind  string `json:"kind"` // "plaintext" or "markdown"
 	Value string `json:"value"`
+}
+
+// RegistrationParams holds registrations for client/registerCapability.
+type RegistrationParams struct {
+	Registrations []Registration `json:"registrations"`
+}
+
+// Registration describes a capability registration.
+type Registration struct {
+	ID              string      `json:"id"`
+	Method          string      `json:"method"`
+	RegisterOptions any `json:"registerOptions,omitempty"`
+}
+
+// DidChangeWatchedFilesRegistrationOptions describes options for file watchers.
+type DidChangeWatchedFilesRegistrationOptions struct {
+	Watchers []FileSystemWatcher `json:"watchers"`
+}
+
+// FileSystemWatcher describes a single file system watcher.
+type FileSystemWatcher struct {
+	GlobPattern string `json:"globPattern"`
+	Kind        int    `json:"kind,omitempty"` // 1=Create, 2=Change, 4=Delete; 7=all
+}
+
+// DidChangeWatchedFilesParams holds the notification parameters.
+type DidChangeWatchedFilesParams struct {
+	Changes []FileEvent `json:"changes"`
+}
+
+// FileEvent describes a file change event.
+type FileEvent struct {
+	URI  string `json:"uri"`
+	Type int    `json:"type"` // 1=Created, 2=Changed, 3=Deleted
+}
+
+// Diagnostic severity constants.
+const (
+	DiagnosticSeverityError       = 1
+	DiagnosticSeverityWarning     = 2
+	DiagnosticSeverityInformation = 3
+	DiagnosticSeverityHint        = 4
+)
+
+// Diagnostic represents a diagnostic (error, warning, etc.) in a document.
+type Diagnostic struct {
+	Range    Range  `json:"range"`
+	Severity int    `json:"severity"`
+	Source   string `json:"source,omitempty"`
+	Message  string `json:"message"`
+}
+
+// PublishDiagnosticsParams holds the parameters for textDocument/publishDiagnostics.
+type PublishDiagnosticsParams struct {
+	URI         string       `json:"uri"`
+	Diagnostics []Diagnostic `json:"diagnostics"`
 }

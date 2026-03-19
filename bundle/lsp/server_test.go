@@ -320,37 +320,6 @@ func TestLoadResourceStateDirectEngine(t *testing.T) {
 	assert.Equal(t, "222", result["resources.pipelines.dlt"].ID)
 }
 
-func TestLoadResourceStateTerraform(t *testing.T) {
-	tmpDir := t.TempDir()
-	stateDir := filepath.Join(tmpDir, ".databricks", "bundle", "dev", "terraform")
-	require.NoError(t, os.MkdirAll(stateDir, 0o755))
-
-	tfState := `{
-		"version": 4,
-		"resources": [
-			{
-				"type": "databricks_job",
-				"name": "etl_job",
-				"mode": "managed",
-				"instances": [{"attributes": {"id": "333", "name": "ETL Job"}}]
-			},
-			{
-				"type": "databricks_pipeline",
-				"name": "dlt_pipeline",
-				"mode": "managed",
-				"instances": [{"attributes": {"id": "444", "name": "DLT Pipeline"}}]
-			}
-		]
-	}`
-	require.NoError(t, os.WriteFile(filepath.Join(stateDir, "terraform.tfstate"), []byte(tfState), 0o644))
-
-	result := lsp.LoadResourceState(tmpDir, "dev")
-	assert.Equal(t, "333", result["resources.jobs.etl_job"].ID)
-	assert.Equal(t, "ETL Job", result["resources.jobs.etl_job"].Name)
-	assert.Equal(t, "444", result["resources.pipelines.dlt_pipeline"].ID)
-	assert.Equal(t, "DLT Pipeline", result["resources.pipelines.dlt_pipeline"].Name)
-}
-
 func TestLoadResourceStateNoState(t *testing.T) {
 	result := lsp.LoadResourceState("/nonexistent", "dev")
 	assert.Empty(t, result)

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/creachadair/jrpc2"
 	"github.com/creachadair/jrpc2/channel"
@@ -24,6 +25,7 @@ type TargetState struct {
 
 // Server is the DABs LSP server.
 type Server struct {
+	mu             sync.RWMutex
 	documents      *DocumentStore
 	bundleRoot     string
 	target         string
@@ -31,6 +33,7 @@ type Server struct {
 	resourceState  map[string]ResourceInfo
 	mergedTree     dyn.Value
 	allTargetState map[string]TargetState
+	jrpcServer     *jrpc2.Server
 }
 
 // NewServer creates a new LSP server.
@@ -54,11 +57,14 @@ func (s *Server) Run(ctx context.Context) error {
 		"textDocument/documentLink": handler.New(s.handleDocumentLink),
 		"textDocument/hover":        handler.New(s.handleHover),
 		"textDocument/definition":   handler.New(s.handleDefinition),
+		"textDocument/completion":              handler.New(s.handleCompletion),
+		"workspace/didChangeWatchedFiles":      handler.New(s.handleDidChangeWatchedFiles),
 	}
 
 	srv := jrpc2.NewServer(mux, &jrpc2.ServerOptions{
 		AllowPush: true,
 	})
+	s.jrpcServer = srv
 	ch := channel.LSP(os.Stdin, os.Stdout)
 	srv.Start(ch)
 	return srv.Wait()
@@ -84,11 +90,16 @@ func (s *Server) handleInitialize(_ context.Context, params InitializeParams) (I
 				ResolveProvider: false,
 			},
 			DefinitionProvider: true,
+			CompletionProvider: &CompletionOptions{
+				TriggerCharacters: []string{".", "{"},
+			},
 		},
 	}, nil
 }
 
-func (s *Server) handleInitialized(_ context.Context) error {
+func (s *Server) handleInitialized(ctx context.Context) error {
+	// Register file watchers for automatic reload.
+	s.registerFileWatchers(ctx)
 	return nil
 }
 
@@ -96,24 +107,90 @@ func (s *Server) handleShutdown(_ context.Context) error {
 	return nil
 }
 
-func (s *Server) handleTextDocumentDidOpen(_ context.Context, params DidOpenTextDocumentParams) error {
+// registerFileWatchers asks the client to watch for changes to bundle config and deployment state.
+func (s *Server) registerFileWatchers(ctx context.Context) {
+	if s.jrpcServer == nil {
+		return
+	}
+
+	const watchAll = 7 // Create | Change | Delete
+	params := RegistrationParams{
+		Registrations: []Registration{
+			{
+				ID:     "bundle-file-watcher",
+				Method: "workspace/didChangeWatchedFiles",
+				RegisterOptions: DidChangeWatchedFilesRegistrationOptions{
+					Watchers: []FileSystemWatcher{
+						{GlobPattern: "**/.databricks/bundle/*/resources.json", Kind: watchAll},
+						{GlobPattern: "**/*.yml", Kind: watchAll},
+						{GlobPattern: "**/*.yaml", Kind: watchAll},
+					},
+				},
+			},
+		},
+	}
+
+	// Fire and forget — if the client doesn't support dynamic registration, this is a no-op.
+	s.jrpcServer.Callback(ctx, "client/registerCapability", params) //nolint:errcheck
+}
+
+// handleDidChangeWatchedFiles reloads bundle info when watched files change.
+func (s *Server) handleDidChangeWatchedFiles(ctx context.Context, _ DidChangeWatchedFilesParams) error {
+	s.loadBundleInfo()
+	// Re-diagnose all open documents since the merged tree may have changed.
+	for _, uri := range s.documents.AllURIs() {
+		s.publishDiagnostics(ctx, uri)
+	}
+	return nil
+}
+
+func (s *Server) handleTextDocumentDidOpen(ctx context.Context, params DidOpenTextDocumentParams) error {
 	s.documents.Open(params.TextDocument.URI, params.TextDocument.Version, params.TextDocument.Text)
 	if s.isRootConfig(params.TextDocument.URI) {
 		s.loadBundleInfo()
 	}
+	s.publishDiagnostics(ctx, params.TextDocument.URI)
 	return nil
 }
 
-func (s *Server) handleTextDocumentDidChange(_ context.Context, params DidChangeTextDocumentParams) error {
+func (s *Server) handleTextDocumentDidChange(ctx context.Context, params DidChangeTextDocumentParams) error {
 	if len(params.ContentChanges) > 0 {
 		s.documents.Change(params.TextDocument.URI, params.TextDocument.Version, params.ContentChanges[len(params.ContentChanges)-1].Text)
+	}
+	s.publishDiagnostics(ctx, params.TextDocument.URI)
+	return nil
+}
+
+func (s *Server) handleTextDocumentDidClose(ctx context.Context, params DidCloseTextDocumentParams) error {
+	s.documents.Close(params.TextDocument.URI)
+	// Clear diagnostics for the closed document.
+	if s.jrpcServer != nil {
+		s.jrpcServer.Callback(ctx, "textDocument/publishDiagnostics", PublishDiagnosticsParams{ //nolint:errcheck
+			URI:         params.TextDocument.URI,
+			Diagnostics: nil,
+		})
 	}
 	return nil
 }
 
-func (s *Server) handleTextDocumentDidClose(_ context.Context, params DidCloseTextDocumentParams) error {
-	s.documents.Close(params.TextDocument.URI)
-	return nil
+// publishDiagnostics computes diagnostics for a document and sends them to the client.
+func (s *Server) publishDiagnostics(ctx context.Context, uri string) {
+	if s.jrpcServer == nil {
+		return
+	}
+	doc := s.documents.Get(uri)
+	if doc == nil {
+		return
+	}
+
+	s.mu.RLock()
+	diags := DiagnoseInterpolations(doc.Lines, s.mergedTree)
+	s.mu.RUnlock()
+
+	s.jrpcServer.Callback(ctx, "textDocument/publishDiagnostics", PublishDiagnosticsParams{ //nolint:errcheck
+		URI:         uri,
+		Diagnostics: diags,
+	})
 }
 
 func (s *Server) handleDocumentLink(_ context.Context, params DocumentLinkParams) ([]DocumentLink, error) {
@@ -121,6 +198,9 @@ func (s *Server) handleDocumentLink(_ context.Context, params DocumentLinkParams
 	if doc == nil {
 		return nil, nil
 	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	entries := IndexResources(doc)
 	var links []DocumentLink
@@ -143,6 +223,9 @@ func (s *Server) handleHover(_ context.Context, params HoverParams) (*Hover, err
 	if doc == nil {
 		return nil, nil
 	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	entries := IndexResources(doc)
 	for _, entry := range entries {
@@ -193,9 +276,10 @@ func (s *Server) loadBundleInfo() {
 		return
 	}
 
-	if s.workspaceHost == "" {
-		s.workspaceHost = LoadWorkspaceHost(v)
-	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.workspaceHost = LoadWorkspaceHost(v)
 
 	target := s.target
 	if target == "" {
@@ -204,22 +288,26 @@ func (s *Server) loadBundleInfo() {
 	}
 
 	s.resourceState = LoadResourceState(s.bundleRoot, target)
-
-	// Build URLs for resources that have IDs but no URL yet.
-	if s.workspaceHost != "" {
-		for key, info := range s.resourceState {
-			if info.URL == "" && info.ID != "" {
-				parts := strings.SplitN(key, ".", 3)
-				if len(parts) == 3 {
-					info.URL = BuildResourceURL(s.workspaceHost, parts[1], info.ID)
-					s.resourceState[key] = info
-				}
-			}
-		}
-	}
+	populateResourceURLs(s.workspaceHost, s.resourceState)
 
 	s.loadMergedTree(configPath, v)
 	s.loadAllTargetState(v)
+}
+
+// populateResourceURLs fills in missing URLs for resources that have IDs.
+func populateResourceURLs(host string, state map[string]ResourceInfo) {
+	if host == "" {
+		return
+	}
+	for key, info := range state {
+		if info.URL == "" && info.ID != "" {
+			parts := strings.SplitN(key, ".", 3)
+			if len(parts) == 3 {
+				info.URL = BuildResourceURL(host, parts[1], info.ID)
+				state[key] = info
+			}
+		}
+	}
 }
 
 // loadMergedTree builds a merged dyn.Value from the root config and all included files.
@@ -287,19 +375,7 @@ func (s *Server) loadAllTargetState(v dyn.Value) {
 	for _, t := range targets {
 		host := LoadTargetWorkspaceHost(v, t)
 		rs := LoadResourceState(s.bundleRoot, t)
-
-		// Build URLs for resources with IDs.
-		if host != "" {
-			for key, info := range rs {
-				if info.URL == "" && info.ID != "" {
-					parts := strings.SplitN(key, ".", 3)
-					if len(parts) == 3 {
-						info.URL = BuildResourceURL(host, parts[1], info.ID)
-						rs[key] = info
-					}
-				}
-			}
-		}
+		populateResourceURLs(host, rs)
 
 		s.allTargetState[t] = TargetState{
 			Host:          host,
@@ -315,11 +391,14 @@ func (s *Server) resolveResourceURL(entry ResourceEntry) string {
 	return ""
 }
 
-func (s *Server) handleDefinition(_ context.Context, params DefinitionParams) (any, error) {
+func (s *Server) handleDefinition(_ context.Context, params DefinitionParams) ([]LSPLocation, error) {
 	doc := s.documents.Get(params.TextDocument.URI)
 	if doc == nil {
 		return nil, nil
 	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	// Check if cursor is on a ${...} reference.
 	ref, ok := FindInterpolationAtPosition(doc.Lines, params.Position)
@@ -328,7 +407,7 @@ func (s *Server) handleDefinition(_ context.Context, params DefinitionParams) (a
 		if !found {
 			return nil, nil
 		}
-		return DynLocationToLSPLocation(loc), nil
+		return []LSPLocation{DynLocationToLSPLocation(loc)}, nil
 	}
 
 	// Check if cursor is on a resource key.
@@ -348,6 +427,40 @@ func (s *Server) handleDefinition(_ context.Context, params DefinitionParams) (a
 	}
 
 	return nil, nil
+}
+
+func (s *Server) handleCompletion(_ context.Context, params CompletionParams) (*CompletionList, error) {
+	doc := s.documents.Get(params.TextDocument.URI)
+	if doc == nil {
+		return nil, nil
+	}
+
+	cctx, ok := FindCompletionContext(doc.Lines, params.Position)
+	if !ok {
+		return nil, nil
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// The edit range covers the text from after "${" to the cursor position.
+	// When a completion is accepted, this entire range is replaced with the full path.
+	editRange := &Range{
+		Start: Position{Line: params.Position.Line, Character: cctx.Start + 2},
+		End:   params.Position,
+	}
+
+	var items []CompletionItem
+	if cctx.PartialPath == "" {
+		items = TopLevelCompletions(s.mergedTree, editRange)
+	} else {
+		items = CompleteInterpolation(s.mergedTree, cctx.PartialPath, editRange)
+	}
+
+	return &CompletionList{
+		IsIncomplete: false,
+		Items:        items,
+	}, nil
 }
 
 func (s *Server) buildHoverContent(entry ResourceEntry) string {

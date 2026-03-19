@@ -16,30 +16,14 @@ type ResourceInfo struct {
 	Name string
 }
 
-// LoadResourceState reads the local deployment state to get resource IDs.
-// It tries direct engine state first, then terraform state.
+// LoadResourceState reads the direct engine deployment state to get resource IDs.
 // Returns a map from resource path (e.g., "resources.jobs.my_job") to ResourceInfo.
 func LoadResourceState(bundleRoot, target string) map[string]ResourceInfo {
-	result := make(map[string]ResourceInfo)
-
-	// Try direct engine state first.
 	directPath := filepath.Join(bundleRoot, ".databricks", "bundle", target, "resources.json")
 	if info := loadDirectState(directPath); info != nil {
-		for k, v := range info {
-			result[k] = v
-		}
-		return result
+		return info
 	}
-
-	// Try terraform state.
-	tfPath := filepath.Join(bundleRoot, ".databricks", "bundle", target, "terraform", "terraform.tfstate")
-	if info := loadTerraformState(tfPath); info != nil {
-		for k, v := range info {
-			result[k] = v
-		}
-	}
-
-	return result
+	return make(map[string]ResourceInfo)
 }
 
 type directState struct {
@@ -65,88 +49,6 @@ func loadDirectState(path string) map[string]ResourceInfo {
 	for key, entry := range state.State {
 		result[key] = ResourceInfo{ID: entry.ID}
 	}
-	return result
-}
-
-type terraformState struct {
-	Version   int                 `json:"version"`
-	Resources []terraformResource `json:"resources"`
-}
-
-type terraformResource struct {
-	Type      string              `json:"type"`
-	Name      string              `json:"name"`
-	Mode      string              `json:"mode"`
-	Instances []terraformInstance `json:"instances"`
-}
-
-type terraformInstance struct {
-	Attributes terraformAttributes `json:"attributes"`
-}
-
-type terraformAttributes struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-// terraformToGroup maps terraform resource types to bundle resource group names.
-var terraformToGroup = map[string]string{
-	"databricks_job":               "jobs",
-	"databricks_pipeline":          "pipelines",
-	"databricks_mlflow_model":      "models",
-	"databricks_mlflow_experiment": "experiments",
-	"databricks_model_serving":     "model_serving_endpoints",
-	"databricks_registered_model":  "registered_models",
-	"databricks_quality_monitor":   "quality_monitors",
-	"databricks_catalog":           "catalogs",
-	"databricks_schema":            "schemas",
-	"databricks_volume":            "volumes",
-	"databricks_cluster":           "clusters",
-	"databricks_sql_dashboard":     "dashboards",
-	"databricks_dashboard":         "dashboards",
-	"databricks_app":               "apps",
-	"databricks_secret_scope":      "secret_scopes",
-	"databricks_sql_alert":         "alerts",
-}
-
-func loadTerraformState(path string) map[string]ResourceInfo {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-
-	var state terraformState
-	if err := json.Unmarshal(data, &state); err != nil {
-		return nil
-	}
-
-	if state.Version != 4 {
-		return nil
-	}
-
-	result := make(map[string]ResourceInfo)
-	for _, r := range state.Resources {
-		if r.Mode != "managed" {
-			continue
-		}
-		group, ok := terraformToGroup[r.Type]
-		if !ok {
-			continue
-		}
-		if len(r.Instances) == 0 {
-			continue
-		}
-
-		id := r.Instances[0].Attributes.ID
-		name := r.Instances[0].Attributes.Name
-		key := "resources." + group + "." + r.Name
-
-		result[key] = ResourceInfo{
-			ID:   id,
-			Name: name,
-		}
-	}
-
 	return result
 }
 

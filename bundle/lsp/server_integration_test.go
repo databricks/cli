@@ -388,13 +388,14 @@ func TestServerDefinitionOnInterpolation(t *testing.T) {
 		}
 	}
 
-	var loc LSPLocation
+	var locs []LSPLocation
 	err = cli.CallResult(ctx, "textDocument/definition", DefinitionParams{
 		TextDocument: TextDocumentIdentifier{URI: docURI},
 		Position:     Position{Line: targetLine, Character: targetCol},
-	}, &loc)
+	}, &locs)
 	require.NoError(t, err)
-	assert.Contains(t, loc.URI, "databricks.yml")
+	require.Len(t, locs, 1)
+	assert.Contains(t, locs[0].URI, "databricks.yml")
 }
 
 func TestServerDefinitionOnResourceKey(t *testing.T) {
@@ -475,13 +476,14 @@ func TestServerDefinitionVarShorthand(t *testing.T) {
 		}
 	}
 
-	var loc LSPLocation
+	var locs []LSPLocation
 	err = cli.CallResult(ctx, "textDocument/definition", DefinitionParams{
 		TextDocument: TextDocumentIdentifier{URI: docURI},
 		Position:     Position{Line: targetLine, Character: targetCol},
-	}, &loc)
+	}, &locs)
 	require.NoError(t, err)
-	assert.Contains(t, loc.URI, "databricks.yml")
+	require.Len(t, locs, 1)
+	assert.Contains(t, locs[0].URI, "databricks.yml")
 }
 
 func TestServerDefinitionNoMatch(t *testing.T) {
@@ -506,14 +508,11 @@ func TestServerDefinitionNoMatch(t *testing.T) {
 	require.NoError(t, err)
 
 	// Cursor on line 0, character 0 ("bundle:") — not an interpolation or resource key.
-	rsp, err := cli.Call(ctx, "textDocument/definition", DefinitionParams{
+	var result []LSPLocation
+	err = cli.CallResult(ctx, "textDocument/definition", DefinitionParams{
 		TextDocument: TextDocumentIdentifier{URI: docURI},
 		Position:     Position{Line: 0, Character: 0},
-	})
-	require.NoError(t, err)
-
-	var result *LSPLocation
-	err = rsp.UnmarshalResult(&result)
+	}, &result)
 	require.NoError(t, err)
 	assert.Nil(t, result)
 }
@@ -569,13 +568,14 @@ variables:
 	}
 
 	// Definition should resolve to variables.my_var in the main config file.
-	var loc LSPLocation
+	var locs []LSPLocation
 	err = cli.CallResult(ctx, "textDocument/definition", DefinitionParams{
 		TextDocument: TextDocumentIdentifier{URI: resDocURI},
 		Position:     Position{Line: targetLine, Character: targetCol},
-	}, &loc)
+	}, &locs)
 	require.NoError(t, err)
-	assert.Contains(t, loc.URI, "databricks.yml")
+	require.Len(t, locs, 1)
+	assert.Contains(t, locs[0].URI, "databricks.yml")
 }
 
 func TestServerHoverMultiTarget(t *testing.T) {

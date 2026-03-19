@@ -72,6 +72,17 @@ func (s *DocumentStore) Get(uri string) *Document {
 	return s.docs[uri]
 }
 
+// AllURIs returns the URIs of all open documents.
+func (s *DocumentStore) AllURIs() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	uris := make([]string, 0, len(s.docs))
+	for uri := range s.docs {
+		uris = append(uris, uri)
+	}
+	return uris
+}
+
 func (doc *Document) parse() {
 	path := URIToPath(doc.URI)
 	v, err := yamlloader.LoadYAML(path, strings.NewReader(doc.Content))
