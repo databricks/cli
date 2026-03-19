@@ -408,6 +408,31 @@ bundle:
 	assert.Equal(t, 1, count)
 }
 
+func TestFindCompletionContextInsideClosedInterpolation(t *testing.T) {
+	//                0123456789012345
+	lines := []string{`${bundle.target}`}
+	// Cursor is at position 15, right before the closing "}".
+	ctx, ok := lsp.FindCompletionContext(lines, lsp.Position{Line: 0, Character: 15})
+	require.True(t, ok)
+	assert.Equal(t, 0, ctx.Start)
+	assert.Equal(t, "bundle.target", ctx.PartialPath)
+}
+
+func TestCompleteInterpolationExactComputedKey(t *testing.T) {
+	yaml := `
+bundle:
+  name: test
+`
+	v, err := yamlloader.LoadYAML("test.yml", strings.NewReader(yaml))
+	require.NoError(t, err)
+
+	// When the user has typed "bundle.target" exactly, the completion should
+	// still return "bundle.target" as a match (exact prefix match).
+	items := lsp.CompleteInterpolation(v, "bundle.target", nil)
+	labels := extractLabels(items)
+	assert.Contains(t, labels, "bundle.target")
+}
+
 func extractLabels(items []lsp.CompletionItem) []string {
 	labels := make([]string, len(items))
 	for i, item := range items {

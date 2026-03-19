@@ -132,6 +132,24 @@ variables:
 	assert.Equal(t, "databricks-bundle-lsp", diags[0].Source)
 }
 
+func TestDiagnoseInterpolationsTypoWithIndex(t *testing.T) {
+	yaml := `
+resources:
+  pipelines:
+    dlt_pipeline:
+      libraries:
+        - notebook:
+            path: ./a.py
+`
+	tree, err := yamlloader.LoadYAML("test.yml", strings.NewReader(yaml))
+	require.NoError(t, err)
+
+	lines := []string{`ref: "${resources.pipelines.dlt_pipeline.librarids[0]}"`}
+	diags := lsp.DiagnoseInterpolations(lines, tree)
+	require.Len(t, diags, 1)
+	assert.Contains(t, diags[0].Message, "librarids")
+}
+
 func TestDiagnoseInterpolationsNoInterpolations(t *testing.T) {
 	tree := dyn.NewValue(map[string]dyn.Value{}, []dyn.Location{})
 	lines := []string{`name: "plain text"`, `value: 42`}

@@ -48,15 +48,15 @@ func NewServer() *Server {
 // Run starts the LSP server on stdin/stdout.
 func (s *Server) Run(ctx context.Context) error {
 	mux := handler.Map{
-		"initialize":                handler.New(s.handleInitialize),
-		"initialized":               handler.New(s.handleInitialized),
-		"shutdown":                  handler.New(s.handleShutdown),
-		"textDocument/didOpen":      handler.New(s.handleTextDocumentDidOpen),
-		"textDocument/didChange":    handler.New(s.handleTextDocumentDidChange),
-		"textDocument/didClose":     handler.New(s.handleTextDocumentDidClose),
-		"textDocument/documentLink": handler.New(s.handleDocumentLink),
-		"textDocument/hover":        handler.New(s.handleHover),
-		"textDocument/definition":   handler.New(s.handleDefinition),
+		"initialize":                           handler.New(s.handleInitialize),
+		"initialized":                          handler.New(s.handleInitialized),
+		"shutdown":                             handler.New(s.handleShutdown),
+		"textDocument/didOpen":                 handler.New(s.handleTextDocumentDidOpen),
+		"textDocument/didChange":               handler.New(s.handleTextDocumentDidChange),
+		"textDocument/didClose":                handler.New(s.handleTextDocumentDidClose),
+		"textDocument/documentLink":            handler.New(s.handleDocumentLink),
+		"textDocument/hover":                   handler.New(s.handleHover),
+		"textDocument/definition":              handler.New(s.handleDefinition),
 		"textDocument/completion":              handler.New(s.handleCompletion),
 		"workspace/didChangeWatchedFiles":      handler.New(s.handleDidChangeWatchedFiles),
 	}
@@ -99,7 +99,8 @@ func (s *Server) handleInitialize(_ context.Context, params InitializeParams) (I
 
 func (s *Server) handleInitialized(ctx context.Context) error {
 	// Register file watchers for automatic reload.
-	s.registerFileWatchers(ctx)
+	// Run in a goroutine because Callback blocks waiting for the client response.
+	go s.registerFileWatchers(ctx)
 	return nil
 }
 
@@ -130,7 +131,7 @@ func (s *Server) registerFileWatchers(ctx context.Context) {
 		},
 	}
 
-	// Fire and forget — if the client doesn't support dynamic registration, this is a no-op.
+	// client/registerCapability is a request (expects response from client).
 	s.jrpcServer.Callback(ctx, "client/registerCapability", params) //nolint:errcheck
 }
 
@@ -164,20 +165,15 @@ func (s *Server) handleTextDocumentDidChange(ctx context.Context, params DidChan
 func (s *Server) handleTextDocumentDidClose(ctx context.Context, params DidCloseTextDocumentParams) error {
 	s.documents.Close(params.TextDocument.URI)
 	// Clear diagnostics for the closed document.
-	if s.jrpcServer != nil {
-		s.jrpcServer.Callback(ctx, "textDocument/publishDiagnostics", PublishDiagnosticsParams{ //nolint:errcheck
-			URI:         params.TextDocument.URI,
-			Diagnostics: nil,
-		})
-	}
+	s.notify(ctx, "textDocument/publishDiagnostics", PublishDiagnosticsParams{
+		URI:         params.TextDocument.URI,
+		Diagnostics: nil,
+	})
 	return nil
 }
 
 // publishDiagnostics computes diagnostics for a document and sends them to the client.
 func (s *Server) publishDiagnostics(ctx context.Context, uri string) {
-	if s.jrpcServer == nil {
-		return
-	}
 	doc := s.documents.Get(uri)
 	if doc == nil {
 		return
@@ -187,10 +183,18 @@ func (s *Server) publishDiagnostics(ctx context.Context, uri string) {
 	diags := DiagnoseInterpolations(doc.Lines, s.mergedTree)
 	s.mu.RUnlock()
 
-	s.jrpcServer.Callback(ctx, "textDocument/publishDiagnostics", PublishDiagnosticsParams{ //nolint:errcheck
+	s.notify(ctx, "textDocument/publishDiagnostics", PublishDiagnosticsParams{
 		URI:         uri,
 		Diagnostics: diags,
 	})
+}
+
+// notify sends a notification to the client (no response expected).
+func (s *Server) notify(ctx context.Context, method string, params any) {
+	if s.jrpcServer == nil {
+		return
+	}
+	s.jrpcServer.Notify(ctx, method, params) //nolint:errcheck
 }
 
 func (s *Server) handleDocumentLink(_ context.Context, params DocumentLinkParams) ([]DocumentLink, error) {
