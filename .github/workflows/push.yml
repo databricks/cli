@@ -362,14 +362,14 @@ jobs:
           fi
 
   # Trigger integration tests in a separate repository.
-  # Requires secrets from "test-trigger-is" environment (not available for fork PRs).
+  # Requires secrets from "test-trigger-is" environment (not available for fork PRs or dependabot).
   # Auto-approves for merge groups to avoid running twice and queue timeouts.
   integration-trigger:
     needs:
       - testmask
 
     if: >-
-      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork) ||
+      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]') ||
       (github.event_name == 'merge_group') ||
       (github.event_name == 'push')
 
@@ -468,3 +468,37 @@ jobs:
           gh workflow run cli-isolated-nightly.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
             --ref main \
             -f commit_sha=${{ github.event.after }}
+
+  # Skip integration tests for dependabot PRs.
+  # Dependabot has no access to the "test-trigger-is" environment secrets,
+  # so we use the built-in GITHUB_TOKEN to mark the required "Integration
+  # Tests" check as passed.
+  integration-trigger-dependabot:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor == 'dependabot[bot]'
+
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    permissions:
+      checks: write
+
+    steps:
+      - name: Skip integration tests
+        uses: actions/github-script@v8
+        with:
+          script: |-
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Integration Tests',
+              head_sha: '${{ github.event.pull_request.head.sha }}',
+              status: 'completed',
+              conclusion: 'success',
+              output: {
+                title: 'Integration Tests',
+                summary: '⏭️ Skipped (dependabot PR)'
+              }
+            });
