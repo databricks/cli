@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -15,6 +16,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 )
+
+type failOnCallTransport struct{}
+
+func (failOnCallTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, errors.New("unexpected HTTP call")
+}
 
 var refreshFailureTokenResponse = fixtures.HTTPFixture{
 	MatchAny: true,
@@ -192,9 +199,9 @@ func TestToken_loadToken(t *testing.T) {
 			},
 		},
 	}
-	validateToken := func(resp *oauth2.Token) {
-		assert.Equal(t, "new-access-token", resp.AccessToken)
-		assert.Equal(t, "Bearer", resp.TokenType)
+	validateToken := func(got *oauth2.Token) {
+		assert.Equal(t, "new-access-token", got.AccessToken)
+		assert.Equal(t, "Bearer", got.TokenType)
 	}
 
 	cases := []struct {
@@ -719,10 +726,11 @@ func TestToken_loadToken(t *testing.T) {
 				persistentAuthOpts: []u2m.PersistentAuthOption{
 					u2m.WithTokenCache(tokenCache),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: failOnCallTransport{}}),
 				},
 			},
-			validateToken: func(resp *oauth2.Token) {
-				assert.Equal(t, "cached-access-token", resp.AccessToken)
+			validateToken: func(got *oauth2.Token) {
+				assert.Equal(t, "cached-access-token", got.AccessToken)
 			},
 		},
 		{

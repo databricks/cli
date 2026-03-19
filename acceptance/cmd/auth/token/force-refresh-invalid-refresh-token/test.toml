@@ -1,7 +1,3 @@
-Ignore = [
-    "home"
-]
-
 [[Server]]
 Pattern = "POST /oidc/v1/token"
 Response.StatusCode = 401

@@ -56,9 +56,9 @@ func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 		Short: "Get authentication token",
 		Long: `Get authentication token from the local cache in ~/.databricks/token-cache.json.
 Refresh the access token if it is expired or close to expiry. Use --force-refresh
-to always refresh regardless of the token's remaining lifetime. Note: This command
-only works with U2M authentication (using the 'databricks auth login' command).
-M2M authentication using a client ID and secret is not supported.`,
+to bypass expiry checks. Note: This command only works with U2M authentication
+(using the 'databricks auth login' command). M2M authentication using a client ID
+and secret is not supported.`,
 	}
 
 	var tokenTimeout time.Duration
