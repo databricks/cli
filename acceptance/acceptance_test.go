@@ -682,7 +682,7 @@ func runTest(t *testing.T,
 		if _, ok := Ignored[relPath]; ok {
 			continue
 		}
-		if config.CompiledIgnoreObject.MatchesPath(relPath) {
+		if config.CompiledIgnoreObject.MatchesPath(relPath) && !strings.HasPrefix(relPath, "out") {
 			continue
 		}
 		if strings.HasPrefix(filepath.Base(relPath), "LOG") {
