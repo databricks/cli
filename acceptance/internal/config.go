@@ -24,8 +24,10 @@ type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
 	Badness *string
 
-	// Execution phase for this test. Tests run in ascending phase order.
-	// Phase is not inherited from parent test.toml files. Default is 0.
+	// Execution phase for this test. Phase 1 tests run after all phase 0 tests complete,
+	// which is useful when a test depends on the output of another tests.
+	// Some tests run diff against sister test output to highlight the differences.
+	// Some tests summarize output of many child tests.
 	Phase int `inherit:"false"`
 
 	// Which OSes the test is enabled on. Each string is compared against runtime.GOOS.
