@@ -81,13 +81,13 @@
         ]
       },
       "changes": {
-        "[0].privileges[0]": {
+        "[principal='deco-test-user@databricks.com'].privileges[0]": {
           "action": "update",
           "old": "READ_VOLUME",
           "new": "MANAGE",
           "remote": "READ_VOLUME"
         },
-        "[0].privileges[1]": {
+        "[principal='deco-test-user@databricks.com'].privileges[1]": {
           "action": "update",
           "old": "WRITE_VOLUME",
           "new": "READ_VOLUME",
