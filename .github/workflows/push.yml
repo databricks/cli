@@ -387,7 +387,7 @@ jobs:
       - name: Generate GitHub App Token
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
         id: generate-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         with:
           app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
           private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
@@ -399,7 +399,7 @@ jobs:
           (github.event_name == 'merge_group') ||
           (github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test'))
         id: generate-check-token
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         with:
           app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
           private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
