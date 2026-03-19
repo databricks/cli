@@ -11,9 +11,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
-var (
-	pathMinQps = structpath.MustParsePath("min_qps")
-)
+var pathMinQps = structpath.MustParsePath("min_qps")
 
 type ResourceVectorSearchEndpoint struct {
 	client *databricks.WorkspaceClient

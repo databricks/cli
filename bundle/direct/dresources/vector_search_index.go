@@ -35,7 +35,9 @@ func (*ResourceVectorSearchIndex) RemapState(info *vectorsearch.VectorIndex) *ve
 
 func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*vectorsearch.VectorIndex, error) {
 	return r.client.VectorSearchIndexes.GetIndex(ctx, vectorsearch.GetIndexRequest{
-		IndexName: id,
+		IndexName:                id,
+		EnsureRerankerCompatible: false,
+		ForceSendFields:          nil,
 	})
 }
 
