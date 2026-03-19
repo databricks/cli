@@ -20,6 +20,10 @@ is removed from the catalog, but the underlying files are not deleted:`
 	deleteOrRecreateDashboardMessage = `
 This action will result in the deletion or recreation of the following dashboards.
 This will result in changed IDs and permanent URLs of the dashboards that will be recreated:`
+
+	deleteOrRecreateVectorSearchEndpointMessage = `
+This action will result in the deletion or recreation of the following Vector Search endpoints.
+Recreating an endpoint will cause downtime and any associated indexes will need to be re-synced:`
 )
 
 // Messages for bundle destroy.

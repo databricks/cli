@@ -1,9 +1,10 @@
 
-=== Deploy bundle with vector search endpoint
+=== Deploy bundle with vector search endpoint and index (index depends on endpoint)
 >>> [CLI] bundle plan
 create vector_search_endpoints.test_endpoint
+create vector_search_indexes.test_index
 
-Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
@@ -18,10 +19,19 @@ Deployment complete!
   "endpoint_type": "STANDARD"
 }
 
+=== Assert the index is created
+>>> [CLI] vector-search-indexes get-index workspace.default.test_vs_index_[UNIQUE_NAME]
+{
+  "name": "workspace.default.test_vs_index_[UNIQUE_NAME]",
+  "endpoint_name": "test-vs-endpoint-[UNIQUE_NAME]",
+  "index_type": "DELTA_SYNC"
+}
+
 === Test cleanup
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.vector_search_endpoints.test_endpoint
+  delete resources.vector_search_indexes.test_index
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
@@ -29,3 +39,4 @@ Deleting files...
 Destroy complete!
 
 === Assert the endpoint is deleted
+=== Assert the index is deleted

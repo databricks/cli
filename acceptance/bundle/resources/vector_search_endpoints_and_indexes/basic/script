@@ -1,8 +1,10 @@
 #!/bin/bash
 
+export VECTOR_INDEX_SOURCE_TABLE="${VECTOR_INDEX_SOURCE_TABLE:-workspace.default.covid_monthly_summary}"
 envsubst < databricks.yml.tmpl > databricks.yml
 
 ENDPOINT_NAME="test-vs-endpoint-${UNIQUE_NAME}"
+INDEX_NAME="workspace.default.test_vs_index_${UNIQUE_NAME}"
 
 cleanup() {
   title "Test cleanup"
@@ -10,12 +12,17 @@ cleanup() {
 
   title "Assert the endpoint is deleted"
   trace errcode $CLI vector-search-endpoints get-endpoint "${ENDPOINT_NAME}" 2>/dev/null
+  title "Assert the index is deleted"
+  trace errcode $CLI vector-search-indexes get-index "${INDEX_NAME}" 2>/dev/null
 }
 trap cleanup EXIT
 
-title "Deploy bundle with vector search endpoint"
+title "Deploy bundle with vector search endpoint and index (index depends on endpoint)"
 trace $CLI bundle plan
 trace $CLI bundle deploy
 
 title "Assert the endpoint is created"
 trace $CLI vector-search-endpoints get-endpoint "${ENDPOINT_NAME}" | jq "{name, endpoint_type}"
+
+title "Assert the index is created"
+trace $CLI vector-search-indexes get-index "${INDEX_NAME}" | jq "{name, endpoint_name, index_type}"

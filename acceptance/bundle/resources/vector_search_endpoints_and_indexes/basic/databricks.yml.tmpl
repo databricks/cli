@@ -1,0 +1,24 @@
+bundle:
+  name: vector-search-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  vector_search_endpoints:
+    test_endpoint:
+      name: test-vs-endpoint-$UNIQUE_NAME
+      endpoint_type: STANDARD
+  vector_search_indexes:
+    test_index:
+      name: workspace.default.test_vs_index_$UNIQUE_NAME
+      endpoint_name: ${resources.vector_search_endpoints.test_endpoint.name}
+      primary_key: continent
+      index_type: DELTA_SYNC
+      delta_sync_index_spec:
+        source_table: $VECTOR_INDEX_SOURCE_TABLE
+        pipeline_type: TRIGGERED
+
+targets:
+  development:
+    default: true

@@ -495,6 +495,8 @@ resources:
     recreate_on_changes:
       - field: name
         reason: id_changes
+      - field: endpoint_type
+        reason: immutable
 
   vector_search_indexes:
     recreate_on_changes:

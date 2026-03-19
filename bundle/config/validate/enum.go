@@ -13,6 +13,12 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
+// enumFieldOverrides extends the generated enum values for fields where the
+// upstream SDK definition is incomplete. Remove entries as the SDK catches up.
+var enumFieldOverrides = map[string][]string{
+	"resources.vector_search_endpoints.*.endpoint_type": {"STORAGE_OPTIMIZED"},
+}
+
 type enum struct{}
 
 func Enum() bundle.Mutator {
@@ -61,7 +67,9 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 
 		// Get valid values for this pattern
-		validValues := generated.EnumFields[pattern.String()]
+		patternStr := pattern.String()
+		validValues := generated.EnumFields[patternStr]
+		validValues = append(validValues, enumFieldOverrides[patternStr]...)
 
 		// Check if the value is in the list of valid enum values
 		validValue := slices.Contains(validValues, strValue)

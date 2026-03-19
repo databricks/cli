@@ -1,0 +1,31 @@
+bundle:
+  name: test-pipeline-recreate-1232132
+
+workspace:
+  root_path: ~/.bundle/
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-19298123
+      libraries:
+        - notebook:
+            path: ./nb2.sql
+      development: true
+      catalog: workspace
+      target: ${resources.schemas.bar.id}
+      serverless: true
+
+  schemas:
+    bar:
+      name: test-schema-123891287
+      catalog_name: workspace
+      comment: This schema was created from DABs
+    baz:
+      name: test-schema-123891281221
+      catalog_name: workspace
+      comment: This schema was created from DABs
+
+targets:
+  development:
+    default: true

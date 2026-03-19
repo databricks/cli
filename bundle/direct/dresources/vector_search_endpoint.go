@@ -5,8 +5,14 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
+)
+
+var (
+	pathMinQps = structpath.MustParsePath("min_qps")
 )
 
 type ResourceVectorSearchEndpoint struct {
@@ -50,6 +56,21 @@ func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vec
 		return config.Name, nil, nil
 	}
 	return info.Name, info, nil
+}
+
+// DoUpdate updates the endpoint in place using the patch-endpoint API.
+// endpoint_type and name changes trigger recreate (see resources.yml).
+func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint, changes Changes) (*vectorsearch.EndpointInfo, error) {
+	if changes.HasChange(pathMinQps) {
+		req := vectorsearch.PatchEndpointRequest{
+			EndpointName:    id,
+			MinQps:          config.MinQps,
+			ForceSendFields: utils.FilterFields[vectorsearch.PatchEndpointRequest](config.ForceSendFields),
+		}
+		return r.client.VectorSearchEndpoints.PatchEndpoint(ctx, req)
+	}
+
+	return nil, nil
 }
 
 func (r *ResourceVectorSearchEndpoint) DoDelete(ctx context.Context, id string) error {
