@@ -7,6 +7,7 @@
 ### CLI
 
 ### Bundles
+* engine/direct: Fix drift in grants resource due to permission reordering ([#4794](https://github.com/databricks/cli/pull/4794))
 
 ### Dependency updates
 
