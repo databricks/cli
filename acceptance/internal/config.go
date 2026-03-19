@@ -428,64 +428,27 @@ func filterExcludedEnvSets(envSets [][]string, exclude map[string][]string) [][]
 	return filtered
 }
 
-// SubsetEnvMatrix reduces each EnvMatrix variable to a single value using consistent hashing.
-// For DATABRICKS_BUNDLE_ENGINE: if the script references $DATABRICKS_BUNDLE_ENGINE, both variants
-// are kept; otherwise "direct" is selected with 90% probability and the other value with 10%.
-// For all other variables with multiple values, one value is selected based on hash(testDir + varName).
-func SubsetEnvMatrix(matrix map[string][]string, testDir string, scriptUsesEngine bool) map[string][]string {
-	if len(matrix) == 0 {
-		return matrix
+// SubsetExpanded selects one variant from an already-expanded and exclusion-filtered list
+// using weighted consistent hashing. DATABRICKS_BUNDLE_ENGINE=direct has weight 10;
+// all other variants have weight 1.
+func SubsetExpanded(expanded [][]string, testDir string) [][]string {
+	if len(expanded) <= 1 {
+		return expanded
 	}
-
-	result := make(map[string][]string, len(matrix))
-	for key, values := range matrix {
-		if len(values) <= 1 {
-			result[key] = values
-			continue
+	// Build weighted list: direct variants appear 10 times, others once.
+	var weighted [][]string
+	for _, envset := range expanded {
+		weight := 1
+		if slices.Contains(envset, "DATABRICKS_BUNDLE_ENGINE=direct") {
+			weight = 10
 		}
-
-		if key == "DATABRICKS_BUNDLE_ENGINE" {
-			if scriptUsesEngine {
-				// Script references the variable — keep all variants.
-				result[key] = values
-			} else {
-				// Select "direct" with 90% probability, otherwise the other value.
-				h := fnv.New64a()
-				h.Write([]byte(testDir))
-				h.Write([]byte(key))
-				pct := h.Sum64() % 100
-				directIdx := slices.Index(values, "direct")
-				if directIdx >= 0 && pct < 90 {
-					result[key] = []string{"direct"}
-				} else if directIdx >= 0 {
-					// Pick the other value (non-direct).
-					for _, v := range values {
-						if v != "direct" {
-							result[key] = []string{v}
-							break
-						}
-					}
-				} else {
-					// No "direct" value — fall through to hash selection.
-					idx := consistentSelect(testDir, key, len(values))
-					result[key] = []string{values[idx]}
-				}
-			}
-		} else {
-			idx := consistentSelect(testDir, key, len(values))
-			result[key] = []string{values[idx]}
+		for range weight {
+			weighted = append(weighted, envset)
 		}
 	}
-
-	return result
-}
-
-// consistentSelect returns a deterministic index in [0, n) based on hash(testDir + varName).
-func consistentSelect(testDir, varName string, n int) int {
 	h := fnv.New64a()
 	h.Write([]byte(testDir))
-	h.Write([]byte(varName))
-	return int(h.Sum64() % uint64(n))
+	return [][]string{weighted[h.Sum64()%uint64(len(weighted))]}
 }
 
 // matchesExclusionRule returns true if envSet contains all KEY=value pairs from excludeRule.

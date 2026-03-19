@@ -371,14 +371,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				extraVars = append(extraVars, "CONFIG_Cloud=true")
 			}
 
-			envMatrix := config.EnvMatrix
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 			if Subset {
-				scriptContent, err := os.ReadFile(filepath.Join(dir, EntryPointScript))
-				scriptUsesEngine := err == nil && strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE")
-				envMatrix = internal.SubsetEnvMatrix(envMatrix, dir, scriptUsesEngine)
+				expanded = internal.SubsetExpanded(expanded, dir)
 			}
-
-			expanded := internal.ExpandEnvMatrix(envMatrix, config.EnvMatrixExclude, extraVars)
 
 			for ind, envset := range expanded {
 				envname := strings.Join(envset, "/")
