@@ -17,6 +17,8 @@ cleanup() {
     (cd bundle1 && unset DATABRICKS_BUNDLE_ENGINE && trace $CLI bundle destroy --auto-approve)
     title "Cleanup bundle 2"
     (cd bundle2 && unset DATABRICKS_BUNDLE_ENGINE && trace $CLI bundle destroy --auto-approve)
+
+    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
