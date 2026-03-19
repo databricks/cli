@@ -35,9 +35,7 @@ func (*ResourceVectorSearchIndex) RemapState(info *vectorsearch.VectorIndex) *ve
 
 func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*vectorsearch.VectorIndex, error) {
 	return r.client.VectorSearchIndexes.GetIndex(ctx, vectorsearch.GetIndexRequest{
-		IndexName:                id,
-		EnsureRerankerCompatible: false,
-		ForceSendFields:          nil,
+		IndexName: id,
 	})
 }
 
@@ -57,3 +55,6 @@ func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string) err
 		IndexName: id,
 	})
 }
+
+// DoUpdate is intentionally not implemented. The Vector Search Index API has no
+// update endpoint; mutable field changes trigger recreate via resources.yml.

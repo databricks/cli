@@ -251,10 +251,10 @@ github.com/databricks/cli/bundle/config.Resources:
       PLACEHOLDER
   "vector_search_endpoints":
     "description": |-
-      PLACEHOLDER
+      The vector search endpoint definitions for the bundle, where each key is the name of the endpoint.
   "vector_search_indexes":
     "description": |-
-      PLACEHOLDER
+      The vector search index definitions for the bundle, where each key is the name of the index.
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -954,41 +954,41 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
 github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
   "budget_policy_id":
     "description": |-
-      PLACEHOLDER
+      The budget policy ID to apply to the vector search endpoint.
   "endpoint_type":
     "description": |-
-      PLACEHOLDER
+      The type of the vector search endpoint.
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Resource lifecycle customization for this vector search endpoint.
   "min_qps":
     "description": |-
-      PLACEHOLDER
+      The minimum QPS target for the vector search endpoint.
   "name":
     "description": |-
-      PLACEHOLDER
+      The name of the vector search endpoint.
 github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
   "delta_sync_index_spec":
     "description": |-
-      PLACEHOLDER
+      Configuration for a Delta Sync vector search index.
   "direct_access_index_spec":
     "description": |-
-      PLACEHOLDER
+      Configuration for a Direct Access vector search index.
   "endpoint_name":
     "description": |-
-      PLACEHOLDER
+      The endpoint name that hosts the vector search index.
   "index_type":
     "description": |-
-      PLACEHOLDER
+      The type of vector search index.
   "lifecycle":
     "description": |-
-      PLACEHOLDER
+      Resource lifecycle customization for this vector search index.
   "name":
     "description": |-
-      PLACEHOLDER
+      The full name of the vector search index.
   "primary_key":
     "description": |-
-      PLACEHOLDER
+      The primary key column for the vector search index.
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-

@@ -914,7 +914,7 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.VectorSearchEndpointCreate(req)
 	})
 	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.VectorSearchEndpoints, req.Vars["endpoint_name"])
+		return req.Workspace.VectorSearchEndpointPatch(req)
 	})
 	server.Handle("DELETE", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.VectorSearchEndpoints, req.Vars["endpoint_name"])

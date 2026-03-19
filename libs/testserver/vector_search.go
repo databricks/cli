@@ -32,6 +32,37 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	return Response{Body: info}
 }
 
+func (s *FakeWorkspace) VectorSearchEndpointPatch(req Request) Response {
+	defer s.LockUnlock()()
+
+	endpointName := req.Vars["endpoint_name"]
+	info, ok := s.VectorSearchEndpoints[endpointName]
+	if !ok {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body: map[string]string{
+				"error_code": "NOT_FOUND",
+				"message":    "resource not found",
+			},
+		}
+	}
+
+	var patchRequest vectorsearch.PatchEndpointRequest
+	if err := json.Unmarshal(req.Body, &patchRequest); err != nil {
+		return Response{
+			Body:       fmt.Sprintf("internal error: %s", err),
+			StatusCode: http.StatusInternalServerError,
+		}
+	}
+
+	if info.ScalingInfo == nil {
+		info.ScalingInfo = &vectorsearch.EndpointScalingInfo{}
+	}
+	info.ScalingInfo.RequestedMinQps = patchRequest.MinQps
+	s.VectorSearchEndpoints[endpointName] = info
+	return Response{Body: info}
+}
+
 func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 	defer s.LockUnlock()()
 

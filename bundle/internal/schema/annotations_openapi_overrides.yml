@@ -1043,46 +1043,46 @@ github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
 github.com/databricks/databricks-sdk-go/service/vectorsearch.DeltaSyncVectorIndexSpecRequest:
   "columns_to_sync":
     "description": |-
-      PLACEHOLDER
+      Optional subset of source table columns to include in the index.
   "embedding_source_columns":
     "description": |-
-      PLACEHOLDER
+      Source columns used to generate embeddings.
   "embedding_vector_columns":
     "description": |-
-      PLACEHOLDER
+      Precomputed embedding vector columns to index.
   "embedding_writeback_table":
     "description": |-
-      PLACEHOLDER
+      Optional table to store generated embeddings.
   "pipeline_type":
     "description": |-
-      PLACEHOLDER
+      Pipeline execution mode for Delta Sync indexing.
   "source_table":
     "description": |-
-      PLACEHOLDER
+      Source Delta table to synchronize into the index.
 github.com/databricks/databricks-sdk-go/service/vectorsearch.DirectAccessVectorIndexSpec:
   "embedding_source_columns":
     "description": |-
-      PLACEHOLDER
+      Source columns used to generate embeddings.
   "embedding_vector_columns":
     "description": |-
-      PLACEHOLDER
+      Precomputed embedding vector columns to index.
   "schema_json":
     "description": |-
-      PLACEHOLDER
+      JSON schema for fields exposed by the direct access index.
 github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn:
   "embedding_model_endpoint_name":
     "description": |-
-      PLACEHOLDER
+      Model serving endpoint used to generate embeddings for this column.
   "model_endpoint_name_for_query":
     "description": |-
-      PLACEHOLDER
+      Optional model endpoint used for query-time embedding generation.
   "name":
     "description": |-
-      PLACEHOLDER
+      Name of the source column.
 github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn:
   "embedding_dimension":
     "description": |-
-      PLACEHOLDER
+      Dimension of vectors stored in this embedding column.
   "name":
     "description": |-
-      PLACEHOLDER
+      Name of the embedding vector column.

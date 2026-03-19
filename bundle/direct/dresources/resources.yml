@@ -497,10 +497,25 @@ resources:
         reason: id_changes
       - field: endpoint_type
         reason: immutable
+    ignore_remote_changes:
+      - field: min_qps
+        reason: input_only
+    ignore_local_changes:
+      - field: budget_policy_id
+        reason: no_update_api
 
   vector_search_indexes:
     recreate_on_changes:
       - field: endpoint_name
         reason: immutable
+      - field: index_type
+        reason: immutable
+      - field: primary_key
+        reason: immutable
       - field: name
         reason: id_changes
+    ignore_remote_changes:
+      - field: delta_sync_index_spec
+        reason: input_only
+      - field: direct_access_index_spec
+        reason: input_only

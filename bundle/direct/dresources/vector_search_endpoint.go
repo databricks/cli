@@ -33,7 +33,7 @@ func (*ResourceVectorSearchEndpoint) RemapState(info *vectorsearch.EndpointInfo)
 		EndpointType:    info.EndpointType,
 		MinQps:          0,
 		Name:            info.Name,
-		ForceSendFields: nil,
+		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](info.ForceSendFields),
 	}
 }
 

@@ -1909,18 +1909,23 @@
                     "type": "object",
                     "properties": {
                       "budget_policy_id": {
+                        "description": "The budget policy ID to apply to the vector search endpoint.",
                         "$ref": "#/$defs/string"
                       },
                       "endpoint_type": {
+                        "description": "The type of the vector search endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType"
                       },
                       "lifecycle": {
+                        "description": "Resource lifecycle customization for this vector search endpoint.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "min_qps": {
+                        "description": "The minimum QPS target for the vector search endpoint.",
                         "$ref": "#/$defs/int64"
                       },
                       "name": {
+                        "description": "The name of the vector search endpoint.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -1942,24 +1947,31 @@
                     "type": "object",
                     "properties": {
                       "delta_sync_index_spec": {
+                        "description": "Configuration for a Delta Sync vector search index.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DeltaSyncVectorIndexSpecRequest"
                       },
                       "direct_access_index_spec": {
+                        "description": "Configuration for a Direct Access vector search index.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.DirectAccessVectorIndexSpec"
                       },
                       "endpoint_name": {
+                        "description": "The endpoint name that hosts the vector search index.",
                         "$ref": "#/$defs/string"
                       },
                       "index_type": {
+                        "description": "The type of vector search index.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType"
                       },
                       "lifecycle": {
+                        "description": "Resource lifecycle customization for this vector search index.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
+                        "description": "The full name of the vector search index.",
                         "$ref": "#/$defs/string"
                       },
                       "primary_key": {
+                        "description": "The primary key column for the vector search index.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -2563,9 +2575,11 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable"
                     },
                     "vector_search_endpoints": {
+                      "description": "The vector search endpoint definitions for the bundle, where each key is the name of the endpoint.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint"
                     },
                     "vector_search_indexes": {
+                      "description": "The vector search index definitions for the bundle, where each key is the name of the index.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.VectorSearchIndex"
                     },
                     "volumes": {
@@ -10512,21 +10526,27 @@
                   "type": "object",
                   "properties": {
                     "columns_to_sync": {
+                      "description": "Optional subset of source table columns to include in the index.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "embedding_source_columns": {
+                      "description": "Source columns used to generate embeddings.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn"
                     },
                     "embedding_vector_columns": {
+                      "description": "Precomputed embedding vector columns to index.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn"
                     },
                     "embedding_writeback_table": {
+                      "description": "Optional table to store generated embeddings.",
                       "$ref": "#/$defs/string"
                     },
                     "pipeline_type": {
+                      "description": "Pipeline execution mode for Delta Sync indexing.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.PipelineType"
                     },
                     "source_table": {
+                      "description": "Source Delta table to synchronize into the index.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -10544,12 +10564,15 @@
                   "type": "object",
                   "properties": {
                     "embedding_source_columns": {
+                      "description": "Source columns used to generate embeddings.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingSourceColumn"
                     },
                     "embedding_vector_columns": {
+                      "description": "Precomputed embedding vector columns to index.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/vectorsearch.EmbeddingVectorColumn"
                     },
                     "schema_json": {
+                      "description": "JSON schema for fields exposed by the direct access index.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -10567,12 +10590,15 @@
                   "type": "object",
                   "properties": {
                     "embedding_model_endpoint_name": {
+                      "description": "Model serving endpoint used to generate embeddings for this column.",
                       "$ref": "#/$defs/string"
                     },
                     "model_endpoint_name_for_query": {
+                      "description": "Optional model endpoint used for query-time embedding generation.",
                       "$ref": "#/$defs/string"
                     },
                     "name": {
+                      "description": "Name of the source column.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -10590,9 +10616,11 @@
                   "type": "object",
                   "properties": {
                     "embedding_dimension": {
+                      "description": "Dimension of vectors stored in this embedding column.",
                       "$ref": "#/$defs/int"
                     },
                     "name": {
+                      "description": "Name of the embedding vector column.",
                       "$ref": "#/$defs/string"
                     }
                   },
