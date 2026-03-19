@@ -1,0 +1,12 @@
+
+>>> [CLI] bundle validate
+Warning: invalid variable reference ${0foo}: invalid key "0foo"
+  in databricks.yml:2:9
+
+Name: ${0foo}
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/${0foo}/default
+
+Found 1 warning

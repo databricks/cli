@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle validate
+Name: $foo is not a reference
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/$foo is not a reference/default
+
+Validation OK!
