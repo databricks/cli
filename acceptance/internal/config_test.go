@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -199,6 +200,91 @@ func TestExpandEnvMatrix(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestSubsetEnvMatrix_SingleValues(t *testing.T) {
+	// Single-value variables are kept as-is.
+	matrix := map[string][]string{
+		"KEY1": {"A"},
+		"KEY2": {"B"},
+	}
+	result := SubsetEnvMatrix(matrix, "some/test", false)
+	assert.Equal(t, map[string][]string{"KEY1": {"A"}, "KEY2": {"B"}}, result)
+}
+
+func TestSubsetEnvMatrix_EmptyMatrix(t *testing.T) {
+	result := SubsetEnvMatrix(nil, "test", false)
+	assert.Nil(t, result)
+}
+
+func TestSubsetEnvMatrix_NonEngineMultipleValues(t *testing.T) {
+	// For non-engine variables with multiple values, exactly one is selected.
+	matrix := map[string][]string{
+		"FOO": {"a", "b", "c"},
+	}
+	result := SubsetEnvMatrix(matrix, "test/dir", false)
+	require.Len(t, result["FOO"], 1)
+	assert.Contains(t, []string{"a", "b", "c"}, result["FOO"][0])
+}
+
+func TestSubsetEnvMatrix_NonEngineDeterministic(t *testing.T) {
+	// Same inputs produce same output.
+	matrix := map[string][]string{
+		"FOO": {"a", "b", "c"},
+	}
+	r1 := SubsetEnvMatrix(matrix, "test/dir", false)
+	r2 := SubsetEnvMatrix(matrix, "test/dir", false)
+	assert.Equal(t, r1, r2)
+}
+
+func TestSubsetEnvMatrix_NonEngineDifferentDirs(t *testing.T) {
+	// Different test dirs may select different values (not guaranteed but likely with enough dirs).
+	matrix := map[string][]string{
+		"FOO": {"a", "b", "c", "d", "e"},
+	}
+	seen := map[string]bool{}
+	for i := range 100 {
+		dir := fmt.Sprintf("dir%d", i)
+		r := SubsetEnvMatrix(matrix, dir, false)
+		seen[r["FOO"][0]] = true
+	}
+	assert.Greater(t, len(seen), 1, "expected different dirs to select different values")
+}
+
+func TestSubsetEnvMatrix_EngineScriptUsesEngine(t *testing.T) {
+	// When script uses $DATABRICKS_BUNDLE_ENGINE, both variants are kept.
+	matrix := map[string][]string{
+		"DATABRICKS_BUNDLE_ENGINE": {"terraform", "direct"},
+	}
+	result := SubsetEnvMatrix(matrix, "test/dir", true)
+	assert.Equal(t, []string{"terraform", "direct"}, result["DATABRICKS_BUNDLE_ENGINE"])
+}
+
+func TestSubsetEnvMatrix_EngineScriptDoesNotUseEngine(t *testing.T) {
+	// When script doesn't use $DATABRICKS_BUNDLE_ENGINE, exactly one variant is selected.
+	matrix := map[string][]string{
+		"DATABRICKS_BUNDLE_ENGINE": {"terraform", "direct"},
+	}
+	result := SubsetEnvMatrix(matrix, "test/dir", false)
+	require.Len(t, result["DATABRICKS_BUNDLE_ENGINE"], 1)
+}
+
+func TestSubsetEnvMatrix_EngineDirectBias(t *testing.T) {
+	// Across many test dirs, "direct" should be selected ~90% of the time.
+	matrix := map[string][]string{
+		"DATABRICKS_BUNDLE_ENGINE": {"terraform", "direct"},
+	}
+	directCount := 0
+	total := 1000
+	for i := range total {
+		dir := fmt.Sprintf("test/dir%d", i)
+		r := SubsetEnvMatrix(matrix, dir, false)
+		if r["DATABRICKS_BUNDLE_ENGINE"][0] == "direct" {
+			directCount++
+		}
+	}
+	ratio := float64(directCount) / float64(total)
+	assert.InDelta(t, 0.9, ratio, 0.05, "expected ~90%% direct, got %.1f%%", ratio*100)
 }
 
 func TestLoadConfigPhaseIsNotInherited(t *testing.T) {

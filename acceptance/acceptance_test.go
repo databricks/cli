@@ -47,6 +47,7 @@ var (
 	UseVersion      string
 	WorkspaceTmpDir bool
 	OnlyOutTestToml bool
+	Subset          bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -78,6 +79,7 @@ func init() {
 	// to simulate an identical environment.
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
+	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants using consistent hashing")
 }
 
 const (
@@ -157,6 +159,10 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 }
 
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
+	if testdiff.OverwriteMode {
+		Subset = true
+	}
+
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -365,7 +371,14 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				extraVars = append(extraVars, "CONFIG_Cloud=true")
 			}
 
-			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
+			envMatrix := config.EnvMatrix
+			if Subset {
+				scriptContent, err := os.ReadFile(filepath.Join(dir, EntryPointScript))
+				scriptUsesEngine := err == nil && strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE")
+				envMatrix = internal.SubsetEnvMatrix(envMatrix, dir, scriptUsesEngine)
+			}
+
+			expanded := internal.ExpandEnvMatrix(envMatrix, config.EnvMatrixExclude, extraVars)
 
 			for ind, envset := range expanded {
 				envname := strings.Join(envset, "/")
