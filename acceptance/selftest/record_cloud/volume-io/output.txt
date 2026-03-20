@@ -7,6 +7,10 @@
 
 >>> print_requests
 {
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
   "method": "POST",
   "path": "/api/2.1/unity-catalog/schemas",
   "body": {
@@ -24,6 +28,10 @@
 >>> print_requests
 {
   "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
   "path": "/api/2.1/unity-catalog/schemas/main.schema-[UNIQUE_NAME]"
 }
 
@@ -34,6 +42,10 @@
 }
 
 >>> print_requests
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
 {
   "method": "POST",
   "path": "/api/2.1/unity-catalog/volumes",
@@ -54,6 +66,10 @@
 >>> print_requests
 {
   "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
   "path": "/api/2.1/unity-catalog/volumes/main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]"
 }
 
@@ -62,12 +78,24 @@
 
 >>> print_requests
 {
-  "method": "HEAD",
-  "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }
 {
   "method": "HEAD",
   "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "HEAD",
+  "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }
 {
   "method": "PUT",
@@ -84,12 +112,20 @@ hello.txt
 >>> print_requests
 {
   "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
   "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
 }
 
 >>> [CLI] fs cat dbfs:/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt
 hello, world
 >>> print_requests
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
 {
   "method": "GET",
   "path": "/api/2.0/fs/files/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt"
@@ -99,12 +135,24 @@ hello, world
 
 >>> print_requests
 {
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
   "method": "HEAD",
   "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt"
 }
 {
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
   "method": "HEAD",
   "path": "/api/2.0/fs/files/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }
 {
   "method": "DELETE",
@@ -116,12 +164,20 @@ hello, world
 >>> print_requests
 {
   "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
   "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
 }
 
 >>> [CLI] volumes delete main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
 
 >>> print_requests
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
 {
   "method": "DELETE",
   "path": "/api/2.1/unity-catalog/volumes/main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]"
@@ -135,12 +191,20 @@ Exit code: 1
 >>> print_requests
 {
   "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
   "path": "/api/2.1/unity-catalog/volumes/main.schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]"
 }
 
 >>> [CLI] schemas delete main.schema-[UNIQUE_NAME]
 
 >>> print_requests
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
 {
   "method": "DELETE",
   "path": "/api/2.1/unity-catalog/schemas/main.schema-[UNIQUE_NAME]"
@@ -152,6 +216,10 @@ Error: Schema 'main.schema-[UNIQUE_NAME]' does not exist.
 Exit code: 1
 
 >>> print_requests
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
 {
   "method": "GET",
   "path": "/api/2.1/unity-catalog/schemas/main.schema-[UNIQUE_NAME]"
