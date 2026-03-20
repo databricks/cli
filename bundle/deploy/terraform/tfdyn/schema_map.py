@@ -9,7 +9,7 @@ Inputs:
     terraform_schema_json: full_schema.json from terraform-provider-databricks
 
 Output:
-    Tab-separated lines: dabs_path \t tf_resource_type \t tf_path \t status
+    Tab-separated lines: status \t dabs_path \t tf_resource_type \t tf_path
     status is one of: match, dabs_only, tf_only, renamed
 """
 
@@ -224,12 +224,12 @@ def main():
             by_resource[res_type][field_path] = path
 
     # For each resource type, compare fields
-    print("dabs_path\ttf_resource\ttf_path\tstatus")
+    print("status\tdabs_path\ttf_resource\ttf_path")
     for dabs_type in sorted(by_resource):
         tf_type = RESOURCE_TYPE_MAP.get(dabs_type)
         if not tf_type:
             for field_path, dabs_path in sorted(by_resource[dabs_type].items()):
-                print(f"{dabs_path}\t?\t?\tno_tf_mapping")
+                print(f"no_tf_mapping\t{dabs_path}\t?\t?")
             continue
 
         tf_fields = tf_schemas.get(tf_type, set())
@@ -242,16 +242,16 @@ def main():
             if tf_path in tf_fields:
                 status = "renamed" if tf_path != field_path else "match"
                 matched_tf.add(tf_path)
-                print(f"{dabs_path}\t{tf_type}\t{tf_path}\t{status}")
+                print(f"{status}\t{dabs_path}\t{tf_type}\t{tf_path}")
             elif field_path in tf_fields:
                 matched_tf.add(field_path)
-                print(f"{dabs_path}\t{tf_type}\t{field_path}\tmatch")
+                print(f"match\t{dabs_path}\t{tf_type}\t{field_path}")
             else:
-                print(f"{dabs_path}\t{tf_type}\t{tf_path}\tdabs_only")
+                print(f"dabs_only\t{dabs_path}\t{tf_type}\t?")
 
         # TF-only fields
         for tf_path in sorted(tf_fields - matched_tf):
-            print(f"?\t{tf_type}\t{tf_path}\ttf_only")
+            print(f"tf_only\t?\t{tf_type}\t{tf_path}")
 
 
 if __name__ == "__main__":
