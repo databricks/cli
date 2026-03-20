@@ -6,3 +6,6 @@ Error: unable to define default workspace root: bundle name not defined
 Exit code: 1
 
 >>> cat out.requests.txt
+No command execution ID found in User-Agent: cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]
+
+Exit code: 1

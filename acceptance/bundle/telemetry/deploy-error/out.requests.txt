@@ -1,0 +1,34 @@
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/telemetry-ext",
+  "body": {
+    "uploadTime": [UNIX_TIME_MILLIS],
+    "items": [],
+    "protoLogs": [
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"[OS]\",\"execution_time_ms\":23,\"exit_code\":1},\"bundle_deploy_event\":{\"resource_count\":0,\"resource_job_count\":0,\"resource_pipeline_count\":0,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":0,\"resource_quality_monitor_count\":0,\"resource_schema_count\":0,\"resource_volume_count\":0,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0}}}}"
+    ]
+  }
+}

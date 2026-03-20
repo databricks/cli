@@ -10,3 +10,6 @@ Deployment complete!
 === Assert that mutator execution times are being recorded
 >>> cat telemetry.json
 true
+No command execution ID found in User-Agent: cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]
+
+Exit code: 1
