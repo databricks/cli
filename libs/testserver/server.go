@@ -265,9 +265,9 @@ Response.Body = '<response body here>'
 	// handler, any test that creates an SDK client against this server would fail
 	// with "No handler for URL: /.well-known/databricks-config".
 	s.Handle("GET", "/.well-known/databricks-config", func(_ Request) any {
-		return map[string]string{
+		return map[string]any{
 			"oidc_endpoint": server.URL + "/oidc",
-			"workspace_id":  "12345678",
+			"workspace_id":  "470123456789500",
 		}
 	})
 

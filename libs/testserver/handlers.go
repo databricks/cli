@@ -265,12 +265,6 @@ func AddDefaultHandlers(server *Server) {
 		return MapList(req.Workspace, req.Workspace.JobRuns, "runs")
 	})
 
-	server.Handle("GET", "/.well-known/databricks-config", func(_ Request) any {
-		return map[string]any{
-			"oidc_endpoint": server.URL + "/oidc",
-		}
-	})
-
 	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ Request) any {
 		return server.fakeOidc.OidcEndpoints()
 	})
