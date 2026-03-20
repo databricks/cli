@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,8 +56,9 @@ func captureUserAgent(t *testing.T) string {
 		}),
 	}
 
-	client, err := cfg.NewApiClient()
+	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
 	require.NoError(t, err)
+	client := httpclient.NewApiClient(clientCfg)
 
 	_ = client.Do(t.Context(), "GET", "/api/2.0/clusters/list")
 	return capturedUA
