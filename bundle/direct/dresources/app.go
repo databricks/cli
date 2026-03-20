@@ -67,8 +67,8 @@ func (*ResourceApp) RemapState(remote *apps.App) *AppState {
 		App:            *remote,
 		Started:        &started,
 		SourceCodePath: "",
-		Config:         &resources.AppConfig{},
-		GitSource:      &apps.GitSource{},
+		Config:         nil,
+		GitSource:      nil,
 	}
 }
 
