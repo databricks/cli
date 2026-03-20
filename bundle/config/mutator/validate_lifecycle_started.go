@@ -13,8 +13,8 @@ type validateLifecycleStarted struct {
 	engine engine.EngineType
 }
 
-// ValidateLifecycleStarted returns a mutator that validates lifecycle.started
-// is only used on supported resource types (apps).
+// ValidateLifecycleStarted returns a mutator that errors when lifecycle.started
+// is used with the terraform deployment engine.
 // lifecycle.started is only supported in direct deployment mode.
 func ValidateLifecycleStarted(e engine.EngineType) bundle.Mutator {
 	return &validateLifecycleStarted{engine: e}

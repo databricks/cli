@@ -14,7 +14,7 @@ import (
 
 // TestAppStateMarshalUnmarshal verifies that AppState correctly preserves bundle-only fields
 // (SourceCodePath, Config, GitSource, Started) through a JSON round-trip.
-// apps.App promotes its MarshalJSON/UnmarshalJSON which would otherwise drop these fields.
+// Without the custom marshaler, apps.App's promoted MarshalJSON would drop these extra fields.
 func TestAppStateMarshalUnmarshal(t *testing.T) {
 	started := true
 	original := AppState{

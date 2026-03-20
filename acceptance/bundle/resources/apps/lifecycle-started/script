@@ -1,32 +1,36 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-    trace $CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
+    trace $CLI bundle destroy --auto-approve
     rm -f out.requests.txt
 }
 trap cleanup EXIT
 
-{ trace errcode $CLI bundle deploy; } &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-{ trace jq 'select(.method == "POST" and .path == "/api/2.0/apps")' out.requests.txt; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+title "Deploy with started=true: app created with compute running"
+trace errcode $CLI bundle deploy
+{ trace jq 'select(.method == "POST" and .path == "/api/2.0/apps")' out.requests.txt; } || true
 rm -f out.requests.txt
-{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true
 
+title "Re-deploy with description change: code deployed again"
 trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
-{ trace errcode $CLI bundle deploy; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
-{ trace jq 'select(.method == "POST" and (.path | endswith("/deployments")))' out.requests.txt; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+trace errcode $CLI bundle deploy
+{ trace jq 'select(.method == "POST" and (.path | endswith("/deployments")))' out.requests.txt; } || true
 rm -f out.requests.txt
-{ trace errcode $CLI apps stop $UNIQUE_NAME | jq '.compute_status.state'; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
 
+title "Stop app externally, then deploy with started=false: app stays stopped"
+{ trace errcode $CLI apps stop $UNIQUE_NAME | jq '.compute_status.state'; } || true
 trace update_file.py databricks.yml "started: true" "started: false"
 trace update_file.py databricks.yml MY_APP_DESCRIPTION MY_APP_DESCRIPTION_2
-{ trace errcode $CLI bundle deploy; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
-{ trace jq 'select(.method == "POST" and (.path | endswith("/deployments")))' out.requests.txt; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+trace errcode $CLI bundle deploy
+{ trace jq 'select(.method == "POST" and (.path | endswith("/deployments")))' out.requests.txt; } || true
 rm -f out.requests.txt
-{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true
 
+title "Deploy with started=true: compute restarted and code deployed"
 trace update_file.py databricks.yml "started: false" "started: true"
 trace update_file.py databricks.yml MY_APP_DESCRIPTION_2 MY_APP_DESCRIPTION_3
-{ trace errcode $CLI bundle deploy; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
-{ trace jq 'select(.method == "POST" and (.path | (endswith("/start") or endswith("/deployments"))))' out.requests.txt; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+trace errcode $CLI bundle deploy
+{ trace jq 'select(.method == "POST" and (.path | (endswith("/start") or endswith("/deployments"))))' out.requests.txt; } || true
 rm -f out.requests.txt
-{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true

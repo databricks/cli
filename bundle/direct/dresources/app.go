@@ -2,9 +2,9 @@ package dresources
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
@@ -27,63 +28,14 @@ type AppState struct {
 	Started        *bool                `json:"started,omitempty"`
 }
 
-// bundleOnlyFields are the AppState fields not present in apps.App.
-// They must be explicitly marshaled/unmarshaled since apps.App's promoted MarshalJSON
-// would otherwise shadow them.
-type bundleOnlyFields struct {
-	SourceCodePath string               `json:"source_code_path,omitempty"`
-	Config         *resources.AppConfig `json:"config,omitempty"`
-	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
-	Started        *bool                `json:"started,omitempty"`
+// Custom marshaler needed because embedded apps.App has its own MarshalJSON
+// which would otherwise take over and ignore the additional fields.
+func (s *AppState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
 }
 
-// MarshalJSON merges apps.App fields with bundle-only fields into a single JSON object.
-// apps.App promotes its own MarshalJSON to AppState, which would otherwise omit bundle-only fields.
 func (s AppState) MarshalJSON() ([]byte, error) {
-	appJSON, err := json.Marshal(s.App)
-	if err != nil {
-		return nil, err
-	}
-	extrasJSON, err := json.Marshal(bundleOnlyFields{
-		SourceCodePath: s.SourceCodePath,
-		Config:         s.Config,
-		GitSource:      s.GitSource,
-		Started:        s.Started,
-	})
-	if err != nil {
-		return nil, err
-	}
-	var result, extras map[string]json.RawMessage
-	if err := json.Unmarshal(appJSON, &result); err != nil {
-		return nil, err
-	}
-	if result == nil {
-		result = make(map[string]json.RawMessage)
-	}
-	if err := json.Unmarshal(extrasJSON, &extras); err != nil {
-		return nil, err
-	}
-	for k, v := range extras {
-		result[k] = v
-	}
-	return json.Marshal(result)
-}
-
-// UnmarshalJSON sets apps.App fields and bundle-only fields from a single JSON object.
-// apps.App promotes its own UnmarshalJSON to *AppState, which would otherwise drop bundle-only fields.
-func (s *AppState) UnmarshalJSON(data []byte) error {
-	if err := json.Unmarshal(data, &s.App); err != nil {
-		return err
-	}
-	var e bundleOnlyFields
-	if err := json.Unmarshal(data, &e); err != nil {
-		return err
-	}
-	s.SourceCodePath = e.SourceCodePath
-	s.Config = e.Config
-	s.GitSource = e.GitSource
-	s.Started = e.Started
-	return nil
+	return marshal.Marshal(s)
 }
 
 type ResourceApp struct {
@@ -107,13 +59,13 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 // RemapState maps the remote apps.App to AppState for diff comparison.
 // Deploy-only fields (SourceCodePath, Config, GitSource) are not in remote state,
 // so they default to zero values, which prevents false drift detection.
+// Started is computed from the remote compute status so the planner can determine
+// whether the app needs to be started or stopped.
 func (*ResourceApp) RemapState(remote *apps.App) *AppState {
+	started := !isComputeStopped(remote)
 	return &AppState{
-		App:            *remote,
-		SourceCodePath: "",
-		Config:         nil,
-		GitSource:      nil,
-		Started:        nil,
+		App:     *remote,
+		Started: &started,
 	}
 }
 
@@ -170,6 +122,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 			maskPaths = append(maskPaths, path)
 		}
 	}
+	slices.Sort(maskPaths)
 	updateMask := strings.Join(maskPaths, ",")
 
 	if updateMask != "" {
@@ -197,14 +150,13 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		return nil, nil
 	}
 
-	app, err := r.client.Apps.GetByName(ctx, id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get app %s: %w", id, err)
-	}
+	// The planner computes the remote started value in RemapState based on compute status,
+	// so changes["started"].Action == Update means the compute state differs from the desired state.
+	startedChange := changes["started"]
 
 	if *config.Started {
 		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
-		if isComputeStopped(app) {
+		if startedChange != nil && startedChange.Action == deployplan.Update {
 			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
 			if err != nil {
 				return nil, fmt.Errorf("failed to start app %s: %w", id, err)
@@ -223,7 +175,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 	} else {
 		// lifecycle.started=false: ensure the app compute is stopped.
-		if !isComputeStopped(app) {
+		if startedChange != nil && startedChange.Action == deployplan.Update {
 			stopWaiter, err := r.client.Apps.Stop(ctx, apps.StopAppRequest{Name: id})
 			if err != nil {
 				return nil, fmt.Errorf("failed to stop app %s: %w", id, err)

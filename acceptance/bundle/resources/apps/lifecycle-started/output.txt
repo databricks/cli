@@ -1,10 +1,98 @@
 
+=== Deploy with started=true: app created with compute running
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq select(.method == "POST" and .path == "/api/2.0/apps") out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "body": {
+    "description": "my_app_description",
+    "name": "[UNIQUE_NAME]"
+  }
+}
+
+>>> errcode [CLI] apps get [UNIQUE_NAME]
+"ACTIVE"
+
+=== Re-deploy with description change: code deployed again
 >>> update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
+Deploying resources...
+✓ Deployment succeeded.
+Updating deployment state...
+Deployment complete!
+
+>>> jq select(.method == "POST" and (.path | endswith("/deployments"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
+  "body": {
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
+  }
+}
+
+=== Stop app externally, then deploy with started=false: app stays stopped
+>>> errcode [CLI] apps stop [UNIQUE_NAME]
+"STOPPED"
 
 >>> update_file.py databricks.yml started: true started: false
 
 >>> update_file.py databricks.yml MY_APP_DESCRIPTION MY_APP_DESCRIPTION_2
 
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq select(.method == "POST" and (.path | endswith("/deployments"))) out.requests.txt
+
+>>> errcode [CLI] apps get [UNIQUE_NAME]
+"STOPPED"
+
+=== Deploy with started=true: compute restarted and code deployed
 >>> update_file.py databricks.yml started: false started: true
 
 >>> update_file.py databricks.yml MY_APP_DESCRIPTION_2 MY_APP_DESCRIPTION_3
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
+Deploying resources...
+✓ Deployment succeeded.
+Updating deployment state...
+Deployment complete!
+
+>>> jq select(.method == "POST" and (.path | (endswith("/start") or endswith("/deployments")))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/start",
+  "body": {}
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
+  "body": {
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
+  }
+}
+
+>>> errcode [CLI] apps get [UNIQUE_NAME]
+"ACTIVE"
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
