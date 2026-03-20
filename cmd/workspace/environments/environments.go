@@ -26,7 +26,7 @@ func New() *cobra.Command {
 		Use:   "environments",
 		Short: `APIs to manage environment resources.`,
 		Long: `APIs to manage environment resources.
-  
+
   The Environments API provides management capabilities for different types of
   environments including workspace-level base environments that define the
   environment version and dependencies to be used in serverless notebooks and
@@ -87,7 +87,7 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Use = "create-workspace-base-environment DISPLAY_NAME"
 	cmd.Short = `Create a workspace base environment.`
 	cmd.Long = `Create a workspace base environment.
-  
+
   Creates a new WorkspaceBaseEnvironment. This is a long-running operation. The
   operation will asynchronously generate a materialized environment to optimize
   dependency resolution and is only marked as done when the materialized
@@ -203,7 +203,7 @@ func newDeleteWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Use = "delete-workspace-base-environment NAME"
 	cmd.Short = `Delete a workspace base environment.`
 	cmd.Long = `Delete a workspace base environment.
-  
+
   Deletes a WorkspaceBaseEnvironment. Deleting a base environment may impact
   linked notebooks and jobs. This operation is irreversible and should be
   performed only when you are certain the environment is no longer needed.
@@ -262,7 +262,7 @@ func newGetDefaultWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Use = "get-default-workspace-base-environment NAME"
 	cmd.Short = `Get the default workspace base environment configuration.`
 	cmd.Long = `Get the default workspace base environment configuration.
-  
+
   Gets the default WorkspaceBaseEnvironment configuration for the workspace.
   Returns the current default base environment settings for both CPU and GPU
   compute.
@@ -321,7 +321,7 @@ func newGetOperation() *cobra.Command {
 	cmd.Use = "get-operation NAME"
 	cmd.Short = `Get the status of a long-running operation.`
 	cmd.Long = `Get the status of a long-running operation.
-  
+
   Gets the status of a long-running operation. Clients can use this method to
   poll the operation result.
 
@@ -378,7 +378,7 @@ func newGetWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Use = "get-workspace-base-environment NAME"
 	cmd.Short = `Get a workspace base environment.`
 	cmd.Long = `Get a workspace base environment.
-  
+
   Retrieves a WorkspaceBaseEnvironment by its name.
 
   Arguments:
@@ -438,7 +438,7 @@ func newListWorkspaceBaseEnvironments() *cobra.Command {
 	cmd.Use = "list-workspace-base-environments"
 	cmd.Short = `List workspace base environments.`
 	cmd.Long = `List workspace base environments.
-  
+
   Lists all WorkspaceBaseEnvironments in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -492,7 +492,7 @@ func newRefreshWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Use = "refresh-workspace-base-environment NAME"
 	cmd.Short = `Refresh materialized workspace base environment.`
 	cmd.Long = `Refresh materialized workspace base environment.
-  
+
   Refreshes the materialized environment for a WorkspaceBaseEnvironment. This is
   a long-running operation. The operation will asynchronously regenerate the
   materialized environment and is only marked as done when the materialized
@@ -597,7 +597,7 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Use = "update-default-workspace-base-environment NAME UPDATE_MASK"
 	cmd.Short = `Update the default workspace base environment configuration.`
 	cmd.Long = `Update the default workspace base environment configuration.
-  
+
   Updates the default WorkspaceBaseEnvironment configuration for the workspace.
   Sets the specified base environments as the workspace defaults for CPU and/or
   GPU compute.
@@ -609,7 +609,7 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
       for multiple fields (no space). The special value '*' indicates that all
       fields should be updated (full replacement). Valid field paths:
       cpu_workspace_base_environment, gpu_workspace_base_environment
-      
+
       To unset one or both defaults, include the field path(s) in the mask and
       omit them from the request body. To unset both, you must list both paths
       explicitly — the wildcard '*' cannot be used to unset fields.`
@@ -694,7 +694,7 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
 	cmd.Use = "update-workspace-base-environment NAME DISPLAY_NAME"
 	cmd.Short = `Update a workspace base environment.`
 	cmd.Long = `Update a workspace base environment.
-  
+
   Updates an existing WorkspaceBaseEnvironment. This is a long-running
   operation. The operation will asynchronously regenerate the materialized
   environment and is only marked as done when the materialized environment has
@@ -707,7 +707,7 @@ func newUpdateWorkspaceBaseEnvironment() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    NAME: 
+    NAME:
     DISPLAY_NAME: Human-readable display name for the workspace base environment.`
 
 	cmd.Annotations = make(map[string]string)
