@@ -167,32 +167,6 @@
     ]
   },
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt",
-  "q": {
-    "overwrite": "true"
-  },
-  "raw_body": "\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...\n"
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
-    ]
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml",
-  "q": {
-    "overwrite": "true"
-  },
-  "raw_body": "bundle:\n  name: test-bundle\n  uuid: [UUID]\n\nresources:\n  jobs:\n    job_one:\n      name: job one\n    job_two:\n      name: job two\n    job_three:\n      name: job three\n\n  pipelines:\n    pipeline_one:\n      name: pipeline one\n    pipeline_two:\n      name: pipeline two\n"
-}
-{
-  "headers": {
-    "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
-    ]
-  },
-  "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/script",
   "q": {
     "overwrite": "true"
@@ -350,19 +324,19 @@
       "Distinct": false
     },
     {
-      "Old": "https://127\\.0\\.0\\.1:51297",
+      "Old": "https://127\\.0\\.0\\.1:52538",
       "New": "[DATABRICKS_URL]",
       "Order": 0,
       "Distinct": false
     },
     {
-      "Old": "http://127\\.0\\.0\\.1:51297",
+      "Old": "http://127\\.0\\.0\\.1:52538",
       "New": "[DATABRICKS_URL]",
       "Order": 0,
       "Distinct": false
     },
     {
-      "Old": "127\\.0\\.0\\.1:51297",
+      "Old": "127\\.0\\.0\\.1:52538",
       "New": "[DATABRICKS_HOST]",
       "Order": 0,
       "Distinct": false
@@ -484,10 +458,24 @@
     ]
   },
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/test.toml",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt",
   "q": {
     "overwrite": "true"
-  }
+  },
+  "raw_body": "\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "bundle:\n  name: test-bundle\n  uuid: [UUID]\n\nresources:\n  jobs:\n    job_one:\n      name: job one\n    job_two:\n      name: job two\n    job_three:\n      name: job three\n\n  pipelines:\n    pipeline_one:\n      name: pipeline one\n    pipeline_two:\n      name: pipeline two\n"
 }
 {
   "headers": {
@@ -509,6 +497,18 @@
     ]
   },
   "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/test.toml",
+  "q": {
+    "overwrite": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
   "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
   "q": {
     "overwrite": "true"
@@ -519,6 +519,10 @@
     "cli_version": "[DEV_VERSION]",
     "timestamp": "[TIMESTAMP]",
     "files": [
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
       {
         "local_path": "test.toml",
         "is_notebook": false
@@ -537,10 +541,6 @@
       },
       {
         "local_path": "repls.json",
-        "is_notebook": false
-      },
-      {
-        "local_path": "script",
         "is_notebook": false
       }
     ],
@@ -564,15 +564,6 @@
     "edition": "ADVANCED",
     "name": "pipeline two"
   }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/pipeline auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.0/pipelines/[UUID]"
 }
 {
   "headers": {
@@ -622,6 +613,15 @@
 {
   "headers": {
     "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/pipeline auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "headers": {
+    "User-Agent": [
       "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/job auth/pat"
     ]
   },
@@ -635,7 +635,7 @@
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
     "max_concurrent_runs": 1,
-    "name": "job three",
+    "name": "job one",
     "queue": {
       "enabled": true
     }
@@ -681,6 +681,18 @@
       "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/job auth/pat"
     ]
   },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/job auth/pat"
+    ]
+  },
   "method": "POST",
   "path": "/api/2.2/jobs/create",
   "body": {
@@ -691,22 +703,10 @@
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
     "max_concurrent_runs": 1,
-    "name": "job one",
+    "name": "job three",
     "queue": {
       "enabled": true
     }
-  }
-}
-{
-  "headers": {
-    "User-Agent": [
-      "databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/job auth/pat"
-    ]
-  },
-  "method": "GET",
-  "path": "/api/2.2/jobs/get",
-  "q": {
-    "job_id": "[NUMID]"
   }
 }
 {
@@ -1263,7 +1263,7 @@
     "uploadTime": [UNIX_TIME_MILLIS][2],
     "items": [],
     "protoLogs": [
-      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"[OS]\",\"execution_time_ms\":1588,\"exit_code\":0},\"bundle_deploy_event\":{\"bundle_uuid\":\"[UUID]\",\"deployment_id\":\"[UUID]\",\"resource_count\":5,\"resource_job_count\":3,\"resource_pipeline_count\":2,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":0,\"resource_quality_monitor_count\":0,\"resource_schema_count\":0,\"resource_volume_count\":0,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0,\"resource_job_ids\":[\"[NUMID]\",\"[NUMID]\",\"[NUMID]\"],\"resource_pipeline_ids\":[\"[UUID]\",\"[UUID]\"],\"experimental\":{\"configuration_file_count\":1,\"variable_count\":0,\"complex_variable_count\":0,\"lookup_variable_count\":0,\"target_count\":1,\"bool_values\":[{\"key\":\"local.cache.attempt\",\"value\":true},{\"key\":\"local.cache.miss\",\"value\":true},{\"key\":\"experimental.use_legacy_run_as\",\"value\":false},{\"key\":\"run_as_set\",\"value\":false},{\"key\":\"presets_name_prefix_is_set\",\"value\":false},{\"key\":\"python_wheel_wrapper_is_set\",\"value\":false},{\"key\":\"skip_artifact_cleanup\",\"value\":false},{\"key\":\"has_serverless_compute\",\"value\":false},{\"key\":\"has_classic_job_compute\",\"value\":false},{\"key\":\"has_classic_interactive_compute\",\"value\":false}],\"bundle_mode\":\"TYPE_UNSPECIFIED\",\"workspace_artifact_path_type\":\"WORKSPACE_FILE_SYSTEM\",\"bundle_mutator_execution_time_ms\":[{\"key\":\"terraform.(plan)\",\"value\":825},{\"key\":\"terraform.(apply)\",\"value\":450},{\"key\":\"phases.Initialize\",\"value\":22},{\"key\":\"files.(upload)\",\"value\":12},{\"key\":\"phases.Build\",\"value\":8},{\"key\":\"artifacts.(build)\",\"value\":7},{\"key\":\"resourcemutator.(processStaticResources)\",\"value\":7},{\"key\":\"deploy.(statePull)\",\"value\":5},{\"key\":\"mutator.(populateCurrentUser)\",\"value\":5},{\"key\":\"lock.(acquire)\",\"value\":4},{\"key\":\"mutator.(initializeCache)\",\"value\":3},{\"key\":\"terraform.(write)\",\"value\":2},{\"key\":\"artifacts.(cleanUp)\",\"value\":2},{\"key\":\"deploy.(statePush)\",\"value\":1},{\"key\":\"libraries.(upload)\",\"value\":1},{\"key\":\"metadata.(upload)\",\"value\":1},{\"key\":\"validate.FastValidate\",\"value\":0}],\"local_cache_measurements_ms\":[{\"key\":\"local.cache.compute_duration\",\"value\":0}]}}}}}"
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"[OS]\",\"execution_time_ms\":2367,\"exit_code\":0},\"bundle_deploy_event\":{\"bundle_uuid\":\"[UUID]\",\"deployment_id\":\"[UUID]\",\"resource_count\":5,\"resource_job_count\":3,\"resource_pipeline_count\":2,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":0,\"resource_quality_monitor_count\":0,\"resource_schema_count\":0,\"resource_volume_count\":0,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0,\"resource_job_ids\":[\"[NUMID]\",\"[NUMID]\",\"[NUMID]\"],\"resource_pipeline_ids\":[\"[UUID]\",\"[UUID]\"],\"experimental\":{\"configuration_file_count\":1,\"variable_count\":0,\"complex_variable_count\":0,\"lookup_variable_count\":0,\"target_count\":1,\"bool_values\":[{\"key\":\"local.cache.attempt\",\"value\":true},{\"key\":\"local.cache.miss\",\"value\":true},{\"key\":\"experimental.use_legacy_run_as\",\"value\":false},{\"key\":\"run_as_set\",\"value\":false},{\"key\":\"presets_name_prefix_is_set\",\"value\":false},{\"key\":\"python_wheel_wrapper_is_set\",\"value\":false},{\"key\":\"skip_artifact_cleanup\",\"value\":false},{\"key\":\"has_serverless_compute\",\"value\":false},{\"key\":\"has_classic_job_compute\",\"value\":false},{\"key\":\"has_classic_interactive_compute\",\"value\":false}],\"bundle_mode\":\"TYPE_UNSPECIFIED\",\"workspace_artifact_path_type\":\"WORKSPACE_FILE_SYSTEM\",\"bundle_mutator_execution_time_ms\":[{\"key\":\"terraform.(plan)\",\"value\":1310},{\"key\":\"terraform.(apply)\",\"value\":732},{\"key\":\"phases.Initialize\",\"value\":15},{\"key\":\"files.(upload)\",\"value\":7},{\"key\":\"resourcemutator.(processStaticResources)\",\"value\":5},{\"key\":\"mutator.(initializeCache)\",\"value\":2},{\"key\":\"mutator.(populateCurrentUser)\",\"value\":2},{\"key\":\"phases.Build\",\"value\":2},{\"key\":\"lock.(acquire)\",\"value\":2},{\"key\":\"artifacts.(build)\",\"value\":1},{\"key\":\"terraform.(interpolateMutator)\",\"value\":1},{\"key\":\"validate.FastValidate\",\"value\":0}],\"local_cache_measurements_ms\":[{\"key\":\"local.cache.compute_duration\",\"value\":0}]}}}}}"
     ]
   }
 }
