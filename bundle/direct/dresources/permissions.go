@@ -48,7 +48,8 @@ type StatePermission struct {
 // by unrelated types and it's harder to evaluate that fixed string because it's non-local.
 
 type PermissionsState struct {
-	ObjectID      string            `json:"object_id"`
+	ObjectID string `json:"object_id"`
+	// By convention, EmbedSlice fields should have __embed__ json tag, see permissions.go for details
 	EmbeddedSlice []StatePermission `json:"__embed__,omitempty"`
 }
 

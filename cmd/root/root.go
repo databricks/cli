@@ -97,8 +97,10 @@ func New(ctx context.Context) *cobra.Command {
 	return cmd
 }
 
-// Wrap flag errors to include the usage string.
+// flagErrorFunc wraps flag errors to include the usage string and, for unknown
+// flags, a "Did you mean" suggestion based on Levenshtein distance.
 func flagErrorFunc(c *cobra.Command, err error) error {
+	err = suggestFlagFromError(c, err)
 	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }
 

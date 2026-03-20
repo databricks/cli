@@ -38,9 +38,14 @@ func GetConfiguredDefaultProfile(ctx context.Context, configFilePath string) (st
 }
 
 // GetConfiguredDefaultProfileFrom returns the explicit default profile from
-// [__settings__].default_profile, or "" when it is not set.
+// [__settings__].default_profile, or "" when it is not set or when the value
+// is the reserved __settings__ section name itself.
 func GetConfiguredDefaultProfileFrom(configFile *config.File) string {
-	return configFile.Section(databricksSettingsSection).Key(defaultProfileKey).String()
+	v := configFile.Section(databricksSettingsSection).Key(defaultProfileKey).String()
+	if v == databricksSettingsSection {
+		return ""
+	}
+	return v
 }
 
 // GetDefaultProfile returns the name of the default profile by loading the

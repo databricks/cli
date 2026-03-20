@@ -5,6 +5,8 @@ cleanup() {
 
    # Also try to delete the old project directly in case it wasn't cleaned up
    $CLI postgres delete-project "projects/test-pg-old-${UNIQUE_NAME}" 2>/dev/null || true
+
+   rm -f out.requests.txt
 }
 trap cleanup EXIT
 
@@ -51,5 +53,3 @@ print_requests destroy
 
 # Clean up any orphaned old project (terraform doesn't delete it on recreation)
 $CLI postgres delete-project $project_id_1 2>/dev/null || true
-
-rm -f out.requests.txt

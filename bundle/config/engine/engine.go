@@ -46,19 +46,9 @@ func FromEnv(ctx context.Context) (EngineType, error) {
 
 // EngineSetting represents a requested engine type along with the source of the request.
 type EngineSetting struct {
-	Type       EngineType // effective: env var if set, else config
+	Type       EngineType // effective resolved engine
 	Source     string     // human-readable source of Type
 	ConfigType EngineType // from bundle config (EngineNotSet if not configured)
-}
-
-// SettingFromEnv returns an EngineSetting from the environment variable.
-// ConfigType is left as EngineNotSet and populated later by ResolveEngineSetting.
-func SettingFromEnv(ctx context.Context) (EngineSetting, error) {
-	e, err := FromEnv(ctx)
-	if err != nil {
-		return EngineSetting{}, err
-	}
-	return EngineSetting{Type: e, Source: EnvVar + " environment variable"}, nil
 }
 
 func (e EngineType) ThisOrDefault() EngineType {

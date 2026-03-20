@@ -508,7 +508,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "catalog",
 			FullName:      "mycatalog",
-			Grants: []catalog.PrivilegeAssignment{{
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
 				Principal:  "user@example.com",
 			}},
@@ -519,7 +519,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "external_location",
 			FullName:      "myexternallocation",
-			Grants: []catalog.PrivilegeAssignment{{
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeReadFiles},
 				Principal:  "user@example.com",
 			}},
@@ -530,7 +530,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "schema",
 			FullName:      "main.myschema",
-			Grants: []catalog.PrivilegeAssignment{{
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
@@ -541,7 +541,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "volume",
 			FullName:      "main.myschema.myvolume",
-			Grants: []catalog.PrivilegeAssignment{{
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},
@@ -552,7 +552,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &GrantsState{
 			SecurableType: "registered-model",
 			FullName:      "modelid",
-			Grants: []catalog.PrivilegeAssignment{{
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
 				Principal:  "user@example.com",
 			}},

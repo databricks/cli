@@ -3,9 +3,10 @@ package dstate
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -40,18 +41,38 @@ var migrations = map[int]func(*Database) error{
 	1: migrateV1ToV2,
 }
 
-// migrateV1ToV2 migrates permissions entries from the old format
-// (iam.AccessControlRequest with "permissions" key and "permission_level" field)
-// to the new format (StatePermission with "_" key and "level" field).
+// migrateV1ToV2 migrates permissions and grants entries from the old format
+// to the new format (__embed__ keys, permission_level -> level).
 func migrateV1ToV2(db *Database) error {
 	for key, entry := range db.State {
-		if !strings.HasSuffix(key, ".permissions") {
-			continue
-		}
 		if len(entry.State) == 0 {
 			continue
 		}
-		migrated, err := migratePermissionsEntry(entry.State)
+
+		path, pathErr := structpath.ParsePath(key)
+		if pathErr != nil || path == nil {
+			continue
+		}
+		// path points to the last node; read its key directly.
+		lastKey, ok := path.StringKey()
+		if !ok {
+			continue
+		}
+
+		var (
+			migrated json.RawMessage
+			err      error
+		)
+
+		switch lastKey {
+		case "permissions":
+			migrated, err = migratePermissionsEntry(entry.State)
+		case "grants":
+			migrated, err = migrateGrantsEntry(entry.State)
+		default:
+			continue
+		}
+
 		if err != nil {
 			return fmt.Errorf("migrating %s: %w", key, err)
 		}
@@ -80,11 +101,6 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 		return nil, err
 	}
 
-	// If old format had no permissions, try parsing as new format (might already be migrated).
-	if len(old.Permissions) == 0 {
-		return raw, nil
-	}
-
 	newState := dresources.PermissionsState{
 		ObjectID: old.ObjectID,
 	}
@@ -97,5 +113,27 @@ func migratePermissionsEntry(raw json.RawMessage) (json.RawMessage, error) {
 		})
 	}
 
-	return json.MarshalIndent(newState, "  ", " ")
+	return json.Marshal(newState)
+}
+
+// oldGrantsStateV1 is the grants state format before v2.
+type oldGrantsStateV1 struct {
+	SecurableType string                        `json:"securable_type"`
+	FullName      string                        `json:"full_name"`
+	Grants        []catalog.PrivilegeAssignment `json:"grants,omitempty"`
+}
+
+func migrateGrantsEntry(raw json.RawMessage) (json.RawMessage, error) {
+	var old oldGrantsStateV1
+	if err := json.Unmarshal(raw, &old); err != nil {
+		return nil, err
+	}
+
+	newState := dresources.GrantsState{
+		SecurableType: old.SecurableType,
+		FullName:      old.FullName,
+		EmbeddedSlice: old.Grants,
+	}
+
+	return json.Marshal(newState)
 }

@@ -5,13 +5,13 @@ Known issues: https://github.com/databricks/cli/issues?q=state%3Aopen%20label%3A
 
 ## Reporting bugs
 
-Click "new issue" on [https://github.com/databricks/cli/issues](https://github.com/databricks/cli/issues) and select "Bug report for Databricks Asset Bundles with direct deployment engine".
+Click "new issue" on [https://github.com/databricks/cli/issues](https://github.com/databricks/cli/issues) and select "Bug report for Declarative Automation Bundles with direct deployment engine".
 
 Please ensure you are on the latest version of CLI when reporting an issue.
 
 ## Background
 
-Databricks Asset Bundles were originally implemented on top of databricks-terraform-provider.
+Declarative Automation Bundles were originally implemented on top of databricks-terraform-provider.
 Since version 0.279.0 DABs support two different deployment engines: "terraform" and "direct".
 The latter does not make use of Terraform.
 It is intended to be a drop-in replacement and will become the only engine we support in 2026\.
@@ -53,7 +53,12 @@ rm .databricks/bundle/my_target/resources.json
 
 ### Using on new bundles
 
-For bundles that were never deployed, the migrate command will not work. Instead, deploy with an environment variable set: `DATABRICKS_BUNDLE_ENGINE=direct databricks bundle deploy -t my_target`.
+For bundles that were never deployed, the migrate command will not work. To start using direct engine, you have two options:
+
+- Set bundle.engine OR targets.\*.engine to "direct" in your databricks.yml
+- Set DATABRICKS_BUNDLE_ENGINE=direct env var before the deployment.
+
+If both are provided, the config takes precedence over the env var.
 
 ## Differences from terraform
 

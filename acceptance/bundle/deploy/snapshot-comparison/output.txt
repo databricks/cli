@@ -27,16 +27,16 @@ Updating deployment state...
 Deployment complete!
 
 === Normalize bundle names for comparison
->>> cp bundle1/.databricks/bundle/default/resources.json out.bundle1.json
+>>> cp bundle1/.databricks/bundle/default/resources.json tmp.bundle1.json
 
->>> cp bundle2/.databricks/bundle/default/resources-config-sync-snapshot.json out.bundle2.json
+>>> cp bundle2/.databricks/bundle/default/resources-config-sync-snapshot.json tmp.bundle2.json
 
->>> update_file.py out.bundle1.json snapshot-test-1- snapshot-test-NORMALIZED-
+>>> update_file.py tmp.bundle1.json snapshot-test-1- snapshot-test-NORMALIZED-
 
->>> update_file.py out.bundle2.json snapshot-test-2- snapshot-test-NORMALIZED-
+>>> update_file.py tmp.bundle2.json snapshot-test-2- snapshot-test-NORMALIZED-
 
 === Compare normalized snapshots
->>> diff.py out.bundle1.json out.bundle2.json
+>>> diff.py tmp.bundle1.json tmp.bundle2.json
 
 === Cleanup bundle 1
 >>> [CLI] bundle destroy --auto-approve
