@@ -47,6 +47,10 @@ RESOURCE_TYPE_MAP = {
 # Each rule: (dabs_parent_glob, {old_key: new_key})
 # dabs_parent_glob uses the DABs path (before renames). Empty string = top-level.
 # Globs support "*" to match any single path segment.
+# Top-level fields added by DABs that don't exist in Terraform.
+# Suppress these from dabs_only output to reduce noise.
+DABS_KNOWN_FIELDS = {"permissions", "url", "lifecycle", "grants"}
+
 RENAME_RULES = {
     "jobs": [
         (
@@ -256,7 +260,9 @@ def main():
                 matched_tf.add(field_path)
                 print(f"match\t{dabs_path}\t{tf_type}\t{field_path}")
             else:
-                print(f"dabs_only\t{dabs_path}\t{tf_type}\t?")
+                top_field = field_path.split(".")[0]
+                if top_field not in DABS_KNOWN_FIELDS:
+                    print(f"dabs_only\t{dabs_path}\t{tf_type}\t?")
 
         # TF-only fields
         for tf_path in sorted(tf_fields - matched_tf):
