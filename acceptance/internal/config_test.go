@@ -1,9 +1,12 @@
 package internal
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestExpandEnvMatrix(t *testing.T) {
@@ -194,6 +197,64 @@ func TestExpandEnvMatrix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ExpandEnvMatrix(tt.matrix, tt.exclude, tt.extraVars)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestLoadConfigPhaseIsNotInherited(t *testing.T) {
+	tests := []struct {
+		name       string
+		files      map[string]string
+		dir        string
+		wantPhase  int
+		wantConfig string
+	}{
+		{
+			name: "missing leaf config defaults to zero",
+			files: map[string]string{
+				"test.toml": "Phase = 3\n",
+			},
+			dir:        "suite/test",
+			wantPhase:  0,
+			wantConfig: "test.toml",
+		},
+		{
+			name: "leaf config without phase resets inherited value",
+			files: map[string]string{
+				"test.toml":            "Phase = 3\n",
+				"suite/test/test.toml": "Local = true\n",
+			},
+			dir:        "suite/test",
+			wantPhase:  0,
+			wantConfig: "test.toml, suite/test/test.toml",
+		},
+		{
+			name: "leaf phase wins",
+			files: map[string]string{
+				"test.toml":            "Phase = 3\n",
+				"suite/test/test.toml": "Local = true\nPhase = 1\n",
+			},
+			dir:        "suite/test",
+			wantPhase:  1,
+			wantConfig: "test.toml, suite/test/test.toml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			t.Chdir(root)
+
+			for path, contents := range tt.files {
+				absPath := filepath.Join(root, filepath.FromSlash(path))
+				require.NoError(t, os.MkdirAll(filepath.Dir(absPath), 0o755))
+				require.NoError(t, os.WriteFile(absPath, []byte(contents), 0o644))
+			}
+
+			config, configPath := LoadConfig(t, tt.dir)
+
+			assert.Equal(t, tt.wantPhase, config.Phase)
+			assert.Equal(t, tt.wantConfig, configPath)
 		})
 	}
 }
