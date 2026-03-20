@@ -125,19 +125,18 @@ def _flatten_tf_nested(nested_type, prefix, fields):
 def apply_renames(dabs_type, field_path):
     """Apply key renames for a given DABs resource type and field path.
 
-    The field_path uses dots as separators, with array notation stripped.
-    Renames are applied segment-by-segment, checking if the parent of the
-    current segment matches a rename rule's parent glob pattern.
+    Returns (tf_path, renamed_indices) where renamed_indices is the set of
+    segment indices that were actually renamed.
     """
     rules = RENAME_RULES.get(dabs_type, [])
     if not rules:
-        return field_path
+        return field_path, set()
 
     parts = field_path.split(".")
     result = []
+    renamed_indices = set()
 
     for i, part in enumerate(parts):
-        # The parent path (in original DABs terms) is parts[0:i] joined
         parent = ".".join(parts[:i])
 
         renamed = False
@@ -146,13 +145,14 @@ def apply_renames(dabs_type, field_path):
                 continue
             if _match_parent(parent, rule_parent):
                 result.append(renames[part])
+                renamed_indices.add(i)
                 renamed = True
                 break
 
         if not renamed:
             result.append(part)
 
-    return ".".join(result)
+    return ".".join(result), renamed_indices
 
 
 def _match_parent(actual_parent, rule_parent):
@@ -237,12 +237,21 @@ def main():
 
         matched_tf = set()
         for field_path, dabs_path in sorted(dabs_type_fields.items()):
-            tf_path = apply_renames(dabs_type, field_path)
+            tf_path, renamed_indices = apply_renames(dabs_type, field_path)
 
             if tf_path in tf_fields:
-                status = "renamed" if tf_path != field_path else "match"
                 matched_tf.add(tf_path)
-                print(f"{status}\t{dabs_path}\t{tf_type}\t{tf_path}")
+                if not renamed_indices:
+                    print(f"match\t{dabs_path}\t{tf_type}\t{tf_path}")
+                else:
+                    # Only print if this field has a rename at its own level
+                    # (i.e., the deepest segment is renamed), or if it IS the
+                    # top-level renamed field itself.
+                    parts = field_path.split(".")
+                    max_renamed = max(renamed_indices)
+                    has_own_rename = max_renamed == len(parts) - 1
+                    if has_own_rename:
+                        print(f"renamed\t{dabs_path}\t{tf_type}\t{tf_path}")
             elif field_path in tf_fields:
                 matched_tf.add(field_path)
                 print(f"match\t{dabs_path}\t{tf_type}\t{field_path}")
