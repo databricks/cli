@@ -86,16 +86,8 @@
   "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
 }
 {
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
   "method": "HEAD",
   "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]"
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
 }
 {
   "method": "PUT",
@@ -143,16 +135,8 @@ hello, world
   "path": "/api/2.0/fs/directories/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt"
 }
 {
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
   "method": "HEAD",
   "path": "/api/2.0/fs/files/Volumes/main/schema-[UNIQUE_NAME]/volume-[UNIQUE_NAME]/hello.txt"
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
 }
 {
   "method": "DELETE",
