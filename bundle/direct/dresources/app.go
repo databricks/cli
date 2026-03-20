@@ -64,8 +64,11 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 func (*ResourceApp) RemapState(remote *apps.App) *AppState {
 	started := !isComputeStopped(remote)
 	return &AppState{
-		App:     *remote,
-		Started: &started,
+		App:            *remote,
+		Started:        &started,
+		SourceCodePath: "",
+		Config:         &resources.AppConfig{},
+		GitSource:      &apps.GitSource{},
 	}
 }
 
