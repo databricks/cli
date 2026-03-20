@@ -79,7 +79,7 @@ func init() {
 	// to simulate an identical environment.
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
-	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants using consistent hashing")
+	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update.")
 }
 
 const (
