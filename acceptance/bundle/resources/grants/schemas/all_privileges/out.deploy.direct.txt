@@ -2,7 +2,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-dup-grants-
 Deploying resources...
 Error: cannot create resources.schemas.apps_schema.grants: Duplicate privileges to add and delete for principal deco-test-user@databricks.com. (400 INVALID_PARAMETER_VALUE)
 
-Endpoint: ...
+Endpoint: PATCH [DATABRICKS_URL]/api/2.1/unity-catalog/permissions/schema/main.schema_dup_grants_[UNIQUE_NAME]
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Duplicate privileges to add and delete for principal deco-test-user@databricks.com.

@@ -1,0 +1,6 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Same principal listed twice with the same privilege.
+trace $CLI bundle deploy
+trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+trace $CLI bundle destroy --auto-approve
