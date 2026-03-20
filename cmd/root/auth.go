@@ -56,15 +56,31 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
-	// Determine if we should prompt for a profile. The SDK no longer returns
-	// ErrNotAccountClient from NewAccountClient (as of v0.125.0, host-type
-	// validation was removed in favor of host metadata resolution). Use
-	// ConfigType() to detect wrong host type.
-	needsPrompt := cfg.ConfigType() != config.AccountConfig ||
-		cfg.AccountID == "" ||
-		(err != nil && errors.Is(err, config.ErrCannotConfigureDefault))
+	// Determine if we should prompt for a profile based on host type.
+	// The SDK no longer returns ErrNotAccountClient from NewAccountClient
+	// (as of v0.125.0, host-type validation was removed in favor of host
+	// metadata resolution). Use HostType() to detect the wrong host type.
+	var needsPrompt bool
+	switch cfg.HostType() {
+	case config.AccountHost, config.UnifiedHost:
+		// Valid host type for account client, but still need account ID.
+		needsPrompt = cfg.AccountID == ""
+	default:
+		// WorkspaceHost or unknown: wrong type for account client.
+		needsPrompt = true
+	}
+	if !needsPrompt && err != nil && errors.Is(err, config.ErrCannotConfigureDefault) {
+		needsPrompt = true
+	}
 
-	if !needsPrompt || !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+	if !needsPrompt {
+		return a, err
+	}
+
+	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+		if err == nil {
+			err = databricks.ErrNotAccountClient
+		}
 		return a, err
 	}
 
@@ -90,9 +106,9 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 		return false, nil
 	}
 
-	// If the error is other than "not a workspace client error" or "no workspace profiles",
-	// return it because configuration is for workspace client
-	// and we don't want to try to create an account client.
+	// If the error indicates a wrong config type (workspace host used for account client,
+	// or config type mismatch detected by workspaceClientOrPrompt), fall through to try
+	// account client.
 	if !errors.Is(werr, databricks.ErrNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
 		return false, werr
 	}
@@ -157,14 +173,31 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
-	// Determine if we should prompt for a profile. The SDK no longer returns
-	// ErrNotWorkspaceClient from NewWorkspaceClient (as of v0.125.0, host-type
-	// validation was removed in favor of host metadata resolution). Use
-	// ConfigType() to detect wrong host type.
-	needsPrompt := cfg.ConfigType() != config.WorkspaceConfig ||
-		(err != nil && errors.Is(err, config.ErrCannotConfigureDefault))
+	// Determine if we should prompt for a profile based on host type.
+	// The SDK no longer returns ErrNotWorkspaceClient from NewWorkspaceClient
+	// (as of v0.125.0, host-type validation was removed in favor of host
+	// metadata resolution). Use HostType() to detect the wrong host type.
+	var needsPrompt bool
+	switch cfg.HostType() {
+	case config.WorkspaceHost, config.UnifiedHost:
+		// Both workspace and unified hosts can serve workspace APIs.
+		needsPrompt = false
+	default:
+		// AccountHost or unknown: wrong type for workspace client.
+		needsPrompt = true
+	}
+	if !needsPrompt && err != nil && errors.Is(err, config.ErrCannotConfigureDefault) {
+		needsPrompt = true
+	}
 
-	if !needsPrompt || !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+	if !needsPrompt {
+		return w, err
+	}
+
+	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+		if err == nil {
+			err = databricks.ErrNotWorkspaceClient
+		}
 		return w, err
 	}
 

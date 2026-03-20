@@ -11,13 +11,14 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // noNetworkTransport prevents real HTTP calls in auth tests.
-// Returns 404 for host metadata lookups; 200 for everything else.
+// Returns 404 for all requests, preventing real HTTP calls during auth tests.
 var noNetworkTransport = roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 	return &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, nil
 })
@@ -424,6 +425,52 @@ token = flag-token
 			assert.Equal(t, tc.wantHost, w.Config.Host)
 		})
 	}
+}
+
+func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	cfg := &config.Config{
+		Host:          "https://adb-1234567.89.azuredatabricks.net/",
+		Token:         "foobar",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	a, err := accountClientOrPrompt(t.Context(), cfg, false)
+	assert.NotNil(t, a)
+	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
+}
+
+func TestWorkspaceClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	cfg := &config.Config{
+		Host:          "https://accounts.azuredatabricks.net/",
+		AccountID:     "1234",
+		Token:         "foobar",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.NotNil(t, w)
+	assert.ErrorIs(t, err, databricks.ErrNotWorkspaceClient)
+}
+
+func TestAccountClientOrPromptReturnsErrorForMissingAccountID(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	cfg := &config.Config{
+		Host:          "https://accounts.azuredatabricks.net/",
+		Token:         "foobar",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	a, err := accountClientOrPrompt(t.Context(), cfg, false)
+	assert.NotNil(t, a)
+	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
 }
 
 func TestMustWorkspaceClientWithoutConfiguredDefaultFallsBackToDefaultSection(t *testing.T) {
