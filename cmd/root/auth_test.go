@@ -17,8 +17,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
 // noNetworkTransport prevents real HTTP calls in auth tests.
-// Returns 404 for all requests, preventing real HTTP calls during auth tests.
+// Returns 404 for all requests so host metadata resolution falls back gracefully.
 var noNetworkTransport = roundTripperFunc(func(r *http.Request) (*http.Response, error) {
 	return &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, nil
 })
