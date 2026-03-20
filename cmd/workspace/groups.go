@@ -104,5 +104,9 @@ func Groups() []cobra.Group {
 			ID:    "postgres",
 			Title: "Postgres",
 		},
+		{
+			ID:    "environments",
+			Title: "Environments",
+		},
 	}
 }

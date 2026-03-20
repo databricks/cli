@@ -56,16 +56,15 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
-	prompt := false
-	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
-		// Prompt to select a profile if the current configuration is not an account client.
-		prompt = prompt || errors.Is(err, databricks.ErrNotAccountClient)
-		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
-		prompt = prompt || errors.Is(err, config.ErrCannotConfigureDefault)
-	}
+	// Determine if we should prompt for a profile. The SDK no longer returns
+	// ErrNotAccountClient from NewAccountClient (as of v0.125.0, host-type
+	// validation was removed in favor of host metadata resolution). Use
+	// ConfigType() to detect wrong host type.
+	needsPrompt := cfg.ConfigType() != config.AccountConfig ||
+		cfg.AccountID == "" ||
+		(err != nil && errors.Is(err, config.ErrCannotConfigureDefault))
 
-	if !prompt {
-		// If we are not prompting, we can return early.
+	if !needsPrompt || !allowPrompt || !cmdio.IsPromptSupported(ctx) {
 		return a, err
 	}
 
@@ -158,16 +157,14 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
-	prompt := false
-	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
-		// Prompt to select a profile if the current configuration is not a workspace client.
-		prompt = prompt || errors.Is(err, databricks.ErrNotWorkspaceClient)
-		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
-		prompt = prompt || errors.Is(err, config.ErrCannotConfigureDefault)
-	}
+	// Determine if we should prompt for a profile. The SDK no longer returns
+	// ErrNotWorkspaceClient from NewWorkspaceClient (as of v0.125.0, host-type
+	// validation was removed in favor of host metadata resolution). Use
+	// ConfigType() to detect wrong host type.
+	needsPrompt := cfg.ConfigType() != config.WorkspaceConfig ||
+		(err != nil && errors.Is(err, config.ErrCannotConfigureDefault))
 
-	if !prompt {
-		// If we are not prompting, we can return early.
+	if !needsPrompt || !allowPrompt || !cmdio.IsPromptSupported(ctx) {
 		return w, err
 	}
 

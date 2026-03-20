@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,6 +15,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// noNetworkTransport prevents real HTTP calls in auth tests.
+// Returns 404 for host metadata lookups; 200 for everything else.
+var noNetworkTransport = roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+	return &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, nil
+})
 
 func TestEmptyHttpRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
@@ -32,7 +39,10 @@ var workspacePromptFn = func(ctx context.Context, cfg *config.Config, retry bool
 	return workspaceClientOrPrompt(ctx, cfg, retry)
 }
 
-func expectPrompts(t *testing.T, fn promptFn, config *config.Config) {
+func expectPrompts(t *testing.T, fn promptFn, cfg *config.Config) {
+	// Prevent real HTTP calls during auth resolution.
+	cfg.HTTPTransport = noNetworkTransport
+
 	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 	defer cancel()
 
@@ -43,7 +53,7 @@ func expectPrompts(t *testing.T, fn promptFn, config *config.Config) {
 	go func() {
 		defer close(errch)
 		defer cancel()
-		_, err := fn(ctx, config, true)
+		_, err := fn(ctx, cfg, true)
 		errch <- err
 	}()
 
@@ -57,12 +67,15 @@ func expectPrompts(t *testing.T, fn promptFn, config *config.Config) {
 	}
 }
 
-func expectReturns(t *testing.T, fn promptFn, config *config.Config) {
+func expectReturns(t *testing.T, fn promptFn, cfg *config.Config) {
+	// Prevent real HTTP calls during auth resolution.
+	cfg.HTTPTransport = noNetworkTransport
+
 	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 	defer cancel()
 
 	ctx, _ = cmdio.SetupTest(ctx, cmdio.TestOptions{PromptSupported: true})
-	client, err := fn(ctx, config, true)
+	client, err := fn(ctx, cfg, true)
 	require.NoError(t, err)
 	require.NotNil(t, client)
 }

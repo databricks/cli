@@ -2346,7 +2346,7 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
   "_":
     "description": |-
       The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
-      In this minimal environment spec, only pip dependencies are supported.
+      In this minimal environment spec, only pip and java dependencies are supported.
   "base_environment":
     "description": |-
       The `base_environment` key refers to an `env.yaml` file that specifies an environment version and a collection of dependencies required for the environment setup.
@@ -2363,7 +2363,7 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
       Allowed dependencies include a requirement specifier, an archive URL, a local project path (such as WSFS or UC Volumes in Databricks), or a VCS project URL.
   "environment_version":
     "description": |-
-      Required. Environment version used by the environment.
+      Either `environment_version` or `base_environment` needs to be provided. Environment version used by the environment.
       Each version comes with a specific Python version and a set of Python packages.
       The version is a string, consisting of an integer.
   "java_dependencies":
@@ -3047,6 +3047,34 @@ github.com/databricks/databricks-sdk-go/service/iam.PermissionLevel:
         CAN_CREATE
       - |-
         CAN_MONITOR_ONLY
+      - |-
+        CAN_CREATE_APP
+github.com/databricks/databricks-sdk-go/service/jobs.AlertTask:
+  "alert_id":
+    "description": |-
+      The alert_id is the canonical identifier of the alert.
+  "subscribers":
+    "description": |-
+      The subscribers receive alert evaluation result notifications after the alert task is completed.
+      The number of subscriptions is limited to 100.
+  "warehouse_id":
+    "description": |-
+      The warehouse_id identifies the warehouse settings used by the alert task.
+  "workspace_path":
+    "description": |-
+      The workspace_path is the path to the alert file in the workspace. The path:
+      * must start with "/Workspace"
+      * must be a normalized path.
+      User has to select only one of alert_id or workspace_path to identify the alert.
+github.com/databricks/databricks-sdk-go/service/jobs.AlertTaskSubscriber:
+  "_":
+    "description": |-
+      Represents a subscriber that will receive alert notifications.
+      A subscriber can be either a user (via email) or a notification destination (via destination_id).
+  "destination_id": {}
+  "user_name":
+    "description": |-
+      A valid workspace email address.
 github.com/databricks/databricks-sdk-go/service/jobs.AuthenticationMethod:
   "_":
     "enum":
@@ -3331,9 +3359,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
       This field is deprecated
     "x-databricks-preview": |-
       PRIVATE
-  "sparse_checkout":
-    "x-databricks-preview": |-
-      PRIVATE
+  "sparse_checkout": {}
 github.com/databricks/databricks-sdk-go/service/jobs.JobCluster:
   "job_cluster_key":
     "description": |-
@@ -3405,7 +3431,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
   "spec":
     "description": |-
       The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
-      In this minimal environment spec, only pip dependencies are supported.
+      In this minimal environment spec, only pip and java dependencies are supported.
 github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings:
   "no_alert_for_canceled_runs":
     "description": |-
@@ -3990,6 +4016,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfigura
       and can be used to wait for a series of table updates before triggering a run. The
       minimum allowed value is 60 seconds.
 github.com/databricks/databricks-sdk-go/service/jobs.Task:
+  "alert_task":
+    "description": |-
+      New alert v2 task
   "clean_rooms_notebook_task":
     "description": |-
       The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook
@@ -4281,9 +4310,37 @@ github.com/databricks/databricks-sdk-go/service/pipelines.ConnectionParameters:
       For Oracle databases, this maps to a service name.
     "x-databricks-preview": |-
       PRIVATE
+github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorType:
+  "_":
+    "description": |-
+      For certain database sources LakeFlow Connect offers both query based and cdc
+      ingestion, ConnectorType can bse used to convey the type of ingestion.
+      If connection_name is provided for database sources, we default to Query Based ingestion
+    "enum":
+      - |-
+        CDC
+      - |-
+        QUERY_BASED
 github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
   "quartz_cron_schedule": {}
   "timezone_id": {}
+github.com/databricks/databricks-sdk-go/service/pipelines.DataStagingOptions:
+  "_":
+    "description": |-
+      Location of staged data storage
+  "catalog_name":
+    "description": |-
+      (Required, Immutable) The name of the catalog for the connector's staging storage location.
+  "schema_name":
+    "description": |-
+      (Required, Immutable) The name of the schema for the connector's staging storage location.
+  "volume_name":
+    "description": |-
+      (Optional) The Unity Catalog-compatible name for the storage location.
+      This is the volume to use for the data that is extracted by the connector.
+      Spark Declarative Pipelines system will automatically create the volume under the catalog and schema.
+      For Combined Cdc Managed Ingestion pipelines default name for the volume would be :
+      __databricks_ingestion_gateway_staging_data-$pipelineId
 github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek:
   "_":
     "description": |-
@@ -4382,6 +4439,19 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
       pipeline.
       Under certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed
       Ingestion Pipeline with Gateway pipeline.
+  "connector_type":
+    "description": |-
+      (Optional) Connector Type for sources. Ex: CDC, Query Based.
+    "x-databricks-preview": |-
+      PRIVATE
+  "data_staging_options":
+    "description": |-
+      (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
+      with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
+      If not specified, the volume for staged data will be created in catalog and schema/target specified in the
+      top level pipeline definition.
+    "x-databricks-preview": |-
+      PRIVATE
   "full_refresh_window":
     "description": |-
       (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.

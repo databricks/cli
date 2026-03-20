@@ -621,9 +621,6 @@ func newGenieCreateEvalRun() *cobra.Command {
     SPACE_ID: The ID associated with the Genie space where the evaluations will be
       executed.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -695,9 +692,6 @@ func newGenieGetEvalResultDetails() *cobra.Command {
     EVAL_RUN_ID: The unique identifier for the evaluation run.
     RESULT_ID: The unique identifier for the evaluation result.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -757,9 +751,6 @@ func newGenieGetEvalRun() *cobra.Command {
     SPACE_ID: The ID associated with the Genie space where the evaluation run is
       located.
     EVAL_RUN_ID: `
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -823,9 +814,6 @@ func newGenieListEvalResults() *cobra.Command {
       located.
     EVAL_RUN_ID: The unique identifier for the evaluation run.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -886,9 +874,6 @@ func newGenieListEvalRuns() *cobra.Command {
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the evaluation run is
       located.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
