@@ -2,9 +2,11 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
 # Same privilege listed twice for the same principal in a single entry.
 trace $CLI bundle deploy
+print_requests.py --get //permissions --keep > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1

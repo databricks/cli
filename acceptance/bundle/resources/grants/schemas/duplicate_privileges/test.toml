@@ -1,2 +1,2 @@
 Badness = "direct engine shows drift after deploy when same privilege is listed twice for same principal"
-RecordRequests = false
+RecordRequests = true
