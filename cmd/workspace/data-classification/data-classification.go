@@ -27,10 +27,7 @@ func New() *cobra.Command {
   tables. Each catalog can have at most one configuration resource that controls
   scanning behavior and auto-tagging rules.`,
 		GroupID: "dataclassification",
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

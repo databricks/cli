@@ -1,4 +1,12 @@
 {
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
   "headers": {
     "Authorization": [
       "Bearer [DATABRICKS_TOKEN]"
