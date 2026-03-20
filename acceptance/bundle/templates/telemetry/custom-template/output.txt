@@ -1,6 +1,24 @@
 
 >>> [CLI] bundle init . --config-file input.json --output-dir output
 ✨ Successfully initialized template
-No command execution ID found in User-Agent: cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]
 
-Exit code: 1
+>>> cat out.requests.txt
+{
+  "frontend_log_event_id": "[UUID]",
+  "entry": {
+    "databricks_cli_log": {
+      "execution_context": {
+        "cmd_exec_id": "[CMD-EXEC-ID]",
+        "version": "[DEV_VERSION]",
+        "command": "bundle_init",
+        "operating_system": "[OS]",
+        "execution_time_ms": SMALL_INT,
+        "exit_code": 0
+      },
+      "bundle_init_event": {
+        "bundle_uuid": "[BUNDLE-UUID]",
+        "template_name": "custom"
+      }
+    }
+  }
+}

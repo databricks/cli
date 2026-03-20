@@ -14,6 +14,8 @@ To get started, refer to the project README.md file and the documentation at htt
 Checking code formatting with ruff format --line-length 88
 
 >>> ruff format --isolated --line-length 88 --quiet --diff --check my_pydabs
-script: line 45: ruff: command not found
+Checking code formatting with ruff format --line-length 120
 
-Exit code: 127
+>>> ruff format --isolated --line-length 120 --quiet --diff --check my_pydabs
+
+>>> yamlcheck.py

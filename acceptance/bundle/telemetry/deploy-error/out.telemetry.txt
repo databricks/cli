@@ -1,6 +1,6 @@
 {
   "execution_context": {
-    "cmd_exec_id": "[UUID]",
+    "cmd_exec_id": "[CMD-EXEC-ID]",
     "version": "[DEV_VERSION]",
     "command": "bundle_deploy",
     "operating_system": "[OS]",
