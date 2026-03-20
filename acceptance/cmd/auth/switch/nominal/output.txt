@@ -11,11 +11,9 @@ default_profile = profile-a
 === Profiles after first switch
 
 >>> [CLI] auth profiles --skip-validate
-Warn: Failed to resolve host metadata: fetching host metadata from "https://profile-a.cloud.databricks.com/.well-known/databricks-config": Get "https://profile-a.cloud.databricks.com/.well-known/databricks-config": dial tcp: lookup profile-a.cloud.databricks.com: no such host. Falling back to user config.
-Warn: Failed to resolve host metadata: fetching host metadata from "https://profile-b.cloud.databricks.com/.well-known/databricks-config": Get "https://profile-b.cloud.databricks.com/.well-known/databricks-config": dial tcp: lookup profile-b.cloud.databricks.com: no such host. Falling back to user config.
-Name                 Host                                    Valid
-profile-a (Default)  https://profile-a.cloud.databricks.com  NO
-profile-b            https://profile-b.cloud.databricks.com  NO
+Name                 Host                    Valid
+profile-a (Default)  [DATABRICKS_URL]  NO
+profile-b            [DATABRICKS_URL]  NO
 
 === Switch to profile-b
 
@@ -29,8 +27,6 @@ default_profile = profile-b
 === Profiles after second switch
 
 >>> [CLI] auth profiles --skip-validate
-Warn: Failed to resolve host metadata: fetching host metadata from "https://profile-b.cloud.databricks.com/.well-known/databricks-config": Get "https://profile-b.cloud.databricks.com/.well-known/databricks-config": dial tcp: lookup profile-b.cloud.databricks.com: no such host. Falling back to user config.
-Warn: Failed to resolve host metadata: fetching host metadata from "https://profile-a.cloud.databricks.com/.well-known/databricks-config": Get "https://profile-a.cloud.databricks.com/.well-known/databricks-config": dial tcp: lookup profile-a.cloud.databricks.com: no such host. Falling back to user config.
-Name                 Host                                    Valid
-profile-a            https://profile-a.cloud.databricks.com  NO
-profile-b (Default)  https://profile-b.cloud.databricks.com  NO
+Name                 Host                    Valid
+profile-a            [DATABRICKS_URL]  NO
+profile-b (Default)  [DATABRICKS_URL]  NO
