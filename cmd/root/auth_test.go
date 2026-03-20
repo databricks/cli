@@ -109,8 +109,11 @@ func TestAccountClientOrPrompt(t *testing.T) {
 		expectPrompts(t, accountPromptFn, &config.Config{})
 	})
 
-	t.Run("Prompt if a workspace host is specified", func(t *testing.T) {
-		expectPrompts(t, accountPromptFn, &config.Config{
+	t.Run("Returns if a workspace host is specified with valid auth and account ID", func(t *testing.T) {
+		// If auth succeeds and an account ID is present, trust the SDK's resolution.
+		// This supports unified hosts where HostType() returns WorkspaceHost but
+		// account APIs are available.
+		expectReturns(t, accountPromptFn, &config.Config{
 			Host:      "https://adb-1234567.89.azuredatabricks.net/",
 			AccountID: "1234",
 			Token:     "foobar",
@@ -179,8 +182,11 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 		expectPrompts(t, workspacePromptFn, &config.Config{})
 	})
 
-	t.Run("Prompt if an account host is specified", func(t *testing.T) {
-		expectPrompts(t, workspacePromptFn, &config.Config{
+	t.Run("Returns if an account host is specified with valid auth", func(t *testing.T) {
+		// If auth succeeds, trust the SDK's resolution. This supports unified
+		// hosts where HostType() returns AccountHost but workspace APIs are
+		// available.
+		expectReturns(t, workspacePromptFn, &config.Config{
 			Host:      "https://accounts.azuredatabricks.net/",
 			AccountID: "1234",
 			Token:     "foobar",
@@ -442,10 +448,13 @@ func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
 }
 
-func TestWorkspaceClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
+func TestWorkspaceClientOrPromptReturnsSuccessWhenAuthSucceeds(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 	t.Setenv("PATH", "")
 
+	// If auth succeeds, trust the SDK's resolution regardless of HostType().
+	// This supports unified hosts where HostType() returns AccountHost but
+	// workspace APIs are available.
 	cfg := &config.Config{
 		Host:          "https://accounts.azuredatabricks.net/",
 		AccountID:     "1234",
@@ -455,7 +464,7 @@ func TestWorkspaceClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
 
 	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
 	assert.NotNil(t, w)
-	assert.ErrorIs(t, err, databricks.ErrNotWorkspaceClient)
+	assert.NoError(t, err)
 }
 
 func TestAccountClientOrPromptReturnsErrorForMissingAccountID(t *testing.T) {

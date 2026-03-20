@@ -56,6 +56,14 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
+	// If auth succeeded and we have an account ID, trust the SDK's resolution.
+	// The SDK resolves host metadata (including .well-known/databricks-config)
+	// during config initialization, so a successful auth means the config is valid
+	// regardless of what HostType() returns from URL pattern matching.
+	if err == nil && cfg.AccountID != "" {
+		return a, nil
+	}
+
 	// Determine if we should prompt for a profile based on host type.
 	// The SDK no longer returns ErrNotAccountClient from NewAccountClient
 	// (as of v0.125.0, host-type validation was removed in favor of host
@@ -171,6 +179,14 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
+	}
+
+	// If auth succeeded, trust the SDK's resolution. The SDK resolves host
+	// metadata (including .well-known/databricks-config) during config
+	// initialization, so a successful auth means the config is valid
+	// regardless of what HostType() returns from URL pattern matching.
+	if err == nil {
+		return w, nil
 	}
 
 	// Determine if we should prompt for a profile based on host type.
