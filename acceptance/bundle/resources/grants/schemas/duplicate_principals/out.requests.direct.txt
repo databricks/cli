@@ -11,15 +11,6 @@
         "remove": [
           "ALL_PRIVILEGES"
         ]
-      },
-      {
-        "add": [
-          "CREATE_TABLE"
-        ],
-        "principal": "deco-test-user@databricks.com",
-        "remove": [
-          "ALL_PRIVILEGES"
-        ]
       }
     ]
   }

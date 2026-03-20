@@ -5,7 +5,6 @@
     "changes": [
       {
         "add": [
-          "CREATE_TABLE",
           "CREATE_TABLE"
         ],
         "principal": "deco-test-user@databricks.com",
