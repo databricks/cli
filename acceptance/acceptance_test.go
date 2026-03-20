@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"net/http"
 	"os"
@@ -139,6 +140,45 @@ func TestInprocessMode(t *testing.T) {
 
 	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
+}
+
+// shardingConfig holds the sharding parameters when running sharded cloud tests.
+type shardingConfig struct {
+	TotalShards int
+	ShardIndex  int
+}
+
+// shardConfig is set by TestAcceptCloudSharded before delegating to testAccept.
+// When non-nil, testAccept will skip tests not assigned to this shard.
+var shardConfig *shardingConfig
+
+// TestAcceptCloudSharded runs a deterministic subset of cloud acceptance tests
+// based on TOTAL_SHARDS and SHARD_INDEX environment variables. Each test
+// (identified by its dir + env variant name) is assigned to exactly one shard
+// via FNV-1a hashing, so all shards together cover the full test suite with no
+// overlap.
+func TestAcceptCloudSharded(t *testing.T) {
+	totalShards, err := strconv.Atoi(os.Getenv("TOTAL_SHARDS"))
+	if err != nil || totalShards <= 0 {
+		t.Fatal("TOTAL_SHARDS must be set to a positive integer")
+	}
+	shardIndex, err := strconv.Atoi(os.Getenv("SHARD_INDEX"))
+	if err != nil || shardIndex < 0 || shardIndex >= totalShards {
+		t.Fatalf("SHARD_INDEX must be in [0, %d)", totalShards)
+	}
+
+	shardConfig = &shardingConfig{TotalShards: totalShards, ShardIndex: shardIndex}
+	defer func() { shardConfig = nil }()
+
+	testAccept(t, false, "")
+}
+
+// isTestInShard returns true if the given test name belongs to the current shard
+// based on FNV-1a hashing.
+func isTestInShard(testName string, cfg *shardingConfig) bool {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(testName))
+	return int(h.Sum32())%cfg.TotalShards == cfg.ShardIndex
 }
 
 // Configure replacements for environment variables we read from test environments.
@@ -341,6 +381,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				if len(expanded[0]) > 0 {
 					t.Logf("Running test with env %v", expanded[0])
 				}
+				if shardConfig != nil && !isTestInShard(dir, shardConfig) {
+					t.Skipf("Skipping: not assigned to shard %d/%d", shardConfig.ShardIndex, shardConfig.TotalShards)
+				}
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
 			} else {
 				for ind, envset := range expanded {
@@ -348,6 +391,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 					t.Run(envname, func(t *testing.T) {
 						if runParallel {
 							t.Parallel()
+						}
+						shardKey := dir + "/" + envname
+						if shardConfig != nil && !isTestInShard(shardKey, shardConfig) {
+							t.Skipf("Skipping: not assigned to shard %d/%d", shardConfig.ShardIndex, shardConfig.TotalShards)
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
 					})
