@@ -294,8 +294,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	envFilters := getEnvFilters(t)
 
+	// Phases are only needed in update mode, where phase 0 tests regenerate
+	// output files that phase 1 tests read via $TESTDIR. In normal runs,
+	// those files are already committed and stable.
+	usePhases := testdiff.OverwriteMode
 	var phase0wg sync.WaitGroup
 	phase1Gate := make(chan struct{})
+	if !usePhases {
+		close(phase1Gate)
+	}
 
 	for _, dir := range testDirs {
 		totalDirs += 1
@@ -339,7 +346,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 			// t.Run blocks until t.Parallel() is called, so Add must happen before t.Parallel().
 			// This ensures all phase0 adds are visible before the wait goroutine starts.
-			if config.Phase == 0 {
+			if usePhases && config.Phase == 0 {
 				phase0wg.Add(1)
 				t.Cleanup(phase0wg.Done)
 			}
@@ -372,10 +379,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		})
 	}
 
-	go func() {
-		phase0wg.Wait()
-		close(phase1Gate)
-	}()
+	if usePhases {
+		go func() {
+			phase0wg.Wait()
+			close(phase1Gate)
+		}()
+	}
 
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
