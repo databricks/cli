@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -642,8 +643,7 @@ func TestRunManifestOnlyFound(t *testing.T) {
 	var buf bytes.Buffer
 	_, _ = io.Copy(&buf, r)
 	out := buf.String()
-	assert.Contains(t, out, `"version": "1.0"`)
-	assert.Contains(t, out, `"analytics"`)
+	assert.Equal(t, content, out)
 }
 
 func TestRunManifestOnlyNotFound(t *testing.T) {
@@ -663,4 +663,27 @@ func TestRunManifestOnlyNotFound(t *testing.T) {
 	_, _ = io.Copy(&buf, r)
 	out := buf.String()
 	assert.Equal(t, "No appkit.plugins.json manifest found in this template.\n", out)
+}
+
+func TestRunManifestOnlyUsesTemplatePathEnvVar(t *testing.T) {
+	dir := t.TempDir()
+	manifestPath := filepath.Join(dir, manifest.ManifestFileName)
+	content := `{"version":"1.0","scaffolding":{"command":"databricks apps init"}}`
+	require.NoError(t, os.WriteFile(manifestPath, []byte(content), 0o644))
+
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	os.Stdout = w
+
+	ctx := env.Set(t.Context(), templatePathEnvVar, dir)
+	err = runManifestOnly(ctx, "", "", "")
+	w.Close()
+	os.Stdout = old
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	out := buf.String()
+	assert.Equal(t, content, out)
 }

@@ -55,6 +55,11 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 
 		// Index access: slice/array
 		if _, isIndex := node.Index(); isIndex {
+			if cur.Kind() == reflect.Struct {
+				if embedType := findEmbedFieldType(cur); embedType != nil {
+					cur = embedType
+				}
+			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
 				return fmt.Errorf("%s: cannot index %s", node.String(), kind)
@@ -65,6 +70,11 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 
 		// Handle wildcards - treat like index/key access
 		if node.BracketStar() {
+			if cur.Kind() == reflect.Struct {
+				if embedType := findEmbedFieldType(cur); embedType != nil {
+					cur = embedType
+				}
+			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
 				return fmt.Errorf("%s: cannot use [*] on %s", node.String(), kind)
@@ -82,6 +92,11 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 
 		// Handle key-value selector: validates that we can index the slice/array
 		if _, _, isKeyValue := node.KeyValue(); isKeyValue {
+			if cur.Kind() == reflect.Struct {
+				if embedType := findEmbedFieldType(cur); embedType != nil {
+					cur = embedType
+				}
+			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
 				return fmt.Errorf("%s: cannot use key-value syntax on %s", node.String(), kind)
@@ -133,7 +148,7 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 			continue
 		}
 		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" {
+		if name == "-" || sf.Name == EmbeddedSliceFieldName {
 			name = ""
 		}
 		if name != "" && name == key {

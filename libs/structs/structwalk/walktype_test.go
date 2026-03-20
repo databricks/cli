@@ -225,6 +225,34 @@ func TestTypeBundleTag(t *testing.T) {
 	assert.Equal(t, []string{"B", "D"}, internal)
 }
 
+func TestWalkTypeEmbedTag(t *testing.T) {
+	type Item struct {
+		Name string `json:"name"`
+	}
+
+	type Container struct {
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
+	}
+
+	var visited []string
+	err := WalkType(reflect.TypeOf(Container{}), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+		if path == nil {
+			return true
+		}
+		visited = append(visited, path.String())
+		return true
+	})
+	require.NoError(t, err)
+
+	// EmbeddedSlice field should not appear as "items" but its contents should be at parent level.
+	assert.Equal(t, []string{
+		"object_id",
+		"[*]",
+		"[*].name",
+	}, visited)
+}
+
 func TestWalkTypeVisited(t *testing.T) {
 	type Inner struct {
 		A int

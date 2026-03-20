@@ -1,0 +1,11 @@
+
+>>> [CLI] bundle validate
+Error: invalid value "invalid_engine" for bundle.engine (expected "terraform" or "direct")
+  in databricks.yml:7:15
+
+Name: test-engine-config
+Target: default
+
+Found 1 error
+
+Exit code: 1

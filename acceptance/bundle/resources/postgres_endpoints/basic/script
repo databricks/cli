@@ -2,6 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
    trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
 }
 trap cleanup EXIT
 
@@ -15,7 +16,7 @@ trace $CLI bundle deploy
 # Get endpoint details
 project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 branch_name="${project_name}/branches/main"
-endpoint_name="${branch_name}/endpoints/primary"
+endpoint_name="${branch_name}/endpoints/custom"
 trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time)'
 
 trace $CLI bundle summary

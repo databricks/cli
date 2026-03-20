@@ -1,5 +1,6 @@
 {
   "creator_user_name":"[USERNAME]",
+  "effective_publishing_mode":"DEFAULT_PUBLISHING_MODE",
   "last_modified":[UNIX_TIME_MILLIS],
   "name":"DABs Revenue Pipeline",
   "pipeline_id":"[UUID]",

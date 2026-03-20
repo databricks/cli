@@ -34,7 +34,7 @@ func Parse(engine string) (EngineType, bool) {
 	}
 }
 
-// FromEnv returns engine setting from environment
+// FromEnv returns engine setting from environment variable.
 func FromEnv(ctx context.Context) (EngineType, error) {
 	value := env.Get(ctx, EnvVar)
 	engine, ok := Parse(value)
@@ -42,6 +42,13 @@ func FromEnv(ctx context.Context) (EngineType, error) {
 		return EngineNotSet, fmt.Errorf("unexpected setting for %s=%#v (expected 'terraform' or 'direct')", EnvVar, value)
 	}
 	return engine, nil
+}
+
+// EngineSetting represents a requested engine type along with the source of the request.
+type EngineSetting struct {
+	Type       EngineType // effective resolved engine
+	Source     string     // human-readable source of Type
+	ConfigType EngineType // from bundle config (EngineNotSet if not configured)
 }
 
 func (e EngineType) ThisOrDefault() EngineType {

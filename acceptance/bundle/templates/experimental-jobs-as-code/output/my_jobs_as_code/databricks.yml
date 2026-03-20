@@ -23,7 +23,6 @@ artifacts:
 
 include:
   - resources/*.yml
-  - resources/*/*.yml
 
 targets:
   dev:

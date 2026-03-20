@@ -28,8 +28,9 @@ You will need to run {{ "databricks auth login" | bold }} to re-authenticate.
 
 func newLogoutCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "logout",
+		Use:    "logout [PROFILE]",
 		Short:  "Log out of a Databricks profile",
+		Args:   cobra.MaximumNArgs(1),
 		Hidden: true,
 		Long: `Log out of a Databricks profile.
 
@@ -37,21 +38,26 @@ This command clears any cached OAuth tokens for the specified profile so
 that the next CLI invocation requires re-authentication. The profile
 entry in ~/.databrickscfg is left intact unless --delete is also specified.
 
-This command requires a profile to be specified (using --profile) or an
-interactive terminal. If you omit --profile and run in an interactive
-terminal, you'll be shown a profile picker. In a non-interactive
-environment (e.g. CI/CD), omitting --profile is an error.
+You can provide a profile name as a positional argument, or use --profile
+to specify it explicitly.
 
-1. If you specify --profile, the command logs out of that profile. In an
-   interactive terminal you'll be asked to confirm unless --force is set.
+This command requires a profile to be specified or an interactive terminal.
+If you omit the profile and run in an interactive terminal, you'll be shown
+a profile picker. In a non-interactive environment (e.g. CI/CD), omitting
+the profile is an error.
 
-2. If you omit --profile in an interactive terminal, you'll be shown
+1. If you specify a profile (via argument or --profile), the command logs
+   out of that profile. In an interactive terminal you'll be asked to
+   confirm unless --force is set.
+
+2. If you omit the profile in an interactive terminal, you'll be shown
    an interactive picker listing all profiles from your configuration file.
    You can search by profile name, host, or account ID. After selecting a
    profile, you'll be asked to confirm unless --force is specified.
 
-3. If you omit --profile in a non-interactive environment (e.g. CI/CD pipeline),
-   the command will fail with an error asking you to specify --profile.
+3. If you omit the profile in a non-interactive environment (e.g. CI/CD
+   pipeline), the command will fail with an error asking you to specify
+   a profile.
 
 4. Use --force to skip the confirmation prompt. This is required when
    running in non-interactive environments.
@@ -68,12 +74,25 @@ environment (e.g. CI/CD), omitting --profile is an error.
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		profiler := profile.DefaultProfiler
+
+		// Resolve the positional argument to a profile name.
+		if profileName != "" && len(args) == 1 {
+			return errors.New("providing both --profile and a positional argument is not supported")
+		}
+		if profileName == "" && len(args) == 1 {
+			resolved, err := resolveLogoutArg(ctx, args[0], profiler)
+			if err != nil {
+				return err
+			}
+			profileName = resolved
+		}
 
 		if profileName == "" {
 			if !cmdio.IsPromptSupported(ctx) {
-				return errors.New("the command is being run in a non-interactive environment, please specify a profile to log out of using --profile")
+				return errors.New("the command is being run in a non-interactive environment, please specify a profile using the PROFILE argument or --profile flag")
 			}
-			allProfiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+			allProfiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
 			if err != nil {
 				return err
 			}
@@ -100,7 +119,7 @@ environment (e.g. CI/CD), omitting --profile is an error.
 			profileName:    profileName,
 			force:          force,
 			deleteProfile:  deleteProfile,
-			profiler:       profile.DefaultProfiler,
+			profiler:       profiler,
 			tokenCache:     tokenCache,
 			configFilePath: env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		})
@@ -269,4 +288,56 @@ func hostCacheKeyAndMatchFn(p profile.Profile) (string, profile.ProfileMatchFunc
 	}
 
 	return host, profile.WithHost(host)
+}
+
+// resolveLogoutArg resolves a positional argument to a profile name. It first
+// tries to match the argument as a profile name, then as a host URL. If the
+// host matches multiple profiles in a non-interactive context, it returns an
+// error listing the matching profile names.
+func resolveLogoutArg(ctx context.Context, arg string, profiler profile.Profiler) (string, error) {
+	// Try as profile name first.
+	candidateProfile, err := loadProfileByName(ctx, arg, profiler)
+	if err != nil {
+		return "", err
+	}
+	if candidateProfile != nil {
+		return arg, nil
+	}
+
+	// Try as host URL.
+	canonicalHost := (&config.Config{Host: arg}).CanonicalHostName()
+	hostProfiles, err := profiler.LoadProfiles(ctx, profile.WithHost(canonicalHost))
+	if err != nil {
+		return "", err
+	}
+
+	switch len(hostProfiles) {
+	case 1:
+		return hostProfiles[0].Name, nil
+	case 0:
+		allProfiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+		if err != nil {
+			return "", fmt.Errorf("no profile found matching %q", arg)
+		}
+		names := strings.Join(allProfiles.Names(), ", ")
+		return "", fmt.Errorf("no profile found matching %q. Available profiles: %s", arg, names)
+	default:
+		// Multiple profiles match the host.
+		if cmdio.IsPromptSupported(ctx) {
+			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
+				Label:             fmt.Sprintf("Multiple profiles found for %q. Select one to log out of", arg),
+				Profiles:          hostProfiles,
+				StartInSearchMode: len(hostProfiles) > 5,
+				ActiveTemplate:    `▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}`,
+				InactiveTemplate:  `  {{.PaddedName}}{{if .AccountID}} (account: {{.AccountID | faint}}){{else}} ({{.Host | faint}}){{end}}`,
+				SelectedTemplate:  `{{ "Selected profile" | faint }}: {{ .Name | bold }}`,
+			})
+			if err != nil {
+				return "", err
+			}
+			return selected, nil
+		}
+		names := strings.Join(hostProfiles.Names(), ", ")
+		return "", fmt.Errorf("multiple profiles found matching host %q: %s. Please specify the profile name directly", arg, names)
+	}
 }

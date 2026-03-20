@@ -6,6 +6,8 @@ cleanup() {
    # Also try to delete the endpoints directly in case they weren't cleaned up
    $CLI postgres delete-endpoint "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/endpoints/test-endpoint-${UNIQUE_NAME}" 2>/dev/null || true
    $CLI postgres delete-endpoint "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/endpoints/test-endpoint-${UNIQUE_NAME}-v2" 2>/dev/null || true
+
+   rm -f out.requests.txt
 }
 trap cleanup EXIT
 
@@ -15,7 +17,6 @@ envsubst < databricks.yml.tmpl | sed "s/ENDPOINT_ID_PLACEHOLDER/test-endpoint-${
 trace cat databricks.yml
 
 trace $CLI bundle plan
-rm -f out.requests.txt
 trace $CLI bundle deploy
 
 endpoint_id_1=`read_id.py my_endpoint`
@@ -50,5 +51,3 @@ title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve
 
 trace print_requests
-
-rm -f out.requests.txt

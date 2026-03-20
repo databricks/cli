@@ -15,6 +15,7 @@
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
         },
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "libraries": [
@@ -54,13 +55,13 @@
       "action": "skip",
       "remote_state": {
         "object_id": "/pipelines/[UUID]",
-        "permissions": [
+        "__embed__": [
           {
-            "group_name": "users",
-            "permission_level": "CAN_VIEW"
+            "level": "CAN_VIEW",
+            "group_name": "users"
           },
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "user_name": "[USERNAME]"
           }
         ]

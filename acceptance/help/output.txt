@@ -156,7 +156,7 @@ Postgres
   postgres                               Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.
 
 Developer Tools
-  bundle                                 Databricks Asset Bundles let you express data/AI/analytics projects as code.
+  bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:

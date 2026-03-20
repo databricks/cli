@@ -20,7 +20,7 @@ Resources:
       Name: 
       URL:  (not deployed)
   Postgres endpoints:
-    primary:
+    custom:
       Name: 
       URL:  (not deployed)
   Postgres projects:
@@ -34,9 +34,9 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/primary
+>>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom
 {
-  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/primary",
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
   "status": {
     "autoscaling_limit_max_cu": 2,
@@ -71,7 +71,7 @@ Resources:
       Name: 
       URL:  (not deployed)
   Postgres endpoints:
-    primary:
+    custom:
       Name: 
       URL:  (not deployed)
   Postgres projects:
@@ -84,7 +84,7 @@ Resources:
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_branches.main
-  delete resources.postgres_endpoints.primary
+  delete resources.postgres_endpoints.custom
   delete resources.postgres_projects.my_project
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default

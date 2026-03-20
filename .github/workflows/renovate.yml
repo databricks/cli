@@ -1,0 +1,14 @@
+name: renovate
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # Weekly on Monday at 00:00 UTC
+  workflow_dispatch:
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: renovatebot/github-action@abd08c7549b2a864af5df4a2e369c43f035a6a9d # v46.1.5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
