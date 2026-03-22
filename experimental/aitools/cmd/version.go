@@ -10,10 +10,15 @@ import (
 )
 
 func newVersionCmd() *cobra.Command {
-	return &cobra.Command{
+	var showSkills bool
+
+	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Show installed AI skills version",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// showSkills is accepted for forward-compat but currently
+			// skills is the only component, so the output is the same.
+			_ = showSkills
 			ctx := cmd.Context()
 
 			globalDir, err := installer.GlobalSkillsDir(ctx)
@@ -57,4 +62,7 @@ func newVersionCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVar(&showSkills, "skills", false, "Show detailed skills version information")
+	return cmd
 }

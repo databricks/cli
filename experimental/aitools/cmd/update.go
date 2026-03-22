@@ -1,6 +1,8 @@
 package aitools
 
 import (
+	"strings"
+
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
@@ -9,6 +11,7 @@ import (
 
 func newUpdateCmd() *cobra.Command {
 	var check, force, noNew bool
+	var skillsFlag string
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -22,11 +25,17 @@ preview what would change without downloading.`,
 			ctx := cmd.Context()
 			installed := agents.DetectInstalled(ctx)
 			src := &installer.GitHubManifestSource{}
-			result, err := installer.UpdateSkills(ctx, src, installed, installer.UpdateOptions{
+
+			opts := installer.UpdateOptions{
 				Check: check,
 				Force: force,
 				NoNew: noNew,
-			})
+			}
+			if skillsFlag != "" {
+				opts.Skills = strings.Split(skillsFlag, ",")
+			}
+
+			result, err := installer.UpdateSkills(ctx, src, installed, opts)
 			if err != nil {
 				return err
 			}
@@ -40,5 +49,6 @@ preview what would change without downloading.`,
 	cmd.Flags().BoolVar(&check, "check", false, "Show what would be updated without downloading")
 	cmd.Flags().BoolVar(&force, "force", false, "Re-download even if versions match")
 	cmd.Flags().BoolVar(&noNew, "no-new", false, "Don't auto-install new skills from manifest")
+	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to update (comma-separated)")
 	return cmd
 }
