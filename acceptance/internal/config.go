@@ -24,6 +24,12 @@ type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
 	Badness *string
 
+	// Execution phase for this test. Phase 1 tests run after all phase 0 tests complete,
+	// which is useful when a test depends on the output of another tests.
+	// Some tests run diff against sister test output to highlight the differences.
+	// Some tests summarize output of many child tests.
+	Phase int `inherit:"false"`
+
 	// Which OSes the test is enabled on. Each string is compared against runtime.GOOS.
 	// If absent, default to true.
 	GOOS map[string]bool
@@ -194,9 +200,19 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 	}
 
 	result := DoLoadConfig(t, configs[0])
+	leafConfigPath := filepath.Join(dir, configFilename)
+	leafConfig := TestConfig{}
+	hasLeafConfig := configs[0] == leafConfigPath
+	if hasLeafConfig {
+		leafConfig = result
+	}
 
 	for _, cfgName := range configs[1:] {
 		cfg := DoLoadConfig(t, cfgName)
+		if cfgName == leafConfigPath {
+			leafConfig = cfg
+			hasLeafConfig = true
+		}
 		err := mergo.Merge(
 			&result,
 			cfg,
@@ -210,14 +226,17 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 		}
 	}
 
+	restoreNonInheritable(&result, leafConfig, hasLeafConfig)
+
 	// Always ignore .cache directory (used by local cache)
 	result.Ignore = append(result.Ignore, ".cache")
 	result.CompiledIgnoreObject = ignore.CompileIgnoreLines(result.Ignore...)
 
 	// Validate incompatible configuration combinations
-	validateConfig(t, result, strings.Join(configs, ", "))
+	configDesc := filepath.ToSlash(strings.Join(configs, ", "))
+	validateConfig(t, result, configDesc)
 
-	return result, strings.Join(configs, ", ")
+	return result, configDesc
 }
 
 // validateConfig checks for incompatible configuration combinations.
@@ -227,6 +246,16 @@ func validateConfig(t *testing.T, config TestConfig, configPath string) {
 	if isTruePtr(config.RunsOnDbr) && isTruePtr(config.RecordRequests) {
 		t.Fatalf("Invalid config %s: RunsOnDbr and RecordRequests cannot both be true. "+
 			"Serverless does not allow access to localhost ports, which the test proxy server requires.", configPath)
+	}
+
+	// Reject Ignore patterns that target out* files, since those are generated
+	// output files and must never be ignored.
+	for _, pattern := range config.Ignore {
+		name := strings.TrimLeft(pattern, "!/")
+		if strings.HasPrefix(name, "out") {
+			t.Fatalf("Invalid config %s: Ignore pattern %q targets output files (out*). "+
+				"Output files must not be ignored.", configPath, pattern)
+		}
 	}
 }
 
@@ -244,6 +273,24 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	}
 
 	return config
+}
+
+// restoreNonInheritable resets fields tagged with `inherit:"false"` to their leaf config values.
+// If there is no leaf config, those fields are reset to their zero value.
+func restoreNonInheritable(result *TestConfig, leafConfig TestConfig, hasLeafConfig bool) {
+	typ := reflect.TypeFor[TestConfig]()
+	val := reflect.ValueOf(result).Elem()
+	leafVal := reflect.ValueOf(leafConfig)
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		if field.Tag.Get("inherit") == "false" {
+			if hasLeafConfig {
+				val.Field(i).Set(leafVal.Field(i))
+			} else {
+				val.Field(i).SetZero()
+			}
+		}
+	}
 }
 
 // mapTransformer is a mergo transformer that merges two maps

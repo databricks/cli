@@ -98,6 +98,7 @@ Deployment complete!
 >>> [CLI] pipelines get [MY_ID_2]
 {
   "creator_user_name":"[USERNAME]",
+  "effective_publishing_mode":"DEFAULT_PUBLISHING_MODE",
   "last_modified":[UNIX_TIME_MILLIS],
   "name":"test-pipeline-[UNIQUE_NAME]",
   "pipeline_id":"[MY_ID_2]",

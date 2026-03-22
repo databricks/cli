@@ -1,6 +1,6 @@
 
->>> [CLI] bundle init default-python --config-file ./input.json --output-dir output
-Welcome to the default Python template for Databricks Asset Bundles!
+>>> [CLI] bundle init default-python --config-file ./input.json --output-dir tmp
+Welcome to the default Python template for Declarative Automation Bundles!
 
 Answer the following questions to customize your project.
 You can always change your configuration in the databricks.yml file later.

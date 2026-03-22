@@ -38,6 +38,6 @@ trace $CLI bundle deployment migrate &> LOG.migrate
 
 cat LOG.migrate | contains.py '!panic:' '!internal error' > /dev/null
 
-$CLI bundle plan -o json &> plan.json
-cat plan.json | contains.py '!panic:' '!internal error' > /dev/null
+$CLI bundle plan -o json > plan.json 2>plan.json.err
+cat plan.json.err | contains.py '!panic:' '!internal error' > /dev/null
 verify_no_drift.py plan.json

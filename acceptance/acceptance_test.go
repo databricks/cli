@@ -20,6 +20,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -209,6 +210,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
+	if !inprocessMode {
+		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
+		t.Setenv("CLI_293", cli293Path)
+		repls.SetPath(cli293Path, "[CLI_293]")
+	}
+
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
@@ -287,6 +294,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	envFilters := getEnvFilters(t)
 
+	// Phases are only needed in update mode, where phase 0 tests regenerate
+	// output files that phase 1 tests read via $TESTDIR. In normal runs,
+	// those files are already committed and stable.
+	usePhases := testdiff.OverwriteMode
+	var phase0wg sync.WaitGroup
+	phase1Gate := make(chan struct{})
+	if !usePhases {
+		close(phase1Gate)
+	}
+
 	for _, dir := range testDirs {
 		totalDirs += 1
 
@@ -294,34 +311,52 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			selectedDirs += 1
 
 			config, configPath := internal.LoadConfig(t, dir)
-			skipReason := getSkipReason(&config, configPath)
-
-			if testdiff.OverwriteMode || OnlyOutTestToml {
-				// Generate materialized config for this test
-				// We do this before skipping the test, so the configs are generated for all tests.
-				materializedConfig, err := internal.GenerateMaterializedConfig(config)
-				require.NoError(t, err)
-				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			err := validateTestPhase(config.Phase)
+			if err != nil {
+				t.Fatalf("Invalid config %s: %s", configPath, err)
 			}
+
+			// Apply default: CloudSlow implies Cloud. Do this before generating
+			// the materialized config so the implication is visible in out.test.toml.
+			if isTruePtr(config.CloudSlow) {
+				config.Cloud = config.CloudSlow
+			}
+
+			// Generate materialized config for this test.
+			// We do this before skipping the test, so the configs are generated for all tests.
+			materializedConfig, err := internal.GenerateMaterializedConfig(config)
+			require.NoError(t, err)
+			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
 
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
+			skipReason := getSkipReason(&config, configPath)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
 			}
 
 			runParallel := !inprocessMode
-
 			if benchmarkMode && strings.Contains(dir, "benchmark") {
 				runParallel = false
 			}
 
+			// t.Run blocks until t.Parallel() is called, so Add must happen before t.Parallel().
+			// This ensures all phase0 adds are visible before the wait goroutine starts.
+			if usePhases && config.Phase == 0 {
+				phase0wg.Add(1)
+				t.Cleanup(phase0wg.Done)
+			}
+
 			if runParallel {
 				t.Parallel()
+			}
+
+			if config.Phase != 0 {
+				<-phase1Gate
 			}
 
 			// Build extra vars for exclusion matching (config state as env vars)
@@ -332,24 +367,23 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 
-			if len(expanded) == 1 {
-				// env vars aren't part of the test case name, so log them for debugging
-				if len(expanded[0]) > 0 {
-					t.Logf("Running test with env %v", expanded[0])
-				}
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
-			} else {
-				for ind, envset := range expanded {
-					envname := strings.Join(envset, "/")
-					t.Run(envname, func(t *testing.T) {
-						if runParallel {
-							t.Parallel()
-						}
-						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
-					})
-				}
+			for ind, envset := range expanded {
+				envname := strings.Join(envset, "/")
+				t.Run(envname, func(t *testing.T) {
+					if runParallel {
+						t.Parallel()
+					}
+					runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
+				})
 			}
 		})
+	}
+
+	if usePhases {
+		go func() {
+			phase0wg.Wait()
+			close(phase1Gate)
+		}()
 	}
 
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
@@ -401,13 +435,16 @@ func getTests(t *testing.T) []string {
 	return testDirs
 }
 
-// Return a reason to skip the test. Empty string means "don't skip".
-func getSkipReason(config *internal.TestConfig, configPath string) string {
-	// Apply default first, so that it's visible in out.test.toml
-	if isTruePtr(config.CloudSlow) {
-		config.Cloud = config.CloudSlow
+func validateTestPhase(phase int) error {
+	if phase == 0 || phase == 1 {
+		return nil
 	}
 
+	return fmt.Errorf("Phase must be 0 or 1, got %d", phase)
+}
+
+// Return a reason to skip the test. Empty string means "don't skip".
+func getSkipReason(config *internal.TestConfig, configPath string) string {
 	if os.Getenv("DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
 		return "Disabled via DATABRICKS_TEST_SKIPLOCAL environment variable in " + configPath
 	}
@@ -539,17 +576,13 @@ func runTest(t *testing.T,
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
 	// Generate materialized config for this test
-	materializedConfig, err := internal.GenerateMaterializedConfig(config)
-	require.NoError(t, err)
-	testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
-
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
-	// Add materialized config to outputs for comparison
-	outputs[internal.MaterializedConfigFile] = true
+	// out.test.toml is written to the source dir during test discovery, not compared.
+	delete(outputs, internal.MaterializedConfigFile)
 
 	timeout := config.Timeout
 
@@ -666,11 +699,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		skipRepls := false
-		if relPath == internal.MaterializedConfigFile {
-			skipRepls = true
-		}
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, skipRepls)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -686,7 +715,7 @@ func runTest(t *testing.T,
 		if _, ok := Ignored[relPath]; ok {
 			continue
 		}
-		if config.CompiledIgnoreObject.MatchesPath(relPath) {
+		if config.CompiledIgnoreObject.MatchesPath(relPath) && !strings.HasPrefix(relPath, "out") {
 			continue
 		}
 		if strings.HasPrefix(filepath.Base(relPath), "LOG") {
@@ -704,7 +733,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, false)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
@@ -777,7 +806,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, skipRepls bool) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -792,7 +821,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
-	if !NoRepl && !skipRepls {
+	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
 	}
 

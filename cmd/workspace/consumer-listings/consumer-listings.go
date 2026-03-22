@@ -123,10 +123,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Consumer Listings drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Consumer Listings drop-down.")
 			names, err := w.ConsumerListings.ListingSummaryNameToIdMap(ctx, marketplace.ListListingsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Consumer Listings drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -260,10 +260,10 @@ func newSearch() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No QUERY argument specified. Loading names for Consumer Listings drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No QUERY argument specified. Loading names for Consumer Listings drop-down.")
 			names, err := w.ConsumerListings.ListingSummaryNameToIdMap(ctx, marketplace.ListListingsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Consumer Listings drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

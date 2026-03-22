@@ -1,4 +1,8 @@
 {
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
   "method": "POST",
   "path": "/api/2.0/repos",
   "body": {
@@ -6,6 +10,10 @@
     "provider": "gitHub",
     "url": "https://github.com/databricks/databricks-empty-ide-project.git"
   }
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }
 {
   "method": "GET",
@@ -17,6 +25,10 @@
 {
   "method": "GET",
   "path": "/api/2.0/repos/[NUMID]"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }
 {
   "method": "GET",
@@ -28,6 +40,10 @@
 {
   "method": "DELETE",
   "path": "/api/2.0/repos/[NUMID]"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }
 {
   "method": "GET",

@@ -2,6 +2,12 @@ __all__ = [
     "Adlsgen2Info",
     "Adlsgen2InfoDict",
     "Adlsgen2InfoParam",
+    "AlertTask",
+    "AlertTaskDict",
+    "AlertTaskParam",
+    "AlertTaskSubscriber",
+    "AlertTaskSubscriberDict",
+    "AlertTaskSubscriberParam",
     "AuthenticationMethod",
     "AuthenticationMethodParam",
     "AutoScale",
@@ -292,6 +298,16 @@ from databricks.bundles.jobs._models.adlsgen2_info import (
     Adlsgen2Info,
     Adlsgen2InfoDict,
     Adlsgen2InfoParam,
+)
+from databricks.bundles.jobs._models.alert_task import (
+    AlertTask,
+    AlertTaskDict,
+    AlertTaskParam,
+)
+from databricks.bundles.jobs._models.alert_task_subscriber import (
+    AlertTaskSubscriber,
+    AlertTaskSubscriberDict,
+    AlertTaskSubscriberParam,
 )
 from databricks.bundles.jobs._models.authentication_method import (
     AuthenticationMethod,
