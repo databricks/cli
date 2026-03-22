@@ -45,7 +45,7 @@ func newVersionCmd() *cobra.Command {
 			if env.Get(ctx, "DATABRICKS_SKILLS_REF") != "" {
 				cmdio.LogString(ctx, "Databricks AI Tools:")
 				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s)", version, len(state.Skills), skillNoun))
-				cmdio.LogString(ctx, fmt.Sprintf("  Last updated: %s", state.LastUpdated.Format("2006-01-02")))
+				cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
 				cmdio.LogString(ctx, "  Using custom ref: $DATABRICKS_SKILLS_REF")
 				return nil
 			}
@@ -61,19 +61,19 @@ func newVersionCmd() *cobra.Command {
 
 			if !authoritative {
 				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s)", version, len(state.Skills), skillNoun))
-				cmdio.LogString(ctx, fmt.Sprintf("  Last updated: %s", state.LastUpdated.Format("2006-01-02")))
+				cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
 				cmdio.LogString(ctx, "  Could not check for latest version.")
 				return nil
 			}
 
 			if latest == state.Release {
 				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s, up to date)", version, len(state.Skills), skillNoun))
-				cmdio.LogString(ctx, fmt.Sprintf("  Last updated: %s", state.LastUpdated.Format("2006-01-02")))
+				cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
 			} else {
 				latestVersion := strings.TrimPrefix(latest, "v")
 				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s)", version, len(state.Skills), skillNoun))
-				cmdio.LogString(ctx, fmt.Sprintf("  Update available: v%s", latestVersion))
-				cmdio.LogString(ctx, fmt.Sprintf("  Last updated: %s", state.LastUpdated.Format("2006-01-02")))
+				cmdio.LogString(ctx, "  Update available: v"+latestVersion)
+				cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
 				cmdio.LogString(ctx, "")
 				cmdio.LogString(ctx, "Run 'databricks experimental aitools update' to update.")
 			}

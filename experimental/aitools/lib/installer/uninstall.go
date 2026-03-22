@@ -2,6 +2,7 @@ package installer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,9 +27,9 @@ func UninstallSkills(ctx context.Context) error {
 
 	if state == nil {
 		if hasLegacyInstall(ctx, globalDir) {
-			return fmt.Errorf("found skills from a previous install without state tracking; run 'databricks experimental aitools install' first, then uninstall")
+			return errors.New("found skills from a previous install without state tracking; run 'databricks experimental aitools install' first, then uninstall")
 		}
-		return fmt.Errorf("no skills installed")
+		return errors.New("no skills installed")
 	}
 
 	skillCount := len(state.Skills)
