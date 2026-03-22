@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -147,8 +148,15 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		return err
 	}
 
-	// Install each skill.
-	for name, meta := range targetSkills {
+	// Install each skill in sorted order for determinism.
+	skillNames := make([]string, 0, len(targetSkills))
+	for name := range targetSkills {
+		skillNames = append(skillNames, name)
+	}
+	sort.Strings(skillNames)
+
+	for _, name := range skillNames {
+		meta := targetSkills[name]
 		// Idempotency: skip if same version is already installed and on disk.
 		if state != nil && state.Skills[name] == meta.Version {
 			skillDir := filepath.Join(globalDir, name)
@@ -165,7 +173,10 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 
 	// Save state. Merge into existing state so skills from previous installs
 	// (e.g., experimental skills from a prior run) are preserved.
-	existingState, _ := LoadState(globalDir)
+	existingState, loadErr := LoadState(globalDir)
+	if loadErr != nil {
+		log.Warnf(ctx, "Could not reload state for merge: %v", loadErr)
+	}
 	var newState *InstallState
 	if existingState != nil {
 		newState = existingState
