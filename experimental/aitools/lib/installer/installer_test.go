@@ -481,7 +481,8 @@ func TestLegacyDetectLegacyDir(t *testing.T) {
 }
 
 func TestInstallAllSkillsSignaturePreserved(t *testing.T) {
-	// Compile-time check that InstallAllSkills satisfies func(context.Context) error.
-	var fn func(context.Context) error = InstallAllSkills
-	_ = fn
+	// Compile-time check that InstallAllSkills matches the expected signature.
+	// cmd/apps/init.go passes this as func(context.Context) error.
+	callback := func(fn func(context.Context) error) { _ = fn }
+	callback(InstallAllSkills)
 }

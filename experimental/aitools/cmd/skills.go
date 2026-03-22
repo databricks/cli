@@ -2,7 +2,8 @@ package aitools
 
 import (
 	"context"
-	"fmt"
+	"errors"
+
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
@@ -13,7 +14,7 @@ import (
 
 // Package-level vars for testability.
 var (
-	promptAgentSelection    = defaultPromptAgentSelection
+	promptAgentSelection     = defaultPromptAgentSelection
 	installSkillsForAgentsFn = installer.InstallSkillsForAgents
 )
 
@@ -37,7 +38,7 @@ func defaultPromptAgentSelection(ctx context.Context, detected []*agents.Agent) 
 	}
 
 	if len(selected) == 0 {
-		return nil, fmt.Errorf("at least one agent must be selected")
+		return nil, errors.New("at least one agent must be selected")
 	}
 
 	result := make([]*agents.Agent, 0, len(selected))

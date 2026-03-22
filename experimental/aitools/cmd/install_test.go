@@ -1,8 +1,8 @@
 package aitools
 
 import (
-	"context"
 	"bufio"
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
