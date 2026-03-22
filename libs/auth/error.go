@@ -135,8 +135,9 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 		}
 		loginCmd := BuildLoginCommand(ctx, "", oauthArg)
 		// For SPOG/unified hosts, the OAuthArgument doesn't carry workspace-id.
-		// Append it so the re-auth command is actionable.
-		if cfg.WorkspaceID != "" && !IsAccountsHost(cfg.Host) {
+		// Append it so the re-auth command is actionable. Only for hosts with
+		// both account_id and workspace_id (i.e. SPOG/unified hosts).
+		if cfg.WorkspaceID != "" && cfg.AccountID != "" {
 			loginCmd += " --workspace-id " + cfg.WorkspaceID
 		}
 		fmt.Fprintf(b, "\n  - Re-authenticate: %s", loginCmd)

@@ -321,6 +321,17 @@ func TestExtractHostQueryParams(t *testing.T) {
 			wantWorkspaceID: "explicit-ws",
 		},
 		{
+			name:     "non-numeric ?o= is skipped",
+			host:     "https://spog.example.com/?o=abc",
+			wantHost: "https://spog.example.com",
+		},
+		{
+			name:            "non-numeric ?workspace_id= is skipped",
+			host:            "https://spog.example.com/?workspace_id=abc",
+			wantHost:        "https://spog.example.com",
+			wantWorkspaceID: "",
+		},
+		{
 			name:     "invalid URL is left unchanged",
 			host:     "not a valid url ://???",
 			wantHost: "not a valid url ://???",
@@ -415,16 +426,16 @@ func TestRunHostDiscovery_ClassicWorkspaceDoesNotSetAccountID(t *testing.T) {
 
 func TestExtractHostQueryParams_OverridesProfileWorkspaceID(t *testing.T) {
 	// Simulates the fix: profile loads workspace_id="old-ws", then the user
-	// provides --host https://spog.example.com?o=new-ws. After Fix 1, profile
+	// provides --host https://spog.example.com?o=99999. After Fix 1, profile
 	// inheritance is deferred, so authArguments.WorkspaceID is empty when
 	// extractHostQueryParams runs, and URL param wins.
 	args := &auth.AuthArguments{
-		Host: "https://spog.example.com/?o=new-ws",
+		Host: "https://spog.example.com/?o=99999",
 		// WorkspaceID is empty because profile inheritance was deferred.
 	}
 	extractHostQueryParams(args)
 	assert.Equal(t, "https://spog.example.com", args.Host)
-	assert.Equal(t, "new-ws", args.WorkspaceID)
+	assert.Equal(t, "99999", args.WorkspaceID)
 }
 
 func TestSetHostAndAccountId_URLParamsOverrideProfile(t *testing.T) {
@@ -433,15 +444,15 @@ func TestSetHostAndAccountId_URLParamsOverrideProfile(t *testing.T) {
 
 	unifiedWorkspaceProfile := loadTestProfile(t, ctx, "unified-workspace")
 
-	// The profile has workspace_id=123456789, but the URL has ?o=new-ws.
-	// After Fix 1, URL params should win over profile values.
+	// The profile has workspace_id=123456789, but the URL has ?o=99999.
+	// URL params should win over profile values.
 	args := auth.AuthArguments{
-		Host:          "https://unified.databricks.com?o=new-ws",
+		Host:          "https://unified.databricks.com?o=99999",
 		AccountID:     "test-unified-account",
 		IsUnifiedHost: true,
 	}
 	err := setHostAndAccountId(ctx, unifiedWorkspaceProfile, &args, []string{})
 	assert.NoError(t, err)
 	assert.Equal(t, "https://unified.databricks.com", args.Host)
-	assert.Equal(t, "new-ws", args.WorkspaceID)
+	assert.Equal(t, "99999", args.WorkspaceID)
 }

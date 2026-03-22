@@ -18,6 +18,10 @@ type AuthArguments struct {
 	// Profile is the optional profile name. When set, the OAuth token cache
 	// key is the profile name instead of the host-based key.
 	Profile string
+
+	// DiscoveryURL is cached from host metadata discovery to avoid duplicate
+	// network calls when both runHostDiscovery and ToOAuthArgument need it.
+	DiscoveryURL string
 }
 
 // ToOAuthArgument converts the AuthArguments to an OAuthArgument from the Go SDK.
@@ -35,15 +39,19 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		Loaders: []config.Loader{config.ConfigAttributes},
 	}
 
-	// Ignore resolution errors; discovery failure is expected for non-SPOG
-	// hosts and the function falls through to workspace OAuth below.
-	_ = cfg.EnsureResolved()
+	discoveryURL := a.DiscoveryURL
+	if discoveryURL == "" {
+		// No cached discovery, resolve fresh.
+		if err := cfg.EnsureResolved(); err == nil {
+			discoveryURL = cfg.DiscoveryURL
+		}
+	}
 
 	host := cfg.CanonicalHostName()
 
 	// Classic accounts.* hosts always use account OAuth, even if discovery
 	// returned data. This preserves backward compatibility.
-	if IsAccountsHost(host) {
+	if (&config.Config{Host: host}).HostType() == config.AccountHost {
 		return u2m.NewProfileAccountOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 
@@ -53,7 +61,7 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	// (e.g. DATABRICKS_ACCOUNT_ID set in the environment). We also require the
 	// DiscoveryURL to contain "/oidc/accounts/" to distinguish SPOG hosts from
 	// classic workspace hosts that may also return discovery metadata.
-	if a.AccountID != "" && cfg.DiscoveryURL != "" && strings.Contains(cfg.DiscoveryURL, "/oidc/accounts/") {
+	if a.AccountID != "" && discoveryURL != "" && strings.Contains(discoveryURL, "/oidc/accounts/") {
 		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 
@@ -63,20 +71,4 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	}
 
 	return u2m.NewProfileWorkspaceOAuthArgument(host, a.Profile)
-}
-
-// IsAccountsHost returns true if the host is a classic Databricks accounts host
-// (e.g. https://accounts.cloud.databricks.com or https://accounts-dod.cloud.databricks.us).
-func IsAccountsHost(host string) bool {
-	h := normalizeHost(host)
-	return strings.HasPrefix(h, "https://accounts.") ||
-		strings.HasPrefix(h, "https://accounts-dod.")
-}
-
-// normalizeHost ensures the host has a scheme prefix.
-func normalizeHost(host string) string {
-	if host != "" && !strings.Contains(host, "://") {
-		return "https://" + host
-	}
-	return host
 }

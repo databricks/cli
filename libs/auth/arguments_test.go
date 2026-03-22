@@ -243,24 +243,3 @@ func TestToOAuthArgument_NoAccountIDSkipsUnifiedRouting(t *testing.T) {
 	_, ok := got.(u2m.WorkspaceOAuthArgument)
 	assert.True(t, ok, "expected WorkspaceOAuthArgument when no caller AccountID, got %T", got)
 }
-
-func TestIsAccountsHost(t *testing.T) {
-	tests := []struct {
-		host string
-		want bool
-	}{
-		{"https://accounts.cloud.databricks.com", true},
-		{"https://accounts-dod.cloud.databricks.us", true},
-		{"accounts.cloud.databricks.com", true},
-		{"accounts-dod.cloud.databricks.us", true},
-		{"https://my-workspace.cloud.databricks.com", false},
-		{"https://spog.example.com", false},
-		{"", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.host, func(t *testing.T) {
-			assert.Equal(t, tt.want, IsAccountsHost(tt.host))
-		})
-	}
-}

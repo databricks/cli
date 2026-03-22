@@ -201,7 +201,8 @@ depends on the existing profiles you have set in your configuration file
 
 		// For SPOG hosts with account_id but no workspace_id, prompt for workspace selection.
 		// This is skipped for classic accounts.* hosts where account-level access is expected.
-		if authArguments.AccountID != "" && authArguments.WorkspaceID == "" && !auth.IsAccountsHost(authArguments.Host) {
+		cfg := &config.Config{Host: authArguments.Host}
+		if authArguments.AccountID != "" && authArguments.WorkspaceID == "" && cfg.HostType() != config.AccountHost {
 			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, persistentAuth)
 			if wsErr != nil {
 				log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
@@ -405,12 +406,18 @@ func extractHostQueryParams(authArguments *auth.AuthArguments) {
 
 	q := u.Query()
 
-	// Extract workspace_id from ?o= or ?workspace_id=
+	// Extract workspace_id from ?o= or ?workspace_id=.
+	// Workspace IDs are always numeric, so skip non-numeric values to avoid
+	// confusing downstream errors.
 	if authArguments.WorkspaceID == "" {
 		if v := q.Get("o"); v != "" {
-			authArguments.WorkspaceID = v
+			if _, err := strconv.ParseInt(v, 10, 64); err == nil {
+				authArguments.WorkspaceID = v
+			}
 		} else if v := q.Get("workspace_id"); v != "" {
-			authArguments.WorkspaceID = v
+			if _, err := strconv.ParseInt(v, 10, 64); err == nil {
+				authArguments.WorkspaceID = v
+			}
 		}
 	}
 
@@ -459,6 +466,9 @@ func runHostDiscovery(ctx context.Context, authArguments *auth.AuthArguments) {
 	}
 	if authArguments.WorkspaceID == "" && cfg.WorkspaceID != "" {
 		authArguments.WorkspaceID = cfg.WorkspaceID
+	}
+	if authArguments.DiscoveryURL == "" && cfg.DiscoveryURL != "" {
+		authArguments.DiscoveryURL = cfg.DiscoveryURL
 	}
 }
 
