@@ -95,26 +95,6 @@ func fetchSkillFile(ctx context.Context, ref, skillName, filePath string) ([]byt
 	return io.ReadAll(resp.Body)
 }
 
-// ListSkills fetches and prints available skills.
-func ListSkills(ctx context.Context) error {
-	manifest, err := FetchManifest(ctx)
-	if err != nil {
-		return err
-	}
-
-	cmdio.LogString(ctx, "Available skills:")
-	cmdio.LogString(ctx, "")
-
-	for name, meta := range manifest.Skills {
-		cmdio.LogString(ctx, fmt.Sprintf("  %s (v%s)", name, meta.Version))
-	}
-
-	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Install all with: databricks experimental aitools skills install")
-	cmdio.LogString(ctx, "Install one with: databricks experimental aitools skills install <skill-name>")
-	return nil
-}
-
 // InstallSkillsForAgents fetches the manifest and installs skills for the given agents.
 // This is the core installation function. Callers are responsible for agent detection,
 // prompting, and printing the "Installing..." header.

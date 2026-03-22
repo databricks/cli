@@ -75,6 +75,7 @@ func newSkillsInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install [skill-name]",
 		Short: "Install Databricks skills for detected coding agents",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Delegate to the flat install command's logic.
 			installCmd := newInstallCmd()
@@ -82,6 +83,8 @@ func newSkillsInstallCmd() *cobra.Command {
 			if len(args) > 0 {
 				// Pass the skill name as a --skills flag.
 				installCmd.SetArgs([]string{"--skills", args[0]})
+			} else {
+				installCmd.SetArgs([]string{})
 			}
 			return installCmd.Execute()
 		},
