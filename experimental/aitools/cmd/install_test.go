@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,62 +46,104 @@ func setupTestAgents(t *testing.T) string {
 	return tmp
 }
 
-func TestInstallCommandsDelegateToSkillsInstall(t *testing.T) {
+func TestInstallAllSkillsForAllAgents(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
-	tests := []struct {
-		name       string
-		newCmd     func() *cobra.Command
-		args       []string
-		wantAgents int
-		wantSkills []string
-	}{
-		{
-			name:       "skills install installs all skills for all agents",
-			newCmd:     newSkillsInstallCmd,
-			wantAgents: 2,
-		},
-		{
-			name:       "skills install forwards skill name",
-			newCmd:     newSkillsInstallCmd,
-			args:       []string{"bundle/review"},
-			wantAgents: 2,
-			wantSkills: []string{"bundle/review"},
-		},
-		{
-			name:       "top level install installs all skills",
-			newCmd:     newInstallCmd,
-			wantAgents: 2,
-		},
-		{
-			name:       "top level install forwards skill name",
-			newCmd:     newInstallCmd,
-			args:       []string{"bundle/review"},
-			wantAgents: 2,
-			wantSkills: []string{"bundle/review"},
-		},
-	}
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			*calls = nil
+	err := cmd.RunE(cmd, nil)
+	require.NoError(t, err)
 
-			ctx := cmdio.MockDiscard(t.Context())
-			cmd := tt.newCmd()
-			cmd.SetContext(ctx)
-
-			err := cmd.RunE(cmd, tt.args)
-			require.NoError(t, err)
-
-			require.Len(t, *calls, 1)
-			assert.Len(t, (*calls)[0].agents, tt.wantAgents)
-			assert.Equal(t, tt.wantSkills, (*calls)[0].opts.SpecificSkills)
-		})
-	}
+	require.Len(t, *calls, 1)
+	assert.Len(t, (*calls)[0].agents, 2)
+	assert.Nil(t, (*calls)[0].opts.SpecificSkills)
 }
 
-func TestRunSkillsInstallInteractivePrompt(t *testing.T) {
+func TestInstallSpecificSkills(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--skills", "databricks,databricks-apps"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, []string{"databricks", "databricks-apps"}, (*calls)[0].opts.SpecificSkills)
+}
+
+func TestInstallSingleSkill(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--skills", "databricks"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, []string{"databricks"}, (*calls)[0].opts.SpecificSkills)
+}
+
+func TestInstallSpecificAgents(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--agents", "claude-code"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, []string{"claude-code"}, (*calls)[0].agents)
+}
+
+func TestInstallUnknownAgentErrors(t *testing.T) {
+	setupTestAgents(t)
+	setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--agents", "invalid-agent"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown agent")
+	assert.Contains(t, err.Error(), "Available agents:")
+}
+
+func TestInstallIncludeExperimental(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--include-experimental"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.True(t, (*calls)[0].opts.IncludeExperimental)
+}
+
+func TestInstallInteractivePrompt(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
@@ -112,15 +153,12 @@ func TestRunSkillsInstallInteractivePrompt(t *testing.T) {
 	promptCalled := false
 	promptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
 		promptCalled = true
-		// Return only the first agent.
 		return detected[:1], nil
 	}
 
-	// Use SetupTest with PromptSupported=true to simulate interactive terminal.
 	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	defer test.Done()
 
-	// Drain both pipes in background to prevent blocking.
 	drain := func(r *bufio.Reader) {
 		buf := make([]byte, 4096)
 		for {
@@ -133,7 +171,10 @@ func TestRunSkillsInstallInteractivePrompt(t *testing.T) {
 	go drain(test.Stdout)
 	go drain(test.Stderr)
 
-	err := runSkillsInstall(ctx, nil)
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, nil)
 	require.NoError(t, err)
 
 	assert.True(t, promptCalled, "prompt should be called when 2+ agents detected and interactive")
@@ -141,7 +182,7 @@ func TestRunSkillsInstallInteractivePrompt(t *testing.T) {
 	assert.Len(t, (*calls)[0].agents, 1, "only the selected agent should be passed")
 }
 
-func TestRunSkillsInstallNonInteractiveUsesAllAgents(t *testing.T) {
+func TestInstallNonInteractiveUsesAllAgents(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
 
@@ -154,10 +195,11 @@ func TestRunSkillsInstallNonInteractiveUsesAllAgents(t *testing.T) {
 		return detected, nil
 	}
 
-	// MockDiscard gives a non-interactive context.
 	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
 
-	err := runSkillsInstall(ctx, nil)
+	err := cmd.RunE(cmd, nil)
 	require.NoError(t, err)
 
 	assert.False(t, promptCalled, "prompt should not be called in non-interactive mode")
@@ -165,15 +207,97 @@ func TestRunSkillsInstallNonInteractiveUsesAllAgents(t *testing.T) {
 	assert.Len(t, (*calls)[0].agents, 2, "all detected agents should be used")
 }
 
-func TestRunSkillsInstallNoAgents(t *testing.T) {
-	// Set HOME to empty dir so no agents are detected.
+func TestInstallNoAgentsDetected(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 
 	calls := setupInstallMock(t)
 	ctx := cmdio.MockDiscard(t.Context())
 
-	err := runSkillsInstall(ctx, nil)
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, nil)
 	require.NoError(t, err)
 	assert.Empty(t, *calls, "install should not be called when no agents detected")
+}
+
+func TestInstallAgentsFlagSkipsPrompt(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
+
+	promptCalled := false
+	promptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
+		promptCalled = true
+		return detected, nil
+	}
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--agents", "claude-code,cursor"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	assert.False(t, promptCalled, "prompt should not be called when --agents is specified")
+	require.Len(t, *calls, 1)
+	assert.Equal(t, []string{"claude-code", "cursor"}, (*calls)[0].agents)
+}
+
+func TestSkillsInstallDelegatesToInstall(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newSkillsInstallCmd()
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, nil)
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Len(t, (*calls)[0].agents, 2)
+}
+
+func TestSkillsInstallForwardsSkillName(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newSkillsInstallCmd()
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, []string{"databricks"})
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, []string{"databricks"}, (*calls)[0].opts.SpecificSkills)
+}
+
+func TestResolveAgentNamesValid(t *testing.T) {
+	ctx := t.Context()
+	result, err := resolveAgentNames(ctx, "claude-code,cursor")
+	require.NoError(t, err)
+	assert.Len(t, result, 2)
+	assert.Equal(t, "claude-code", result[0].Name)
+	assert.Equal(t, "cursor", result[1].Name)
+}
+
+func TestResolveAgentNamesUnknown(t *testing.T) {
+	ctx := t.Context()
+	_, err := resolveAgentNames(ctx, "claude-code,invalid-agent")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown agent")
+	assert.Contains(t, err.Error(), "invalid-agent")
+}
+
+func TestResolveAgentNamesEmpty(t *testing.T) {
+	ctx := t.Context()
+	_, err := resolveAgentNames(ctx, "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no agents specified")
 }

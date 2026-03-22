@@ -13,8 +13,20 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
+// UninstallOptions controls the behavior of UninstallSkillsOpts.
+type UninstallOptions struct {
+	Skills []string // empty = all
+}
+
 // UninstallSkills removes all installed skills, their symlinks, and the state file.
 func UninstallSkills(ctx context.Context) error {
+	return UninstallSkillsOpts(ctx, UninstallOptions{})
+}
+
+// UninstallSkillsOpts removes installed skills based on options.
+// When opts.Skills is empty, all skills are removed (same as UninstallSkills).
+// When opts.Skills is non-empty, only the named skills are removed.
+func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 	globalDir, err := GlobalSkillsDir(ctx)
 	if err != nil {
 		return err
@@ -32,35 +44,52 @@ func UninstallSkills(ctx context.Context) error {
 		return errors.New("no skills installed")
 	}
 
-	skillCount := len(state.Skills)
-
-	// Remove skill directories and symlinks for each skill in state.
-	for name := range state.Skills {
-		canonicalDir := filepath.Join(globalDir, name)
-
-		// Remove symlinks from agent directories (only symlinks pointing to canonical dir).
-		removeSymlinksFromAgents(ctx, name, canonicalDir)
-
-		// Remove canonical skill directory.
-		if err := os.RemoveAll(canonicalDir); err != nil {
-			log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
+	// Determine which skills to remove.
+	var toRemove []string
+	if len(opts.Skills) > 0 {
+		for _, name := range opts.Skills {
+			if _, ok := state.Skills[name]; !ok {
+				return fmt.Errorf("skill %q is not installed", name)
+			}
+			toRemove = append(toRemove, name)
+		}
+	} else {
+		for name := range state.Skills {
+			toRemove = append(toRemove, name)
 		}
 	}
 
-	// Clean up orphaned symlinks pointing into the canonical dir.
-	cleanOrphanedSymlinks(ctx, globalDir)
+	removeAll := len(toRemove) == len(state.Skills)
 
-	// Delete state file.
-	stateFile := filepath.Join(globalDir, stateFileName)
-	if err := os.Remove(stateFile); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove state file: %w", err)
+	// Remove skill directories and symlinks for each skill.
+	for _, name := range toRemove {
+		canonicalDir := filepath.Join(globalDir, name)
+		removeSymlinksFromAgents(ctx, name, canonicalDir)
+		if err := os.RemoveAll(canonicalDir); err != nil {
+			log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
+		}
+		delete(state.Skills, name)
+	}
+
+	if removeAll {
+		// Clean up orphaned symlinks and delete state file.
+		cleanOrphanedSymlinks(ctx, globalDir)
+		stateFile := filepath.Join(globalDir, stateFileName)
+		if err := os.Remove(stateFile); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove state file: %w", err)
+		}
+	} else {
+		// Update state to reflect remaining skills.
+		if err := SaveState(globalDir, state); err != nil {
+			return err
+		}
 	}
 
 	noun := "skills"
-	if skillCount == 1 {
+	if len(toRemove) == 1 {
 		noun = "skill"
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Uninstalled %d %s.", skillCount, noun))
+	cmdio.LogString(ctx, fmt.Sprintf("Uninstalled %d %s.", len(toRemove), noun))
 	return nil
 }
 

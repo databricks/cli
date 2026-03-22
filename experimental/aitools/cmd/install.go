@@ -1,18 +1,118 @@
 package aitools
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
 func newInstallCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "install [skill-name]",
-		Short: "Alias for skills install",
-		Long: `Alias for "databricks experimental aitools skills install".
+	var skillsFlag, agentsFlag string
+	var includeExperimental bool
 
-Installs Databricks skills for detected coding agents.`,
+	cmd := &cobra.Command{
+		Use:   "install",
+		Short: "Install AI skills for coding agents",
+		Long: `Install Databricks AI skills for detected coding agents.
+
+Skills are installed globally to each agent's skills directory.
+When multiple agents are detected, skills are stored in a canonical location
+and symlinked to each agent to avoid duplication.
+
+Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSkillsInstall(cmd.Context(), args)
+			ctx := cmd.Context()
+
+			// Resolve target agents.
+			var targetAgents []*agents.Agent
+			if agentsFlag != "" {
+				var err error
+				targetAgents, err = resolveAgentNames(ctx, agentsFlag)
+				if err != nil {
+					return err
+				}
+			} else {
+				detected := agents.DetectInstalled(ctx)
+				if len(detected) == 0 {
+					printNoAgentsMessage(ctx)
+					return nil
+				}
+
+				switch {
+				case len(detected) == 1:
+					targetAgents = detected
+				case cmdio.IsPromptSupported(ctx):
+					var err error
+					targetAgents, err = promptAgentSelection(ctx, detected)
+					if err != nil {
+						return err
+					}
+				default:
+					targetAgents = detected
+				}
+			}
+
+			// Build install options.
+			opts := installer.InstallOptions{
+				IncludeExperimental: includeExperimental,
+			}
+			if skillsFlag != "" {
+				opts.SpecificSkills = strings.Split(skillsFlag, ",")
+			}
+
+			installer.PrintInstallingFor(ctx, targetAgents)
+
+			src := &installer.GitHubManifestSource{}
+			return installSkillsForAgentsFn(ctx, src, targetAgents, opts)
 		},
 	}
+
+	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to install (comma-separated)")
+	cmd.Flags().StringVar(&agentsFlag, "agents", "", "Agents to install for (comma-separated, e.g. claude-code,cursor)")
+	cmd.Flags().BoolVar(&includeExperimental, "include-experimental", false, "Include experimental skills")
+	return cmd
+}
+
+// resolveAgentNames parses a comma-separated list of agent names and validates
+// them against the registry. Returns an error for unrecognized names.
+func resolveAgentNames(ctx context.Context, names string) ([]*agents.Agent, error) {
+	available := make(map[string]*agents.Agent, len(agents.Registry))
+	var availableNames []string
+	for i := range agents.Registry {
+		a := &agents.Registry[i]
+		available[a.Name] = a
+		availableNames = append(availableNames, a.Name)
+	}
+
+	var result []*agents.Agent
+	for _, name := range strings.Split(names, ",") {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		agent, ok := available[name]
+		if !ok {
+			return nil, fmt.Errorf("unknown agent %q. Available agents: %s", name, strings.Join(availableNames, ", "))
+		}
+		result = append(result, agent)
+	}
+
+	if len(result) == 0 {
+		return nil, errors.New("no agents specified")
+	}
+	return result, nil
+}
+
+// printNoAgentsMessage prints the "no agents detected" message.
+func printNoAgentsMessage(ctx context.Context) {
+	cmdio.LogString(ctx, "No supported coding agents detected.")
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity")
+	cmdio.LogString(ctx, "Please install at least one coding agent first.")
 }
