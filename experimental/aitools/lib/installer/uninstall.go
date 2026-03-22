@@ -157,4 +157,3 @@ func cleanOrphanedSymlinks(ctx context.Context, globalDir string) {
 		}
 	}
 }
-
