@@ -1,8 +1,10 @@
 package auth
 
 import (
-	"fmt"
+	"context"
+	"strings"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
@@ -21,25 +23,59 @@ type AuthArguments struct {
 }
 
 // ToOAuthArgument converts the AuthArguments to an OAuthArgument from the Go SDK.
+// It calls EnsureResolved() to run host metadata discovery and routes based on
+// the resolved DiscoveryURL rather than the Experimental_IsUnifiedHost flag.
 func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	cfg := &config.Config{
 		Host:                       a.Host,
 		AccountID:                  a.AccountID,
 		WorkspaceID:                a.WorkspaceID,
 		Experimental_IsUnifiedHost: a.IsUnifiedHost,
+		HTTPTimeoutSeconds:         5,
+		// Skip config file loading. We only want host metadata resolution
+		// based on the explicit fields provided.
+		Loaders: []config.Loader{config.ConfigAttributes},
 	}
+
+	if err := cfg.EnsureResolved(); err != nil {
+		//nolint:forbidigo // ToOAuthArgument has no context parameter; this is a non-critical warning.
+		log.Warnf(context.Background(), "Config resolution failed in ToOAuthArgument: %v", err)
+	}
+
 	host := cfg.CanonicalHostName()
 
-	switch cfg.HostType() {
-	case config.AccountHost:
+	// Classic accounts.* hosts always use account OAuth, even if discovery
+	// returned data. This preserves backward compatibility.
+	if IsAccountsHost(host) {
 		return u2m.NewProfileAccountOAuthArgument(host, cfg.AccountID, a.Profile)
-	case config.WorkspaceHost:
-		return u2m.NewProfileWorkspaceOAuthArgument(host, a.Profile)
-	case config.UnifiedHost:
-		// For unified hosts, always use the unified OAuth argument with account ID.
-		// The workspace ID is stored in the config for API routing, not OAuth.
-		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
-	default:
-		return nil, fmt.Errorf("unknown host type: %v", cfg.HostType())
 	}
+
+	// Route based on discovery data: a non-accounts host with a DiscoveryURL
+	// and account_id is a SPOG/unified host.
+	if cfg.DiscoveryURL != "" && cfg.AccountID != "" {
+		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
+	}
+
+	// Legacy backward compat: existing profiles with IsUnifiedHost flag.
+	if a.IsUnifiedHost && a.AccountID != "" {
+		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
+	}
+
+	return u2m.NewProfileWorkspaceOAuthArgument(host, a.Profile)
+}
+
+// IsAccountsHost returns true if the host is a classic Databricks accounts host
+// (e.g. https://accounts.cloud.databricks.com or https://accounts-dod.cloud.databricks.us).
+func IsAccountsHost(host string) bool {
+	h := normalizeHost(host)
+	return strings.HasPrefix(h, "https://accounts.") ||
+		strings.HasPrefix(h, "https://accounts-dod.")
+}
+
+// normalizeHost ensures the host has a scheme prefix.
+func normalizeHost(host string) string {
+	if host != "" && !strings.Contains(host, "://") {
+		return "https://" + host
+	}
+	return host
 }

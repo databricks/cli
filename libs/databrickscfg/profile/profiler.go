@@ -9,17 +9,16 @@ import (
 type ProfileMatchFunction func(Profile) bool
 
 func MatchWorkspaceProfiles(p Profile) bool {
-	// Match workspace profiles: regular workspace profiles (no account ID)
-	// or unified hosts with workspace ID
-	return (p.AccountID == "" && !p.IsUnifiedHost) ||
-		(p.IsUnifiedHost && p.WorkspaceID != "")
+	// Workspace profile: has workspace_id (covers both classic and SPOG profiles),
+	// or is a regular workspace host (no account_id and not a legacy unified-host profile).
+	return p.WorkspaceID != "" || (p.AccountID == "" && !p.IsUnifiedHost)
 }
 
 func MatchAccountProfiles(p Profile) bool {
-	// Match account profiles: regular account profiles (with account ID)
-	// or unified hosts with account ID but no workspace ID
-	return (p.Host != "" && p.AccountID != "" && !p.IsUnifiedHost) ||
-		(p.IsUnifiedHost && p.AccountID != "" && p.WorkspaceID == "")
+	// Account profile: has host and account_id but no workspace_id.
+	// This covers classic accounts.* profiles, legacy unified-host account profiles,
+	// and new SPOG account profiles.
+	return p.Host != "" && p.AccountID != "" && p.WorkspaceID == ""
 }
 
 func MatchAllProfiles(p Profile) bool {

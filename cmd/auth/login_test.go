@@ -267,3 +267,95 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractHostQueryParams(t *testing.T) {
+	tests := []struct {
+		name            string
+		host            string
+		existingAcctID  string
+		existingWsID    string
+		wantHost        string
+		wantAccountID   string
+		wantWorkspaceID string
+	}{
+		{
+			name:            "extract workspace_id from ?o=",
+			host:            "https://spog.example.com/?o=12345",
+			wantHost:        "https://spog.example.com/",
+			wantWorkspaceID: "12345",
+		},
+		{
+			name:            "extract both account_id and workspace_id",
+			host:            "https://spog.example.com/?o=12345&a=abc",
+			wantHost:        "https://spog.example.com/",
+			wantAccountID:   "abc",
+			wantWorkspaceID: "12345",
+		},
+		{
+			name:            "extract account_id from ?account_id=",
+			host:            "https://spog.example.com/?account_id=abc",
+			wantHost:        "https://spog.example.com/",
+			wantAccountID:   "abc",
+		},
+		{
+			name:            "extract workspace_id from ?workspace_id=",
+			host:            "https://spog.example.com/?workspace_id=99999",
+			wantHost:        "https://spog.example.com/",
+			wantWorkspaceID: "99999",
+		},
+		{
+			name:     "no query params leaves host unchanged",
+			host:     "https://spog.example.com",
+			wantHost: "https://spog.example.com",
+		},
+		{
+			name:            "explicit flags take precedence over query params",
+			host:            "https://spog.example.com/?o=12345&a=abc",
+			existingAcctID:  "explicit-account",
+			existingWsID:    "explicit-ws",
+			wantHost:        "https://spog.example.com/",
+			wantAccountID:   "explicit-account",
+			wantWorkspaceID: "explicit-ws",
+		},
+		{
+			name:     "invalid URL is left unchanged",
+			host:     "not a valid url ://???",
+			wantHost: "not a valid url ://???",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := &auth.AuthArguments{
+				Host:        tt.host,
+				AccountID:   tt.existingAcctID,
+				WorkspaceID: tt.existingWsID,
+			}
+			extractHostQueryParams(args)
+			assert.Equal(t, tt.wantHost, args.Host)
+			assert.Equal(t, tt.wantAccountID, args.AccountID)
+			assert.Equal(t, tt.wantWorkspaceID, args.WorkspaceID)
+		})
+	}
+}
+
+func TestRunHostDiscovery_NoHost(t *testing.T) {
+	ctx := t.Context()
+	args := &auth.AuthArguments{}
+	runHostDiscovery(ctx, args)
+	assert.Equal(t, "", args.AccountID)
+	assert.Equal(t, "", args.WorkspaceID)
+}
+
+func TestRunHostDiscovery_ExplicitFieldsNotOverridden(t *testing.T) {
+	ctx := t.Context()
+	args := &auth.AuthArguments{
+		Host:        "https://nonexistent.example.com",
+		AccountID:   "explicit-account",
+		WorkspaceID: "explicit-ws",
+	}
+	runHostDiscovery(ctx, args)
+	// Explicit fields should not be overridden even if discovery would return values
+	assert.Equal(t, "explicit-account", args.AccountID)
+	assert.Equal(t, "explicit-ws", args.WorkspaceID)
+}

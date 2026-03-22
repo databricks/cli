@@ -123,3 +123,88 @@ func TestWithHostAndAccountID(t *testing.T) {
 		})
 	}
 }
+
+func TestMatchWorkspaceProfiles(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile Profile
+		want    bool
+	}{
+		{
+			name:    "regular workspace (no account_id)",
+			profile: Profile{Host: "https://ws.cloud.databricks.com"},
+			want:    true,
+		},
+		{
+			name:    "SPOG workspace (has workspace_id)",
+			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1", WorkspaceID: "ws-1"},
+			want:    true,
+		},
+		{
+			name:    "legacy unified workspace (has workspace_id and IsUnifiedHost)",
+			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", WorkspaceID: "ws-1", IsUnifiedHost: true},
+			want:    true,
+		},
+		{
+			name:    "regular account profile (has account_id, no workspace_id)",
+			profile: Profile{Host: "https://accounts.cloud.databricks.com", AccountID: "acc-1"},
+			want:    false,
+		},
+		{
+			name:    "legacy unified account (IsUnifiedHost, no workspace_id)",
+			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", IsUnifiedHost: true},
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, MatchWorkspaceProfiles(tt.profile))
+		})
+	}
+}
+
+func TestMatchAccountProfiles(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile Profile
+		want    bool
+	}{
+		{
+			name:    "regular account profile",
+			profile: Profile{Host: "https://accounts.cloud.databricks.com", AccountID: "acc-1"},
+			want:    true,
+		},
+		{
+			name:    "SPOG account profile (account_id, no workspace_id)",
+			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1"},
+			want:    true,
+		},
+		{
+			name:    "legacy unified account profile",
+			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", IsUnifiedHost: true},
+			want:    true,
+		},
+		{
+			name:    "SPOG workspace profile (has workspace_id)",
+			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1", WorkspaceID: "ws-1"},
+			want:    false,
+		},
+		{
+			name:    "regular workspace (no account_id)",
+			profile: Profile{Host: "https://ws.cloud.databricks.com"},
+			want:    false,
+		},
+		{
+			name:    "no host",
+			profile: Profile{AccountID: "acc-1"},
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, MatchAccountProfiles(tt.profile))
+		})
+	}
+}

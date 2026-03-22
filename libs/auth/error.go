@@ -134,9 +134,9 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 			return
 		}
 		loginCmd := BuildLoginCommand(ctx, "", oauthArg)
-		// For unified hosts, BuildLoginCommand (via OAuthArgument) doesn't carry
-		// workspace-id. Append it so the command is actionable.
-		if cfg.Experimental_IsUnifiedHost && cfg.WorkspaceID != "" {
+		// For SPOG/unified hosts, the OAuthArgument doesn't carry workspace-id.
+		// Append it so the re-auth command is actionable.
+		if cfg.WorkspaceID != "" && !IsAccountsHost(cfg.Host) {
 			loginCmd += " --workspace-id " + cfg.WorkspaceID
 		}
 		fmt.Fprintf(b, "\n  - Re-authenticate: %s", loginCmd)
@@ -178,7 +178,8 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 	} else {
 		switch arg := arg.(type) {
 		case u2m.UnifiedOAuthArgument:
-			cmd = append(cmd, "--host", arg.GetHost(), "--account-id", arg.GetAccountId(), "--experimental-is-unified-host")
+			// Discovery-driven login no longer needs --experimental-is-unified-host.
+			cmd = append(cmd, "--host", arg.GetHost(), "--account-id", arg.GetAccountId())
 		case u2m.AccountOAuthArgument:
 			cmd = append(cmd, "--host", arg.GetAccountHost(), "--account-id", arg.GetAccountId())
 		case u2m.WorkspaceOAuthArgument:
