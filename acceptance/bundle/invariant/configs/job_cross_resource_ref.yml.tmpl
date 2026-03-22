@@ -1,0 +1,27 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    # job_src defines permissions and a tag value used as references by other resources
+    job_src:
+      name: test-job-src-$UNIQUE_NAME
+      tags:
+        perm_group: users
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+
+    # job_perm_ref uses permission fields from job_src as its permission values
+    job_perm_ref:
+      name: test-job-perm-ref-$UNIQUE_NAME
+      permissions:
+        - level: ${resources.jobs.job_src.permissions[0].level}
+          group_name: ${resources.jobs.job_src.permissions[0].group_name}
+
+    # job_tag_ref uses a job tag from job_src as a permission group_name
+    job_tag_ref:
+      name: test-job-tag-ref-$UNIQUE_NAME
+      permissions:
+        - level: CAN_VIEW
+          group_name: ${resources.jobs.job_src.tags.perm_group}

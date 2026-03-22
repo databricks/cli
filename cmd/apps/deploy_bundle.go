@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/apps/validation"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -153,11 +154,11 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) 
 
 	log.Infof(ctx, "Running app: %s", appKey)
 	if err := runBundleApp(ctx, b, appKey); err != nil {
-		cmdio.LogString(ctx, "✔ Deployment succeeded, but failed to start app")
+		prompt.PrintDone(ctx, "Deployment succeeded, but failed to start app")
 		return fmt.Errorf("failed to run app: %w. Run `databricks apps logs` to view logs", err)
 	}
 
-	cmdio.LogString(ctx, "✔ Deployment complete!")
+	prompt.PrintDone(ctx, "Deployment complete!")
 	return nil
 }
 

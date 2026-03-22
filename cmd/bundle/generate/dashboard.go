@@ -14,12 +14,12 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/deployment"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -95,7 +95,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("dashboard %q is a legacy dashboard", path.Base(d.existingPath)),
 				Detail: "" +
-					"Databricks Asset Bundles work exclusively with AI/BI dashboards.\n" +
+					"Declarative Automation Bundles work exclusively with AI/BI dashboards.\n" +
 					"\n" +
 					"Instructions on how to convert a legacy dashboard to an AI/BI dashboard\n" +
 					"can be found at: https://docs.databricks.com/en/dashboards/clone-legacy-to-aibi.html.",
@@ -373,18 +373,17 @@ func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
-	engine, err := engine.FromEnv(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-
 	phases.Initialize(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
-	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), engine)
+	requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
 	if logdiag.HasError(ctx) {
 		return
 	}

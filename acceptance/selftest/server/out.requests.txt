@@ -11,6 +11,10 @@
 }
 {
   "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
     "path": "/a/b/c"

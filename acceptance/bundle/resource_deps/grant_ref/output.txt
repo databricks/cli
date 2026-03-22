@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle plan
+create schemas.schema_a
+create schemas.schema_a.grants
+create schemas.schema_b
+create schemas.schema_b.grants
+
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

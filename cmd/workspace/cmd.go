@@ -35,6 +35,7 @@ import (
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
 	entity_tag_assignments "github.com/databricks/cli/cmd/workspace/entity-tag-assignments"
+	environments "github.com/databricks/cli/cmd/workspace/environments"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_lineage "github.com/databricks/cli/cmd/workspace/external-lineage"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
@@ -162,6 +163,7 @@ func All() []*cobra.Command {
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
 	out = append(out, entity_tag_assignments.New())
+	out = append(out, environments.New())
 	out = append(out, experiments.New())
 	out = append(out, external_lineage.New())
 	out = append(out, external_locations.New())

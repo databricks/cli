@@ -17,5 +17,5 @@ r["tags"] = {"env": "test"}
 EOF
 
 title "JSON output format"
-$CLI bundle config-remote-sync -o json > out.json
-cat out.json
+$CLI bundle config-remote-sync -o json > tmp.json
+cat tmp.json

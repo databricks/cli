@@ -6,7 +6,6 @@ bundle:
 
 include:
   - resources/*.yml
-  - resources/*/*.yml
 
 artifacts:
   python_artifact:

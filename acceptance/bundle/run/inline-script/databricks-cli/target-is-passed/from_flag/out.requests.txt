@@ -1,5 +1,9 @@
 {
   "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
   "path": "/oidc/.well-known/oauth-authorization-server"
 }
 {
@@ -11,6 +15,10 @@
   "method": "POST",
   "path": "/oidc/v1/token",
   "raw_body": "grant_type=client_credentials\u0026scope=all-apis"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }
 {
   "method": "GET",

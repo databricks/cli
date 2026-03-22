@@ -136,10 +136,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FILE_ID argument specified. Loading names for Provider Files drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No FILE_ID argument specified. Loading names for Provider Files drop-down.")
 			names, err := w.ProviderFiles.FileInfoDisplayNameToIdMap(ctx, marketplace.ListFilesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Files drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -201,10 +201,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FILE_ID argument specified. Loading names for Provider Files drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No FILE_ID argument specified. Loading names for Provider Files drop-down.")
 			names, err := w.ProviderFiles.FileInfoDisplayNameToIdMap(ctx, marketplace.ListFilesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Provider Files drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

@@ -57,6 +57,12 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 		}
 
 		if idx, isIndex := node.Index(); isIndex {
+			// If cur is a struct with an EmbeddedSlice field, navigate through it.
+			if cur.Kind() == reflect.Struct {
+				if embed := findEmbedField(cur); embed.IsValid() {
+					cur = embed
+				}
+			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
 				return reflect.Value{}, fmt.Errorf("%s: cannot index %s", node.String(), kind)
@@ -69,6 +75,12 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 		}
 
 		if key, value, ok := node.KeyValue(); ok {
+			// If cur is a struct with an EmbeddedSlice field, navigate through it.
+			if cur.Kind() == reflect.Struct {
+				if embed := findEmbedField(cur); embed.IsValid() {
+					cur = embed
+				}
+			}
 			nv, err := accessKeyValue(cur, key, value, node)
 			if err != nil {
 				return reflect.Value{}, err
@@ -141,10 +153,11 @@ func accessKey(v reflect.Value, key string, path *structpath.PathNode) (reflect.
 				if fv.IsNil() {
 					return reflect.Value{}, nil
 				}
-				// Non-nil pointer: check if the pointed-to value is empty for omitempty
-				if isEmptyForOmitEmpty(fv.Elem()) {
-					return reflect.Value{}, nil
-				}
+				// Non-nil pointer: return the dereferenced value.
+				// JSON omitempty only omits nil pointers, not pointers to zero values.
+				// Returning the dereferenced value is consistent with GetStructDiff,
+				// which recursively dereferences non-nil pointers.
+				return fv.Elem(), nil
 			} else if isEmptyForOmitEmpty(fv) {
 				return reflect.Value{}, nil
 			}
@@ -234,6 +247,9 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 			name = ""
 		}
 
+		if sf.Name == EmbeddedSliceFieldName {
+			continue // EmbeddedSlice fields are not accessible by name
+		}
 		if name != "" && name == key {
 			// Skip fields marked as internal or readonly via bundle tag
 			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
