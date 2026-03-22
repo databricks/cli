@@ -2,6 +2,7 @@ package installer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"sort"
@@ -53,9 +54,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	if state == nil {
 		if hasLegacyInstall(ctx, globalDir) {
-			return nil, fmt.Errorf("found skills from a previous install without state tracking; run 'databricks experimental aitools install' to refresh before updating")
+			return nil, errors.New("found skills from a previous install without state tracking; run 'databricks experimental aitools install' to refresh before updating")
 		}
-		return nil, fmt.Errorf("no skills installed. Run 'databricks experimental aitools install' to install")
+		return nil, errors.New("no skills installed. Run 'databricks experimental aitools install' to install")
 	}
 
 	latestTag, authoritative, err := src.FetchLatestRelease(ctx)

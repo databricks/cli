@@ -3,7 +3,7 @@ package installer
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -170,7 +170,7 @@ func TestUpdateForceRedownloads(t *testing.T) {
 
 	// All skills should be in Updated since Force re-downloads everything.
 	assert.Len(t, result.Updated, 2)
-	assert.True(t, fetchCalls > 0, "force should trigger downloads")
+	assert.Positive(t, fetchCalls, "force should trigger downloads")
 }
 
 func TestUpdateAutoAddsNewSkills(t *testing.T) {
@@ -267,7 +267,7 @@ func TestUpdateOutputSortedAlphabetically(t *testing.T) {
 type nonAuthoritativeMock struct{}
 
 func (m *nonAuthoritativeMock) FetchManifest(_ context.Context, _ string) (*Manifest, error) {
-	return nil, fmt.Errorf("should not be called")
+	return nil, errors.New("should not be called")
 }
 
 func (m *nonAuthoritativeMock) FetchLatestRelease(_ context.Context) (string, bool, error) {
