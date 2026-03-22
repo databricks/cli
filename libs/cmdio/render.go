@@ -340,7 +340,7 @@ var renderFuncMap = template.FuncMap{
 	},
 	"replace":  strings.ReplaceAll,
 	"sanitize": sanitizeControlWhitespace,
-	"join":    strings.Join,
+	"join":     strings.Join,
 	"sub": func(a, b int) int {
 		return a - b
 	},
