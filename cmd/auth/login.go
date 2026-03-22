@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"runtime"
 	"strings"
 	"time"
@@ -66,13 +65,27 @@ type discoveryPersistentAuth interface {
 	Close() error
 }
 
-var newDiscoveryOAuthArgument = u2m.NewBasicDiscoveryOAuthArgument
+// discoveryClient abstracts the external dependencies of discoveryLogin so
+// they can be replaced in tests without package-level variable mutation.
+type discoveryClient interface {
+	NewOAuthArgument(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error)
+	NewPersistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error)
+	IntrospectToken(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error)
+}
 
-var newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+type defaultDiscoveryClient struct{}
+
+func (d *defaultDiscoveryClient) NewOAuthArgument(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+	return u2m.NewBasicDiscoveryOAuthArgument(profileName)
+}
+
+func (d *defaultDiscoveryClient) NewPersistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
 	return u2m.NewPersistentAuth(ctx, opts...)
 }
 
-var introspectToken = auth.IntrospectToken
+func (d *defaultDiscoveryClient) IntrospectToken(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
+	return auth.IntrospectToken(ctx, host, accessToken, nil)
+}
 
 func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
@@ -170,16 +183,10 @@ depends on the existing profiles you have set in your configuration file
 		// If no host is available from any source, use the discovery flow
 		// via login.databricks.com.
 		if shouldUseDiscovery(authArguments.Host, args, existingProfile) {
-			if configureCluster {
-				return errors.New("--configure-cluster requires --host to be specified")
-			}
-			if configureServerless {
-				return errors.New("--configure-serverless requires --host to be specified")
-			}
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
 			}
-			return discoveryLogin(ctx, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
+			return discoveryLogin(ctx, &defaultDiscoveryClient{}, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
 		}
 
 		// Load unified host flags from the profile if not explicitly set via CLI flag
@@ -461,6 +468,8 @@ var discoveryIncompatibleFlags = []string{
 	"account-id",
 	"workspace-id",
 	"experimental-is-unified-host",
+	"configure-cluster",
+	"configure-serverless",
 }
 
 // validateDiscoveryFlagCompatibility returns an error if any flags that require
@@ -494,8 +503,8 @@ func openURLSuppressingStderr(url string) error {
 // discoveryLogin runs the login.databricks.com discovery flow. The user
 // authenticates in the browser, selects a workspace, and the CLI receives
 // the workspace host from the OAuth callback's iss parameter.
-func discoveryLogin(ctx context.Context, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
-	arg, err := newDiscoveryOAuthArgument(profileName)
+func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
+	arg, err := dc.NewOAuthArgument(profileName)
 	if err != nil {
 		return discoveryErr("setting up login.databricks.com", err)
 	}
@@ -518,7 +527,7 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	persistentAuth, err := newDiscoveryPersistentAuth(ctx, opts...)
+	persistentAuth, err := dc.NewPersistentAuth(ctx, opts...)
 	if err != nil {
 		return discoveryErr("setting up login.databricks.com", err)
 	}
@@ -541,9 +550,8 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 	}
 
 	// Best-effort introspection for metadata.
-	httpClient := httpClientForIntrospection()
 	var workspaceID string
-	introspection, err := introspectToken(ctx, discoveredHost, tok.AccessToken, httpClient)
+	introspection, err := dc.IntrospectToken(ctx, discoveredHost, tok.AccessToken)
 	if err != nil {
 		log.Debugf(ctx, "token introspection failed (non-fatal): %v", err)
 	} else {
@@ -562,10 +570,11 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 
 	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	clearKeys := oauthLoginClearKeys()
-	// Clear stale routing fields that may exist from a previous login to a
-	// different host type. Discovery always produces a workspace-level profile.
-	// workspace_id is cleared and re-written only if introspection returned a
-	// fresh value, preventing stale IDs from surviving failed introspection.
+	// Discovery login always produces a workspace-level profile pointing at the
+	// discovered host. Any previous routing metadata (account_id, workspace_id,
+	// is_unified_host, cluster_id, serverless_compute_id) from a prior login to
+	// a different host type must be cleared so they don't leak into the new
+	// profile. workspace_id is re-added only when introspection succeeds.
 	clearKeys = append(clearKeys,
 		"account_id",
 		"workspace_id",
@@ -594,9 +603,6 @@ func discoveryLogin(ctx context.Context, profileName string, timeout time.Durati
 
 // splitScopes splits a comma-separated scopes string into a trimmed slice.
 func splitScopes(scopes string) []string {
-	if scopes == "" {
-		return nil
-	}
 	var result []string
 	for _, s := range strings.Split(scopes, ",") {
 		scope := strings.TrimSpace(s)
@@ -651,12 +657,4 @@ func getBrowserFunc(cmd *cobra.Command) func(url string) error {
 			return cmd.Wait()
 		}
 	}
-}
-
-// httpClientForIntrospection returns an *http.Client suitable for the
-// best-effort token introspection call. It clones http.DefaultTransport
-// to inherit system CA certs, proxy settings, and timeouts.
-func httpClientForIntrospection() *http.Client {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	return &http.Client{Transport: transport}
 }

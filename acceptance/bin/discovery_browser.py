@@ -47,11 +47,13 @@ if not testserver_host:
 issuer = testserver_host.rstrip("/") + "/oidc"
 
 # Build the callback URL with code, state, and iss (the workspace issuer).
-callback_params = urllib.parse.urlencode({
-    "code": "oauth-code",
-    "state": state,
-    "iss": issuer,
-})
+callback_params = urllib.parse.urlencode(
+    {
+        "code": "oauth-code",
+        "state": state,
+        "iss": issuer,
+    }
+)
 callback_url = f"{redirect_uri}?{callback_params}"
 
 try:

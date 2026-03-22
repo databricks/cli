@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -68,6 +67,41 @@ func (f *fakeDiscoveryPersistentAuth) Token() (*oauth2.Token, error) {
 
 func (f *fakeDiscoveryPersistentAuth) Close() error {
 	return nil
+}
+
+type fakeDiscoveryClient struct {
+	oauthArg          *u2m.BasicDiscoveryOAuthArgument
+	oauthArgErr       error
+	persistentAuth    discoveryPersistentAuth
+	persistentAuthErr error
+	introspection     *auth.IntrospectionResult
+	introspectionErr  error
+	// For assertions
+	introspectHost  string
+	introspectToken string
+}
+
+func (f *fakeDiscoveryClient) NewOAuthArgument(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
+	if f.oauthArgErr != nil {
+		return nil, f.oauthArgErr
+	}
+	return f.oauthArg, nil
+}
+
+func (f *fakeDiscoveryClient) NewPersistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+	if f.persistentAuthErr != nil {
+		return nil, f.persistentAuthErr
+	}
+	return f.persistentAuth, nil
+}
+
+func (f *fakeDiscoveryClient) IntrospectToken(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
+	f.introspectHost = host
+	f.introspectToken = accessToken
+	if f.introspectionErr != nil {
+		return nil, f.introspectionErr
+	}
+	return f.introspection, nil
 }
 
 func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
@@ -431,6 +465,18 @@ func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
 			wantErr: "--experimental-is-unified-host requires --host to be specified",
 		},
 		{
+			name:    "configure-cluster is incompatible",
+			setFlag: "configure-cluster",
+			flagVal: "true",
+			wantErr: "--configure-cluster requires --host to be specified",
+		},
+		{
+			name:    "configure-serverless is incompatible",
+			setFlag: "configure-serverless",
+			flagVal: "true",
+			wantErr: "--configure-serverless requires --host to be specified",
+		},
+		{
 			name: "no flags set is ok",
 		},
 	}
@@ -440,6 +486,8 @@ func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
 			cmd.Flags().String("account-id", "", "")
 			cmd.Flags().String("workspace-id", "", "")
 			cmd.Flags().Bool("experimental-is-unified-host", false, "")
+			cmd.Flags().Bool("configure-cluster", false, "")
+			cmd.Flags().Bool("configure-serverless", false, "")
 
 			if tt.setFlag != "" {
 				require.NoError(t, cmd.Flags().Set(tt.setFlag, tt.flagVal))
@@ -462,39 +510,24 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
-	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
-	originalIntrospectToken := introspectToken
-	t.Cleanup(func() {
-		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
-		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
-		introspectToken = originalIntrospectToken
-	})
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
 
-	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
-		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
-		if err != nil {
-			return nil, err
-		}
-		arg.SetDiscoveredHost("https://workspace.example.com")
-		return arg, nil
-	}
-
-	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
-		return &fakeDiscoveryPersistentAuth{
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
 			token: &oauth2.Token{AccessToken: "test-token"},
-		}, nil
-	}
-
-	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
-		assert.Equal(t, "https://workspace.example.com", host)
-		assert.Equal(t, "test-token", accessToken)
-		return nil, errors.New("introspection failed")
+		},
+		introspectionErr: errors.New("introspection failed"),
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "all-apis, ,sql,", nil, func(string) error { return nil })
+	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "all-apis, ,sql,", nil, func(string) error { return nil })
 	require.NoError(t, err)
+
+	assert.Equal(t, "https://workspace.example.com", dc.introspectHost)
+	assert.Equal(t, "test-token", dc.introspectToken)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
 	require.NoError(t, err)
@@ -512,35 +545,19 @@ func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
-	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
-	originalIntrospectToken := introspectToken
-	t.Cleanup(func() {
-		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
-		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
-		introspectToken = originalIntrospectToken
-	})
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
 
-	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
-		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
-		if err != nil {
-			return nil, err
-		}
-		arg.SetDiscoveredHost("https://workspace.example.com")
-		return arg, nil
-	}
-
-	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
-		return &fakeDiscoveryPersistentAuth{
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
 			token: &oauth2.Token{AccessToken: "test-token"},
-		}, nil
-	}
-
-	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
-		return &auth.IntrospectionResult{
+		},
+		introspection: &auth.IntrospectionResult{
 			AccountID:   "new-account-id",
 			WorkspaceID: "12345",
-		}, nil
+		},
 	}
 
 	// Set up a logger that captures log records to verify the warning.
@@ -554,7 +571,7 @@ func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
 		AccountID: "old-account-id",
 	}
 
-	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
 	require.NoError(t, err)
 
 	// Verify warning about mismatched account IDs was logged.
@@ -576,35 +593,19 @@ func TestDiscoveryLogin_NoWarningWhenAccountIDsMatch(t *testing.T) {
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
-	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
-	originalIntrospectToken := introspectToken
-	t.Cleanup(func() {
-		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
-		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
-		introspectToken = originalIntrospectToken
-	})
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
 
-	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
-		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
-		if err != nil {
-			return nil, err
-		}
-		arg.SetDiscoveredHost("https://workspace.example.com")
-		return arg, nil
-	}
-
-	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
-		return &fakeDiscoveryPersistentAuth{
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
 			token: &oauth2.Token{AccessToken: "test-token"},
-		}, nil
-	}
-
-	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
-		return &auth.IntrospectionResult{
+		},
+		introspection: &auth.IntrospectionResult{
 			AccountID:   "same-account-id",
 			WorkspaceID: "12345",
-		}, nil
+		},
 	}
 
 	var logBuf logBuffer
@@ -617,7 +618,7 @@ func TestDiscoveryLogin_NoWarningWhenAccountIDsMatch(t *testing.T) {
 		AccountID: "same-account-id",
 	}
 
-	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
 	require.NoError(t, err)
 
 	// No warning should be logged when account IDs match.
@@ -625,26 +626,19 @@ func TestDiscoveryLogin_NoWarningWhenAccountIDsMatch(t *testing.T) {
 }
 
 func TestDiscoveryLogin_EmptyDiscoveredHostReturnsError(t *testing.T) {
-	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
-	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
-	t.Cleanup(func() {
-		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
-		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
-	})
-
 	// Return arg without calling SetDiscoveredHost, so GetDiscoveredHost returns "".
-	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
-		return u2m.NewBasicDiscoveryOAuthArgument(profileName)
-	}
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
 
-	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
-		return &fakeDiscoveryPersistentAuth{
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
 			token: &oauth2.Token{AccessToken: "test-token"},
-		}, nil
+		},
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err := discoveryLogin(ctx, "DISCOVERY", time.Second, "", nil, func(string) error { return nil })
+	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", nil, func(string) error { return nil })
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no workspace host was discovered")
 }
@@ -656,32 +650,16 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
-	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
-	originalIntrospectToken := introspectToken
-	t.Cleanup(func() {
-		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
-		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
-		introspectToken = originalIntrospectToken
-	})
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
 
-	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
-		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
-		if err != nil {
-			return nil, err
-		}
-		arg.SetDiscoveredHost("https://workspace.example.com")
-		return arg, nil
-	}
-
-	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
-		return &fakeDiscoveryPersistentAuth{
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
 			token: &oauth2.Token{AccessToken: "test-token"},
-		}, nil
-	}
-
-	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
-		return nil, errors.New("introspection failed")
+		},
+		introspectionErr: errors.New("introspection failed"),
 	}
 
 	existingProfile := &profile.Profile{
@@ -692,7 +670,7 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 
 	// No --scopes flag (empty string), should fall back to existing profile scopes.
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
@@ -709,32 +687,16 @@ func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
-	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
-	originalIntrospectToken := introspectToken
-	t.Cleanup(func() {
-		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
-		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
-		introspectToken = originalIntrospectToken
-	})
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
 
-	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
-		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
-		if err != nil {
-			return nil, err
-		}
-		arg.SetDiscoveredHost("https://workspace.example.com")
-		return arg, nil
-	}
-
-	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
-		return &fakeDiscoveryPersistentAuth{
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
 			token: &oauth2.Token{AccessToken: "test-token"},
-		}, nil
-	}
-
-	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
-		return nil, errors.New("introspection failed")
+		},
+		introspectionErr: errors.New("introspection failed"),
 	}
 
 	existingProfile := &profile.Profile{
@@ -745,7 +707,7 @@ func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {
 
 	// Explicit --scopes flag should override existing profile scopes.
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "all-apis", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "all-apis", existingProfile, func(string) error { return nil })
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
@@ -770,33 +732,17 @@ auth_type = databricks-cli
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
-	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
-	originalIntrospectToken := introspectToken
-	t.Cleanup(func() {
-		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
-		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
-		introspectToken = originalIntrospectToken
-	})
-
-	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
-		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
-		if err != nil {
-			return nil, err
-		}
-		arg.SetDiscoveredHost("https://new-workspace.example.com")
-		return arg, nil
-	}
-
-	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
-		return &fakeDiscoveryPersistentAuth{
-			token: &oauth2.Token{AccessToken: "test-token"},
-		}, nil
-	}
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://new-workspace.example.com")
 
 	// Introspection fails, so workspace_id should be cleared (not left stale).
-	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
-		return nil, errors.New("introspection unavailable")
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspectionErr: errors.New("introspection unavailable"),
 	}
 
 	existingProfile := &profile.Profile{
@@ -808,7 +754,7 @@ auth_type = databricks-cli
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
@@ -835,36 +781,20 @@ auth_type = databricks-cli
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
-	originalNewDiscoveryOAuthArgument := newDiscoveryOAuthArgument
-	originalNewDiscoveryPersistentAuth := newDiscoveryPersistentAuth
-	originalIntrospectToken := introspectToken
-	t.Cleanup(func() {
-		newDiscoveryOAuthArgument = originalNewDiscoveryOAuthArgument
-		newDiscoveryPersistentAuth = originalNewDiscoveryPersistentAuth
-		introspectToken = originalIntrospectToken
-	})
-
-	newDiscoveryOAuthArgument = func(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
-		arg, err := u2m.NewBasicDiscoveryOAuthArgument(profileName)
-		if err != nil {
-			return nil, err
-		}
-		arg.SetDiscoveredHost("https://new-workspace.example.com")
-		return arg, nil
-	}
-
-	newDiscoveryPersistentAuth = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
-		return &fakeDiscoveryPersistentAuth{
-			token: &oauth2.Token{AccessToken: "test-token"},
-		}, nil
-	}
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://new-workspace.example.com")
 
 	// Introspection succeeds with a fresh workspace_id.
-	introspectToken = func(ctx context.Context, host, accessToken string, _ *http.Client) (*auth.IntrospectionResult, error) {
-		return &auth.IntrospectionResult{
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspection: &auth.IntrospectionResult{
 			AccountID:   "fresh-account",
 			WorkspaceID: "222222",
-		}, nil
+		},
 	}
 
 	existingProfile := &profile.Profile{
@@ -874,7 +804,7 @@ auth_type = databricks-cli
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
@@ -882,13 +812,4 @@ auth_type = databricks-cli
 	require.NotNil(t, savedProfile)
 	assert.Equal(t, "https://new-workspace.example.com", savedProfile.Host)
 	assert.Equal(t, "222222", savedProfile.WorkspaceID, "workspace_id should be updated to fresh introspection value")
-}
-
-func TestHttpClientForIntrospection(t *testing.T) {
-	c := httpClientForIntrospection()
-	require.NotNil(t, c.Transport)
-	transport, ok := c.Transport.(*http.Transport)
-	require.True(t, ok)
-	// Should be a clone of DefaultTransport, not the same pointer.
-	assert.NotSame(t, http.DefaultTransport, transport)
 }
