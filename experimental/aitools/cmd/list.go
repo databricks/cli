@@ -17,13 +17,15 @@ import (
 var listSkillsFn = defaultListSkills
 
 func newListCmd() *cobra.Command {
+	// --skills is accepted for forward-compat (future component types)
+	// but currently skills is the only component, so the output is the same.
 	var showSkills bool
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List installed AI tools components",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Currently skills is the only component, so always show detailed view.
+			_ = showSkills
 			return listSkillsFn(cmd)
 		},
 	}

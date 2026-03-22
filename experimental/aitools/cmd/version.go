@@ -16,8 +16,8 @@ func newVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Show installed AI skills version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// showSkills is accepted for forward-compat but currently
-			// skills is the only component, so the output is the same.
+			// --skills is accepted for forward-compat (future component types)
+			// but currently skills is the only component, so the output is the same.
 			_ = showSkills
 			ctx := cmd.Context()
 
