@@ -147,7 +147,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	}
 
 	// Download and install updated/added skills.
-	allChanges := append(result.Updated, result.Added...)
+	allChanges := make([]SkillUpdate, 0, len(result.Updated)+len(result.Added))
+	allChanges = append(allChanges, result.Updated...)
+	allChanges = append(allChanges, result.Added...)
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
 		if err := installSkillForAgents(ctx, latestTag, change.Name, meta.Files, targetAgents, globalDir); err != nil {
