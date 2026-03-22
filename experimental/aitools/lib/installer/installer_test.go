@@ -1,7 +1,9 @@
 package installer
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,6 +11,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -231,7 +234,7 @@ func TestInstallSkillForSingleWritesState(t *testing.T) {
 	assert.Len(t, state.Skills, 1)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 
-	assert.Contains(t, stderr.String(), "Installed 1 skills (v0.1.0).")
+	assert.Contains(t, stderr.String(), "Installed 1 skill (v0.1.0).")
 }
 
 func TestInstallSkillsSpecificNotFound(t *testing.T) {
@@ -313,6 +316,11 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 	setupFetchMock(t)
 	setBuildVersion(t, "0.200.0")
 
+	// Capture log output to verify the warning.
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn}))
+	ctx = log.NewContext(ctx, logger)
+
 	manifest := testManifest()
 	manifest.Skills["databricks-future"] = SkillMeta{
 		Version:   "0.1.0",
@@ -334,6 +342,7 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 	assert.NotContains(t, state.Skills, "databricks-future")
 
 	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.0).")
+	assert.Contains(t, logBuf.String(), "requires CLI version 0.300.0")
 }
 
 func TestMinCLIVersionHardErrorForInstallSingle(t *testing.T) {

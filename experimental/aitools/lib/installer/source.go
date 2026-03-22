@@ -21,7 +21,7 @@ type GitHubManifestSource struct{}
 
 // FetchManifest fetches the skills manifest from GitHub at the given ref.
 func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*Manifest, error) {
-	log.Infof(ctx, "Fetching skills manifest from %s/%s@%s", skillsRepoOwner, skillsRepoName, ref)
+	log.Debugf(ctx, "Fetching skills manifest from %s/%s@%s", skillsRepoOwner, skillsRepoName, ref)
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/manifest.json",
 		skillsRepoOwner, skillsRepoName, ref)
 
