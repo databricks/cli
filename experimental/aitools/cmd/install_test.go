@@ -278,6 +278,52 @@ func TestSkillsInstallForwardsSkillName(t *testing.T) {
 	assert.Equal(t, []string{"databricks"}, (*calls)[0].opts.SpecificSkills)
 }
 
+func TestSkillsInstallExecuteNoArgs(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newSkillsInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Len(t, (*calls)[0].agents, 2)
+	assert.Nil(t, (*calls)[0].opts.SpecificSkills)
+}
+
+func TestSkillsInstallExecuteWithSkillName(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newSkillsInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"databricks"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, []string{"databricks"}, (*calls)[0].opts.SpecificSkills)
+}
+
+func TestSkillsInstallExecuteRejectsTwoArgs(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newSkillsInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"a", "b"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "accepts at most 1 arg")
+}
+
 func TestResolveAgentNamesValid(t *testing.T) {
 	ctx := t.Context()
 	result, err := resolveAgentNames(ctx, "claude-code,cursor")
