@@ -122,4 +122,3 @@ func runSkillsInstall(ctx context.Context, args []string) error {
 	src := &installer.GitHubManifestSource{}
 	return installSkillsForAgentsFn(ctx, src, targetAgents, opts)
 }
-
