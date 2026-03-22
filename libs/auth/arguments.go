@@ -50,9 +50,13 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		return u2m.NewProfileAccountOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 
-	// Route based on discovery data: a non-accounts host with a DiscoveryURL
-	// and account_id is a SPOG/unified host.
-	if cfg.DiscoveryURL != "" && cfg.AccountID != "" {
+	// Route based on discovery data: a non-accounts host with an account-scoped
+	// OIDC endpoint is a SPOG/unified host. We check a.AccountID (the caller-
+	// provided value) rather than cfg.AccountID to avoid env var contamination
+	// (e.g. DATABRICKS_ACCOUNT_ID set in the environment). We also require the
+	// DiscoveryURL to contain "/oidc/accounts/" to distinguish SPOG hosts from
+	// classic workspace hosts that may also return discovery metadata.
+	if a.AccountID != "" && cfg.DiscoveryURL != "" && strings.Contains(cfg.DiscoveryURL, "/oidc/accounts/") {
 		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 

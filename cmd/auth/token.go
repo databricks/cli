@@ -37,16 +37,15 @@ const (
 )
 
 // applyUnifiedHostFlags copies unified host fields from the profile to the
-// auth arguments when they are not already set.
+// auth arguments when they are not already set. WorkspaceID is NOT copied
+// here; it is deferred to setHostAndAccountId() so that URL query params
+// (?o=...) can override stale profile values.
 func applyUnifiedHostFlags(p *profile.Profile, args *auth.AuthArguments) {
 	if p == nil {
 		return
 	}
 	if !args.IsUnifiedHost && p.IsUnifiedHost {
 		args.IsUnifiedHost = p.IsUnifiedHost
-	}
-	if args.WorkspaceID == "" && p.WorkspaceID != "" {
-		args.WorkspaceID = p.WorkspaceID
 	}
 }
 
@@ -176,11 +175,13 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	// primary key. Once older SDKs have migrated to profile-based keys,
 	// dualWrite and the host key can be removed entirely.
 	if args.profileName == "" && args.authArguments.Host != "" {
-		// Match by host + account_id when an account_id is present (covers both
-		// classic accounts.* hosts, legacy unified hosts, and SPOG hosts).
-		// Otherwise match by host alone (workspace hosts).
+		// Match profiles by host and available identifiers. For SPOG workspace
+		// profiles (host + account_id + workspace_id), use all three to
+		// disambiguate between workspaces sharing the same host and account.
 		var matchFn profile.ProfileMatchFunction
-		if args.authArguments.AccountID != "" {
+		if args.authArguments.AccountID != "" && args.authArguments.WorkspaceID != "" {
+			matchFn = profile.WithHostAccountIDAndWorkspaceID(args.authArguments.Host, args.authArguments.AccountID, args.authArguments.WorkspaceID)
+		} else if args.authArguments.AccountID != "" {
 			matchFn = profile.WithHostAndAccountID(args.authArguments.Host, args.authArguments.AccountID)
 		} else {
 			matchFn = profile.WithHost(args.authArguments.Host)

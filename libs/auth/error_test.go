@@ -241,7 +241,7 @@ func TestEnrichAuthError(t *testing.T) {
 				"\nHost:      https://unified.cloud.databricks.com" +
 				"\nAuth type: OAuth (databricks-cli)" +
 				"\n\nNext steps:" +
-				"\n  - Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123 --workspace-id ws-456" +
+				"\n  - Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123 --experimental-is-unified-host --workspace-id ws-456" +
 				"\n  - Check your identity: databricks auth describe" +
 				"\n  - Consider setting up a profile: databricks auth login --profile <name>",
 		},

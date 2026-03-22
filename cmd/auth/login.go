@@ -141,12 +141,11 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
-		// Load unified host flags from the profile if not explicitly set via CLI flag
+		// Load unified host flag from the profile if not explicitly set via CLI flag.
+		// WorkspaceID is NOT loaded here; it is deferred to setHostAndAccountId()
+		// so that URL query params (?o=...) can override stale profile values.
 		if !cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
 			authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
-		}
-		if !cmd.Flag("workspace-id").Changed && existingProfile != nil {
-			authArguments.WorkspaceID = existingProfile.WorkspaceID
 		}
 
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
@@ -323,6 +322,13 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	// URL params from explicit --host override stale profile values.
 	extractHostQueryParams(authArguments)
 
+	// Inherit workspace_id from the existing profile AFTER URL param extraction.
+	// This ensures URL params (?o=...) take precedence over stale profile values,
+	// while explicit CLI flags (--workspace-id) still win (already set on authArguments).
+	if authArguments.WorkspaceID == "" && existingProfile != nil && existingProfile.WorkspaceID != "" {
+		authArguments.WorkspaceID = existingProfile.WorkspaceID
+	}
+
 	// Call discovery to populate account_id/workspace_id from the host's
 	// .well-known/databricks-config endpoint. This is best-effort: failures
 	// are logged as warnings and never block login.
@@ -420,6 +426,7 @@ func extractHostQueryParams(authArguments *auth.AuthArguments) {
 	// Strip query params from host
 	u.RawQuery = ""
 	u.Fragment = ""
+	u.Path = strings.TrimSuffix(u.Path, "/")
 	authArguments.Host = u.String()
 }
 
@@ -537,6 +544,12 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 
 	if len(workspaces) == 0 {
 		return "", nil
+	}
+
+	const maxWorkspaces = 50
+	if len(workspaces) > maxWorkspaces {
+		cmdio.LogString(ctx, fmt.Sprintf("Account has %d workspaces. Showing first %d. Use --workspace-id to specify directly.", len(workspaces), maxWorkspaces))
+		workspaces = workspaces[:maxWorkspaces]
 	}
 
 	if len(workspaces) == 1 {

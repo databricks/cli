@@ -178,8 +178,10 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 	} else {
 		switch arg := arg.(type) {
 		case u2m.UnifiedOAuthArgument:
-			// Discovery-driven login no longer needs --experimental-is-unified-host.
-			cmd = append(cmd, "--host", arg.GetHost(), "--account-id", arg.GetAccountId())
+			// Keep --experimental-is-unified-host for now. Discovery-driven login
+			// works without it, but legacy profiles where discovery is unavailable
+			// still need this flag for correct re-authentication.
+			cmd = append(cmd, "--host", arg.GetHost(), "--account-id", arg.GetAccountId(), "--experimental-is-unified-host")
 		case u2m.AccountOAuthArgument:
 			cmd = append(cmd, "--host", arg.GetAccountHost(), "--account-id", arg.GetAccountId())
 		case u2m.WorkspaceOAuthArgument:

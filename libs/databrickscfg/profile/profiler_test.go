@@ -124,6 +124,77 @@ func TestWithHostAndAccountID(t *testing.T) {
 	}
 }
 
+func TestWithHostAccountIDAndWorkspaceID(t *testing.T) {
+	cases := []struct {
+		name               string
+		inputHost          string
+		inputAccountID     string
+		inputWorkspaceID   string
+		profileHost        string
+		profileAccountID   string
+		profileWorkspaceID string
+		want               bool
+	}{
+		{
+			name:               "all three match",
+			inputHost:          "https://spog.example.com",
+			inputAccountID:     "acc-1",
+			inputWorkspaceID:   "ws-1",
+			profileHost:        "https://spog.example.com",
+			profileAccountID:   "acc-1",
+			profileWorkspaceID: "ws-1",
+			want:               true,
+		},
+		{
+			name:               "different workspace_id",
+			inputHost:          "https://spog.example.com",
+			inputAccountID:     "acc-1",
+			inputWorkspaceID:   "ws-1",
+			profileHost:        "https://spog.example.com",
+			profileAccountID:   "acc-1",
+			profileWorkspaceID: "ws-2",
+			want:               false,
+		},
+		{
+			name:               "different account_id",
+			inputHost:          "https://spog.example.com",
+			inputAccountID:     "acc-1",
+			inputWorkspaceID:   "ws-1",
+			profileHost:        "https://spog.example.com",
+			profileAccountID:   "acc-2",
+			profileWorkspaceID: "ws-1",
+			want:               false,
+		},
+		{
+			name:               "different host",
+			inputHost:          "https://other.example.com",
+			inputAccountID:     "acc-1",
+			inputWorkspaceID:   "ws-1",
+			profileHost:        "https://spog.example.com",
+			profileAccountID:   "acc-1",
+			profileWorkspaceID: "ws-1",
+			want:               false,
+		},
+		{
+			name:               "empty host on profile",
+			inputHost:          "https://spog.example.com",
+			inputAccountID:     "acc-1",
+			inputWorkspaceID:   "ws-1",
+			profileHost:        "",
+			profileAccountID:   "acc-1",
+			profileWorkspaceID: "ws-1",
+			want:               false,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			p := Profile{Host: c.profileHost, AccountID: c.profileAccountID, WorkspaceID: c.profileWorkspaceID}
+			fn := WithHostAccountIDAndWorkspaceID(c.inputHost, c.inputAccountID, c.inputWorkspaceID)
+			assert.Equal(t, c.want, fn(p))
+		})
+	}
+}
+
 func TestMatchWorkspaceProfiles(t *testing.T) {
 	tests := []struct {
 		name    string
