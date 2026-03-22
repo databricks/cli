@@ -163,23 +163,40 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		}
 	}
 
-	// Save state.
-	newState := &InstallState{
-		SchemaVersion:       1,
-		IncludeExperimental: opts.IncludeExperimental,
-		Release:             latestTag,
-		LastUpdated:         time.Now(),
-		Skills:              make(map[string]string, len(targetSkills)),
-	}
-	for name, meta := range targetSkills {
-		newState.Skills[name] = meta.Version
+	// Save state. Merge into existing state so skills from previous installs
+	// (e.g., experimental skills from a prior run) are preserved.
+	existingState, _ := LoadState(globalDir)
+	var newState *InstallState
+	if existingState != nil {
+		newState = existingState
+		newState.Release = latestTag
+		newState.LastUpdated = time.Now()
+		newState.IncludeExperimental = opts.IncludeExperimental
+		for name, meta := range targetSkills {
+			newState.Skills[name] = meta.Version
+		}
+	} else {
+		newState = &InstallState{
+			SchemaVersion:       1,
+			IncludeExperimental: opts.IncludeExperimental,
+			Release:             latestTag,
+			LastUpdated:         time.Now(),
+			Skills:              make(map[string]string, len(targetSkills)),
+		}
+		for name, meta := range targetSkills {
+			newState.Skills[name] = meta.Version
+		}
 	}
 	if err := SaveState(globalDir, newState); err != nil {
 		return err
 	}
 
 	tag := strings.TrimPrefix(latestTag, "v")
-	cmdio.LogString(ctx, fmt.Sprintf("Installed %d skills (v%s).", len(targetSkills), tag))
+	noun := "skills"
+	if len(targetSkills) == 1 {
+		noun = "skill"
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("Installed %d %s (v%s).", len(targetSkills), noun, tag))
 	return nil
 }
 
@@ -209,7 +226,7 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 	for name, meta := range candidates {
 		if meta.Experimental && !opts.IncludeExperimental {
 			if isSpecific {
-				return nil, fmt.Errorf("skill %q is experimental; use --experimental to install", name)
+				return nil, fmt.Errorf("skill %q is experimental; use --include-experimental to install", name)
 			}
 			log.Debugf(ctx, "Skipping experimental skill %s", name)
 			continue
