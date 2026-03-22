@@ -874,6 +874,10 @@ github.com/databricks/databricks-sdk-go/service/database.SyncedTablePosition:
   "delta_table_sync_info":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.AlertTaskSubscriber:
+  "destination_id":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
   "dashboard_id":
     "description": |-

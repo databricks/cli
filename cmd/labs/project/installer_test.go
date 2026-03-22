@@ -168,6 +168,10 @@ func TestInstallerWorksForReleases(t *testing.T) {
 		})
 	}()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		if r.URL.Path == "/databrickslabs/blueprint/v0.3.15/labs.yml" {
 			raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
 			assert.NoError(t, err)
@@ -248,6 +252,10 @@ func TestOfflineInstallerWorksForReleases(t *testing.T) {
 	// run databricks labs install --offline=true
 	// it will look for the code in the same install directory and if present, install from there.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
 			respondWithJSON(t, w, &compute.ClusterDetails{
 				State: compute.StateRunning,
@@ -291,6 +299,10 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	}()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		if r.URL.Path == "/api/2.1/clusters/list" {
 			respondWithJSON(t, w, compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
@@ -416,6 +428,10 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 		})
 	}()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		if r.URL.Path == "/databrickslabs/blueprint/v0.4.0/labs.yml" {
 			raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
 			assert.NoError(t, err)

@@ -15,3 +15,7 @@ updates:
       - "/.github/actions/setup-build-environment"
     schedule:
       interval: "monthly"
+    # tagging.yml is generated and maintained externally. Ignore
+    # actions/create-github-app-token since it is only used in tagging.yml.
+    ignore:
+      - dependency-name: "actions/create-github-app-token"
