@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
@@ -20,13 +21,10 @@ func TestSaveAndLoadStateRoundtrip(t *testing.T) {
 	dir := t.TempDir()
 	original := &InstallState{
 		SchemaVersion: 1,
-		SkillsRef:     "v0.2.0",
-		LastChecked:   "2026-03-22T10:00:00Z",
-		Skills: map[string]InstalledSkill{
-			"databricks": {
-				Version:     "1.0.0",
-				InstalledAt: "2026-03-22T09:00:00Z",
-			},
+		Release:       "v0.2.0",
+		LastUpdated:   time.Date(2026, 3, 22, 10, 0, 0, 0, time.UTC),
+		Skills: map[string]string{
+			"databricks": "1.0.0",
 		},
 	}
 
@@ -42,8 +40,9 @@ func TestSaveStateCreatesDirectory(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nested", "path")
 	state := &InstallState{
 		SchemaVersion: 1,
-		SkillsRef:     "v0.1.0",
-		Skills:        map[string]InstalledSkill{},
+		Release:       "v0.1.0",
+		LastUpdated:   time.Date(2026, 3, 22, 9, 0, 0, 0, time.UTC),
+		Skills:        map[string]string{},
 	}
 
 	err := SaveState(dir, state)
@@ -52,6 +51,23 @@ func TestSaveStateCreatesDirectory(t *testing.T) {
 	// Verify file exists.
 	_, err = os.Stat(filepath.Join(dir, stateFileName))
 	assert.NoError(t, err)
+}
+
+func TestSaveStateTrailingNewline(t *testing.T) {
+	dir := t.TempDir()
+	state := &InstallState{
+		SchemaVersion: 1,
+		Release:       "v0.1.0",
+		LastUpdated:   time.Date(2026, 3, 22, 9, 0, 0, 0, time.UTC),
+		Skills:        map[string]string{},
+	}
+
+	err := SaveState(dir, state)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(filepath.Join(dir, stateFileName))
+	require.NoError(t, err)
+	assert.Equal(t, byte('\n'), data[len(data)-1])
 }
 
 func TestLoadStateCorruptJSON(t *testing.T) {
@@ -75,4 +91,26 @@ func TestProjectSkillsDirNotImplemented(t *testing.T) {
 	dir, err := ProjectSkillsDir(t.Context())
 	assert.ErrorIs(t, err, ErrNotImplemented)
 	assert.Empty(t, dir)
+}
+
+func TestSaveAndLoadStateWithOptionalFields(t *testing.T) {
+	dir := t.TempDir()
+	original := &InstallState{
+		SchemaVersion:       1,
+		IncludeExperimental: true,
+		Release:             "v0.3.0",
+		LastUpdated:         time.Date(2026, 3, 22, 12, 30, 0, 0, time.UTC),
+		Skills: map[string]string{
+			"databricks": "1.0.0",
+			"sql-tools":  "0.2.0",
+		},
+		Scope: "project",
+	}
+
+	err := SaveState(dir, original)
+	require.NoError(t, err)
+
+	loaded, err := LoadState(dir)
+	require.NoError(t, err)
+	assert.Equal(t, original, loaded)
 }

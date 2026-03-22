@@ -11,24 +11,16 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-// Clock abstracts time for testing.
-type Clock interface {
-	Now() time.Time
-}
-
-// RealClock returns the actual current time.
-type RealClock struct{}
-
-// Now returns the current time.
-func (RealClock) Now() time.Time { return time.Now() }
-
 // ManifestSource abstracts how the skills manifest and release info are fetched.
 type ManifestSource interface {
 	// FetchManifest fetches the skills manifest at the given ref.
 	FetchManifest(ctx context.Context, ref string) (*Manifest, error)
 
 	// FetchLatestRelease returns the latest release tag.
-	// Falls back to defaultSkillsRepoRef on any error.
+	// Implementations should fall back to a default ref on network errors rather
+	// than returning an error. The error return exists for cases where fallback is
+	// not possible (e.g., mock implementations in tests that want to simulate hard
+	// failures).
 	FetchLatestRelease(ctx context.Context) (string, error)
 }
 
@@ -68,6 +60,10 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 // FetchLatestRelease returns the latest release tag from GitHub.
 // If DATABRICKS_SKILLS_REF is set, it is returned immediately.
 // On any error (network, non-200, parse), falls back to defaultSkillsRepoRef.
+//
+// The DATABRICKS_SKILLS_REF check is intentionally duplicated in getSkillsRef()
+// because callers may use either the ManifestSource interface directly or the
+// convenience FetchManifest wrapper.
 func (s *GitHubManifestSource) FetchLatestRelease(ctx context.Context) (string, error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref, nil

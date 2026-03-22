@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/databricks/cli/libs/env"
 )
@@ -16,18 +17,14 @@ const stateFileName = ".state.json"
 // ErrNotImplemented indicates that a feature is not yet implemented.
 var ErrNotImplemented = errors.New("project scope not yet implemented")
 
-// InstalledSkill records the installed version and timestamp for a single skill.
-type InstalledSkill struct {
-	Version     string `json:"version"`
-	InstalledAt string `json:"installed_at"`
-}
-
 // InstallState records the state of all installed skills in a scope directory.
 type InstallState struct {
-	SchemaVersion int                       `json:"schema_version"`
-	SkillsRef     string                    `json:"skills_ref"`
-	LastChecked   string                    `json:"last_checked,omitempty"`
-	Skills        map[string]InstalledSkill `json:"skills"`
+	SchemaVersion       int               `json:"schema_version"`
+	IncludeExperimental bool              `json:"include_experimental,omitempty"`
+	Release             string            `json:"release"`
+	LastUpdated         time.Time         `json:"last_updated"`
+	Skills              map[string]string `json:"skills"`
+	Scope               string            `json:"scope,omitempty"`
 }
 
 // LoadState reads install state from the given directory.
@@ -59,6 +56,7 @@ func SaveState(dir string, state *InstallState) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
+	data = append(data, '\n')
 
 	// Atomic write: write to temp file in the same directory, then rename.
 	tmp, err := os.CreateTemp(dir, ".state-*.tmp")
