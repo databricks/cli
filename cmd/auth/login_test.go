@@ -438,6 +438,23 @@ func TestExtractHostQueryParams_OverridesProfileWorkspaceID(t *testing.T) {
 	assert.Equal(t, "99999", args.WorkspaceID)
 }
 
+func TestSetHostAndAccountId_WorkspaceIDNoneSentinelInherited(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
+
+	skipProfile := loadTestProfile(t, ctx, "spog-skip-workspace")
+
+	// When loading from a profile with workspace_id=none, the sentinel should
+	// be inherited and the workspace prompt should not fire.
+	args := auth.AuthArguments{
+		Host:      "https://spog.example.com",
+		AccountID: "spog-account",
+	}
+	err := setHostAndAccountId(ctx, skipProfile, &args, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, auth.WorkspaceIDNone, args.WorkspaceID)
+}
+
 func TestSetHostAndAccountId_URLParamsOverrideProfile(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
 	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})

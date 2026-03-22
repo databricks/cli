@@ -120,6 +120,18 @@ func TestToOAuthArgument(t *testing.T) {
 			wantHost:     "https://unified.cloud.databricks.com",
 			wantCacheKey: "my-unified-profile",
 		},
+		{
+			name: "workspace_id none sentinel is stripped",
+			args: AuthArguments{
+				Host:          "https://unified.cloud.databricks.com",
+				AccountID:     "123456789",
+				WorkspaceID:   "none",
+				IsUnifiedHost: true,
+				Profile:       "my-profile",
+			},
+			wantHost:     "https://unified.cloud.databricks.com",
+			wantCacheKey: "my-profile",
+		},
 	}
 
 	for _, tt := range tests {

@@ -7,6 +7,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
 
+// WorkspaceIDNone is a sentinel value persisted to .databrickscfg when the
+// user explicitly skips workspace selection for SPOG account-level access.
+const WorkspaceIDNone = "none"
+
 // AuthArguments is a struct that contains the common arguments passed to
 // `databricks auth` commands.
 type AuthArguments struct {
@@ -28,10 +32,16 @@ type AuthArguments struct {
 // It calls EnsureResolved() to run host metadata discovery and routes based on
 // the resolved DiscoveryURL rather than the Experimental_IsUnifiedHost flag.
 func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
+	// Strip the "none" sentinel so it is never passed to the SDK.
+	workspaceID := a.WorkspaceID
+	if workspaceID == WorkspaceIDNone {
+		workspaceID = ""
+	}
+
 	cfg := &config.Config{
 		Host:                       a.Host,
 		AccountID:                  a.AccountID,
-		WorkspaceID:                a.WorkspaceID,
+		WorkspaceID:                workspaceID,
 		Experimental_IsUnifiedHost: a.IsUnifiedHost,
 		HTTPTimeoutSeconds:         5,
 		// Skip config file loading. We only want host metadata resolution

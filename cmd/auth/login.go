@@ -103,6 +103,7 @@ depends on the existing profiles you have set in your configuration file
 	var loginTimeout time.Duration
 	var configureCluster bool
 	var configureServerless bool
+	var skipWorkspace bool
 	var scopes string
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
@@ -110,6 +111,8 @@ depends on the existing profiles you have set in your configuration file
 		"Prompts to configure cluster")
 	cmd.Flags().BoolVar(&configureServerless, "configure-serverless", false,
 		"Prompts to configure serverless")
+	cmd.Flags().BoolVar(&skipWorkspace, "skip-workspace", false,
+		"Skip workspace selection for account-level access")
 	cmd.Flags().StringVar(&scopes, "scopes", "",
 		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
 
@@ -201,12 +204,27 @@ depends on the existing profiles you have set in your configuration file
 
 		// For SPOG hosts with account_id but no workspace_id, prompt for workspace selection.
 		// This is skipped for classic accounts.* hosts where account-level access is expected.
+		// Skip workspace selection if:
+		// - --skip-workspace flag is set
+		// - workspace_id is already set (including "none" sentinel from a previous login)
 		cfg := &config.Config{Host: authArguments.Host}
-		if authArguments.AccountID != "" && authArguments.WorkspaceID == "" && cfg.HostType() != config.AccountHost {
+		shouldPromptWorkspace := authArguments.AccountID != "" &&
+			authArguments.WorkspaceID == "" &&
+			cfg.HostType() != config.AccountHost &&
+			!skipWorkspace
+
+		if skipWorkspace && authArguments.WorkspaceID == "" {
+			authArguments.WorkspaceID = auth.WorkspaceIDNone
+		}
+
+		if shouldPromptWorkspace {
 			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, persistentAuth)
 			if wsErr != nil {
 				log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
-			} else if wsID != "" {
+			} else if wsID == "" {
+				// User selected "Skip" from the prompt.
+				authArguments.WorkspaceID = auth.WorkspaceIDNone
+			} else {
 				authArguments.WorkspaceID = wsID
 			}
 		}

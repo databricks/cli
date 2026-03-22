@@ -3,6 +3,7 @@ package profile
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
@@ -11,14 +12,16 @@ type ProfileMatchFunction func(Profile) bool
 func MatchWorkspaceProfiles(p Profile) bool {
 	// Workspace profile: has workspace_id (covers both classic and SPOG profiles),
 	// or is a regular workspace host (no account_id and not a legacy unified-host profile).
-	return p.WorkspaceID != "" || (p.AccountID == "" && !p.IsUnifiedHost)
+	// workspace_id = "none" is a sentinel for "skip workspace", so it does NOT count.
+	return (p.WorkspaceID != "" && p.WorkspaceID != auth.WorkspaceIDNone) || (p.AccountID == "" && !p.IsUnifiedHost)
 }
 
 func MatchAccountProfiles(p Profile) bool {
 	// Account profile: has host and account_id but no workspace_id.
+	// workspace_id = "none" is a sentinel for account-level access, treated as empty.
 	// This covers classic accounts.* profiles, legacy unified-host account profiles,
 	// and new SPOG account profiles.
-	return p.Host != "" && p.AccountID != "" && p.WorkspaceID == ""
+	return p.Host != "" && p.AccountID != "" && (p.WorkspaceID == "" || p.WorkspaceID == auth.WorkspaceIDNone)
 }
 
 func MatchAllProfiles(p Profile) bool {

@@ -226,6 +226,11 @@ func TestMatchWorkspaceProfiles(t *testing.T) {
 			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", IsUnifiedHost: true},
 			want:    false,
 		},
+		{
+			name:    "workspace_id none sentinel is not a workspace profile",
+			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1", WorkspaceID: "none"},
+			want:    false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -254,6 +259,11 @@ func TestMatchAccountProfiles(t *testing.T) {
 		{
 			name:    "legacy unified account profile",
 			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", IsUnifiedHost: true},
+			want:    true,
+		},
+		{
+			name:    "workspace_id none sentinel matches as account profile",
+			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1", WorkspaceID: "none"},
 			want:    true,
 		},
 		{
