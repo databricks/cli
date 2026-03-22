@@ -18,9 +18,10 @@ import (
 
 // mockManifestSource is a test double for ManifestSource.
 type mockManifestSource struct {
-	manifest *Manifest
-	release  string
-	fetchErr error
+	manifest      *Manifest
+	release       string
+	authoritative bool
+	fetchErr      error
 }
 
 func (m *mockManifestSource) FetchManifest(_ context.Context, _ string) (*Manifest, error) {
@@ -30,8 +31,8 @@ func (m *mockManifestSource) FetchManifest(_ context.Context, _ string) (*Manife
 	return m.manifest, nil
 }
 
-func (m *mockManifestSource) FetchLatestRelease(_ context.Context) (string, error) {
-	return m.release, nil
+func (m *mockManifestSource) FetchLatestRelease(_ context.Context) (string, bool, error) {
+	return m.release, m.authoritative, nil
 }
 
 func testManifest() *Manifest {
@@ -195,7 +196,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
@@ -219,7 +220,7 @@ func TestInstallSkillForSingleWritesState(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{
@@ -242,7 +243,7 @@ func TestInstallSkillsSpecificNotFound(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{
@@ -264,7 +265,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 		Experimental: true,
 	}
 
-	src := &mockManifestSource{manifest: manifest, release: "v0.1.0"}
+	src := &mockManifestSource{manifest: manifest, release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
@@ -292,7 +293,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 		Experimental: true,
 	}
 
-	src := &mockManifestSource{manifest: manifest, release: "v0.1.0"}
+	src := &mockManifestSource{manifest: manifest, release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{
@@ -328,7 +329,7 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 		MinCLIVer: "0.300.0",
 	}
 
-	src := &mockManifestSource{manifest: manifest, release: "v0.1.0"}
+	src := &mockManifestSource{manifest: manifest, release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
@@ -358,7 +359,7 @@ func TestMinCLIVersionHardErrorForInstallSingle(t *testing.T) {
 		MinCLIVer: "0.300.0",
 	}
 
-	src := &mockManifestSource{manifest: manifest, release: "v0.1.0"}
+	src := &mockManifestSource{manifest: manifest, release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{
@@ -374,7 +375,7 @@ func TestIdempotentSecondInstallSkips(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	// First install.
@@ -403,7 +404,7 @@ func TestIdempotentInstallUpdatesNewVersions(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	// First install.
@@ -416,7 +417,7 @@ func TestIdempotentInstallUpdatesNewVersions(t *testing.T) {
 		Version: "0.2.0",
 		Files:   []string{"SKILL.md"},
 	}
-	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0"}
+	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0", authoritative: true}
 
 	// Track which skills are fetched.
 	var fetchedSkills []string
@@ -452,7 +453,7 @@ func TestLegacyDetectMessagePrinted(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
@@ -470,7 +471,7 @@ func TestLegacyDetectLegacyDir(t *testing.T) {
 	legacyDir := filepath.Join(tmp, ".databricks", "agent-skills")
 	require.NoError(t, os.MkdirAll(filepath.Join(legacyDir, "databricks-sql"), 0o755))
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})

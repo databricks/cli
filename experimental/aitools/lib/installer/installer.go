@@ -115,7 +115,7 @@ func ListSkills(ctx context.Context) error {
 // This is the core installation function. Callers are responsible for agent detection,
 // prompting, and printing the "Installing..." header.
 func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent, opts InstallOptions) error {
-	latestTag, err := src.FetchLatestRelease(ctx)
+	latestTag, _, err := src.FetchLatestRelease(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to fetch latest release: %w", err)
 	}

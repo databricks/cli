@@ -29,35 +29,51 @@ func newVersionCmd() *cobra.Command {
 			}
 
 			if state == nil {
-				cmdio.LogString(ctx, "Databricks AI skills: not installed")
+				cmdio.LogString(ctx, "No Databricks AI Tools components installed.")
 				cmdio.LogString(ctx, "")
-				cmdio.LogString(ctx, "Run 'databricks experimental aitools install' to install.")
+				cmdio.LogString(ctx, "Run 'databricks experimental aitools install' to get started.")
 				return nil
 			}
 
 			version := strings.TrimPrefix(state.Release, "v")
-			cmdio.LogString(ctx, fmt.Sprintf("Databricks AI skills v%s", version))
-			cmdio.LogString(ctx, fmt.Sprintf("  Skills installed: %d", len(state.Skills)))
-			cmdio.LogString(ctx, fmt.Sprintf("  Last updated:     %s", state.LastUpdated.Format("2006-01-02")))
+			skillNoun := "skills"
+			if len(state.Skills) == 1 {
+				skillNoun = "skill"
+			}
 
 			// Best-effort staleness check.
 			if env.Get(ctx, "DATABRICKS_SKILLS_REF") != "" {
-				cmdio.LogString(ctx, "  Using custom ref:  $DATABRICKS_SKILLS_REF")
+				cmdio.LogString(ctx, "Databricks AI Tools:")
+				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s)", version, len(state.Skills), skillNoun))
+				cmdio.LogString(ctx, fmt.Sprintf("  Last updated: %s", state.LastUpdated.Format("2006-01-02")))
+				cmdio.LogString(ctx, "  Using custom ref: $DATABRICKS_SKILLS_REF")
 				return nil
 			}
 
 			src := &installer.GitHubManifestSource{}
-			latest, err := src.FetchLatestRelease(ctx)
+			latest, authoritative, err := src.FetchLatestRelease(ctx)
 			if err != nil {
 				log.Debugf(ctx, "Could not check for updates: %v", err)
+				authoritative = false
+			}
+
+			cmdio.LogString(ctx, "Databricks AI Tools:")
+
+			if !authoritative {
+				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s)", version, len(state.Skills), skillNoun))
+				cmdio.LogString(ctx, fmt.Sprintf("  Last updated: %s", state.LastUpdated.Format("2006-01-02")))
+				cmdio.LogString(ctx, "  Could not check for latest version.")
 				return nil
 			}
 
 			if latest == state.Release {
-				cmdio.LogString(ctx, "  Status:           up to date")
+				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s, up to date)", version, len(state.Skills), skillNoun))
+				cmdio.LogString(ctx, fmt.Sprintf("  Last updated: %s", state.LastUpdated.Format("2006-01-02")))
 			} else {
 				latestVersion := strings.TrimPrefix(latest, "v")
-				cmdio.LogString(ctx, fmt.Sprintf("  Status:           update available (v%s)", latestVersion))
+				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s)", version, len(state.Skills), skillNoun))
+				cmdio.LogString(ctx, fmt.Sprintf("  Update available: v%s", latestVersion))
+				cmdio.LogString(ctx, fmt.Sprintf("  Last updated: %s", state.LastUpdated.Format("2006-01-02")))
 				cmdio.LogString(ctx, "")
 				cmdio.LogString(ctx, "Run 'databricks experimental aitools update' to update.")
 			}

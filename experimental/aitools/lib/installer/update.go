@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"golang.org/x/mod/semver"
 )
 
 // UpdateOptions controls the behavior of UpdateSkills.
@@ -53,16 +55,17 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		if hasLegacyInstall(ctx, globalDir) {
 			return nil, fmt.Errorf("found skills from a previous install without state tracking; run 'databricks experimental aitools install' to refresh before updating")
 		}
-		return nil, fmt.Errorf("no skills installed; run 'databricks experimental aitools install' to install")
+		return nil, fmt.Errorf("no skills installed. Run 'databricks experimental aitools install' to install")
 	}
 
-	latestTag, err := src.FetchLatestRelease(ctx)
+	latestTag, authoritative, err := src.FetchLatestRelease(ctx)
 	if err != nil {
-		if opts.Check {
-			log.Warnf(ctx, "Could not check for updates: %v", err)
-			return &UpdateResult{}, nil
-		}
 		return nil, fmt.Errorf("failed to fetch latest release: %w", err)
+	}
+
+	if !authoritative && !opts.Force {
+		cmdio.LogString(ctx, "Could not check for updates (offline?). Use --force to update anyway.")
+		return &UpdateResult{Unchanged: sortedKeys(state.Skills)}, nil
 	}
 
 	if state.Release == latestTag && !opts.Force {
@@ -84,6 +87,9 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	result := &UpdateResult{}
 
+	cliVersion := build.GetInfo().Version
+	isDev := strings.HasPrefix(cliVersion, build.DefaultSemver)
+
 	// Sort skill names for deterministic output.
 	names := sortedKeys(skillSet)
 
@@ -92,8 +98,25 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		oldVersion := state.Skills[name]
 
 		if !inManifest {
-			// Skill was in state but removed from manifest. Keep as unchanged.
+			_, wasInstalled := state.Skills[name]
+			if wasInstalled {
+				log.Warnf(ctx, "Warning: %q not found in manifest %s (keeping installed version).", name, latestTag)
+			}
 			result.Unchanged = append(result.Unchanged, name)
+			continue
+		}
+
+		// Filter experimental skills unless state opted in.
+		if meta.Experimental && !state.IncludeExperimental {
+			log.Debugf(ctx, "Skipping experimental skill %s", name)
+			result.Skipped = append(result.Skipped, name)
+			continue
+		}
+
+		// Filter skills requiring a newer CLI version.
+		if meta.MinCLIVer != "" && !isDev && semver.Compare("v"+cliVersion, "v"+meta.MinCLIVer) < 0 {
+			log.Warnf(ctx, "Skipping %s: requires CLI version %s (running %s)", name, meta.MinCLIVer, cliVersion)
+			result.Skipped = append(result.Skipped, name)
 			continue
 		}
 
@@ -194,19 +217,29 @@ func sortedKeys[V any](m map[string]V) []string {
 }
 
 // FormatUpdateResult returns a human-readable summary of the update result.
-func FormatUpdateResult(result *UpdateResult) string {
+// When check is true, output uses "Would update/add" instead of "Updated/Added".
+func FormatUpdateResult(result *UpdateResult, check bool) string {
 	var lines []string
+
+	updateVerb := "updated"
+	addVerb := "added"
+	summaryVerb := "Updated"
+	if check {
+		updateVerb = "would update"
+		addVerb = "would add"
+		summaryVerb = "Would update"
+	}
 
 	for _, u := range result.Updated {
 		if u.OldVersion == "" {
-			lines = append(lines, fmt.Sprintf("  updated %s -> v%s", u.Name, u.NewVersion))
+			lines = append(lines, fmt.Sprintf("  %s %s -> v%s", updateVerb, u.Name, u.NewVersion))
 		} else {
-			lines = append(lines, fmt.Sprintf("  updated %s v%s -> v%s", u.Name, u.OldVersion, u.NewVersion))
+			lines = append(lines, fmt.Sprintf("  %s %s v%s -> v%s", updateVerb, u.Name, u.OldVersion, u.NewVersion))
 		}
 	}
 
 	for _, a := range result.Added {
-		lines = append(lines, fmt.Sprintf("  added %s v%s", a.Name, a.NewVersion))
+		lines = append(lines, fmt.Sprintf("  %s %s v%s", addVerb, a.Name, a.NewVersion))
 	}
 
 	total := len(result.Updated) + len(result.Added)
@@ -218,6 +251,6 @@ func FormatUpdateResult(result *UpdateResult) string {
 	if total == 1 {
 		noun = "skill"
 	}
-	lines = append(lines, fmt.Sprintf("Updated %d %s.", total, noun))
+	lines = append(lines, fmt.Sprintf("%s %d %s.", summaryVerb, total, noun))
 	return strings.Join(lines, "\n")
 }

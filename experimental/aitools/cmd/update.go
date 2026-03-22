@@ -31,7 +31,7 @@ preview what would change without downloading.`,
 				return err
 			}
 			if result != nil && (len(result.Updated) > 0 || len(result.Added) > 0) {
-				cmdio.LogString(ctx, installer.FormatUpdateResult(result))
+				cmdio.LogString(ctx, installer.FormatUpdateResult(result, check))
 			}
 			return nil
 		},

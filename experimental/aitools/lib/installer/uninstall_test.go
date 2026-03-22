@@ -18,7 +18,7 @@ func installTestSkills(t *testing.T, tmp string) string {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
 
@@ -68,7 +68,7 @@ func TestUninstallRemovesSymlinks(t *testing.T) {
 		},
 	}
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{claudeAgent, cursorAgent}, InstallOptions{}))
 
 	ctx2, _ := cmdio.NewTestContextWithStderr(t.Context())
@@ -161,11 +161,11 @@ func TestUninstallHandlesMissingDirectories(t *testing.T) {
 	assert.Contains(t, stderr.String(), "Uninstalled 2 skills.")
 }
 
-func TestUninstallHandlesBrokenSymlinks(t *testing.T) {
+func TestUninstallHandlesBrokenSymlinksToCanonicalDir(t *testing.T) {
 	tmp := setupTestHome(t)
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 
-	// Create state and a broken symlink.
+	// Create state with one skill.
 	state := &InstallState{
 		SchemaVersion: 1,
 		Release:       "v0.1.0",
@@ -176,19 +176,82 @@ func TestUninstallHandlesBrokenSymlinks(t *testing.T) {
 	}
 	require.NoError(t, SaveState(globalDir, state))
 
-	// Create a broken symlink in a registry agent dir (.claude is in agents.Registry).
+	// Create a symlink pointing to the canonical dir (which doesn't exist on disk).
+	canonicalTarget := filepath.Join(globalDir, "databricks-sql")
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
 	agentSkillsDir := filepath.Join(tmp, ".claude", "skills")
 	require.NoError(t, os.MkdirAll(agentSkillsDir, 0o755))
-	brokenLink := filepath.Join(agentSkillsDir, "databricks-sql")
-	require.NoError(t, os.Symlink("/nonexistent/target", brokenLink))
+	link := filepath.Join(agentSkillsDir, "databricks-sql")
+	require.NoError(t, os.Symlink(canonicalTarget, link))
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	err := UninstallSkills(ctx)
 	require.NoError(t, err)
 
-	// Broken symlink should be removed.
-	_, err = os.Lstat(brokenLink)
+	// Symlink pointing to canonical dir should be removed.
+	_, err = os.Lstat(link)
 	assert.True(t, os.IsNotExist(err))
+	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
+}
+
+func TestUninstallLeavesNonCanonicalSymlinks(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+
+	state := &InstallState{
+		SchemaVersion: 1,
+		Release:       "v0.1.0",
+		LastUpdated:   time.Now(),
+		Skills: map[string]string{
+			"databricks-sql": "0.1.0",
+		},
+	}
+	require.NoError(t, SaveState(globalDir, state))
+
+	// Create a symlink in an agent dir pointing somewhere other than canonical dir.
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
+	agentSkillsDir := filepath.Join(tmp, ".claude", "skills")
+	require.NoError(t, os.MkdirAll(agentSkillsDir, 0o755))
+	externalLink := filepath.Join(agentSkillsDir, "databricks-sql")
+	require.NoError(t, os.Symlink("/some/other/place", externalLink))
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	err := UninstallSkills(ctx)
+	require.NoError(t, err)
+
+	// Symlink pointing outside canonical dir should be preserved.
+	_, err = os.Lstat(externalLink)
+	assert.NoError(t, err, "symlink to external path should not be removed")
+	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
+}
+
+func TestUninstallLeavesNonSymlinkDirectories(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+
+	state := &InstallState{
+		SchemaVersion: 1,
+		Release:       "v0.1.0",
+		LastUpdated:   time.Now(),
+		Skills: map[string]string{
+			"databricks-sql": "0.1.0",
+		},
+	}
+	require.NoError(t, SaveState(globalDir, state))
+
+	// Create a regular directory (not symlink) in agent skills dir.
+	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
+	agentSkillsDir := filepath.Join(tmp, ".claude", "skills")
+	regularDir := filepath.Join(agentSkillsDir, "databricks-sql")
+	require.NoError(t, os.MkdirAll(regularDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(regularDir, "custom.md"), []byte("custom"), 0o644))
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	err := UninstallSkills(ctx)
+	require.NoError(t, err)
+
+	// Regular directory should be preserved (not a symlink to canonical dir).
+	_, err = os.Stat(regularDir)
+	assert.NoError(t, err, "regular directory should not be removed")
 	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
 }

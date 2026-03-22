@@ -35,14 +35,15 @@ func UninstallSkills(ctx context.Context) error {
 
 	// Remove skill directories and symlinks for each skill in state.
 	for name := range state.Skills {
-		// Remove canonical skill directory.
 		canonicalDir := filepath.Join(globalDir, name)
+
+		// Remove symlinks from agent directories (only symlinks pointing to canonical dir).
+		removeSymlinksFromAgents(ctx, name, canonicalDir)
+
+		// Remove canonical skill directory.
 		if err := os.RemoveAll(canonicalDir); err != nil {
 			log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
 		}
-
-		// Remove symlinks from ALL agent directories (not just detected ones).
-		removeSymlinksFromAgents(ctx, name)
 	}
 
 	// Clean up orphaned symlinks pointing into the canonical dir.
@@ -62,8 +63,10 @@ func UninstallSkills(ctx context.Context) error {
 	return nil
 }
 
-// removeSymlinksFromAgents removes a skill's symlink from all agent directories in the registry.
-func removeSymlinksFromAgents(ctx context.Context, skillName string) {
+// removeSymlinksFromAgents removes a skill's symlink from all agent directories
+// in the registry, but only if the entry is a symlink pointing into canonicalDir.
+// Non-symlink directories are left untouched to avoid deleting user-managed content.
+func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir string) {
 	for i := range agents.Registry {
 		agent := &agents.Registry[i]
 		skillsDir, err := agent.SkillsDir(ctx)
@@ -83,18 +86,28 @@ func removeSymlinksFromAgents(ctx context.Context, skillName string) {
 			continue
 		}
 
-		// Remove symlinks and directories alike.
-		if fi.Mode()&os.ModeSymlink != 0 {
-			if err := os.Remove(destDir); err != nil {
-				log.Warnf(ctx, "Failed to remove symlink %s: %v", destDir, err)
-			}
-		} else {
-			if err := os.RemoveAll(destDir); err != nil {
-				log.Warnf(ctx, "Failed to remove %s: %v", destDir, err)
-			}
+		if fi.Mode()&os.ModeSymlink == 0 {
+			log.Debugf(ctx, "Skipping non-symlink %s for %s", destDir, agent.DisplayName)
+			continue
 		}
 
-		log.Debugf(ctx, "Removed %q from %s", skillName, agent.DisplayName)
+		target, err := os.Readlink(destDir)
+		if err != nil {
+			log.Warnf(ctx, "Failed to read symlink %s: %v", destDir, err)
+			continue
+		}
+
+		// Only remove if the symlink points into our canonical dir.
+		if !strings.HasPrefix(target, canonicalDir+string(os.PathSeparator)) && target != canonicalDir {
+			log.Debugf(ctx, "Skipping symlink %s (points to %s, not %s)", destDir, target, canonicalDir)
+			continue
+		}
+
+		if err := os.Remove(destDir); err != nil {
+			log.Warnf(ctx, "Failed to remove symlink %s: %v", destDir, err)
+		} else {
+			log.Debugf(ctx, "Removed %q from %s", skillName, agent.DisplayName)
+		}
 	}
 }
 

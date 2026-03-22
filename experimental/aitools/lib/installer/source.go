@@ -16,12 +16,12 @@ type ManifestSource interface {
 	// FetchManifest fetches the skills manifest at the given ref.
 	FetchManifest(ctx context.Context, ref string) (*Manifest, error)
 
-	// FetchLatestRelease returns the latest release tag.
-	// Implementations should fall back to a default ref on network errors rather
-	// than returning an error. The error return exists for cases where fallback is
-	// not possible (e.g., mock implementations in tests that want to simulate hard
-	// failures).
-	FetchLatestRelease(ctx context.Context) (string, error)
+	// FetchLatestRelease returns the latest release tag and whether the result
+	// is authoritative. When authoritative is true, the tag came from a
+	// successful API call. When false, the tag is a fallback default (e.g.,
+	// due to network failure). Callers should use this to decide whether
+	// to trust the result for staleness comparisons.
+	FetchLatestRelease(ctx context.Context) (tag string, authoritative bool, err error)
 }
 
 // GitHubManifestSource fetches manifests and release info from GitHub.
@@ -58,15 +58,16 @@ func (s *GitHubManifestSource) FetchManifest(ctx context.Context, ref string) (*
 }
 
 // FetchLatestRelease returns the latest release tag from GitHub.
-// If DATABRICKS_SKILLS_REF is set, it is returned immediately.
-// On any error (network, non-200, parse), falls back to defaultSkillsRepoRef.
+// If DATABRICKS_SKILLS_REF is set, it is returned as authoritative.
+// On any error (network, non-200, parse), falls back to defaultSkillsRepoRef
+// with authoritative=false.
 //
 // The DATABRICKS_SKILLS_REF check is intentionally duplicated in getSkillsRef()
 // because callers may use either the ManifestSource interface directly or the
 // convenience FetchManifest wrapper.
-func (s *GitHubManifestSource) FetchLatestRelease(ctx context.Context) (string, error) {
+func (s *GitHubManifestSource) FetchLatestRelease(ctx context.Context) (string, bool, error) {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
-		return ref, nil
+		return ref, true, nil
 	}
 
 	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases/latest",
@@ -75,20 +76,20 @@ func (s *GitHubManifestSource) FetchLatestRelease(ctx context.Context) (string, 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		log.Debugf(ctx, "Failed to create release request, falling back to %s: %v", defaultSkillsRepoRef, err)
-		return defaultSkillsRepoRef, nil
+		return defaultSkillsRepoRef, false, nil
 	}
 
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Debugf(ctx, "Failed to fetch latest release, falling back to %s: %v", defaultSkillsRepoRef, err)
-		return defaultSkillsRepoRef, nil
+		return defaultSkillsRepoRef, false, nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Debugf(ctx, "Latest release returned HTTP %d, falling back to %s", resp.StatusCode, defaultSkillsRepoRef)
-		return defaultSkillsRepoRef, nil
+		return defaultSkillsRepoRef, false, nil
 	}
 
 	var release struct {
@@ -96,13 +97,13 @@ func (s *GitHubManifestSource) FetchLatestRelease(ctx context.Context) (string, 
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
 		log.Debugf(ctx, "Failed to parse release response, falling back to %s: %v", defaultSkillsRepoRef, err)
-		return defaultSkillsRepoRef, nil
+		return defaultSkillsRepoRef, false, nil
 	}
 
 	if release.TagName == "" {
 		log.Debugf(ctx, "Empty tag_name in release response, falling back to %s", defaultSkillsRepoRef)
-		return defaultSkillsRepoRef, nil
+		return defaultSkillsRepoRef, false, nil
 	}
 
-	return release.TagName, nil
+	return release.TagName, true, nil
 }
