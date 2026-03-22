@@ -12,5 +12,6 @@ Profile override-test was successfully saved
 [DEFAULT]
 
 [override-test]
-host      = [DATABRICKS_URL]
-auth_type = databricks-cli
+host         = [DATABRICKS_URL]
+workspace_id = [NUMID]
+auth_type    = databricks-cli

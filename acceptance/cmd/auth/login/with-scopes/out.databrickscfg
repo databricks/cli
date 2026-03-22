@@ -2,9 +2,10 @@
 [DEFAULT]
 
 [scoped-test]
-host      = [DATABRICKS_URL]
-scopes    = jobs,pipelines,clusters
-auth_type = databricks-cli
+host         = [DATABRICKS_URL]
+workspace_id = [NUMID]
+scopes       = jobs,pipelines,clusters
+auth_type    = databricks-cli
 
 [__settings__]
 default_profile = scoped-test
