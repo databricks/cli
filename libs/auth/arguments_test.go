@@ -155,12 +155,14 @@ func TestToOAuthArgument_SPOGHostRoutesToUnified(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/.well-known/databricks-config" {
 			w.Header().Set("Content-Type", "application/json")
-			err := json.NewEncoder(w).Encode(map[string]any{
+			if err := json.NewEncoder(w).Encode(map[string]any{
 				"account_id":    "spog-account",
 				"workspace_id":  "spog-ws",
 				"oidc_endpoint": r.Host + "/oidc/accounts/spog-account",
-			})
-			require.NoError(t, err)
+			}); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -184,11 +186,13 @@ func TestToOAuthArgument_ClassicWorkspaceNotMisrouted(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/.well-known/databricks-config" {
 			w.Header().Set("Content-Type", "application/json")
-			err := json.NewEncoder(w).Encode(map[string]any{
+			if err := json.NewEncoder(w).Encode(map[string]any{
 				"workspace_id":  "12345",
 				"oidc_endpoint": r.Host + "/oidc",
-			})
-			require.NoError(t, err)
+			}); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
@@ -215,11 +219,13 @@ func TestToOAuthArgument_NoAccountIDSkipsUnifiedRouting(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/.well-known/databricks-config" {
 			w.Header().Set("Content-Type", "application/json")
-			err := json.NewEncoder(w).Encode(map[string]any{
+			if err := json.NewEncoder(w).Encode(map[string]any{
 				"account_id":    "discovered-account",
 				"oidc_endpoint": r.Host + "/oidc/accounts/discovered-account",
-			})
-			require.NoError(t, err)
+			}); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)

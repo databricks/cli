@@ -295,10 +295,10 @@ func TestExtractHostQueryParams(t *testing.T) {
 			wantWorkspaceID: "12345",
 		},
 		{
-			name:            "extract account_id from ?account_id=",
-			host:            "https://spog.example.com/?account_id=abc",
-			wantHost:        "https://spog.example.com",
-			wantAccountID:   "abc",
+			name:          "extract account_id from ?account_id=",
+			host:          "https://spog.example.com/?account_id=abc",
+			wantHost:      "https://spog.example.com",
+			wantAccountID: "abc",
 		},
 		{
 			name:            "extract workspace_id from ?workspace_id=",
@@ -370,8 +370,10 @@ func newDiscoveryServer(t *testing.T, metadata map[string]any) *httptest.Server 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/.well-known/databricks-config" {
 			w.Header().Set("Content-Type", "application/json")
-			err := json.NewEncoder(w).Encode(metadata)
-			require.NoError(t, err)
+			if err := json.NewEncoder(w).Encode(metadata); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)

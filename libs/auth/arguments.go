@@ -1,10 +1,8 @@
 package auth
 
 import (
-	"context"
 	"strings"
 
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
@@ -37,10 +35,9 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		Loaders: []config.Loader{config.ConfigAttributes},
 	}
 
-	if err := cfg.EnsureResolved(); err != nil {
-		//nolint:forbidigo // ToOAuthArgument has no context parameter; this is a non-critical warning.
-		log.Warnf(context.Background(), "Config resolution failed in ToOAuthArgument: %v", err)
-	}
+	// Ignore resolution errors; discovery failure is expected for non-SPOG
+	// hosts and the function falls through to workspace OAuth below.
+	_ = cfg.EnsureResolved()
 
 	host := cfg.CanonicalHostName()
 
