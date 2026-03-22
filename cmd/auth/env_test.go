@@ -47,34 +47,38 @@ func TestEnvCommand_TextOutput(t *testing.T) {
 	}{
 		{
 			name:     "default output is JSON",
-			args:     []string{"--host", "https://test.cloud.databricks.com"},
+			args:     nil,
 			wantJSON: true,
 		},
 		{
 			name:     "explicit --output text produces KEY=VALUE lines",
-			args:     []string{"--host", "https://test.cloud.databricks.com", "--output", "text"},
+			args:     []string{"--output", "text"},
 			wantJSON: false,
 		},
 		{
 			name:     "explicit --output json produces JSON",
-			args:     []string{"--host", "https://test.cloud.databricks.com", "--output", "json"},
+			args:     []string{"--output", "json"},
 			wantJSON: true,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			// Isolate from real config/token cache on the machine.
+			t.Setenv("DATABRICKS_CONFIG_FILE", t.TempDir()+"/.databrickscfg")
+			t.Setenv("HOME", t.TempDir())
+			// Set env vars so MustAnyClient resolves auth via PAT.
+			t.Setenv("DATABRICKS_HOST", "https://test.cloud.databricks.com")
+			t.Setenv("DATABRICKS_TOKEN", "test-token-value")
+
 			parent := &cobra.Command{Use: "databricks"}
 			outputFlag := flags.OutputText
 			parent.PersistentFlags().VarP(&outputFlag, "output", "o", "output type: text or json")
+			parent.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 
 			envCmd := newEnvCommand()
 			parent.AddCommand(envCmd)
 			parent.SetContext(cmdio.MockDiscard(t.Context()))
-
-			// Set DATABRICKS_TOKEN so the SDK's config.Authenticate succeeds
-			// without hitting a real endpoint.
-			t.Setenv("DATABRICKS_TOKEN", "test-token-value")
 
 			var buf bytes.Buffer
 			parent.SetOut(&buf)
@@ -91,7 +95,6 @@ func TestEnvCommand_TextOutput(t *testing.T) {
 				assert.NotContains(t, output, "{")
 				assert.Contains(t, output, "DATABRICKS_HOST=")
 				assert.Contains(t, output, "=")
-				// Verify KEY=VALUE format (no JSON structure)
 				assert.NotContains(t, output, `"env"`)
 			}
 		})
