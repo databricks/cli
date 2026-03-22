@@ -118,6 +118,9 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string) {
 	for i := range agents.Registry {
 		agent := &agents.Registry[i]
+		if scope == ScopeProject && !agent.SupportsProjectScope {
+			continue
+		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
 		if err != nil {
 			continue
@@ -146,9 +149,16 @@ func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scop
 			continue
 		}
 
+		// Resolve relative symlinks to absolute for comparison.
+		absTarget := target
+		if !filepath.IsAbs(target) {
+			absTarget = filepath.Join(filepath.Dir(destDir), target)
+			absTarget = filepath.Clean(absTarget)
+		}
+
 		// Only remove if the symlink points into our canonical dir.
-		if !strings.HasPrefix(target, canonicalDir+string(os.PathSeparator)) && target != canonicalDir {
-			log.Debugf(ctx, "Skipping symlink %s (points to %s, not %s)", destDir, target, canonicalDir)
+		if !strings.HasPrefix(absTarget, canonicalDir+string(os.PathSeparator)) && absTarget != canonicalDir {
+			log.Debugf(ctx, "Skipping symlink %s (points to %s, not %s)", destDir, absTarget, canonicalDir)
 			continue
 		}
 
@@ -165,6 +175,9 @@ func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scop
 func cleanOrphanedSymlinks(ctx context.Context, baseDir, scope, cwd string) {
 	for i := range agents.Registry {
 		agent := &agents.Registry[i]
+		if scope == ScopeProject && !agent.SupportsProjectScope {
+			continue
+		}
 		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
 		if err != nil {
 			continue
@@ -192,8 +205,14 @@ func cleanOrphanedSymlinks(ctx context.Context, baseDir, scope, cwd string) {
 				continue
 			}
 
+			// Resolve relative symlinks to absolute for comparison.
+			absTarget := target
+			if !filepath.IsAbs(target) {
+				absTarget = filepath.Clean(filepath.Join(filepath.Dir(entryPath), target))
+			}
+
 			// Check if the symlink points into our managed skills dir.
-			if !strings.HasPrefix(target, baseDir+string(os.PathSeparator)) && target != baseDir {
+			if !strings.HasPrefix(absTarget, baseDir+string(os.PathSeparator)) && absTarget != baseDir {
 				continue
 			}
 

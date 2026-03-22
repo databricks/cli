@@ -66,7 +66,8 @@ func newSkillsListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List available skills",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return listSkillsFn(cmd)
+			// Default to showing all scopes (empty scope = both).
+			return listSkillsFn(cmd, "")
 		},
 	}
 }

@@ -123,7 +123,11 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		if err != nil {
 			return fmt.Errorf("failed to determine working directory: %w", err)
 		}
+		incompatible := incompatibleAgentNames(targetAgents)
 		targetAgents = filterProjectAgents(ctx, targetAgents)
+		if len(targetAgents) == 0 {
+			return fmt.Errorf("no agents support project-scoped skills. The following detected agents are global-only: %s", strings.Join(incompatible, ", "))
+		}
 	}
 
 	// Load existing state for idempotency checks.
@@ -148,6 +152,13 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		return err
 	}
 
+	params := installParams{
+		baseDir: baseDir,
+		scope:   scope,
+		cwd:     cwd,
+		ref:     ref,
+	}
+
 	// Install each skill in sorted order for determinism.
 	skillNames := make([]string, 0, len(targetSkills))
 	for name := range targetSkills {
@@ -167,7 +178,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 			}
 		}
 
-		if err := installSkillForAgents(ctx, ref, name, meta.Files, targetAgents, baseDir, scope, cwd); err != nil {
+		if err := installSkillForAgents(ctx, name, meta.Files, targetAgents, params); err != nil {
 			return err
 		}
 	}
@@ -222,6 +233,17 @@ func filterProjectAgents(ctx context.Context, targetAgents []*agents.Agent) []*a
 		}
 	}
 	return compatible
+}
+
+// incompatibleAgentNames returns the display names of agents that do not support project scope.
+func incompatibleAgentNames(targetAgents []*agents.Agent) []string {
+	var names []string
+	for _, a := range targetAgents {
+		if !a.SupportsProjectScope {
+			names = append(names, a.DisplayName)
+		}
+	}
+	return names
 }
 
 // resolveSkills filters the manifest skills based on the install options,
@@ -360,17 +382,25 @@ func allAgentsHaveSkill(ctx context.Context, skillName string, targetAgents []*a
 	return true
 }
 
-func installSkillForAgents(ctx context.Context, ref, skillName string, files []string, detectedAgents []*agents.Agent, baseDir, scope, cwd string) error {
-	canonicalDir := filepath.Join(baseDir, skillName)
-	if err := installSkillToDir(ctx, ref, skillName, canonicalDir, files); err != nil {
+// installParams bundles the parameters for installSkillForAgents to keep the signature manageable.
+type installParams struct {
+	baseDir string
+	scope   string
+	cwd     string
+	ref     string
+}
+
+func installSkillForAgents(ctx context.Context, skillName string, files []string, detectedAgents []*agents.Agent, params installParams) error {
+	canonicalDir := filepath.Join(params.baseDir, skillName)
+	if err := installSkillToDir(ctx, params.ref, skillName, canonicalDir, files); err != nil {
 		return err
 	}
 
 	// For project scope, always symlink. For global, symlink when multiple agents.
-	useSymlinks := scope == ScopeProject || len(detectedAgents) > 1
+	useSymlinks := params.scope == ScopeProject || len(detectedAgents) > 1
 
 	for _, agent := range detectedAgents {
-		agentSkillDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
+		agentSkillDir, err := agentSkillsDirForScope(ctx, agent, params.scope, params.cwd)
 		if err != nil {
 			log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
 			continue
@@ -384,7 +414,15 @@ func installSkillForAgents(ctx context.Context, ref, skillName string, files []s
 		}
 
 		if useSymlinks {
-			if err := createSymlink(canonicalDir, destDir); err != nil {
+			symlinkTarget := canonicalDir
+			// For project scope, use relative symlinks so they work for teammates.
+			if params.scope == ScopeProject {
+				rel, relErr := filepath.Rel(filepath.Dir(destDir), canonicalDir)
+				if relErr == nil {
+					symlinkTarget = rel
+				}
+			}
+			if err := createSymlink(symlinkTarget, destDir); err != nil {
 				log.Debugf(ctx, "Symlink failed for %s, copying instead: %v", agent.DisplayName, err)
 				if err := copyDir(canonicalDir, destDir); err != nil {
 					log.Warnf(ctx, "Failed to install for %s: %v", agent.DisplayName, err)
@@ -427,8 +465,14 @@ func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName
 	// If it's a symlink to our canonical dir, no backup needed.
 	if fi.Mode()&os.ModeSymlink != 0 {
 		target, err := os.Readlink(destDir)
-		if err == nil && target == canonicalDir {
-			return nil
+		if err == nil {
+			absTarget := target
+			if !filepath.IsAbs(target) {
+				absTarget = filepath.Clean(filepath.Join(filepath.Dir(destDir), target))
+			}
+			if absTarget == canonicalDir {
+				return nil
+			}
 		}
 	}
 

@@ -629,7 +629,7 @@ func TestInstallProjectScopeCreatesSymlinks(t *testing.T) {
 	err = InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{Scope: ScopeProject})
 	require.NoError(t, err)
 
-	// Check that agent's project skills dir has symlinks.
+	// Check that agent's project skills dir has relative symlinks.
 	agentSkillDir := filepath.Join(projectDir, ".test-project-agent", "skills")
 	for _, skill := range []string{"databricks-sql", "databricks-jobs"} {
 		link := filepath.Join(agentSkillDir, skill)
@@ -639,7 +639,16 @@ func TestInstallProjectScopeCreatesSymlinks(t *testing.T) {
 
 		target, err := os.Readlink(link)
 		require.NoError(t, err)
-		assert.Equal(t, filepath.Join(cwd, ".databricks", "aitools", "skills", skill), target)
+		// Project scope should use relative symlinks for portability.
+		expectedRel := filepath.Join("..", "..", ".databricks", "aitools", "skills", skill)
+		assert.Equal(t, expectedRel, target)
+
+		// Verify the symlink resolves to a valid directory with the expected content.
+		resolved, err := filepath.EvalSymlinks(link)
+		require.NoError(t, err)
+		expectedResolved, err := filepath.EvalSymlinks(filepath.Join(cwd, ".databricks", "aitools", "skills", skill))
+		require.NoError(t, err)
+		assert.Equal(t, expectedResolved, resolved)
 	}
 }
 
@@ -668,6 +677,32 @@ func TestInstallProjectScopeFiltersIncompatibleAgents(t *testing.T) {
 
 	assert.Contains(t, stderr.String(), "Skipped No Project Agent: does not support project-scoped skills.")
 	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.0).")
+}
+
+func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+
+	projectDir := filepath.Join(tmp, "myproject")
+	require.NoError(t, os.MkdirAll(projectDir, 0o755))
+	t.Chdir(projectDir)
+
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+
+	// Only provide agents that don't support project scope.
+	globalOnlyAgent := &agents.Agent{
+		Name:        "no-project-agent",
+		DisplayName: "No Project Agent",
+		ConfigDir: func(_ context.Context) (string, error) {
+			return filepath.Join(tmp, ".no-project-agent"), nil
+		},
+	}
+
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{globalOnlyAgent}, InstallOptions{Scope: ScopeProject})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no agents support project-scoped skills")
+	assert.Contains(t, err.Error(), "No Project Agent")
 }
 
 func TestSupportsProjectScopeSetCorrectly(t *testing.T) {

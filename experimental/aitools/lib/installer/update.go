@@ -159,9 +159,17 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	allChanges := make([]SkillUpdate, 0, len(result.Updated)+len(result.Added))
 	allChanges = append(allChanges, result.Updated...)
 	allChanges = append(allChanges, result.Added...)
+
+	params := installParams{
+		baseDir: baseDir,
+		scope:   scope,
+		cwd:     cwd,
+		ref:     latestTag,
+	}
+
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
-		if err := installSkillForAgents(ctx, latestTag, change.Name, meta.Files, targetAgents, baseDir, scope, cwd); err != nil {
+		if err := installSkillForAgents(ctx, change.Name, meta.Files, targetAgents, params); err != nil {
 			return nil, err
 		}
 	}

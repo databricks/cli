@@ -64,6 +64,7 @@ func TestVersionShowsBothScopes(t *testing.T) {
 	assert.Contains(t, output, "v0.2.0")
 	assert.Contains(t, output, "2 skills")
 	assert.Contains(t, output, "3 skills")
+	assert.Contains(t, output, "Last updated: 2026-03-22")
 }
 
 func TestVersionShowsSingleScopeWithoutQualifier(t *testing.T) {
