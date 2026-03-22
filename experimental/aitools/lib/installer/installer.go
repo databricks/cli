@@ -62,6 +62,7 @@ type SkillMeta struct {
 type InstallOptions struct {
 	IncludeExperimental bool
 	SpecificSkills      []string // empty = all skills
+	Scope               string   // ScopeGlobal or ScopeProject (default: global)
 }
 
 // FetchManifest fetches the skills manifest from the skills repo.
@@ -105,24 +106,39 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		return err
 	}
 
-	globalDir, err := GlobalSkillsDir(ctx)
+	scope := opts.Scope
+	if scope == "" {
+		scope = ScopeGlobal
+	}
+
+	baseDir, err := skillsDir(ctx, scope)
 	if err != nil {
 		return err
 	}
 
+	// For project scope, filter to agents that support it and warn about the rest.
+	var cwd string
+	if scope == ScopeProject {
+		cwd, err = os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to determine working directory: %w", err)
+		}
+		targetAgents = filterProjectAgents(ctx, targetAgents)
+	}
+
 	// Load existing state for idempotency checks.
-	state, err := LoadState(globalDir)
+	state, err := LoadState(baseDir)
 	if err != nil {
 		return fmt.Errorf("failed to load install state: %w", err)
 	}
 
-	// Detect legacy installs (skills on disk but no state file).
+	// Detect legacy installs (skills on disk but no state file). Global only.
 	// Block targeted installs on legacy setups to avoid writing incomplete state
 	// that would hide the legacy warning on future runs.
-	if state == nil {
-		isLegacy := checkLegacyInstall(ctx, globalDir)
+	if state == nil && scope == ScopeGlobal {
+		isLegacy := checkLegacyInstall(ctx, baseDir)
 		if isLegacy && len(opts.SpecificSkills) > 0 {
-			return errors.New("legacy install detected without state tracking; run 'databricks experimental aitools skills install' (without a skill name) first to rebuild state")
+			return errors.New("legacy install detected without state tracking; run 'databricks experimental aitools install' (without a skill name) first to rebuild state")
 		}
 	}
 
@@ -144,14 +160,14 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		// Idempotency: skip if same version is already installed, the canonical
 		// dir exists, AND every requested agent already has the skill on disk.
 		if state != nil && state.Skills[name] == meta.Version {
-			skillDir := filepath.Join(globalDir, name)
+			skillDir := filepath.Join(baseDir, name)
 			if _, statErr := os.Stat(skillDir); statErr == nil && allAgentsHaveSkill(ctx, name, targetAgents) {
 				log.Debugf(ctx, "%s v%s already installed for all agents, skipping", name, meta.Version)
 				continue
 			}
 		}
 
-		if err := installSkillForAgents(ctx, ref, name, meta.Files, targetAgents, globalDir); err != nil {
+		if err := installSkillForAgents(ctx, ref, name, meta.Files, targetAgents, baseDir, scope, cwd); err != nil {
 			return err
 		}
 	}
@@ -170,10 +186,11 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	// map may still contain experimental entries from a prior run with the flag
 	// enabled; this field does not retroactively remove them.
 	state.IncludeExperimental = opts.IncludeExperimental
+	state.Scope = scope
 	for name, meta := range targetSkills {
 		state.Skills[name] = meta.Version
 	}
-	if err := SaveState(globalDir, state); err != nil {
+	if err := SaveState(baseDir, state); err != nil {
 		return err
 	}
 
@@ -184,6 +201,27 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("Installed %d %s (v%s).", len(targetSkills), noun, tag))
 	return nil
+}
+
+// skillsDir returns the base skills directory for the given scope.
+func skillsDir(ctx context.Context, scope string) (string, error) {
+	if scope == ScopeProject {
+		return ProjectSkillsDir(ctx)
+	}
+	return GlobalSkillsDir(ctx)
+}
+
+// filterProjectAgents returns only agents that support project scope and warns about skipped agents.
+func filterProjectAgents(ctx context.Context, targetAgents []*agents.Agent) []*agents.Agent {
+	var compatible []*agents.Agent
+	for _, a := range targetAgents {
+		if a.SupportsProjectScope {
+			compatible = append(compatible, a)
+		} else {
+			cmdio.LogString(ctx, "Skipped "+a.DisplayName+": does not support project-scoped skills.")
+		}
+	}
+	return compatible
 }
 
 // resolveSkills filters the manifest skills based on the install options,
@@ -322,16 +360,17 @@ func allAgentsHaveSkill(ctx context.Context, skillName string, targetAgents []*a
 	return true
 }
 
-func installSkillForAgents(ctx context.Context, ref, skillName string, files []string, detectedAgents []*agents.Agent, globalDir string) error {
-	canonicalDir := filepath.Join(globalDir, skillName)
+func installSkillForAgents(ctx context.Context, ref, skillName string, files []string, detectedAgents []*agents.Agent, baseDir, scope, cwd string) error {
+	canonicalDir := filepath.Join(baseDir, skillName)
 	if err := installSkillToDir(ctx, ref, skillName, canonicalDir, files); err != nil {
 		return err
 	}
 
-	useSymlinks := len(detectedAgents) > 1
+	// For project scope, always symlink. For global, symlink when multiple agents.
+	useSymlinks := scope == ScopeProject || len(detectedAgents) > 1
 
 	for _, agent := range detectedAgents {
-		agentSkillDir, err := agent.SkillsDir(ctx)
+		agentSkillDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
 		if err != nil {
 			log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
 			continue
@@ -364,6 +403,14 @@ func installSkillForAgents(ctx context.Context, ref, skillName string, files []s
 	}
 
 	return nil
+}
+
+// agentSkillsDirForScope returns the agent's skills directory for the given scope.
+func agentSkillsDirForScope(ctx context.Context, agent *agents.Agent, scope, cwd string) (string, error) {
+	if scope == ScopeProject {
+		return agent.ProjectSkillsDir(cwd), nil
+	}
+	return agent.SkillsDir(ctx)
 }
 
 // backupThirdPartySkill moves destDir to a temp directory if it exists and is not

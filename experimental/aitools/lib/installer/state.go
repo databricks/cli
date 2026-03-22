@@ -14,8 +14,11 @@ import (
 
 const stateFileName = ".state.json"
 
-// ErrNotImplemented indicates that a feature is not yet implemented.
-var ErrNotImplemented = errors.New("project scope not yet implemented")
+// Scope constants for skill installation.
+const (
+	ScopeGlobal  = "global"
+	ScopeProject = "project"
+)
 
 // InstallState records the state of all installed skills in a scope directory.
 type InstallState struct {
@@ -92,7 +95,11 @@ func GlobalSkillsDir(ctx context.Context) (string, error) {
 }
 
 // ProjectSkillsDir returns the path to the project-scoped skills directory.
-// Project scope is not yet implemented.
+// The project root is the current working directory.
 func ProjectSkillsDir(_ context.Context) (string, error) {
-	return "", ErrNotImplemented
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to determine working directory: %w", err)
+	}
+	return filepath.Join(cwd, ".databricks", "aitools", "skills"), nil
 }

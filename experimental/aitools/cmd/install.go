@@ -16,13 +16,15 @@ import (
 func newInstallCmd() *cobra.Command {
 	var skillsFlag, agentsFlag string
 	var includeExperimental bool
+	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
 		Use:   "install",
 		Short: "Install AI skills for coding agents",
 		Long: `Install Databricks AI skills for detected coding agents.
 
-Skills are installed globally to each agent's skills directory.
+By default, skills are installed globally to each agent's skills directory.
+Use --project to install to the current project directory instead.
 When multiple agents are detected, skills are stored in a canonical location
 and symlinked to each agent to avoid duplication.
 
@@ -31,10 +33,15 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
+			// Resolve scope.
+			scope, err := resolveScopeWithPrompt(ctx, projectFlag, globalFlag)
+			if err != nil {
+				return err
+			}
+
 			// Resolve target agents.
 			var targetAgents []*agents.Agent
 			if agentsFlag != "" {
-				var err error
 				targetAgents, err = resolveAgentNames(ctx, agentsFlag)
 				if err != nil {
 					return err
@@ -50,7 +57,6 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 				case len(detected) == 1:
 					targetAgents = detected
 				case cmdio.IsPromptSupported(ctx):
-					var err error
 					targetAgents, err = promptAgentSelection(ctx, detected)
 					if err != nil {
 						return err
@@ -63,6 +69,7 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 			// Build install options.
 			opts := installer.InstallOptions{
 				IncludeExperimental: includeExperimental,
+				Scope:               scope,
 			}
 			opts.SpecificSkills = splitAndTrim(skillsFlag)
 
@@ -76,6 +83,8 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to install (comma-separated)")
 	cmd.Flags().StringVar(&agentsFlag, "agents", "", "Agents to install for (comma-separated, e.g. claude-code,cursor)")
 	cmd.Flags().BoolVar(&includeExperimental, "experimental", false, "Include experimental skills")
+	cmd.Flags().BoolVar(&projectFlag, "project", false, "Install to project directory (cwd)")
+	cmd.Flags().BoolVar(&globalFlag, "global", false, "Install globally (default)")
 	return cmd
 }
 

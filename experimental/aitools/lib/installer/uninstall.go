@@ -16,6 +16,7 @@ import (
 // UninstallOptions controls the behavior of UninstallSkillsOpts.
 type UninstallOptions struct {
 	Skills []string // empty = all
+	Scope  string   // ScopeGlobal or ScopeProject (default: global)
 }
 
 // UninstallSkills removes all installed skills, their symlinks, and the state file.
@@ -27,18 +28,31 @@ func UninstallSkills(ctx context.Context) error {
 // When opts.Skills is empty, all skills are removed (same as UninstallSkills).
 // When opts.Skills is non-empty, only the named skills are removed.
 func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
-	globalDir, err := GlobalSkillsDir(ctx)
+	scope := opts.Scope
+	if scope == "" {
+		scope = ScopeGlobal
+	}
+
+	baseDir, err := skillsDir(ctx, scope)
 	if err != nil {
 		return err
 	}
 
-	state, err := LoadState(globalDir)
+	var cwd string
+	if scope == ScopeProject {
+		cwd, err = os.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to determine working directory: %w", err)
+		}
+	}
+
+	state, err := LoadState(baseDir)
 	if err != nil {
 		return fmt.Errorf("failed to load install state: %w", err)
 	}
 
 	if state == nil {
-		if hasLegacyInstall(ctx, globalDir) {
+		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
 			return errors.New("found skills from a previous install without state tracking; run 'databricks experimental aitools install' first, then uninstall")
 		}
 		return errors.New("no skills installed")
@@ -68,8 +82,8 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 
 	// Remove skill directories and symlinks for each skill.
 	for _, name := range toRemove {
-		canonicalDir := filepath.Join(globalDir, name)
-		removeSymlinksFromAgents(ctx, name, canonicalDir)
+		canonicalDir := filepath.Join(baseDir, name)
+		removeSymlinksFromAgents(ctx, name, canonicalDir, scope, cwd)
 		if err := os.RemoveAll(canonicalDir); err != nil {
 			log.Warnf(ctx, "Failed to remove %s: %v", canonicalDir, err)
 		}
@@ -78,14 +92,14 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 
 	if removeAll {
 		// Clean up orphaned symlinks and delete state file.
-		cleanOrphanedSymlinks(ctx, globalDir)
-		stateFile := filepath.Join(globalDir, stateFileName)
+		cleanOrphanedSymlinks(ctx, baseDir, scope, cwd)
+		stateFile := filepath.Join(baseDir, stateFileName)
 		if err := os.Remove(stateFile); err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("failed to remove state file: %w", err)
 		}
 	} else {
 		// Update state to reflect remaining skills.
-		if err := SaveState(globalDir, state); err != nil {
+		if err := SaveState(baseDir, state); err != nil {
 			return err
 		}
 	}
@@ -101,15 +115,15 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 // removeSymlinksFromAgents removes a skill's symlink from all agent directories
 // in the registry, but only if the entry is a symlink pointing into canonicalDir.
 // Non-symlink directories are left untouched to avoid deleting user-managed content.
-func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir string) {
+func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scope, cwd string) {
 	for i := range agents.Registry {
 		agent := &agents.Registry[i]
-		skillsDir, err := agent.SkillsDir(ctx)
+		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
 		if err != nil {
 			continue
 		}
 
-		destDir := filepath.Join(skillsDir, skillName)
+		destDir := filepath.Join(agentDir, skillName)
 
 		// Use Lstat to detect symlinks (Stat follows them).
 		fi, err := os.Lstat(destDir)
@@ -147,22 +161,22 @@ func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir strin
 }
 
 // cleanOrphanedSymlinks scans all agent skill directories for symlinks pointing
-// into globalDir that are not tracked in state, and removes them.
-func cleanOrphanedSymlinks(ctx context.Context, globalDir string) {
+// into baseDir that are not tracked in state, and removes them.
+func cleanOrphanedSymlinks(ctx context.Context, baseDir, scope, cwd string) {
 	for i := range agents.Registry {
 		agent := &agents.Registry[i]
-		skillsDir, err := agent.SkillsDir(ctx)
+		agentDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
 		if err != nil {
 			continue
 		}
 
-		entries, err := os.ReadDir(skillsDir)
+		entries, err := os.ReadDir(agentDir)
 		if err != nil {
 			continue
 		}
 
 		for _, entry := range entries {
-			entryPath := filepath.Join(skillsDir, entry.Name())
+			entryPath := filepath.Join(agentDir, entry.Name())
 
 			fi, err := os.Lstat(entryPath)
 			if err != nil {
@@ -178,8 +192,8 @@ func cleanOrphanedSymlinks(ctx context.Context, globalDir string) {
 				continue
 			}
 
-			// Check if the symlink points into our global skills dir.
-			if !strings.HasPrefix(target, globalDir+string(os.PathSeparator)) && target != globalDir {
+			// Check if the symlink points into our managed skills dir.
+			if !strings.HasPrefix(target, baseDir+string(os.PathSeparator)) && target != baseDir {
 				continue
 			}
 
