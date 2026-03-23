@@ -37,7 +37,10 @@ tools that accept Databricks authentication via environment variables.`,
 			w := cmd.OutOrStdout()
 			keys := slices.Sorted(maps.Keys(envVars))
 			for _, k := range keys {
-				fmt.Fprintf(w, "%s=%s\n", k, quoteEnvValue(envVars[k]))
+				_, err := fmt.Fprintf(w, "%s=%s\n", k, quoteEnvValue(envVars[k]))
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		}
@@ -46,8 +49,8 @@ tools that accept Databricks authentication via environment variables.`,
 		if err != nil {
 			return err
 		}
-		_, _ = cmd.OutOrStdout().Write(raw)
-		return nil
+		_, err = cmd.OutOrStdout().Write(raw)
+		return err
 	}
 
 	return cmd

@@ -92,18 +92,20 @@ using a client ID and secret is not supported.`,
 }
 
 func writeTokenOutput(cmd *cobra.Command, t *oauth2.Token) error {
-	// Output plain token when the user explicitly passes --output text.
+	// Only honor the explicit --output text flag, not implicit text mode
+	// (e.g. from DATABRICKS_OUTPUT_FORMAT). auth token defaults to JSON,
+	// and changing that implicitly would break scripts that parse JSON output.
 	if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
-		_, _ = fmt.Fprintln(cmd.OutOrStdout(), t.AccessToken)
-		return nil
+		_, err := fmt.Fprintln(cmd.OutOrStdout(), t.AccessToken)
+		return err
 	}
 
 	raw, err := json.MarshalIndent(t, "", "  ")
 	if err != nil {
 		return err
 	}
-	_, _ = cmd.OutOrStdout().Write(raw)
-	return nil
+	_, err = cmd.OutOrStdout().Write(raw)
+	return err
 }
 
 type loadTokenArgs struct {
