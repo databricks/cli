@@ -78,6 +78,11 @@ type paginatedModel struct {
 	limitReached bool
 }
 
+// Err returns the error recorded during data fetching, if any.
+func (m paginatedModel) Err() error {
+	return m.err
+}
+
 // newFetchCmdFunc returns a closure that creates fetch commands, capturing ctx.
 func newFetchCmdFunc(ctx context.Context) func(paginatedModel) tea.Cmd {
 	return func(m paginatedModel) tea.Cmd {
@@ -156,17 +161,12 @@ func RunPaginated(ctx context.Context, w io.Writer, cfg *TableConfig, iter RowIt
 	if err != nil {
 		return err
 	}
-	if pm, ok := finalModel.(FinalModel); ok {
-		if modelErr := pm.Err(); modelErr != nil {
-			return modelErr
+	if m, ok := finalModel.(FinalModel); ok {
+		if fetchErr := m.Err(); fetchErr != nil {
+			return fetchErr
 		}
 	}
 	return nil
-}
-
-// Err returns any error that occurred during data fetching.
-func (m paginatedModel) Err() error {
-	return m.err
 }
 
 func (m paginatedModel) Init() tea.Cmd {
@@ -275,7 +275,8 @@ func (m paginatedModel) renderContent() string {
 	}
 	fmt.Fprintln(tw, strings.Join(seps, "\t"))
 
-	// Data rows
+	// Data rows.
+	// MaxWidth truncation is destructive; horizontal scroll won't recover hidden text.
 	for _, row := range m.rows {
 		vals := make([]string, len(m.headers))
 		for i := range m.headers {

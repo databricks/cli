@@ -62,8 +62,34 @@ func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipeli
 	}
 }
 
+func listPipelineEventsOverride(listCmd *cobra.Command, _ *pipelines.ListPipelineEventsRequest) {
+	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
+	{{header "Timestamp"}}	{{header "Level"}}	{{header "Event Type"}}	{{header "Message"}}`)
+	listCmd.Annotations["template"] = cmdio.Heredoc(`
+	{{range .}}{{.Timestamp}}	{{.Level}}	{{.EventType}}	{{.Message | sanitize}}
+	{{end}}`)
+
+	columns := []tableview.ColumnDef{
+		{Header: "Timestamp", Extract: func(v any) string {
+			return v.(pipelines.PipelineEvent).Timestamp
+		}},
+		{Header: "Level", Extract: func(v any) string {
+			return string(v.(pipelines.PipelineEvent).Level)
+		}},
+		{Header: "Event Type", Extract: func(v any) string {
+			return v.(pipelines.PipelineEvent).EventType
+		}},
+		{Header: "Message", MaxWidth: 200, Extract: func(v any) string {
+			return sanitizeWhitespace(v.(pipelines.PipelineEvent).Message)
+		}},
+	}
+
+	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
+}
+
 func init() {
 	listPipelinesOverrides = append(listPipelinesOverrides, listPipelinesOverride)
+	listPipelineEventsOverrides = append(listPipelineEventsOverrides, listPipelineEventsOverride)
 
 	cmdOverrides = append(cmdOverrides, func(cli *cobra.Command) {
 		// all auto-generated commands apart from nonManagementCommands go into 'management' group
@@ -133,6 +159,14 @@ func disableSearchIfFilterSet(cmd *cobra.Command) {
 			cfg.Search = nil
 		}
 	}
+}
+
+var controlWhitespaceReplacer = strings.NewReplacer("\n", " ", "\r", " ", "\t", " ")
+
+// sanitizeWhitespace replaces control whitespace (newlines, tabs) with spaces
+// to prevent corrupting tab-delimited or TUI table output.
+func sanitizeWhitespace(s string) string {
+	return controlWhitespaceReplacer.Replace(s)
 }
 
 var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)

@@ -313,6 +313,14 @@ func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
+var controlWhitespaceReplacer = strings.NewReplacer("\n", " ", "\r", " ", "\t", " ")
+
+// sanitizeControlWhitespace replaces newlines and tabs with spaces to prevent
+// corrupting tab-delimited text output.
+func sanitizeControlWhitespace(s string) string {
+	return controlWhitespaceReplacer.Replace(s)
+}
+
 var renderFuncMap = template.FuncMap{
 	// we render colored output if stdout is TTY, otherwise we render text.
 	// in the future we'll check if we can explicitly check for stderr being
@@ -330,8 +338,9 @@ var renderFuncMap = template.FuncMap{
 	"italic": func(format string, a ...any) string {
 		return color.New(color.Italic).Sprintf(format, a...)
 	},
-	"replace": strings.ReplaceAll,
-	"join":    strings.Join,
+	"replace":  strings.ReplaceAll,
+	"sanitize": sanitizeControlWhitespace,
+	"join":     strings.Join,
 	"sub": func(a, b int) int {
 		return a - b
 	},

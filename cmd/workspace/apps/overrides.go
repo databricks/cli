@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func listOverride(listCmd *cobra.Command, listReq *apps.ListAppsRequest) {
+func listOverride(listCmd *cobra.Command, _ *apps.ListAppsRequest) {
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Name"}}	{{header "Url"}}	{{header "ComputeStatus"}}	{{header "DeploymentStatus"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
@@ -45,7 +45,7 @@ func listOverride(listCmd *cobra.Command, listReq *apps.ListAppsRequest) {
 	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
 }
 
-func listDeploymentsOverride(listDeploymentsCmd *cobra.Command, listDeploymentsReq *apps.ListAppDeploymentsRequest) {
+func listDeploymentsOverride(listDeploymentsCmd *cobra.Command, _ *apps.ListAppDeploymentsRequest) {
 	listDeploymentsCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "DeploymentId"}}	{{header "State"}}	{{header "CreatedAt"}}`)
 	listDeploymentsCmd.Annotations["template"] = cmdio.Heredoc(`
