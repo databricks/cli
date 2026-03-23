@@ -1,41 +1,39 @@
 normalize_grants() {
-    jq --sort-keys '
-        .privilege_assignments |= sort_by((.principal != env.GROUP1), .principal) |
+    jq --sort-keys --arg current "$CURRENT_USER_NAME" '
+        .privilege_assignments |= sort_by((.principal != $current), .principal) |
         (.privilege_assignments[]?.privileges |= sort)
     '
 }
 
-GROUP1="$CURRENT_USER_NAME"
-GROUP2="deco-test-user@databricks.com"
-TMP_GRANTS="tmp.$DATABRICKS_BUNDLE_ENGINE.grants.json"
-export GROUP1 GROUP2
-
-add_repl.py "$GROUP1" CURRENT_USER_NAME
+add_repl.py "$CURRENT_USER_NAME" CURRENT_USER_NAME
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace errcode $CLI bundle destroy --auto-approve
-    rm -f "$TMP_GRANTS" out.requests.txt
+    rm -f out.requests.txt
 }
 trap cleanup EXIT
 
 trace $CLI bundle deploy
 trace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants
 
-$CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants > "$TMP_GRANTS"
-contains.py "\"principal\": \"$GROUP1\"" "\"principal\": \"$GROUP2\"" < "$TMP_GRANTS" > /dev/null
-rm "$TMP_GRANTS"
+$CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME |
+    normalize_grants |
+    gron.py |
+    contains.py \
+        ".principal = \"$CURRENT_USER_NAME\";" \
+        '.principal = "deco-test-user@databricks.com";' > /dev/null
 
-update_file.py databricks.yml "        - principal: $GROUP2
-          privileges:
-            - USE_SCHEMA
-" ""
+grep -v 'TO_REMOVE' databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 
 trace $CLI bundle deploy
 trace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants
 
-$CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants > "$TMP_GRANTS"
-contains.py "\"principal\": \"$GROUP1\"" "!\"principal\": \"$GROUP2\"" < "$TMP_GRANTS" > /dev/null
-rm "$TMP_GRANTS"
+$CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME |
+    normalize_grants |
+    gron.py |
+    contains.py \
+        ".principal = \"$CURRENT_USER_NAME\";" \
+        '!.principal = "deco-test-user@databricks.com";' > /dev/null
 
 trace $CLI bundle plan

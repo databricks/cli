@@ -7,9 +7,7 @@ resources:
       name: schema_remove_principal_$UNIQUE_NAME
       catalog_name: main
       grants:
-        - principal: ${GROUP1}
+        - principal: $CURRENT_USER_NAME
           privileges:
             - CREATE_TABLE
-        - principal: ${GROUP2}
-          privileges:
-            - USE_SCHEMA
+        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_REMOVE
