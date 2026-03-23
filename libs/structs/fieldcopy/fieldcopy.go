@@ -56,7 +56,9 @@ func (c *Copy[Src, Dst]) build() func(*Src) Dst {
 	stringSliceType := reflect.TypeFor[[]string]()
 	dstFSF, dstOK := dstType.FieldByName(forceSendFieldsName)
 	srcFSF, srcOK := srcType.FieldByName(forceSendFieldsName)
-	if dstOK && srcOK && dstFSF.Type == stringSliceType && srcFSF.Type == stringSliceType {
+	// Only auto-handle when ForceSendFields is a direct (non-promoted) field on both types.
+	// Promoted fields from embedded structs have len(Index) > 1.
+	if dstOK && srcOK && len(dstFSF.Index) == 1 && len(srcFSF.Index) == 1 && dstFSF.Type == stringSliceType && srcFSF.Type == stringSliceType {
 		autoFSF = true
 		fsfSrcIdx = srcFSF.Index
 		fsfDstIdx = dstFSF.Index
@@ -136,12 +138,12 @@ func (c *Copy[Src, Dst]) report(srcType, dstType reflect.Type) string {
 		}
 	}
 
-	// Detect auto-handled ForceSendFields.
+	// Detect auto-handled ForceSendFields (direct fields only, not promoted from embedded structs).
 	autoFSF := false
 	stringSliceType := reflect.TypeFor[[]string]()
 	if dstFSF, ok := dstType.FieldByName(forceSendFieldsName); ok {
 		if srcFSF, ok := srcType.FieldByName(forceSendFieldsName); ok {
-			if dstFSF.Type == stringSliceType && srcFSF.Type == stringSliceType {
+			if len(dstFSF.Index) == 1 && len(srcFSF.Index) == 1 && dstFSF.Type == stringSliceType && srcFSF.Type == stringSliceType {
 				autoFSF = true
 			}
 		}

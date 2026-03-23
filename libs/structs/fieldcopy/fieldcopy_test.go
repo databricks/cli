@@ -339,3 +339,39 @@ func TestDoForceSendFieldsAllFiltered(t *testing.T) {
 	// All entries filtered out → nil.
 	assert.Nil(t, dst.ForceSendFields)
 }
+
+// Embedded struct: ForceSendFields promoted from embedded type should NOT
+// trigger auto-handling, since we only copy direct fields.
+
+type InnerFSF struct {
+	Name            string
+	ForceSendFields []string
+}
+
+type outerDstFSF struct {
+	InnerFSF
+	Extra string
+}
+
+func TestDoForceSendFieldsNotAutoHandledWhenPromoted(t *testing.T) {
+	c := fieldcopy.Copy[srcFSF, outerDstFSF]{}
+	src := srcFSF{
+		Name:            "alice",
+		Extra:           "x",
+		ForceSendFields: []string{"Name", "Extra"},
+	}
+	dst := c.Do(&src)
+	assert.Equal(t, "x", dst.Extra)
+	// ForceSendFields is promoted from InnerFSF — autoFSF should not activate.
+	// The embedded InnerFSF is not copied (type mismatch), so ForceSendFields stays nil.
+	assert.Nil(t, dst.ForceSendFields)
+}
+
+func TestReportEmbeddedStructShowsAsField(t *testing.T) {
+	c := fieldcopy.Copy[srcFSF, outerDstFSF]{}
+	report := c.Report()
+	// The embedded struct itself appears as unmatched dst field.
+	assert.Contains(t, report, "- InnerFSF")
+	// ForceSendFields on src is not auto-handled, so it shows as unmatched.
+	assert.Contains(t, report, "- ForceSendFields")
+}

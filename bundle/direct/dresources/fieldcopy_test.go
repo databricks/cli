@@ -35,6 +35,6 @@ func TestFieldCopyReport(t *testing.T) {
 		buf.WriteString(c.Report())
 	}
 
-	goldenPath := filepath.Join("testdata", "fieldcopy_report.txt")
+	goldenPath := filepath.Join("testdata", "out.fieldcopy.txt")
 	testdiff.AssertOutput(t, ctx, buf.String(), "fieldcopy report", goldenPath)
 }
