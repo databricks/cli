@@ -130,11 +130,8 @@ func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) er
 		return errors.New("internal error: grants full_name must be resolved before deployment")
 	}
 
-	// Merge privileges by principal and deduplicate.
-	merged := mergeGrantAssignments(state.EmbeddedSlice)
-
 	var changes []catalog.PermissionsChange
-	for _, ga := range merged {
+	for _, ga := range state.EmbeddedSlice {
 		change := catalog.PermissionsChange{
 			Principal: ga.Principal,
 			Add:       ga.Privileges,
@@ -153,37 +150,6 @@ func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) er
 		Changes:       changes,
 	})
 	return err
-}
-
-// mergeGrantAssignments consolidates multiple entries for the same principal
-// into a single entry with deduplicated, sorted privileges.
-func mergeGrantAssignments(assignments []catalog.PrivilegeAssignment) []catalog.PrivilegeAssignment {
-	seen := map[string]map[catalog.Privilege]bool{}
-	var order []string
-
-	for _, a := range assignments {
-		if seen[a.Principal] == nil {
-			seen[a.Principal] = map[catalog.Privilege]bool{}
-			order = append(order, a.Principal)
-		}
-		for _, p := range a.Privileges {
-			seen[a.Principal][p] = true
-		}
-	}
-
-	result := make([]catalog.PrivilegeAssignment, 0, len(order))
-	for _, principal := range order {
-		privs := make([]catalog.Privilege, 0, len(seen[principal]))
-		for p := range seen[principal] {
-			privs = append(privs, p)
-		}
-		slices.Sort(privs)
-		result = append(result, catalog.PrivilegeAssignment{
-			Principal:  principal,
-			Privileges: privs,
-		})
-	}
-	return result
 }
 
 func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName string) ([]catalog.PrivilegeAssignment, error) {
