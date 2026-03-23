@@ -55,13 +55,21 @@ databricks.yml to auto-detect the app name.`
 }
 
 // inferAppNameHint tries to suggest an app name from the local environment.
-// It checks the current directory name as a best-effort hint.
+// Only returns a hint if the current directory looks like a Databricks app
+// (contains app.yml or app.yaml), using the directory name as the suggestion.
 func inferAppNameHint() string {
 	wd, err := os.Getwd()
 	if err != nil {
 		return ""
 	}
-	return filepath.Base(wd)
+
+	for _, filename := range []string{"app.yml", "app.yaml"} {
+		if _, err := os.Stat(filepath.Join(wd, filename)); err == nil {
+			return filepath.Base(wd)
+		}
+	}
+
+	return ""
 }
 
 // getAppNameFromArgs returns the app name from args or detects it from the bundle.
