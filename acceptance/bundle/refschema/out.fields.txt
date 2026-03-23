@@ -227,10 +227,10 @@ resources.catalogs.*.effective_predictive_optimization_flag	*catalog.EffectivePr
 resources.catalogs.*.effective_predictive_optimization_flag.inherited_from_name	string	REMOTE
 resources.catalogs.*.effective_predictive_optimization_flag.inherited_from_type	catalog.EffectivePredictiveOptimizationFlagInheritedFromType	REMOTE
 resources.catalogs.*.effective_predictive_optimization_flag.value	catalog.EnablePredictiveOptimization	REMOTE
-resources.catalogs.*.enable_predictive_optimization	catalog.EnablePredictiveOptimization	REMOTE
+resources.catalogs.*.enable_predictive_optimization	catalog.EnablePredictiveOptimization	ALL
 resources.catalogs.*.full_name	string	REMOTE
 resources.catalogs.*.id	string	INPUT
-resources.catalogs.*.isolation_mode	catalog.CatalogIsolationMode	REMOTE
+resources.catalogs.*.isolation_mode	catalog.CatalogIsolationMode	ALL
 resources.catalogs.*.lifecycle	resources.Lifecycle	INPUT
 resources.catalogs.*.lifecycle.prevent_destroy	bool	INPUT
 resources.catalogs.*.metastore_id	string	REMOTE
@@ -238,7 +238,7 @@ resources.catalogs.*.modified_status	string	INPUT
 resources.catalogs.*.name	string	ALL
 resources.catalogs.*.options	map[string]string	ALL
 resources.catalogs.*.options.*	string	ALL
-resources.catalogs.*.owner	string	REMOTE
+resources.catalogs.*.owner	string	ALL
 resources.catalogs.*.properties	map[string]string	ALL
 resources.catalogs.*.properties.*	string	ALL
 resources.catalogs.*.provider_name	string	ALL

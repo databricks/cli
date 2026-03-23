@@ -12,6 +12,13 @@
         "full_name": "catalog_grants_[UNIQUE_NAME]",
         "name": "catalog_grants_[UNIQUE_NAME]",
         "owner": "[USERNAME]"
+      },
+      "changes": {
+        "owner": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "[USERNAME]"
+        }
       }
     },
     "resources.catalogs.grants_catalog.grants": {
