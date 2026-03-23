@@ -562,10 +562,19 @@ github.com/databricks/cli/bundle/config/resources.Catalog:
   "connection_name":
     "description": |-
       PLACEHOLDER
+  "enable_predictive_optimization":
+    "description": |-
+      PLACEHOLDER
+  "isolation_mode":
+    "description": |-
+      PLACEHOLDER
   "name":
     "description": |-
       PLACEHOLDER
   "options":
+    "description": |-
+      PLACEHOLDER
+  "owner":
     "description": |-
       PLACEHOLDER
   "properties":

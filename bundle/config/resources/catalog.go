@@ -17,6 +17,11 @@ type Catalog struct {
 	BaseResource
 	catalog.CreateCatalog
 
+	// Fields that can only be set via update, not during creation.
+	EnablePredictiveOptimization catalog.EnablePredictiveOptimization `json:"enable_predictive_optimization,omitempty"`
+	IsolationMode                catalog.CatalogIsolationMode         `json:"isolation_mode,omitempty"`
+	Owner                        string                               `json:"owner,omitempty"`
+
 	// List of grants to apply on this catalog.
 	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }

@@ -1,0 +1,25 @@
+
+=== Deploy catalog without update-only fields
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert no PATCH was called during create
+=== Assert catalog is created correctly
+>>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
+{
+  "name": "test_catalog_[UNIQUE_NAME]",
+  "comment": "Catalog without update-only fields"
+}
+
+=== Test cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.catalogs.test_catalog
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

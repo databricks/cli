@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+CATALOG_NAME="test_catalog_${UNIQUE_NAME}"
+
+cleanup() {
+  title "Test cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy catalog without update-only fields"
+trace $CLI bundle deploy
+
+title "Assert no PATCH was called during create"
+print_requests.py //unity-catalog/catalogs --sort > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+
+title "Assert catalog is created correctly"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment}"

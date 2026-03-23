@@ -69,6 +69,12 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 	if updateRequest.Owner != "" {
 		existing.Owner = updateRequest.Owner
 	}
+	if updateRequest.IsolationMode != "" {
+		existing.IsolationMode = updateRequest.IsolationMode
+	}
+	if updateRequest.EnablePredictiveOptimization != "" {
+		existing.EnablePredictiveOptimization = updateRequest.EnablePredictiveOptimization
+	}
 	if updateRequest.NewName != "" {
 		existing.Name = updateRequest.NewName
 		existing.FullName = updateRequest.NewName
