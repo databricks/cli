@@ -7,6 +7,16 @@ Updating deployment state...
 Deployment complete!
 
 === Assert no PATCH was called during create
+>>> print_requests.py //unity-catalog/catalogs --sort
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/catalogs",
+  "body": {
+    "comment": "Catalog without update-only fields",
+    "name": "test_catalog_[UNIQUE_NAME]"
+  }
+}
+
 === Assert catalog is created correctly
 >>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
 {
