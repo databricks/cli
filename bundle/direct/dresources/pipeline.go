@@ -91,12 +91,6 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.Creat
 // pipelineEditCopy maps CreatePipeline (local state) to EditPipeline (API request).
 var pipelineEditCopy fieldcopy.Copy[pipelines.CreatePipeline, pipelines.EditPipeline]
 
-func init() {
-	registerCopy(&pipelineSpecCopy)
-	registerCopy(&pipelineRemoteCopy)
-	registerCopy(&pipelineEditCopy)
-}
-
 func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ Changes) (*PipelineRemote, error) {
 	request := pipelineEditCopy.Do(config)
 	request.PipelineId = id
@@ -111,3 +105,9 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 // a) reads back state at least once and fails create if state is "failed"
 // b) repeatededly reads state until state is "running" (if spec.Contionous is set).
 // TODO: investigate if we need to mimic this behaviour or can rely on Create status code.
+
+func init() {
+	registerCopy(&pipelineSpecCopy)
+	registerCopy(&pipelineRemoteCopy)
+	registerCopy(&pipelineEditCopy)
+}

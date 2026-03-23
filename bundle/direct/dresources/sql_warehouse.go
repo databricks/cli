@@ -51,11 +51,6 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateW
 // sqlWarehouseEditCopy maps CreateWarehouseRequest (local state) to EditWarehouseRequest (API request).
 var sqlWarehouseEditCopy fieldcopy.Copy[sql.CreateWarehouseRequest, sql.EditWarehouseRequest]
 
-func init() {
-	registerCopy(&sqlWarehouseRemapCopy)
-	registerCopy(&sqlWarehouseEditCopy)
-}
-
 // DoUpdate updates the warehouse in place.
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest, _ Changes) (*sql.GetWarehouseResponse, error) {
 	request := sqlWarehouseEditCopy.Do(config)
@@ -77,4 +72,9 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 
 func (r *ResourceSqlWarehouse) DoDelete(ctx context.Context, oldID string) error {
 	return r.client.Warehouses.DeleteById(ctx, oldID)
+}
+
+func init() {
+	registerCopy(&sqlWarehouseRemapCopy)
+	registerCopy(&sqlWarehouseEditCopy)
 }

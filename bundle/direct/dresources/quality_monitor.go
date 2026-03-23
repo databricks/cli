@@ -72,11 +72,6 @@ func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, config *QualityMo
 // qualityMonitorUpdateCopy maps CreateMonitor (local state) to UpdateMonitor (API request).
 var qualityMonitorUpdateCopy fieldcopy.Copy[catalog.CreateMonitor, catalog.UpdateMonitor]
 
-func init() {
-	registerCopy(&qualityMonitorRemapCopy)
-	registerCopy(&qualityMonitorUpdateCopy)
-}
-
 func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config *QualityMonitorState, _ Changes) (*catalog.MonitorInfo, error) {
 	updateRequest := qualityMonitorUpdateCopy.Do(&config.CreateMonitor)
 	updateRequest.TableName = id
@@ -96,4 +91,9 @@ func (r *ResourceQualityMonitor) DoDelete(ctx context.Context, id string) error 
 		TableName: id,
 	})
 	return err
+}
+
+func init() {
+	registerCopy(&qualityMonitorRemapCopy)
+	registerCopy(&qualityMonitorUpdateCopy)
 }

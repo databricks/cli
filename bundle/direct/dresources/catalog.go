@@ -44,11 +44,6 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCa
 // catalogUpdateCopy maps CreateCatalog (local state) to UpdateCatalog (API request).
 var catalogUpdateCopy fieldcopy.Copy[catalog.CreateCatalog, catalog.UpdateCatalog]
 
-func init() {
-	registerCopy(&catalogRemapCopy)
-	registerCopy(&catalogUpdateCopy)
-}
-
 // DoUpdate updates the catalog in place and returns remote state.
 func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ Changes) (*catalog.CatalogInfo, error) {
 	updateRequest := catalogUpdateCopy.Do(config)
@@ -91,4 +86,9 @@ func (r *ResourceCatalog) DoDelete(ctx context.Context, id string) error {
 		Force:           true,
 		ForceSendFields: nil,
 	})
+}
+
+func init() {
+	registerCopy(&catalogRemapCopy)
+	registerCopy(&catalogUpdateCopy)
 }

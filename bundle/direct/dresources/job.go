@@ -100,6 +100,9 @@ func makeJobRemote(job *jobs.Job) *JobRemote {
 	}
 }
 
+// jobCreateCopy maps JobSettings (local state) to CreateJob (API request).
+var jobCreateCopy fieldcopy.Copy[jobs.JobSettings, jobs.CreateJob]
+
 func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, *JobRemote, error) {
 	response, err := r.client.Jobs.Create(ctx, jobCreateCopy.Do(config))
 	if err != nil {
@@ -109,11 +112,14 @@ func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (s
 }
 
 func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings, _ Changes) (*JobRemote, error) {
-	request, err := makeResetJob(*config, id)
+	idInt, err := parseJobID(id)
 	if err != nil {
 		return nil, err
 	}
-	return nil, r.client.Jobs.Reset(ctx, request)
+	return nil, r.client.Jobs.Reset(ctx, jobs.ResetJob{
+		JobId:       idInt,
+		NewSettings: *config,
+	})
 }
 
 func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
@@ -124,29 +130,14 @@ func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
 	return r.client.Jobs.DeleteByJobId(ctx, idInt)
 }
 
-// jobCreateCopy maps JobSettings (local state) to CreateJob (API request).
-var jobCreateCopy fieldcopy.Copy[jobs.JobSettings, jobs.CreateJob]
-
-func init() {
-	registerCopy(&jobCreateCopy)
-}
-
-func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
-	idInt, err := parseJobID(id)
-	if err != nil {
-		return jobs.ResetJob{}, err
-	}
-	result := jobs.ResetJob{
-		JobId:       idInt,
-		NewSettings: config,
-	}
-	return result, err
-}
-
 func parseJobID(id string) (int64, error) {
 	result, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		return 0, fmt.Errorf("internal error: job id is not integer: %q: %w", id, err)
 	}
 	return result, nil
+}
+
+func init() {
+	registerCopy(&jobCreateCopy)
 }

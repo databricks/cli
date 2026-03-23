@@ -72,12 +72,6 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 // servingRemapCopy maps ServingEndpointDetailed (remote GET response) to CreateServingEndpoint (local state).
 var servingRemapCopy fieldcopy.Copy[serving.ServingEndpointDetailed, serving.CreateServingEndpoint]
 
-func init() {
-	registerCopy(&autoCaptureConfigCopy)
-	registerCopy(&servedEntityCopy)
-	registerCopy(&servingRemapCopy)
-}
-
 func (*ResourceModelServingEndpoint) RemapState(state *RefreshOutput) *serving.CreateServingEndpoint {
 	details := state.EndpointDetails
 	result := servingRemapCopy.Do(details)
@@ -302,4 +296,10 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 
 func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) error {
 	return r.client.ServingEndpoints.DeleteByName(ctx, id)
+}
+
+func init() {
+	registerCopy(&autoCaptureConfigCopy)
+	registerCopy(&servedEntityCopy)
+	registerCopy(&servingRemapCopy)
 }

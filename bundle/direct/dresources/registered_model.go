@@ -52,11 +52,6 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 // registeredModelUpdateCopy maps CreateRegisteredModelRequest (local state) to UpdateRegisteredModelRequest (API request).
 var registeredModelUpdateCopy fieldcopy.Copy[catalog.CreateRegisteredModelRequest, catalog.UpdateRegisteredModelRequest]
 
-func init() {
-	registerCopy(&registeredModelRemapCopy)
-	registerCopy(&registeredModelUpdateCopy)
-}
-
 func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ Changes) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := registeredModelUpdateCopy.Do(config)
 	updateRequest.FullName = id
@@ -73,4 +68,9 @@ func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string) error
 	return r.client.RegisteredModels.Delete(ctx, catalog.DeleteRegisteredModelRequest{
 		FullName: id,
 	})
+}
+
+func init() {
+	registerCopy(&registeredModelRemapCopy)
+	registerCopy(&registeredModelUpdateCopy)
 }

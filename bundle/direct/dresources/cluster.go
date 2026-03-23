@@ -46,20 +46,32 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.Clust
 	return r.client.Clusters.GetByClusterId(ctx, id)
 }
 
+// clusterCreateCopy maps ClusterSpec (local state) to CreateCluster (API request).
+var clusterCreateCopy fieldcopy.Copy[compute.ClusterSpec, compute.CreateCluster]
+
 func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, *compute.ClusterDetails, error) {
-	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(config))
+	create := clusterCreateCopy.Do(config)
+	forceNumWorkers(config, &create.ForceSendFields)
+	wait, err := r.client.Clusters.Create(ctx, create)
 	if err != nil {
 		return "", nil, err
 	}
 	return wait.ClusterId, nil, nil
 }
 
+// clusterEditCopy maps ClusterSpec (local state) to EditCluster (API request).
+var clusterEditCopy fieldcopy.Copy[compute.ClusterSpec, compute.EditCluster]
+
 func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec, _ Changes) (*compute.ClusterDetails, error) {
+	edit := clusterEditCopy.Do(config)
+	edit.ClusterId = id
+	forceNumWorkers(config, &edit.ForceSendFields)
+
 	// Same retry as in TF provider logic
 	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 	timeout := 15 * time.Minute
 	_, err := retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
-		wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, config))
+		wait, err := r.client.Clusters.Edit(ctx, edit)
 		if err == nil {
 			return wait, nil
 		}
@@ -119,39 +131,16 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 	return nil
 }
 
-// clusterCreateCopy maps ClusterSpec (local state) to CreateCluster (API request).
-var clusterCreateCopy fieldcopy.Copy[compute.ClusterSpec, compute.CreateCluster]
-
-func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
-	create := clusterCreateCopy.Do(config)
-
-	// If autoscale is not set, we need to send NumWorkers because one of them is required.
-	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
+// forceNumWorkers ensures NumWorkers is sent when Autoscale is not set,
+// because the API requires one of them.
+func forceNumWorkers(config *compute.ClusterSpec, fsf *[]string) {
 	if config.Autoscale == nil && config.NumWorkers == 0 {
-		create.ForceSendFields = append(create.ForceSendFields, "NumWorkers")
+		*fsf = append(*fsf, "NumWorkers")
 	}
-
-	return create
 }
-
-// clusterEditCopy maps ClusterSpec (local state) to EditCluster (API request).
-var clusterEditCopy fieldcopy.Copy[compute.ClusterSpec, compute.EditCluster]
 
 func init() {
 	registerCopy(&clusterRemapCopy)
 	registerCopy(&clusterCreateCopy)
 	registerCopy(&clusterEditCopy)
-}
-
-func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster {
-	edit := clusterEditCopy.Do(config)
-	edit.ClusterId = id
-
-	// If autoscale is not set, we need to send NumWorkers because one of them is required.
-	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
-	if config.Autoscale == nil && config.NumWorkers == 0 {
-		edit.ForceSendFields = append(edit.ForceSendFields, "NumWorkers")
-	}
-
-	return edit
 }
