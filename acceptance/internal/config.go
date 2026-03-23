@@ -436,8 +436,11 @@ func SubsetExpanded(expanded [][]string, testDir string, scriptUsesEngine bool) 
 		return expanded
 	}
 	if scriptUsesEngine {
-		// Group by engine value and pick one combo per group.
-		groups := make(map[string][][]string)
+		// Collect candidates per engine key, preserving first-seen order.
+		// keyToIdx maps engine value -> index in result/groups slices.
+		var result [][]string
+		var groups [][][]string
+		keyToIdx := make(map[string]int)
 		for _, envset := range expanded {
 			engine := ""
 			for _, kv := range envset {
@@ -446,11 +449,17 @@ func SubsetExpanded(expanded [][]string, testDir string, scriptUsesEngine bool) 
 					break
 				}
 			}
-			groups[engine] = append(groups[engine], envset)
+			idx, ok := keyToIdx[engine]
+			if !ok {
+				idx = len(result)
+				keyToIdx[engine] = idx
+				result = append(result, nil)
+				groups = append(groups, nil)
+			}
+			groups[idx] = append(groups[idx], envset)
 		}
-		var result [][]string
-		for _, group := range groups {
-			result = append(result, weightedSelect(group, testDir))
+		for i, group := range groups {
+			result[i] = weightedSelect(group, testDir)
 		}
 		return result
 	}
