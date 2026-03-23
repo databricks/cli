@@ -130,7 +130,8 @@ func (r *ResourceCatalog) applyUpdate(ctx context.Context, id, newName string, c
 
 func (r *ResourceCatalog) DoDelete(ctx context.Context, id string) error {
 	return r.client.Catalogs.Delete(ctx, catalog.DeleteCatalogRequest{
-		Name:  id,
-		Force: true,
+		Name:            id,
+		Force:           true,
+		ForceSendFields: nil,
 	})
 }
