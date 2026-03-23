@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run go test -update for all packages that use libs/testdiff."""
+
 import os
 import subprocess
 import sys
