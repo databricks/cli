@@ -110,31 +110,32 @@ func TestFormatAppStatusMessage(t *testing.T) {
 
 func TestInferAppNameHint(t *testing.T) {
 	t.Run("returns empty when no app config exists", func(t *testing.T) {
-		dir := t.TempDir()
-		testChdir(t, dir)
+		t.Chdir(t.TempDir())
 
 		assert.Equal(t, "", inferAppNameHint())
 	})
 
 	t.Run("returns dir name when app.yml exists", func(t *testing.T) {
 		dir := t.TempDir()
-		testChdir(t, dir)
-		os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		t.Chdir(dir)
+		err := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, err)
 
 		assert.Equal(t, filepath.Base(dir), inferAppNameHint())
 	})
 
 	t.Run("returns dir name when app.yaml exists", func(t *testing.T) {
 		dir := t.TempDir()
-		testChdir(t, dir)
-		os.WriteFile(filepath.Join(dir, "app.yaml"), []byte("command: [\"python\"]"), 0o644)
+		t.Chdir(dir)
+		err := os.WriteFile(filepath.Join(dir, "app.yaml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, err)
 
 		assert.Equal(t, filepath.Base(dir), inferAppNameHint())
 	})
 
 	t.Run("returns empty when cwd has been deleted", func(t *testing.T) {
 		dir := t.TempDir()
-		testChdir(t, dir)
+		t.Chdir(dir)
 		os.Remove(dir)
 
 		assert.Equal(t, "", inferAppNameHint())
@@ -143,8 +144,7 @@ func TestInferAppNameHint(t *testing.T) {
 
 func TestMissingAppNameError(t *testing.T) {
 	t.Run("includes APP_NAME and usage info", func(t *testing.T) {
-		dir := t.TempDir()
-		testChdir(t, dir)
+		t.Chdir(t.TempDir())
 
 		err := missingAppNameError()
 		assert.Contains(t, err.Error(), "APP_NAME")
@@ -154,8 +154,9 @@ func TestMissingAppNameError(t *testing.T) {
 
 	t.Run("includes hint when app.yml exists", func(t *testing.T) {
 		dir := t.TempDir()
-		testChdir(t, dir)
-		os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		t.Chdir(dir)
+		writeErr := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, writeErr)
 
 		err := missingAppNameError()
 		assert.Contains(t, err.Error(), "Did you mean")
@@ -164,22 +165,13 @@ func TestMissingAppNameError(t *testing.T) {
 
 	t.Run("gracefully handles deleted cwd", func(t *testing.T) {
 		dir := t.TempDir()
-		testChdir(t, dir)
+		t.Chdir(dir)
 		os.Remove(dir)
 
 		err := missingAppNameError()
 		assert.Contains(t, err.Error(), "APP_NAME")
 		assert.NotContains(t, err.Error(), "Did you mean")
 	})
-}
-
-// testChdir changes to the given directory for the duration of the test.
-func testChdir(t *testing.T, dir string) {
-	t.Helper()
-	orig, err := os.Getwd()
-	assert.NoError(t, err)
-	assert.NoError(t, os.Chdir(dir))
-	t.Cleanup(func() { os.Chdir(orig) })
 }
 
 func TestMakeArgsOptionalWithBundle(t *testing.T) {
