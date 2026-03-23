@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -22,7 +21,7 @@ func (*ResourceExternalLocation) PrepareState(input *resources.ExternalLocation)
 }
 
 // externalLocationRemapCopy maps ExternalLocationInfo (remote GET response) to CreateExternalLocation (local state).
-var externalLocationRemapCopy fieldcopy.Copy[catalog.ExternalLocationInfo, catalog.CreateExternalLocation]
+var externalLocationRemapCopy = newCopy[catalog.ExternalLocationInfo, catalog.CreateExternalLocation]()
 
 func (*ResourceExternalLocation) RemapState(info *catalog.ExternalLocationInfo) *catalog.CreateExternalLocation {
 	return externalLocationRemapCopy.Do(info)
@@ -41,7 +40,7 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog
 }
 
 // externalLocationUpdateCopy maps CreateExternalLocation (local state) to UpdateExternalLocation (API request).
-var externalLocationUpdateCopy fieldcopy.Copy[catalog.CreateExternalLocation, catalog.UpdateExternalLocation]
+var externalLocationUpdateCopy = newCopy[catalog.CreateExternalLocation, catalog.UpdateExternalLocation]()
 
 // DoUpdate updates the external location in place and returns remote state.
 func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ Changes) (*catalog.ExternalLocationInfo, error) {
@@ -82,7 +81,3 @@ func (r *ResourceExternalLocation) DoDelete(ctx context.Context, id string) erro
 	})
 }
 
-func init() {
-	registerCopy(&externalLocationRemapCopy)
-	registerCopy(&externalLocationUpdateCopy)
-}

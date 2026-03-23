@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -101,7 +100,7 @@ func makeJobRemote(job *jobs.Job) *JobRemote {
 }
 
 // jobCreateCopy maps JobSettings (local state) to CreateJob (API request).
-var jobCreateCopy fieldcopy.Copy[jobs.JobSettings, jobs.CreateJob]
+var jobCreateCopy = newCopy[jobs.JobSettings, jobs.CreateJob]()
 
 func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, *JobRemote, error) {
 	response, err := r.client.Jobs.Create(ctx, *jobCreateCopy.Do(config))
@@ -138,6 +137,3 @@ func parseJobID(id string) (int64, error) {
 	return result, nil
 }
 
-func init() {
-	registerCopy(&jobCreateCopy)
-}

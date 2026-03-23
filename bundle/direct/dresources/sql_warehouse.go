@@ -5,7 +5,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -25,7 +24,7 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *sql.Cr
 }
 
 // sqlWarehouseRemapCopy maps GetWarehouseResponse (remote GET response) to CreateWarehouseRequest (local state).
-var sqlWarehouseRemapCopy fieldcopy.Copy[sql.GetWarehouseResponse, sql.CreateWarehouseRequest]
+var sqlWarehouseRemapCopy = newCopy[sql.GetWarehouseResponse, sql.CreateWarehouseRequest]()
 
 func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sql.CreateWarehouseRequest {
 	result := sqlWarehouseRemapCopy.Do(warehouse)
@@ -49,7 +48,7 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateW
 }
 
 // sqlWarehouseEditCopy maps CreateWarehouseRequest (local state) to EditWarehouseRequest (API request).
-var sqlWarehouseEditCopy fieldcopy.Copy[sql.CreateWarehouseRequest, sql.EditWarehouseRequest]
+var sqlWarehouseEditCopy = newCopy[sql.CreateWarehouseRequest, sql.EditWarehouseRequest]()
 
 // DoUpdate updates the warehouse in place.
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest, _ Changes) (*sql.GetWarehouseResponse, error) {
@@ -74,7 +73,3 @@ func (r *ResourceSqlWarehouse) DoDelete(ctx context.Context, oldID string) error
 	return r.client.Warehouses.DeleteById(ctx, oldID)
 }
 
-func init() {
-	registerCopy(&sqlWarehouseRemapCopy)
-	registerCopy(&sqlWarehouseEditCopy)
-}

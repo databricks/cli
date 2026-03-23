@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -24,7 +23,7 @@ func (*ResourceRegisteredModel) PrepareState(input *resources.RegisteredModel) *
 }
 
 // registeredModelRemapCopy maps RegisteredModelInfo (remote GET response) to CreateRegisteredModelRequest (local state).
-var registeredModelRemapCopy fieldcopy.Copy[catalog.RegisteredModelInfo, catalog.CreateRegisteredModelRequest]
+var registeredModelRemapCopy = newCopy[catalog.RegisteredModelInfo, catalog.CreateRegisteredModelRequest]()
 
 func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *catalog.CreateRegisteredModelRequest {
 	return registeredModelRemapCopy.Do(model)
@@ -49,7 +48,7 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 }
 
 // registeredModelUpdateCopy maps CreateRegisteredModelRequest (local state) to UpdateRegisteredModelRequest (API request).
-var registeredModelUpdateCopy fieldcopy.Copy[catalog.CreateRegisteredModelRequest, catalog.UpdateRegisteredModelRequest]
+var registeredModelUpdateCopy = newCopy[catalog.CreateRegisteredModelRequest, catalog.UpdateRegisteredModelRequest]()
 
 func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ Changes) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := registeredModelUpdateCopy.Do(config)
@@ -69,7 +68,3 @@ func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string) error
 	})
 }
 
-func init() {
-	registerCopy(&registeredModelRemapCopy)
-	registerCopy(&registeredModelUpdateCopy)
-}

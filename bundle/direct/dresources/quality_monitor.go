@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -42,7 +41,7 @@ func (*ResourceQualityMonitor) PrepareState(input *resources.QualityMonitor) *Qu
 }
 
 // qualityMonitorRemapCopy maps MonitorInfo (remote GET response) to CreateMonitor (local state).
-var qualityMonitorRemapCopy fieldcopy.Copy[catalog.MonitorInfo, catalog.CreateMonitor]
+var qualityMonitorRemapCopy = newCopy[catalog.MonitorInfo, catalog.CreateMonitor]()
 
 func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *QualityMonitorState {
 	return &QualityMonitorState{
@@ -70,7 +69,7 @@ func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, config *QualityMo
 }
 
 // qualityMonitorUpdateCopy maps CreateMonitor (local state) to UpdateMonitor (API request).
-var qualityMonitorUpdateCopy fieldcopy.Copy[catalog.CreateMonitor, catalog.UpdateMonitor]
+var qualityMonitorUpdateCopy = newCopy[catalog.CreateMonitor, catalog.UpdateMonitor]()
 
 func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config *QualityMonitorState, _ Changes) (*catalog.MonitorInfo, error) {
 	updateRequest := qualityMonitorUpdateCopy.Do(&config.CreateMonitor)
@@ -93,7 +92,3 @@ func (r *ResourceQualityMonitor) DoDelete(ctx context.Context, id string) error 
 	return err
 }
 
-func init() {
-	registerCopy(&qualityMonitorRemapCopy)
-	registerCopy(&qualityMonitorUpdateCopy)
-}

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -22,7 +21,7 @@ func (*ResourceCatalog) PrepareState(input *resources.Catalog) *catalog.CreateCa
 }
 
 // catalogRemapCopy maps CatalogInfo (remote GET response) to CreateCatalog (local state).
-var catalogRemapCopy fieldcopy.Copy[catalog.CatalogInfo, catalog.CreateCatalog]
+var catalogRemapCopy = newCopy[catalog.CatalogInfo, catalog.CreateCatalog]()
 
 func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCatalog {
 	return catalogRemapCopy.Do(info)
@@ -41,7 +40,7 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCa
 }
 
 // catalogUpdateCopy maps CreateCatalog (local state) to UpdateCatalog (API request).
-var catalogUpdateCopy fieldcopy.Copy[catalog.CreateCatalog, catalog.UpdateCatalog]
+var catalogUpdateCopy = newCopy[catalog.CreateCatalog, catalog.UpdateCatalog]()
 
 // DoUpdate updates the catalog in place and returns remote state.
 func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ Changes) (*catalog.CatalogInfo, error) {
@@ -87,7 +86,3 @@ func (r *ResourceCatalog) DoDelete(ctx context.Context, id string) error {
 	})
 }
 
-func init() {
-	registerCopy(&catalogRemapCopy)
-	registerCopy(&catalogUpdateCopy)
-}

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -35,7 +34,7 @@ func (*ResourceModelServingEndpoint) PrepareState(input *resources.ModelServingE
 }
 
 // autoCaptureConfigCopy maps AutoCaptureConfigOutput to AutoCaptureConfigInput.
-var autoCaptureConfigCopy fieldcopy.Copy[serving.AutoCaptureConfigOutput, serving.AutoCaptureConfigInput]
+var autoCaptureConfigCopy = newCopy[serving.AutoCaptureConfigOutput, serving.AutoCaptureConfigInput]()
 
 func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *serving.AutoCaptureConfigInput {
 	if output == nil {
@@ -45,7 +44,7 @@ func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *se
 }
 
 // servedEntityCopy maps ServedEntityOutput to ServedEntityInput.
-var servedEntityCopy fieldcopy.Copy[serving.ServedEntityOutput, serving.ServedEntityInput]
+var servedEntityCopy = newCopy[serving.ServedEntityOutput, serving.ServedEntityInput]()
 
 func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.ServedEntityInput {
 	entities := make([]serving.ServedEntityInput, len(output))
@@ -69,7 +68,7 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 }
 
 // servingRemapCopy maps ServingEndpointDetailed (remote GET response) to CreateServingEndpoint (local state).
-var servingRemapCopy fieldcopy.Copy[serving.ServingEndpointDetailed, serving.CreateServingEndpoint]
+var servingRemapCopy = newCopy[serving.ServingEndpointDetailed, serving.CreateServingEndpoint]()
 
 func (*ResourceModelServingEndpoint) RemapState(state *RefreshOutput) *serving.CreateServingEndpoint {
 	details := state.EndpointDetails
@@ -297,8 +296,3 @@ func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) 
 	return r.client.ServingEndpoints.DeleteByName(ctx, id)
 }
 
-func init() {
-	registerCopy(&autoCaptureConfigCopy)
-	registerCopy(&servedEntityCopy)
-	registerCopy(&servingRemapCopy)
-}

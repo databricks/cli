@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -66,10 +65,10 @@ func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemo
 }
 
 // pipelineSpecCopy maps PipelineSpec (from GET response) to CreatePipeline (local state).
-var pipelineSpecCopy fieldcopy.Copy[pipelines.PipelineSpec, pipelines.CreatePipeline]
+var pipelineSpecCopy = newCopy[pipelines.PipelineSpec, pipelines.CreatePipeline]()
 
 // pipelineRemoteCopy maps GetPipelineResponse to PipelineRemote extra fields.
-var pipelineRemoteCopy fieldcopy.Copy[pipelines.GetPipelineResponse, PipelineRemote]
+var pipelineRemoteCopy = newCopy[pipelines.GetPipelineResponse, PipelineRemote]()
 
 func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 	remote := pipelineRemoteCopy.Do(p)
@@ -89,7 +88,7 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.Creat
 }
 
 // pipelineEditCopy maps CreatePipeline (local state) to EditPipeline (API request).
-var pipelineEditCopy fieldcopy.Copy[pipelines.CreatePipeline, pipelines.EditPipeline]
+var pipelineEditCopy = newCopy[pipelines.CreatePipeline, pipelines.EditPipeline]()
 
 func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ Changes) (*PipelineRemote, error) {
 	request := pipelineEditCopy.Do(config)
@@ -106,8 +105,3 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 // b) repeatededly reads state until state is "running" (if spec.Contionous is set).
 // TODO: investigate if we need to mimic this behaviour or can rely on Create status code.
 
-func init() {
-	registerCopy(&pipelineSpecCopy)
-	registerCopy(&pipelineRemoteCopy)
-	registerCopy(&pipelineEditCopy)
-}

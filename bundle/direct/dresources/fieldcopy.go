@@ -8,7 +8,9 @@ type fieldCopyReporter interface {
 
 var allFieldCopies []fieldCopyReporter
 
-func registerCopy[Src, Dst any](c *fieldcopy.Copy[Src, Dst]) {
+func newCopy[Src, Dst any]() *fieldcopy.Copy[Src, Dst] {
+	c := &fieldcopy.Copy[Src, Dst]{}
 	c.Init()
 	allFieldCopies = append(allFieldCopies, c)
+	return c
 }

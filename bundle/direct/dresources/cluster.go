@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -32,7 +31,7 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *compute.Cluste
 }
 
 // clusterRemapCopy maps ClusterDetails (remote GET response) to ClusterSpec (local state).
-var clusterRemapCopy fieldcopy.Copy[compute.ClusterDetails, compute.ClusterSpec]
+var clusterRemapCopy = newCopy[compute.ClusterDetails, compute.ClusterSpec]()
 
 func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.ClusterSpec {
 	spec := clusterRemapCopy.Do(input)
@@ -47,7 +46,7 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.Clust
 }
 
 // clusterCreateCopy maps ClusterSpec (local state) to CreateCluster (API request).
-var clusterCreateCopy fieldcopy.Copy[compute.ClusterSpec, compute.CreateCluster]
+var clusterCreateCopy = newCopy[compute.ClusterSpec, compute.CreateCluster]()
 
 func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, *compute.ClusterDetails, error) {
 	create := clusterCreateCopy.Do(config)
@@ -60,7 +59,7 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterS
 }
 
 // clusterEditCopy maps ClusterSpec (local state) to EditCluster (API request).
-var clusterEditCopy fieldcopy.Copy[compute.ClusterSpec, compute.EditCluster]
+var clusterEditCopy = newCopy[compute.ClusterSpec, compute.EditCluster]()
 
 func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec, _ Changes) (*compute.ClusterDetails, error) {
 	edit := clusterEditCopy.Do(config)
@@ -139,8 +138,3 @@ func forceNumWorkers(config *compute.ClusterSpec, fsf *[]string) {
 	}
 }
 
-func init() {
-	registerCopy(&clusterRemapCopy)
-	registerCopy(&clusterCreateCopy)
-	registerCopy(&clusterEditCopy)
-}
