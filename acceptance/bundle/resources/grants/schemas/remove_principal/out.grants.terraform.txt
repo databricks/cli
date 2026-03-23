@@ -1,0 +1,2 @@
+json.privilege_assignments[0].principal = "[USERNAME]";
+json.privilege_assignments[0].privileges[0] = "CREATE_TABLE";
