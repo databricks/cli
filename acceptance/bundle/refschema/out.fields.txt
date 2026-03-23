@@ -2974,6 +2974,74 @@ resources.synced_database_tables.*.spec.source_table_full_name	string	ALL
 resources.synced_database_tables.*.spec.timeseries_key	string	ALL
 resources.synced_database_tables.*.unity_catalog_provisioning_state	database.ProvisioningInfoState	ALL
 resources.synced_database_tables.*.url	string	INPUT
+resources.vector_search_endpoints.*.budget_policy_id	string	INPUT	STATE
+resources.vector_search_endpoints.*.creation_timestamp	int64	REMOTE
+resources.vector_search_endpoints.*.creator	string	REMOTE
+resources.vector_search_endpoints.*.custom_tags	[]vectorsearch.CustomTag	REMOTE
+resources.vector_search_endpoints.*.custom_tags[*]	vectorsearch.CustomTag	REMOTE
+resources.vector_search_endpoints.*.custom_tags[*].key	string	REMOTE
+resources.vector_search_endpoints.*.custom_tags[*].value	string	REMOTE
+resources.vector_search_endpoints.*.effective_budget_policy_id	string	REMOTE
+resources.vector_search_endpoints.*.endpoint_status	*vectorsearch.EndpointStatus	REMOTE
+resources.vector_search_endpoints.*.endpoint_status.message	string	REMOTE
+resources.vector_search_endpoints.*.endpoint_status.state	vectorsearch.EndpointStatusState	REMOTE
+resources.vector_search_endpoints.*.endpoint_type	vectorsearch.EndpointType	ALL
+resources.vector_search_endpoints.*.id	string	INPUT	REMOTE
+resources.vector_search_endpoints.*.last_updated_timestamp	int64	REMOTE
+resources.vector_search_endpoints.*.last_updated_user	string	REMOTE
+resources.vector_search_endpoints.*.lifecycle	resources.Lifecycle	INPUT
+resources.vector_search_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
+resources.vector_search_endpoints.*.min_qps	int64	INPUT	STATE
+resources.vector_search_endpoints.*.modified_status	string	INPUT
+resources.vector_search_endpoints.*.name	string	ALL
+resources.vector_search_endpoints.*.num_indexes	int	REMOTE
+resources.vector_search_endpoints.*.scaling_info	*vectorsearch.EndpointScalingInfo	REMOTE
+resources.vector_search_endpoints.*.scaling_info.requested_min_qps	int64	REMOTE
+resources.vector_search_endpoints.*.scaling_info.state	vectorsearch.ScalingChangeState	REMOTE
+resources.vector_search_endpoints.*.url	string	INPUT
+resources.vector_search_indexes.*.creator	string	REMOTE
+resources.vector_search_indexes.*.delta_sync_index_spec	*vectorsearch.DeltaSyncVectorIndexSpecRequest	INPUT	STATE
+resources.vector_search_indexes.*.delta_sync_index_spec	*vectorsearch.DeltaSyncVectorIndexSpecResponse	REMOTE
+resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_sync	[]string	INPUT	STATE
+resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_sync[*]	string	INPUT	STATE
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns	[]vectorsearch.EmbeddingSourceColumn	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns[*]	vectorsearch.EmbeddingSourceColumn	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns[*].embedding_model_endpoint_name	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns[*].model_endpoint_name_for_query	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_source_columns[*].name	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns	[]vectorsearch.EmbeddingVectorColumn	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns[*]	vectorsearch.EmbeddingVectorColumn	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns[*].embedding_dimension	int	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns[*].name	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.embedding_writeback_table	string	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.pipeline_id	string	REMOTE
+resources.vector_search_indexes.*.delta_sync_index_spec.pipeline_type	vectorsearch.PipelineType	ALL
+resources.vector_search_indexes.*.delta_sync_index_spec.source_table	string	ALL
+resources.vector_search_indexes.*.direct_access_index_spec	*vectorsearch.DirectAccessVectorIndexSpec	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_source_columns	[]vectorsearch.EmbeddingSourceColumn	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_source_columns[*]	vectorsearch.EmbeddingSourceColumn	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_source_columns[*].embedding_model_endpoint_name	string	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_source_columns[*].model_endpoint_name_for_query	string	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_source_columns[*].name	string	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns	[]vectorsearch.EmbeddingVectorColumn	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*]	vectorsearch.EmbeddingVectorColumn	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].embedding_dimension	int	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].name	string	ALL
+resources.vector_search_indexes.*.direct_access_index_spec.schema_json	string	ALL
+resources.vector_search_indexes.*.endpoint_name	string	ALL
+resources.vector_search_indexes.*.id	string	INPUT
+resources.vector_search_indexes.*.index_type	vectorsearch.VectorIndexType	ALL
+resources.vector_search_indexes.*.lifecycle	resources.Lifecycle	INPUT
+resources.vector_search_indexes.*.lifecycle.prevent_destroy	bool	INPUT
+resources.vector_search_indexes.*.modified_status	string	INPUT
+resources.vector_search_indexes.*.name	string	ALL
+resources.vector_search_indexes.*.primary_key	string	ALL
+resources.vector_search_indexes.*.status	*vectorsearch.VectorIndexStatus	REMOTE
+resources.vector_search_indexes.*.status.index_url	string	REMOTE
+resources.vector_search_indexes.*.status.indexed_row_count	int64	REMOTE
+resources.vector_search_indexes.*.status.message	string	REMOTE
+resources.vector_search_indexes.*.status.ready	bool	REMOTE
+resources.vector_search_indexes.*.url	string	INPUT
 resources.volumes.*.access_point	string	REMOTE
 resources.volumes.*.browse_only	bool	REMOTE
 resources.volumes.*.catalog_name	string	ALL
