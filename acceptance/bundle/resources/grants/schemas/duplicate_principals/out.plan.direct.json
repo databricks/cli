@@ -26,27 +26,7 @@
           "label": "${resources.schemas.apps_schema.id}"
         }
       ],
-      "action": "update",
-      "new_state": {
-        "value": {
-          "securable_type": "schema",
-          "full_name": "main.schema_dup_grants_[UNIQUE_NAME]",
-          "__embed__": [
-            {
-              "principal": "deco-test-user@databricks.com",
-              "privileges": [
-                "CREATE_TABLE"
-              ]
-            },
-            {
-              "principal": "deco-test-user@databricks.com",
-              "privileges": [
-                "CREATE_TABLE"
-              ]
-            }
-          ]
-        }
-      },
+      "action": "skip",
       "remote_state": {
         "securable_type": "schema",
         "full_name": "main.schema_dup_grants_[UNIQUE_NAME]",
@@ -58,23 +38,6 @@
             ]
           }
         ]
-      },
-      "changes": {
-        "[principal='deco-test-user@databricks.com']": {
-          "action": "update",
-          "old": {
-            "principal": "deco-test-user@databricks.com",
-            "privileges": [
-              "CREATE_TABLE"
-            ]
-          },
-          "new": {
-            "principal": "deco-test-user@databricks.com",
-            "privileges": [
-              "CREATE_TABLE"
-            ]
-          }
-        }
       }
     }
   }
