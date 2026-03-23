@@ -1,10 +1,7 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 normalize_grants() {
-    jq --sort-keys --arg current "$CURRENT_USER_NAME" '
-        .privilege_assignments |= sort_by((.principal != $current), .principal) |
-        (.privilege_assignments[]?.privileges |= sort)
-    '
+    gron.py --noindex | sort
 }
 
 cleanup() {
@@ -14,12 +11,12 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
-trace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants | gron.py
+trace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants
 
-$CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants | gron.py | contains.py "$CURRENT_USER_NAME" 'deco-test-user@databricks.com'
+$CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants | contains.py "$CURRENT_USER_NAME" 'deco-test-user@databricks.com'
 
 grep -v 'TO_REMOVE' databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 
 trace $CLI bundle deploy
-trace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants | gron.py | contains.py "$CURRENT_USER_NAME" '!deco-test-user@databricks.com' &> out.grants.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants | contains.py "$CURRENT_USER_NAME" '!deco-test-user@databricks.com' &> out.grants.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
