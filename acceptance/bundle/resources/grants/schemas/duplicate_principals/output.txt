@@ -5,6 +5,8 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+>>> [CLI] bundle plan -o json
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.apps_schema

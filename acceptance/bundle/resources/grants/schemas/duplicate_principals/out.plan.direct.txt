@@ -1,5 +1,0 @@
-
->>> [CLI] bundle plan
-update schemas.apps_schema.grants
-
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
