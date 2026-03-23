@@ -27,6 +27,21 @@ func TestFieldCopyReport(t *testing.T) {
 		&autoCaptureConfigCopy,
 		&servedEntityCopy,
 		&servingRemapCopy,
+		// catalog
+		&catalogRemapCopy,
+		&catalogUpdateCopy,
+		// registered model
+		&registeredModelRemapCopy,
+		&registeredModelUpdateCopy,
+		// external location
+		&externalLocationRemapCopy,
+		&externalLocationUpdateCopy,
+		// quality monitor
+		&qualityMonitorRemapCopy,
+		&qualityMonitorUpdateCopy,
+		// sql warehouse
+		&sqlWarehouseRemapCopy,
+		&sqlWarehouseEditCopy,
 	}
 
 	var buf strings.Builder

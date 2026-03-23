@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -21,18 +21,12 @@ func (*ResourceCatalog) PrepareState(input *resources.Catalog) *catalog.CreateCa
 	return &input.CreateCatalog
 }
 
+// catalogRemapCopy maps CatalogInfo (remote GET response) to CreateCatalog (local state).
+var catalogRemapCopy = fieldcopy.Copy[catalog.CatalogInfo, catalog.CreateCatalog]{}
+
 func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCatalog {
-	return &catalog.CreateCatalog{
-		Comment:         info.Comment,
-		ConnectionName:  info.ConnectionName,
-		Name:            info.Name,
-		Options:         info.Options,
-		Properties:      info.Properties,
-		ProviderName:    info.ProviderName,
-		ShareName:       info.ShareName,
-		StorageRoot:     info.StorageRoot,
-		ForceSendFields: utils.FilterFields[catalog.CreateCatalog](info.ForceSendFields),
-	}
+	result := catalogRemapCopy.Do(info)
+	return &result
 }
 
 func (r *ResourceCatalog) DoRead(ctx context.Context, id string) (*catalog.CatalogInfo, error) {
@@ -47,19 +41,13 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCa
 	return response.Name, response, nil
 }
 
+// catalogUpdateCopy maps CreateCatalog (local state) to UpdateCatalog (API request).
+var catalogUpdateCopy = fieldcopy.Copy[catalog.CreateCatalog, catalog.UpdateCatalog]{}
+
 // DoUpdate updates the catalog in place and returns remote state.
 func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ Changes) (*catalog.CatalogInfo, error) {
-	updateRequest := catalog.UpdateCatalog{
-		Comment:                      config.Comment,
-		EnablePredictiveOptimization: "", // Not supported by DABs
-		IsolationMode:                "", // Not supported by DABs
-		Name:                         id,
-		NewName:                      "", // Only set if name actually changes (see DoUpdateWithID)
-		Options:                      config.Options,
-		Owner:                        "", // Not supported by DABs
-		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
-	}
+	updateRequest := catalogUpdateCopy.Do(config)
+	updateRequest.Name = id
 
 	response, err := r.client.Catalogs.Update(ctx, updateRequest)
 	if err != nil {
@@ -71,17 +59,8 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 
 // DoUpdateWithID updates the catalog and returns the new ID if the name changes.
 func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateCatalog) (string, *catalog.CatalogInfo, error) {
-	updateRequest := catalog.UpdateCatalog{
-		Comment:                      config.Comment,
-		EnablePredictiveOptimization: "", // Not supported by DABs
-		IsolationMode:                "", // Not supported by DABs
-		Name:                         id,
-		NewName:                      "", // Initialized below if needed
-		Options:                      config.Options,
-		Owner:                        "", // Not supported by DABs
-		Properties:                   config.Properties,
-		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
-	}
+	updateRequest := catalogUpdateCopy.Do(config)
+	updateRequest.Name = id
 
 	if config.Name != id {
 		updateRequest.NewName = config.Name

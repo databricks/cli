@@ -74,3 +74,89 @@ serving.ServingEndpointDetailed → serving.CreateServingEndpoint
   dst not set:
     - Config
     - RateLimits
+catalog.CatalogInfo → catalog.CreateCatalog
+  src not copied:
+    - BrowseOnly
+    - CatalogType
+    - CreatedAt
+    - CreatedBy
+    - EffectivePredictiveOptimizationFlag
+    - EnablePredictiveOptimization
+    - FullName
+    - IsolationMode
+    - MetastoreId
+    - Owner
+    - ProvisioningInfo
+    - SecurableType
+    - StorageLocation
+    - UpdatedAt
+    - UpdatedBy
+catalog.CreateCatalog → catalog.UpdateCatalog
+  src not copied:
+    - ConnectionName
+    - ProviderName
+    - ShareName
+    - StorageRoot
+  dst not set:
+    - EnablePredictiveOptimization
+    - IsolationMode
+    - NewName
+    - Owner
+catalog.RegisteredModelInfo → catalog.CreateRegisteredModelRequest: all fields matched
+catalog.CreateRegisteredModelRequest → catalog.UpdateRegisteredModelRequest
+  dst not set:
+    - NewName
+catalog.ExternalLocationInfo → catalog.CreateExternalLocation
+  src not copied:
+    - BrowseOnly
+    - CreatedAt
+    - CreatedBy
+    - CredentialId
+    - IsolationMode
+    - MetastoreId
+    - Owner
+    - UpdatedAt
+    - UpdatedBy
+  dst not set:
+    - SkipValidation
+catalog.CreateExternalLocation → catalog.UpdateExternalLocation
+  dst not set:
+    - Force
+    - IsolationMode
+    - NewName
+    - Owner
+catalog.MonitorInfo → catalog.CreateMonitor
+  src not copied:
+    - DashboardId
+    - DriftMetricsTableName
+    - MonitorVersion
+    - ProfileMetricsTableName
+    - Status
+  dst not set:
+    - SkipBuiltinDashboard
+    - WarehouseId
+catalog.CreateMonitor → catalog.UpdateMonitor
+  src not copied:
+    - AssetsDir
+    - SkipBuiltinDashboard
+    - WarehouseId
+  dst not set:
+    - DashboardId
+sql.GetWarehouseResponse → sql.CreateWarehouseRequest
+  src not copied:
+    - Health
+    - Id
+    - JdbcUrl
+    - NumActiveSessions
+    - NumClusters
+    - OdbcParams
+    - State
+    - WarehouseType
+  dst not set:
+    - WarehouseType
+sql.CreateWarehouseRequest → sql.EditWarehouseRequest
+  src not copied:
+    - WarehouseType
+  dst not set:
+    - Id
+    - WarehouseType
