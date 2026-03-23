@@ -50,6 +50,7 @@ import (
 //   - experiments: runs, metrics, parameters, and artifacts are lost.
 //   - quality_monitors: drift/profile metrics tables may be lost or orphaned.
 //   - alerts: purge permanently destroys evaluation and notification history.
+//
 // isActionSafeToDestroy checks if an action targets a resource type that is
 // safe to destroy. For child resources (e.g. permissions, grants), the safety
 // is determined by the parent resource type.
@@ -92,9 +93,11 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
 
 	// Collect destructive actions for resource types that are NOT safe to destroy.
+	// Child resources (e.g. permissions, grants) are excluded because deleting
+	// them does not cause data loss in the parent resource.
 	var destructiveActions []deployplan.Action
 	for _, action := range actions {
-		if isActionSafeToDestroy(action) {
+		if action.IsChildResource() || isActionSafeToDestroy(action) {
 			continue
 		}
 		for _, t := range types {
@@ -112,9 +115,6 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 
 	cmdio.LogString(ctx, deleteOrRecreateResourceMessage)
 	for _, action := range destructiveActions {
-		if action.IsChildResource() {
-			continue
-		}
 		cmdio.Log(ctx, action)
 	}
 
