@@ -27,21 +27,58 @@ type Copy[Src, Dst any] struct {
 	// with different names in source and destination.
 	Rename map[string]string
 
-	copyFn func(src *Src) *Dst
+	// ops is the list of field copy operations (src index → dst index).
+	ops []fieldOp
+
+	// autoFSF is true when ForceSendFields is auto-handled.
+	autoFSF bool
+
+	// fsfSrcIdx is the reflect field index of ForceSendFields on Src.
+	fsfSrcIdx []int
+
+	// fsfDstIdx is the reflect field index of ForceSendFields on Dst.
+	fsfDstIdx []int
+
+	// validFSFNames is the set of dst field names eligible for ForceSendFields.
+	validFSFNames map[string]bool
+
+	// ready is set to true after Init completes.
+	ready bool
 }
 
 // Init eagerly computes field mappings via reflection. Must be called before Do.
 func (c *Copy[Src, Dst]) Init() {
-	c.copyFn = c.build()
+	c.build()
 }
 
 // Do copies fields from src to a new Dst value using precomputed field mappings.
 // Panics if [Copy.Init] was not called.
 func (c *Copy[Src, Dst]) Do(src *Src) *Dst {
-	if c.copyFn == nil {
+	if !c.ready {
 		panic(fmt.Sprintf("fieldcopy: Do called on uninitialized Copy[%v, %v]; call Init first", reflect.TypeFor[Src](), reflect.TypeFor[Dst]()))
 	}
-	return c.copyFn(src)
+	var dst Dst
+	sv := reflect.ValueOf(src).Elem()
+	dv := reflect.ValueOf(&dst).Elem()
+	for _, op := range c.ops {
+		dv.FieldByIndex(op.dstIndex).Set(sv.FieldByIndex(op.srcIndex))
+	}
+	if c.autoFSF {
+		srcFSF := sv.FieldByIndex(c.fsfSrcIdx)
+		if !srcFSF.IsNil() {
+			srcFields := srcFSF.Interface().([]string)
+			var filtered []string
+			for _, name := range srcFields {
+				if c.validFSFNames[name] {
+					filtered = append(filtered, name)
+				}
+			}
+			if filtered != nil {
+				dv.FieldByIndex(c.fsfDstIdx).Set(reflect.ValueOf(filtered))
+			}
+		}
+	}
+	return &dst
 }
 
 type fieldOp struct {
@@ -49,35 +86,29 @@ type fieldOp struct {
 	srcIndex []int
 }
 
-func (c *Copy[Src, Dst]) build() func(*Src) *Dst {
+func (c *Copy[Src, Dst]) build() {
 	srcType := reflect.TypeFor[Src]()
 	dstType := reflect.TypeFor[Dst]()
 
 	// Detect auto-handling of ForceSendFields: both types must have it as []string.
-	var autoFSF bool
-	var fsfSrcIdx, fsfDstIdx []int
-	var validFSFNames map[string]bool
-
 	stringSliceType := reflect.TypeFor[[]string]()
 	dstFSF, dstOK := dstType.FieldByName(forceSendFieldsName)
 	srcFSF, srcOK := srcType.FieldByName(forceSendFieldsName)
 	// Only auto-handle when ForceSendFields is a direct (non-promoted) field on both types.
 	// Promoted fields from embedded structs have len(Index) > 1.
 	if dstOK && srcOK && len(dstFSF.Index) == 1 && len(srcFSF.Index) == 1 && dstFSF.Type == stringSliceType && srcFSF.Type == stringSliceType {
-		autoFSF = true
-		fsfSrcIdx = srcFSF.Index
-		fsfDstIdx = dstFSF.Index
-		validFSFNames = make(map[string]bool)
+		c.autoFSF = true
+		c.fsfSrcIdx = srcFSF.Index
+		c.fsfDstIdx = dstFSF.Index
+		c.validFSFNames = make(map[string]bool)
 	}
-
-	var ops []fieldOp
 
 	for i := range dstType.NumField() {
 		df := dstType.Field(i)
 		if !df.IsExported() {
 			continue
 		}
-		if autoFSF && df.Name == forceSendFieldsName {
+		if c.autoFSF && df.Name == forceSendFieldsName {
 			continue // handled separately
 		}
 
@@ -93,36 +124,13 @@ func (c *Copy[Src, Dst]) build() func(*Src) *Dst {
 			continue
 		}
 
-		ops = append(ops, fieldOp{dstIndex: df.Index, srcIndex: sf.Index})
-		if autoFSF {
-			validFSFNames[df.Name] = true
+		c.ops = append(c.ops, fieldOp{dstIndex: df.Index, srcIndex: sf.Index})
+		if c.autoFSF {
+			c.validFSFNames[df.Name] = true
 		}
 	}
 
-	return func(src *Src) *Dst {
-		var dst Dst
-		sv := reflect.ValueOf(src).Elem()
-		dv := reflect.ValueOf(&dst).Elem()
-		for _, op := range ops {
-			dv.FieldByIndex(op.dstIndex).Set(sv.FieldByIndex(op.srcIndex))
-		}
-		if autoFSF {
-			srcFSF := sv.FieldByIndex(fsfSrcIdx)
-			if !srcFSF.IsNil() {
-				srcFields := srcFSF.Interface().([]string)
-				var filtered []string
-				for _, name := range srcFields {
-					if validFSFNames[name] {
-						filtered = append(filtered, name)
-					}
-				}
-				if filtered != nil {
-					dv.FieldByIndex(fsfDstIdx).Set(reflect.ValueOf(filtered))
-				}
-			}
-		}
-		return &dst
-	}
+	c.ready = true
 }
 
 // Report returns a human-readable summary of unmatched fields for golden file testing.
