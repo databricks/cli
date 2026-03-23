@@ -23,7 +23,7 @@ Deployment complete!
 
 >>> [CLI] grants get schema main.schema_remove_principal_[UNIQUE_NAME]
 
->>> [CLI] bundle plan -o json
+>>> [CLI] bundle plan
 
 >>> errcode [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -1,5 +1,5 @@
-json.privilege_assignments[0].principal = "deco-test-user@databricks.com";
-contains error: 'deco-test-user@databricks.com' was not expected: 'json.privilege_assignments[0].principal = "deco-test-user@databricks.com";'
-json.privilege_assignments[0].privileges[0] = "USE_SCHEMA";
-json.privilege_assignments[1].principal = "[USERNAME]";
-json.privilege_assignments[1].privileges[0] = "CREATE_TABLE";
+json.privilege_assignments[0].principal = "[USERNAME]";
+json.privilege_assignments[0].privileges[0] = "CREATE_TABLE";
+json.privilege_assignments[1].principal = "deco-test-user@databricks.com";
+contains error: 'deco-test-user@databricks.com' was not expected: 'json.privilege_assignments[1].principal = "deco-test-user@databricks.com";'
+json.privilege_assignments[1].privileges[0] = "USE_SCHEMA";
