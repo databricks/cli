@@ -48,7 +48,7 @@ Alternatively, run this command from a project directory containing
 databricks.yml to auto-detect the app name.`
 
 	if hint != "" {
-		msg += fmt.Sprintf("\n\nDid you mean?\n  databricks apps deploy %s", hint)
+		msg += "\n\nDid you mean?\n  databricks apps deploy " + hint
 	}
 
 	return errors.New(msg)
