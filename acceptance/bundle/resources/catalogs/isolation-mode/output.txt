@@ -30,7 +30,6 @@ Deployment complete!
   "isolation_mode": "OPEN"
 }
 
-=== Test cleanup
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.catalogs.test_catalog

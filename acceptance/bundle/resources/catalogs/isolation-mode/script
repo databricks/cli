@@ -3,7 +3,6 @@ envsubst < databricks.yml.tmpl > databricks.yml
 CATALOG_NAME="test_catalog_${UNIQUE_NAME}"
 
 cleanup() {
-  title "Test cleanup"
   trace $CLI bundle destroy --auto-approve
 }
 trap cleanup EXIT

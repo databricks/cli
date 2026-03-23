@@ -24,7 +24,6 @@ Deployment complete!
   "comment": "Catalog without update-only fields"
 }
 
-=== Test cleanup
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.catalogs.test_catalog
