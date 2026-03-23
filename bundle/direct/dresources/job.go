@@ -125,7 +125,11 @@ func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
 }
 
 // jobCreateCopy maps JobSettings (local state) to CreateJob (API request).
-var jobCreateCopy = fieldcopy.Copy[jobs.JobSettings, jobs.CreateJob]{}
+var jobCreateCopy fieldcopy.Copy[jobs.JobSettings, jobs.CreateJob]
+
+func init() {
+	registerCopy(&jobCreateCopy)
+}
 
 func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
 	idInt, err := parseJobID(id)

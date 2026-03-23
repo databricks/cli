@@ -12,40 +12,8 @@ func TestFieldCopyReport(t *testing.T) {
 	ctx := context.Background()
 	ctx, _ = testdiff.WithReplacementsMap(ctx)
 
-	copies := []interface{ Report() string }{
-		// cluster
-		&clusterRemapCopy,
-		&clusterCreateCopy,
-		&clusterEditCopy,
-		// job
-		&jobCreateCopy,
-		// pipeline
-		&pipelineSpecCopy,
-		&pipelineRemoteCopy,
-		&pipelineEditCopy,
-		// model serving endpoint
-		&autoCaptureConfigCopy,
-		&servedEntityCopy,
-		&servingRemapCopy,
-		// catalog
-		&catalogRemapCopy,
-		&catalogUpdateCopy,
-		// registered model
-		&registeredModelRemapCopy,
-		&registeredModelUpdateCopy,
-		// external location
-		&externalLocationRemapCopy,
-		&externalLocationUpdateCopy,
-		// quality monitor
-		&qualityMonitorRemapCopy,
-		&qualityMonitorUpdateCopy,
-		// sql warehouse
-		&sqlWarehouseRemapCopy,
-		&sqlWarehouseEditCopy,
-	}
-
 	var buf strings.Builder
-	for _, c := range copies {
+	for _, c := range allFieldCopies {
 		buf.WriteString(c.Report())
 	}
 

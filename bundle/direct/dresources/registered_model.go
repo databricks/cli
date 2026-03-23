@@ -24,7 +24,7 @@ func (*ResourceRegisteredModel) PrepareState(input *resources.RegisteredModel) *
 }
 
 // registeredModelRemapCopy maps RegisteredModelInfo (remote GET response) to CreateRegisteredModelRequest (local state).
-var registeredModelRemapCopy = fieldcopy.Copy[catalog.RegisteredModelInfo, catalog.CreateRegisteredModelRequest]{}
+var registeredModelRemapCopy fieldcopy.Copy[catalog.RegisteredModelInfo, catalog.CreateRegisteredModelRequest]
 
 func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *catalog.CreateRegisteredModelRequest {
 	result := registeredModelRemapCopy.Do(model)
@@ -50,7 +50,12 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 }
 
 // registeredModelUpdateCopy maps CreateRegisteredModelRequest (local state) to UpdateRegisteredModelRequest (API request).
-var registeredModelUpdateCopy = fieldcopy.Copy[catalog.CreateRegisteredModelRequest, catalog.UpdateRegisteredModelRequest]{}
+var registeredModelUpdateCopy fieldcopy.Copy[catalog.CreateRegisteredModelRequest, catalog.UpdateRegisteredModelRequest]
+
+func init() {
+	registerCopy(&registeredModelRemapCopy)
+	registerCopy(&registeredModelUpdateCopy)
+}
 
 func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ Changes) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := registeredModelUpdateCopy.Do(config)

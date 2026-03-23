@@ -23,6 +23,7 @@ type dstBasic struct {
 
 func TestDoBasicCopy(t *testing.T) {
 	c := fieldcopy.Copy[srcBasic, dstBasic]{}
+	c.Init()
 	src := srcBasic{Name: "alice", Age: 30, Email: "a@b.c"}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -32,6 +33,7 @@ func TestDoBasicCopy(t *testing.T) {
 
 func TestDoCachedSecondCall(t *testing.T) {
 	c := fieldcopy.Copy[srcBasic, dstBasic]{}
+	c.Init()
 	src1 := srcBasic{Name: "alice", Age: 30, Email: "a@b.c"}
 	dst1 := c.Do(&src1)
 	assert.Equal(t, "alice", dst1.Name)
@@ -55,6 +57,7 @@ type dstSmall struct {
 
 func TestDoUnmatchedFieldsIgnored(t *testing.T) {
 	c := fieldcopy.Copy[srcWithExtra, dstSmall]{}
+	c.Init()
 	src := srcWithExtra{Name: "alice", Age: 30, Extra: "ignored"}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -69,6 +72,7 @@ type dstWithDefault struct {
 
 func TestDoUnmatchedDstLeftAtZero(t *testing.T) {
 	c := fieldcopy.Copy[srcBasic, dstWithDefault]{}
+	c.Init()
 	src := srcBasic{Name: "alice", Age: 30, Email: "a@b.c"}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -90,6 +94,7 @@ func TestDoRename(t *testing.T) {
 	c := fieldcopy.Copy[srcRenamed, dstRenamed]{
 		Rename: map[string]string{"Name": "FullName"},
 	}
+	c.Init()
 	src := srcRenamed{FullName: "alice", Age: 30}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -98,12 +103,14 @@ func TestDoRename(t *testing.T) {
 
 func TestReportAllMatched(t *testing.T) {
 	c := fieldcopy.Copy[srcBasic, dstBasic]{}
+	c.Init()
 	report := c.Report()
 	assert.Contains(t, report, "all fields matched")
 }
 
 func TestReportUnmatchedSrc(t *testing.T) {
 	c := fieldcopy.Copy[srcWithExtra, dstSmall]{}
+	c.Init()
 	report := c.Report()
 	assert.Contains(t, report, "src not copied:")
 	assert.Contains(t, report, "- Extra")
@@ -111,6 +118,7 @@ func TestReportUnmatchedSrc(t *testing.T) {
 
 func TestReportUnmatchedDst(t *testing.T) {
 	c := fieldcopy.Copy[srcBasic, dstWithDefault]{}
+	c.Init()
 	report := c.Report()
 	assert.Contains(t, report, "dst not set:")
 	assert.Contains(t, report, "- Default")
@@ -143,6 +151,7 @@ type srcTypeMismatch struct {
 
 func TestDoTypeMismatchFieldSkipped(t *testing.T) {
 	c := fieldcopy.Copy[srcTypeMismatch, dstBasic]{}
+	c.Init()
 	src := srcTypeMismatch{Name: "alice", Age: "30"}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -152,6 +161,7 @@ func TestDoTypeMismatchFieldSkipped(t *testing.T) {
 
 func TestReportTypeMismatch(t *testing.T) {
 	c := fieldcopy.Copy[srcTypeMismatch, dstBasic]{}
+	c.Init()
 	report := c.Report()
 	// Age exists on both but types don't match, so it's unmatched on both sides.
 	assert.Contains(t, report, "src not copied:")
@@ -170,6 +180,7 @@ type dstPointer struct {
 
 func TestDoPointerFields(t *testing.T) {
 	c := fieldcopy.Copy[srcPointer, dstPointer]{}
+	c.Init()
 	items := []string{"a", "b"}
 	src := srcPointer{Name: "alice", Items: &items}
 	dst := c.Do(&src)
@@ -182,6 +193,7 @@ func TestDoPointerFields(t *testing.T) {
 
 func TestDoNilPointerFields(t *testing.T) {
 	c := fieldcopy.Copy[srcPointer, dstPointer]{}
+	c.Init()
 	src := srcPointer{Name: "alice", Items: nil}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -198,6 +210,7 @@ type dstMap struct {
 
 func TestDoMapFields(t *testing.T) {
 	c := fieldcopy.Copy[srcMap, dstMap]{}
+	c.Init()
 	src := srcMap{Tags: map[string]string{"k": "v"}}
 	dst := c.Do(&src)
 	assert.Equal(t, map[string]string{"k": "v"}, dst.Tags)
@@ -216,6 +229,7 @@ type dstSlice struct {
 
 func TestDoSliceFields(t *testing.T) {
 	c := fieldcopy.Copy[srcSlice, dstSlice]{}
+	c.Init()
 	src := srcSlice{Items: []string{"a", "b"}}
 	dst := c.Do(&src)
 	assert.Equal(t, []string{"a", "b"}, dst.Items)
@@ -223,6 +237,7 @@ func TestDoSliceFields(t *testing.T) {
 
 func TestDoZeroValue(t *testing.T) {
 	c := fieldcopy.Copy[srcBasic, dstBasic]{}
+	c.Init()
 	src := srcBasic{}
 	dst := c.Do(&src)
 	assert.Equal(t, "", dst.Name)
@@ -242,6 +257,7 @@ type dstBool struct {
 
 func TestDoBoolZeroValue(t *testing.T) {
 	c := fieldcopy.Copy[srcBool, dstBool]{}
+	c.Init()
 	src := srcBool{Enabled: false, Name: "test"}
 	dst := c.Do(&src)
 	assert.Equal(t, false, dst.Enabled)
@@ -264,6 +280,7 @@ type nestedConfig struct {
 
 func TestDoNestedStructPointer(t *testing.T) {
 	c := fieldcopy.Copy[srcNested, dstNested]{}
+	c.Init()
 	src := srcNested{Name: "alice", Config: &nestedConfig{Value: 42}}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -284,6 +301,7 @@ type dstPrivate struct {
 
 func TestDoIgnoresUnexportedFields(t *testing.T) {
 	c := fieldcopy.Copy[srcPrivate, dstPrivate]{}
+	c.Init()
 	dst := c.Do(&srcPrivate{Name: "test"})
 	assert.Equal(t, "test", dst.Name)
 }
@@ -305,6 +323,7 @@ type dstFSF struct {
 
 func TestDoForceSendFieldsAutoFiltered(t *testing.T) {
 	c := fieldcopy.Copy[srcFSF, dstFSF]{}
+	c.Init()
 	src := srcFSF{
 		Name:            "alice",
 		Age:             30,
@@ -319,6 +338,7 @@ func TestDoForceSendFieldsAutoFiltered(t *testing.T) {
 
 func TestDoForceSendFieldsNil(t *testing.T) {
 	c := fieldcopy.Copy[srcFSF, dstFSF]{}
+	c.Init()
 	src := srcFSF{Name: "alice", ForceSendFields: nil}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -327,6 +347,7 @@ func TestDoForceSendFieldsNil(t *testing.T) {
 
 func TestDoForceSendFieldsEmpty(t *testing.T) {
 	c := fieldcopy.Copy[srcFSF, dstFSF]{}
+	c.Init()
 	src := srcFSF{Name: "alice", ForceSendFields: []string{}}
 	dst := c.Do(&src)
 	assert.Nil(t, dst.ForceSendFields)
@@ -334,6 +355,7 @@ func TestDoForceSendFieldsEmpty(t *testing.T) {
 
 func TestDoForceSendFieldsAllFiltered(t *testing.T) {
 	c := fieldcopy.Copy[srcFSF, dstFSF]{}
+	c.Init()
 	src := srcFSF{ForceSendFields: []string{"Extra", "NonExistent"}}
 	dst := c.Do(&src)
 	// All entries filtered out → nil.
@@ -355,6 +377,7 @@ type outerDstFSF struct {
 
 func TestDoForceSendFieldsNotAutoHandledWhenPromoted(t *testing.T) {
 	c := fieldcopy.Copy[srcFSF, outerDstFSF]{}
+	c.Init()
 	src := srcFSF{
 		Name:            "alice",
 		Extra:           "x",
@@ -369,9 +392,17 @@ func TestDoForceSendFieldsNotAutoHandledWhenPromoted(t *testing.T) {
 
 func TestReportEmbeddedStructShowsAsField(t *testing.T) {
 	c := fieldcopy.Copy[srcFSF, outerDstFSF]{}
+	c.Init()
 	report := c.Report()
 	// The embedded struct itself appears as unmatched dst field.
 	assert.Contains(t, report, "- InnerFSF")
 	// ForceSendFields on src is not auto-handled, so it shows as unmatched.
 	assert.Contains(t, report, "- ForceSendFields")
+}
+
+func TestDoPanicsWithoutInit(t *testing.T) {
+	c := fieldcopy.Copy[srcBasic, dstBasic]{}
+	assert.PanicsWithValue(t, "fieldcopy: Do called on uninitialized Copy[fieldcopy_test.srcBasic, fieldcopy_test.dstBasic]; call Init first", func() {
+		c.Do(&srcBasic{})
+	})
 }

@@ -66,10 +66,10 @@ func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemo
 }
 
 // pipelineSpecCopy maps PipelineSpec (from GET response) to CreatePipeline (local state).
-var pipelineSpecCopy = fieldcopy.Copy[pipelines.PipelineSpec, pipelines.CreatePipeline]{}
+var pipelineSpecCopy fieldcopy.Copy[pipelines.PipelineSpec, pipelines.CreatePipeline]
 
 // pipelineRemoteCopy maps GetPipelineResponse to PipelineRemote extra fields.
-var pipelineRemoteCopy = fieldcopy.Copy[pipelines.GetPipelineResponse, PipelineRemote]{}
+var pipelineRemoteCopy fieldcopy.Copy[pipelines.GetPipelineResponse, PipelineRemote]
 
 func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 	remote := pipelineRemoteCopy.Do(p)
@@ -89,7 +89,13 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.Creat
 }
 
 // pipelineEditCopy maps CreatePipeline (local state) to EditPipeline (API request).
-var pipelineEditCopy = fieldcopy.Copy[pipelines.CreatePipeline, pipelines.EditPipeline]{}
+var pipelineEditCopy fieldcopy.Copy[pipelines.CreatePipeline, pipelines.EditPipeline]
+
+func init() {
+	registerCopy(&pipelineSpecCopy)
+	registerCopy(&pipelineRemoteCopy)
+	registerCopy(&pipelineEditCopy)
+}
 
 func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ Changes) (*PipelineRemote, error) {
 	request := pipelineEditCopy.Do(config)

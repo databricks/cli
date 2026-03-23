@@ -12,7 +12,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"sync"
 )
 
 const forceSendFieldsName = "ForceSendFields"
@@ -21,21 +20,27 @@ const forceSendFieldsName = "ForceSendFields"
 // Fields with matching names and assignable types are copied automatically.
 // Unmatched fields are left at zero and reported via [Copy.Report] for
 // golden file testing.
+//
+// Call [Copy.Init] before using [Copy.Do]; Do panics if Init was not called.
 type Copy[Src, Dst any] struct {
 	// Rename maps destination field name to source field name for fields
 	// with different names in source and destination.
 	Rename map[string]string
 
-	once   sync.Once
 	copyFn func(src *Src) Dst
 }
 
+// Init eagerly computes field mappings via reflection. Must be called before Do.
+func (c *Copy[Src, Dst]) Init() {
+	c.copyFn = c.build()
+}
+
 // Do copies fields from src to a new Dst value using precomputed field mappings.
-// On first call, field mappings are computed via reflection and cached.
+// Panics if [Copy.Init] was not called.
 func (c *Copy[Src, Dst]) Do(src *Src) Dst {
-	c.once.Do(func() {
-		c.copyFn = c.build()
-	})
+	if c.copyFn == nil {
+		panic(fmt.Sprintf("fieldcopy: Do called on uninitialized Copy[%v, %v]; call Init first", reflect.TypeFor[Src](), reflect.TypeFor[Dst]()))
+	}
 	return c.copyFn(src)
 }
 

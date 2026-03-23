@@ -32,7 +32,7 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *compute.Cluste
 }
 
 // clusterRemapCopy maps ClusterDetails (remote GET response) to ClusterSpec (local state).
-var clusterRemapCopy = fieldcopy.Copy[compute.ClusterDetails, compute.ClusterSpec]{}
+var clusterRemapCopy fieldcopy.Copy[compute.ClusterDetails, compute.ClusterSpec]
 
 func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.ClusterSpec {
 	spec := clusterRemapCopy.Do(input)
@@ -120,7 +120,7 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 }
 
 // clusterCreateCopy maps ClusterSpec (local state) to CreateCluster (API request).
-var clusterCreateCopy = fieldcopy.Copy[compute.ClusterSpec, compute.CreateCluster]{}
+var clusterCreateCopy fieldcopy.Copy[compute.ClusterSpec, compute.CreateCluster]
 
 func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 	create := clusterCreateCopy.Do(config)
@@ -135,7 +135,13 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 }
 
 // clusterEditCopy maps ClusterSpec (local state) to EditCluster (API request).
-var clusterEditCopy = fieldcopy.Copy[compute.ClusterSpec, compute.EditCluster]{}
+var clusterEditCopy fieldcopy.Copy[compute.ClusterSpec, compute.EditCluster]
+
+func init() {
+	registerCopy(&clusterRemapCopy)
+	registerCopy(&clusterCreateCopy)
+	registerCopy(&clusterEditCopy)
+}
 
 func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster {
 	edit := clusterEditCopy.Do(config)

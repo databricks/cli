@@ -22,7 +22,7 @@ func (*ResourceCatalog) PrepareState(input *resources.Catalog) *catalog.CreateCa
 }
 
 // catalogRemapCopy maps CatalogInfo (remote GET response) to CreateCatalog (local state).
-var catalogRemapCopy = fieldcopy.Copy[catalog.CatalogInfo, catalog.CreateCatalog]{}
+var catalogRemapCopy fieldcopy.Copy[catalog.CatalogInfo, catalog.CreateCatalog]
 
 func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCatalog {
 	result := catalogRemapCopy.Do(info)
@@ -42,7 +42,12 @@ func (r *ResourceCatalog) DoCreate(ctx context.Context, config *catalog.CreateCa
 }
 
 // catalogUpdateCopy maps CreateCatalog (local state) to UpdateCatalog (API request).
-var catalogUpdateCopy = fieldcopy.Copy[catalog.CreateCatalog, catalog.UpdateCatalog]{}
+var catalogUpdateCopy fieldcopy.Copy[catalog.CreateCatalog, catalog.UpdateCatalog]
+
+func init() {
+	registerCopy(&catalogRemapCopy)
+	registerCopy(&catalogUpdateCopy)
+}
 
 // DoUpdate updates the catalog in place and returns remote state.
 func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catalog.CreateCatalog, _ Changes) (*catalog.CatalogInfo, error) {

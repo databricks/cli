@@ -22,7 +22,7 @@ func (*ResourceExternalLocation) PrepareState(input *resources.ExternalLocation)
 }
 
 // externalLocationRemapCopy maps ExternalLocationInfo (remote GET response) to CreateExternalLocation (local state).
-var externalLocationRemapCopy = fieldcopy.Copy[catalog.ExternalLocationInfo, catalog.CreateExternalLocation]{}
+var externalLocationRemapCopy fieldcopy.Copy[catalog.ExternalLocationInfo, catalog.CreateExternalLocation]
 
 func (*ResourceExternalLocation) RemapState(info *catalog.ExternalLocationInfo) *catalog.CreateExternalLocation {
 	result := externalLocationRemapCopy.Do(info)
@@ -42,7 +42,12 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog
 }
 
 // externalLocationUpdateCopy maps CreateExternalLocation (local state) to UpdateExternalLocation (API request).
-var externalLocationUpdateCopy = fieldcopy.Copy[catalog.CreateExternalLocation, catalog.UpdateExternalLocation]{}
+var externalLocationUpdateCopy fieldcopy.Copy[catalog.CreateExternalLocation, catalog.UpdateExternalLocation]
+
+func init() {
+	registerCopy(&externalLocationRemapCopy)
+	registerCopy(&externalLocationUpdateCopy)
+}
 
 // DoUpdate updates the external location in place and returns remote state.
 func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ Changes) (*catalog.ExternalLocationInfo, error) {

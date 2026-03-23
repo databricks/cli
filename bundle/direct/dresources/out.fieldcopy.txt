@@ -1,3 +1,31 @@
+catalog.CatalogInfo → catalog.CreateCatalog
+  src not copied:
+    - BrowseOnly
+    - CatalogType
+    - CreatedAt
+    - CreatedBy
+    - EffectivePredictiveOptimizationFlag
+    - EnablePredictiveOptimization
+    - FullName
+    - IsolationMode
+    - MetastoreId
+    - Owner
+    - ProvisioningInfo
+    - SecurableType
+    - StorageLocation
+    - UpdatedAt
+    - UpdatedBy
+catalog.CreateCatalog → catalog.UpdateCatalog
+  src not copied:
+    - ConnectionName
+    - ProviderName
+    - ShareName
+    - StorageRoot
+  dst not set:
+    - EnablePredictiveOptimization
+    - IsolationMode
+    - NewName
+    - Owner
 compute.ClusterDetails → compute.ClusterSpec
   src not copied:
     - ClusterCores
@@ -27,28 +55,28 @@ compute.ClusterSpec → compute.CreateCluster
 compute.ClusterSpec → compute.EditCluster
   dst not set:
     - ClusterId
+catalog.ExternalLocationInfo → catalog.CreateExternalLocation
+  src not copied:
+    - BrowseOnly
+    - CreatedAt
+    - CreatedBy
+    - CredentialId
+    - IsolationMode
+    - MetastoreId
+    - Owner
+    - UpdatedAt
+    - UpdatedBy
+  dst not set:
+    - SkipValidation
+catalog.CreateExternalLocation → catalog.UpdateExternalLocation
+  dst not set:
+    - Force
+    - IsolationMode
+    - NewName
+    - Owner
 jobs.JobSettings → jobs.CreateJob
   dst not set:
     - AccessControlList
-pipelines.PipelineSpec → pipelines.CreatePipeline
-  dst not set:
-    - AllowDuplicateNames
-    - DryRun
-    - RunAs
-pipelines.GetPipelineResponse → dresources.PipelineRemote
-  src not copied:
-    - Name
-    - RunAs
-    - Spec
-    - ForceSendFields
-  dst not set:
-    - CreatePipeline
-pipelines.CreatePipeline → pipelines.EditPipeline
-  src not copied:
-    - DryRun
-  dst not set:
-    - ExpectedLastModified
-    - PipelineId
 serving.AutoCaptureConfigOutput → serving.AutoCaptureConfigInput
   src not copied:
     - State
@@ -74,57 +102,25 @@ serving.ServingEndpointDetailed → serving.CreateServingEndpoint
   dst not set:
     - Config
     - RateLimits
-catalog.CatalogInfo → catalog.CreateCatalog
+pipelines.PipelineSpec → pipelines.CreatePipeline
+  dst not set:
+    - AllowDuplicateNames
+    - DryRun
+    - RunAs
+pipelines.GetPipelineResponse → dresources.PipelineRemote
   src not copied:
-    - BrowseOnly
-    - CatalogType
-    - CreatedAt
-    - CreatedBy
-    - EffectivePredictiveOptimizationFlag
-    - EnablePredictiveOptimization
-    - FullName
-    - IsolationMode
-    - MetastoreId
-    - Owner
-    - ProvisioningInfo
-    - SecurableType
-    - StorageLocation
-    - UpdatedAt
-    - UpdatedBy
-catalog.CreateCatalog → catalog.UpdateCatalog
+    - Name
+    - RunAs
+    - Spec
+    - ForceSendFields
+  dst not set:
+    - CreatePipeline
+pipelines.CreatePipeline → pipelines.EditPipeline
   src not copied:
-    - ConnectionName
-    - ProviderName
-    - ShareName
-    - StorageRoot
+    - DryRun
   dst not set:
-    - EnablePredictiveOptimization
-    - IsolationMode
-    - NewName
-    - Owner
-catalog.RegisteredModelInfo → catalog.CreateRegisteredModelRequest: all fields matched
-catalog.CreateRegisteredModelRequest → catalog.UpdateRegisteredModelRequest
-  dst not set:
-    - NewName
-catalog.ExternalLocationInfo → catalog.CreateExternalLocation
-  src not copied:
-    - BrowseOnly
-    - CreatedAt
-    - CreatedBy
-    - CredentialId
-    - IsolationMode
-    - MetastoreId
-    - Owner
-    - UpdatedAt
-    - UpdatedBy
-  dst not set:
-    - SkipValidation
-catalog.CreateExternalLocation → catalog.UpdateExternalLocation
-  dst not set:
-    - Force
-    - IsolationMode
-    - NewName
-    - Owner
+    - ExpectedLastModified
+    - PipelineId
 catalog.MonitorInfo → catalog.CreateMonitor
   src not copied:
     - DashboardId
@@ -142,6 +138,10 @@ catalog.CreateMonitor → catalog.UpdateMonitor
     - WarehouseId
   dst not set:
     - DashboardId
+catalog.RegisteredModelInfo → catalog.CreateRegisteredModelRequest: all fields matched
+catalog.CreateRegisteredModelRequest → catalog.UpdateRegisteredModelRequest
+  dst not set:
+    - NewName
 sql.GetWarehouseResponse → sql.CreateWarehouseRequest
   src not copied:
     - Health

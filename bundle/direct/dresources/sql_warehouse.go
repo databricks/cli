@@ -25,7 +25,7 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *sql.Cr
 }
 
 // sqlWarehouseRemapCopy maps GetWarehouseResponse (remote GET response) to CreateWarehouseRequest (local state).
-var sqlWarehouseRemapCopy = fieldcopy.Copy[sql.GetWarehouseResponse, sql.CreateWarehouseRequest]{}
+var sqlWarehouseRemapCopy fieldcopy.Copy[sql.GetWarehouseResponse, sql.CreateWarehouseRequest]
 
 func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sql.CreateWarehouseRequest {
 	result := sqlWarehouseRemapCopy.Do(warehouse)
@@ -49,7 +49,12 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateW
 }
 
 // sqlWarehouseEditCopy maps CreateWarehouseRequest (local state) to EditWarehouseRequest (API request).
-var sqlWarehouseEditCopy = fieldcopy.Copy[sql.CreateWarehouseRequest, sql.EditWarehouseRequest]{}
+var sqlWarehouseEditCopy fieldcopy.Copy[sql.CreateWarehouseRequest, sql.EditWarehouseRequest]
+
+func init() {
+	registerCopy(&sqlWarehouseRemapCopy)
+	registerCopy(&sqlWarehouseEditCopy)
+}
 
 // DoUpdate updates the warehouse in place.
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest, _ Changes) (*sql.GetWarehouseResponse, error) {
