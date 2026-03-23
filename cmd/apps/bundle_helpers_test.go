@@ -3,6 +3,8 @@ package apps
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -104,6 +106,80 @@ func TestFormatAppStatusMessage(t *testing.T) {
 		msg := formatAppStatusMessage(appInfo, "test-app", "started")
 		assert.Equal(t, "✔ App 'test-app' status: unknown", msg)
 	})
+}
+
+func TestInferAppNameHint(t *testing.T) {
+	t.Run("returns empty when no app config exists", func(t *testing.T) {
+		dir := t.TempDir()
+		testChdir(t, dir)
+
+		assert.Equal(t, "", inferAppNameHint())
+	})
+
+	t.Run("returns dir name when app.yml exists", func(t *testing.T) {
+		dir := t.TempDir()
+		testChdir(t, dir)
+		os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+
+		assert.Equal(t, filepath.Base(dir), inferAppNameHint())
+	})
+
+	t.Run("returns dir name when app.yaml exists", func(t *testing.T) {
+		dir := t.TempDir()
+		testChdir(t, dir)
+		os.WriteFile(filepath.Join(dir, "app.yaml"), []byte("command: [\"python\"]"), 0o644)
+
+		assert.Equal(t, filepath.Base(dir), inferAppNameHint())
+	})
+
+	t.Run("returns empty when cwd has been deleted", func(t *testing.T) {
+		dir := t.TempDir()
+		testChdir(t, dir)
+		os.Remove(dir)
+
+		assert.Equal(t, "", inferAppNameHint())
+	})
+}
+
+func TestMissingAppNameError(t *testing.T) {
+	t.Run("includes APP_NAME and usage info", func(t *testing.T) {
+		dir := t.TempDir()
+		testChdir(t, dir)
+
+		err := missingAppNameError()
+		assert.Contains(t, err.Error(), "APP_NAME")
+		assert.Contains(t, err.Error(), "databricks.yml")
+		assert.NotContains(t, err.Error(), "Did you mean")
+	})
+
+	t.Run("includes hint when app.yml exists", func(t *testing.T) {
+		dir := t.TempDir()
+		testChdir(t, dir)
+		os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+
+		err := missingAppNameError()
+		assert.Contains(t, err.Error(), "Did you mean")
+		assert.Contains(t, err.Error(), filepath.Base(dir))
+	})
+
+	t.Run("gracefully handles deleted cwd", func(t *testing.T) {
+		dir := t.TempDir()
+		testChdir(t, dir)
+		os.Remove(dir)
+
+		err := missingAppNameError()
+		assert.Contains(t, err.Error(), "APP_NAME")
+		assert.NotContains(t, err.Error(), "Did you mean")
+	})
+}
+
+// testChdir changes to the given directory for the duration of the test.
+func testChdir(t *testing.T, dir string) {
+	t.Helper()
+	orig, err := os.Getwd()
+	assert.NoError(t, err)
+	assert.NoError(t, os.Chdir(dir))
+	t.Cleanup(func() { os.Chdir(orig) })
 }
 
 func TestMakeArgsOptionalWithBundle(t *testing.T) {
