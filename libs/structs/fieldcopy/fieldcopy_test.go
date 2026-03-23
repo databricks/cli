@@ -146,7 +146,7 @@ func TestDoTypeMismatchFieldSkipped(t *testing.T) {
 	src := srcTypeMismatch{Name: "alice", Age: "30"}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
-	assert.Equal(t, 0, dst.Age)   // not copied due to type mismatch
+	assert.Equal(t, 0, dst.Age)    // not copied due to type mismatch
 	assert.Equal(t, "", dst.Email) // no match on src
 }
 
