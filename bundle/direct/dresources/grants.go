@@ -133,8 +133,10 @@ func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) er
 	var changes []catalog.PermissionsChange
 	for _, ga := range state.EmbeddedSlice {
 		change := catalog.PermissionsChange{
-			Principal: ga.Principal,
-			Add:       ga.Privileges,
+			Principal:       ga.Principal,
+			Add:             ga.Privileges,
+			Remove:          nil,
+			ForceSendFields: nil,
 		}
 		// Remove all other privileges unless ALL_PRIVILEGES is being granted
 		// (it would conflict with appearing in both Add and Remove).
