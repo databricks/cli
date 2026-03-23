@@ -185,12 +185,10 @@ The following resources will be deleted:
   delete resources.schemas.my_schema
   delete resources.sql_warehouses.my_sql_warehouse
 
-This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete resources.schemas.my_schema
-
-This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+The following resources may contain data that will be lost upon deletion:
+  delete resources.alerts.my_alert
   delete resources.pipelines.my_pipeline
+  delete resources.schemas.my_schema
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 

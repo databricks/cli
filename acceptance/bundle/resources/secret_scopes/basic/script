@@ -27,7 +27,7 @@ export SECRET_SCOPE_NAME="test-scope-$UNIQUE_NAME-2"
 envsubst < databricks.yml.tmpl > databricks.yml
 
 trace $CLI bundle plan -o json | sort_acls_json.py > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
-trace $CLI bundle deploy
+trace $CLI bundle deploy --auto-approve
 
 # Capture API requests for verification. Terraform cleans up ACLs before deleting the scope, but direct does not, hence the difference in requests.
 trace print_requests.py //secrets > out.recreate-requests.$DATABRICKS_BUNDLE_ENGINE.txt

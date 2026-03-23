@@ -29,6 +29,9 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 The following resources will be deleted:
   delete resources.quality_monitors.monitor1
 
+The following resources may contain data that will be lost upon deletion:
+  delete resources.quality_monitors.monitor1
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default
 
 Deleting files...

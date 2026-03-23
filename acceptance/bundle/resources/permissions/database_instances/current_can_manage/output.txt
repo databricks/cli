@@ -61,6 +61,9 @@ Warning: unknown field: instance_profile_arn
 The following resources will be deleted:
   delete resources.database_instances.foo
 
+The following resources may contain data that will be lost upon deletion:
+  delete resources.database_instances.foo
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Deleting files...

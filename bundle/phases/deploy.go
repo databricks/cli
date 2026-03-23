@@ -26,6 +26,48 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
+// resourcesSafeToDestroy lists resource types that can be safely deleted or
+// recreated without a confirmation prompt. All other resource types require
+// approval because their deletion may cause non-recoverable data loss.
+//
+// Rubric: a resource is safe if it holds only ephemeral state or configuration
+// that is fully recoverable by redeploying the bundle.
+//
+// Resources NOT on this list (and thus requiring a warning):
+//   - schemas: contains tables, views, functions; force-delete cascades to all data.
+//   - volumes: managed volumes have files deleted from cloud within 30 days.
+//   - pipelines: deletion currently cascades to managed Streaming Tables and Materialized Views.
+//   - dashboards: non-reproducible URL/ID; UI-developed content may not be in bundle config.
+//   - catalogs: top-level UC container; force-delete cascades to all schemas/tables/data.
+//   - secret_scopes: secrets are added out-of-band and destroyed on scope deletion.
+//   - database_instances: purge deletes all Postgres data permanently.
+//   - database_catalogs: destroys associated Postgres database and all tables/data.
+//   - postgres_projects: cascades to delete all branches, databases, and endpoints.
+//   - postgres_branches: contains forked database data that is permanently lost.
+//   - models: deletion cascades to all model versions and artifacts.
+//   - registered_models: deletion cascades to all UC model versions.
+//   - experiments: runs, metrics, parameters, and artifacts are lost.
+//   - quality_monitors: drift/profile metrics tables may be lost or orphaned.
+//   - alerts: purge permanently destroys evaluation and notification history.
+var resourcesSafeToDestroy = map[string]bool{
+	// Jobs: run history persists independently of the job definition.
+	"jobs": true,
+	// Model serving endpoints: stateless config; inference tables live in UC independently.
+	"model_serving_endpoints": true,
+	// Clusters: pure ephemeral compute; all config is in the bundle.
+	"clusters": true,
+	// Apps: stateless; all config and code deployed from bundle.
+	"apps": true,
+	// SQL warehouses: compute endpoint; query history stored separately.
+	"sql_warehouses": true,
+	// External locations: metadata pointer only; underlying cloud storage is not deleted.
+	"external_locations": true,
+	// Synced database tables: PurgeData=false preserves synced data; source always preserved.
+	"synced_database_tables": true,
+	// Postgres endpoints: stateless connection config; data lives in branch/project.
+	"postgres_endpoints": true,
+}
+
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
 
@@ -35,49 +77,33 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	}
 
 	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
-	schemaActions := filterGroup(actions, "schemas", types...)
-	dltActions := filterGroup(actions, "pipelines", types...)
-	volumeActions := filterGroup(actions, "volumes", types...)
-	dashboardActions := filterGroup(actions, "dashboards", types...)
+
+	// Collect destructive actions for resource types that are NOT safe to destroy.
+	var destructiveActions []deployplan.Action
+	for _, action := range actions {
+		actionGroup := config.GetResourceTypeFromKey(action.ResourceKey)
+		if resourcesSafeToDestroy[actionGroup] {
+			continue
+		}
+		for _, t := range types {
+			if action.ActionType == t {
+				destructiveActions = append(destructiveActions, action)
+				break
+			}
+		}
+	}
 
 	// We don't need to display any prompts in this case.
-	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
+	if len(destructiveActions) == 0 {
 		return true, nil
 	}
 
-	// One or more UC schema resources will be deleted or recreated.
-	if len(schemaActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateSchemaMessage)
-		for _, action := range schemaActions {
-			if action.IsChildResource() {
-				continue
-			}
-			cmdio.Log(ctx, action)
+	cmdio.LogString(ctx, deleteOrRecreateResourceMessage)
+	for _, action := range destructiveActions {
+		if action.IsChildResource() {
+			continue
 		}
-	}
-
-	// One or more DLT pipelines is being recreated.
-	if len(dltActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreatePipelineMessage)
-		for _, action := range dltActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more volumes is being recreated.
-	if len(volumeActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateVolumeMessage)
-		for _, action := range volumeActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more dashboards is being recreated.
-	if len(dashboardActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDashboardMessage)
-		for _, action := range dashboardActions {
-			cmdio.Log(ctx, action)
-		}
+		cmdio.Log(ctx, action)
 	}
 
 	if b.AutoApprove {

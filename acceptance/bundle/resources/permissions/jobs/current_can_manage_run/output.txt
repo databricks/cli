@@ -36,6 +36,8 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.jobs.interim_gold_layer_job
 
+The following resources may contain data that will be lost upon deletion:
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green
 
 Deleting files...

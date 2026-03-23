@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -51,29 +52,21 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		cmdio.LogString(ctx, "")
 	}
 
-	schemaActions := filterGroup(deleteActions, "schemas", deployplan.Delete)
-	dltActions := filterGroup(deleteActions, "pipelines", deployplan.Delete)
-	volumeActions := filterGroup(deleteActions, "volumes", deployplan.Delete)
-
-	if len(schemaActions) > 0 {
-		cmdio.LogString(ctx, deleteSchemaMessage)
-		for _, a := range schemaActions {
-			cmdio.Log(ctx, a)
+	// Highlight resources that may cause data loss when destroyed.
+	var dataLossActions []deployplan.Action
+	for _, a := range deleteActions {
+		actionGroup := config.GetResourceTypeFromKey(a.ResourceKey)
+		if !resourcesSafeToDestroy[actionGroup] && a.ActionType == deployplan.Delete {
+			dataLossActions = append(dataLossActions, a)
 		}
-		cmdio.LogString(ctx, "")
 	}
 
-	if len(dltActions) > 0 {
-		cmdio.LogString(ctx, deletePipelineMessage)
-		for _, a := range dltActions {
-			cmdio.Log(ctx, a)
-		}
-		cmdio.LogString(ctx, "")
-	}
-
-	if len(volumeActions) > 0 {
-		cmdio.LogString(ctx, deleteVolumeMessage)
-		for _, a := range volumeActions {
+	if len(dataLossActions) > 0 {
+		cmdio.LogString(ctx, deleteResourceMessage)
+		for _, a := range dataLossActions {
+			if a.IsChildResource() {
+				continue
+			}
 			cmdio.Log(ctx, a)
 		}
 		cmdio.LogString(ctx, "")

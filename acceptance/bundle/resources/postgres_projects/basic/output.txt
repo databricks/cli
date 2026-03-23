@@ -64,6 +64,9 @@ Resources:
 The following resources will be deleted:
   delete resources.postgres_projects.my_project
 
+The following resources may contain data that will be lost upon deletion:
+  delete resources.postgres_projects.my_project
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-single-project-[UNIQUE_NAME]/default
 
 Deleting files...

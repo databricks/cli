@@ -57,10 +57,9 @@ The following resources will be deleted:
   delete resources.sql_warehouses.test_warehouse
   delete resources.volumes.test_volume
 
-This action will result in the deletion of the following volumes.
-For managed volumes, the files stored in the volume are also deleted from your
-cloud tenant within 30 days. For external volumes, the metadata about the volume
-is removed from the catalog, but the underlying files are not deleted:
+The following resources may contain data that will be lost upon deletion:
+  delete resources.experiments.test_experiment
+  delete resources.registered_models.test_model
   delete resources.volumes.test_volume
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default

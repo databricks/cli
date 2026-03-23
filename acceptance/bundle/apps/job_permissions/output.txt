@@ -33,6 +33,8 @@ The following resources will be deleted:
   delete resources.apps.my_app
   delete resources.jobs.my_job
 
+The following resources may contain data that will be lost upon deletion:
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/default
 
 Deleting files...

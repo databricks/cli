@@ -2,35 +2,12 @@ package phases
 
 // Messages for bundle deploy.
 const (
-	deleteOrRecreateSchemaMessage = `
-This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:`
-
-	deleteOrRecreatePipelineMessage = `
-This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
-restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
-properties such as the 'catalog' or 'storage' are changed:`
-
-	deleteOrRecreateVolumeMessage = `
-This action will result in the deletion or recreation of the following volumes.
-For managed volumes, the files stored in the volume are also deleted from your
-cloud tenant within 30 days. For external volumes, the metadata about the volume
-is removed from the catalog, but the underlying files are not deleted:`
-
-	deleteOrRecreateDashboardMessage = `
-This action will result in the deletion or recreation of the following dashboards.
-This will result in changed IDs and permanent URLs of the dashboards that will be recreated:`
+	deleteOrRecreateResourceMessage = `
+This action will result in the deletion or recreation of the following resources.
+Deleted or recreated resources may result in data loss or other irreversible consequences:`
 )
 
 // Messages for bundle destroy.
 const (
-	deleteSchemaMessage = `This action will result in the deletion of the following UC schemas. Any underlying data may be lost:`
-
-	deletePipelineMessage = `This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:`
-
-	deleteVolumeMessage = `This action will result in the deletion of the following volumes.
-For managed volumes, the files stored in the volume are also deleted from your
-cloud tenant within 30 days. For external volumes, the metadata about the volume
-is removed from the catalog, but the underlying files are not deleted:`
+	deleteResourceMessage = `The following resources may contain data that will be lost upon deletion:`
 )

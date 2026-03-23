@@ -56,6 +56,9 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 The following resources will be deleted:
   delete resources.alerts.myalert
 
+The following resources may contain data that will be lost upon deletion:
+  delete resources.alerts.myalert
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default
 
 Deleting files...

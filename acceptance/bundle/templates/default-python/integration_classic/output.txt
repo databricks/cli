@@ -92,8 +92,7 @@ The following resources will be deleted:
   delete resources.jobs.sample_job
   delete resources.pipelines.project_name_[UNIQUE_NAME]_etl
 
-This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+The following resources may contain data that will be lost upon deletion:
   delete resources.pipelines.project_name_[UNIQUE_NAME]_etl
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev
@@ -490,8 +489,7 @@ The following resources will be deleted:
   delete resources.jobs.sample_job
   delete resources.pipelines.project_name_[UNIQUE_NAME]_etl
 
-This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+The following resources may contain data that will be lost upon deletion:
   delete resources.pipelines.project_name_[UNIQUE_NAME]_etl
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod

@@ -17,8 +17,7 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.pipelines.foo
 
-This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+The following resources may contain data that will be lost upon deletion:
   delete resources.pipelines.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
