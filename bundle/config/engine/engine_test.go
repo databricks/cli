@@ -8,23 +8,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSettingFromEnv(t *testing.T) {
-	ctx := t.Context()
-	ctx = env.Set(ctx, EnvVar, "direct")
-	req, err := SettingFromEnv(ctx)
+func TestFromEnv(t *testing.T) {
+	ctx := env.Set(t.Context(), EnvVar, "direct")
+	e, err := FromEnv(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, EngineDirect, req.Type)
-	assert.Contains(t, req.Source, EnvVar)
+	assert.Equal(t, EngineDirect, e)
 }
 
-func TestSettingFromEnvNotSet(t *testing.T) {
-	req, err := SettingFromEnv(t.Context())
+func TestFromEnvNotSet(t *testing.T) {
+	e, err := FromEnv(t.Context())
 	require.NoError(t, err)
-	assert.Equal(t, EngineNotSet, req.Type)
+	assert.Equal(t, EngineNotSet, e)
 }
 
-func TestSettingFromEnvInvalid(t *testing.T) {
+func TestFromEnvInvalid(t *testing.T) {
 	ctx := env.Set(t.Context(), EnvVar, "invalid")
-	_, err := SettingFromEnv(ctx)
+	_, err := FromEnv(ctx)
 	assert.Error(t, err)
 }

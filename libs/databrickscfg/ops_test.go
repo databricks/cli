@@ -230,6 +230,11 @@ func TestGetDefaultProfile(t *testing.T) {
 			content: "[no-host]\naccount_id = abc\n\n[profile1]\nhost = https://abc\n",
 			want:    "profile1",
 		},
+		{
+			name:    "self-referencing __settings__ falls through to single profile",
+			content: "[__settings__]\ndefault_profile = __settings__\n\n[profile1]\nhost = https://abc\n",
+			want:    "profile1",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -278,6 +283,11 @@ func TestGetConfiguredDefaultProfile(t *testing.T) {
 		{
 			name:    "settings section without key",
 			content: "[__settings__]\n\n[profile1]\nhost = https://abc\n",
+			want:    "",
+		},
+		{
+			name:    "self-referencing __settings__ is ignored",
+			content: "[__settings__]\ndefault_profile = __settings__\n\n[profile1]\nhost = https://abc\n",
 			want:    "",
 		},
 	}

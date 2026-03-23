@@ -201,6 +201,7 @@ var RequiredFields = map[string][]string{
 	"resources.pipelines.*.clusters[*].init_scripts[*].workspace":                                               {"destination"},
 	"resources.pipelines.*.deployment":                                                                          {"kind"},
 	"resources.pipelines.*.gateway_definition":                                                                  {"connection_name", "gateway_storage_catalog", "gateway_storage_schema"},
+	"resources.pipelines.*.ingestion_definition.data_staging_options":                                           {"catalog_name", "schema_name"},
 	"resources.pipelines.*.ingestion_definition.full_refresh_window":                                            {"start_hour"},
 	"resources.pipelines.*.ingestion_definition.objects[*].report":                                              {"destination_catalog", "destination_schema", "source_url"},
 	"resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy": {"enabled"},

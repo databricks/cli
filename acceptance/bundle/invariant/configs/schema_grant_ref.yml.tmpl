@@ -1,0 +1,35 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  schemas:
+    schema_b:
+      catalog_name: main
+      name: test-schema-b-$UNIQUE_NAME
+      grants:
+        # make sure principals are not sorted, to better detect drift
+        - principal: $CURRENT_USER_NAME
+          privileges:
+            - USE_SCHEMA
+            - CREATE_TABLE
+        - principal: account users
+          privileges:
+            # make sure privileges are not sorted, to better detect drift
+            - USE_SCHEMA
+            - APPLY_TAG
+            - CREATE_VOLUME
+
+    schema_a:
+      catalog_name: main
+      name: test-schema-a-$UNIQUE_NAME
+      grants:
+        # Reference principal and privileges from schema_b by index
+        - principal: ${resources.schemas.schema_b.grants[0].principal}
+          privileges:
+            - USE_SCHEMA
+            - APPLY_TAG
+        - principal: ${resources.schemas.schema_b.grants[1].principal}
+          privileges:
+            - CREATE_TABLE
+            - USE_SCHEMA
+            - APPLY_TAG

@@ -1,0 +1,46 @@
+{
+ "state_version": 1,
+ "cli_version": "0.0.0-dev",
+ "lineage": "test-lineage",
+ "serial": 1,
+ "state": {
+  "resources.jobs.my_job": {
+   "__id__": "123",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "my job",
+    "queue": {
+     "enabled": true
+    }
+   }
+  },
+  "resources.jobs.my_job.permissions": {
+   "__id__": "/jobs/123",
+   "state": {
+    "object_id": "/jobs/123",
+    "permissions": [
+     {
+      "permission_level": "CAN_VIEW",
+      "group_name": "viewers"
+     },
+     {
+      "permission_level": "IS_OWNER",
+      "user_name": "tester@databricks.com"
+     }
+    ]
+   },
+   "depends_on": [
+    {
+     "node": "resources.jobs.my_job",
+     "label": "${resources.jobs.my_job.id}"
+    }
+   ]
+  }
+ }
+}

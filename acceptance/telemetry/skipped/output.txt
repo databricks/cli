@@ -1,5 +1,14 @@
 
 >>> [CLI] selftest send-telemetry --debug
 HH:MM:SS Info: start pid=PID version=[DEV_VERSION] args="[CLI], selftest, send-telemetry, --debug"
+HH:MM:SS Debug: GET /.well-known/databricks-config
+< HTTP/1.1 200 OK
+< {
+<   "oidc_endpoint": "[DATABRICKS_URL]/oidc",
+<   "workspace_id": "[NUMID]"
+< } pid=PID sdk=true
+HH:MM:SS Debug: Resolved workspace_id from host metadata: "[NUMID]" pid=PID sdk=true
+HH:MM:SS Debug: Resolved cloud from hostname: "AWS" pid=PID sdk=true
+HH:MM:SS Debug: Resolved discovery_url from host metadata: "[DATABRICKS_URL]/oidc/.well-known/oauth-authorization-server" pid=PID sdk=true
 HH:MM:SS Info: completed execution pid=PID exit_code=0
 HH:MM:SS Debug: telemetry upload is disabled. Not uploading any logs. pid=PID

@@ -21,7 +21,7 @@ const (
 	skillsRepoOwner      = "databricks"
 	skillsRepoName       = "databricks-agent-skills"
 	skillsRepoPath       = "skills"
-	defaultSkillsRepoRef = "v0.1.2"
+	defaultSkillsRepoRef = "v0.1.3"
 )
 
 func getSkillsRef(ctx context.Context) string {
