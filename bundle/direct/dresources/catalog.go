@@ -85,4 +85,3 @@ func (r *ResourceCatalog) DoDelete(ctx context.Context, id string) error {
 		ForceSendFields: nil,
 	})
 }
-

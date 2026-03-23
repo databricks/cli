@@ -72,4 +72,3 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 func (r *ResourceSqlWarehouse) DoDelete(ctx context.Context, oldID string) error {
 	return r.client.Warehouses.DeleteById(ctx, oldID)
 }
-

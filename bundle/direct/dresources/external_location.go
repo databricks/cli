@@ -80,4 +80,3 @@ func (r *ResourceExternalLocation) DoDelete(ctx context.Context, id string) erro
 		ForceSendFields: nil,
 	})
 }
-

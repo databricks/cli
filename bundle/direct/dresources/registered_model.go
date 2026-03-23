@@ -67,4 +67,3 @@ func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string) error
 		FullName: id,
 	})
 }
-

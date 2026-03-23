@@ -91,4 +91,3 @@ func (r *ResourceQualityMonitor) DoDelete(ctx context.Context, id string) error 
 	})
 	return err
 }
-

@@ -104,4 +104,3 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 // a) reads back state at least once and fails create if state is "failed"
 // b) repeatededly reads state until state is "running" (if spec.Contionous is set).
 // TODO: investigate if we need to mimic this behaviour or can rely on Create status code.
-

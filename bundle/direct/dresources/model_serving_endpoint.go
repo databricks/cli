@@ -295,4 +295,3 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) error {
 	return r.client.ServingEndpoints.DeleteByName(ctx, id)
 }
-

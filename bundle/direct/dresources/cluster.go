@@ -137,4 +137,3 @@ func forceNumWorkers(config *compute.ClusterSpec, fsf *[]string) {
 		*fsf = append(*fsf, "NumWorkers")
 	}
 }
-
