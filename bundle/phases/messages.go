@@ -24,6 +24,10 @@ This will result in changed IDs and permanent URLs of the dashboards that will b
 	deleteOrRecreateVectorSearchEndpointMessage = `
 This action will result in the deletion or recreation of the following Vector Search endpoints.
 Recreating an endpoint will cause downtime and any associated indexes will need to be re-synced:`
+
+	deleteOrRecreateVectorSearchIndexMessage = `
+This action will result in the deletion or recreation of the following Vector Search indexes.
+Recreating an index can require a full re-sync and may impact query availability until indexing completes:`
 )
 
 // Messages for bundle destroy.

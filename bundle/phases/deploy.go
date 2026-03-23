@@ -40,9 +40,10 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	volumeActions := filterGroup(actions, "volumes", types...)
 	dashboardActions := filterGroup(actions, "dashboards", types...)
 	vsEndpointActions := filterGroup(actions, "vector_search_endpoints", types...)
+	vsIndexActions := filterGroup(actions, "vector_search_indexes", types...)
 
 	// We don't need to display any prompts in this case.
-	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 && len(vsEndpointActions) == 0 {
+	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 && len(vsEndpointActions) == 0 && len(vsIndexActions) == 0 {
 		return true, nil
 	}
 
@@ -85,6 +86,14 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	if len(vsEndpointActions) != 0 {
 		cmdio.LogString(ctx, deleteOrRecreateVectorSearchEndpointMessage)
 		for _, action := range vsEndpointActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more vector search indexes is being recreated.
+	if len(vsIndexActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateVectorSearchIndexMessage)
+		for _, action := range vsIndexActions {
 			cmdio.Log(ctx, action)
 		}
 	}

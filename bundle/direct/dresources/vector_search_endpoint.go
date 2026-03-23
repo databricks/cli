@@ -26,10 +26,15 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 }
 
 func (*ResourceVectorSearchEndpoint) RemapState(info *vectorsearch.EndpointInfo) *vectorsearch.CreateEndpoint {
+	minQps := int64(0)
+	if info.ScalingInfo != nil {
+		minQps = info.ScalingInfo.RequestedMinQps
+	}
+
 	return &vectorsearch.CreateEndpoint{
 		BudgetPolicyId:  info.EffectiveBudgetPolicyId,
 		EndpointType:    info.EndpointType,
-		MinQps:          0,
+		MinQps:          minQps,
 		Name:            info.Name,
 		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](info.ForceSendFields),
 	}
