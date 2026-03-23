@@ -16,6 +16,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
+	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
