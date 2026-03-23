@@ -12,8 +12,8 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v1.0.0
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
-	github.com/databricks/databricks-sdk-go v0.120.0 // Apache 2.0
-	github.com/fatih/color v1.18.0 // MIT
+	github.com/databricks/databricks-sdk-go v0.126.0 // Apache 2.0
+	github.com/fatih/color v1.19.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD 2-Clause
@@ -82,7 +82,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect

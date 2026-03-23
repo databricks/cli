@@ -98,8 +98,6 @@ test-slow-acc:
 .PHONY: test-update
 test-update:
 	-go test ./acceptance -run '^TestAccept$$' -update -timeout=${LOCAL_TIMEOUT}
-	@# at the moment second pass is required because some tests show diff against output of another test for easier review
-	-go test ./acceptance -run '^TestAccept$$' -update -timeout=${LOCAL_TIMEOUT}
 
 # Updates acceptance test output for template tests only
 .PHONY: test-update-templates
