@@ -35,11 +35,7 @@ func (*ResourceModelServingEndpoint) PrepareState(input *resources.ModelServingE
 }
 
 // autoCaptureConfigCopy maps AutoCaptureConfigOutput to AutoCaptureConfigInput.
-var autoCaptureConfigCopy = fieldcopy.Copy[serving.AutoCaptureConfigOutput, serving.AutoCaptureConfigInput]{
-	SkipSrc: []string{
-		"State",
-	},
-}
+var autoCaptureConfigCopy = fieldcopy.Copy[serving.AutoCaptureConfigOutput, serving.AutoCaptureConfigInput]{}
 
 func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *serving.AutoCaptureConfigInput {
 	if output == nil {
@@ -50,14 +46,7 @@ func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *se
 }
 
 // servedEntityCopy maps ServedEntityOutput to ServedEntityInput.
-var servedEntityCopy = fieldcopy.Copy[serving.ServedEntityOutput, serving.ServedEntityInput]{
-	SkipSrc: []string{
-		"CreationTimestamp",
-		"Creator",
-		"FoundationModel",
-		"State",
-	},
-}
+var servedEntityCopy = fieldcopy.Copy[serving.ServedEntityOutput, serving.ServedEntityInput]{}
 
 func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.ServedEntityInput {
 	entities := make([]serving.ServedEntityInput, len(output))
@@ -81,25 +70,7 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 }
 
 // servingRemapCopy maps ServingEndpointDetailed (remote GET response) to CreateServingEndpoint (local state).
-var servingRemapCopy = fieldcopy.Copy[serving.ServingEndpointDetailed, serving.CreateServingEndpoint]{
-	SkipSrc: []string{
-		"Config",
-		"CreationTimestamp",
-		"Creator",
-		"DataPlaneInfo",
-		"EndpointUrl",
-		"Id",
-		"LastUpdatedTimestamp",
-		"PendingConfig",
-		"PermissionLevel",
-		"State",
-		"Task",
-	},
-	SkipDst: []string{
-		"Config",     // Requires type conversion via configOutputToInput.
-		"RateLimits", // Deprecated field, not returned by API.
-	},
-}
+var servingRemapCopy = fieldcopy.Copy[serving.ServingEndpointDetailed, serving.CreateServingEndpoint]{}
 
 func (*ResourceModelServingEndpoint) RemapState(state *RefreshOutput) *serving.CreateServingEndpoint {
 	details := state.EndpointDetails

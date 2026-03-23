@@ -1,13 +1,19 @@
 package dresources
 
 import (
+	"context"
+	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/databricks/cli/libs/testdiff"
 )
 
-func TestFieldCopyValidate(t *testing.T) {
-	copies := []interface{ Validate() error }{
+func TestFieldCopyReport(t *testing.T) {
+	ctx := context.Background()
+	ctx, _ = testdiff.WithReplacementsMap(ctx)
+
+	copies := []interface{ Report() string }{
 		// cluster
 		&clusterRemapCopy,
 		&clusterCreateCopy,
@@ -23,7 +29,12 @@ func TestFieldCopyValidate(t *testing.T) {
 		&servedEntityCopy,
 		&servingRemapCopy,
 	}
+
+	var buf strings.Builder
 	for _, c := range copies {
-		require.NoError(t, c.Validate())
+		buf.WriteString(c.Report())
 	}
+
+	goldenPath := filepath.Join("testdata", "fieldcopy_report.txt")
+	testdiff.AssertOutput(t, ctx, buf.String(), "fieldcopy report", goldenPath)
 }

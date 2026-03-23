@@ -1,15 +1,16 @@
 // Package fieldcopy provides reflection-based struct-to-struct field copying
-// with test-time completeness validation. Field mappings are computed once
-// on first use and cached for subsequent calls.
+// with test-time completeness validation via golden files.
 //
+// Field mappings are computed once on first use and cached for subsequent calls.
 // If both Src and Dst have a ForceSendFields []string field, it is handled
 // automatically: source values are filtered to only include names of exported
-// Dst fields that are being copied (not in SkipDst).
+// Dst fields that are being copied.
 package fieldcopy
 
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -18,16 +19,12 @@ const forceSendFieldsName = "ForceSendFields"
 
 // Copy describes a field-by-field mapping from Src to Dst struct type.
 // Fields with matching names and assignable types are copied automatically.
+// Unmatched fields are left at zero and reported via [Copy.Report] for
+// golden file testing.
 type Copy[Src, Dst any] struct {
 	// Rename maps destination field name to source field name for fields
 	// with different names in source and destination.
 	Rename map[string]string
-
-	// SkipSrc lists source field names intentionally not copied.
-	SkipSrc []string
-
-	// SkipDst lists destination field names intentionally left at zero value.
-	SkipDst []string
 
 	once   sync.Once
 	copyFn func(src *Src) Dst
@@ -51,39 +48,26 @@ func (c *Copy[Src, Dst]) build() func(*Src) Dst {
 	srcType := reflect.TypeFor[Src]()
 	dstType := reflect.TypeFor[Dst]()
 
-	skipDst := toSet(c.SkipDst)
-
-	// Detect auto-handling of ForceSendFields: both types must have it as []string
-	// and it must not be in SkipDst (which would mean manual handling).
+	// Detect auto-handling of ForceSendFields: both types must have it as []string.
 	var autoFSF bool
 	var fsfSrcIdx, fsfDstIdx []int
 	var validFSFNames map[string]bool
 
 	stringSliceType := reflect.TypeFor[[]string]()
-	if !skipDst[forceSendFieldsName] {
-		dstFSF, dstOK := dstType.FieldByName(forceSendFieldsName)
-		srcFSF, srcOK := srcType.FieldByName(forceSendFieldsName)
-		if dstOK && srcOK && dstFSF.Type == stringSliceType && srcFSF.Type == stringSliceType {
-			autoFSF = true
-			fsfSrcIdx = srcFSF.Index
-			fsfDstIdx = dstFSF.Index
-
-			// Build set of valid field names: exported dst fields that are being copied.
-			validFSFNames = make(map[string]bool)
-			for i := range dstType.NumField() {
-				f := dstType.Field(i)
-				if f.IsExported() && f.Name != forceSendFieldsName && !skipDst[f.Name] {
-					validFSFNames[f.Name] = true
-				}
-			}
-		}
+	dstFSF, dstOK := dstType.FieldByName(forceSendFieldsName)
+	srcFSF, srcOK := srcType.FieldByName(forceSendFieldsName)
+	if dstOK && srcOK && dstFSF.Type == stringSliceType && srcFSF.Type == stringSliceType {
+		autoFSF = true
+		fsfSrcIdx = srcFSF.Index
+		fsfDstIdx = dstFSF.Index
+		validFSFNames = make(map[string]bool)
 	}
 
 	var ops []fieldOp
 
 	for i := range dstType.NumField() {
 		df := dstType.Field(i)
-		if !df.IsExported() || skipDst[df.Name] {
+		if !df.IsExported() {
 			continue
 		}
 		if autoFSF && df.Name == forceSendFieldsName {
@@ -103,6 +87,9 @@ func (c *Copy[Src, Dst]) build() func(*Src) Dst {
 		}
 
 		ops = append(ops, fieldOp{dstIndex: df.Index, srcIndex: sf.Index})
+		if autoFSF {
+			validFSFNames[df.Name] = true
+		}
 	}
 
 	return func(src *Src) Dst {
@@ -131,51 +118,46 @@ func (c *Copy[Src, Dst]) build() func(*Src) Dst {
 	}
 }
 
-// Validate checks that the mapping is complete:
-//   - Every exported Dst field is either matched in Src, in Rename, or in SkipDst.
-//   - Every exported Src field is either matched in Dst, a Rename source, or in SkipSrc.
-//   - No stale entries in SkipSrc, SkipDst, or Rename.
-//
-// ForceSendFields is considered auto-handled when both types have it as []string
-// and it is not in SkipDst.
-func (c *Copy[Src, Dst]) Validate() error {
+// Report returns a human-readable summary of unmatched fields for golden file testing.
+// Fields that exist on Src but have no match on Dst are listed as "src not copied".
+// Fields that exist on Dst but have no match on Src are listed as "dst not set".
+func (c *Copy[Src, Dst]) Report() string {
 	srcType := reflect.TypeFor[Src]()
 	dstType := reflect.TypeFor[Dst]()
+	return c.report(srcType, dstType)
+}
 
-	skipSrc := toSet(c.SkipSrc)
-	skipDst := toSet(c.SkipDst)
+func (c *Copy[Src, Dst]) report(srcType, dstType reflect.Type) string {
+	// Build rename lookups.
+	renameTargets := make(map[string]bool) // src names used by Rename
+	if c.Rename != nil {
+		for _, srcName := range c.Rename {
+			renameTargets[srcName] = true
+		}
+	}
 
 	// Detect auto-handled ForceSendFields.
 	autoFSF := false
 	stringSliceType := reflect.TypeFor[[]string]()
-	if !skipDst[forceSendFieldsName] {
-		dstFSF, dstOK := dstType.FieldByName(forceSendFieldsName)
-		srcFSF, srcOK := srcType.FieldByName(forceSendFieldsName)
-		if dstOK && srcOK && dstFSF.Type == stringSliceType && srcFSF.Type == stringSliceType {
-			autoFSF = true
+	if dstFSF, ok := dstType.FieldByName(forceSendFieldsName); ok {
+		if srcFSF, ok := srcType.FieldByName(forceSendFieldsName); ok {
+			if dstFSF.Type == stringSliceType && srcFSF.Type == stringSliceType {
+				autoFSF = true
+			}
 		}
 	}
 
-	// Build set of rename targets (src field names used by Rename).
-	renameTargets := make(map[string]string) // src name → dst name
-	if c.Rename != nil {
-		for dstName, srcName := range c.Rename {
-			renameTargets[srcName] = dstName
-		}
-	}
-
-	var errs []string
-
-	// Check every exported dst field is handled.
+	// Collect matched dst field names (including renames).
+	matchedDst := make(map[string]bool)
+	matchedSrc := make(map[string]bool)
 	for i := range dstType.NumField() {
 		df := dstType.Field(i)
 		if !df.IsExported() {
 			continue
 		}
-		if skipDst[df.Name] {
-			continue
-		}
 		if autoFSF && df.Name == forceSendFieldsName {
+			matchedDst[df.Name] = true
+			matchedSrc[df.Name] = true
 			continue
 		}
 
@@ -187,72 +169,78 @@ func (c *Copy[Src, Dst]) Validate() error {
 		}
 
 		sf, ok := srcType.FieldByName(srcName)
-		if !ok {
-			errs = append(errs, fmt.Sprintf("dst field %q: no matching field %q on %v (add to Rename or SkipDst)", df.Name, srcName, srcType))
-			continue
-		}
-		if !sf.Type.AssignableTo(df.Type) {
-			errs = append(errs, fmt.Sprintf("dst field %q: type %v not assignable from src type %v (add to SkipDst and handle in post-processing)", df.Name, df.Type, sf.Type))
+		if ok && sf.Type.AssignableTo(df.Type) {
+			matchedDst[df.Name] = true
+			matchedSrc[srcName] = true
 		}
 	}
 
-	// Check every exported src field is consumed.
+	// Find unmatched src fields.
+	var unmatchedSrc []string
 	for i := range srcType.NumField() {
 		sf := srcType.Field(i)
-		if !sf.IsExported() {
+		if !sf.IsExported() || matchedSrc[sf.Name] || renameTargets[sf.Name] {
 			continue
 		}
-		if skipSrc[sf.Name] {
-			continue
-		}
-		if autoFSF && sf.Name == forceSendFieldsName {
-			continue
-		}
-		if _, ok := renameTargets[sf.Name]; ok {
-			continue
-		}
-		if _, ok := dstType.FieldByName(sf.Name); ok {
-			continue
-		}
-		errs = append(errs, fmt.Sprintf("src field %q on %v not consumed (add to dst %v, Rename, or SkipSrc)", sf.Name, srcType, dstType))
+		unmatchedSrc = append(unmatchedSrc, sf.Name)
 	}
 
-	// Check for stale SkipSrc entries.
-	for _, name := range c.SkipSrc {
-		if _, ok := srcType.FieldByName(name); !ok {
-			errs = append(errs, fmt.Sprintf("stale SkipSrc entry %q: field does not exist on %v", name, srcType))
+	// Find unmatched dst fields.
+	var unmatchedDst []string
+	for i := range dstType.NumField() {
+		df := dstType.Field(i)
+		if !df.IsExported() || matchedDst[df.Name] {
+			continue
 		}
-	}
-
-	// Check for stale SkipDst entries.
-	for _, name := range c.SkipDst {
-		if _, ok := dstType.FieldByName(name); !ok {
-			errs = append(errs, fmt.Sprintf("stale SkipDst entry %q: field does not exist on %v", name, dstType))
-		}
+		unmatchedDst = append(unmatchedDst, df.Name)
 	}
 
 	// Check for stale Rename entries.
+	var staleRenames []string
 	if c.Rename != nil {
 		for dstName, srcName := range c.Rename {
+			var issues []string
 			if _, ok := dstType.FieldByName(dstName); !ok {
-				errs = append(errs, fmt.Sprintf("stale Rename key %q: field does not exist on %v", dstName, dstType))
+				issues = append(issues, fmt.Sprintf("dst %q not found", dstName))
 			}
 			if _, ok := srcType.FieldByName(srcName); !ok {
-				errs = append(errs, fmt.Sprintf("stale Rename value %q: field does not exist on %v", srcName, srcType))
+				issues = append(issues, fmt.Sprintf("src %q not found", srcName))
 			}
+			if len(issues) > 0 {
+				staleRenames = append(staleRenames, fmt.Sprintf("%s→%s (%s)", dstName, srcName, strings.Join(issues, ", ")))
+			}
+		}
+		sort.Strings(staleRenames)
+	}
+
+	var buf strings.Builder
+	fmt.Fprintf(&buf, "%v → %v", srcType, dstType)
+
+	if len(unmatchedSrc) == 0 && len(unmatchedDst) == 0 && len(staleRenames) == 0 {
+		buf.WriteString(": all fields matched\n")
+		return buf.String()
+	}
+
+	buf.WriteString("\n")
+
+	if len(unmatchedSrc) > 0 {
+		buf.WriteString("  src not copied:\n")
+		for _, name := range unmatchedSrc {
+			fmt.Fprintf(&buf, "    - %s\n", name)
+		}
+	}
+	if len(unmatchedDst) > 0 {
+		buf.WriteString("  dst not set:\n")
+		for _, name := range unmatchedDst {
+			fmt.Fprintf(&buf, "    - %s\n", name)
+		}
+	}
+	if len(staleRenames) > 0 {
+		buf.WriteString("  stale renames:\n")
+		for _, s := range staleRenames {
+			fmt.Fprintf(&buf, "    - %s\n", s)
 		}
 	}
 
-	if len(errs) > 0 {
-		return fmt.Errorf("fieldcopy.Validate[%v → %v]:\n  %s", srcType, dstType, strings.Join(errs, "\n  "))
-	}
-	return nil
-}
-
-func toSet(ss []string) map[string]bool {
-	m := make(map[string]bool, len(ss))
-	for _, s := range ss {
-		m[s] = true
-	}
-	return m
+	return buf.String()
 }

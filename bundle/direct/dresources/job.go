@@ -101,11 +101,7 @@ func makeJobRemote(job *jobs.Job) *JobRemote {
 }
 
 func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, *JobRemote, error) {
-	request, err := makeCreateJob(*config)
-	if err != nil {
-		return "", nil, err
-	}
-	response, err := r.client.Jobs.Create(ctx, request)
+	response, err := r.client.Jobs.Create(ctx, jobCreateCopy.Do(config))
 	if err != nil {
 		return "", nil, err
 	}
@@ -129,15 +125,7 @@ func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
 }
 
 // jobCreateCopy maps JobSettings (local state) to CreateJob (API request).
-var jobCreateCopy = fieldcopy.Copy[jobs.JobSettings, jobs.CreateJob]{
-	SkipDst: []string{
-		"AccessControlList", // Not supported by DABs.
-	},
-}
-
-func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
-	return jobCreateCopy.Do(&config), nil
-}
+var jobCreateCopy = fieldcopy.Copy[jobs.JobSettings, jobs.CreateJob]{}
 
 func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
 	idInt, err := parseJobID(id)

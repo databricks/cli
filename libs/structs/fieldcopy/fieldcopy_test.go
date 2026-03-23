@@ -53,10 +53,8 @@ type dstSmall struct {
 	Age  int
 }
 
-func TestDoSkipSrc(t *testing.T) {
-	c := fieldcopy.Copy[srcWithExtra, dstSmall]{
-		SkipSrc: []string{"Extra"},
-	}
+func TestDoUnmatchedFieldsIgnored(t *testing.T) {
+	c := fieldcopy.Copy[srcWithExtra, dstSmall]{}
 	src := srcWithExtra{Name: "alice", Age: 30, Extra: "ignored"}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -69,11 +67,8 @@ type dstWithDefault struct {
 	Default string
 }
 
-func TestDoSkipDst(t *testing.T) {
-	c := fieldcopy.Copy[srcBasic, dstWithDefault]{
-		SkipSrc: []string{"Email"},
-		SkipDst: []string{"Default"},
-	}
+func TestDoUnmatchedDstLeftAtZero(t *testing.T) {
+	c := fieldcopy.Copy[srcBasic, dstWithDefault]{}
 	src := srcBasic{Name: "alice", Age: 30, Email: "a@b.c"}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -101,81 +96,44 @@ func TestDoRename(t *testing.T) {
 	assert.Equal(t, 30, dst.Age)
 }
 
-func TestValidateBasicPass(t *testing.T) {
+func TestReportAllMatched(t *testing.T) {
 	c := fieldcopy.Copy[srcBasic, dstBasic]{}
-	require.NoError(t, c.Validate())
+	report := c.Report()
+	assert.Contains(t, report, "all fields matched")
 }
 
-func TestValidateWithSkips(t *testing.T) {
-	c := fieldcopy.Copy[srcWithExtra, dstWithDefault]{
-		SkipSrc: []string{"Extra"},
-		SkipDst: []string{"Default"},
-	}
-	require.NoError(t, c.Validate())
+func TestReportUnmatchedSrc(t *testing.T) {
+	c := fieldcopy.Copy[srcWithExtra, dstSmall]{}
+	report := c.Report()
+	assert.Contains(t, report, "src not copied:")
+	assert.Contains(t, report, "- Extra")
 }
 
-func TestValidateWithRename(t *testing.T) {
+func TestReportUnmatchedDst(t *testing.T) {
+	c := fieldcopy.Copy[srcBasic, dstWithDefault]{}
+	report := c.Report()
+	assert.Contains(t, report, "dst not set:")
+	assert.Contains(t, report, "- Default")
+}
+
+func TestReportWithRename(t *testing.T) {
 	c := fieldcopy.Copy[srcRenamed, dstRenamed]{
 		Rename: map[string]string{"Name": "FullName"},
 	}
-	require.NoError(t, c.Validate())
+	report := c.Report()
+	assert.Contains(t, report, "all fields matched")
 }
 
-func TestValidateUnhandledDstField(t *testing.T) {
-	c := fieldcopy.Copy[dstSmall, dstWithDefault]{}
-	err := c.Validate()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `dst field "Default"`)
-	assert.Contains(t, err.Error(), "SkipDst")
-}
-
-func TestValidateUnconsumedSrcField(t *testing.T) {
-	c := fieldcopy.Copy[srcWithExtra, dstSmall]{}
-	err := c.Validate()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `src field "Extra"`)
-	assert.Contains(t, err.Error(), "SkipSrc")
-}
-
-func TestValidateStaleSkipSrc(t *testing.T) {
-	c := fieldcopy.Copy[srcBasic, dstBasic]{
-		SkipSrc: []string{"NonExistent"},
-	}
-	err := c.Validate()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `stale SkipSrc entry "NonExistent"`)
-}
-
-func TestValidateStaleSkipDst(t *testing.T) {
-	c := fieldcopy.Copy[srcBasic, dstBasic]{
-		SkipDst: []string{"NonExistent"},
-	}
-	err := c.Validate()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `stale SkipDst entry "NonExistent"`)
-}
-
-func TestValidateStaleRenameKey(t *testing.T) {
+func TestReportStaleRename(t *testing.T) {
 	c := fieldcopy.Copy[srcRenamed, dstRenamed]{
 		Rename: map[string]string{
 			"Name":        "FullName",
 			"NonExistent": "Age",
 		},
 	}
-	err := c.Validate()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `stale Rename key "NonExistent"`)
-}
-
-func TestValidateStaleRenameValue(t *testing.T) {
-	c := fieldcopy.Copy[srcRenamed, dstRenamed]{
-		Rename: map[string]string{
-			"Name": "NonExistent",
-		},
-	}
-	err := c.Validate()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `stale Rename value "NonExistent"`)
+	report := c.Report()
+	assert.Contains(t, report, "stale renames:")
+	assert.Contains(t, report, "NonExistent")
 }
 
 type srcTypeMismatch struct {
@@ -183,20 +141,21 @@ type srcTypeMismatch struct {
 	Age  string // string instead of int
 }
 
-func TestValidateTypeMismatch(t *testing.T) {
-	c := fieldcopy.Copy[srcTypeMismatch, dstBasic]{
-		SkipDst: []string{"Age", "Email"},
-	}
-	require.NoError(t, c.Validate())
+func TestDoTypeMismatchFieldSkipped(t *testing.T) {
+	c := fieldcopy.Copy[srcTypeMismatch, dstBasic]{}
+	src := srcTypeMismatch{Name: "alice", Age: "30"}
+	dst := c.Do(&src)
+	assert.Equal(t, "alice", dst.Name)
+	assert.Equal(t, 0, dst.Age)   // not copied due to type mismatch
+	assert.Equal(t, "", dst.Email) // no match on src
+}
 
-	// Without SkipDst, the type mismatch is caught.
-	c2 := fieldcopy.Copy[srcTypeMismatch, dstBasic]{
-		SkipDst: []string{"Email"},
-	}
-	err := c2.Validate()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `dst field "Age"`)
-	assert.Contains(t, err.Error(), "not assignable")
+func TestReportTypeMismatch(t *testing.T) {
+	c := fieldcopy.Copy[srcTypeMismatch, dstBasic]{}
+	report := c.Report()
+	// Age exists on both but types don't match, so it's unmatched on both sides.
+	assert.Contains(t, report, "src not copied:")
+	assert.Contains(t, report, "dst not set:")
 }
 
 type srcPointer struct {
@@ -312,16 +271,6 @@ func TestDoNestedStructPointer(t *testing.T) {
 	assert.Equal(t, 42, dst.Config.Value)
 }
 
-func TestValidateMultipleErrors(t *testing.T) {
-	c := fieldcopy.Copy[srcWithExtra, dstWithDefault]{
-		// Missing: SkipSrc for Extra, SkipDst for Default
-	}
-	err := c.Validate()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `"Extra"`)
-	assert.Contains(t, err.Error(), `"Default"`)
-}
-
 // Verify that private (unexported) fields are ignored.
 type srcPrivate struct {
 	Name    string
@@ -333,10 +282,8 @@ type dstPrivate struct {
 	private int //nolint:unused
 }
 
-func TestValidateIgnoresUnexportedFields(t *testing.T) {
+func TestDoIgnoresUnexportedFields(t *testing.T) {
 	c := fieldcopy.Copy[srcPrivate, dstPrivate]{}
-	require.NoError(t, c.Validate())
-
 	dst := c.Do(&srcPrivate{Name: "test"})
 	assert.Equal(t, "test", dst.Name)
 }
@@ -357,9 +304,7 @@ type dstFSF struct {
 }
 
 func TestDoForceSendFieldsAutoFiltered(t *testing.T) {
-	c := fieldcopy.Copy[srcFSF, dstFSF]{
-		SkipSrc: []string{"Extra"},
-	}
+	c := fieldcopy.Copy[srcFSF, dstFSF]{}
 	src := srcFSF{
 		Name:            "alice",
 		Age:             30,
@@ -373,9 +318,7 @@ func TestDoForceSendFieldsAutoFiltered(t *testing.T) {
 }
 
 func TestDoForceSendFieldsNil(t *testing.T) {
-	c := fieldcopy.Copy[srcFSF, dstFSF]{
-		SkipSrc: []string{"Extra"},
-	}
+	c := fieldcopy.Copy[srcFSF, dstFSF]{}
 	src := srcFSF{Name: "alice", ForceSendFields: nil}
 	dst := c.Do(&src)
 	assert.Equal(t, "alice", dst.Name)
@@ -383,60 +326,16 @@ func TestDoForceSendFieldsNil(t *testing.T) {
 }
 
 func TestDoForceSendFieldsEmpty(t *testing.T) {
-	c := fieldcopy.Copy[srcFSF, dstFSF]{
-		SkipSrc: []string{"Extra"},
-	}
+	c := fieldcopy.Copy[srcFSF, dstFSF]{}
 	src := srcFSF{Name: "alice", ForceSendFields: []string{}}
 	dst := c.Do(&src)
 	assert.Nil(t, dst.ForceSendFields)
 }
 
-func TestDoForceSendFieldsExcludesSkipDst(t *testing.T) {
-	c := fieldcopy.Copy[srcFSF, dstFSF]{
-		SkipSrc: []string{"Extra"},
-		SkipDst: []string{"Age"},
-	}
-	src := srcFSF{
-		Name:            "alice",
-		Age:             30,
-		ForceSendFields: []string{"Name", "Age"},
-	}
-	dst := c.Do(&src)
-	// "Age" should be filtered out since it's in SkipDst.
-	assert.Equal(t, []string{"Name"}, dst.ForceSendFields)
-	// Age should NOT be copied (it's in SkipDst).
-	assert.Equal(t, 0, dst.Age)
-}
-
 func TestDoForceSendFieldsAllFiltered(t *testing.T) {
-	c := fieldcopy.Copy[srcFSF, dstFSF]{
-		SkipSrc: []string{"Extra"},
-	}
+	c := fieldcopy.Copy[srcFSF, dstFSF]{}
 	src := srcFSF{ForceSendFields: []string{"Extra", "NonExistent"}}
 	dst := c.Do(&src)
 	// All entries filtered out → nil.
 	assert.Nil(t, dst.ForceSendFields)
-}
-
-func TestValidateForceSendFieldsAutoHandled(t *testing.T) {
-	c := fieldcopy.Copy[srcFSF, dstFSF]{
-		SkipSrc: []string{"Extra"},
-	}
-	// ForceSendFields should not need to be in SkipSrc or SkipDst.
-	require.NoError(t, c.Validate())
-}
-
-func TestDoForceSendFieldsManualWhenInSkipDst(t *testing.T) {
-	c := fieldcopy.Copy[srcFSF, dstFSF]{
-		SkipSrc: []string{"Extra", "ForceSendFields"},
-		SkipDst: []string{"ForceSendFields"},
-	}
-	src := srcFSF{
-		Name:            "alice",
-		ForceSendFields: []string{"Name", "Extra"},
-	}
-	dst := c.Do(&src)
-	// ForceSendFields in SkipDst → not auto-handled, left at nil.
-	assert.Nil(t, dst.ForceSendFields)
-	require.NoError(t, c.Validate())
 }

@@ -1,0 +1,76 @@
+compute.ClusterDetails → compute.ClusterSpec
+  src not copied:
+    - ClusterCores
+    - ClusterId
+    - ClusterLogStatus
+    - ClusterMemoryMb
+    - ClusterSource
+    - CreatorUserName
+    - DefaultTags
+    - Driver
+    - Executors
+    - JdbcPort
+    - LastRestartedTime
+    - LastStateLossTime
+    - SparkContextId
+    - Spec
+    - StartTime
+    - State
+    - StateMessage
+    - TerminatedTime
+    - TerminationReason
+  dst not set:
+    - ApplyPolicyDefaultValues
+compute.ClusterSpec → compute.CreateCluster
+  dst not set:
+    - CloneFrom
+compute.ClusterSpec → compute.EditCluster
+  dst not set:
+    - ClusterId
+jobs.JobSettings → jobs.CreateJob
+  dst not set:
+    - AccessControlList
+pipelines.PipelineSpec → pipelines.CreatePipeline
+  dst not set:
+    - AllowDuplicateNames
+    - DryRun
+    - RunAs
+pipelines.GetPipelineResponse → dresources.PipelineRemote
+  src not copied:
+    - Name
+    - RunAs
+    - Spec
+    - ForceSendFields
+  dst not set:
+    - CreatePipeline
+pipelines.CreatePipeline → pipelines.EditPipeline
+  src not copied:
+    - DryRun
+  dst not set:
+    - ExpectedLastModified
+    - PipelineId
+serving.AutoCaptureConfigOutput → serving.AutoCaptureConfigInput
+  src not copied:
+    - State
+serving.ServedEntityOutput → serving.ServedEntityInput
+  src not copied:
+    - CreationTimestamp
+    - Creator
+    - FoundationModel
+    - State
+serving.ServingEndpointDetailed → serving.CreateServingEndpoint
+  src not copied:
+    - Config
+    - CreationTimestamp
+    - Creator
+    - DataPlaneInfo
+    - EndpointUrl
+    - Id
+    - LastUpdatedTimestamp
+    - PendingConfig
+    - PermissionLevel
+    - State
+    - Task
+  dst not set:
+    - Config
+    - RateLimits
