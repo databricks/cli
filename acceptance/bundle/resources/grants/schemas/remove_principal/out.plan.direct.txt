@@ -1,3 +1,1 @@
-update schemas.grants_schema.grants
-
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
