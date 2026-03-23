@@ -431,10 +431,10 @@ func TestIdempotentInstallUpdatesNewVersions(t *testing.T) {
 	err = InstallSkillsForAgents(ctx, src2, []*agents.Agent{agent}, InstallOptions{})
 	require.NoError(t, err)
 
-	// Both skills should be fetched because the release tag changed.
-	// (databricks-sql has a new version, databricks-jobs has the same version
-	// but state was from v0.1.0 release.)
+	// Only databricks-sql should be re-fetched (version changed from 0.1.0 to 0.2.0).
+	// databricks-jobs keeps version 0.1.0 and should be skipped by the idempotency check.
 	assert.Contains(t, fetchedSkills, "databricks-sql")
+	assert.NotContains(t, fetchedSkills, "databricks-jobs")
 
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	state, err := LoadState(globalDir)
@@ -477,6 +477,95 @@ func TestLegacyDetectLegacyDir(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, stderr.String(), "Found skills installed before state tracking was added.")
+}
+
+func TestIdempotentInstallReinstallsForNewAgent(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	agent1 := testAgent(tmp)
+
+	// First install for agent1.
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent1}, InstallOptions{})
+	require.NoError(t, err)
+
+	// Create a second agent.
+	agent2Dir := filepath.Join(tmp, ".second-agent")
+	require.NoError(t, os.MkdirAll(agent2Dir, 0o755))
+	agent2 := &agents.Agent{
+		Name:        "second-agent",
+		DisplayName: "Second Agent",
+		ConfigDir: func(_ context.Context) (string, error) {
+			return agent2Dir, nil
+		},
+	}
+
+	// Track fetch calls for second install (with both agents).
+	fetchCalls := 0
+	orig := fetchFileFn
+	t.Cleanup(func() { fetchFileFn = orig })
+	fetchFileFn = func(_ context.Context, _, skillName, filePath string) ([]byte, error) {
+		fetchCalls++
+		return []byte("# " + skillName + "/" + filePath), nil
+	}
+
+	// Second install with both agents, same version.
+	err = InstallSkillsForAgents(ctx, src, []*agents.Agent{agent1, agent2}, InstallOptions{})
+	require.NoError(t, err)
+
+	// Skills should be re-fetched because agent2 doesn't have them yet.
+	assert.Greater(t, fetchCalls, 0, "should re-install skills for new agent")
+
+	// Verify agent2 got the skills.
+	agent2SkillsDir := filepath.Join(agent2Dir, "skills")
+	_, err = os.Stat(filepath.Join(agent2SkillsDir, "databricks-sql"))
+	assert.NoError(t, err, "agent2 should have databricks-sql")
+}
+
+func TestLegacyTargetedInstallBlocked(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+
+	// Create skills on disk at canonical location but no state file (legacy).
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
+
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	agent := testAgent(tmp)
+
+	// Targeted install should fail on legacy setup.
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{
+		SpecificSkills: []string{"databricks-sql"},
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "legacy install detected")
+}
+
+func TestLegacyFullInstallAllowed(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	setupFetchMock(t)
+
+	// Create skills on disk at canonical location but no state file (legacy).
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
+	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
+
+	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	agent := testAgent(tmp)
+
+	// Full install (no SpecificSkills) should succeed and rebuild state.
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
+	require.NoError(t, err)
+
+	assert.Contains(t, stderr.String(), "Found skills installed before state tracking was added.")
+
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Len(t, state.Skills, 2)
 }
 
 func TestInstallAllSkillsSignaturePreserved(t *testing.T) {

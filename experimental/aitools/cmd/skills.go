@@ -72,7 +72,9 @@ func newSkillsListCmd() *cobra.Command {
 }
 
 func newSkillsInstallCmd() *cobra.Command {
-	return &cobra.Command{
+	var includeExperimental bool
+
+	cmd := &cobra.Command{
 		Use:   "install [skill-name]",
 		Short: "Install Databricks skills for detected coding agents",
 		Long: `Install Databricks skills to all detected coding agents.
@@ -83,12 +85,15 @@ and symlinked to each agent to avoid duplication.
 
 Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSkillsInstall(cmd.Context(), args)
+			return runSkillsInstall(cmd.Context(), args, includeExperimental)
 		},
 	}
+
+	cmd.Flags().BoolVar(&includeExperimental, "experimental", false, "Include experimental skills")
+	return cmd
 }
 
-func runSkillsInstall(ctx context.Context, args []string) error {
+func runSkillsInstall(ctx context.Context, args []string, includeExperimental bool) error {
 	detected := agents.DetectInstalled(ctx)
 	if len(detected) == 0 {
 		cmdio.LogString(ctx, color.YellowString("No supported coding agents detected."))
@@ -115,7 +120,9 @@ func runSkillsInstall(ctx context.Context, args []string) error {
 
 	installer.PrintInstallingFor(ctx, targetAgents)
 
-	opts := installer.InstallOptions{}
+	opts := installer.InstallOptions{
+		IncludeExperimental: includeExperimental,
+	}
 	if len(args) > 0 {
 		opts.SpecificSkills = []string{args[0]}
 	}

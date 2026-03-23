@@ -52,11 +52,13 @@ func TestInstallCommandsDelegateToSkillsInstall(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	tests := []struct {
-		name       string
-		newCmd     func() *cobra.Command
-		args       []string
-		wantAgents int
-		wantSkills []string
+		name               string
+		newCmd             func() *cobra.Command
+		args               []string
+		flags              []string
+		wantAgents         int
+		wantSkills         []string
+		wantExperimental   bool
 	}{
 		{
 			name:       "skills install installs all skills for all agents",
@@ -71,6 +73,13 @@ func TestInstallCommandsDelegateToSkillsInstall(t *testing.T) {
 			wantSkills: []string{"bundle/review"},
 		},
 		{
+			name:             "skills install with --experimental",
+			newCmd:           newSkillsInstallCmd,
+			flags:            []string{"--experimental"},
+			wantAgents:       2,
+			wantExperimental: true,
+		},
+		{
 			name:       "top level install installs all skills",
 			newCmd:     newInstallCmd,
 			wantAgents: 2,
@@ -82,6 +91,13 @@ func TestInstallCommandsDelegateToSkillsInstall(t *testing.T) {
 			wantAgents: 2,
 			wantSkills: []string{"bundle/review"},
 		},
+		{
+			name:             "top level install with --experimental",
+			newCmd:           newInstallCmd,
+			flags:            []string{"--experimental"},
+			wantAgents:       2,
+			wantExperimental: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -91,6 +107,9 @@ func TestInstallCommandsDelegateToSkillsInstall(t *testing.T) {
 			ctx := cmdio.MockDiscard(t.Context())
 			cmd := tt.newCmd()
 			cmd.SetContext(ctx)
+			if len(tt.flags) > 0 {
+				require.NoError(t, cmd.ParseFlags(tt.flags))
+			}
 
 			err := cmd.RunE(cmd, tt.args)
 			require.NoError(t, err)
@@ -98,6 +117,7 @@ func TestInstallCommandsDelegateToSkillsInstall(t *testing.T) {
 			require.Len(t, *calls, 1)
 			assert.Len(t, (*calls)[0].agents, tt.wantAgents)
 			assert.Equal(t, tt.wantSkills, (*calls)[0].opts.SpecificSkills)
+			assert.Equal(t, tt.wantExperimental, (*calls)[0].opts.IncludeExperimental)
 		})
 	}
 }
@@ -133,7 +153,7 @@ func TestRunSkillsInstallInteractivePrompt(t *testing.T) {
 	go drain(test.Stdout)
 	go drain(test.Stderr)
 
-	err := runSkillsInstall(ctx, nil)
+	err := runSkillsInstall(ctx, nil, false)
 	require.NoError(t, err)
 
 	assert.True(t, promptCalled, "prompt should be called when 2+ agents detected and interactive")
@@ -157,7 +177,7 @@ func TestRunSkillsInstallNonInteractiveUsesAllAgents(t *testing.T) {
 	// MockDiscard gives a non-interactive context.
 	ctx := cmdio.MockDiscard(t.Context())
 
-	err := runSkillsInstall(ctx, nil)
+	err := runSkillsInstall(ctx, nil, false)
 	require.NoError(t, err)
 
 	assert.False(t, promptCalled, "prompt should not be called in non-interactive mode")
@@ -173,7 +193,7 @@ func TestRunSkillsInstallNoAgents(t *testing.T) {
 	calls := setupInstallMock(t)
 	ctx := cmdio.MockDiscard(t.Context())
 
-	err := runSkillsInstall(ctx, nil)
+	err := runSkillsInstall(ctx, nil, false)
 	require.NoError(t, err)
 	assert.Empty(t, *calls, "install should not be called when no agents detected")
 }

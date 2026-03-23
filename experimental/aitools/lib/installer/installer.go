@@ -138,8 +138,13 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	}
 
 	// Detect legacy installs (skills on disk but no state file).
+	// Block targeted installs on legacy setups to avoid writing incomplete state
+	// that would hide the legacy warning on future runs.
 	if state == nil {
-		checkLegacyInstall(ctx, globalDir)
+		isLegacy := checkLegacyInstall(ctx, globalDir)
+		if isLegacy && len(opts.SpecificSkills) > 0 {
+			return fmt.Errorf("legacy install detected without state tracking; run 'databricks experimental aitools skills install' (without a skill name) first to rebuild state")
+		}
 	}
 
 	// Filter skills based on options, experimental flag, and CLI version.
@@ -157,11 +162,12 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 
 	for _, name := range skillNames {
 		meta := targetSkills[name]
-		// Idempotency: skip if same version is already installed and on disk.
+		// Idempotency: skip if same version is already installed, the canonical
+		// dir exists, AND every requested agent already has the skill on disk.
 		if state != nil && state.Skills[name] == meta.Version {
 			skillDir := filepath.Join(globalDir, name)
-			if _, statErr := os.Stat(skillDir); statErr == nil {
-				log.Debugf(ctx, "%s v%s already installed, skipping", name, meta.Version)
+			if _, statErr := os.Stat(skillDir); statErr == nil && allAgentsHaveSkill(ctx, name, targetAgents) {
+				log.Debugf(ctx, "%s v%s already installed for all agents, skipping", name, meta.Version)
 				continue
 			}
 		}
@@ -171,34 +177,24 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		}
 	}
 
-	// Save state. Merge into existing state so skills from previous installs
-	// (e.g., experimental skills from a prior run) are preserved.
-	existingState, loadErr := LoadState(globalDir)
-	if loadErr != nil {
-		log.Warnf(ctx, "Could not reload state for merge: %v", loadErr)
-	}
-	var newState *InstallState
-	if existingState != nil {
-		newState = existingState
-		newState.Release = latestTag
-		newState.LastUpdated = time.Now()
-		newState.IncludeExperimental = opts.IncludeExperimental
-		for name, meta := range targetSkills {
-			newState.Skills[name] = meta.Version
-		}
-	} else {
-		newState = &InstallState{
-			SchemaVersion:       1,
-			IncludeExperimental: opts.IncludeExperimental,
-			Release:             latestTag,
-			LastUpdated:         time.Now(),
-			Skills:              make(map[string]string, len(targetSkills)),
-		}
-		for name, meta := range targetSkills {
-			newState.Skills[name] = meta.Version
+	// Save state. Merge into existing state (loaded above) so skills from
+	// previous installs (e.g., experimental skills from a prior run) are preserved.
+	if state == nil {
+		state = &InstallState{
+			SchemaVersion: 1,
+			Skills:        make(map[string]string, len(targetSkills)),
 		}
 	}
-	if err := SaveState(globalDir, newState); err != nil {
+	state.Release = latestTag
+	state.LastUpdated = time.Now()
+	// IncludeExperimental reflects the last invocation's flag value. The Skills
+	// map may still contain experimental entries from a prior run with the flag
+	// enabled; this field does not retroactively remove them.
+	state.IncludeExperimental = opts.IncludeExperimental
+	for name, meta := range targetSkills {
+		state.Skills[name] = meta.Version
+	}
+	if err := SaveState(globalDir, state); err != nil {
 		return err
 	}
 
@@ -237,7 +233,7 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 	for name, meta := range candidates {
 		if meta.Experimental && !opts.IncludeExperimental {
 			if isSpecific {
-				return nil, fmt.Errorf("skill %q is experimental; use --include-experimental to install", name)
+				return nil, fmt.Errorf("skill %q is experimental; use --experimental to install", name)
 			}
 			log.Debugf(ctx, "Skipping experimental skill %s", name)
 			continue
@@ -300,19 +296,22 @@ func printNoAgentsDetected(ctx context.Context) {
 }
 
 // checkLegacyInstall prints a message if skills exist on disk but no state file was found.
-func checkLegacyInstall(ctx context.Context, globalDir string) {
+// Returns true if a legacy install was detected.
+func checkLegacyInstall(ctx context.Context, globalDir string) bool {
 	if hasSkillsOnDisk(globalDir) {
 		cmdio.LogString(ctx, "Found skills installed before state tracking was added. Run 'databricks experimental aitools install' to refresh.")
-		return
+		return true
 	}
 	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
-		return
+		return false
 	}
 	legacyDir := filepath.Join(homeDir, ".databricks", "agent-skills")
 	if hasSkillsOnDisk(legacyDir) {
 		cmdio.LogString(ctx, "Found skills installed before state tracking was added. Run 'databricks experimental aitools install' to refresh.")
+		return true
 	}
+	return false
 }
 
 // hasSkillsOnDisk checks if a directory contains subdirectories starting with "databricks".
@@ -327,6 +326,21 @@ func hasSkillsOnDisk(dir string) bool {
 		}
 	}
 	return false
+}
+
+// allAgentsHaveSkill returns true if every agent in the list has the named
+// skill directory present (either as a real directory or symlink).
+func allAgentsHaveSkill(ctx context.Context, skillName string, targetAgents []*agents.Agent) bool {
+	for _, agent := range targetAgents {
+		agentSkillDir, err := agent.SkillsDir(ctx)
+		if err != nil {
+			return false
+		}
+		if _, err := os.Stat(filepath.Join(agentSkillDir, skillName)); err != nil {
+			return false
+		}
+	}
+	return true
 }
 
 func installSkillForAgents(ctx context.Context, ref, skillName string, files []string, detectedAgents []*agents.Agent, globalDir string) error {
@@ -354,14 +368,15 @@ func installSkillForAgents(ctx context.Context, ref, skillName string, files []s
 		if useSymlinks {
 			if err := createSymlink(canonicalDir, destDir); err != nil {
 				log.Debugf(ctx, "Symlink failed for %s, copying instead: %v", agent.DisplayName, err)
-				if err := installSkillToDir(ctx, ref, skillName, destDir, files); err != nil {
+				if err := copyDir(canonicalDir, destDir); err != nil {
 					log.Warnf(ctx, "Failed to install for %s: %v", agent.DisplayName, err)
 					continue
 				}
 			}
 			log.Debugf(ctx, "Installed %q for %s (symlinked)", skillName, agent.DisplayName)
 		} else {
-			if err := installSkillToDir(ctx, ref, skillName, destDir, files); err != nil {
+			// Copy from canonical dir instead of re-downloading.
+			if err := copyDir(canonicalDir, destDir); err != nil {
 				log.Warnf(ctx, "Failed to install for %s: %v", agent.DisplayName, err)
 				continue
 			}
@@ -434,6 +449,38 @@ func installSkillToDir(ctx context.Context, ref, skillName, destDir string, file
 	}
 
 	return nil
+}
+
+// copyDir copies all files from src to dest, recreating the directory structure.
+func copyDir(src, dest string) error {
+	if err := os.RemoveAll(dest); err != nil {
+		return fmt.Errorf("failed to remove existing path: %w", err)
+	}
+
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dest, rel)
+
+		if info.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read %s: %w", rel, err)
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0o644)
+	})
 }
 
 func createSymlink(source, dest string) error {
