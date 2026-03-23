@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -49,6 +50,18 @@ import (
 //   - experiments: runs, metrics, parameters, and artifacts are lost.
 //   - quality_monitors: drift/profile metrics tables may be lost or orphaned.
 //   - alerts: purge permanently destroys evaluation and notification history.
+// isActionSafeToDestroy checks if an action targets a resource type that is
+// safe to destroy. For child resources (e.g. permissions, grants), the safety
+// is determined by the parent resource type.
+func isActionSafeToDestroy(action deployplan.Action) bool {
+	resourceType := config.GetResourceTypeFromKey(action.ResourceKey)
+	// Child resources like "jobs.permissions" inherit safety from parent type.
+	if base, _, ok := strings.Cut(resourceType, "."); ok {
+		return resourcesSafeToDestroy[base]
+	}
+	return resourcesSafeToDestroy[resourceType]
+}
+
 var resourcesSafeToDestroy = map[string]bool{
 	// Jobs: run history persists independently of the job definition.
 	"jobs": true,
@@ -81,8 +94,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	// Collect destructive actions for resource types that are NOT safe to destroy.
 	var destructiveActions []deployplan.Action
 	for _, action := range actions {
-		actionGroup := config.GetResourceTypeFromKey(action.ResourceKey)
-		if resourcesSafeToDestroy[actionGroup] {
+		if isActionSafeToDestroy(action) {
 			continue
 		}
 		for _, t := range types {

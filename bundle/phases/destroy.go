@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -55,8 +54,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	// Highlight resources that may cause data loss when destroyed.
 	var dataLossActions []deployplan.Action
 	for _, a := range deleteActions {
-		actionGroup := config.GetResourceTypeFromKey(a.ResourceKey)
-		if !resourcesSafeToDestroy[actionGroup] && a.ActionType == deployplan.Delete {
+		if !isActionSafeToDestroy(a) && a.ActionType == deployplan.Delete {
 			dataLossActions = append(dataLossActions, a)
 		}
 	}

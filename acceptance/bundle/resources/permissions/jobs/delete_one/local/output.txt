@@ -29,8 +29,6 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.jobs.job_with_permissions
 
-The following resources may contain data that will be lost upon deletion:
-
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Deleting files...
