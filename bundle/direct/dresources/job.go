@@ -104,7 +104,7 @@ func makeJobRemote(job *jobs.Job) *JobRemote {
 var jobCreateCopy fieldcopy.Copy[jobs.JobSettings, jobs.CreateJob]
 
 func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, *JobRemote, error) {
-	response, err := r.client.Jobs.Create(ctx, jobCreateCopy.Do(config))
+	response, err := r.client.Jobs.Create(ctx, *jobCreateCopy.Do(config))
 	if err != nil {
 		return "", nil, err
 	}

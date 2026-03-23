@@ -74,10 +74,10 @@ var pipelineRemoteCopy fieldcopy.Copy[pipelines.GetPipelineResponse, PipelineRem
 func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 	remote := pipelineRemoteCopy.Do(p)
 	if p.Spec != nil {
-		remote.CreatePipeline = pipelineSpecCopy.Do(p.Spec)
+		remote.CreatePipeline = *pipelineSpecCopy.Do(p.Spec)
 		remote.CreatePipeline.RunAs = p.RunAs
 	}
-	return &remote
+	return remote
 }
 
 func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, *PipelineRemote, error) {
@@ -94,7 +94,7 @@ var pipelineEditCopy fieldcopy.Copy[pipelines.CreatePipeline, pipelines.EditPipe
 func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ Changes) (*PipelineRemote, error) {
 	request := pipelineEditCopy.Do(config)
 	request.PipelineId = id
-	return nil, r.client.Pipelines.Update(ctx, request)
+	return nil, r.client.Pipelines.Update(ctx, *request)
 }
 
 func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {

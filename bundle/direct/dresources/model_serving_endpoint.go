@@ -41,8 +41,7 @@ func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *se
 	if output == nil {
 		return nil
 	}
-	result := autoCaptureConfigCopy.Do(output)
-	return &result
+	return autoCaptureConfigCopy.Do(output)
 }
 
 // servedEntityCopy maps ServedEntityOutput to ServedEntityInput.
@@ -51,7 +50,7 @@ var servedEntityCopy fieldcopy.Copy[serving.ServedEntityOutput, serving.ServedEn
 func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.ServedEntityInput {
 	entities := make([]serving.ServedEntityInput, len(output))
 	for i, entity := range output {
-		entities[i] = servedEntityCopy.Do(&entity)
+		entities[i] = *servedEntityCopy.Do(&entity)
 	}
 	return entities
 }
@@ -76,7 +75,7 @@ func (*ResourceModelServingEndpoint) RemapState(state *RefreshOutput) *serving.C
 	details := state.EndpointDetails
 	result := servingRemapCopy.Do(details)
 	result.Config = configOutputToInput(details.Config)
-	return &result
+	return result
 }
 
 type RefreshOutput struct {

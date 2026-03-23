@@ -46,7 +46,7 @@ var qualityMonitorRemapCopy fieldcopy.Copy[catalog.MonitorInfo, catalog.CreateMo
 
 func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *QualityMonitorState {
 	return &QualityMonitorState{
-		CreateMonitor: qualityMonitorRemapCopy.Do(info),
+		CreateMonitor: *qualityMonitorRemapCopy.Do(info),
 		TableName:     info.TableName,
 	}
 }
@@ -77,7 +77,7 @@ func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config
 	updateRequest.TableName = id
 
 	//nolint:staticcheck // Direct quality_monitor resource still uses legacy monitor endpoints; v1 data-quality migration is separate work.
-	response, err := r.client.QualityMonitors.Update(ctx, updateRequest)
+	response, err := r.client.QualityMonitors.Update(ctx, *updateRequest)
 	if err != nil {
 		return nil, err
 	}

@@ -39,7 +39,7 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 	if input.Spec != nil {
 		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
 	}
-	return &spec
+	return spec
 }
 
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.ClusterDetails, error) {
@@ -52,7 +52,7 @@ var clusterCreateCopy fieldcopy.Copy[compute.ClusterSpec, compute.CreateCluster]
 func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, *compute.ClusterDetails, error) {
 	create := clusterCreateCopy.Do(config)
 	forceNumWorkers(config, &create.ForceSendFields)
-	wait, err := r.client.Clusters.Create(ctx, create)
+	wait, err := r.client.Clusters.Create(ctx, *create)
 	if err != nil {
 		return "", nil, err
 	}
@@ -71,7 +71,7 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compu
 	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 	timeout := 15 * time.Minute
 	_, err := retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
-		wait, err := r.client.Clusters.Edit(ctx, edit)
+		wait, err := r.client.Clusters.Edit(ctx, *edit)
 		if err == nil {
 			return wait, nil
 		}

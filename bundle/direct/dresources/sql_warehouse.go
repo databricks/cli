@@ -31,7 +31,7 @@ func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sq
 	result := sqlWarehouseRemapCopy.Do(warehouse)
 	// WarehouseType requires explicit conversion between different named string types.
 	result.WarehouseType = sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType)
-	return &result
+	return result
 }
 
 // DoRead reads the warehouse by id.
@@ -58,7 +58,7 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 	// WarehouseType requires explicit conversion between different named string types.
 	request.WarehouseType = sql.EditWarehouseRequestWarehouseType(config.WarehouseType)
 
-	waiter, err := r.client.Warehouses.Edit(ctx, request)
+	waiter, err := r.client.Warehouses.Edit(ctx, *request)
 	if err != nil {
 		return nil, err
 	}

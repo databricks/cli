@@ -25,8 +25,7 @@ func (*ResourceCatalog) PrepareState(input *resources.Catalog) *catalog.CreateCa
 var catalogRemapCopy fieldcopy.Copy[catalog.CatalogInfo, catalog.CreateCatalog]
 
 func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCatalog {
-	result := catalogRemapCopy.Do(info)
-	return &result
+	return catalogRemapCopy.Do(info)
 }
 
 func (r *ResourceCatalog) DoRead(ctx context.Context, id string) (*catalog.CatalogInfo, error) {
@@ -49,7 +48,7 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 	updateRequest := catalogUpdateCopy.Do(config)
 	updateRequest.Name = id
 
-	response, err := r.client.Catalogs.Update(ctx, updateRequest)
+	response, err := r.client.Catalogs.Update(ctx, *updateRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +65,7 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 		updateRequest.NewName = config.Name
 	}
 
-	response, err := r.client.Catalogs.Update(ctx, updateRequest)
+	response, err := r.client.Catalogs.Update(ctx, *updateRequest)
 	if err != nil {
 		return "", nil, err
 	}

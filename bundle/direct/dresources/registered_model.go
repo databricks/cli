@@ -27,8 +27,7 @@ func (*ResourceRegisteredModel) PrepareState(input *resources.RegisteredModel) *
 var registeredModelRemapCopy fieldcopy.Copy[catalog.RegisteredModelInfo, catalog.CreateRegisteredModelRequest]
 
 func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *catalog.CreateRegisteredModelRequest {
-	result := registeredModelRemapCopy.Do(model)
-	return &result
+	return registeredModelRemapCopy.Do(model)
 }
 
 func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
@@ -56,7 +55,7 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 	updateRequest := registeredModelUpdateCopy.Do(config)
 	updateRequest.FullName = id
 
-	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
+	response, err := r.client.RegisteredModels.Update(ctx, *updateRequest)
 	if err != nil {
 		return nil, err
 	}

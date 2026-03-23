@@ -27,7 +27,7 @@ type Copy[Src, Dst any] struct {
 	// with different names in source and destination.
 	Rename map[string]string
 
-	copyFn func(src *Src) Dst
+	copyFn func(src *Src) *Dst
 }
 
 // Init eagerly computes field mappings via reflection. Must be called before Do.
@@ -37,7 +37,7 @@ func (c *Copy[Src, Dst]) Init() {
 
 // Do copies fields from src to a new Dst value using precomputed field mappings.
 // Panics if [Copy.Init] was not called.
-func (c *Copy[Src, Dst]) Do(src *Src) Dst {
+func (c *Copy[Src, Dst]) Do(src *Src) *Dst {
 	if c.copyFn == nil {
 		panic(fmt.Sprintf("fieldcopy: Do called on uninitialized Copy[%v, %v]; call Init first", reflect.TypeFor[Src](), reflect.TypeFor[Dst]()))
 	}
@@ -49,7 +49,7 @@ type fieldOp struct {
 	srcIndex []int
 }
 
-func (c *Copy[Src, Dst]) build() func(*Src) Dst {
+func (c *Copy[Src, Dst]) build() func(*Src) *Dst {
 	srcType := reflect.TypeFor[Src]()
 	dstType := reflect.TypeFor[Dst]()
 
@@ -99,7 +99,7 @@ func (c *Copy[Src, Dst]) build() func(*Src) Dst {
 		}
 	}
 
-	return func(src *Src) Dst {
+	return func(src *Src) *Dst {
 		var dst Dst
 		sv := reflect.ValueOf(src).Elem()
 		dv := reflect.ValueOf(&dst).Elem()
@@ -121,7 +121,7 @@ func (c *Copy[Src, Dst]) build() func(*Src) Dst {
 				}
 			}
 		}
-		return dst
+		return &dst
 	}
 }
 

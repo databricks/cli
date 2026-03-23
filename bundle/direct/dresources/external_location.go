@@ -25,8 +25,7 @@ func (*ResourceExternalLocation) PrepareState(input *resources.ExternalLocation)
 var externalLocationRemapCopy fieldcopy.Copy[catalog.ExternalLocationInfo, catalog.CreateExternalLocation]
 
 func (*ResourceExternalLocation) RemapState(info *catalog.ExternalLocationInfo) *catalog.CreateExternalLocation {
-	result := externalLocationRemapCopy.Do(info)
-	return &result
+	return externalLocationRemapCopy.Do(info)
 }
 
 func (r *ResourceExternalLocation) DoRead(ctx context.Context, id string) (*catalog.ExternalLocationInfo, error) {
@@ -49,7 +48,7 @@ func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, conf
 	updateRequest := externalLocationUpdateCopy.Do(config)
 	updateRequest.Name = id
 
-	return r.client.ExternalLocations.Update(ctx, updateRequest)
+	return r.client.ExternalLocations.Update(ctx, *updateRequest)
 }
 
 // DoUpdateWithID updates the external location and returns the new ID if the name changes.
@@ -61,7 +60,7 @@ func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string
 		updateRequest.NewName = config.Name
 	}
 
-	response, err := r.client.ExternalLocations.Update(ctx, updateRequest)
+	response, err := r.client.ExternalLocations.Update(ctx, *updateRequest)
 	if err != nil {
 		return "", nil, err
 	}
