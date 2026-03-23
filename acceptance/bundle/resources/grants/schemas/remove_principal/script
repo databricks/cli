@@ -1,0 +1,41 @@
+normalize_grants() {
+    jq --sort-keys '
+        .privilege_assignments |= sort_by((.principal != env.GROUP1), .principal) |
+        (.privilege_assignments[]?.privileges |= sort)
+    '
+}
+
+GROUP1="$CURRENT_USER_NAME"
+GROUP2="deco-test-user@databricks.com"
+TMP_GRANTS="tmp.$DATABRICKS_BUNDLE_ENGINE.grants.json"
+export GROUP1 GROUP2
+
+add_repl.py "$GROUP1" CURRENT_USER_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f "$TMP_GRANTS" out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+trace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants
+
+$CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants > "$TMP_GRANTS"
+contains.py "\"principal\": \"$GROUP1\"" "\"principal\": \"$GROUP2\"" < "$TMP_GRANTS" > /dev/null
+rm "$TMP_GRANTS"
+
+update_file.py databricks.yml "        - principal: $GROUP2
+          privileges:
+            - USE_SCHEMA
+" ""
+
+trace $CLI bundle deploy
+trace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants
+
+$CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | normalize_grants > "$TMP_GRANTS"
+contains.py "\"principal\": \"$GROUP1\"" "!\"principal\": \"$GROUP2\"" < "$TMP_GRANTS" > /dev/null
+rm "$TMP_GRANTS"
+
+trace $CLI bundle plan

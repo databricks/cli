@@ -1,0 +1,15 @@
+bundle:
+  name: schema-grants-remove-principal-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_remove_principal_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        - principal: ${GROUP1}
+          privileges:
+            - CREATE_TABLE
+        - principal: ${GROUP2}
+          privileges:
+            - USE_SCHEMA
