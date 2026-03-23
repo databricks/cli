@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -27,10 +29,39 @@ func makeArgsOptionalWithBundle(cmd *cobra.Command, usage string) {
 			return fmt.Errorf("accepts at most 1 arg(s), received %d", len(args))
 		}
 		if !hasBundleConfig() && len(args) != 1 {
-			return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
+			return missingAppNameError()
 		}
 		return nil
 	}
+}
+
+// missingAppNameError returns an error message that explains what the positional
+// argument should be, and attempts to infer a suggestion from the local environment.
+func missingAppNameError() error {
+	hint := inferAppNameHint()
+	msg := `missing required argument: APP_NAME
+
+Usage: databricks apps <command> APP_NAME
+
+APP_NAME is the name of the Databricks app to operate on.
+Alternatively, run this command from a project directory containing
+databricks.yml to auto-detect the app name.`
+
+	if hint != "" {
+		msg += fmt.Sprintf("\n\nDid you mean?\n  databricks apps deploy %s", hint)
+	}
+
+	return errors.New(msg)
+}
+
+// inferAppNameHint tries to suggest an app name from the local environment.
+// It checks the current directory name as a best-effort hint.
+func inferAppNameHint() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	return filepath.Base(wd)
 }
 
 // getAppNameFromArgs returns the app name from args or detects it from the bundle.
