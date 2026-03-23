@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -35,6 +34,5 @@ func TestFieldCopyReport(t *testing.T) {
 		buf.WriteString(c.Report())
 	}
 
-	goldenPath := filepath.Join("testdata", "out.fieldcopy.txt")
-	testdiff.AssertOutput(t, ctx, buf.String(), "fieldcopy report", goldenPath)
+	testdiff.AssertOutput(t, ctx, buf.String(), "fieldcopy report", "out.fieldcopy.txt")
 }
