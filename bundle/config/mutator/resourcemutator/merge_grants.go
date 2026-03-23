@@ -30,17 +30,6 @@ func (m *mergeGrants) Name() string {
 	return "MergeGrants"
 }
 
-func (m *mergeGrants) principalString(v dyn.Value) string {
-	switch v.Kind() {
-	case dyn.KindInvalid, dyn.KindNil:
-		return ""
-	case dyn.KindString:
-		return v.MustString()
-	default:
-		panic("principal must be a string")
-	}
-}
-
 func (m *mergeGrants) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		if v.Kind() == dyn.KindNil {
@@ -52,7 +41,10 @@ func (m *mergeGrants) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 			v, mapErr = dyn.Map(v, "resources."+resourceType, dyn.Foreach(func(_ dyn.Path, resource dyn.Value) (dyn.Value, error) {
 				// Merge grant entries by principal. This concatenates privileges
 				// for entries with the same principal via the standard merge semantics.
-				resource, err := dyn.Map(resource, "grants", merge.ElementsByKey("principal", m.principalString))
+				resource, err := dyn.Map(resource, "grants", merge.ElementsByKey("principal", func(v dyn.Value) string {
+					s, _ := v.AsString()
+					return s
+				}))
 				if err != nil {
 					return resource, err
 				}
@@ -84,7 +76,7 @@ func deduplicateSequence(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 	seen := make(map[string]bool, len(elements))
 	out := make([]dyn.Value, 0, len(elements))
 	for _, elem := range elements {
-		key := elem.MustString()
+		key, _ := elem.AsString()
 		if seen[key] {
 			continue
 		}
