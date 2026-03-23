@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
+	"github.com/databricks/cli/libs/structs/fieldcopy"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -128,40 +128,15 @@ func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
 	return r.client.Jobs.DeleteByJobId(ctx, idInt)
 }
 
-func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
-	// Note, exhaustruct linter validates that all off CreateJob fields are initialized.
-	// We don't have linter that validates that all of config fields are used.
-	result := jobs.CreateJob{
-		AccessControlList:    nil, // Not supported by DABs
-		BudgetPolicyId:       config.BudgetPolicyId,
-		Continuous:           config.Continuous,
-		Deployment:           config.Deployment,
-		Description:          config.Description,
-		EditMode:             config.EditMode,
-		EmailNotifications:   config.EmailNotifications,
-		Environments:         config.Environments,
-		Format:               config.Format,
-		GitSource:            config.GitSource,
-		Health:               config.Health,
-		JobClusters:          config.JobClusters,
-		MaxConcurrentRuns:    config.MaxConcurrentRuns,
-		Name:                 config.Name,
-		NotificationSettings: config.NotificationSettings,
-		Parameters:           config.Parameters,
-		PerformanceTarget:    config.PerformanceTarget,
-		Queue:                config.Queue,
-		RunAs:                config.RunAs,
-		Schedule:             config.Schedule,
-		Tags:                 config.Tags,
-		Tasks:                config.Tasks,
-		TimeoutSeconds:       config.TimeoutSeconds,
-		Trigger:              config.Trigger,
-		UsagePolicyId:        config.UsagePolicyId,
-		WebhookNotifications: config.WebhookNotifications,
-		ForceSendFields:      utils.FilterFields[jobs.CreateJob](config.ForceSendFields, "AccessControlList"),
-	}
+// jobCreateCopy maps JobSettings (local state) to CreateJob (API request).
+var jobCreateCopy = fieldcopy.Copy[jobs.JobSettings, jobs.CreateJob]{
+	SkipDst: []string{
+		"AccessControlList", // Not supported by DABs.
+	},
+}
 
-	return result, nil
+func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
+	return jobCreateCopy.Do(&config), nil
 }
 
 func makeResetJob(config jobs.JobSettings, id string) (jobs.ResetJob, error) {
