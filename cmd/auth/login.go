@@ -202,15 +202,16 @@ depends on the existing profiles you have set in your configuration file
 		// 2. Configuring cluster and serverless;
 		// 3. Saving the profile.
 
-		// For SPOG hosts with account_id but no workspace_id, prompt for workspace selection.
-		// This is skipped for classic accounts.* hosts where account-level access is expected.
-		// Skip workspace selection if:
+		// For unified/SPOG hosts with account_id but no workspace_id, prompt for
+		// workspace selection. We use IsUnifiedHost (set from discovery or profile)
+		// rather than HostType(), which is unreliable for SPOG hosts. Classic
+		// accounts.* hosts don't need this because they access account-level APIs
+		// directly. Skip workspace selection if:
 		// - --skip-workspace flag is set
 		// - workspace_id is already set (including "none" sentinel from a previous login)
-		cfg := &config.Config{Host: authArguments.Host}
-		shouldPromptWorkspace := authArguments.AccountID != "" &&
+		shouldPromptWorkspace := authArguments.IsUnifiedHost &&
+			authArguments.AccountID != "" &&
 			authArguments.WorkspaceID == "" &&
-			cfg.HostType() != config.AccountHost &&
 			!skipWorkspace
 
 		if skipWorkspace && authArguments.WorkspaceID == "" {
