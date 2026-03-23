@@ -67,8 +67,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
 
-This action will result in the deletion or recreation of the following resources.
-Deleted or recreated resources may result in data loss or other irreversible consequences:
+This action will result in the deletion or recreation of the following registered models along with all their versions:
   recreate resources.registered_models.my_registered_model
 Deploying resources...
 Updating deployment state...
@@ -91,8 +90,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
 
-This action will result in the deletion or recreation of the following resources.
-Deleted or recreated resources may result in data loss or other irreversible consequences:
+This action will result in the deletion or recreation of the following registered models along with all their versions:
   recreate resources.registered_models.my_registered_model
 Deploying resources...
 Updating deployment state...
@@ -115,8 +113,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
 
-This action will result in the deletion or recreation of the following resources.
-Deleted or recreated resources may result in data loss or other irreversible consequences:
+This action will result in the deletion or recreation of the following registered models along with all their versions:
   recreate resources.registered_models.my_registered_model
 Deploying resources...
 Updating deployment state...
@@ -134,7 +131,8 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.registered_models.my_registered_model
 
-The following resources may contain data that will be lost upon deletion:
+
+This action will result in the deletion or recreation of the following registered models along with all their versions:
   delete resources.registered_models.my_registered_model
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default

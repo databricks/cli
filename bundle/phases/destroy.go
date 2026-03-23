@@ -51,21 +51,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		cmdio.LogString(ctx, "")
 	}
 
-	// Highlight resources that may cause data loss when destroyed.
-	// Child resources (e.g. permissions, grants) are excluded because deleting
-	// them does not cause data loss in the parent resource.
-	var dataLossActions []deployplan.Action
-	for _, a := range deleteActions {
-		if !a.IsChildResource() && !isActionSafeToDestroy(a) && a.ActionType == deployplan.Delete {
-			dataLossActions = append(dataLossActions, a)
-		}
-	}
-
+	dataLossActions := collectDestructiveActions(deleteActions)
 	if len(dataLossActions) > 0 {
-		cmdio.LogString(ctx, deleteResourceMessage)
-		for _, a := range dataLossActions {
-			cmdio.Log(ctx, a)
-		}
+		logDestructiveActions(ctx, dataLossActions)
 		cmdio.LogString(ctx, "")
 	}
 

@@ -35,9 +35,10 @@ Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
 
-This action will result in the deletion or recreation of the following resources.
-Deleted or recreated resources may result in data loss or other irreversible consequences:
+This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   recreate resources.pipelines.my_pipelines
+
+This action will result in the deletion or recreation of the following UC schemas along with all the tables and views they contain:
   recreate resources.schemas.my_schema
 Deploying resources...
 Updating deployment state...
@@ -52,9 +53,10 @@ Plan: 0 to add, 0 to change, 2 to delete, 0 unchanged
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
 
-This action will result in the deletion or recreation of the following resources.
-Deleted or recreated resources may result in data loss or other irreversible consequences:
+This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete resources.pipelines.my_pipelines
+
+This action will result in the deletion or recreation of the following UC schemas along with all the tables and views they contain:
   delete resources.schemas.my_schema
 Deploying resources...
 Updating deployment state...

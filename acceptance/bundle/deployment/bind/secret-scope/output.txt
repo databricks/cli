@@ -6,16 +6,6 @@ Updating deployment state...
 Successfully bound secret_scope with an id 'test-secret-scope-[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace
 
->>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-secret-scope-test-[UNIQUE_NAME]/default/files...
-
-This action will result in the deletion or recreation of the following resources.
-Deleted or recreated resources may result in data loss or other irreversible consequences:
-  recreate resources.secret_scopes.secret_scope1
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
 >>> [CLI] secrets list-scopes -o json
 {
   "backend_type": "DATABRICKS",

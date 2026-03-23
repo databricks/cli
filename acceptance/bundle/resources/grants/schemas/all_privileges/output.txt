@@ -7,7 +7,8 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.schemas.apps_schema
 
-The following resources may contain data that will be lost upon deletion:
+
+This action will result in the deletion or recreation of the following UC schemas along with all the tables and views they contain:
   delete resources.schemas.apps_schema
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-dup-grants-[UNIQUE_NAME]/default

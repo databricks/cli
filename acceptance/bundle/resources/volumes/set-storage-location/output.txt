@@ -33,7 +33,8 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 The following resources will be deleted:
   delete resources.schemas.myschema
 
-The following resources may contain data that will be lost upon deletion:
+
+This action will result in the deletion or recreation of the following UC schemas along with all the tables and views they contain:
   delete resources.schemas.myschema
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default

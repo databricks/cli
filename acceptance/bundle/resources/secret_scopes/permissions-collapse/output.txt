@@ -24,7 +24,8 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.secret_scopes.my_scope
 
-The following resources may contain data that will be lost upon deletion:
+
+This action will result in the deletion or recreation of the following secret scopes. All secrets stored in them will be permanently lost:
   delete resources.secret_scopes.my_scope
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default

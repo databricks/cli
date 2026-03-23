@@ -12,7 +12,7 @@ trap cleanup EXIT
 
 trace $CLI bundle deployment bind secret_scope1 "${SECRET_SCOPE_NAME}" --auto-approve
 
-trace $CLI bundle deploy --auto-approve
+trace $CLI bundle deploy --auto-approve &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 
 trace $CLI secrets list-scopes -o json | jq --arg value ${SECRET_SCOPE_NAME} '.[] | select(.name == $value)'
 

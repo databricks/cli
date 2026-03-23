@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-secret-scope-test-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following secret scopes. All secrets stored in them will be permanently lost:
+  recreate resources.secret_scopes.secret_scope1
+Deploying resources...
+Updating deployment state...
+Deployment complete!

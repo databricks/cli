@@ -44,7 +44,8 @@ The following resources will be deleted:
   delete resources.jobs.test_job
   delete resources.pipelines.test_pipeline
 
-The following resources may contain data that will be lost upon deletion:
+
+This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete resources.pipelines.test_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/snapshot-test-1-[UNIQUE_NAME]/default
@@ -58,7 +59,8 @@ The following resources will be deleted:
   delete resources.jobs.test_job
   delete resources.pipelines.test_pipeline
 
-The following resources may contain data that will be lost upon deletion:
+
+This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete resources.pipelines.test_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/snapshot-test-2-[UNIQUE_NAME]/default

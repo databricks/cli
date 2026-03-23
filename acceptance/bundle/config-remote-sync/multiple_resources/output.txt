@@ -57,9 +57,14 @@ The following resources will be deleted:
   delete resources.sql_warehouses.test_warehouse
   delete resources.volumes.test_volume
 
-The following resources may contain data that will be lost upon deletion:
+
+This action will result in the deletion or recreation of the following MLflow experiments along with all their runs, metrics, and artifacts:
   delete resources.experiments.test_experiment
+
+This action will result in the deletion or recreation of the following registered models along with all their versions:
   delete resources.registered_models.test_model
+
+This action will result in the deletion or recreation of the following volumes. For managed volumes, the files stored in the volume are also deleted from your cloud tenant within 30 days. For external volumes, the metadata about the volume is removed from the catalog, but the underlying files are not deleted:
   delete resources.volumes.test_volume
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default

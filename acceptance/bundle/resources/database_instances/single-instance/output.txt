@@ -59,7 +59,8 @@ Resources:
 The following resources will be deleted:
   delete resources.database_instances.my_database
 
-The following resources may contain data that will be lost upon deletion:
+
+This action will result in the deletion or recreation of the following database instances. All data stored in them will be permanently lost:
   delete resources.database_instances.my_database
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default
