@@ -73,10 +73,19 @@ github.com/databricks/cli/bundle/config/resources.App:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Catalog:
+  "enable_predictive_optimization":
+    "description": |-
+      PLACEHOLDER
   "grants":
     "description": |-
       PLACEHOLDER
+  "isolation_mode":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "owner":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Cluster:

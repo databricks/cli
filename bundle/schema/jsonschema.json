@@ -3580,10 +3580,35 @@
               ]
             },
             "catalog.CatalogIsolationMode": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "OPEN",
+                    "ISOLATED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "catalog.EnablePredictiveOptimization": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "DISABLE",
+                    "ENABLE",
+                    "INHERIT"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "catalog.EncryptionDetails": {
               "oneOf": [

@@ -4,7 +4,7 @@ alerts: sql.AlertV2
 
 apps: apps.App
 
-catalogs: catalog.CreateCatalog
+catalogs: catalog.CatalogInfo
 
 clusters: compute.ClusterSpec
 

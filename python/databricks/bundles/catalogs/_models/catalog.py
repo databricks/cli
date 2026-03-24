@@ -1,6 +1,14 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 
+from databricks.bundles.catalogs._models.catalog_isolation_mode import (
+    CatalogIsolationMode,
+    CatalogIsolationModeParam,
+)
+from databricks.bundles.catalogs._models.enable_predictive_optimization import (
+    EnablePredictiveOptimization,
+    EnablePredictiveOptimizationParam,
+)
 from databricks.bundles.catalogs._models.lifecycle import Lifecycle, LifecycleParam
 from databricks.bundles.catalogs._models.privilege_assignment import (
     PrivilegeAssignment,
@@ -30,11 +38,19 @@ class Catalog(Resource):
 
     connection_name: VariableOrOptional[str] = None
 
+    enable_predictive_optimization: VariableOrOptional[EnablePredictiveOptimization] = (
+        None
+    )
+
     grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
+
+    isolation_mode: VariableOrOptional[CatalogIsolationMode] = None
 
     lifecycle: VariableOrOptional[Lifecycle] = None
 
     options: VariableOrDict[str] = field(default_factory=dict)
+
+    owner: VariableOrOptional[str] = None
 
     properties: VariableOrDict[str] = field(default_factory=dict)
 
@@ -61,11 +77,19 @@ class CatalogDict(TypedDict, total=False):
 
     connection_name: VariableOrOptional[str]
 
+    enable_predictive_optimization: VariableOrOptional[
+        EnablePredictiveOptimizationParam
+    ]
+
     grants: VariableOrList[PrivilegeAssignmentParam]
+
+    isolation_mode: VariableOrOptional[CatalogIsolationModeParam]
 
     lifecycle: VariableOrOptional[LifecycleParam]
 
     options: VariableOrDict[str]
+
+    owner: VariableOrOptional[str]
 
     properties: VariableOrDict[str]
 
