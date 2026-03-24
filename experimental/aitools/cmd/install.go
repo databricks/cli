@@ -27,6 +27,7 @@ When multiple agents are detected, skills are stored in a canonical location
 and symlinked to each agent to avoid duplication.
 
 Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 

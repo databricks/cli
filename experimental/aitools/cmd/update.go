@@ -19,6 +19,7 @@ func newUpdateCmd() *cobra.Command {
 By default, updates all installed skills and auto-installs new skills
 from the manifest. Use --no-new to skip new skills, or --check to
 preview what would change without downloading.`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			installed := agents.DetectInstalled(ctx)

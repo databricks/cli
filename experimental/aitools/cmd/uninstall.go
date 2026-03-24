@@ -14,6 +14,7 @@ func newUninstallCmd() *cobra.Command {
 		Long: `Remove installed Databricks AI skills from all coding agents.
 
 By default, removes all skills. Use --skills to remove specific skills only.`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := installer.UninstallOptions{}
 			opts.Skills = splitAndTrim(skillsFlag)

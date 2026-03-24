@@ -340,6 +340,71 @@ func TestSkillsInstallExecuteRejectsTwoArgs(t *testing.T) {
 	assert.Contains(t, err.Error(), "accepts at most 1 arg")
 }
 
+func TestInstallRejectsPositionalArgs(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"databricks"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown command")
+}
+
+func TestUpdateRejectsPositionalArgs(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newUpdateCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"databricks"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown command")
+}
+
+func TestUninstallRejectsPositionalArgs(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newUninstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"databricks"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown command")
+}
+
+func TestListRejectsPositionalArgs(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newListCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"databricks"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown command")
+}
+
+func TestVersionRejectsPositionalArgs(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newVersionCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"databricks"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown command")
+}
+
 func TestResolveAgentNamesValid(t *testing.T) {
 	ctx := t.Context()
 	result, err := resolveAgentNames(ctx, "claude-code,cursor")
