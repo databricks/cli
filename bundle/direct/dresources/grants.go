@@ -207,11 +207,9 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 			if assignment.Principal == "" {
 				continue
 			}
-			privs := make([]catalog.Privilege, len(assignment.Privileges))
-			copy(privs, assignment.Privileges)
 			assignments = append(assignments, catalog.PrivilegeAssignment{
 				Principal:       assignment.Principal,
-				Privileges:      privs,
+				Privileges:      assignment.Privileges,
 				ForceSendFields: nil,
 			})
 		}
