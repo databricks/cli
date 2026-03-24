@@ -292,6 +292,33 @@ func TestUninstallSelectiveUnknownSkillErrors(t *testing.T) {
 	assert.Contains(t, err.Error(), "not installed")
 }
 
+func TestUninstallSelectiveDuplicateNamesDeduplicates(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := installTestSkills(t, tmp)
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	// Pass duplicate: should only remove databricks-sql once, not wipe state.
+	err := UninstallSkillsOpts(ctx, UninstallOptions{Skills: []string{"databricks-sql", "databricks-sql"}})
+	require.NoError(t, err)
+
+	// databricks-sql should be gone.
+	_, err = os.Stat(filepath.Join(globalDir, "databricks-sql"))
+	assert.True(t, os.IsNotExist(err))
+
+	// databricks-jobs should still exist.
+	_, err = os.Stat(filepath.Join(globalDir, "databricks-jobs"))
+	assert.NoError(t, err, "other skills must not be removed")
+
+	// State should still exist with remaining skill.
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, state, "state file must not be deleted when other skills remain")
+	assert.Len(t, state.Skills, 1)
+	assert.Contains(t, state.Skills, "databricks-jobs")
+
+	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
+}
+
 func TestUninstallSelectiveAllRemovesStateFile(t *testing.T) {
 	tmp := setupTestHome(t)
 	globalDir := installTestSkills(t, tmp)
