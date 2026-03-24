@@ -33,13 +33,6 @@ func TestListCommandCallsListFn(t *testing.T) {
 	assert.True(t, called)
 }
 
-func TestListCommandHasSkillsFlag(t *testing.T) {
-	cmd := newListCmd()
-	f := cmd.Flags().Lookup("skills")
-	require.NotNil(t, f, "--skills flag should exist")
-	assert.Equal(t, "false", f.DefValue)
-}
-
 func TestSkillsListDelegatesToListFn(t *testing.T) {
 	orig := listSkillsFn
 	t.Cleanup(func() { listSkillsFn = orig })

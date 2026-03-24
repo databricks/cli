@@ -17,21 +17,15 @@ import (
 var listSkillsFn = defaultListSkills
 
 func newListCmd() *cobra.Command {
-	// --skills is accepted for forward-compat (future component types)
-	// but currently skills is the only component, so the output is the same.
-	var showSkills bool
-
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List installed AI tools components",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_ = showSkills
 			return listSkillsFn(cmd)
 		},
 	}
 
-	cmd.Flags().BoolVar(&showSkills, "skills", false, "Show detailed skills information")
 	return cmd
 }
 
