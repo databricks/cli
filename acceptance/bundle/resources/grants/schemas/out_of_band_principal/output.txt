@@ -9,6 +9,14 @@ Deployment complete!
 
 >>> [CLI] bundle plan -o json
 
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-out-of-band-principal-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan -o json
+
 >>> errcode [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.grants_schema

@@ -2,7 +2,7 @@
   "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
-  "serial": 1,
+  "serial": 2,
   "plan": {
     "resources.schemas.grants_schema": {
       "action": "skip",
@@ -34,21 +34,7 @@
           "label": "${resources.schemas.grants_schema.id}"
         }
       ],
-      "action": "update",
-      "new_state": {
-        "value": {
-          "securable_type": "schema",
-          "full_name": "main.schema_out_of_band_principal_[UNIQUE_NAME]",
-          "__embed__": [
-            {
-              "principal": "[USERNAME]",
-              "privileges": [
-                "CREATE_TABLE"
-              ]
-            }
-          ]
-        }
-      },
+      "action": "skip",
       "remote_state": {
         "securable_type": "schema",
         "full_name": "main.schema_out_of_band_principal_[UNIQUE_NAME]",
@@ -58,25 +44,8 @@
             "privileges": [
               "CREATE_TABLE"
             ]
-          },
-          {
-            "principal": "deco-test-user@databricks.com",
-            "privileges": [
-              "USE_SCHEMA"
-            ]
           }
         ]
-      },
-      "changes": {
-        "[principal='deco-test-user@databricks.com']": {
-          "action": "update",
-          "remote": {
-            "principal": "deco-test-user@databricks.com",
-            "privileges": [
-              "USE_SCHEMA"
-            ]
-          }
-        }
       }
     }
   }
