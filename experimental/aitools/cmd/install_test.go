@@ -311,6 +311,22 @@ func TestSkillsInstallExecuteWithSkillName(t *testing.T) {
 	assert.Equal(t, []string{"databricks"}, (*calls)[0].opts.SpecificSkills)
 }
 
+func TestSkillsInstallForwardsExperimental(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newSkillsInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--experimental"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.True(t, (*calls)[0].opts.IncludeExperimental, "--experimental should be forwarded")
+}
+
 func TestSkillsInstallExecuteRejectsTwoArgs(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	cmd := newSkillsInstallCmd()

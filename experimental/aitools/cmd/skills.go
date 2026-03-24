@@ -72,6 +72,8 @@ func newSkillsListCmd() *cobra.Command {
 }
 
 func newSkillsInstallCmd() *cobra.Command {
+	var includeExperimental bool
+
 	cmd := &cobra.Command{
 		Use:   "install [skill-name]",
 		Short: "Install Databricks skills for detected coding agents",
@@ -80,15 +82,19 @@ func newSkillsInstallCmd() *cobra.Command {
 			// Delegate to the flat install command's logic.
 			installCmd := newInstallCmd()
 			installCmd.SetContext(cmd.Context())
+
+			var delegateArgs []string
 			if len(args) > 0 {
-				// Pass the skill name as a --skills flag.
-				installCmd.SetArgs([]string{"--skills", args[0]})
-			} else {
-				installCmd.SetArgs([]string{})
+				delegateArgs = append(delegateArgs, "--skills", args[0])
 			}
+			if includeExperimental {
+				delegateArgs = append(delegateArgs, "--experimental")
+			}
+			installCmd.SetArgs(delegateArgs)
 			return installCmd.Execute()
 		},
 	}
 
+	cmd.Flags().BoolVar(&includeExperimental, "experimental", false, "Include experimental skills")
 	return cmd
 }
