@@ -20,6 +20,16 @@ Deployment complete!
 >>> [CLI] grants get schema main.schema_remove_principal_[UNIQUE_NAME]
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> errcode [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
