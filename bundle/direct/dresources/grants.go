@@ -13,12 +13,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
-const (
-	grantsNodeSuffix    = ".grants"
-	grantsPrincipalKey  = "principal"
-	grantsFullNameError = "internal error: grants full_name must be resolved before deployment"
-)
-
 var grantResourceToSecurableType = map[string]string{
 	"catalogs":           "catalog",
 	"schemas":            "schema",
@@ -34,9 +28,9 @@ type GrantsState struct {
 }
 
 func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
-	baseNode, ok := strings.CutSuffix(node, grantsNodeSuffix)
+	baseNode, ok := strings.CutSuffix(node, ".grants")
 	if !ok {
-		return nil, fmt.Errorf("internal error: node %q does not end with %s", node, grantsNodeSuffix)
+		return nil, fmt.Errorf("internal error: node %q does not end with .grants", node)
 	}
 
 	resourceType, err := extractGrantResourceType(node)
@@ -56,7 +50,7 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 
 	// Backend sorts privileges, so we sort here as well.
 	for i := range *grantsPtr {
-		sortPrivileges((*grantsPtr)[i].Privileges)
+		sortPriviliges((*grantsPtr)[i].Privileges)
 	}
 
 	return &structvar.StructVar{
@@ -84,7 +78,7 @@ func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
 }
 
 func grantKey(x catalog.PrivilegeAssignment) (string, string) {
-	return grantsPrincipalKey, x.Principal
+	return "principal", x.Principal
 }
 
 func (*ResourceGrants) KeyedSlices() map[string]any {
@@ -114,7 +108,7 @@ func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, e
 }
 
 func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (string, *GrantsState, error) {
-	err := r.updateGrants(ctx, state, nil)
+	err := r.applyGrants(ctx, state, nil)
 	if err != nil {
 		return "", nil, err
 	}
@@ -123,7 +117,7 @@ func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (stri
 }
 
 func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, changes Changes) (*GrantsState, error) {
-	return nil, r.updateGrants(ctx, state, changes)
+	return nil, r.applyGrants(ctx, state, changes)
 }
 
 func (r *ResourceGrants) DoDelete(ctx context.Context, id string) error {
@@ -132,28 +126,20 @@ func (r *ResourceGrants) DoDelete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *ResourceGrants) updateGrants(ctx context.Context, state *GrantsState, changes Changes) error {
-	req, err := buildGrantUpdateRequest(state, changes)
-	if err != nil {
-		return err
-	}
-	_, err = r.client.Grants.Update(ctx, req)
-	return err
-}
-
-func buildGrantUpdateRequest(state *GrantsState, changes Changes) (catalog.UpdatePermissions, error) {
+func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState, changes Changes) error {
 	if state.FullName == "" {
-		return catalog.UpdatePermissions{}, errors.New(grantsFullNameError)
+		return errors.New("internal error: grants full_name must be resolved before deployment")
 	}
 	removedPrincipals, err := removedGrantPrincipals(changes, state.EmbeddedSlice)
 	if err != nil {
-		return catalog.UpdatePermissions{}, err
+		return err
 	}
-	return catalog.UpdatePermissions{
+	_, err = r.client.Grants.Update(ctx, catalog.UpdatePermissions{
 		SecurableType: state.SecurableType,
 		FullName:      state.FullName,
 		Changes:       buildGrantChanges(state.EmbeddedSlice, removedPrincipals),
-	}, nil
+	})
+	return err
 }
 
 func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removedPrincipals []string) []catalog.PermissionsChange {
@@ -238,7 +224,7 @@ func grantPrincipalFromPath(pathString string) (string, bool, error) {
 		return "", false, nil
 	}
 	key, value, ok := segments[0].KeyValue()
-	if !ok || key != grantsPrincipalKey {
+	if !ok || key != "principal" {
 		return "", false, nil
 	}
 	return value, true, nil
@@ -263,7 +249,8 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 			if assignment.Principal == "" {
 				continue
 			}
-			privs := slices.Clone(assignment.Privileges)
+			privs := make([]catalog.Privilege, len(assignment.Privileges))
+			copy(privs, assignment.Privileges)
 			assignments = append(assignments, catalog.PrivilegeAssignment{
 				Principal:       assignment.Principal,
 				Privileges:      privs,
@@ -278,7 +265,7 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 	return assignments, nil
 }
 
-func sortPrivileges(privileges []catalog.Privilege) {
+func sortPriviliges(privileges []catalog.Privilege) {
 	slices.Sort(privileges)
 }
 
