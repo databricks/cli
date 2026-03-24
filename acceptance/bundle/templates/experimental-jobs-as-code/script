@@ -6,11 +6,11 @@ cd output/my_jobs_as_code
 #
 # with -f we add pre-build wheel, in addition to PyPi index,
 # if PyPi package is not yet published, it will be used instead
-uv -q sync -f $(dirname $DATABRICKS_BUNDLES_WHEEL)
+uv -q sync --no-index -f $(dirname $DATABRICKS_BUNDLES_WHEEL)
 
 trace $CLI bundle validate -t dev --output json | jq ".resources"
 
-uv build -q
+uv build -q --no-index
 trace unzip -Z1 dist/my_jobs_as_code-0.0.1-py3-none-any.whl
 
 rm -fr .venv resources/__pycache__ uv.lock src/my_jobs_as_code.egg-info dist

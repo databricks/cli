@@ -144,6 +144,7 @@ func TestPatchWheel(t *testing.T) {
 	// Unset any existing virtualenv so that "uv pip install" below is not confused
 	// (it prefers virtual env from the environment and fallsback to .venv in current directory)
 	t.Setenv("VIRTUAL_ENV", "")
+	t.Setenv("UV_OFFLINE", "true")
 
 	for _, py := range pythonVersions {
 		t.Run(py, func(t *testing.T) {
