@@ -145,10 +145,6 @@ func TestPatchWheel(t *testing.T) {
 	// (it prefers virtual env from the environment and fallsback to .venv in current directory)
 	t.Setenv("VIRTUAL_ENV", "")
 
-	// Use vendored packages instead of PyPI
-	t.Setenv("UV_FIND_LINKS", vendoredPackages)
-	t.Setenv("UV_OFFLINE", "true")
-
 	for _, py := range pythonVersions {
 		t.Run(py, func(t *testing.T) {
 			t.Parallel()
@@ -159,7 +155,7 @@ func TestPatchWheel(t *testing.T) {
 
 			runCmd(t, tempDir, "uv", "venv", "-q", "--python", py)
 
-			runCmd(t, tempDir, "uv", "build", "-q", "--wheel")
+			runCmd(t, tempDir, "uv", "build", "-q", "--wheel", "--no-index", "--find-links", vendoredPackages)
 			distDir := filepath.Join(tempDir, "dist")
 			origWheel := getWheel(t, distDir)
 
@@ -196,7 +192,7 @@ func TestPatchWheel(t *testing.T) {
 			require.Greater(t, patchedWheel3, patchedWheel)
 
 			// Now use regular pip to re-install the wheel. Install pip from vendored packages (no network needed).
-			runCmd(t, tempDir, "uv", "pip", "install", "-q", "pip")
+			runCmd(t, tempDir, "uv", "pip", "install", "-q", "--no-index", "--find-links", vendoredPackages, "pip")
 
 			pippath := filepath.Join(tempDir, ".venv", getPythonScriptsDir(), "pip")
 			runCmd(t, tempDir, pippath, "install", "-q", patchedWheel3)
