@@ -204,6 +204,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
 	}
 
+	vendoredPyPackages, err := filepath.Abs("../libs/vendored_py_packages")
+	require.NoError(t, err)
+	t.Setenv("VENDORED_PY_PACKAGES", vendoredPyPackages)
+	repls.SetPath(vendoredPyPackages, "[VENDORED_PY_PACKAGES]")
+
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
 	if coverDir != "" {

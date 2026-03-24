@@ -1,0 +1,7 @@
+if [ "$PYDAB_VERSION" = "current" ]; then
+  echo "$DATABRICKS_BUNDLES_WHEEL" > "requirements-latest.txt"
+  UV_ARGS="--with-requirements requirements-latest.txt --no-cache"
+else
+  UV_ARGS="--no-index --find-links $VENDORED_PY_PACKAGES --with databricks-bundles==$PYDAB_VERSION"
+fi
+add_repl.py "$UV_ARGS" UV_ARGS
