@@ -1,0 +1,27 @@
+SCHEMA_NAME=schema_out_of_band_principal_$UNIQUE_NAME
+SCHEMA_FULL_NAME=main.$SCHEMA_NAME
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt update.json
+}
+trap cleanup EXIT
+
+cat > update.json <<'EOF'
+{
+  "changes": [
+    {
+      "principal": "deco-test-user@databricks.com",
+      "add": ["USE_SCHEMA"]
+    }
+  ]
+}
+EOF
+
+trace $CLI bundle deploy
+trace $CLI grants update schema "$SCHEMA_FULL_NAME" --json @update.json > /dev/null
+$CLI grants get schema "$SCHEMA_FULL_NAME" | gron.py --noindex | sort | contains.py "$CURRENT_USER_NAME" 'deco-test-user@databricks.com' > /dev/null
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+jq 'walk(if type == "object" then del(.effective_predictive_optimization_flag, .enable_predictive_optimization, .metastore_id, .schema_id, .updated_at, .updated_by) else . end)' out.plan.$DATABRICKS_BUNDLE_ENGINE.json > tmp.json && mv tmp.json out.plan.$DATABRICKS_BUNDLE_ENGINE.json
