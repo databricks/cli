@@ -8,6 +8,10 @@ Ignore = [
     '*.whl',
 ]
 
+[[Repls]]
+Old = 'Updating deployment state...\n'
+New = ''
+
 [[Server]]
 Pattern = "GET /api/2.1/clusters/get"
 Response.Body = '''

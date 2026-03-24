@@ -104,8 +104,6 @@ func (db *DeploymentState) DeleteState(key string) error {
 	return nil
 }
 
-// ensureWALOpen opens the WAL file and writes the header if not already done.
-// Must be called while holding db.mu.
 func (db *DeploymentState) ensureWALOpen() error {
 	if db.wal != nil {
 		return nil
@@ -122,7 +120,6 @@ func (db *DeploymentState) ensureWALOpen() error {
 		db.Data.Lineage = lineage
 	}
 
-	// WAL serial is the NEXT serial (current + 1)
 	walSerial := db.Data.Serial + 1
 
 	if err := wal.writeJSON(WALHeader{Lineage: lineage, Serial: walSerial}); err != nil {
@@ -169,15 +166,8 @@ func (db *DeploymentState) Open(ctx context.Context, path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			// Create new database with serial=0, will be incremented to 1 in Finalize()
 			db.Data = NewDatabase("", 0)
 			db.Path = path
-
-			// Write state file immediately to ensure it exists before any WAL operations.
-			// This guarantees we have a base state file for recovery validation.
-			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-				return fmt.Errorf("failed to create state directory: %w", err)
-			}
 			if err := db.unlockedSave(); err != nil {
 				return err
 			}
@@ -196,6 +186,11 @@ func (db *DeploymentState) Open(ctx context.Context, path string) error {
 	if err != nil {
 		return fmt.Errorf("WAL recovery failed: %w", err)
 	}
+
+	if err := migrateState(&db.Data); err != nil {
+		return fmt.Errorf("migrating state %s: %w", path, err)
+	}
+
 	if recovered {
 		if err := db.unlockedSave(); err != nil {
 			return err
@@ -204,10 +199,6 @@ func (db *DeploymentState) Open(ctx context.Context, path string) error {
 			return err
 		}
 		db.recoveredFromWAL = true
-	}
-
-	if err := migrateState(&db.Data); err != nil {
-		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 	return nil
 }
@@ -223,7 +214,8 @@ func (db *DeploymentState) Finalize() error {
 		}
 		db.wal = nil
 
-		replayResult, err := replayWAL(db.Path, &db.Data)
+		validationDB := db.Data
+		replayResult, err := replayWAL(db.Path, &validationDB)
 		if err != nil {
 			return fmt.Errorf("failed to replay WAL during finalize: %w", err)
 		}
@@ -259,8 +251,7 @@ func (db *DeploymentState) Finalize() error {
 	return nil
 }
 
-// Close closes the WAL file handle without finalizing or truncating.
-// Use this in tests or when you need to abort without saving state.
+// Close closes the WAL file without saving state.
 func (db *DeploymentState) Close() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -280,8 +271,7 @@ func (db *DeploymentState) AssertOpened() {
 	}
 }
 
-// RecoveredFromWAL returns true if state was recovered from WAL during Open().
-// This is used to determine if Finalize() should be called even with an empty plan.
+// RecoveredFromWAL reports whether Open recovered state from the WAL.
 func (db *DeploymentState) RecoveredFromWAL() bool {
 	return db.recoveredFromWAL
 }
@@ -316,7 +306,6 @@ func (db *DeploymentState) unlockedSave() error {
 		return err
 	}
 
-	// Create parent directories if they don't exist
 	dir := filepath.Dir(db.Path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %#v: %w", dir, err)

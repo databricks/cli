@@ -1,7 +1,6 @@
 package dstate
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -98,7 +97,7 @@ func TestOpenWALFailsIfFileAlreadyExists(t *testing.T) {
 }
 
 func TestRecoverFromWAL_NoWAL(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 
@@ -109,7 +108,7 @@ func TestRecoverFromWAL_NoWAL(t *testing.T) {
 }
 
 func TestRecoverFromWAL_ValidWAL(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 
@@ -139,7 +138,7 @@ func TestRecoverFromWAL_ValidWAL(t *testing.T) {
 }
 
 func TestRecoverFromWAL_StaleWAL(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 	walFilePath := walPath(statePath)
@@ -162,7 +161,7 @@ func TestRecoverFromWAL_StaleWAL(t *testing.T) {
 }
 
 func TestRecoverFromWAL_FutureWAL(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 
@@ -181,7 +180,7 @@ func TestRecoverFromWAL_FutureWAL(t *testing.T) {
 }
 
 func TestRecoverFromWAL_LineageMismatch(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 
@@ -200,7 +199,7 @@ func TestRecoverFromWAL_LineageMismatch(t *testing.T) {
 }
 
 func TestRecoverFromWAL_DeleteOperation(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 
@@ -232,7 +231,7 @@ func TestRecoverFromWAL_DeleteOperation(t *testing.T) {
 }
 
 func TestDeploymentState_WALIntegration(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 	walFilePath := walPath(statePath)
@@ -270,7 +269,7 @@ func TestDeploymentState_WALIntegration(t *testing.T) {
 }
 
 func TestDeploymentState_WALRecoveryOnOpen(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 
@@ -307,7 +306,7 @@ func TestDeploymentState_WALRecoveryOnOpen(t *testing.T) {
 }
 
 func TestDeploymentState_DeleteStateWritesWAL(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 
@@ -340,7 +339,7 @@ func TestDeploymentState_DeleteStateWritesWAL(t *testing.T) {
 }
 
 func TestDeploymentState_WALWithDependsOn(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 
@@ -366,7 +365,7 @@ func TestDeploymentState_WALWithDependsOn(t *testing.T) {
 }
 
 func TestRecoverFromWAL_CorruptedMiddleLine(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 	walFilePath := walPath(statePath)
@@ -398,7 +397,7 @@ not valid json
 }
 
 func TestRecoverFromWAL_CorruptedLastLine(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 	walFilePath := walPath(statePath)
@@ -430,7 +429,7 @@ not valid json
 }
 
 func TestDeploymentState_RecoveredFromWALFlag(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 
@@ -457,7 +456,7 @@ func TestDeploymentState_RecoveredFromWALFlag(t *testing.T) {
 }
 
 func TestRecoverFromWAL_LineageAdoption(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 	walFilePath := walPath(statePath)
@@ -489,7 +488,7 @@ func TestReadWAL_EmptyFile(t *testing.T) {
 }
 
 func TestDeploymentState_MultipleOperationsSameKey(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 
@@ -522,7 +521,7 @@ func TestDeploymentState_MultipleOperationsSameKey(t *testing.T) {
 }
 
 func TestDeploymentState_FinalizeFailsOnCorruptedWAL(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 	walFilePath := walPath(statePath)

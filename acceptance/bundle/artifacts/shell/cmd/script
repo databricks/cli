@@ -1,1 +1,1 @@
-trace $CLI bundle deploy > out.deploy.txt 2>&1
+trace $CLI bundle deploy
