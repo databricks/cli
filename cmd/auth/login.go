@@ -385,7 +385,14 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 
 	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
 	// URL params from explicit --host override stale profile values.
-	extractHostQueryParams(authArguments)
+	params := auth.ExtractHostQueryParams(authArguments.Host)
+	authArguments.Host = params.Host
+	if authArguments.WorkspaceID == "" {
+		authArguments.WorkspaceID = params.WorkspaceID
+	}
+	if authArguments.AccountID == "" {
+		authArguments.AccountID = params.AccountID
+	}
 
 	// Inherit workspace_id from the existing profile AFTER URL param extraction.
 	// This ensures URL params (?o=...) take precedence over stale profile values,
@@ -456,20 +463,6 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	}
 
 	return nil
-}
-
-// extractHostQueryParams parses query parameters from the host URL and applies
-// them to authArguments. Only sets values not already present (explicit flags
-// take precedence). Uses [auth.ExtractHostQueryParams] for the actual parsing.
-func extractHostQueryParams(authArguments *auth.AuthArguments) {
-	params := auth.ExtractHostQueryParams(authArguments.Host)
-	authArguments.Host = params.Host
-	if authArguments.WorkspaceID == "" {
-		authArguments.WorkspaceID = params.WorkspaceID
-	}
-	if authArguments.AccountID == "" {
-		authArguments.AccountID = params.AccountID
-	}
 }
 
 // runHostDiscovery calls EnsureResolved() with a temporary config to fetch

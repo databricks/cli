@@ -356,88 +356,6 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 	}
 }
 
-func TestExtractHostQueryParams(t *testing.T) {
-	tests := []struct {
-		name            string
-		host            string
-		existingAcctID  string
-		existingWsID    string
-		wantHost        string
-		wantAccountID   string
-		wantWorkspaceID string
-	}{
-		{
-			name:            "extract workspace_id from ?o=",
-			host:            "https://spog.example.com/?o=12345",
-			wantHost:        "https://spog.example.com",
-			wantWorkspaceID: "12345",
-		},
-		{
-			name:            "extract both account_id and workspace_id",
-			host:            "https://spog.example.com/?o=12345&a=abc",
-			wantHost:        "https://spog.example.com",
-			wantAccountID:   "abc",
-			wantWorkspaceID: "12345",
-		},
-		{
-			name:          "extract account_id from ?account_id=",
-			host:          "https://spog.example.com/?account_id=abc",
-			wantHost:      "https://spog.example.com",
-			wantAccountID: "abc",
-		},
-		{
-			name:            "extract workspace_id from ?workspace_id=",
-			host:            "https://spog.example.com/?workspace_id=99999",
-			wantHost:        "https://spog.example.com",
-			wantWorkspaceID: "99999",
-		},
-		{
-			name:     "no query params leaves host unchanged",
-			host:     "https://spog.example.com",
-			wantHost: "https://spog.example.com",
-		},
-		{
-			name:            "explicit flags take precedence over query params",
-			host:            "https://spog.example.com/?o=12345&a=abc",
-			existingAcctID:  "explicit-account",
-			existingWsID:    "explicit-ws",
-			wantHost:        "https://spog.example.com",
-			wantAccountID:   "explicit-account",
-			wantWorkspaceID: "explicit-ws",
-		},
-		{
-			name:     "non-numeric ?o= is skipped",
-			host:     "https://spog.example.com/?o=abc",
-			wantHost: "https://spog.example.com",
-		},
-		{
-			name:            "non-numeric ?workspace_id= is skipped",
-			host:            "https://spog.example.com/?workspace_id=abc",
-			wantHost:        "https://spog.example.com",
-			wantWorkspaceID: "",
-		},
-		{
-			name:     "invalid URL is left unchanged",
-			host:     "not a valid url ://???",
-			wantHost: "not a valid url ://???",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			args := &auth.AuthArguments{
-				Host:        tt.host,
-				AccountID:   tt.existingAcctID,
-				WorkspaceID: tt.existingWsID,
-			}
-			extractHostQueryParams(args)
-			assert.Equal(t, tt.wantHost, args.Host)
-			assert.Equal(t, tt.wantAccountID, args.AccountID)
-			assert.Equal(t, tt.wantWorkspaceID, args.WorkspaceID)
-		})
-	}
-}
-
 func TestShouldUseDiscovery(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -593,20 +511,6 @@ func TestRunHostDiscovery_ClassicWorkspaceDoesNotSetAccountID(t *testing.T) {
 	// Only workspace_id is set; account_id stays empty since discovery didn't return it.
 	assert.Equal(t, "", args.AccountID)
 	assert.Equal(t, "12345", args.WorkspaceID)
-}
-
-func TestExtractHostQueryParams_OverridesProfileWorkspaceID(t *testing.T) {
-	// Simulates the fix: profile loads workspace_id="old-ws", then the user
-	// provides --host https://spog.example.com?o=99999. After Fix 1, profile
-	// inheritance is deferred, so authArguments.WorkspaceID is empty when
-	// extractHostQueryParams runs, and URL param wins.
-	args := &auth.AuthArguments{
-		Host: "https://spog.example.com/?o=99999",
-		// WorkspaceID is empty because profile inheritance was deferred.
-	}
-	extractHostQueryParams(args)
-	assert.Equal(t, "https://spog.example.com", args.Host)
-	assert.Equal(t, "99999", args.WorkspaceID)
 }
 
 func TestSetHostAndAccountId_WorkspaceIDNoneSentinelInherited(t *testing.T) {
