@@ -90,11 +90,13 @@ func resolveAgentNames(ctx context.Context, names string) ([]*agents.Agent, erro
 	}
 
 	var result []*agents.Agent
+	seen := make(map[string]bool)
 	for _, name := range strings.Split(names, ",") {
 		name = strings.TrimSpace(name)
-		if name == "" {
+		if name == "" || seen[name] {
 			continue
 		}
+		seen[name] = true
 		agent, ok := available[name]
 		if !ok {
 			return nil, fmt.Errorf("unknown agent %q. Available agents: %s", name, strings.Join(availableNames, ", "))

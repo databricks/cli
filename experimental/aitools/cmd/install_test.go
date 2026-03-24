@@ -347,3 +347,11 @@ func TestResolveAgentNamesEmpty(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no agents specified")
 }
+
+func TestResolveAgentNamesDuplicatesDeduplicates(t *testing.T) {
+	ctx := t.Context()
+	result, err := resolveAgentNames(ctx, "claude-code,claude-code")
+	require.NoError(t, err)
+	assert.Len(t, result, 1, "duplicate agent names should be deduplicated")
+	assert.Equal(t, "claude-code", result[0].Name)
+}
