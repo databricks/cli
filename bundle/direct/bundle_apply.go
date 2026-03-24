@@ -21,7 +21,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	}
 
 	if len(plan.Plan) == 0 {
-		// Still need to finalize if WAL recovery happened to commit the recovered state
 		if b.StateDB.RecoveredFromWAL() {
 			if err := b.StateDB.Finalize(); err != nil {
 				logdiag.LogError(ctx, err)

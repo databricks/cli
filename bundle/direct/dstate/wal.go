@@ -36,7 +36,6 @@ type corruptedWALEntry struct {
 }
 
 type walReplayResult struct {
-	hasWAL           bool
 	recovered        bool
 	stale            bool
 	entriesRecovered int
@@ -198,100 +197,46 @@ func readWAL(statePath string) (*WALHeader, []WALEntry, []corruptedWALEntry, err
 
 func replayWAL(statePath string, db *Database) (walReplayResult, error) {
 	result := walReplayResult{}
-	wp := walPath(statePath)
-
-	if _, err := os.Stat(wp); os.IsNotExist(err) {
-		return result, nil
-	}
-	result.hasWAL = true
-
-	f, err := os.Open(wp)
+	header, entries, corrupted, err := readWAL(statePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return result, nil
+		}
 		return result, fmt.Errorf("%w: %v", errWALRead, err)
 	}
-	defer f.Close()
 
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
-	var header *WALHeader
-	lineNumber := 0
-	var corrupted []corruptedWALEntry
-	for scanner.Scan() {
-		lineNumber++
-		line := bytes.TrimSpace(scanner.Bytes())
-		if len(line) == 0 {
-			continue
-		}
+	expectedSerial := db.Serial + 1
+	if header.Serial < expectedSerial {
+		result.stale = true
+		return result, nil
+	}
 
-		lineCopy := make([]byte, len(line))
-		copy(lineCopy, line)
-		if header == nil {
-			var h WALHeader
-			if err := json.Unmarshal(lineCopy, &h); err != nil {
-				return result, fmt.Errorf("%w: failed to parse WAL header: %w", errWALRead, err)
-			}
-			header = &h
+	if header.Serial > expectedSerial {
+		return result, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
+	}
 
-			expectedSerial := db.Serial + 1
-			if header.Serial < expectedSerial {
-				result.stale = true
-				return result, nil
-			}
+	if db.Lineage != "" && header.Lineage != "" && db.Lineage != header.Lineage {
+		return result, fmt.Errorf("WAL lineage (%s) does not match state lineage (%s)", header.Lineage, db.Lineage)
+	}
 
-			if header.Serial > expectedSerial {
-				return result, fmt.Errorf("WAL serial (%d) is ahead of expected (%d), state may be corrupted", header.Serial, expectedSerial)
-			}
+	if db.Lineage == "" && header.Lineage != "" {
+		db.Lineage = header.Lineage
+	}
 
-			if db.Lineage != "" && header.Lineage != "" && db.Lineage != header.Lineage {
-				return result, fmt.Errorf("WAL lineage (%s) does not match state lineage (%s)", header.Lineage, db.Lineage)
-			}
+	if db.State == nil {
+		db.State = make(map[string]ResourceEntry)
+	}
 
-			if db.Lineage == "" && header.Lineage != "" {
-				db.Lineage = header.Lineage
-			}
-
-			if db.State == nil {
-				db.State = make(map[string]ResourceEntry)
-			}
-			continue
-		}
-
-		var entry WALEntry
-		if err := json.Unmarshal(lineCopy, &entry); err != nil {
-			corrupted = append(corrupted, corruptedWALEntry{
-				lineNumber: lineNumber,
-				rawLine:    string(lineCopy),
-				parseErr:   err,
-			})
-			continue
-		}
-
-		if entry.K == "" {
-			corrupted = append(corrupted, corruptedWALEntry{
-				lineNumber: lineNumber,
-				rawLine:    string(lineCopy),
-				parseErr:   errors.New("entry has empty key"),
-			})
-			continue
-		}
-
+	for _, entry := range entries {
 		if entry.V != nil {
 			db.State[entry.K] = *entry.V
 		} else {
 			delete(db.State, entry.K)
 		}
-		result.entriesRecovered++
-	}
-
-	if err := scanner.Err(); err != nil {
-		return result, fmt.Errorf("%w: failed to read WAL file: %w", errWALRead, err)
-	}
-
-	if header == nil {
-		return result, fmt.Errorf("%w: WAL file is empty", errWALRead)
 	}
 
 	result.recovered = true
+	result.entriesRecovered = len(entries)
 	result.corruptedEntries = corrupted
 	return result, nil
 }
@@ -324,7 +269,7 @@ func recoverFromWAL(ctx context.Context, statePath string, db *Database) (bool, 
 	logRecoveryProgress(ctx, "Recovering state from WAL file: "+relativePathForLog(walPath(statePath)))
 	walLogPath := relativePathForLog(walPath(statePath))
 	for _, corrupted := range replayResult.corruptedEntries {
-		log.Warnf(ctx, "Could not read state file WAL entry in %s: line %d: %s: %v", walLogPath, corrupted.lineNumber, corrupted.rawLine, corrupted.parseErr)
+		log.Warnf(ctx, "Could not read state file WAL entry in %s: line %d", walLogPath, corrupted.lineNumber)
 	}
 
 	if err := writeCorruptedWALEntries(statePath, replayResult.corruptedEntries); err != nil {
