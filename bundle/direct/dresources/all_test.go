@@ -778,7 +778,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	if adapter.HasDoUpdate() {
-		remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, nil)
+		remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, &deployplan.PlanEntry{})
 		require.NoError(t, err, "DoUpdate failed")
 		if remoteStateFromUpdate != nil {
 			remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)

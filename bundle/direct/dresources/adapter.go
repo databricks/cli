@@ -15,6 +15,7 @@ import (
 type (
 	Changes    = deployplan.Changes
 	ChangeDesc = deployplan.ChangeDesc
+	PlanEntry  = deployplan.PlanEntry
 )
 
 // IResource describes core methods for the resource implementation.
@@ -55,8 +56,8 @@ type IResource interface {
 
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, changes Changes) (*catalog.SchemaInfo, error)
-	DoUpdate(ctx context.Context, id string, newState any, changes Changes) (remoteState any, e error)
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
+	DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
@@ -435,14 +436,14 @@ func (a *Adapter) HasDoUpdate() bool {
 	return a.doUpdate != nil
 }
 
-// DoUpdate updates the resource with information about changes computed during plan.
+// DoUpdate updates the resource with the plan entry computed during plan.
 // Returns remote state if available, otherwise nil.
-func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, changes Changes) (any, error) {
+func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (any, error) {
 	if a.doUpdate == nil {
 		return nil, errors.New("internal error: DoUpdate not found")
 	}
 
-	outs, err := a.doUpdate.Call(ctx, id, newState, changes)
+	outs, err := a.doUpdate.Call(ctx, id, newState, entry)
 	if err != nil {
 		return nil, err
 	}

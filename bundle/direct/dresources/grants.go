@@ -7,8 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -117,15 +115,12 @@ func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (stri
 	return state.SecurableType + "/" + state.FullName, nil, nil
 }
 
-func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, changes Changes) (*GrantsState, error) {
+func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, entry *PlanEntry) (*GrantsState, error) {
 	if state.FullName == "" {
 		return nil, errors.New("internal error: grants full_name must be resolved before deployment")
 	}
-	removedPrincipals, err := removedGrantPrincipals(ctx, changes, state.EmbeddedSlice)
-	if err != nil {
-		return nil, err
-	}
-	_, err = r.client.Grants.Update(ctx, catalog.UpdatePermissions{
+	removedPrincipals := removedGrantPrincipals(state.EmbeddedSlice, entry)
+	_, err := r.client.Grants.Update(ctx, catalog.UpdatePermissions{
 		SecurableType: state.SecurableType,
 		FullName:      state.FullName,
 		Changes:       buildGrantChanges(state.EmbeddedSlice, removedPrincipals),
@@ -166,66 +161,31 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removed
 	return changes
 }
 
-func removedGrantPrincipals(ctx context.Context, changes Changes, desiredAssignments []catalog.PrivilegeAssignment) ([]string, error) {
-	if len(changes) == 0 {
-		return nil, nil
+// removedGrantPrincipals returns principals present in the remote state but absent from the desired assignments.
+func removedGrantPrincipals(desiredAssignments []catalog.PrivilegeAssignment, entry *PlanEntry) []string {
+	if entry == nil {
+		return nil
+	}
+	remote, ok := entry.RemoteState.(*GrantsState)
+	if !ok || remote == nil {
+		return nil
 	}
 
-	desiredPrincipals := make(map[string]struct{}, len(desiredAssignments))
-	for _, assignment := range desiredAssignments {
-		if assignment.Principal == "" {
-			continue
+	desired := make(map[string]struct{}, len(desiredAssignments))
+	for _, a := range desiredAssignments {
+		if a.Principal != "" {
+			desired[a.Principal] = struct{}{}
 		}
-		desiredPrincipals[assignment.Principal] = struct{}{}
 	}
 
-	removedPrincipals := make(map[string]struct{})
-	for pathString, change := range changes {
-		if change == nil || change.Remote == nil {
-			continue
+	var result []string
+	for _, a := range remote.EmbeddedSlice {
+		if _, ok := desired[a.Principal]; !ok {
+			result = append(result, a.Principal)
 		}
-		principal, ok, err := grantPrincipalFromPath(pathString)
-		if err != nil {
-			log.Warnf(ctx, "grants: skipping unparseable change path %q: %v", pathString, err)
-			continue
-		}
-		if !ok {
-			continue
-		}
-		if _, ok := desiredPrincipals[principal]; ok {
-			continue
-		}
-		removedPrincipals[principal] = struct{}{}
-	}
-
-	result := make([]string, 0, len(removedPrincipals))
-	for principal := range removedPrincipals {
-		result = append(result, principal)
-	}
-	if len(result) == 0 {
-		return nil, nil
 	}
 	slices.Sort(result)
-	return result, nil
-}
-
-func grantPrincipalFromPath(pathString string) (string, bool, error) {
-	path, err := structpath.ParsePath(pathString)
-	if err != nil {
-		return "", false, err
-	}
-	if path == nil {
-		return "", false, nil
-	}
-	segments := path.AsSlice()
-	if len(segments) == 0 {
-		return "", false, nil
-	}
-	key, value, ok := segments[0].KeyValue()
-	if !ok || key != "principal" {
-		return "", false, nil
-	}
-	return value, true, nil
+	return result
 }
 
 func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName string) ([]catalog.PrivilegeAssignment, error) {

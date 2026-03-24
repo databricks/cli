@@ -37,7 +37,7 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 		"Owner",                        // Unsupported - should be filtered out
 	}
 
-	_, err = adapter.DoUpdate(ctx, id, config, nil)
+	_, err = adapter.DoUpdate(ctx, id, config, &PlanEntry{})
 	require.NoError(t, err)
 
 	result, err := adapter.DoRead(ctx, id)

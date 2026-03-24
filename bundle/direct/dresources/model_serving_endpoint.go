@@ -285,34 +285,34 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes Changes) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, entry *PlanEntry) (*RefreshOutput, error) {
 	var err error
 
 	// Terraform makes these API calls sequentially. We do the same here.
 	// It's an unknown as of 1st Dec 2025 if these APIs are safe to make in parallel. (we did not check)
 	// https://github.com/databricks/terraform-provider-databricks/blob/c61a32300445f84efb2bb6827dee35e6e523f4ff/serving/resource_model_serving.go#L373
-	if changes.HasChange(pathTags) {
+	if entry.Changes.HasChange(pathTags) {
 		err = r.updateTags(ctx, id, config.Tags)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if changes.HasChange(pathAiGateway) {
+	if entry.Changes.HasChange(pathAiGateway) {
 		err = r.updateAiGateway(ctx, id, config.AiGateway)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if changes.HasChange(pathConfig) {
+	if entry.Changes.HasChange(pathConfig) {
 		err = r.updateConfig(ctx, id, config.Config)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if changes.HasChange(pathEmailNotifications) {
+	if entry.Changes.HasChange(pathEmailNotifications) {
 		err = r.updateNotifications(ctx, id, config.EmailNotifications)
 		if err != nil {
 			return nil, err
