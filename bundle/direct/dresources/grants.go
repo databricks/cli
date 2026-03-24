@@ -131,15 +131,19 @@ func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) er
 	}
 
 	var changes []catalog.PermissionsChange
-
-	// For each principal in the config, add their grants and remove everything else
-	for _, grantAssignment := range state.EmbeddedSlice {
-		changes = append(changes, catalog.PermissionsChange{
-			Principal:       grantAssignment.Principal,
-			Add:             grantAssignment.Privileges,
-			Remove:          []catalog.Privilege{catalog.PrivilegeAllPrivileges},
+	for _, ga := range state.EmbeddedSlice {
+		change := catalog.PermissionsChange{
+			Principal:       ga.Principal,
+			Add:             ga.Privileges,
+			Remove:          nil,
 			ForceSendFields: nil,
-		})
+		}
+		// Remove all other privileges unless ALL_PRIVILEGES is being granted
+		// (it would conflict with appearing in both Add and Remove).
+		if !slices.Contains(ga.Privileges, catalog.PrivilegeAllPrivileges) {
+			change.Remove = []catalog.Privilege{catalog.PrivilegeAllPrivileges}
+		}
+		changes = append(changes, change)
 	}
 
 	_, err := r.client.Grants.Update(ctx, catalog.UpdatePermissions{
