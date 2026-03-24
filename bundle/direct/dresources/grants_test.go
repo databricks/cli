@@ -9,6 +9,7 @@ import (
 )
 
 func TestRemovedGrantPrincipals(t *testing.T) {
+	ctx := t.Context()
 	tests := []struct {
 		name     string
 		changes  Changes
@@ -81,11 +82,25 @@ func TestRemovedGrantPrincipals(t *testing.T) {
 				"team's group",
 			},
 		},
+		{
+			name: "skips malformed change paths",
+			changes: Changes{
+				"[principal='bob'].privileges[0]": {
+					Remote: catalog.PrivilegeUseSchema,
+				},
+				"[principal='alice'": {
+					Remote: catalog.PrivilegeCreateTable,
+				},
+			},
+			expected: []string{
+				"bob",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := removedGrantPrincipals(tt.changes, tt.desired)
+			actual, err := removedGrantPrincipals(ctx, tt.changes, tt.desired)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, actual)
 		})

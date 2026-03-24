@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
@@ -108,7 +109,7 @@ func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, e
 }
 
 func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (string, *GrantsState, error) {
-	err := r.applyGrants(ctx, state, nil)
+	_, err := r.DoUpdate(ctx, "", state, nil)
 	if err != nil {
 		return "", nil, err
 	}
@@ -117,29 +118,25 @@ func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (stri
 }
 
 func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, changes Changes) (*GrantsState, error) {
-	return nil, r.applyGrants(ctx, state, changes)
-}
-
-func (r *ResourceGrants) DoDelete(ctx context.Context, id string) error {
-	// Similar to permissions, we do nothing there.
-	// We could delete all grants there, but it would be confusing to explain wrt permissions.
-	return nil
-}
-
-func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState, changes Changes) error {
 	if state.FullName == "" {
-		return errors.New("internal error: grants full_name must be resolved before deployment")
+		return nil, errors.New("internal error: grants full_name must be resolved before deployment")
 	}
-	removedPrincipals, err := removedGrantPrincipals(changes, state.EmbeddedSlice)
+	removedPrincipals, err := removedGrantPrincipals(ctx, changes, state.EmbeddedSlice)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	_, err = r.client.Grants.Update(ctx, catalog.UpdatePermissions{
 		SecurableType: state.SecurableType,
 		FullName:      state.FullName,
 		Changes:       buildGrantChanges(state.EmbeddedSlice, removedPrincipals),
 	})
-	return err
+	return nil, err
+}
+
+func (r *ResourceGrants) DoDelete(ctx context.Context, id string) error {
+	// Similar to permissions, we do nothing there.
+	// We could delete all grants there, but it would be confusing to explain wrt permissions.
+	return nil
 }
 
 func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removedPrincipals []string) []catalog.PermissionsChange {
@@ -169,7 +166,7 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removed
 	return changes
 }
 
-func removedGrantPrincipals(changes Changes, desiredAssignments []catalog.PrivilegeAssignment) ([]string, error) {
+func removedGrantPrincipals(ctx context.Context, changes Changes, desiredAssignments []catalog.PrivilegeAssignment) ([]string, error) {
 	if len(changes) == 0 {
 		return nil, nil
 	}
@@ -189,7 +186,8 @@ func removedGrantPrincipals(changes Changes, desiredAssignments []catalog.Privil
 		}
 		principal, ok, err := grantPrincipalFromPath(pathString)
 		if err != nil {
-			return nil, fmt.Errorf("internal error: parsing grants change path %q: %w", pathString, err)
+			log.Warnf(ctx, "grants: skipping unparseable change path %q: %v", pathString, err)
+			continue
 		}
 		if !ok {
 			continue
