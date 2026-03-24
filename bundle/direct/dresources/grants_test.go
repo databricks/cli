@@ -5,86 +5,148 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestRemovedPrincipalChanges(t *testing.T) {
+func TestRemovedGrantPrincipals(t *testing.T) {
 	tests := []struct {
 		name     string
-		current  []catalog.PrivilegeAssignment
+		changes  Changes
 		desired  []catalog.PrivilegeAssignment
+		expected []string
+	}{
+		{
+			name: "finds removed principals from root keyed path",
+			changes: Changes{
+				"[principal='bob']": {
+					Remote: catalog.PrivilegeAssignment{
+						Principal: "bob",
+					},
+				},
+			},
+			desired: []catalog.PrivilegeAssignment{
+				{
+					Principal: "alice",
+				},
+			},
+			expected: []string{
+				"bob",
+			},
+		},
+		{
+			name: "finds removed principals from nested privilege paths",
+			changes: Changes{
+				"[principal='bob'].privileges[0]": {
+					Remote: catalog.PrivilegeUseSchema,
+				},
+				"[principal='alice'].privileges[0]": {
+					Remote: catalog.PrivilegeCreateTable,
+				},
+			},
+			desired: []catalog.PrivilegeAssignment{
+				{
+					Principal: "alice",
+				},
+			},
+			expected: []string{
+				"bob",
+			},
+		},
+		{
+			name: "skips desired principals and nil remote entries",
+			changes: Changes{
+				"[principal='alice'].privileges[0]": {
+					Remote: catalog.PrivilegeCreateTable,
+				},
+				"[principal='bob'].privileges[0]": {},
+			},
+			desired: []catalog.PrivilegeAssignment{
+				{
+					Principal: "alice",
+				},
+			},
+		},
+		{
+			name: "sorts removed principals and unescapes quotes",
+			changes: Changes{
+				"[principal='team''s group'].privileges[0]": {
+					Remote: catalog.PrivilegeUseSchema,
+				},
+				"[principal='bob'].privileges[0]": {
+					Remote: catalog.PrivilegeApplyTag,
+				},
+			},
+			expected: []string{
+				"bob",
+				"team's group",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := removedGrantPrincipals(tt.changes, tt.desired)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestBuildGrantChanges(t *testing.T) {
+	tests := []struct {
+		name     string
+		desired  []catalog.PrivilegeAssignment
+		removed  []string
 		expected []catalog.PermissionsChange
 	}{
 		{
-			name: "removes principals missing from config",
-			current: []catalog.PrivilegeAssignment{
-				{
-					Principal:  "alice",
-					Privileges: []catalog.Privilege{catalog.PrivilegeCreateTable},
-				},
-				{
-					Principal:  "bob",
-					Privileges: []catalog.Privilege{catalog.PrivilegeUseSchema, catalog.PrivilegeApplyTag},
-				},
-			},
+			name: "removes all other privileges for desired principal",
 			desired: []catalog.PrivilegeAssignment{
 				{
-					Principal:  "alice",
-					Privileges: []catalog.Privilege{catalog.PrivilegeCreateTable},
+					Principal: "alice",
+					Privileges: []catalog.Privilege{
+						catalog.PrivilegeApplyTag,
+						catalog.PrivilegeCreateTable,
+					},
 				},
 			},
 			expected: []catalog.PermissionsChange{
 				{
-					Principal: "bob",
-					Remove: []catalog.Privilege{
+					Principal: "alice",
+					Add: []catalog.Privilege{
 						catalog.PrivilegeApplyTag,
-						catalog.PrivilegeUseSchema,
+						catalog.PrivilegeCreateTable,
+					},
+					Remove: []catalog.Privilege{
+						catalog.PrivilegeAllPrivileges,
 					},
 				},
 			},
 		},
 		{
-			name: "skips principals that are still desired",
-			current: []catalog.PrivilegeAssignment{
-				{
-					Principal:  "alice",
-					Privileges: []catalog.Privilege{catalog.PrivilegeCreateTable},
-				},
-			},
+			name: "uses all privileges for removed principals",
 			desired: []catalog.PrivilegeAssignment{
 				{
-					Principal:  "alice",
-					Privileges: []catalog.Privilege{catalog.PrivilegeCreateTable},
+					Principal: "alice",
+					Privileges: []catalog.Privilege{
+						catalog.PrivilegeAllPrivileges,
+					},
 				},
 			},
-		},
-		{
-			name: "sorts removed principals and privileges",
-			current: []catalog.PrivilegeAssignment{
-				{
-					Principal:  "charlie",
-					Privileges: []catalog.Privilege{catalog.PrivilegeModify},
-				},
-				{
-					Principal:  "bob",
-					Privileges: []catalog.Privilege{catalog.PrivilegeUseSchema, catalog.PrivilegeApplyTag},
-				},
-				{
-					Principal: "empty",
-				},
+			removed: []string{
+				"bob",
 			},
-			desired: nil,
 			expected: []catalog.PermissionsChange{
 				{
-					Principal: "bob",
-					Remove: []catalog.Privilege{
-						catalog.PrivilegeApplyTag,
-						catalog.PrivilegeUseSchema,
+					Principal: "alice",
+					Add: []catalog.Privilege{
+						catalog.PrivilegeAllPrivileges,
 					},
 				},
 				{
-					Principal: "charlie",
+					Principal: "bob",
 					Remove: []catalog.Privilege{
-						catalog.PrivilegeModify,
+						catalog.PrivilegeAllPrivileges,
 					},
 				},
 			},
@@ -93,7 +155,7 @@ func TestRemovedPrincipalChanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, removedPrincipalChanges(tt.current, tt.desired))
+			assert.Equal(t, tt.expected, buildGrantChanges(tt.desired, tt.removed))
 		})
 	}
 }
