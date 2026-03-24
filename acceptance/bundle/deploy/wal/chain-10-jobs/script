@@ -3,7 +3,7 @@ trace errcode $CLI bundle deploy
 
 echo ""
 echo "=== WAL content after crash ==="
-cat .databricks/bundle/default/resources.json.wal 2>/dev/null || echo "No WAL file"
+jq -S . .databricks/bundle/default/resources.json.wal 2>/dev/null || echo "No WAL file"
 
 echo ""
 echo "=== Number of jobs saved in WAL ==="

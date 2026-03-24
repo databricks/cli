@@ -1,5 +1,4 @@
 RecordRequests = true
-EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
 Ignore = [
     '.venv',
     'dist',
