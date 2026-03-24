@@ -4,7 +4,7 @@ targets:
     artifacts:
       wheels:
         type: whl
-        build: "uv build --wheel --no-index --find-links $VENDORED_PY_PACKAGES"
+        build: "uv build --wheel"
     resources:
       jobs:
         job1:

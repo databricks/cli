@@ -198,16 +198,20 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		setupTerraform(t, cwd, buildDir, &repls)
 	}
 
+	vendoredPyPackages, err := filepath.Abs("../libs/vendored_py_packages")
+	require.NoError(t, err)
+	t.Setenv("VENDORED_PY_PACKAGES", vendoredPyPackages)
+	repls.SetPath(vendoredPyPackages, "[VENDORED_PY_PACKAGES]")
+
+	// Make all uv invocations use vendored packages instead of PyPI
+	t.Setenv("UV_FIND_LINKS", vendoredPyPackages)
+	t.Setenv("UV_OFFLINE", "true")
+
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
 		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
 		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
 	}
-
-	vendoredPyPackages, err := filepath.Abs("../libs/vendored_py_packages")
-	require.NoError(t, err)
-	t.Setenv("VENDORED_PY_PACKAGES", vendoredPyPackages)
-	repls.SetPath(vendoredPyPackages, "[VENDORED_PY_PACKAGES]")
 
 	coverDir := os.Getenv("CLI_GOCOVERDIR")
 
@@ -1392,9 +1396,7 @@ func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// so we prepare here by keeping only one.
 	_ = prepareWheelBuildDirectory(t, buildDir)
 
-	vendoredPackages, err := filepath.Abs("../libs/vendored_py_packages")
-	require.NoError(t, err)
-	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir, "--no-index", "--find-links", vendoredPackages}, "../python", []string{})
+	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../python", []string{})
 
 	latestWheel := prepareWheelBuildDirectory(t, buildDir)
 	if latestWheel == "" {
