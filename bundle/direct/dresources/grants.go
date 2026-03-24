@@ -50,7 +50,7 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 
 	// Backend sorts privileges, so we sort here as well.
 	for i := range *grantsPtr {
-		sortPriviliges((*grantsPtr)[i].Privileges)
+		slices.Sort((*grantsPtr)[i].Privileges)
 	}
 
 	return &structvar.StructVar{
@@ -113,7 +113,7 @@ func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (stri
 		return "", nil, err
 	}
 
-	return makeGrantsID(state.SecurableType, state.FullName), nil, nil
+	return state.SecurableType + "/" + state.FullName, nil, nil
 }
 
 func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, changes Changes) (*GrantsState, error) {
@@ -265,10 +265,6 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 	return assignments, nil
 }
 
-func sortPriviliges(privileges []catalog.Privilege) {
-	slices.Sort(privileges)
-}
-
 func extractGrantResourceType(node string) (string, error) {
 	rest, ok := strings.CutPrefix(node, "resources.")
 	if !ok {
@@ -290,8 +286,4 @@ func parseGrantsID(id string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid grants id: %q", id)
 	}
 	return parts[0], parts[1], nil
-}
-
-func makeGrantsID(securableType, fullName string) string {
-	return securableType + "/" + fullName
 }
