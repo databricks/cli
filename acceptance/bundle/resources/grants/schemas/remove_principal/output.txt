@@ -10,10 +10,6 @@ json.privilege_assignments[].principal = "deco-test-user@databricks.com";
 json.privilege_assignments[].principal = "[USERNAME]";
 json.privilege_assignments[].privileges[] = "CREATE_TABLE";
 json.privilege_assignments[].privileges[] = "USE_SCHEMA";
-json.privilege_assignments[].principal = "deco-test-user@databricks.com";
-json.privilege_assignments[].principal = "[USERNAME]";
-json.privilege_assignments[].privileges[] = "CREATE_TABLE";
-json.privilege_assignments[].privileges[] = "USE_SCHEMA";
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...
