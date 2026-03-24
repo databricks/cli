@@ -1,8 +1,6 @@
 package aitools
 
 import (
-	"strings"
-
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
@@ -31,9 +29,7 @@ preview what would change without downloading.`,
 				Force: force,
 				NoNew: noNew,
 			}
-			if skillsFlag != "" {
-				opts.Skills = strings.Split(skillsFlag, ",")
-			}
+			opts.Skills = splitAndTrim(skillsFlag)
 
 			result, err := installer.UpdateSkills(ctx, src, installed, opts)
 			if err != nil {

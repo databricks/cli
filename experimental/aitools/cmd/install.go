@@ -63,9 +63,7 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 			opts := installer.InstallOptions{
 				IncludeExperimental: includeExperimental,
 			}
-			if skillsFlag != "" {
-				opts.SpecificSkills = strings.Split(skillsFlag, ",")
-			}
+			opts.SpecificSkills = splitAndTrim(skillsFlag)
 
 			installer.PrintInstallingFor(ctx, targetAgents)
 

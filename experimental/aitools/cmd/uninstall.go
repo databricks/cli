@@ -1,8 +1,6 @@
 package aitools
 
 import (
-	"strings"
-
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/spf13/cobra"
 )
@@ -18,9 +16,7 @@ func newUninstallCmd() *cobra.Command {
 By default, removes all skills. Use --skills to remove specific skills only.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			opts := installer.UninstallOptions{}
-			if skillsFlag != "" {
-				opts.Skills = strings.Split(skillsFlag, ",")
-			}
+			opts.Skills = splitAndTrim(skillsFlag)
 			return installer.UninstallSkillsOpts(cmd.Context(), opts)
 		},
 	}
