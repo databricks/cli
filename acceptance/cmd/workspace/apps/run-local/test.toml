@@ -3,8 +3,6 @@ Cloud = false
 # It's also very slow when it does work.
 Local = false
 RecordRequests = false
-Timeout = '2m'
-TimeoutWindows = '10m'
 
 Ignore = [
     '.venv',

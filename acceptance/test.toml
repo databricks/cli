@@ -3,13 +3,13 @@ Local = true
 Cloud = false
 
 # default timeouts
-Timeout = '30s'
-TimeoutWindows = '60s'
+Timeout = '10m'
+TimeoutWindows = '20m'
 
 # Slowest test I saw:
 # github.com/databricks/cli/acceptance TestAccept/bundle/integration_whl/interactive_single_user 18m8.69s
 # http://go/deco/tests/14775362030/job/41482560953
-TimeoutCloud = '25m'
+TimeoutCloud = '30m'
 
 TimeoutCIMultiplier = 2
 

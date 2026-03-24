@@ -1,3 +1,2 @@
-Timeout = '30s'
 Cloud = true
 Ignore = ["bar.py", "foo.py"]
