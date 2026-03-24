@@ -2,6 +2,7 @@ package installer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -143,7 +144,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if state == nil {
 		isLegacy := checkLegacyInstall(ctx, globalDir)
 		if isLegacy && len(opts.SpecificSkills) > 0 {
-			return fmt.Errorf("legacy install detected without state tracking; run 'databricks experimental aitools skills install' (without a skill name) first to rebuild state")
+			return errors.New("legacy install detected without state tracking; run 'databricks experimental aitools skills install' (without a skill name) first to rebuild state")
 		}
 	}
 

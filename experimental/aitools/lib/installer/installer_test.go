@@ -516,7 +516,7 @@ func TestIdempotentInstallReinstallsForNewAgent(t *testing.T) {
 	require.NoError(t, err)
 
 	// Skills should be re-fetched because agent2 doesn't have them yet.
-	assert.Greater(t, fetchCalls, 0, "should re-install skills for new agent")
+	assert.Positive(t, fetchCalls, "should re-install skills for new agent")
 
 	// Verify agent2 got the skills.
 	agent2SkillsDir := filepath.Join(agent2Dir, "skills")

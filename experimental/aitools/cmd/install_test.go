@@ -52,13 +52,13 @@ func TestInstallCommandsDelegateToSkillsInstall(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	tests := []struct {
-		name               string
-		newCmd             func() *cobra.Command
-		args               []string
-		flags              []string
-		wantAgents         int
-		wantSkills         []string
-		wantExperimental   bool
+		name             string
+		newCmd           func() *cobra.Command
+		args             []string
+		flags            []string
+		wantAgents       int
+		wantSkills       []string
+		wantExperimental bool
 	}{
 		{
 			name:       "skills install installs all skills for all agents",
