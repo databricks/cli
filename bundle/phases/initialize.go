@@ -34,10 +34,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.ValidateEngine(),
 		validate.Scripts(),
 
-		// Extract query parameters (?o=, ?a=) from workspace host URL and strip them.
-		// Must run before any mutator that uses the host for authentication or API calls.
-		mutator.NormalizeHostURL(),
-
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
 		mutator.RewriteSyncPaths(),

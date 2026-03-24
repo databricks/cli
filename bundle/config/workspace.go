@@ -1,10 +1,10 @@
 package config
 
 import (
-	"net/url"
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -146,40 +146,14 @@ func (w *Workspace) Config() *config.Config {
 // config. Must be called before Config() so the extracted fields are included
 // in the SDK config used for profile resolution and authentication.
 func (w *Workspace) NormalizeHostURL() {
-	if w.Host == "" {
-		return
-	}
-	u, err := url.Parse(w.Host)
-	if err != nil {
-		return
-	}
-	q := u.Query()
-	if len(q) == 0 {
-		return
-	}
-
-	// Extract workspace_id from ?o= or ?workspace_id= if not already set.
+	params := auth.ExtractHostQueryParams(w.Host)
+	w.Host = params.Host
 	if w.WorkspaceID == "" {
-		if v := q.Get("o"); v != "" {
-			w.WorkspaceID = v
-		} else if v := q.Get("workspace_id"); v != "" {
-			w.WorkspaceID = v
-		}
+		w.WorkspaceID = params.WorkspaceID
 	}
-
-	// Extract account_id from ?a= or ?account_id= if not already set.
 	if w.AccountID == "" {
-		if v := q.Get("a"); v != "" {
-			w.AccountID = v
-		} else if v := q.Get("account_id"); v != "" {
-			w.AccountID = v
-		}
+		w.AccountID = params.AccountID
 	}
-
-	// Strip query parameters from the host.
-	u.RawQuery = ""
-	u.Fragment = ""
-	w.Host = u.String()
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {

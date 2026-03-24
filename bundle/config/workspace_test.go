@@ -79,8 +79,18 @@ func TestWorkspaceNormalizeHostURL(t *testing.T) {
 			Host: "https://spog.databricks.com/?o=12345",
 		}
 		w.NormalizeHostURL()
-		assert.Equal(t, "https://spog.databricks.com/", w.Host)
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
 		assert.Equal(t, "12345", w.WorkspaceID)
+	})
+
+	t.Run("extracts both workspace_id and account_id", func(t *testing.T) {
+		w := Workspace{
+			Host: "https://spog.databricks.com/?o=605&a=abc123",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
+		assert.Equal(t, "605", w.WorkspaceID)
+		assert.Equal(t, "abc123", w.AccountID)
 	})
 
 	t.Run("explicit workspace_id takes precedence", func(t *testing.T) {
@@ -89,8 +99,18 @@ func TestWorkspaceNormalizeHostURL(t *testing.T) {
 			WorkspaceID: "explicit",
 		}
 		w.NormalizeHostURL()
-		assert.Equal(t, "https://spog.databricks.com/", w.Host)
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
 		assert.Equal(t, "explicit", w.WorkspaceID)
+	})
+
+	t.Run("explicit account_id takes precedence", func(t *testing.T) {
+		w := Workspace{
+			Host:      "https://spog.databricks.com/?a=from-url",
+			AccountID: "explicit-account",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
+		assert.Equal(t, "explicit-account", w.AccountID)
 	})
 
 	t.Run("no-op for host without query params", func(t *testing.T) {
