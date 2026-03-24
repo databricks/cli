@@ -60,11 +60,9 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	host := cfg.CanonicalHostName()
 
 	// Classic accounts.* hosts always use account OAuth, even if discovery
-	// returned data. HostType() is reliable here because it only checks for
-	// the "accounts." URL prefix, which uniquely identifies classic account
-	// consoles. SPOG/unified hosts are handled below via discovery or the
-	// IsUnifiedHost flag.
-	if (&config.Config{Host: host}).HostType() == config.AccountHost {
+	// returned data. SPOG/unified hosts are handled below via discovery or
+	// the IsUnifiedHost flag.
+	if strings.HasPrefix(host, "https://accounts.") || strings.HasPrefix(host, "https://accounts-dod.") {
 		return u2m.NewProfileAccountOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 
