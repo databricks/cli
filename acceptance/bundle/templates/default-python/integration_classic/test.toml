@@ -1,4 +1,5 @@
 Cloud = true
+Timeout = '1m'
 
 Ignore = [
     '.venv',

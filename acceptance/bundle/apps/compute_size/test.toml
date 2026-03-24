@@ -5,6 +5,7 @@ RecordRequests = false
 Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "tmp.app-run"]
 
 # Apps can take longer to deploy
+TimeoutCloud = "5m"
 
 # Simulate the Terraform provider's old update API not supporting compute_size changes.
 [[Server]]

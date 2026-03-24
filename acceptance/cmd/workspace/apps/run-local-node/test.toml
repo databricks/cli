@@ -1,6 +1,8 @@
 Cloud = false
 Local = true
 RecordRequests = false
+Timeout = '2m'
+TimeoutWindows = '10m'
 
 Ignore = [
     'node_modules',

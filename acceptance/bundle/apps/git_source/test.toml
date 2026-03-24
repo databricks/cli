@@ -8,6 +8,7 @@ RequiresWarehouse = true
 Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "tmp.app-run"]
 
 # Apps can take longer to deploy
+TimeoutCloud = "5m"
 
 # Mock responses for app deployment
 [[Server]]

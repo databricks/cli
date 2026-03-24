@@ -1,6 +1,8 @@
 Ignore = [
     '.venv',
 ]
+Timeout = '40s'
+TimeoutWindows = '120s'
 
 [[Repls]]
 Old = '"databricks-bundles==0.\d+.\d+"'

@@ -1,4 +1,5 @@
 Slow = true
+Timeout = "3m"
 
 [[Server]]
 # Client single timeout is 90s, retry timeout is 30m, API delay is 2m and test timeout is 3m, so we should see test killed with timeout.
