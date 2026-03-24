@@ -183,7 +183,6 @@ func startLocalServer(t *testing.T,
 		s.ResponseCallback = logResponseCallback(t)
 	}
 
-	// Track remaining kill counts and offset counts per pattern (for KillCaller > 0)
 	killCounters := make(map[string]int)
 	offsetCounters := make(map[string]int)
 	killCountersMu := &sync.Mutex{}
@@ -196,7 +195,6 @@ func startLocalServer(t *testing.T,
 		items := strings.Split(stub.Pattern, " ")
 		require.Len(t, items, 2)
 
-		// Initialize kill counter and offset counter for this pattern
 		if stub.KillCaller > 0 {
 			killCounters[stub.Pattern] = stub.KillCaller
 			offsetCounters[stub.Pattern] = stub.KillCallerOffset
@@ -240,7 +238,6 @@ func shouldKillCaller(stub ServerStub, offsetCounters, killCounters map[string]i
 	mu.Lock()
 	defer mu.Unlock()
 
-	// Still in offset period? Let this request pass.
 	if offsetCounters[stub.Pattern] > 0 {
 		offsetCounters[stub.Pattern]--
 		return false
