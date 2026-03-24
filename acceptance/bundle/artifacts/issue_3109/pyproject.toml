@@ -5,11 +5,11 @@ authors = [{ name = "[USERNAME]" }]
 requires-python = ">= 3.11"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/job1/databricks_job"]
+[tool.setuptools.packages.find]
+where = ["src/job1"]
 
 [project.scripts]
 main = "my_default_python.main:main"
