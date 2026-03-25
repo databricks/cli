@@ -3,4 +3,4 @@ Cloud = false
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-  UV_ARGS = ["--with-requirements requirements-latest.txt --no-cache"]
+  PYDAB_VERSION = ["current"]

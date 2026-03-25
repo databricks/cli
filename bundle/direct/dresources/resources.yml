@@ -381,6 +381,10 @@ resources:
       - field: compute_size
 
   secret_scopes:
+    backend_defaults:
+      # The Secrets API defaults scope_backend_type to DATABRICKS when not specified.
+      - field: scope_backend_type
+        values: ["DATABRICKS"]
     recreate_on_changes:
       - field: scope
         reason: immutable
