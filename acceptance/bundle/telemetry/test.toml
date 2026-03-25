@@ -8,6 +8,11 @@ DATABRICKS_CACHE_ENABLED = 'false'
 Old = '"execution_time_ms": \d{1,5},'
 New = '"execution_time_ms": SMALL_INT,'
 
+# Same replacement for compact JSON inside protoLogs strings (no space after colon).
+[[Repls]]
+Old = 'execution_time_ms\\":\d{1,5},'
+New = 'execution_time_ms\\":SMALL_INT,'
+
 [[Repls]]
 Old = '(linux|darwin|windows)'
 New = '[OS]'

@@ -12,8 +12,8 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v1.0.0
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
-	github.com/databricks/databricks-sdk-go v0.120.0 // Apache 2.0
-	github.com/fatih/color v1.18.0 // MIT
+	github.com/databricks/databricks-sdk-go v0.126.0 // Apache 2.0
+	github.com/fatih/color v1.19.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD 2-Clause
@@ -33,13 +33,13 @@ require (
 	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
 	github.com/stretchr/testify v1.11.1 // MIT
 	go.yaml.in/yaml/v3 v3.0.4 // MIT, Apache 2.0
-	golang.org/x/crypto v0.48.0 // BSD-3-Clause
+	golang.org/x/crypto v0.49.0 // BSD-3-Clause
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
-	golang.org/x/mod v0.33.0
+	golang.org/x/mod v0.34.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.20.0
 	golang.org/x/sys v0.42.0
-	golang.org/x/text v0.34.0
+	golang.org/x/text v0.35.0
 	gopkg.in/ini.v1 v1.67.1 // Apache 2.0
 )
 
@@ -82,7 +82,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
@@ -100,7 +100,7 @@ require (
 	go.opentelemetry.io/otel v1.40.0 // indirect
 	go.opentelemetry.io/otel/metric v1.40.0 // indirect
 	go.opentelemetry.io/otel/trace v1.40.0 // indirect
-	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/api v0.265.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect

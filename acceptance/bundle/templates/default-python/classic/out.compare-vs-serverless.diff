@@ -1,6 +1,6 @@
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/databricks.yml
 +++ output/my_default_python/databricks.yml
-@@ -34,4 +34,6 @@
+@@ -33,4 +33,6 @@
        catalog: hive_metastore
        schema: ${workspace.current_user.short_name}
 +    presets:

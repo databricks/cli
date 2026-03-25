@@ -274,6 +274,23 @@ func TestApplyResolvedValues(t *testing.T) {
 	})
 }
 
+func TestVolumePathToSecurableName(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"/Volumes/catalog/schema/vol", "catalog.schema.vol"},
+		{"/Volumes/my-cat/my-schema/my-vol", "my-cat.my-schema.my-vol"},
+		{"catalog.schema.vol", "catalog.schema.vol"},
+		{"/Volumes/a/b/c", "a.b.c"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			assert.Equal(t, tt.want, volumePathToSecurableName(tt.input))
+		})
+	}
+}
+
 func TestMaxAppNameLength(t *testing.T) {
 	// Verify the constant is set correctly
 	assert.Equal(t, 30, MaxAppNameLength)

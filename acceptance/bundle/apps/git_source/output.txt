@@ -41,7 +41,7 @@ Deployment complete!
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Run the app to verify it works
->>> cat out.app-run
+>>> cat tmp.app-run
 ✓ Getting the status of the app [APP_NAME]
 ✓ App is in RUNNING state
 ✓ App compute is in ACTIVE state

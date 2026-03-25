@@ -34,7 +34,7 @@
   "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
   "q": {
-    "endpoint_id": "primary"
+    "endpoint_id": "custom"
   },
   "body": {
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
@@ -47,5 +47,5 @@
 }
 {
   "method": "GET",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/primary"
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom"
 }

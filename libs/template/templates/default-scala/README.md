@@ -1,6 +1,6 @@
 # default-scala
 
-This template helps you create Scala projects with Databricks Asset Bundles. It uses sbt to compile and package Scala files, and can be used with Databricks Connect for local development.
+This template helps you create Scala projects with Declarative Automation Bundles. It uses sbt to compile and package Scala files, and can be used with Databricks Connect for local development.
 
 It supports two compute types: standard clusters and serverless compute.
 

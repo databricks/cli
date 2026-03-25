@@ -25,7 +25,7 @@ class Variable(Generic[_T]):
     """
     Reference to a bundle variable.
 
-    See: `Databricks Asset Bundles configuration <https://docs.databricks.com/en/dev-tools/bundles/settings.html>`_
+    See: `Declarative Automation Bundles configuration <https://docs.databricks.com/en/dev-tools/bundles/settings.html>`_
     """
 
     path: str

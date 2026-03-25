@@ -1,5 +1,7 @@
 package config
 
+import "github.com/databricks/cli/bundle/config/engine"
+
 type Terraform struct {
 	ExecPath string `json:"exec_path"`
 }
@@ -43,6 +45,10 @@ type Bundle struct {
 
 	// Overrides the cluster used for jobs and other supported assets.
 	ClusterId string `json:"cluster_id,omitempty"`
+
+	// Engine specifies the deployment engine to use ("terraform" or "direct").
+	// Can be overridden with the DATABRICKS_BUNDLE_ENGINE environment variable.
+	Engine engine.EngineType `json:"engine,omitempty"`
 
 	// Deployment section specifies deployment related configuration for bundle
 	Deployment Deployment `json:"deployment,omitempty"`

@@ -28,8 +28,8 @@ title "Verify no drift after deployment"
 trace $CLI bundle plan
 
 title "Run the app to verify it works"
-$CLI bundle run my_app &> out.app-run || true
-trace cat out.app-run | head -20
+$CLI bundle run my_app &> tmp.app-run || true
+trace cat tmp.app-run | head -20
 
 title "Update git_source branch and redeploy"
 # Change branch from main to a different value (still main, but via sed to test config change)

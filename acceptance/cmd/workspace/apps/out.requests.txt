@@ -1,4 +1,8 @@
 {
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
   "method": "POST",
   "path": "/api/2.0/apps",
   "body": {
@@ -20,6 +24,10 @@
 {
   "method": "GET",
   "path": "/api/2.0/apps/test-name"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }
 {
   "method": "PATCH",

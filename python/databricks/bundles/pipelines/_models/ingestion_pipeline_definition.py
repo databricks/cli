@@ -4,6 +4,14 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.pipelines._models.connector_type import (
+    ConnectorType,
+    ConnectorTypeParam,
+)
+from databricks.bundles.pipelines._models.data_staging_options import (
+    DataStagingOptions,
+    DataStagingOptionsParam,
+)
 from databricks.bundles.pipelines._models.ingestion_config import (
     IngestionConfig,
     IngestionConfigParam,
@@ -39,6 +47,23 @@ class IngestionPipelineDefinition:
     pipeline.
     Under certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed
     Ingestion Pipeline with Gateway pipeline.
+    """
+
+    connector_type: VariableOrOptional[ConnectorType] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional) Connector Type for sources. Ex: CDC, Query Based.
+    """
+
+    data_staging_options: VariableOrOptional[DataStagingOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
+    with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
+    If not specified, the volume for staged data will be created in catalog and schema/target specified in the
+    top level pipeline definition.
     """
 
     full_refresh_window: VariableOrOptional[OperationTimeWindow] = None
@@ -105,6 +130,23 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     pipeline.
     Under certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed
     Ingestion Pipeline with Gateway pipeline.
+    """
+
+    connector_type: VariableOrOptional[ConnectorTypeParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional) Connector Type for sources. Ex: CDC, Query Based.
+    """
+
+    data_staging_options: VariableOrOptional[DataStagingOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
+    with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
+    If not specified, the volume for staged data will be created in catalog and schema/target specified in the
+    top level pipeline definition.
     """
 
     full_refresh_window: VariableOrOptional[OperationTimeWindowParam]

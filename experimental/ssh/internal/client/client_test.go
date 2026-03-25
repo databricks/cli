@@ -55,6 +55,15 @@ func TestValidate(t *testing.T) {
 			opts: client.ClientOptions{ConnectionName: "my-conn_1", Accelerator: "GPU_1xA10"},
 		},
 		{
+			name: "valid connection name with GPU_8xH100 accelerator",
+			opts: client.ClientOptions{ConnectionName: "my-conn_1", Accelerator: "GPU_8xH100"},
+		},
+		{
+			name:    "invalid accelerator value",
+			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "CPU_1x"},
+			wantErr: `invalid accelerator value: "CPU_1x", expected "GPU_1xA10" or "GPU_8xH100"`,
+		},
+		{
 			name: "both cluster ID and connection name",
 			opts: client.ClientOptions{ClusterID: "abc-123", ConnectionName: "my-conn", Accelerator: "GPU_1xA10"},
 		},

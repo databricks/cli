@@ -22,6 +22,7 @@ const (
 	remotePlatform       = "linux"
 	pythonExtension      = "ms-python.python"
 	jupyterExtension     = "ms-toolsai.jupyter"
+	databricksExtension  = "databricks.databricks"
 	serverPickPortsKey   = "remote.SSH.serverPickPortsFromRange"
 	remotePlatformKey    = "remote.SSH.remotePlatform"
 	defaultExtensionsKey = "remote.SSH.defaultExtensions"
@@ -178,7 +179,7 @@ func hasCorrectListenOnSocket(v hujson.Value) bool {
 }
 
 func getMissingExtensions(v hujson.Value) []string {
-	required := []string{pythonExtension, jupyterExtension}
+	required := []string{pythonExtension, jupyterExtension, databricksExtension}
 	found := v.Find(jsonPtr(defaultExtensionsKey))
 	if found == nil {
 		return required
@@ -244,7 +245,7 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension},
+		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
 	}
 	shouldCreate, err := promptUserForUpdate(ctx, ide, connectionName, missing)
 	if err != nil {
@@ -289,11 +290,11 @@ func backupSettings(ctx context.Context, path string) error {
 	latestBak := path + ".latest.bak"
 
 	if _, err := os.Stat(originalBak); os.IsNotExist(err) {
-		cmdio.LogString(ctx, "Backing up settings to "+filepath.ToSlash(originalBak))
+		log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(originalBak))
 		return os.WriteFile(originalBak, data, 0o600)
 	}
 
-	cmdio.LogString(ctx, "Backing up settings to "+filepath.ToSlash(latestBak))
+	log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(latestBak))
 	return os.WriteFile(latestBak, data, 0o600)
 }
 
@@ -348,7 +349,7 @@ func GetManualInstructions(ide, connectionName string) string {
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension},
+		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
 	}
 	return fmt.Sprintf(
 		"To ensure the remote connection works as expected, manually add these settings to your %s settings.json:\n%s",

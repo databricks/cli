@@ -131,7 +131,7 @@ func newCreateEndpoint() *cobra.Command {
 		if createEndpointSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *vectorsearch.EndpointInfo) {
 			if i.EndpointStatus == nil {
 				return
@@ -141,9 +141,9 @@ func newCreateEndpoint() *cobra.Command {
 			if i.EndpointStatus != nil {
 				statusMessage = i.EndpointStatus.Message
 			}
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createEndpointTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}

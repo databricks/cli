@@ -1,6 +1,6 @@
 uv venv -q .venv
 venv_activate
-uv pip install -q setuptools
+uv pip install -q --no-index setuptools
 
 # On Windows, create python3 alias since some build commands use python3
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then

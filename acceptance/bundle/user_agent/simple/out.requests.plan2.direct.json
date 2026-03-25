@@ -73,3 +73,12 @@
   "method": "GET",
   "path": "/api/2.1/unity-catalog/schemas/mycatalog.myschema"
 }
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
