@@ -300,4 +300,3 @@ func hostCacheKeyAndMatchFn(p profile.Profile) (string, profile.ProfileMatchFunc
 
 	return host, profile.WithHost(host)
 }
-

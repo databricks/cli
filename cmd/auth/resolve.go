@@ -22,7 +22,7 @@ func looksLikeHost(arg string) bool {
 // matches and the argument looks like a host URL, it returns it as a host. If
 // no profile matches and the argument does not look like a host, it returns an
 // error.
-func resolvePositionalArg(ctx context.Context, arg string, profiler profile.Profiler) (profileName string, host string, err error) {
+func resolvePositionalArg(ctx context.Context, arg string, profiler profile.Profiler) (profileName, host string, err error) {
 	candidateProfile, err := loadProfileByName(ctx, arg, profiler)
 	if err != nil {
 		return "", "", err
