@@ -19,7 +19,6 @@ import (
 // mockManifestSource is a test double for ManifestSource.
 type mockManifestSource struct {
 	manifest *Manifest
-	release  string
 	fetchErr error
 }
 
@@ -28,10 +27,6 @@ func (m *mockManifestSource) FetchManifest(_ context.Context, _ string) (*Manife
 		return nil, m.fetchErr
 	}
 	return m.manifest, nil
-}
-
-func (m *mockManifestSource) FetchLatestRelease(_ context.Context) (string, error) {
-	return m.release, nil
 }
 
 func testManifest() *Manifest {
@@ -195,7 +190,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
@@ -206,12 +201,12 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, state)
 	assert.Equal(t, 1, state.SchemaVersion)
-	assert.Equal(t, "v0.1.0", state.Release)
+	assert.Equal(t, defaultSkillsRepoRef, state.Release)
 	assert.Len(t, state.Skills, 2)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 	assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.0).")
+	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
 }
 
 func TestInstallSkillForSingleWritesState(t *testing.T) {
@@ -219,7 +214,7 @@ func TestInstallSkillForSingleWritesState(t *testing.T) {
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{
@@ -234,7 +229,7 @@ func TestInstallSkillForSingleWritesState(t *testing.T) {
 	assert.Len(t, state.Skills, 1)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 
-	assert.Contains(t, stderr.String(), "Installed 1 skill (v0.1.0).")
+	assert.Contains(t, stderr.String(), "Installed 1 skill (v0.1.3).")
 }
 
 func TestInstallSkillsSpecificNotFound(t *testing.T) {
@@ -242,7 +237,7 @@ func TestInstallSkillsSpecificNotFound(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{
@@ -264,7 +259,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 		Experimental: true,
 	}
 
-	src := &mockManifestSource{manifest: manifest, release: "v0.1.0"}
+	src := &mockManifestSource{manifest: manifest}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
@@ -277,7 +272,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-experimental")
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.0).")
+	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
 }
 
 func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
@@ -292,7 +287,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 		Experimental: true,
 	}
 
-	src := &mockManifestSource{manifest: manifest, release: "v0.1.0"}
+	src := &mockManifestSource{manifest: manifest}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{
@@ -307,7 +302,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 	assert.Contains(t, state.Skills, "databricks-experimental")
 	assert.True(t, state.IncludeExperimental)
 
-	assert.Contains(t, stderr.String(), "Installed 3 skills (v0.1.0).")
+	assert.Contains(t, stderr.String(), "Installed 3 skills (v0.1.3).")
 }
 
 func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
@@ -328,7 +323,7 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 		MinCLIVer: "0.300.0",
 	}
 
-	src := &mockManifestSource{manifest: manifest, release: "v0.1.0"}
+	src := &mockManifestSource{manifest: manifest}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
@@ -341,7 +336,7 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-future")
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.0).")
+	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
 	assert.Contains(t, logBuf.String(), "requires CLI version 0.300.0")
 }
 
@@ -358,7 +353,7 @@ func TestMinCLIVersionHardErrorForInstallSingle(t *testing.T) {
 		MinCLIVer: "0.300.0",
 	}
 
-	src := &mockManifestSource{manifest: manifest, release: "v0.1.0"}
+	src := &mockManifestSource{manifest: manifest}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{
@@ -374,7 +369,7 @@ func TestIdempotentSecondInstallSkips(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
 	// First install.
@@ -403,7 +398,7 @@ func TestIdempotentInstallUpdatesNewVersions(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
 	// First install.
@@ -416,7 +411,7 @@ func TestIdempotentInstallUpdatesNewVersions(t *testing.T) {
 		Version: "0.2.0",
 		Files:   []string{"SKILL.md"},
 	}
-	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0"}
+	src2 := &mockManifestSource{manifest: updatedManifest}
 
 	// Track which skills are fetched.
 	var fetchedSkills []string
@@ -439,7 +434,7 @@ func TestIdempotentInstallUpdatesNewVersions(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
-	assert.Equal(t, "v0.2.0", state.Release)
+	assert.Equal(t, defaultSkillsRepoRef, state.Release)
 	assert.Equal(t, "0.2.0", state.Skills["databricks-sql"])
 }
 
@@ -452,7 +447,7 @@ func TestLegacyDetectMessagePrinted(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
@@ -470,7 +465,7 @@ func TestLegacyDetectLegacyDir(t *testing.T) {
 	legacyDir := filepath.Join(tmp, ".databricks", "agent-skills")
 	require.NoError(t, os.MkdirAll(filepath.Join(legacyDir, "databricks-sql"), 0o755))
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
@@ -484,7 +479,7 @@ func TestIdempotentInstallReinstallsForNewAgent(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent1 := testAgent(tmp)
 
 	// First install for agent1.
@@ -533,7 +528,7 @@ func TestLegacyTargetedInstallBlocked(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
 	// Targeted install should fail on legacy setup.
@@ -553,7 +548,7 @@ func TestLegacyFullInstallAllowed(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0"}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 
 	// Full install (no SpecificSkills) should succeed and rebuild state.

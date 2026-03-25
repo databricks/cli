@@ -117,12 +117,8 @@ func ListSkills(ctx context.Context) error {
 // This is the core installation function. Callers are responsible for agent detection,
 // prompting, and printing the "Installing..." header.
 func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent, opts InstallOptions) error {
-	latestTag, err := src.FetchLatestRelease(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to fetch latest release: %w", err)
-	}
-
-	manifest, err := src.FetchManifest(ctx, latestTag)
+	ref := getSkillsRef(ctx)
+	manifest, err := src.FetchManifest(ctx, ref)
 	if err != nil {
 		return err
 	}
@@ -173,7 +169,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 			}
 		}
 
-		if err := installSkillForAgents(ctx, latestTag, name, meta.Files, targetAgents, globalDir); err != nil {
+		if err := installSkillForAgents(ctx, ref, name, meta.Files, targetAgents, globalDir); err != nil {
 			return err
 		}
 	}
@@ -186,7 +182,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 			Skills:        make(map[string]string, len(targetSkills)),
 		}
 	}
-	state.Release = latestTag
+	state.Release = ref
 	state.LastUpdated = time.Now()
 	// IncludeExperimental reflects the last invocation's flag value. The Skills
 	// map may still contain experimental entries from a prior run with the flag
@@ -199,7 +195,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		return err
 	}
 
-	tag := strings.TrimPrefix(latestTag, "v")
+	tag := strings.TrimPrefix(ref, "v")
 	noun := "skills"
 	if len(targetSkills) == 1 {
 		noun = "skill"
