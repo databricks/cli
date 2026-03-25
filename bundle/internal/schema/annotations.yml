@@ -249,6 +249,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "synced_database_tables":
     "description": |-
       PLACEHOLDER
+  "vector_search_endpoints":
+    "description": |-
+      PLACEHOLDER
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -946,6 +949,22 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
     "description": |-
       PLACEHOLDER
   "unity_catalog_provisioning_state":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "min_qps":
+    "description": |-
+      PLACEHOLDER
+  "name":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:

@@ -1116,6 +1116,22 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
       may be in "PROVISIONING" as it runs asynchronously).
     "x-databricks-field-behaviors_output_only": |-
       true
+github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
+  "budget_policy_id":
+    "description": |-
+      The budget policy id to be applied
+    "x-databricks-preview": |-
+      PRIVATE
+  "endpoint_type":
+    "description": |-
+      Type of endpoint
+  "min_qps":
+    "description": |-
+      Min QPS for the endpoint. Mutually exclusive with num_replicas.
+      The actual replica count is calculated at index creation/sync time based on this value.
+  "name":
+    "description": |-
+      Name of the vector search endpoint
 github.com/databricks/cli/bundle/config/resources.Volume:
   "catalog_name":
     "description": |-
@@ -5934,6 +5950,13 @@ github.com/databricks/databricks-sdk-go/service/sql.WarehousePermissionLevel:
         CAN_MONITOR
       - |-
         CAN_VIEW
+github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType:
+  "_":
+    "description": |-
+      Type of endpoint.
+    "enum":
+      - |-
+        STANDARD
 github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
   "_":
     "description": |-
