@@ -59,6 +59,13 @@ func TestResolvePositionalArg(t *testing.T) {
 			wantHost:    "http://localhost:8080",
 		},
 		{
+			name:        "host:port without dots or scheme",
+			profiles:    profile.Profiles{},
+			arg:         "localhost:8080",
+			wantProfile: "",
+			wantHost:    "localhost:8080",
+		},
+		{
 			name:     "empty profiles error",
 			profiles: profile.Profiles{},
 			arg:      "myprofile",

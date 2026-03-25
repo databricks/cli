@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -14,7 +15,16 @@ import (
 // a profile name. Profile names are short identifiers (e.g., "logfood",
 // "DEFAULT"), while host URLs contain dots or start with "http".
 func looksLikeHost(arg string) bool {
-	return strings.Contains(arg, ".") || strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://")
+	if strings.Contains(arg, ".") || strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
+		return true
+	}
+	// Match host:port pattern without dots or scheme (e.g., localhost:8080).
+	if i := strings.LastIndex(arg, ":"); i > 0 {
+		if _, err := strconv.Atoi(arg[i+1:]); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 // resolvePositionalArg resolves a positional argument to either a profile name
@@ -61,7 +71,7 @@ func resolveHostToProfile(ctx context.Context, host string, profiler profile.Pro
 	default:
 		if cmdio.IsPromptSupported(ctx) {
 			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
-				Label:             fmt.Sprintf("Multiple profiles found for %q. Select one", host),
+				Label:             fmt.Sprintf("Multiple profiles found for %q. Select one to use", host),
 				Profiles:          hostProfiles,
 				StartInSearchMode: len(hostProfiles) > 5,
 				ActiveTemplate:    "▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}",

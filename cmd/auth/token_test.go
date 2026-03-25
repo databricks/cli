@@ -708,6 +708,20 @@ func TestToken_loadToken(t *testing.T) {
 			validateToken: validateToken,
 		},
 		{
+			name: "DATABRICKS_CONFIG_PROFILE with positional typo runs resolver first",
+			setupCtx: func(ctx context.Context) context.Context {
+				return env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "active")
+			},
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"e2-logfood"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+			},
+			wantErr: `no profile named "e2-logfood" found`,
+		},
+		{
 			name: "host flag with profile env var disambiguates multi-profile",
 			setupCtx: func(ctx context.Context) context.Context {
 				return env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "dup1")

@@ -54,7 +54,7 @@ func applyUnifiedHostFlags(p *profile.Profile, args *auth.AuthArguments) {
 
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "token [HOST_OR_PROFILE]",
+		Use:   "token [PROFILE_OR_HOST]",
 		Short: "Get authentication token",
 		Long: `Get authentication token from the local cache in ~/.databricks/token-cache.json.
 Refresh the access token if it is expired or close to expiry. Use --force-refresh
@@ -149,15 +149,10 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, errors.New("providing both a profile and host is not supported")
 	}
 
-	// When no explicit --profile flag is provided, check the env var. This
-	// handles the case where downstream tools (like the Terraform provider)
-	// pass --host but not --profile, while DATABRICKS_CONFIG_PROFILE is set.
-	if args.profileName == "" {
-		args.profileName = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
-	}
-
-	// If no --profile flag, resolve the positional arg as a profile name first,
-	// then as a host. Error if it matches neither.
+	// Resolve the positional arg as a profile name first, then as a host.
+	// Error if it matches neither. This runs before the DATABRICKS_CONFIG_PROFILE
+	// env var check so that an explicit positional argument always goes through
+	// profile-first resolution.
 	if args.profileName == "" && len(args.args) == 1 {
 		resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args.args[0], args.profiler)
 		if err != nil {
@@ -170,6 +165,14 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			args.authArguments.Host = resolvedHost
 			args.args = nil
 		}
+	}
+
+	// When no explicit --profile flag or positional arg is provided, check the
+	// env var. This handles the case where downstream tools (like the Terraform
+	// provider) pass --host but not --profile, while DATABRICKS_CONFIG_PROFILE
+	// is set.
+	if args.profileName == "" {
+		args.profileName = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
 	}
 
 	existingProfile, err := loadProfileByName(ctx, args.profileName, args.profiler)

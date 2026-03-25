@@ -992,3 +992,14 @@ auth_type = databricks-cli
 	assert.Equal(t, "fresh-account", savedProfile.AccountID, "account_id should be saved from introspection")
 	assert.Equal(t, "222222", savedProfile.WorkspaceID, "workspace_id should be updated to fresh introspection value")
 }
+
+func TestLoginRejectsHostFlagWithPositionalArg(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	authArgs := &auth.AuthArguments{Host: "https://example.com"}
+	cmd := newLoginCommand(authArgs)
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"myprofile"})
+	err := cmd.Execute()
+	assert.ErrorContains(t, err, "please only provide a positional argument or --host, not both")
+}
