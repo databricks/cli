@@ -277,7 +277,6 @@ func TestUpdateOutputSortedAlphabetically(t *testing.T) {
 	assert.Equal(t, "databricks-sql", result.Updated[1].Name)
 }
 
-
 func TestUpdateSkillRemovedFromManifestWarning(t *testing.T) {
 	tmp := setupTestHome(t)
 	ctx := cmdio.MockDiscard(t.Context())
