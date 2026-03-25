@@ -1,0 +1,21 @@
+bundle:
+  name: uc-catalog-isolation-mode-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+sync:
+  exclude:
+    - "out.*"
+
+resources:
+  catalogs:
+    test_catalog:
+      name: test_catalog_$UNIQUE_NAME
+      comment: "Catalog with isolation mode"
+      isolation_mode: ISOLATED
+      enable_predictive_optimization: ENABLE
+
+targets:
+  development:
+    default: true

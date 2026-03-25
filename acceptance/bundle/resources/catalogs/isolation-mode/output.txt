@@ -1,0 +1,40 @@
+
+=== Deploy catalog with isolation_mode and enable_predictive_optimization
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert update-only fields were applied
+>>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
+{
+  "name": "test_catalog_[UNIQUE_NAME]",
+  "comment": "Catalog with isolation mode",
+  "isolation_mode": "ISOLATED",
+  "enable_predictive_optimization": "ENABLE"
+}
+
+=== Update isolation_mode to OPEN
+=== Redeploy with updated isolation_mode
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert isolation_mode is updated
+>>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
+{
+  "name": "test_catalog_[UNIQUE_NAME]",
+  "isolation_mode": "OPEN"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.catalogs.test_catalog
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

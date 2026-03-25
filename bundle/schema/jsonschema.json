@@ -295,8 +295,14 @@
                       "connection_name": {
                         "$ref": "#/$defs/string"
                       },
+                      "enable_predictive_optimization": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.EnablePredictiveOptimization"
+                      },
                       "grants": {
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                      },
+                      "isolation_mode": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.CatalogIsolationMode"
                       },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
@@ -306,6 +312,9 @@
                       },
                       "options": {
                         "$ref": "#/$defs/map/string"
+                      },
+                      "owner": {
+                        "$ref": "#/$defs/string"
                       },
                       "properties": {
                         "$ref": "#/$defs/map/string"
@@ -3563,6 +3572,37 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.CatalogIsolationMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "OPEN",
+                    "ISOLATED"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.EnablePredictiveOptimization": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "DISABLE",
+                    "ENABLE",
+                    "INHERIT"
+                  ]
                 },
                 {
                   "type": "string",

@@ -1,0 +1,19 @@
+bundle:
+  name: uc-catalog-no-update-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+sync:
+  exclude:
+    - "out.*"
+
+resources:
+  catalogs:
+    test_catalog:
+      name: test_catalog_$UNIQUE_NAME
+      comment: "Catalog without update-only fields"
+
+targets:
+  development:
+    default: true

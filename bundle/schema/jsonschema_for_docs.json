@@ -236,9 +236,15 @@
                     "$ref": "#/$defs/string",
                     "x-since-version": "v0.287.0"
                   },
+                  "enable_predictive_optimization": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.EnablePredictiveOptimization"
+                  },
                   "grants": {
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment",
                     "x-since-version": "v0.287.0"
+                  },
+                  "isolation_mode": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.CatalogIsolationMode"
                   },
                   "lifecycle": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
@@ -251,6 +257,9 @@
                   "options": {
                     "$ref": "#/$defs/map/string",
                     "x-since-version": "v0.287.0"
+                  },
+                  "owner": {
+                    "$ref": "#/$defs/string"
                   },
                   "properties": {
                     "$ref": "#/$defs/map/string",
@@ -3285,6 +3294,21 @@
                 }
               },
               "additionalProperties": false
+            },
+            "catalog.CatalogIsolationMode": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "ISOLATED"
+              ]
+            },
+            "catalog.EnablePredictiveOptimization": {
+              "type": "string",
+              "enum": [
+                "DISABLE",
+                "ENABLE",
+                "INHERIT"
+              ]
             },
             "catalog.EncryptionDetails": {
               "type": "object",

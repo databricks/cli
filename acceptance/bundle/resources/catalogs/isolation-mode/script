@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+CATALOG_NAME="test_catalog_${UNIQUE_NAME}"
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy catalog with isolation_mode and enable_predictive_optimization"
+trace $CLI bundle deploy
+
+title "Assert update-only fields were applied"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment, isolation_mode, enable_predictive_optimization}"
+
+title "Update isolation_mode to OPEN"
+update_file.py databricks.yml "isolation_mode: ISOLATED" "isolation_mode: OPEN"
+
+title "Redeploy with updated isolation_mode"
+trace $CLI bundle deploy
+
+title "Assert isolation_mode is updated"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, isolation_mode}"

@@ -1,0 +1,34 @@
+
+=== Deploy catalog without update-only fields
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert no PATCH was called during create
+>>> print_requests.py //unity-catalog/catalogs --sort
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/catalogs",
+  "body": {
+    "comment": "Catalog without update-only fields",
+    "name": "test_catalog_[UNIQUE_NAME]"
+  }
+}
+
+=== Assert catalog is created correctly
+>>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
+{
+  "name": "test_catalog_[UNIQUE_NAME]",
+  "comment": "Catalog without update-only fields"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.catalogs.test_catalog
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

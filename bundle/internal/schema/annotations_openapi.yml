@@ -1575,6 +1575,22 @@ github.com/databricks/databricks-sdk-go/service/catalog.AzureQueueStorage:
       Optional subscription id for the queue, event grid subscription, and external location storage
       account.
       Required for locations with a service principal storage credential
+github.com/databricks/databricks-sdk-go/service/catalog.CatalogIsolationMode:
+  "_":
+    "enum":
+      - |-
+        OPEN
+      - |-
+        ISOLATED
+github.com/databricks/databricks-sdk-go/service/catalog.EnablePredictiveOptimization:
+  "_":
+    "enum":
+      - |-
+        DISABLE
+      - |-
+        ENABLE
+      - |-
+        INHERIT
 github.com/databricks/databricks-sdk-go/service/catalog.EncryptionDetails:
   "_":
     "description": |-

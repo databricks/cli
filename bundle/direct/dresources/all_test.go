@@ -44,8 +44,8 @@ var testConfig map[string]any = map[string]any{
 			Name:    "mycatalog",
 			Comment: "Test catalog",
 		},
-		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
-		// only during updates. They are not included in the test config.
+		IsolationMode:                catalog.CatalogIsolationModeIsolated,
+		EnablePredictiveOptimization: catalog.EnablePredictiveOptimizationEnable,
 	},
 
 	"external_locations": &resources.ExternalLocation{
