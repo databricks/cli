@@ -1,0 +1,18 @@
+Ignore = [
+    "home"
+]
+RecordRequests = true
+
+# Override the introspection endpoint so we can verify it gets called.
+[[Server]]
+Pattern = "GET /api/2.0/tokens/introspect"
+Response.Body = '''
+{
+    "principal_context": {
+        "authentication_scope": {
+            "account_id": "test-account-123",
+            "workspace_id": 12345
+        }
+    }
+}
+'''

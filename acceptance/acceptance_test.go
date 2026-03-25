@@ -47,6 +47,7 @@ var (
 	UseVersion      string
 	WorkspaceTmpDir bool
 	OnlyOutTestToml bool
+	Subset          bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -78,6 +79,7 @@ func init() {
 	// to simulate an identical environment.
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
+	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update (unless -run specifies a variant with '=').")
 }
 
 const (
@@ -156,7 +158,39 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 	}
 }
 
+// helperScriptUsesEngineCache caches whether a _script helper in a given directory
+// (or any of its ancestors) references $DATABRICKS_BUNDLE_ENGINE.
+// Since _script helpers are shared across many tests, caching avoids redundant reads.
+var helperScriptUsesEngineCache sync.Map
+
+// anyHelperScriptUsesEngine returns true if any _script helper in dir or its ancestors
+// contains $DATABRICKS_BUNDLE_ENGINE.
+func anyHelperScriptUsesEngine(dir string) bool {
+	if dir == "" || dir == "." {
+		return false
+	}
+	if v, ok := helperScriptUsesEngineCache.Load(dir); ok {
+		return v.(bool)
+	}
+	content, err := os.ReadFile(filepath.Join(dir, "_script"))
+	result := (err == nil && strings.Contains(string(content), "$DATABRICKS_BUNDLE_ENGINE")) ||
+		anyHelperScriptUsesEngine(filepath.Dir(dir))
+	helperScriptUsesEngineCache.Store(dir, result)
+	return result
+}
+
+// hasRunFilter returns true if the -run flag contains '=', indicating a specific
+// EnvMatrix variant was requested (e.g. DATABRICKS_BUNDLE_ENGINE=direct).
+func hasRunFilter() bool {
+	f := flag.Lookup("test.run")
+	return f != nil && strings.Contains(f.Value.String(), "=")
+}
+
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
+	if testdiff.OverwriteMode && !hasRunFilter() {
+		Subset = true
+	}
+
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -170,6 +204,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if !WorkspaceTmpDir {
 		setupTerraform(t, cwd, buildDir, &repls)
 	}
+
+	vendoredPyPackages, err := filepath.Abs("../libs/vendored_py_packages")
+	require.NoError(t, err)
+	t.Setenv("VENDORED_PY_PACKAGES", vendoredPyPackages)
+	repls.SetPath(vendoredPyPackages, "[VENDORED_PY_PACKAGES]")
+
+	// Make all uv invocations use vendored packages instead of PyPI
+	t.Setenv("UV_FIND_LINKS", vendoredPyPackages)
+	t.Setenv("UV_OFFLINE", "true")
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
@@ -366,6 +409,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			}
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
+			if Subset {
+				scriptContent, _ := os.ReadFile(filepath.Join(dir, EntryPointScript))
+				scriptUsesEngine := strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE") ||
+					anyHelperScriptUsesEngine(dir)
+				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
+			}
 
 			for ind, envset := range expanded {
 				envname := strings.Join(envset, "/")
@@ -1354,7 +1403,7 @@ func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// so we prepare here by keeping only one.
 	_ = prepareWheelBuildDirectory(t, buildDir)
 
-	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../python", []string{})
+	RunCommand(t, []string{"uv", "build", "-q", "--wheel", "--no-index", "--out-dir", buildDir}, "../python", []string{})
 
 	latestWheel := prepareWheelBuildDirectory(t, buildDir)
 	if latestWheel == "" {
