@@ -25,6 +25,26 @@ Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
 GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	}
 
+	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		profileFlag := cmd.Flag("profile")
+		hostFlag := cmd.Flag("host")
+
+		// Only validate when both flags are explicitly set by the user.
+		if profileFlag == nil || hostFlag == nil {
+			return nil
+		}
+		if !profileFlag.Changed || !hostFlag.Changed {
+			return nil
+		}
+
+		return validateProfileHostConflict(
+			cmd.Context(),
+			profileFlag.Value.String(),
+			hostFlag.Value.String(),
+			profile.DefaultProfiler,
+		)
+	}
+
 	var authArguments auth.AuthArguments
 	cmd.PersistentFlags().StringVar(&authArguments.Host, "host", "", "Databricks Host")
 	cmd.PersistentFlags().StringVar(&authArguments.AccountID, "account-id", "", "Databricks Account ID")
