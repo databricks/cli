@@ -3,7 +3,6 @@ package installer
 import (
 	"bytes"
 	"context"
-	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -21,7 +20,7 @@ func TestUpdateNoStateReturnsInstallHint(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	_ = tmp
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no skills installed")
@@ -36,7 +35,7 @@ func TestUpdateLegacyInstallDetected(t *testing.T) {
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "databricks-sql"), 0o755))
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 	_, err := UpdateSkills(ctx, src, nil, UpdateOptions{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "previous install without state tracking")
@@ -49,7 +48,7 @@ func TestUpdateAlreadyUpToDate(t *testing.T) {
 	setupFetchMock(t)
 
 	// Install first.
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
 
@@ -70,10 +69,13 @@ func TestUpdateVersionDiffDetected(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	// Install v0.1.0.
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	// Install with default ref.
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// Simulate a new release by changing the ref.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
 
 	// Updated manifest with new version for one skill.
 	updatedManifest := testManifest()
@@ -81,7 +83,7 @@ func TestUpdateVersionDiffDetected(t *testing.T) {
 		Version: "0.2.0",
 		Files:   []string{"SKILL.md"},
 	}
-	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0", authoritative: true}
+	src2 := &mockManifestSource{manifest: updatedManifest}
 
 	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{})
 	require.NoError(t, err)
@@ -107,10 +109,13 @@ func TestUpdateCheckDryRun(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	// Install v0.1.0.
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	// Install with default ref.
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// Simulate a new release.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
 
 	// Updated manifest.
 	updatedManifest := testManifest()
@@ -118,7 +123,7 @@ func TestUpdateCheckDryRun(t *testing.T) {
 		Version: "0.2.0",
 		Files:   []string{"SKILL.md"},
 	}
-	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0", authoritative: true}
+	src2 := &mockManifestSource{manifest: updatedManifest}
 
 	// Track fetch calls to verify no downloads happen.
 	fetchCalls := 0
@@ -139,11 +144,11 @@ func TestUpdateCheckDryRun(t *testing.T) {
 	// Should NOT have downloaded anything.
 	assert.Equal(t, 0, fetchCalls)
 
-	// State should be unchanged.
+	// State should be unchanged (still the original install ref).
 	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills")
 	state, err := LoadState(globalDir)
 	require.NoError(t, err)
-	assert.Equal(t, "v0.1.0", state.Release)
+	assert.Equal(t, defaultSkillsRepoRef, state.Release)
 }
 
 func TestUpdateForceRedownloads(t *testing.T) {
@@ -152,7 +157,7 @@ func TestUpdateForceRedownloads(t *testing.T) {
 	setupFetchMock(t)
 
 	// Install v0.1.0.
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
 
@@ -178,10 +183,13 @@ func TestUpdateAutoAddsNewSkills(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	// Install v0.1.0 with two skills.
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	// Install with default ref.
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// Simulate a new release.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
 
 	// New manifest with an additional skill.
 	updatedManifest := testManifest()
@@ -189,7 +197,7 @@ func TestUpdateAutoAddsNewSkills(t *testing.T) {
 		Version: "0.1.0",
 		Files:   []string{"SKILL.md"},
 	}
-	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0", authoritative: true}
+	src2 := &mockManifestSource{manifest: updatedManifest}
 
 	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{})
 	require.NoError(t, err)
@@ -211,10 +219,13 @@ func TestUpdateNoNewIgnoresNewSkills(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	// Install v0.1.0.
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	// Install with default ref.
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// Simulate a new release.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
 
 	// New manifest with an additional skill.
 	updatedManifest := testManifest()
@@ -222,7 +233,7 @@ func TestUpdateNoNewIgnoresNewSkills(t *testing.T) {
 		Version: "0.1.0",
 		Files:   []string{"SKILL.md"},
 	}
-	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0", authoritative: true}
+	src2 := &mockManifestSource{manifest: updatedManifest}
 
 	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{NoNew: true})
 	require.NoError(t, err)
@@ -245,15 +256,18 @@ func TestUpdateOutputSortedAlphabetically(t *testing.T) {
 	setupFetchMock(t)
 
 	// Install with skills.
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// Simulate a new release.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
 
 	// Update all skills.
 	updatedManifest := testManifest()
 	updatedManifest.Skills["databricks-sql"] = SkillMeta{Version: "0.2.0", Files: []string{"SKILL.md"}}
 	updatedManifest.Skills["databricks-jobs"] = SkillMeta{Version: "0.2.0", Files: []string{"SKILL.md"}}
-	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0", authoritative: true}
+	src2 := &mockManifestSource{manifest: updatedManifest}
 
 	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{})
 	require.NoError(t, err)
@@ -263,36 +277,6 @@ func TestUpdateOutputSortedAlphabetically(t *testing.T) {
 	assert.Equal(t, "databricks-sql", result.Updated[1].Name)
 }
 
-// nonAuthoritativeMock returns a fallback ref with authoritative=false.
-type nonAuthoritativeMock struct{}
-
-func (m *nonAuthoritativeMock) FetchManifest(_ context.Context, _ string) (*Manifest, error) {
-	return nil, errors.New("should not be called")
-}
-
-func (m *nonAuthoritativeMock) FetchLatestRelease(_ context.Context) (string, bool, error) {
-	return defaultSkillsRepoRef, false, nil
-}
-
-func TestUpdateNonAuthoritativeWithoutForce(t *testing.T) {
-	tmp := setupTestHome(t)
-	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	setupFetchMock(t)
-
-	// Install first.
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
-	agent := testAgent(tmp)
-	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
-
-	stderr.Reset()
-
-	// Non-authoritative release fetch (offline fallback).
-	fallbackSrc := &nonAuthoritativeMock{}
-	result, err := UpdateSkills(ctx, fallbackSrc, []*agents.Agent{agent}, UpdateOptions{})
-	require.NoError(t, err)
-	assert.Contains(t, stderr.String(), "Could not check for updates (offline?)")
-	assert.Len(t, result.Unchanged, 2)
-}
 
 func TestUpdateSkillRemovedFromManifestWarning(t *testing.T) {
 	tmp := setupTestHome(t)
@@ -304,10 +288,13 @@ func TestUpdateSkillRemovedFromManifestWarning(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn}))
 	ctx = log.NewContext(ctx, logger)
 
-	// Install v0.1.0 with two skills.
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	// Install with default ref.
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// Simulate a new release.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
 
 	// New manifest that removed databricks-jobs.
 	updatedManifest := &Manifest{
@@ -317,7 +304,7 @@ func TestUpdateSkillRemovedFromManifestWarning(t *testing.T) {
 			"databricks-sql": {Version: "0.2.0", Files: []string{"SKILL.md"}},
 		},
 	}
-	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0", authoritative: true}
+	src2 := &mockManifestSource{manifest: updatedManifest}
 
 	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{})
 	require.NoError(t, err)
@@ -340,10 +327,13 @@ func TestUpdateSkipsExperimentalSkills(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	// Install v0.1.0 (not experimental).
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	// Install with default ref (not experimental).
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// Simulate a new release.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
 
 	// New manifest with an experimental skill.
 	updatedManifest := testManifest()
@@ -352,7 +342,7 @@ func TestUpdateSkipsExperimentalSkills(t *testing.T) {
 		Files:        []string{"SKILL.md"},
 		Experimental: true,
 	}
-	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0", authoritative: true}
+	src2 := &mockManifestSource{manifest: updatedManifest}
 
 	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{})
 	require.NoError(t, err)
@@ -372,10 +362,13 @@ func TestUpdateSkipsMinCLIVersionSkills(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn}))
 	ctx = log.NewContext(ctx, logger)
 
-	// Install v0.1.0.
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	// Install with default ref.
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
+
+	// Simulate a new release.
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.0")
 
 	// New manifest with a skill requiring a newer CLI.
 	updatedManifest := testManifest()
@@ -384,7 +377,7 @@ func TestUpdateSkipsMinCLIVersionSkills(t *testing.T) {
 		Files:     []string{"SKILL.md"},
 		MinCLIVer: "0.300.0",
 	}
-	src2 := &mockManifestSource{manifest: updatedManifest, release: "v0.2.0", authoritative: true}
+	src2 := &mockManifestSource{manifest: updatedManifest}
 
 	result, err := UpdateSkills(ctx, src2, []*agents.Agent{agent}, UpdateOptions{})
 	require.NoError(t, err)

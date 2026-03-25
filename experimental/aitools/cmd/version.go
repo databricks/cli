@@ -6,8 +6,6 @@ import (
 
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
@@ -41,36 +39,14 @@ func newVersionCmd() *cobra.Command {
 				skillNoun = "skill"
 			}
 
-			// Best-effort staleness check.
-			if env.Get(ctx, "DATABRICKS_SKILLS_REF") != "" {
-				cmdio.LogString(ctx, "Databricks AI Tools:")
-				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s)", version, len(state.Skills), skillNoun))
-				cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
-				cmdio.LogString(ctx, "  Using custom ref: $DATABRICKS_SKILLS_REF")
-				return nil
-			}
-
-			src := &installer.GitHubManifestSource{}
-			latest, authoritative, err := src.FetchLatestRelease(ctx)
-			if err != nil {
-				log.Debugf(ctx, "Could not check for updates: %v", err)
-				authoritative = false
-			}
-
 			cmdio.LogString(ctx, "Databricks AI Tools:")
 
-			if !authoritative {
-				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s)", version, len(state.Skills), skillNoun))
-				cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
-				cmdio.LogString(ctx, "  Could not check for latest version.")
-				return nil
-			}
-
-			if latest == state.Release {
+			latestRef := installer.GetSkillsRef(ctx)
+			if latestRef == state.Release {
 				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s, up to date)", version, len(state.Skills), skillNoun))
 				cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
 			} else {
-				latestVersion := strings.TrimPrefix(latest, "v")
+				latestVersion := strings.TrimPrefix(latestRef, "v")
 				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s)", version, len(state.Skills), skillNoun))
 				cmdio.LogString(ctx, "  Update available: v"+latestVersion)
 				cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))

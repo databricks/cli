@@ -59,15 +59,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		return nil, errors.New("no skills installed. Run 'databricks experimental aitools install' to install")
 	}
 
-	latestTag, authoritative, err := src.FetchLatestRelease(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch latest release: %w", err)
-	}
-
-	if !authoritative && !opts.Force {
-		cmdio.LogString(ctx, "Could not check for updates (offline?). Use --force to update anyway.")
-		return &UpdateResult{Unchanged: sortedKeys(state.Skills)}, nil
-	}
+	latestTag := GetSkillsRef(ctx)
 
 	if state.Release == latestTag && !opts.Force {
 		cmdio.LogString(ctx, "Already up to date.")

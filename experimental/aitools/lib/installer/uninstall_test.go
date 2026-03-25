@@ -18,7 +18,7 @@ func installTestSkills(t *testing.T, tmp string) string {
 	ctx := cmdio.MockDiscard(t.Context())
 	setupFetchMock(t)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testAgent(tmp)
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{}))
 
@@ -68,7 +68,7 @@ func TestUninstallRemovesSymlinks(t *testing.T) {
 		},
 	}
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 	require.NoError(t, InstallSkillsForAgents(ctx, src, []*agents.Agent{claudeAgent, cursorAgent}, InstallOptions{}))
 
 	ctx2, _ := cmdio.NewTestContextWithStderr(t.Context())
