@@ -2,7 +2,6 @@ package installer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,7 +12,6 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/log"
 	"github.com/fatih/color"
 )
 
@@ -40,39 +38,20 @@ type Manifest struct {
 
 // SkillMeta describes a single skill entry in the manifest.
 type SkillMeta struct {
-	Version   string   `json:"version"`
-	UpdatedAt string   `json:"updated_at"`
-	Files     []string `json:"files"`
+	Version      string   `json:"version"`
+	UpdatedAt    string   `json:"updated_at"`
+	Files        []string `json:"files"`
+	Experimental bool     `json:"experimental,omitempty"`
+	Description  string   `json:"description,omitempty"`
+	MinCLIVer    string   `json:"min_cli_version,omitempty"`
 }
 
 // FetchManifest fetches the skills manifest from the skills repo.
+// This is a convenience wrapper that uses the default GitHubManifestSource.
 func FetchManifest(ctx context.Context) (*Manifest, error) {
+	src := &GitHubManifestSource{}
 	ref := getSkillsRef(ctx)
-	log.Infof(ctx, "Fetching skills manifest from %s/%s@%s", skillsRepoOwner, skillsRepoName, ref)
-	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/manifest.json",
-		skillsRepoOwner, skillsRepoName, ref)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch manifest: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch manifest: HTTP %d", resp.StatusCode)
-	}
-
-	var manifest Manifest
-	if err := json.NewDecoder(resp.Body).Decode(&manifest); err != nil {
-		return nil, fmt.Errorf("failed to parse manifest: %w", err)
-	}
-
-	return &manifest, nil
+	return src.FetchManifest(ctx, ref)
 }
 
 func fetchSkillFile(ctx context.Context, skillName, filePath string) ([]byte, error) {
