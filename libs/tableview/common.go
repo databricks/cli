@@ -89,26 +89,39 @@ func findMatches(lines []string, query string) []int {
 }
 
 // highlightSearch applies search match highlighting to a single line.
+// It works in rune-space so that case-folding length changes (e.g. "ß"→"ss")
+// do not misalign the highlighted spans in the original string.
 func highlightSearch(line, query string) string {
 	if query == "" {
 		return line
 	}
-	lower := strings.ToLower(query)
-	qLen := len(query)
-	lineLower := strings.ToLower(line)
+	lineRunes := []rune(line)
+	queryRunes := []rune(strings.ToLower(query))
+	lineLower := []rune(strings.ToLower(line))
+	qLen := len(queryRunes)
 
 	var b strings.Builder
 	pos := 0
-	for {
-		idx := strings.Index(lineLower[pos:], lower)
-		if idx < 0 {
-			b.WriteString(line[pos:])
-			break
+	for pos <= len(lineLower)-qLen {
+		match := false
+		for i := range qLen {
+			if lineLower[pos+i] != queryRunes[i] {
+				break
+			}
+			if i == qLen-1 {
+				match = true
+			}
 		}
-		b.WriteString(line[pos : pos+idx])
-		b.WriteString(searchHighlightStyle.Render(line[pos+idx : pos+idx+qLen]))
-		pos += idx + qLen
+		if !match {
+			b.WriteRune(lineRunes[pos])
+			pos++
+			continue
+		}
+		b.WriteString(searchHighlightStyle.Render(string(lineRunes[pos : pos+qLen])))
+		pos += qLen
 	}
+	// Write remaining runes after last possible match position.
+	b.WriteString(string(lineRunes[pos:]))
 	return b.String()
 }
 

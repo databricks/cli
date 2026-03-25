@@ -400,10 +400,12 @@ func (m *paginatedModel) restorePreSearchState() {
 		m.savedRows = nil
 		m.savedIter = nil
 		m.savedExhaust = false
+		m.limitReached = false
 		m.loading = false
 	}
 	m.cursor = 0
 	if m.ready {
+		m.computeWidths()
 		m.viewport.SetContent(m.renderContent())
 		m.viewport.GotoTop()
 	}
@@ -427,6 +429,7 @@ func (m paginatedModel) executeSearch(query string) (tea.Model, tea.Cmd) {
 	m.fetchGeneration++
 	m.rows = nil
 	m.exhausted = false
+	m.limitReached = false
 	m.loading = true
 	m.cursor = 0
 	m.rowIter = m.makeSearchIter(query)
