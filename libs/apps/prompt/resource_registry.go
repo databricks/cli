@@ -30,6 +30,21 @@ const (
 // keys use the format "resource_key.field_name" (e.g., {"database.instance_name": "x", "database.database_name": "y"}).
 type PromptResourceFunc func(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error)
 
+// ResolveResourceFunc resolves derived field values for a resource.
+// It receives the resource and already-known values (from prompts or flags),
+// returning additional derived values to merge in.
+type ResolveResourceFunc func(ctx context.Context, r manifest.Resource, provided map[string]string) (map[string]string, error)
+
+// GetResolveFunc returns the resolve function for the given resource type, or (nil, false) if not needed.
+func GetResolveFunc(resourceType string) (ResolveResourceFunc, bool) {
+	switch resourceType {
+	case ResourceTypePostgres:
+		return resolvePostgresResource, true
+	default:
+		return nil, false
+	}
+}
+
 // GetPromptFunc returns the prompt function for the given resource type, or (nil, false) if not supported.
 func GetPromptFunc(resourceType string) (PromptResourceFunc, bool) {
 	switch resourceType {

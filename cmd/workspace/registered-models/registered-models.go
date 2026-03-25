@@ -201,10 +201,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Registered Models drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No FULL_NAME argument specified. Loading names for Registered Models drop-down.")
 			names, err := w.RegisteredModels.RegisteredModelInfoNameToFullNameMap(ctx, catalog.ListRegisteredModelsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Registered Models drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -340,10 +340,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Registered Models drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No FULL_NAME argument specified. Loading names for Registered Models drop-down.")
 			names, err := w.RegisteredModels.RegisteredModelInfoNameToFullNameMap(ctx, catalog.ListRegisteredModelsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Registered Models drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -609,10 +609,10 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Registered Models drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No FULL_NAME argument specified. Loading names for Registered Models drop-down.")
 			names, err := w.RegisteredModels.RegisteredModelInfoNameToFullNameMap(ctx, catalog.ListRegisteredModelsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Registered Models drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

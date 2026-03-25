@@ -138,6 +138,9 @@ Clean Rooms
 Quality Monitor
   quality-monitor-v2                     Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).
 
+Data Classification
+  data-classification                    Manage data classification for Unity Catalog catalogs.
+
 Data Quality Monitoring
   data-quality                           Manage the data quality of Unity Catalog objects (currently support schema and table).
 
@@ -155,8 +158,11 @@ Tags
 Postgres
   postgres                               Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.
 
+Environments
+  environments                           APIs to manage environment resources.
+
 Developer Tools
-  bundle                                 Databricks Asset Bundles let you express data/AI/analytics projects as code.
+  bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:

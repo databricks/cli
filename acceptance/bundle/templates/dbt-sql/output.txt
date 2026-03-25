@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle init dbt-sql --config-file ./input.json --output-dir output
 
-Welcome to the dbt template for Databricks Asset Bundles!
+Welcome to the dbt template for Declarative Automation Bundles!
 
 A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
 workspace_host: [DATABRICKS_URL]

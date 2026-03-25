@@ -14,9 +14,9 @@ rm out.backup_state.json
 # check that this is stored as resolved value, not as reference:
 trace jq '.state."resources.pipelines.test_pipeline".state.tags.volume_storage_location' out.new_state.json | contains.py 's3://'
 
-# this is expected to fail because state does not match env var
-trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle plan
-trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle deploy
+# this is expected to warn because state does not match env var, but still succeed using state engine
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 title "Should show that it's already migrated"
 trace musterr $CLI bundle deployment migrate

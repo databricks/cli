@@ -6,19 +6,19 @@ import (
 	"io"
 	"time"
 
-	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"golang.org/x/sync/errgroup"
 )
 
 func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, requestHandoverTick func() <-chan time.Time, createConn createWebsocketConnectionFunc) error {
 	proxy := newProxyConnection(createConn)
-	cmdio.LogString(ctx, "Establishing SSH proxy connection...")
+	log.Infof(ctx, "Establishing SSH proxy connection...")
 	g, gCtx := errgroup.WithContext(ctx)
 	if err := proxy.connect(gCtx); err != nil {
 		return fmt.Errorf("failed to connect to proxy: %w", err)
 	}
 	defer proxy.close()
-	cmdio.LogString(ctx, "SSH proxy connection established")
+	log.Infof(ctx, "SSH proxy connection established")
 
 	g.Go(func() error {
 		for {

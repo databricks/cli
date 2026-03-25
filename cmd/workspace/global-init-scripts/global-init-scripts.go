@@ -167,10 +167,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down.")
 			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -235,10 +235,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down.")
 			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

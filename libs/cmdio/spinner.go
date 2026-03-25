@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -12,9 +13,10 @@ import (
 
 // spinnerModel is the Bubble Tea model for the spinner.
 type spinnerModel struct {
-	spinner  bubblespinner.Model
-	suffix   string
-	quitting bool
+	spinner   bubblespinner.Model
+	suffix    string
+	quitting  bool
+	startTime time.Time // non-zero when elapsed time display is enabled
 }
 
 // Message types for spinner updates.
@@ -23,8 +25,18 @@ type (
 	quitMsg   struct{}
 )
 
+// SpinnerOption configures spinner behavior.
+type SpinnerOption func(*spinnerModel)
+
+// WithElapsedTime enables an elapsed time prefix (MM:SS) on the spinner.
+func WithElapsedTime() SpinnerOption {
+	return func(m *spinnerModel) {
+		m.startTime = time.Now()
+	}
+}
+
 // newSpinnerModel creates a new spinner model.
-func newSpinnerModel() spinnerModel {
+func newSpinnerModel(opts ...SpinnerOption) spinnerModel {
 	s := bubblespinner.New()
 	// Braille spinner frames with 200ms timing
 	s.Spinner = bubblespinner.Spinner{
@@ -33,11 +45,13 @@ func newSpinnerModel() spinnerModel {
 	}
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("10")) // Green
 
-	return spinnerModel{
-		spinner:  s,
-		suffix:   "",
-		quitting: false,
+	m := spinnerModel{
+		spinner: s,
 	}
+	for _, opt := range opts {
+		opt(&m)
+	}
+	return m
 }
 
 func (m spinnerModel) Init() tea.Cmd {
@@ -69,11 +83,16 @@ func (m spinnerModel) View() string {
 		return ""
 	}
 
-	if m.suffix != "" {
-		return m.spinner.View() + " " + m.suffix
+	var result string
+	if !m.startTime.IsZero() {
+		elapsed := time.Since(m.startTime)
+		result += fmt.Sprintf("%02d:%02d ", int(elapsed.Minutes()), int(elapsed.Seconds())%60)
 	}
-
-	return m.spinner.View()
+	result += m.spinner.View()
+	if m.suffix != "" {
+		result += " " + m.suffix
+	}
+	return result
 }
 
 // spinner provides a structured interface for displaying progress indicators.
@@ -121,14 +140,18 @@ func (sp *spinner) Close() {
 //	sp := cmdio.NewSpinner(ctx)
 //	defer sp.Close()
 //	sp.Update("processing files")
-func (c *cmdIO) NewSpinner(ctx context.Context) *spinner {
+//
+// Use WithElapsedTime() to show a running MM:SS prefix:
+//
+//	sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
+func (c *cmdIO) NewSpinner(ctx context.Context, opts ...SpinnerOption) *spinner {
 	// Don't show spinner if not interactive
 	if !c.capabilities.SupportsInteractive() {
 		return &spinner{p: nil, c: c, ctx: ctx}
 	}
 
 	// Create model and program
-	m := newSpinnerModel()
+	m := newSpinnerModel(opts...)
 	p := tea.NewProgram(
 		m,
 		tea.WithInput(nil),
@@ -164,32 +187,4 @@ func (c *cmdIO) NewSpinner(ctx context.Context) *spinner {
 	}()
 
 	return sp
-}
-
-// Spinner returns a channel for updating spinner status messages.
-// Send messages to update the suffix, close the channel to stop.
-// The spinner runs until the channel is closed or context is cancelled.
-func (c *cmdIO) Spinner(ctx context.Context) chan string {
-	updates := make(chan string)
-	sp := c.NewSpinner(ctx)
-
-	// Bridge goroutine: channel -> spinner.Update()
-	go func() {
-		defer sp.Close()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case msg, ok := <-updates:
-				if !ok {
-					// Channel closed
-					return
-				}
-				sp.Update(msg)
-			}
-		}
-	}()
-
-	return updates
 }

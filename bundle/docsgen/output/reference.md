@@ -389,7 +389,7 @@ Defines bundle deployment presets. See [\_](/dev-tools/bundles/deployment-modes.
   
 **`Type: Map`**
   
-A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Databricks Asset Bundles supported resources, and resource definition reference, see [\_](/dev-tools/bundles/resources.md).
+A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Declarative Automation Bundles supported resources, and resource definition reference, see [\_](/dev-tools/bundles/resources.md).
 
 ```yaml
 resources:
@@ -656,7 +656,7 @@ Lifecycle is a struct that contains the lifecycle settings for a resource. It co
   
 **`Type: Map`**
   
-The identity to use when running Databricks Asset Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
+The identity to use when running Declarative Automation Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
   
   
   

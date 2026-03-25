@@ -1,5 +1,5 @@
 ---
-description: 'Learn about resources supported by Databricks Asset Bundles and how to configure them.'
+description: 'Learn about resources supported by Declarative Automation Bundles and how to configure them.'
 last_update:
   date: 2025-09-13
 ---
@@ -1816,7 +1816,7 @@ Tags: Additional metadata key-value pairs.
   
 **`Type: Map`**
   
-The job resource allows you to define [jobs and their corresponding tasks](/api/workspace/jobs/create) in your bundle. For information about jobs, see [_](/jobs/index.md). For a tutorial that uses a Databricks Asset Bundles template to create a job, see [_](/dev-tools/bundles/jobs-tutorial.md).
+The job resource allows you to define [jobs and their corresponding tasks](/api/workspace/jobs/create) in your bundle. For information about jobs, see [_](/jobs/index.md). For a tutorial that uses a Declarative Automation Bundles template to create a job, see [_](/dev-tools/bundles/jobs-tutorial.md).
   
 ```yaml
 jobs:
@@ -6783,7 +6783,7 @@ Additional metadata for registered model.
   
 **`Type: Map`**
   
-The pipeline resource allows you to create Delta Live Tables [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Databricks Asset Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
+The pipeline resource allows you to create Delta Live Tables [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
   
 ```yaml
 pipelines:
@@ -8639,7 +8639,7 @@ resources:
       comment: This schema was created by DABs.
 ```
 
-A top-level grants mapping is not supported by Databricks Asset Bundles, so if you want to set grants for a schema, define the grants for the schema within the `schemas` mapping. For more information about grants, see [_](/data-governance/unity-catalog/manage-privileges/index.md#grant).
+A top-level grants mapping is not supported by Declarative Automation Bundles, so if you want to set grants for a schema, define the grants for the schema within the `schemas` mapping. For more information about grants, see [_](/data-governance/unity-catalog/manage-privileges/index.md#grant).
 
 The following example defines a Unity Catalog schema with grants:
 
@@ -9187,7 +9187,7 @@ only requires read permissions.
   
 The volume resource type allows you to define and create Unity Catalog [volumes](/api/workspace/volumes/create) as part of a bundle. When deploying a bundle with a volume defined, note that:
 
-- A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Databricks Asset Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.
+- A volume cannot be referenced in the `artifact_path` for the bundle until it exists in the workspace. Hence, if you want to use Declarative Automation Bundles to create the volume, you must first define the volume in the bundle, deploy it to create the volume, then reference it in the `artifact_path` in subsequent deployments.
 
 - Volumes in the bundle are not prepended with the `dev_${workspace.current_user.short_name}` prefix when the deployment target has `mode: development` configured. However, you can manually configure this prefix. See [_](/dev-tools/bundles/deployment-modes.md#custom-presets).
   

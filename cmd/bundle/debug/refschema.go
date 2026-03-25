@@ -67,8 +67,12 @@ func dumpRemoteSchemas(out io.Writer) error {
 				if path == nil {
 					return true
 				}
-				p := path.String()
-				p = strings.TrimPrefix(p, ".")
+				p := strings.TrimPrefix(path.String(), ".")
+				// permissions and grants are separate sub-resource adapters; skip them here.
+				if p == "permissions" || strings.HasPrefix(p, "permissions.") || strings.HasPrefix(p, "permissions[") ||
+					p == "grants" || strings.HasPrefix(p, "grants.") || strings.HasPrefix(p, "grants[") {
+					return false
+				}
 				t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
 				byType, ok := pathTypes[p]
 				if !ok {
@@ -100,7 +104,11 @@ func dumpRemoteSchemas(out io.Writer) error {
 			byType := pathTypes[p]
 			for _, t := range utils.SortedKeys(byType) {
 				info := formatTags(byType[t])
-				lines = append(lines, fmt.Sprintf("%s.%s\t%s\t%s\n", resourcePrefix, p, t, info))
+				sep := "."
+				if strings.HasPrefix(p, "[") {
+					sep = ""
+				}
+				lines = append(lines, fmt.Sprintf("%s%s%s\t%s\t%s\n", resourcePrefix, sep, p, t, info))
 			}
 		}
 

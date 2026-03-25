@@ -1,5 +1,26 @@
 # Version changelog
 
+## Release v0.295.0 (2026-03-18)
+
+### Notable Changes
+
+* Databricks Asset Bundles have been renamed to Declarative Automation Bundles (DABs). This is a non-breaking change; no code or configuration modifications are required. See the [FAQ](https://docs.databricks.com/aws/en/dev-tools/bundles/faqs#why-was-databricks-asset-bundles-renamed-to-declarative-automation-bundles).
+* Add `bundle.engine` config setting to select the deployment engine (`terraform` or [`direct`](https://docs.databricks.com/aws/en/dev-tools/bundles/direct)). The `bundle.engine` setting takes precedence over the `DATABRICKS_BUNDLE_ENGINE` environment variable. When the configured engine doesn't match existing deployment state, a warning is issued and the existing engine is used ([#4749](https://github.com/databricks/cli/pull/4749), [#4782](https://github.com/databricks/cli/pull/4782))
+
+### CLI
+* Add `databricks auth switch` command for setting the default profile ([#4651](https://github.com/databricks/cli/pull/4651))
+* Add positional argument support to `auth logout` ([#4744](https://github.com/databricks/cli/pull/4744))
+* Strip trailing slash from host in `auth login`, `auth token`, and `configure` commands ([#4633](https://github.com/databricks/cli/pull/4633))
+
+### Bundles
+* Standardize `personal_schemas` enum across bundle templates ([#4401](https://github.com/databricks/cli/pull/4401))
+* engine/direct: Fix permanent drift on experiment name field ([#4627](https://github.com/databricks/cli/pull/4627))
+* engine/direct: Fix permissions state path to match input config schema ([#4703](https://github.com/databricks/cli/pull/4703))
+* Add default project name and success message to default-scala template ([#4661](https://github.com/databricks/cli/pull/4661))
+* Skip enum validation for unresolved variable references ([#4752](https://github.com/databricks/cli/pull/4752))
+* engine/direct: Support references to/from grants ([#4774](https://github.com/databricks/cli/pull/4774))
+
+
 ## Release v0.294.0 (2026-03-12)
 
 ### Bundles

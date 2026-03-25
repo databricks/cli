@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    # job_b has permissions that job_a references
+    job_b:
+      name: job B
+      permissions:
+        - level: CAN_VIEW
+          group_name: viewers
+        - level: CAN_MANAGE
+          group_name: admins
+
+    # job_a references job_b's permission levels
+    job_a:
+      name: job A
+      permissions:
+        # Reference by integer index
+        - level: ${resources.jobs.job_b.permissions[0].level}
+          group_name: team-alpha
+        # Reference by integer index (second entry)
+        - level: ${resources.jobs.job_b.permissions[1].level}
+          group_name: team-beta
