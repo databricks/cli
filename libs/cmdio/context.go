@@ -21,11 +21,6 @@ func CommandFromContext(ctx context.Context) *cobra.Command {
 
 type maxItemsKeyType struct{}
 
-// WithMaxItems stores a max items limit in context.
-func WithMaxItems(ctx context.Context, n int) context.Context {
-	return context.WithValue(ctx, maxItemsKeyType{}, n)
-}
-
 // GetMaxItems retrieves the max items limit from context (0 = unlimited).
 func GetMaxItems(ctx context.Context) int {
 	n, _ := ctx.Value(maxItemsKeyType{}).(int)

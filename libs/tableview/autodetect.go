@@ -64,6 +64,9 @@ func autoDetectFromType(t reflect.Type) *TableConfig {
 					}
 					val = val.Elem()
 				}
+				if val.Kind() != reflect.Struct {
+					return ""
+				}
 				f := val.Field(i)
 				return fmt.Sprintf("%v", f.Interface())
 			},

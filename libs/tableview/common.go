@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 	"text/tabwriter"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/lipgloss"
@@ -36,12 +37,12 @@ func renderTableLines(columns []string, rows [][]string) []string {
 	// Separator: compute widths from header + data for dash line.
 	widths := make([]int, len(columns))
 	for i, col := range columns {
-		widths[i] = len(col)
+		widths[i] = utf8.RuneCountInString(col)
 	}
 	for _, row := range rows {
 		for i := range columns {
 			if i < len(row) {
-				widths[i] = max(widths[i], len(row[i]))
+				widths[i] = max(widths[i], utf8.RuneCountInString(row[i]))
 			}
 		}
 	}
@@ -133,10 +134,10 @@ func RenderStaticTable(w io.Writer, columns []string, rows [][]string) error {
 	// Separator
 	seps := make([]string, len(columns))
 	for i, col := range columns {
-		width := len(col)
+		width := utf8.RuneCountInString(col)
 		for _, row := range rows {
 			if i < len(row) {
-				width = max(width, min(len(row[i]), maxColumnWidth))
+				width = max(width, min(utf8.RuneCountInString(row[i]), maxColumnWidth))
 			}
 		}
 		seps[i] = strings.Repeat("-", width)

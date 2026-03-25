@@ -106,6 +106,9 @@ func newFetchCmdFunc(ctx context.Context) func(paginatedModel) tea.Cmd {
 
 			for range limit {
 				if !iter.HasNext(ctx) {
+					if ctx.Err() != nil {
+						return rowsFetchedMsg{err: ctx.Err(), generation: generation}
+					}
 					exhausted = true
 					break
 				}
@@ -154,21 +157,6 @@ func NewPaginatedProgram(ctx context.Context, w io.Writer, cfg *TableConfig, ite
 	return tea.NewProgram(m, tea.WithOutput(w))
 }
 
-// RunPaginated launches the paginated TUI table.
-func RunPaginated(ctx context.Context, w io.Writer, cfg *TableConfig, iter RowIterator, maxItems int) error {
-	p := NewPaginatedProgram(ctx, w, cfg, iter, maxItems)
-	finalModel, err := p.Run()
-	if err != nil {
-		return err
-	}
-	if m, ok := finalModel.(FinalModel); ok {
-		if fetchErr := m.Err(); fetchErr != nil {
-			return fetchErr
-		}
-	}
-	return nil
-}
-
 func (m paginatedModel) Init() tea.Cmd {
 	return m.makeFetchCmd(m)
 }
@@ -200,6 +188,9 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		if msg.err != nil {
 			m.err = msg.err
+			// fetchGeneration is intentionally not bumped: scrolling past the
+			// threshold retries the failed fetch, and the error is shown in
+			// the footer until the retry succeeds.
 			return m, nil
 		}
 		m.err = nil
@@ -246,7 +237,7 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *paginatedModel) computeWidths() {
 	m.widths = make([]int, len(m.headers))
 	for i, h := range m.headers {
-		m.widths[i] = len(h)
+		m.widths[i] = utf8.RuneCountInString(h)
 	}
 	for _, row := range m.rows {
 		for i := range m.widths {
@@ -255,7 +246,7 @@ func (m *paginatedModel) computeWidths() {
 				if i < len(m.cfg.Columns) && m.cfg.Columns[i].MaxWidth > 0 {
 					maxW = m.cfg.Columns[i].MaxWidth
 				}
-				m.widths[i] = min(max(m.widths[i], len(row[i])), maxW)
+				m.widths[i] = min(max(m.widths[i], utf8.RuneCountInString(row[i])), maxW)
 			}
 		}
 	}
@@ -286,11 +277,12 @@ func (m paginatedModel) renderContent() string {
 				if i < len(m.cfg.Columns) && m.cfg.Columns[i].MaxWidth > 0 {
 					maxW = m.cfg.Columns[i].MaxWidth
 				}
-				if len(v) > maxW {
+				if utf8.RuneCountInString(v) > maxW {
+					runes := []rune(v)
 					if maxW <= 3 {
-						v = v[:maxW]
+						v = string(runes[:maxW])
 					} else {
-						v = v[:maxW-3] + "..."
+						v = string(runes[:maxW-3]) + "..."
 					}
 				}
 				vals[i] = v
