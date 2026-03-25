@@ -53,6 +53,14 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 					return nil
 				}
 
+				// For project scope, pre-filter to compatible agents before prompting.
+				if scope == installer.ScopeProject {
+					detected = filterProjectScopeAgents(detected)
+					if len(detected) == 0 {
+						return fmt.Errorf("no detected agents support project-scoped skills")
+					}
+				}
+
 				switch {
 				case len(detected) == 1:
 					targetAgents = detected
@@ -118,6 +126,17 @@ func resolveAgentNames(ctx context.Context, names string) ([]*agents.Agent, erro
 		return nil, errors.New("no agents specified")
 	}
 	return result, nil
+}
+
+// filterProjectScopeAgents returns only agents that support project-scoped skills.
+func filterProjectScopeAgents(detected []*agents.Agent) []*agents.Agent {
+	var compatible []*agents.Agent
+	for _, a := range detected {
+		if a.SupportsProjectScope {
+			compatible = append(compatible, a)
+		}
+	}
+	return compatible
 }
 
 // printNoAgentsMessage prints the "no agents detected" message.

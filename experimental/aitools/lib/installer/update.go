@@ -61,7 +61,11 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 		if err != nil {
 			return nil, fmt.Errorf("failed to determine working directory: %w", err)
 		}
+		incompatible := incompatibleAgentNames(targetAgents)
 		targetAgents = filterProjectAgents(ctx, targetAgents)
+		if len(targetAgents) == 0 {
+			return nil, fmt.Errorf("no agents support project-scoped skills. The following detected agents are global-only: %s", strings.Join(incompatible, ", "))
+		}
 	}
 
 	state, err := LoadState(baseDir)

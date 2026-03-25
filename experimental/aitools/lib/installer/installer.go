@@ -172,7 +172,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 		// dir exists, AND every requested agent already has the skill on disk.
 		if state != nil && state.Skills[name] == meta.Version {
 			skillDir := filepath.Join(baseDir, name)
-			if _, statErr := os.Stat(skillDir); statErr == nil && allAgentsHaveSkill(ctx, name, targetAgents) {
+			if _, statErr := os.Stat(skillDir); statErr == nil && allAgentsHaveSkill(ctx, name, targetAgents, scope, cwd) {
 				log.Debugf(ctx, "%s v%s already installed for all agents, skipping", name, meta.Version)
 				continue
 			}
@@ -369,9 +369,9 @@ func hasSkillsOnDisk(dir string) bool {
 
 // allAgentsHaveSkill returns true if every agent in the list has the named
 // skill directory present (either as a real directory or symlink).
-func allAgentsHaveSkill(ctx context.Context, skillName string, targetAgents []*agents.Agent) bool {
+func allAgentsHaveSkill(ctx context.Context, skillName string, targetAgents []*agents.Agent, scope, cwd string) bool {
 	for _, agent := range targetAgents {
-		agentSkillDir, err := agent.SkillsDir(ctx)
+		agentSkillDir, err := agentSkillsDirForScope(ctx, agent, scope, cwd)
 		if err != nil {
 			return false
 		}

@@ -129,9 +129,10 @@ func defaultListSkills(cmd *cobra.Command, scope string) error {
 		cmdio.LogString(ctx, fmt.Sprintf("%d/%d skills installed (global), %d/%d (project)", globalCount, len(names), projectCount, len(names)))
 	case projectState != nil:
 		cmdio.LogString(ctx, fmt.Sprintf("%d/%d skills installed (project)", projectCount, len(names)))
+	case scope == installer.ScopeProject:
+		cmdio.LogString(ctx, fmt.Sprintf("%d/%d skills installed (project)", 0, len(names)))
 	default:
-		installedCount := globalCount
-		cmdio.LogString(ctx, fmt.Sprintf("%d/%d skills installed (global)", installedCount, len(names)))
+		cmdio.LogString(ctx, fmt.Sprintf("%d/%d skills installed (global)", globalCount, len(names)))
 	}
 	return nil
 }
