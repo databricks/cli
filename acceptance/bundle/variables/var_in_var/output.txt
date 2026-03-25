@@ -1,6 +1,7 @@
 
 >>> [CLI] bundle validate -o json -t target_x
-Warning: nested variable references are not supported (at position 0)
+Warning: nested variable references are not supported
+  at variables.final.default
   in databricks.yml:14:14
 
 {
@@ -23,7 +24,8 @@ Warning: nested variable references are not supported (at position 0)
 }
 
 >>> [CLI] bundle validate -o json -t target_y
-Warning: nested variable references are not supported (at position 0)
+Warning: nested variable references are not supported
+  at variables.final.default
   in databricks.yml:14:14
 
 {

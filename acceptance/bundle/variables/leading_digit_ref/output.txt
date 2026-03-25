@@ -1,6 +1,7 @@
 
 >>> [CLI] bundle validate
 Warning: invalid variable reference ${0foo}: invalid key "0foo"
+  at bundle.name
   in databricks.yml:2:9
 
 Name: ${0foo}

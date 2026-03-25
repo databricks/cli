@@ -1,6 +1,7 @@
 
 >>> [CLI] bundle validate
-Warning: unterminated variable reference at position 0
+Warning: unterminated variable reference
+  at bundle.name
   in databricks.yml:2:9
 
 Name: ${foo.bar

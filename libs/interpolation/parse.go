@@ -7,6 +7,18 @@ import (
 	"strings"
 )
 
+// ParseError is returned by [Parse] when the input contains a malformed
+// variable reference. Pos is the byte offset in the original string where
+// the problematic reference starts.
+type ParseError struct {
+	Msg string
+	Pos int
+}
+
+func (e *ParseError) Error() string {
+	return e.Msg
+}
+
 // TokenKind represents the type of a parsed token.
 type TokenKind int
 
@@ -128,32 +140,36 @@ func Parse(s string) ([]Token, error) {
 			pathStart := j
 			for j < len(s) && s[j] != closeBrace {
 				if s[j] == dollarChar && j+1 < len(s) && s[j+1] == openBrace {
-					return nil, fmt.Errorf(
-						"nested variable references are not supported (at position %d)", refStart,
-					)
+					return nil, &ParseError{
+						Msg: "nested variable references are not supported",
+						Pos: refStart,
+					}
 				}
 				j++
 			}
 
 			if j >= len(s) {
-				return nil, fmt.Errorf(
-					"unterminated variable reference at position %d", refStart,
-				)
+				return nil, &ParseError{
+					Msg: "unterminated variable reference",
+					Pos: refStart,
+				}
 			}
 
 			path := s[pathStart:j]
 			j++ // skip '}'
 
 			if path == "" {
-				return nil, fmt.Errorf(
-					"empty variable reference at position %d", refStart,
-				)
+				return nil, &ParseError{
+					Msg: "empty variable reference",
+					Pos: refStart,
+				}
 			}
 
 			if err := validatePath(path); err != nil {
-				return nil, fmt.Errorf(
-					"invalid variable reference ${%s}: %w", path, err,
-				)
+				return nil, &ParseError{
+					Msg: fmt.Sprintf("invalid variable reference ${%s}: %s", path, err),
+					Pos: refStart,
+				}
 			}
 
 			flushLiteral(i)
