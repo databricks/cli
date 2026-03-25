@@ -12,7 +12,7 @@ import (
 // a profile name. Profile names are short identifiers (e.g., "logfood",
 // "DEFAULT"), while host URLs contain dots or start with "http".
 func looksLikeHost(arg string) bool {
-	return strings.Contains(arg, ".") || strings.HasPrefix(arg, "http")
+	return strings.Contains(arg, ".") || strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://")
 }
 
 // resolvePositionalArg resolves a positional argument to either a profile name
