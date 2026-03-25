@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### CLI
+* Auth commands now error when --profile and --host conflict ([#4841](https://github.com/databricks/cli/pull/4841))
 
 ### Bundles
 * engine/direct: Fix drift in grants resource due to privilege reordering ([#4794](https://github.com/databricks/cli/pull/4794))
