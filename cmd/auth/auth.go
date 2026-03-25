@@ -94,7 +94,7 @@ func validateProfileHostConflict(ctx context.Context, profileName, host string, 
 
 	if profileHost != flagHost {
 		return fmt.Errorf(
-			"--profile %q has host %q, which conflicts with --host %q. Use --profile alone or --host alone, not both",
+			"--profile %q has host %q, which conflicts with --host %q. Use --profile only to select a profile",
 			profileName, p.Host, host,
 		)
 	}

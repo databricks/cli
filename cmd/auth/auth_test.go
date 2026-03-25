@@ -39,7 +39,7 @@ func TestValidateProfileHostConflict(t *testing.T) {
 			name:        "conflicting hosts produce error",
 			profileName: "logfood",
 			host:        "https://other.cloud.databricks.com",
-			wantErr:     `--profile "logfood" has host "https://logfood.cloud.databricks.com", which conflicts with --host "https://other.cloud.databricks.com". Use --profile alone or --host alone, not both`,
+			wantErr:     `--profile "logfood" has host "https://logfood.cloud.databricks.com", which conflicts with --host "https://other.cloud.databricks.com". Use --profile only to select a profile`,
 		},
 		{
 			name:        "profile not found skips check",
@@ -87,7 +87,7 @@ func TestProfileHostConflictViaCobra(t *testing.T) {
 	_, err := cli.ExecuteContextC(ctx)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `--profile "profile-1" has host "https://www.host1.com", which conflicts with --host "https://other.host.com"`)
-	assert.Contains(t, err.Error(), "Use --profile alone or --host alone, not both")
+	assert.Contains(t, err.Error(), "Use --profile only to select a profile")
 }
 
 // TestProfileHostConflictTokenViaCobra verifies the conflict check on the token subcommand.
