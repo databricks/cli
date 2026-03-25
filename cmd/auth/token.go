@@ -156,15 +156,18 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		args.profileName = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
 	}
 
-	// If no --profile flag, try resolving the positional arg as a profile name.
-	// If it matches, use it. If not, fall through to host treatment.
+	// If no --profile flag, resolve the positional arg as a profile name first,
+	// then as a host. Error if it matches neither.
 	if args.profileName == "" && len(args.args) == 1 {
-		candidateProfile, err := loadProfileByName(ctx, args.args[0], args.profiler)
+		resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args.args[0], args.profiler)
 		if err != nil {
 			return nil, err
 		}
-		if candidateProfile != nil {
-			args.profileName = args.args[0]
+		if resolvedProfile != "" {
+			args.profileName = resolvedProfile
+			args.args = nil
+		} else {
+			args.authArguments.Host = resolvedHost
 			args.args = nil
 		}
 	}

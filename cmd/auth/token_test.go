@@ -385,7 +385,7 @@ func TestToken_loadToken(t *testing.T) {
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{},
 				profileName:   "",
-				args:          []string{"nonexistent"},
+				args:          []string{"nonexistent.cloud.databricks.com"},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
@@ -394,8 +394,19 @@ func TestToken_loadToken(t *testing.T) {
 				},
 			},
 			wantErr: "cache: databricks OAuth is not configured for this host. " +
-				"Try logging in again with `databricks auth login --host https://nonexistent` before retrying. " +
+				"Try logging in again with `databricks auth login --host https://nonexistent.cloud.databricks.com` before retrying. " +
 				"If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
+		},
+		{
+			name: "errors with clear message for non-host non-profile positional arg",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"e2-logfood"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+			},
+			wantErr: `no profile named "e2-logfood" found`,
 		},
 		{
 			name: "scheme-less account host ambiguity detected correctly",
