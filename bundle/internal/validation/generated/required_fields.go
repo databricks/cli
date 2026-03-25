@@ -238,6 +238,8 @@ var RequiredFields = map[string][]string{
 
 	"resources.synced_database_tables.*": {"name"},
 
+	"resources.vector_search_endpoints.*": {"endpoint_type", "name"},
+
 	"resources.volumes.*": {"catalog_name", "name", "schema_name", "volume_type"},
 
 	"scripts.*": {"content"},
