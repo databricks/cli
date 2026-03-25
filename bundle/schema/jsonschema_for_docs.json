@@ -1895,6 +1895,31 @@
                   "name"
                 ]
               },
+              "resources.VectorSearchEndpoint": {
+                "type": "object",
+                "properties": {
+                  "budget_policy_id": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "endpoint_type": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                  },
+                  "min_qps": {
+                    "$ref": "#/$defs/int64"
+                  },
+                  "name": {
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "endpoint_type",
+                  "name"
+                ]
+              },
               "resources.Volume": {
                 "type": "object",
                 "properties": {
@@ -2465,6 +2490,9 @@
                 "synced_database_tables": {
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable",
                   "x-since-version": "v0.266.0"
+                },
+                "vector_search_endpoints": {
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint"
                 },
                 "volumes": {
                   "description": "The volume definitions for the bundle, where each key is the name of the volume.",
@@ -8850,6 +8878,9 @@
                 "CAN_VIEW"
               ]
             },
+            "vectorsearch.EndpointType": {
+              "type": "string"
+            },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "type": "object",
               "description": "The metadata of the Azure KeyVault for a secret scope of type `AZURE_KEYVAULT`",
@@ -9026,6 +9057,12 @@
                   "type": "object",
                   "additionalProperties": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable"
+                  }
+                },
+                "resources.VectorSearchEndpoint": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint"
                   }
                 },
                 "resources.Volume": {
