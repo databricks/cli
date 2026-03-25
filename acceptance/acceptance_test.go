@@ -79,7 +79,7 @@ func init() {
 	// to simulate an identical environment.
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
-	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update.")
+	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update (unless -run specifies a variant with '=').")
 }
 
 const (
@@ -179,8 +179,15 @@ func anyHelperScriptUsesEngine(dir string) bool {
 	return result
 }
 
+// hasRunFilter returns true if the -run flag contains '=', indicating a specific
+// EnvMatrix variant was requested (e.g. DATABRICKS_BUNDLE_ENGINE=direct).
+func hasRunFilter() bool {
+	f := flag.Lookup("test.run")
+	return f != nil && strings.Contains(f.Value.String(), "=")
+}
+
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
-	if testdiff.OverwriteMode {
+	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
 	}
 
