@@ -63,6 +63,8 @@ using a client ID and secret is not supported.`,
 	cmd.Flags().DurationVar(&tokenTimeout, "timeout", defaultTimeout,
 		"Timeout for acquiring a token.")
 
+	cmd.PreRunE = profileHostConflictCheck
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profileName := ""

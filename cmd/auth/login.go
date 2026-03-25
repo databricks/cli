@@ -156,6 +156,8 @@ depends on the existing profiles you have set in your configuration file
 	cmd.Flags().StringVar(&scopes, "scopes", "",
 		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
 
+	cmd.PreRunE = profileHostConflictCheck
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
