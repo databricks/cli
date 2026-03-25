@@ -151,7 +151,7 @@ a new profile is created.
 
 		// Resolve positional argument as profile or host.
 		if len(args) > 0 && authArguments.Host != "" {
-			return errors.New("please only provide a host as an argument or a flag, not both")
+			return errors.New("please only provide a positional argument or --host, not both")
 		}
 		if profileName == "" && len(args) == 1 {
 			resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args[0], profile.DefaultProfiler)

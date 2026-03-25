@@ -90,3 +90,73 @@ func TestResolvePositionalArg(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveHostToProfileMatchesOneProfile(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
+			{Name: "staging", Host: "https://staging.cloud.databricks.com", AuthType: "databricks-cli"},
+		},
+	}
+
+	resolved, err := resolveHostToProfile(ctx, "https://dev.cloud.databricks.com", profiler)
+	require.NoError(t, err)
+	assert.Equal(t, "dev", resolved)
+}
+
+func TestResolveHostToProfileMatchesMultipleProfiles(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{Name: "dev1", Host: "https://shared.cloud.databricks.com", AuthType: "databricks-cli"},
+			{Name: "dev2", Host: "https://shared.cloud.databricks.com", AuthType: "databricks-cli"},
+		},
+	}
+
+	_, err := resolveHostToProfile(ctx, "https://shared.cloud.databricks.com", profiler)
+	assert.ErrorContains(t, err, "multiple profiles found matching host")
+	assert.ErrorContains(t, err, "dev1")
+	assert.ErrorContains(t, err, "dev2")
+}
+
+func TestResolveHostToProfileMatchesNothing(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
+			{Name: "staging", Host: "https://staging.cloud.databricks.com", AuthType: "databricks-cli"},
+		},
+	}
+
+	_, err := resolveHostToProfile(ctx, "https://unknown.cloud.databricks.com", profiler)
+	assert.ErrorContains(t, err, `no profile found matching host "https://unknown.cloud.databricks.com"`)
+	assert.ErrorContains(t, err, "dev")
+	assert.ErrorContains(t, err, "staging")
+}
+
+func TestResolveHostToProfileCanonicalizesHost(t *testing.T) {
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{
+			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
+		},
+	}
+
+	cases := []struct {
+		name string
+		arg  string
+	}{
+		{name: "canonical URL", arg: "https://dev.cloud.databricks.com"},
+		{name: "trailing slash", arg: "https://dev.cloud.databricks.com/"},
+		{name: "no scheme", arg: "dev.cloud.databricks.com"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := cmdio.MockDiscard(t.Context())
+			resolved, err := resolveHostToProfile(ctx, tc.arg, profiler)
+			require.NoError(t, err)
+			assert.Equal(t, "dev", resolved)
+		})
+	}
+}
