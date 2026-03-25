@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -262,7 +263,7 @@ func TestLogoutNoTokensWithDelete(t *testing.T) {
 	assert.Empty(t, profiles)
 }
 
-func TestLogoutResolveArgMatchesProfileName(t *testing.T) {
+func TestResolveHostToProfileMatchesOneProfile(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{
@@ -271,26 +272,12 @@ func TestLogoutResolveArgMatchesProfileName(t *testing.T) {
 		},
 	}
 
-	resolved, err := resolveLogoutArg(ctx, "dev", profiler)
+	resolved, err := resolveHostToProfile(ctx, "https://dev.cloud.databricks.com", profiler)
 	require.NoError(t, err)
 	assert.Equal(t, "dev", resolved)
 }
 
-func TestLogoutResolveArgMatchesHostWithOneProfile(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	profiler := profile.InMemoryProfiler{
-		Profiles: profile.Profiles{
-			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
-			{Name: "staging", Host: "https://staging.cloud.databricks.com", AuthType: "databricks-cli"},
-		},
-	}
-
-	resolved, err := resolveLogoutArg(ctx, "https://dev.cloud.databricks.com", profiler)
-	require.NoError(t, err)
-	assert.Equal(t, "dev", resolved)
-}
-
-func TestLogoutResolveArgMatchesHostWithMultipleProfiles(t *testing.T) {
+func TestResolveHostToProfileMatchesMultipleProfiles(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{
@@ -299,13 +286,13 @@ func TestLogoutResolveArgMatchesHostWithMultipleProfiles(t *testing.T) {
 		},
 	}
 
-	_, err := resolveLogoutArg(ctx, "https://shared.cloud.databricks.com", profiler)
+	_, err := resolveHostToProfile(ctx, "https://shared.cloud.databricks.com", profiler)
 	assert.ErrorContains(t, err, "multiple profiles found matching host")
 	assert.ErrorContains(t, err, "dev1")
 	assert.ErrorContains(t, err, "dev2")
 }
 
-func TestLogoutResolveArgMatchesNothing(t *testing.T) {
+func TestResolveHostToProfileMatchesNothing(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{
@@ -314,13 +301,13 @@ func TestLogoutResolveArgMatchesNothing(t *testing.T) {
 		},
 	}
 
-	_, err := resolveLogoutArg(ctx, "https://unknown.cloud.databricks.com", profiler)
-	assert.ErrorContains(t, err, `no profile found matching "https://unknown.cloud.databricks.com"`)
+	_, err := resolveHostToProfile(ctx, "https://unknown.cloud.databricks.com", profiler)
+	assert.ErrorContains(t, err, `no profile found matching host "https://unknown.cloud.databricks.com"`)
 	assert.ErrorContains(t, err, "dev")
 	assert.ErrorContains(t, err, "staging")
 }
 
-func TestLogoutResolveArgCanonicalizesHost(t *testing.T) {
+func TestResolveHostToProfileCanonicalizesHost(t *testing.T) {
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{
 			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
@@ -339,7 +326,7 @@ func TestLogoutResolveArgCanonicalizesHost(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := cmdio.MockDiscard(t.Context())
-			resolved, err := resolveLogoutArg(ctx, tc.arg, profiler)
+			resolved, err := resolveHostToProfile(ctx, tc.arg, profiler)
 			require.NoError(t, err)
 			assert.Equal(t, "dev", resolved)
 		})
@@ -347,9 +334,12 @@ func TestLogoutResolveArgCanonicalizesHost(t *testing.T) {
 }
 
 func TestLogoutProfileFlagAndPositionalArgConflict(t *testing.T) {
+	parent := &cobra.Command{Use: "root"}
+	parent.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd := newLogoutCommand()
-	cmd.SetArgs([]string{"myprofile", "--profile", "other"})
-	err := cmd.Execute()
+	parent.AddCommand(cmd)
+	parent.SetArgs([]string{"logout", "myprofile", "--profile", "other"})
+	err := parent.Execute()
 	assert.ErrorContains(t, err, "providing both --profile and a positional argument is not supported")
 }
 

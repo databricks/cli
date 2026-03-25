@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/databricks-sdk-go/config"
 )
 
 // looksLikeHost returns true if the argument looks like a host URL rather than
@@ -34,4 +36,44 @@ func resolvePositionalArg(ctx context.Context, arg string, profiler profile.Prof
 	}
 
 	return "", "", fmt.Errorf("no profile named %q found", arg)
+}
+
+// resolveHostToProfile resolves a host URL to a profile name. If multiple
+// profiles match the host, it prompts the user to select one (or errors in
+// non-interactive mode). If no profiles match, it returns an error.
+func resolveHostToProfile(ctx context.Context, host string, profiler profile.Profiler) (string, error) {
+	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
+	hostProfiles, err := profiler.LoadProfiles(ctx, profile.WithHost(canonicalHost))
+	if err != nil {
+		return "", err
+	}
+
+	switch len(hostProfiles) {
+	case 1:
+		return hostProfiles[0].Name, nil
+	case 0:
+		allProfiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+		if err != nil {
+			return "", fmt.Errorf("no profile found matching host %q", host)
+		}
+		names := strings.Join(allProfiles.Names(), ", ")
+		return "", fmt.Errorf("no profile found matching host %q. Available profiles: %s", host, names)
+	default:
+		if cmdio.IsPromptSupported(ctx) {
+			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
+				Label:             fmt.Sprintf("Multiple profiles found for %q. Select one", host),
+				Profiles:          hostProfiles,
+				StartInSearchMode: len(hostProfiles) > 5,
+				ActiveTemplate:    "▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}",
+				InactiveTemplate:  "  {{.PaddedName}}{{if .AccountID}} (account: {{.AccountID | faint}}){{else}} ({{.Host | faint}}){{end}}",
+				SelectedTemplate:  `{{ "Selected profile" | faint }}: {{ .Name | bold }}`,
+			})
+			if err != nil {
+				return "", err
+			}
+			return selected, nil
+		}
+		names := strings.Join(hostProfiles.Names(), ", ")
+		return "", fmt.Errorf("multiple profiles found matching host %q: %s. Please specify the profile name directly", host, names)
+	}
 }
