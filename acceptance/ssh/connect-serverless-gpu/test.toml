@@ -1,5 +1,5 @@
 Local = false
-Cloud = true
+Cloud = false
 
 # Serverless GPU is only available in newer environments
 RequiresUnityCatalog = true
