@@ -32,7 +32,9 @@ const (
 // It is a package-level var so tests can replace it with a mock.
 var fetchFileFn = fetchSkillFile
 
-func getSkillsRef(ctx context.Context) string {
+// GetSkillsRef returns the skills repo ref to use. If DATABRICKS_SKILLS_REF
+// is set, it returns that value; otherwise it returns the default ref.
+func GetSkillsRef(ctx context.Context) string {
 	if ref := env.Get(ctx, "DATABRICKS_SKILLS_REF"); ref != "" {
 		return ref
 	}
@@ -66,7 +68,7 @@ type InstallOptions struct {
 // This is a convenience wrapper that uses the default GitHubManifestSource.
 func FetchManifest(ctx context.Context) (*Manifest, error) {
 	src := &GitHubManifestSource{}
-	ref := getSkillsRef(ctx)
+	ref := GetSkillsRef(ctx)
 	return src.FetchManifest(ctx, ref)
 }
 
@@ -117,7 +119,7 @@ func ListSkills(ctx context.Context) error {
 // This is the core installation function. Callers are responsible for agent detection,
 // prompting, and printing the "Installing..." header.
 func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent, opts InstallOptions) error {
-	ref := getSkillsRef(ctx)
+	ref := GetSkillsRef(ctx)
 	manifest, err := src.FetchManifest(ctx, ref)
 	if err != nil {
 		return err

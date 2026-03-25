@@ -20,6 +20,9 @@ Provides commands to:
 	cmd.AddCommand(newInstallCmd())
 	cmd.AddCommand(newSkillsCmd())
 	cmd.AddCommand(newToolsCmd())
+	cmd.AddCommand(newUpdateCmd())
+	cmd.AddCommand(newUninstallCmd())
+	cmd.AddCommand(newVersionCmd())
 
 	return cmd
 }
