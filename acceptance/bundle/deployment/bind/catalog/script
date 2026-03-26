@@ -1,6 +1,6 @@
 cleanup() {
     title "Test cleanup"
-    trace $CLI catalogs delete "test-catalog-$UNIQUE_NAME"
+    trace $CLI catalogs delete "test-catalog-$UNIQUE_NAME" --force
     echo $?
 }
 trap cleanup EXIT
