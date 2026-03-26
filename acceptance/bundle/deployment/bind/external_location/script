@@ -1,0 +1,26 @@
+cleanup() {
+    title "Test cleanup"
+    trace $CLI external-locations delete "test-location-$UNIQUE_NAME"
+    echo $?
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI external-locations create "test-location-$UNIQUE_NAME" "s3://test-bucket/path" "test_storage_credential" | jq '{name, url, credential_name}'
+
+trace $CLI bundle deployment bind test_location "test-location-$UNIQUE_NAME" --auto-approve
+
+title "Deploy bundle"
+trace $CLI bundle deploy --force-lock --auto-approve
+
+trace $CLI external-locations get "test-location-$UNIQUE_NAME" | jq '{name, url, credential_name}'
+
+title "Unbind external location"
+trace $CLI bundle deployment unbind test_location
+
+title "Destroy bundle"
+trace $CLI bundle destroy --auto-approve
+
+title "Read the pre-defined external location again (expecting it still exists): "
+trace $CLI external-locations get "test-location-$UNIQUE_NAME" | jq '{name, url, credential_name}'
