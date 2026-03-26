@@ -17,6 +17,12 @@ type Agent struct {
 	ConfigDir func(ctx context.Context) (string, error)
 	// SkillsSubdir is the subdirectory within ConfigDir for skills (default: "skills").
 	SkillsSubdir string
+	// SupportsProjectScope indicates whether this agent supports project-scoped skills.
+	// When true, skills can be installed relative to the project root.
+	SupportsProjectScope bool
+	// ProjectConfigDir is the config directory name relative to a project root
+	// (e.g., ".claude"). Only used when SupportsProjectScope is true.
+	ProjectConfigDir string
 }
 
 // Detected returns true if the agent is installed on the system.
@@ -54,17 +60,31 @@ func homeSubdir(subpath ...string) func(ctx context.Context) (string, error) {
 	}
 }
 
+// ProjectSkillsDir returns the project-scoped skills directory for this agent.
+// Only valid for agents where SupportsProjectScope is true.
+func (a *Agent) ProjectSkillsDir(cwd string) string {
+	subdir := a.SkillsSubdir
+	if subdir == "" {
+		subdir = "skills"
+	}
+	return filepath.Join(cwd, a.ProjectConfigDir, subdir)
+}
+
 // Registry contains all supported agents.
 var Registry = []Agent{
 	{
-		Name:        "claude-code",
-		DisplayName: "Claude Code",
-		ConfigDir:   homeSubdir(".claude"),
+		Name:                 "claude-code",
+		DisplayName:          "Claude Code",
+		ConfigDir:            homeSubdir(".claude"),
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".claude",
 	},
 	{
-		Name:        "cursor",
-		DisplayName: "Cursor",
-		ConfigDir:   homeSubdir(".cursor"),
+		Name:                 "cursor",
+		DisplayName:          "Cursor",
+		ConfigDir:            homeSubdir(".cursor"),
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".cursor",
 	},
 	{
 		Name:        "codex",
