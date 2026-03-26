@@ -31,6 +31,19 @@ func setupInstallMock(t *testing.T) *[]installCall {
 	return &calls
 }
 
+func setupScopeMock(t *testing.T, scope string) *bool {
+	t.Helper()
+	orig := promptScopeSelection
+	t.Cleanup(func() { promptScopeSelection = orig })
+
+	called := false
+	promptScopeSelection = func(_ context.Context) (string, error) {
+		called = true
+		return scope, nil
+	}
+	return &called
+}
+
 type installCall struct {
 	agents []string
 	opts   installer.InstallOptions
@@ -146,6 +159,7 @@ func TestInstallIncludeExperimental(t *testing.T) {
 func TestInstallInteractivePrompt(t *testing.T) {
 	setupTestAgents(t)
 	calls := setupInstallMock(t)
+	setupScopeMock(t, installer.ScopeGlobal)
 
 	origPrompt := promptAgentSelection
 	t.Cleanup(func() { promptAgentSelection = origPrompt })
@@ -435,4 +449,135 @@ func TestResolveAgentNamesDuplicatesDeduplicates(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, result, 1, "duplicate agent names should be deduplicated")
 	assert.Equal(t, "claude-code", result[0].Name)
+}
+
+// --- Scope flag tests ---
+
+func TestInstallProjectFlag(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--project"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, installer.ScopeProject, (*calls)[0].opts.Scope)
+}
+
+func TestInstallGlobalFlag(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--global"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, installer.ScopeGlobal, (*calls)[0].opts.Scope)
+}
+
+func TestInstallGlobalAndProjectErrors(t *testing.T) {
+	setupTestAgents(t)
+	setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--global", "--project"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot use --global and --project together")
+}
+
+func TestInstallNoFlagNonInteractiveUsesGlobal(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, nil)
+	require.NoError(t, err)
+
+	require.Len(t, *calls, 1)
+	assert.Equal(t, installer.ScopeGlobal, (*calls)[0].opts.Scope)
+}
+
+func TestInstallNoFlagInteractiveShowsScopePrompt(t *testing.T) {
+	setupTestAgents(t)
+	calls := setupInstallMock(t)
+	scopePromptCalled := setupScopeMock(t, installer.ScopeProject)
+
+	// Also mock agent prompt since interactive mode triggers it.
+	origPrompt := promptAgentSelection
+	t.Cleanup(func() { promptAgentSelection = origPrompt })
+	promptAgentSelection = func(_ context.Context, detected []*agents.Agent) ([]*agents.Agent, error) {
+		return detected, nil
+	}
+
+	ctx, test := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer test.Done()
+
+	drain := func(r *bufio.Reader) {
+		buf := make([]byte, 4096)
+		for {
+			_, err := r.Read(buf)
+			if err != nil {
+				return
+			}
+		}
+	}
+	go drain(test.Stdout)
+	go drain(test.Stderr)
+
+	cmd := newInstallCmd()
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, nil)
+	require.NoError(t, err)
+
+	assert.True(t, *scopePromptCalled, "scope prompt should be called in interactive mode")
+	require.Len(t, *calls, 1)
+	assert.Equal(t, installer.ScopeProject, (*calls)[0].opts.Scope)
+}
+
+func TestResolveScopeValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		project bool
+		global  bool
+		want    string
+		wantErr string
+	}{
+		{name: "neither", want: installer.ScopeGlobal},
+		{name: "global only", global: true, want: installer.ScopeGlobal},
+		{name: "project only", project: true, want: installer.ScopeProject},
+		{name: "both", project: true, global: true, wantErr: "cannot use --global and --project together"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := resolveScope(tc.project, tc.global)
+			if tc.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.wantErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.want, got)
+			}
+		})
+	}
 }

@@ -1,6 +1,7 @@
 package aitools
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -21,38 +22,47 @@ func newVersionCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			state, err := installer.LoadState(globalDir)
+			globalState, err := installer.LoadState(globalDir)
 			if err != nil {
-				return fmt.Errorf("failed to load install state: %w", err)
+				return fmt.Errorf("failed to load global install state: %w", err)
 			}
 
-			if state == nil {
+			// Try loading project state (may fail if not in a project, that's ok).
+			var projectState *installer.InstallState
+			projectDir, projErr := installer.ProjectSkillsDir(ctx)
+			if projErr == nil {
+				projectState, err = installer.LoadState(projectDir)
+				if err != nil {
+					return fmt.Errorf("failed to load project install state: %w", err)
+				}
+			}
+
+			if globalState == nil && projectState == nil {
 				cmdio.LogString(ctx, "No Databricks AI Tools components installed.")
 				cmdio.LogString(ctx, "")
 				cmdio.LogString(ctx, "Run 'databricks experimental aitools install' to get started.")
 				return nil
 			}
 
-			version := strings.TrimPrefix(state.Release, "v")
-			skillNoun := "skills"
-			if len(state.Skills) == 1 {
-				skillNoun = "skill"
-			}
+			latestRef := installer.GetSkillsRef(ctx)
+			bothScopes := globalState != nil && projectState != nil
 
 			cmdio.LogString(ctx, "Databricks AI Tools:")
 
-			latestRef := installer.GetSkillsRef(ctx)
-			if latestRef == state.Release {
-				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s, up to date)", version, len(state.Skills), skillNoun))
-				cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
-			} else {
-				latestVersion := strings.TrimPrefix(latestRef, "v")
-				cmdio.LogString(ctx, fmt.Sprintf("  Skills: v%s (%d %s)", version, len(state.Skills), skillNoun))
-				cmdio.LogString(ctx, "  Update available: v"+latestVersion)
-				cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
-				cmdio.LogString(ctx, "")
-				cmdio.LogString(ctx, "Run 'databricks experimental aitools update' to update.")
+			if globalState != nil {
+				label := "Skills"
+				if bothScopes {
+					label = "Skills (global)"
+				}
+				printVersionLine(ctx, label, globalState, latestRef)
+			}
+
+			if projectState != nil {
+				label := "Skills"
+				if bothScopes {
+					label = "Skills (project)"
+				}
+				printVersionLine(ctx, label, projectState, latestRef)
 			}
 
 			return nil
@@ -60,4 +70,25 @@ func newVersionCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// printVersionLine prints a single version line for a scope.
+func printVersionLine(ctx context.Context, label string, state *installer.InstallState, latestRef string) {
+	version := strings.TrimPrefix(state.Release, "v")
+	skillNoun := "skills"
+	if len(state.Skills) == 1 {
+		skillNoun = "skill"
+	}
+
+	if latestRef == state.Release {
+		cmdio.LogString(ctx, fmt.Sprintf("  %s: v%s (%d %s, up to date)", label, version, len(state.Skills), skillNoun))
+		cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
+	} else {
+		latestVersion := strings.TrimPrefix(latestRef, "v")
+		cmdio.LogString(ctx, fmt.Sprintf("  %s: v%s (%d %s)", label, version, len(state.Skills), skillNoun))
+		cmdio.LogString(ctx, "  Update available: v"+latestVersion)
+		cmdio.LogString(ctx, "  Last updated: "+state.LastUpdated.Format("2006-01-02"))
+		cmdio.LogString(ctx, "")
+		cmdio.LogString(ctx, "Run 'databricks experimental aitools update' to update.")
+	}
 }

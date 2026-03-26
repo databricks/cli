@@ -10,6 +10,7 @@ import (
 func newUpdateCmd() *cobra.Command {
 	var check, force, noNew bool
 	var skillsFlag string
+	var projectFlag, globalFlag bool
 
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -22,6 +23,12 @@ preview what would change without downloading.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			scope, err := resolveScope(projectFlag, globalFlag)
+			if err != nil {
+				return err
+			}
+
 			installed := agents.DetectInstalled(ctx)
 			src := &installer.GitHubManifestSource{}
 
@@ -29,6 +36,7 @@ preview what would change without downloading.`,
 				Check: check,
 				Force: force,
 				NoNew: noNew,
+				Scope: scope,
 			}
 			opts.Skills = splitAndTrim(skillsFlag)
 
@@ -47,5 +55,7 @@ preview what would change without downloading.`,
 	cmd.Flags().BoolVar(&force, "force", false, "Re-download even if versions match")
 	cmd.Flags().BoolVar(&noNew, "no-new", false, "Don't auto-install new skills from manifest")
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to update (comma-separated)")
+	cmd.Flags().BoolVar(&projectFlag, "project", false, "Update project-scoped skills")
+	cmd.Flags().BoolVar(&globalFlag, "global", false, "Update globally-scoped skills (default)")
 	return cmd
 }

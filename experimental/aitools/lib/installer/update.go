@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -23,6 +24,7 @@ type UpdateOptions struct {
 	NoNew  bool
 	Check  bool     // dry run: show what would change without downloading
 	Skills []string // empty = all installed
+	Scope  string   // ScopeGlobal or ScopeProject (default: global)
 }
 
 // UpdateResult describes what UpdateSkills did (or would do in check mode).
@@ -42,18 +44,37 @@ type SkillUpdate struct {
 
 // UpdateSkills updates installed skills to the latest release.
 func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agents.Agent, opts UpdateOptions) (*UpdateResult, error) {
-	globalDir, err := GlobalSkillsDir(ctx)
+	scope := opts.Scope
+	if scope == "" {
+		scope = ScopeGlobal
+	}
+
+	baseDir, err := skillsDir(ctx, scope)
 	if err != nil {
 		return nil, err
 	}
 
-	state, err := LoadState(globalDir)
+	// For project scope, filter to compatible agents.
+	var cwd string
+	if scope == ScopeProject {
+		cwd, err = os.Getwd()
+		if err != nil {
+			return nil, fmt.Errorf("failed to determine working directory: %w", err)
+		}
+		incompatible := incompatibleAgentNames(targetAgents)
+		targetAgents = filterProjectAgents(ctx, targetAgents)
+		if len(targetAgents) == 0 {
+			return nil, fmt.Errorf("no agents support project-scoped skills. The following detected agents are global-only: %s", strings.Join(incompatible, ", "))
+		}
+	}
+
+	state, err := LoadState(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load install state: %w", err)
 	}
 
 	if state == nil {
-		if hasLegacyInstall(ctx, globalDir) {
+		if scope == ScopeGlobal && hasLegacyInstall(ctx, baseDir) {
 			return nil, errors.New("found skills from a previous install without state tracking; run 'databricks experimental aitools install' to refresh before updating")
 		}
 		return nil, errors.New("no skills installed. Run 'databricks experimental aitools install' to install")
@@ -142,9 +163,17 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	allChanges := make([]SkillUpdate, 0, len(result.Updated)+len(result.Added))
 	allChanges = append(allChanges, result.Updated...)
 	allChanges = append(allChanges, result.Added...)
+
+	params := installParams{
+		baseDir: baseDir,
+		scope:   scope,
+		cwd:     cwd,
+		ref:     latestTag,
+	}
+
 	for _, change := range allChanges {
 		meta := manifest.Skills[change.Name]
-		if err := installSkillForAgents(ctx, latestTag, change.Name, meta.Files, targetAgents, globalDir); err != nil {
+		if err := installSkillForAgents(ctx, change.Name, meta.Files, targetAgents, params); err != nil {
 			return nil, err
 		}
 	}
@@ -155,7 +184,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	for _, change := range allChanges {
 		state.Skills[change.Name] = change.NewVersion
 	}
-	if err := SaveState(globalDir, state); err != nil {
+	if err := SaveState(baseDir, state); err != nil {
 		return nil, err
 	}
 
