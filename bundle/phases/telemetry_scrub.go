@@ -49,6 +49,7 @@ var knownExtensions = map[string]bool{
 	".toml": true,
 	".cfg":  true,
 	".ini":  true,
+	".env":  true,
 
 	// Notebook and script languages
 	".py":    true,
@@ -58,9 +59,17 @@ var knownExtensions = map[string]bool{
 	".ipynb": true,
 	".sh":    true,
 
+	// Web / Apps
+	".js":   true,
+	".ts":   true,
+	".jsx":  true,
+	".tsx":  true,
+	".html": true,
+	".css":  true,
+
 	// Terraform
-	".tf":    true,
-	".hcl":   true,
+	".tf":  true,
+	".hcl": true,
 
 	// Build artifacts and archives
 	".whl": true,
@@ -71,6 +80,7 @@ var knownExtensions = map[string]bool{
 	// Other
 	".txt": true,
 	".csv": true,
+	".md":  true,
 }
 
 // scrubForTelemetry is a best-effort scrubber that removes sensitive path and
