@@ -1,0 +1,27 @@
+bundle:
+  name: catalog-var-ref
+
+variables:
+  catalog:
+    description: Unity Catalog name
+    default: main
+
+resources:
+  catalogs:
+    main_catalog:
+      name: ${var.catalog}
+      comment: "My catalog"
+      storage_root: s3://my-s3-path/dbx/${var.catalog}
+#
+  schemas:
+    raw_schema:
+      name: raw
+      catalog_name: ${var.catalog}
+
+  volumes:
+    metadata:
+      name: metadata
+      catalog_name: ${var.catalog}
+      schema_name: raw
+      volume_type: EXTERNAL
+      storage_location: s3://my-s3-path/${var.catalog}_raw
