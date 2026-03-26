@@ -30,44 +30,11 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *compute.Cluste
 	return &input.ClusterSpec
 }
 
+// clusterRemapCopy maps ClusterDetails (remote GET response) to ClusterSpec (local state).
+var clusterRemapCopy = newCopy[compute.ClusterDetails, compute.ClusterSpec]()
+
 func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.ClusterSpec {
-	spec := &compute.ClusterSpec{
-		ApplyPolicyDefaultValues:   false,
-		Autoscale:                  input.Autoscale,
-		AutoterminationMinutes:     input.AutoterminationMinutes,
-		AwsAttributes:              input.AwsAttributes,
-		AzureAttributes:            input.AzureAttributes,
-		ClusterLogConf:             input.ClusterLogConf,
-		ClusterName:                input.ClusterName,
-		CustomTags:                 input.CustomTags,
-		DataSecurityMode:           input.DataSecurityMode,
-		DockerImage:                input.DockerImage,
-		DriverInstancePoolId:       input.DriverInstancePoolId,
-		DriverNodeTypeId:           input.DriverNodeTypeId,
-		DriverNodeTypeFlexibility:  input.DriverNodeTypeFlexibility,
-		EnableElasticDisk:          input.EnableElasticDisk,
-		EnableLocalDiskEncryption:  input.EnableLocalDiskEncryption,
-		GcpAttributes:              input.GcpAttributes,
-		InitScripts:                input.InitScripts,
-		InstancePoolId:             input.InstancePoolId,
-		IsSingleNode:               input.IsSingleNode,
-		Kind:                       input.Kind,
-		NodeTypeId:                 input.NodeTypeId,
-		NumWorkers:                 input.NumWorkers,
-		PolicyId:                   input.PolicyId,
-		RemoteDiskThroughput:       input.RemoteDiskThroughput,
-		RuntimeEngine:              input.RuntimeEngine,
-		SingleUserName:             input.SingleUserName,
-		SparkConf:                  input.SparkConf,
-		SparkEnvVars:               input.SparkEnvVars,
-		SparkVersion:               input.SparkVersion,
-		SshPublicKeys:              input.SshPublicKeys,
-		TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
-		UseMlRuntime:               input.UseMlRuntime,
-		WorkloadType:               input.WorkloadType,
-		WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
-		ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
-	}
+	spec := clusterRemapCopy.Do(input)
 	if input.Spec != nil {
 		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
 	}
@@ -78,20 +45,32 @@ func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.Clust
 	return r.client.Clusters.GetByClusterId(ctx, id)
 }
 
+// clusterCreateCopy maps ClusterSpec (local state) to CreateCluster (API request).
+var clusterCreateCopy = newCopy[compute.ClusterSpec, compute.CreateCluster]()
+
 func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, *compute.ClusterDetails, error) {
-	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(config))
+	create := clusterCreateCopy.Do(config)
+	forceNumWorkers(config, &create.ForceSendFields)
+	wait, err := r.client.Clusters.Create(ctx, *create)
 	if err != nil {
 		return "", nil, err
 	}
 	return wait.ClusterId, nil, nil
 }
 
+// clusterEditCopy maps ClusterSpec (local state) to EditCluster (API request).
+var clusterEditCopy = newCopy[compute.ClusterSpec, compute.EditCluster]()
+
 func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec, _ Changes) (*compute.ClusterDetails, error) {
+	edit := clusterEditCopy.Do(config)
+	edit.ClusterId = id
+	forceNumWorkers(config, &edit.ForceSendFields)
+
 	// Same retry as in TF provider logic
 	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 	timeout := 15 * time.Minute
 	_, err := retries.Poll(ctx, timeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
-		wait, err := r.client.Clusters.Edit(ctx, makeEditCluster(id, config))
+		wait, err := r.client.Clusters.Edit(ctx, *edit)
 		if err == nil {
 			return wait, nil
 		}
@@ -151,100 +130,10 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 	return nil
 }
 
-func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
-	create := compute.CreateCluster{
-		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
-		Autoscale:                  config.Autoscale,
-		AutoterminationMinutes:     config.AutoterminationMinutes,
-		AwsAttributes:              config.AwsAttributes,
-		AzureAttributes:            config.AzureAttributes,
-		ClusterLogConf:             config.ClusterLogConf,
-		ClusterName:                config.ClusterName,
-		CloneFrom:                  nil, // Not supported by DABs
-		CustomTags:                 config.CustomTags,
-		DataSecurityMode:           config.DataSecurityMode,
-		DockerImage:                config.DockerImage,
-		DriverInstancePoolId:       config.DriverInstancePoolId,
-		DriverNodeTypeId:           config.DriverNodeTypeId,
-		DriverNodeTypeFlexibility:  config.DriverNodeTypeFlexibility,
-		EnableElasticDisk:          config.EnableElasticDisk,
-		EnableLocalDiskEncryption:  config.EnableLocalDiskEncryption,
-		GcpAttributes:              config.GcpAttributes,
-		InitScripts:                config.InitScripts,
-		InstancePoolId:             config.InstancePoolId,
-		IsSingleNode:               config.IsSingleNode,
-		Kind:                       config.Kind,
-		NodeTypeId:                 config.NodeTypeId,
-		NumWorkers:                 config.NumWorkers,
-		PolicyId:                   config.PolicyId,
-		RemoteDiskThroughput:       config.RemoteDiskThroughput,
-		RuntimeEngine:              config.RuntimeEngine,
-		SingleUserName:             config.SingleUserName,
-		SparkConf:                  config.SparkConf,
-		SparkEnvVars:               config.SparkEnvVars,
-		SparkVersion:               config.SparkVersion,
-		SshPublicKeys:              config.SshPublicKeys,
-		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
-		UseMlRuntime:               config.UseMlRuntime,
-		WorkloadType:               config.WorkloadType,
-		WorkerNodeTypeFlexibility:  config.WorkerNodeTypeFlexibility,
-		ForceSendFields:            utils.FilterFields[compute.CreateCluster](config.ForceSendFields),
-	}
-
-	// If autoscale is not set, we need to send NumWorkers because one of them is required.
-	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
+// forceNumWorkers ensures NumWorkers is sent when Autoscale is not set,
+// because the API requires one of them.
+func forceNumWorkers(config *compute.ClusterSpec, fsf *[]string) {
 	if config.Autoscale == nil && config.NumWorkers == 0 {
-		create.ForceSendFields = append(create.ForceSendFields, "NumWorkers")
+		*fsf = append(*fsf, "NumWorkers")
 	}
-
-	return create
-}
-
-func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster {
-	edit := compute.EditCluster{
-		ClusterId:                  id,
-		ApplyPolicyDefaultValues:   config.ApplyPolicyDefaultValues,
-		Autoscale:                  config.Autoscale,
-		AutoterminationMinutes:     config.AutoterminationMinutes,
-		AwsAttributes:              config.AwsAttributes,
-		AzureAttributes:            config.AzureAttributes,
-		ClusterLogConf:             config.ClusterLogConf,
-		ClusterName:                config.ClusterName,
-		CustomTags:                 config.CustomTags,
-		DataSecurityMode:           config.DataSecurityMode,
-		DockerImage:                config.DockerImage,
-		DriverInstancePoolId:       config.DriverInstancePoolId,
-		DriverNodeTypeId:           config.DriverNodeTypeId,
-		DriverNodeTypeFlexibility:  config.DriverNodeTypeFlexibility,
-		EnableElasticDisk:          config.EnableElasticDisk,
-		EnableLocalDiskEncryption:  config.EnableLocalDiskEncryption,
-		GcpAttributes:              config.GcpAttributes,
-		InitScripts:                config.InitScripts,
-		InstancePoolId:             config.InstancePoolId,
-		IsSingleNode:               config.IsSingleNode,
-		Kind:                       config.Kind,
-		NodeTypeId:                 config.NodeTypeId,
-		NumWorkers:                 config.NumWorkers,
-		PolicyId:                   config.PolicyId,
-		RemoteDiskThroughput:       config.RemoteDiskThroughput,
-		RuntimeEngine:              config.RuntimeEngine,
-		SingleUserName:             config.SingleUserName,
-		SparkConf:                  config.SparkConf,
-		SparkEnvVars:               config.SparkEnvVars,
-		SparkVersion:               config.SparkVersion,
-		SshPublicKeys:              config.SshPublicKeys,
-		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
-		UseMlRuntime:               config.UseMlRuntime,
-		WorkloadType:               config.WorkloadType,
-		WorkerNodeTypeFlexibility:  config.WorkerNodeTypeFlexibility,
-		ForceSendFields:            utils.FilterFields[compute.EditCluster](config.ForceSendFields),
-	}
-
-	// If autoscale is not set, we need to send NumWorkers because one of them is required.
-	// If NumWorkers is not nil, we don't need to set it to ForceSendFields as it will be sent anyway.
-	if config.Autoscale == nil && config.NumWorkers == 0 {
-		edit.ForceSendFields = append(edit.ForceSendFields, "NumWorkers")
-	}
-
-	return edit
 }

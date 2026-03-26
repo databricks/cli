@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -65,61 +64,19 @@ func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*PipelineRemo
 	return makePipelineRemote(resp), nil
 }
 
+// pipelineSpecCopy maps PipelineSpec (from GET response) to CreatePipeline (local state).
+var pipelineSpecCopy = newCopy[pipelines.PipelineSpec, pipelines.CreatePipeline]()
+
+// pipelineRemoteCopy maps GetPipelineResponse to PipelineRemote extra fields.
+var pipelineRemoteCopy = newCopy[pipelines.GetPipelineResponse, PipelineRemote]()
+
 func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
-	var createPipeline pipelines.CreatePipeline
+	remote := pipelineRemoteCopy.Do(p)
 	if p.Spec != nil {
-		spec := p.Spec
-		createPipeline = pipelines.CreatePipeline{
-			// Note: AllowDuplicateNames and DryRun are not in PipelineSpec,
-			// they are request-only fields, so they stay at their zero values.
-			AllowDuplicateNames: false,
-			BudgetPolicyId:      spec.BudgetPolicyId,
-			Catalog:             spec.Catalog,
-			Channel:             spec.Channel,
-			Clusters:            spec.Clusters,
-			Configuration:       spec.Configuration,
-			Continuous:          spec.Continuous,
-			Deployment:          spec.Deployment,
-			Development:         spec.Development,
-			DryRun:              false,
-			Edition:             spec.Edition,
-			Environment:         spec.Environment,
-			EventLog:            spec.EventLog,
-			Filters:             spec.Filters,
-			GatewayDefinition:   spec.GatewayDefinition,
-			Id:                  spec.Id,
-			IngestionDefinition: spec.IngestionDefinition,
-			Libraries:           spec.Libraries,
-			Name:                spec.Name,
-			Notifications:       spec.Notifications,
-			Photon:              spec.Photon,
-			RestartWindow:       spec.RestartWindow,
-			RootPath:            spec.RootPath,
-			RunAs:               p.RunAs,
-			Schema:              spec.Schema,
-			Serverless:          spec.Serverless,
-			Storage:             spec.Storage,
-			Tags:                spec.Tags,
-			Target:              spec.Target,
-			Trigger:             spec.Trigger,
-			UsagePolicyId:       spec.UsagePolicyId,
-			ForceSendFields:     utils.FilterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs"),
-		}
+		remote.CreatePipeline = *pipelineSpecCopy.Do(p.Spec)
+		remote.CreatePipeline.RunAs = p.RunAs
 	}
-	return &PipelineRemote{
-		CreatePipeline:          createPipeline,
-		Cause:                   p.Cause,
-		ClusterId:               p.ClusterId,
-		CreatorUserName:         p.CreatorUserName,
-		EffectiveBudgetPolicyId: p.EffectiveBudgetPolicyId,
-		EffectivePublishingMode: p.EffectivePublishingMode,
-		Health:                  p.Health,
-		LastModified:            p.LastModified,
-		LatestUpdates:           p.LatestUpdates,
-		PipelineId:              p.PipelineId,
-		RunAsUserName:           p.RunAsUserName,
-		State:                   p.State,
-	}
+	return remote
 }
 
 func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, *PipelineRemote, error) {
@@ -130,44 +87,13 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.Creat
 	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ Changes) (*PipelineRemote, error) {
-	request := pipelines.EditPipeline{
-		AllowDuplicateNames:  config.AllowDuplicateNames,
-		BudgetPolicyId:       config.BudgetPolicyId,
-		Catalog:              config.Catalog,
-		Channel:              config.Channel,
-		Clusters:             config.Clusters,
-		Configuration:        config.Configuration,
-		Continuous:           config.Continuous,
-		Deployment:           config.Deployment,
-		Development:          config.Development,
-		Edition:              config.Edition,
-		Environment:          config.Environment,
-		EventLog:             config.EventLog,
-		ExpectedLastModified: 0,
-		Filters:              config.Filters,
-		GatewayDefinition:    config.GatewayDefinition,
-		Id:                   config.Id,
-		IngestionDefinition:  config.IngestionDefinition,
-		Libraries:            config.Libraries,
-		Name:                 config.Name,
-		Notifications:        config.Notifications,
-		Photon:               config.Photon,
-		RestartWindow:        config.RestartWindow,
-		RootPath:             config.RootPath,
-		RunAs:                config.RunAs,
-		Schema:               config.Schema,
-		Serverless:           config.Serverless,
-		Storage:              config.Storage,
-		Tags:                 config.Tags,
-		Target:               config.Target,
-		Trigger:              config.Trigger,
-		UsagePolicyId:        config.UsagePolicyId,
-		PipelineId:           id,
-		ForceSendFields:      utils.FilterFields[pipelines.EditPipeline](config.ForceSendFields),
-	}
+// pipelineEditCopy maps CreatePipeline (local state) to EditPipeline (API request).
+var pipelineEditCopy = newCopy[pipelines.CreatePipeline, pipelines.EditPipeline]()
 
-	return nil, r.client.Pipelines.Update(ctx, request)
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ Changes) (*PipelineRemote, error) {
+	request := pipelineEditCopy.Do(config)
+	request.PipelineId = id
+	return nil, r.client.Pipelines.Update(ctx, *request)
 }
 
 func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {

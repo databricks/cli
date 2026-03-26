@@ -96,8 +96,13 @@ test-slow-acc:
 
 # Updates acceptance test output (local tests)
 .PHONY: test-update
-test-update:
+test-update: test-update-golden
 	-go test ./acceptance -run '^TestAccept$$' -update -timeout=${LOCAL_TIMEOUT}
+
+# Updates golden files test output (other than acceptance tests)
+.PHONY: test-update-golden
+test-update-golden:
+	./tools/update_golden.py
 
 # Updates acceptance test output for template tests only
 .PHONY: test-update-templates

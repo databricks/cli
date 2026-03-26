@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
@@ -34,42 +33,24 @@ func (*ResourceModelServingEndpoint) PrepareState(input *resources.ModelServingE
 	return &input.CreateServingEndpoint
 }
 
+// autoCaptureConfigCopy maps AutoCaptureConfigOutput to AutoCaptureConfigInput.
+var autoCaptureConfigCopy = newCopy[serving.AutoCaptureConfigOutput, serving.AutoCaptureConfigInput]()
+
 func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *serving.AutoCaptureConfigInput {
 	if output == nil {
 		return nil
 	}
-	return &serving.AutoCaptureConfigInput{
-		CatalogName:     output.CatalogName,
-		SchemaName:      output.SchemaName,
-		TableNamePrefix: output.TableNamePrefix,
-		Enabled:         output.Enabled,
-		ForceSendFields: utils.FilterFields[serving.AutoCaptureConfigInput](output.ForceSendFields),
-	}
+	return autoCaptureConfigCopy.Do(output)
 }
+
+// servedEntityCopy maps ServedEntityOutput to ServedEntityInput.
+var servedEntityCopy = newCopy[serving.ServedEntityOutput, serving.ServedEntityInput]()
 
 func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.ServedEntityInput {
 	entities := make([]serving.ServedEntityInput, len(output))
 	for i, entity := range output {
-		entities[i] = serving.ServedEntityInput{
-			EntityName:                entity.EntityName,
-			EntityVersion:             entity.EntityVersion,
-			EnvironmentVars:           entity.EnvironmentVars,
-			ExternalModel:             entity.ExternalModel,
-			InstanceProfileArn:        entity.InstanceProfileArn,
-			MaxProvisionedConcurrency: entity.MaxProvisionedConcurrency,
-			MaxProvisionedThroughput:  entity.MaxProvisionedThroughput,
-			MinProvisionedConcurrency: entity.MinProvisionedConcurrency,
-			MinProvisionedThroughput:  entity.MinProvisionedThroughput,
-			Name:                      entity.Name,
-			ProvisionedModelUnits:     entity.ProvisionedModelUnits,
-			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
-			WorkloadSize:              entity.WorkloadSize,
-			WorkloadType:              entity.WorkloadType,
-			BurstScalingEnabled:       entity.BurstScalingEnabled,
-			ForceSendFields:           utils.FilterFields[serving.ServedEntityInput](entity.ForceSendFields),
-		}
+		entities[i] = *servedEntityCopy.Do(&entity)
 	}
-
 	return entities
 }
 
@@ -86,25 +67,14 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 	}
 }
 
+// servingRemapCopy maps ServingEndpointDetailed (remote GET response) to CreateServingEndpoint (local state).
+var servingRemapCopy = newCopy[serving.ServingEndpointDetailed, serving.CreateServingEndpoint]()
+
 func (*ResourceModelServingEndpoint) RemapState(state *RefreshOutput) *serving.CreateServingEndpoint {
 	details := state.EndpointDetails
-	// Map the remote state (ServingEndpointDetailed) to the local state (CreateServingEndpoint)
-	// for proper comparison during diff calculation
-	return &serving.CreateServingEndpoint{
-		AiGateway:          details.AiGateway,
-		BudgetPolicyId:     details.BudgetPolicyId,
-		Config:             configOutputToInput(details.Config),
-		Description:        details.Description,
-		EmailNotifications: details.EmailNotifications,
-		Name:               details.Name,
-		RouteOptimized:     details.RouteOptimized,
-		Tags:               details.Tags,
-		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](details.ForceSendFields),
-
-		// Rate limits are a deprecated field that are not returned by the API on GET calls. Thus we map them to nil.
-		// TODO(shreyas): Add a warning when users try setting top level rate limits.
-		RateLimits: nil,
-	}
+	result := servingRemapCopy.Do(details)
+	result.Config = configOutputToInput(details.Config)
+	return result
 }
 
 type RefreshOutput struct {

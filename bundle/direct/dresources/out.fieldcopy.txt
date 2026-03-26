@@ -1,0 +1,162 @@
+catalog.CatalogInfo → catalog.CreateCatalog
+  src not copied:
+    - BrowseOnly
+    - CatalogType
+    - CreatedAt
+    - CreatedBy
+    - EffectivePredictiveOptimizationFlag
+    - EnablePredictiveOptimization
+    - FullName
+    - IsolationMode
+    - MetastoreId
+    - Owner
+    - ProvisioningInfo
+    - SecurableType
+    - StorageLocation
+    - UpdatedAt
+    - UpdatedBy
+catalog.CreateCatalog → catalog.UpdateCatalog
+  src not copied:
+    - ConnectionName
+    - ProviderName
+    - ShareName
+    - StorageRoot
+  dst not set:
+    - EnablePredictiveOptimization
+    - IsolationMode
+    - NewName
+    - Owner
+compute.ClusterDetails → compute.ClusterSpec
+  src not copied:
+    - ClusterCores
+    - ClusterId
+    - ClusterLogStatus
+    - ClusterMemoryMb
+    - ClusterSource
+    - CreatorUserName
+    - DefaultTags
+    - Driver
+    - Executors
+    - JdbcPort
+    - LastRestartedTime
+    - LastStateLossTime
+    - SparkContextId
+    - Spec
+    - StartTime
+    - State
+    - StateMessage
+    - TerminatedTime
+    - TerminationReason
+  dst not set:
+    - ApplyPolicyDefaultValues
+compute.ClusterSpec → compute.CreateCluster
+  dst not set:
+    - CloneFrom
+compute.ClusterSpec → compute.EditCluster
+  dst not set:
+    - ClusterId
+catalog.ExternalLocationInfo → catalog.CreateExternalLocation
+  src not copied:
+    - BrowseOnly
+    - CreatedAt
+    - CreatedBy
+    - CredentialId
+    - IsolationMode
+    - MetastoreId
+    - Owner
+    - UpdatedAt
+    - UpdatedBy
+  dst not set:
+    - SkipValidation
+catalog.CreateExternalLocation → catalog.UpdateExternalLocation
+  dst not set:
+    - Force
+    - IsolationMode
+    - NewName
+    - Owner
+jobs.JobSettings → jobs.CreateJob
+  dst not set:
+    - AccessControlList
+serving.AutoCaptureConfigOutput → serving.AutoCaptureConfigInput
+  src not copied:
+    - State
+serving.ServedEntityOutput → serving.ServedEntityInput
+  src not copied:
+    - CreationTimestamp
+    - Creator
+    - FoundationModel
+    - State
+serving.ServingEndpointDetailed → serving.CreateServingEndpoint
+  src not copied:
+    - Config
+    - CreationTimestamp
+    - Creator
+    - DataPlaneInfo
+    - EndpointUrl
+    - Id
+    - LastUpdatedTimestamp
+    - PendingConfig
+    - PermissionLevel
+    - State
+    - Task
+  dst not set:
+    - Config
+    - RateLimits
+pipelines.PipelineSpec → pipelines.CreatePipeline
+  dst not set:
+    - AllowDuplicateNames
+    - DryRun
+    - RunAs
+pipelines.GetPipelineResponse → dresources.PipelineRemote
+  src not copied:
+    - Name
+    - RunAs
+    - Spec
+    - ForceSendFields
+  dst not set:
+    - CreatePipeline
+pipelines.CreatePipeline → pipelines.EditPipeline
+  src not copied:
+    - DryRun
+  dst not set:
+    - ExpectedLastModified
+    - PipelineId
+catalog.MonitorInfo → catalog.CreateMonitor
+  src not copied:
+    - DashboardId
+    - DriftMetricsTableName
+    - MonitorVersion
+    - ProfileMetricsTableName
+    - Status
+  dst not set:
+    - SkipBuiltinDashboard
+    - WarehouseId
+catalog.CreateMonitor → catalog.UpdateMonitor
+  src not copied:
+    - AssetsDir
+    - SkipBuiltinDashboard
+    - WarehouseId
+  dst not set:
+    - DashboardId
+catalog.RegisteredModelInfo → catalog.CreateRegisteredModelRequest: all fields matched
+catalog.CreateRegisteredModelRequest → catalog.UpdateRegisteredModelRequest
+  dst not set:
+    - NewName
+sql.GetWarehouseResponse → sql.CreateWarehouseRequest
+  src not copied:
+    - Health
+    - Id
+    - JdbcUrl
+    - NumActiveSessions
+    - NumClusters
+    - OdbcParams
+    - State
+    - WarehouseType
+  dst not set:
+    - WarehouseType
+sql.CreateWarehouseRequest → sql.EditWarehouseRequest
+  src not copied:
+    - WarehouseType
+  dst not set:
+    - Id
+    - WarehouseType

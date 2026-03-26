@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -23,27 +22,11 @@ func (*ResourceRegisteredModel) PrepareState(input *resources.RegisteredModel) *
 	return &input.CreateRegisteredModelRequest
 }
 
+// registeredModelRemapCopy maps RegisteredModelInfo (remote GET response) to CreateRegisteredModelRequest (local state).
+var registeredModelRemapCopy = newCopy[catalog.RegisteredModelInfo, catalog.CreateRegisteredModelRequest]()
+
 func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *catalog.CreateRegisteredModelRequest {
-	return &catalog.CreateRegisteredModelRequest{
-		CatalogName:     model.CatalogName,
-		Comment:         model.Comment,
-		Name:            model.Name,
-		SchemaName:      model.SchemaName,
-		StorageLocation: model.StorageLocation,
-		ForceSendFields: utils.FilterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
-
-		Aliases:     model.Aliases,
-		BrowseOnly:  model.BrowseOnly,
-		FullName:    model.FullName,
-		MetastoreId: model.MetastoreId,
-		Owner:       model.Owner,
-
-		// Clear output only fields. They should not show up on remote diff computation.
-		CreatedAt: 0,
-		CreatedBy: "",
-		UpdatedAt: 0,
-		UpdatedBy: "",
-	}
+	return registeredModelRemapCopy.Do(model)
 }
 
 func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
@@ -64,33 +47,14 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 	return response.FullName, response, nil
 }
 
+// registeredModelUpdateCopy maps CreateRegisteredModelRequest (local state) to UpdateRegisteredModelRequest (API request).
+var registeredModelUpdateCopy = newCopy[catalog.CreateRegisteredModelRequest, catalog.UpdateRegisteredModelRequest]()
+
 func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ Changes) (*catalog.RegisteredModelInfo, error) {
-	updateRequest := catalog.UpdateRegisteredModelRequest{
-		FullName:        id,
-		Comment:         config.Comment,
-		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](config.ForceSendFields, "Owner", "NewName"),
+	updateRequest := registeredModelUpdateCopy.Do(config)
+	updateRequest.FullName = id
 
-		// Owner is not part of the configuration tree
-		Owner: "",
-
-		// Name updates are not supported yet without recreating. Can be added as a follow-up.
-		// Note: TF also does not support changing name without a recreate so the current behavior matches TF.
-		NewName: "",
-
-		Aliases:         config.Aliases,
-		BrowseOnly:      config.BrowseOnly,
-		CreatedAt:       config.CreatedAt,
-		CreatedBy:       config.CreatedBy,
-		MetastoreId:     config.MetastoreId,
-		UpdatedAt:       config.UpdatedAt,
-		UpdatedBy:       config.UpdatedBy,
-		SchemaName:      config.SchemaName,
-		StorageLocation: config.StorageLocation,
-		Name:            config.Name,
-		CatalogName:     config.CatalogName,
-	}
-
-	response, err := r.client.RegisteredModels.Update(ctx, updateRequest)
+	response, err := r.client.RegisteredModels.Update(ctx, *updateRequest)
 	if err != nil {
 		return nil, err
 	}

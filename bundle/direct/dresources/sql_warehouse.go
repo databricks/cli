@@ -5,7 +5,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -24,23 +23,14 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *sql.Cr
 	return &input.CreateWarehouseRequest
 }
 
+// sqlWarehouseRemapCopy maps GetWarehouseResponse (remote GET response) to CreateWarehouseRequest (local state).
+var sqlWarehouseRemapCopy = newCopy[sql.GetWarehouseResponse, sql.CreateWarehouseRequest]()
+
 func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sql.CreateWarehouseRequest {
-	return &sql.CreateWarehouseRequest{
-		AutoStopMins:            warehouse.AutoStopMins,
-		Channel:                 warehouse.Channel,
-		ClusterSize:             warehouse.ClusterSize,
-		CreatorName:             warehouse.CreatorName,
-		EnablePhoton:            warehouse.EnablePhoton,
-		EnableServerlessCompute: warehouse.EnableServerlessCompute,
-		InstanceProfileArn:      warehouse.InstanceProfileArn,
-		MaxNumClusters:          warehouse.MaxNumClusters,
-		MinNumClusters:          warehouse.MinNumClusters,
-		Name:                    warehouse.Name,
-		SpotInstancePolicy:      warehouse.SpotInstancePolicy,
-		Tags:                    warehouse.Tags,
-		WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
-		ForceSendFields:         utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
-	}
+	result := sqlWarehouseRemapCopy.Do(warehouse)
+	// WarehouseType requires explicit conversion between different named string types.
+	result.WarehouseType = sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType)
+	return result
 }
 
 // DoRead reads the warehouse by id.
@@ -57,27 +47,17 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateW
 	return waiter.Id, nil, nil
 }
 
+// sqlWarehouseEditCopy maps CreateWarehouseRequest (local state) to EditWarehouseRequest (API request).
+var sqlWarehouseEditCopy = newCopy[sql.CreateWarehouseRequest, sql.EditWarehouseRequest]()
+
 // DoUpdate updates the warehouse in place.
 func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest, _ Changes) (*sql.GetWarehouseResponse, error) {
-	request := sql.EditWarehouseRequest{
-		AutoStopMins:            config.AutoStopMins,
-		Channel:                 config.Channel,
-		ClusterSize:             config.ClusterSize,
-		CreatorName:             config.CreatorName,
-		EnablePhoton:            config.EnablePhoton,
-		EnableServerlessCompute: config.EnableServerlessCompute,
-		Id:                      id,
-		InstanceProfileArn:      config.InstanceProfileArn,
-		MaxNumClusters:          config.MaxNumClusters,
-		MinNumClusters:          config.MinNumClusters,
-		Name:                    config.Name,
-		SpotInstancePolicy:      config.SpotInstancePolicy,
-		Tags:                    config.Tags,
-		WarehouseType:           sql.EditWarehouseRequestWarehouseType(config.WarehouseType),
-		ForceSendFields:         utils.FilterFields[sql.EditWarehouseRequest](config.ForceSendFields),
-	}
+	request := sqlWarehouseEditCopy.Do(config)
+	request.Id = id
+	// WarehouseType requires explicit conversion between different named string types.
+	request.WarehouseType = sql.EditWarehouseRequestWarehouseType(config.WarehouseType)
 
-	waiter, err := r.client.Warehouses.Edit(ctx, request)
+	waiter, err := r.client.Warehouses.Edit(ctx, *request)
 	if err != nil {
 		return nil, err
 	}
