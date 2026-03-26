@@ -173,24 +173,22 @@ func TestSchemaValidatePassCases(t *testing.T) {
 func TestSchemaValidateFailCases(t *testing.T) {
 	sch := compileSchema(t)
 
-	// Each entry maps a test file to substrings expected in the validation error.
-	// Note: the Google library discards branch-specific errors when oneOf fails,
-	// so we can only assert on the schema path, not the specific failure reason.
-	tests := map[string][]string{
-		"basic.yml":                           {"config.Bundle", "oneOf"},
-		"deprecated_job_field_format.yml":     {"config.Resources", "oneOf"},
-		"hidden_job_field_deployment.yml":     {"config.Resources", "oneOf"},
-		"hidden_job_field_edit_mode.yml":      {"config.Target", "oneOf"},
-		"incorrect_volume_type.yml":           {"config.Resources", "oneOf"},
-		"invalid_enum_value_in_job.yml":       {"config.Resources", "oneOf"},
-		"invalid_enum_value_in_model.yml":     {"config.Resources", "oneOf"},
-		"invalid_reference_in_job.yml":        {"config.Resources", "oneOf"},
-		"invalid_reference_in_model.yml":      {"config.Resources", "oneOf"},
-		"readonly_job_field_git_snapshot.yml": {"config.Resources", "oneOf"},
-		"readonly_job_field_job_source.yml":   {"config.Resources", "oneOf"},
-		"required_field_missing_in_job.yml":   {"config.Resources", "oneOf"},
-		"unknown_field_in_job.yml":            {"config.Resources", "oneOf"},
-		"unknown_field_in_model.yml":          {"config.Resources", "oneOf"},
+	// Each entry maps a test file to the expected schema path in the error.
+	tests := map[string]string{
+		"basic.yml":                           "config.Bundle",
+		"deprecated_job_field_format.yml":     "config.Resources",
+		"hidden_job_field_deployment.yml":     "config.Resources",
+		"hidden_job_field_edit_mode.yml":      "config.Target",
+		"incorrect_volume_type.yml":           "config.Resources",
+		"invalid_enum_value_in_job.yml":       "config.Resources",
+		"invalid_enum_value_in_model.yml":     "config.Resources",
+		"invalid_reference_in_job.yml":        "config.Resources",
+		"invalid_reference_in_model.yml":      "config.Resources",
+		"readonly_job_field_git_snapshot.yml": "config.Resources",
+		"readonly_job_field_job_source.yml":   "config.Resources",
+		"required_field_missing_in_job.yml":   "config.Resources",
+		"unknown_field_in_job.yml":            "config.Resources",
+		"unknown_field_in_model.yml":          "config.Resources",
 	}
 
 	files, err := filepath.Glob("../internal/schema/testdata/fail/*.yml")
@@ -199,16 +197,13 @@ func TestSchemaValidateFailCases(t *testing.T) {
 
 	for _, file := range files {
 		name := filepath.Base(file)
-		expectedSubstrings, ok := tests[name]
+		expectedErr, ok := tests[name]
 		require.True(t, ok, "no expected error for %s, please add an entry to the test table", name)
 
 		t.Run(name, func(t *testing.T) {
 			instance := loadYAMLAsJSON(t, file)
 			err := sch.Validate(instance)
-			require.Error(t, err)
-			for _, substr := range expectedSubstrings {
-				assert.ErrorContains(t, err, substr)
-			}
+			assert.ErrorContains(t, err, expectedErr)
 		})
 	}
 }
