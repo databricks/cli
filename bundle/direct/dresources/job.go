@@ -112,7 +112,7 @@ func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (s
 	return strconv.FormatInt(response.JobId, 10), nil, nil
 }
 
-func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings, _ Changes) (*JobRemote, error) {
+func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings, _ *PlanEntry) (*JobRemote, error) {
 	request, err := makeResetJob(*config, id)
 	if err != nil {
 		return nil, err

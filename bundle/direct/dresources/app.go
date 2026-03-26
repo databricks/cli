@@ -141,10 +141,10 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	return app.Name, nil, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, changes Changes) (*AppRemote, error) {
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Build update mask excluding local-only fields that have no counterpart in the API.
 	var maskPaths []string
-	for path, change := range changes {
+	for path, change := range entry.Changes {
 		if change.Action == deployplan.Update && !localOnlyFields[path] {
 			maskPaths = append(maskPaths, path)
 		}
