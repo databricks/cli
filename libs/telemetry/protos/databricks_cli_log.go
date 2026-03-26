@@ -20,9 +20,6 @@ type ExecutionContext struct {
 	// Only set when the CLI is being run from a Databricks cluster.
 	DbrVersion string `json:"dbr_version,omitempty"`
 
-	// If true, the CLI is being run from a Databricks notebook / cluster web terminal.
-	FromWebTerminal bool `json:"from_web_terminal,omitempty"`
-
 	// Time taken for the CLI command to execute.
 	// We want to serialize the zero value as well so the omitempty tag is not set.
 	ExecutionTimeMs int64 `json:"execution_time_ms"`

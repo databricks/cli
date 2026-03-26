@@ -267,6 +267,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	}
 
 	if opts.Deploy {
+		// Record that initialization and validation passed before entering the
+		// deploy phase. Combined with a non-zero exit code this lets us measure
+		// the "validation pass, deploy fail" gap.
+		b.Metrics.SetBoolValue("validation_passed", true)
+
 		var outputHandler sync.OutputHandler
 		if opts.Verbose {
 			outputHandler = func(ctx context.Context, c <-chan sync.Event) {

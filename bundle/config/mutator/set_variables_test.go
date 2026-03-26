@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,8 +25,9 @@ func TestSetVariableFromProcessEnvVar(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
+	v, source, err := setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
+	assert.Equal(t, variableOverrideSourceEnvVar, source)
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
@@ -42,8 +44,9 @@ func TestSetVariableUsingDefaultValue(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
+	v, source, err := setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
+	assert.Equal(t, variableOverrideSourceDefault, source)
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
@@ -64,8 +67,9 @@ func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
+	v, source, err := setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
+	assert.Equal(t, variableOverrideSourceCLI, source)
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
@@ -89,8 +93,9 @@ func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	v, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
+	v, source, err := setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	require.NoError(t, err)
+	assert.Equal(t, variableOverrideSourceCLI, source)
 
 	err = convert.ToTyped(&variable, v)
 	require.NoError(t, err)
@@ -106,7 +111,7 @@ func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	_, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
+	_, _, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	assert.ErrorContains(t, err, "no value assigned to required variable foo. Variables are usually assigned in databricks.yml, and they can be overridden using \"--var\", the BUNDLE_VAR_foo environment variable, or .databricks/bundle/<target>/variable-overrides.json")
 }
 
@@ -156,6 +161,81 @@ func TestSetComplexVariablesViaEnvVariablesIsNotAllowed(t *testing.T) {
 	v, err := convert.FromTyped(variable, dyn.NilValue)
 	require.NoError(t, err)
 
-	_, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
+	_, _, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	assert.ErrorContains(t, err, "setting via environment variables (BUNDLE_VAR_foo) is not supported for complex variable foo")
+}
+
+func TestSetVariablesMutatorTracksEnvVarOverride(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Variables: map[string]*variable.Variable{
+				"a": {
+					Description: "resolved from env var",
+					Default:     "default-a",
+				},
+			},
+		},
+	}
+
+	t.Setenv("BUNDLE_VAR_a", "env-val")
+
+	diags := bundle.Apply(t.Context(), b, SetVariables())
+	require.NoError(t, diags.Error())
+	assert.Contains(t, b.Metrics.BoolValues, protos.BoolMapEntry{Key: "variable_override_env_var_used", Value: true})
+}
+
+func TestSetVariablesMutatorTracksCliFlagOverride(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Variables: map[string]*variable.Variable{
+				"a": {
+					Description: "already has a value (set via CLI flag)",
+					Value:       "cli-val",
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, SetVariables())
+	require.NoError(t, diags.Error())
+	assert.Contains(t, b.Metrics.BoolValues, protos.BoolMapEntry{Key: "variable_override_cli_flag_used", Value: true})
+}
+
+func TestSetVariablesMutatorNoOverrideMetricsForDefaults(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Variables: map[string]*variable.Variable{
+				"a": {
+					Description: "resolved to default",
+					Default:     "default-a",
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, SetVariables())
+	require.NoError(t, diags.Error())
+
+	for _, entry := range b.Metrics.BoolValues {
+		assert.NotEqual(t, "variable_override_env_var_used", entry.Key)
+		assert.NotEqual(t, "variable_override_file_used", entry.Key)
+		assert.NotEqual(t, "variable_override_cli_flag_used", entry.Key)
+	}
+}
+
+func TestSetVariableFromFileReturnsFileSource(t *testing.T) {
+	variable := variable.Variable{
+		Description: "a test variable",
+	}
+
+	v, err := convert.FromTyped(variable, dyn.NilValue)
+	require.NoError(t, err)
+
+	v, source, err := setVariable(t.Context(), v, &variable, "foo", dyn.V("file-val"))
+	require.NoError(t, err)
+	assert.Equal(t, variableOverrideSourceFile, source)
+
+	err = convert.ToTyped(&variable, v)
+	require.NoError(t, err)
+	assert.Equal(t, "file-val", variable.Value)
 }

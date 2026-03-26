@@ -38,6 +38,10 @@ Deployment complete!
     "value": false
   },
   {
+    "key": "validation_passed",
+    "value": true
+  },
+  {
     "key": "skip_artifact_cleanup",
     "value": false
   },
@@ -78,6 +82,10 @@ Deployment complete!
   {
     "key": "python_wheel_wrapper_is_set",
     "value": false
+  },
+  {
+    "key": "validation_passed",
+    "value": true
   },
   {
     "key": "skip_artifact_cleanup",

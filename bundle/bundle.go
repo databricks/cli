@@ -56,6 +56,7 @@ type Metrics struct {
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
 	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+	DeployPlanMetrics           []protos.IntMapEntry // Deployment plan and graph metrics (direct engine)
 }
 
 // SetBoolValue sets the value of a boolean metric.

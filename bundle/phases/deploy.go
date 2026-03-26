@@ -192,6 +192,15 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	// Collect telemetry about the deployment plan and its dependency graph.
+	if plan != nil && engine.IsDirect() {
+		boolMetrics, intMetrics := deployplan.ComputePlanTelemetry(plan)
+		for _, m := range boolMetrics {
+			b.Metrics.AddBoolValue(m.Key, m.Value)
+		}
+		b.Metrics.DeployPlanMetrics = append(b.Metrics.DeployPlanMetrics, intMetrics...)
+	}
+
 	haveApproval, err := approvalForDeploy(ctx, b, plan)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -209,6 +218,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	logDeployTelemetry(ctx, b)
+
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
