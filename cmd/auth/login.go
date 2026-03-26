@@ -247,15 +247,11 @@ depends on the existing profiles you have set in your configuration file
 		// 2. Configuring cluster and serverless;
 		// 3. Saving the profile.
 
-		// For unified/SPOG hosts with account_id but no workspace_id, prompt for
-		// workspace selection. We use IsUnifiedHost (set from discovery or profile)
-		// rather than HostType(), which is unreliable for SPOG hosts. Classic
-		// accounts.* hosts don't need this because they access account-level APIs
-		// directly. Skip workspace selection if:
-		// - --skip-workspace flag is set
-		// - workspace_id is already set (including "none" sentinel from a previous login)
-		shouldPromptWorkspace := authArguments.IsUnifiedHost &&
-			authArguments.AccountID != "" &&
+		// If discovery gave us an account_id but we still have no workspace_id,
+		// prompt the user to select a workspace. This applies to any host where
+		// .well-known/databricks-config returned an account_id, regardless of
+		// whether IsUnifiedHost is set.
+		shouldPromptWorkspace := authArguments.AccountID != "" &&
 			authArguments.WorkspaceID == "" &&
 			!skipWorkspace
 
@@ -717,6 +713,7 @@ func oauthLoginClearKeys() []string {
 // to the user.
 func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthArguments, persistentAuth *u2m.PersistentAuth) (string, error) {
 	if !cmdio.IsPromptSupported(ctx) {
+		cmdio.LogString(ctx, "To use workspace commands, set workspace_id in your profile or pass --workspace-id.")
 		return "", nil
 	}
 
