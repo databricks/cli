@@ -18,17 +18,29 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
+// AppStateLifecycle holds lifecycle settings persisted in state.
+type AppStateLifecycle struct {
+	Started *bool `json:"started,omitempty"`
+}
+
 // AppState is the state type for App resources. It extends apps.App with fields
 // needed for app deployments (Apps.Deploy) that are not part of the remote state.
 type AppState struct {
 	apps.App
 	SourceCodePath string               `json:"source_code_path,omitempty"`
-	Config         *resources.AppConfig `json:"config,omitempty"`
-	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
-	Started        *bool                `json:"started,omitempty"`
+	Config         *resources.AppConfig  `json:"config,omitempty"`
+	GitSource      *apps.GitSource       `json:"git_source,omitempty"`
+	Lifecycle      AppStateLifecycle     `json:"lifecycle,omitempty"`
 }
 
-// Custom marshaler needed because embedded apps.App has its own MarshalJSON
+// AppRemote extends apps.App with lifecycle.started so that it appears in
+// RemoteType and can be used for $resource resolution.
+type AppRemote struct {
+	apps.App
+	Lifecycle AppStateLifecycle `json:"lifecycle,omitempty"`
+}
+
+// Custom marshalers needed because embedded apps.App has its own MarshalJSON
 // which would otherwise take over and ignore the additional fields.
 func (s *AppState) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
@@ -36,6 +48,14 @@ func (s *AppState) UnmarshalJSON(b []byte) error {
 
 func (s AppState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
+}
+
+func (r *AppRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
+}
+
+func (r AppRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
 }
 
 type ResourceApp struct {
@@ -52,34 +72,33 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 		SourceCodePath: input.SourceCodePath,
 		Config:         input.Config,
 		GitSource:      input.GitSource,
-		Started:        input.Lifecycle.Started,
+		Lifecycle:      AppStateLifecycle{Started: input.Lifecycle.Started},
 	}
 }
 
-// RemapState maps the remote apps.App to AppState for diff comparison.
+// RemapState maps the remote AppRemote to AppState for diff comparison.
 // Deploy-only fields (SourceCodePath, Config, GitSource) are not in remote state,
 // so they default to zero values, which prevents false drift detection.
-// Started is computed from the remote compute status so the planner can determine
-// whether the app needs to be started or stopped.
-func (*ResourceApp) RemapState(remote *apps.App) *AppState {
-	started := !isComputeStopped(remote)
+func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 	return &AppState{
-		App:            *remote,
-		Started:        &started,
-		SourceCodePath: "",
-		Config:         nil,
-		GitSource:      nil,
+		App:       remote.App,
+		Lifecycle: remote.Lifecycle,
 	}
 }
 
-func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) {
-	return r.client.Apps.GetByName(ctx, id)
+func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error) {
+	app, err := r.client.Apps.GetByName(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	started := !isComputeStopped(app)
+	return &AppRemote{App: *app, Lifecycle: AppStateLifecycle{Started: &started}}, nil
 }
 
-func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *apps.App, error) {
+func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *AppRemote, error) {
 	// Start app compute only when lifecycle.started=true is explicit.
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
-	noCompute := config.Started == nil || !*config.Started
+	noCompute := config.Lifecycle.Started == nil || !*config.Lifecycle.Started
 	request := apps.CreateAppRequest{
 		App:             config.App,
 		NoCompute:       noCompute,
@@ -117,7 +136,7 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	return app.Name, nil, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, changes Changes) (*apps.App, error) {
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, changes Changes) (*AppRemote, error) {
 	// Build update mask excluding local-only fields that have no counterpart in the API.
 	var maskPaths []string
 	for path, change := range changes {
@@ -149,15 +168,15 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 	}
 
-	if config.Started == nil {
+	if config.Lifecycle.Started == nil {
 		return nil, nil
 	}
 
 	// The planner computes the remote started value in RemapState based on compute status,
-	// so changes["started"].Action == Update means the compute state differs from the desired state.
-	startedChange := changes["started"]
+	// so changes["lifecycle.started"].Action == Update means the compute state differs from the desired state.
+	startedChange := changes["lifecycle.started"]
 
-	if *config.Started {
+	if *config.Lifecycle.Started {
 		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
 		if startedChange != nil && startedChange.Action == deployplan.Update {
 			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
@@ -195,10 +214,11 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 // localOnlyFields are AppState fields that have no counterpart in the remote state.
 // They must not appear in the App update_mask.
 var localOnlyFields = map[string]bool{
-	"source_code_path": true,
-	"config":           true,
-	"git_source":       true,
-	"started":          true,
+	"source_code_path":  true,
+	"config":            true,
+	"git_source":        true,
+	"lifecycle":         true,
+	"lifecycle.started": true,
 }
 
 func isComputeStopped(app *apps.App) bool {
@@ -212,7 +232,7 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	return err
 }
 
-func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *AppState) (*apps.App, error) {
+func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *AppState) (*AppRemote, error) {
 	return r.waitForApp(ctx, r.client, config.Name)
 }
 
@@ -221,9 +241,9 @@ func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *AppState) (*a
 // We can't use the default waiter from SDK because it only waits on ACTIVE state but we need also STOPPED state.
 // Ideally this should be done in Go SDK but currently only ACTIVE is marked as terminal state
 // so this would need to be addressed by Apps service team first in their proto.
-func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceClient, name string) (*apps.App, error) {
+func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceClient, name string) (*AppRemote, error) {
 	retrier := retries.New[apps.App](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
-	return retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
+	app, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
 		app, err := w.Apps.GetByName(ctx, name)
 		if err != nil {
 			return nil, retries.Halt(err)
@@ -241,4 +261,9 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 			return nil, retries.Continues(statusMessage)
 		}
 	})
+	if err != nil {
+		return nil, err
+	}
+	started := !isComputeStopped(app)
+	return &AppRemote{App: *app, Lifecycle: AppStateLifecycle{Started: &started}}, nil
 }

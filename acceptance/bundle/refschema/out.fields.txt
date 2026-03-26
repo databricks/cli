@@ -122,10 +122,11 @@ resources.apps.*.git_source.resolved_commit	string	INPUT	STATE
 resources.apps.*.git_source.source_code_path	string	INPUT	STATE
 resources.apps.*.git_source.tag	string	INPUT	STATE
 resources.apps.*.id	string	ALL
+resources.apps.*.lifecycle	dresources.AppStateLifecycle	REMOTE	STATE
 resources.apps.*.lifecycle	resources.Lifecycle	INPUT
 resources.apps.*.lifecycle	resources.LifecycleWithStarted	INPUT
 resources.apps.*.lifecycle.prevent_destroy	bool	INPUT
-resources.apps.*.lifecycle.started	*bool	INPUT
+resources.apps.*.lifecycle.started	*bool	ALL
 resources.apps.*.modified_status	string	INPUT
 resources.apps.*.name	string	ALL
 resources.apps.*.oauth2_app_client_id	string	ALL
@@ -201,7 +202,6 @@ resources.apps.*.service_principal_id	int64	ALL
 resources.apps.*.service_principal_name	string	ALL
 resources.apps.*.source_code_path	string	INPUT	STATE
 resources.apps.*.space	string	ALL
-resources.apps.*.started	*bool	STATE
 resources.apps.*.telemetry_export_destinations	[]apps.TelemetryExportDestination	ALL
 resources.apps.*.telemetry_export_destinations[*]	apps.TelemetryExportDestination	ALL
 resources.apps.*.telemetry_export_destinations[*].unity_catalog	*apps.UnityCatalog	ALL

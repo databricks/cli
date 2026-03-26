@@ -13,7 +13,7 @@ import (
 )
 
 // TestAppStateMarshalUnmarshal verifies that AppState correctly preserves bundle-only fields
-// (SourceCodePath, Config, GitSource, Started) through a JSON round-trip.
+// (SourceCodePath, Config, GitSource, Lifecycle) through a JSON round-trip.
 // Without the custom marshaler, apps.App's promoted MarshalJSON would drop these extra fields.
 func TestAppStateMarshalUnmarshal(t *testing.T) {
 	started := true
@@ -26,7 +26,7 @@ func TestAppStateMarshalUnmarshal(t *testing.T) {
 		Config: &resources.AppConfig{
 			Command: []string{"python", "app.py"},
 		},
-		Started: &started,
+		Lifecycle: AppStateLifecycle{Started: &started},
 	}
 
 	data, err := json.Marshal(original)
@@ -39,7 +39,7 @@ func TestAppStateMarshalUnmarshal(t *testing.T) {
 	assert.Equal(t, original.Description, restored.Description)
 	assert.Equal(t, original.SourceCodePath, restored.SourceCodePath)
 	assert.Equal(t, original.Config, restored.Config)
-	assert.Equal(t, original.Started, restored.Started)
+	assert.Equal(t, original.Lifecycle.Started, restored.Lifecycle.Started)
 }
 
 // TestAppDoCreate_RetriesWhenAppIsDeleting verifies that DoCreate retries when
