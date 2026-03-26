@@ -22,10 +22,12 @@ func TestScrubForTelemetry_BundleRootPath(t *testing.T) {
 			expected:   "failed to load [REDACTED_REL_PATH]: invalid config",
 		},
 		{
+			// Bundle root without trailing separator is caught by the
+			// absolute path regex.
 			name:       "replaces bundle root without trailing content",
 			msg:        "error at /home/user/project",
 			bundleRoot: "/home/user/project",
-			expected:   "error at .",
+			expected:   "error at [REDACTED_PATH]",
 		},
 		{
 			name:       "replaces multiple occurrences",
@@ -92,46 +94,6 @@ func TestScrubForTelemetry_HomeDir(t *testing.T) {
 	}
 }
 
-func TestScrubForTelemetry_HomeDirRegexFallback(t *testing.T) {
-	tests := []struct {
-		name     string
-		msg      string
-		expected string
-	}{
-		{
-			name:     "macOS home dir",
-			msg:      "failed to read /Users/otheruser/some-project/file.yml",
-			expected: "failed to read [REDACTED_PATH]",
-		},
-		{
-			name:     "Linux home dir",
-			msg:      "failed to read /home/runner/work/project/file.yml",
-			expected: "failed to read [REDACTED_PATH]",
-		},
-		{
-			name:     "home dir in middle of message",
-			msg:      "error: /Users/jane/project/a.yml: not found, try again",
-			expected: "error: [REDACTED_PATH]: not found, try again",
-		},
-		{
-			name:     "Windows home dir with backslashes",
-			msg:      `error at C:\Users\shreyas\project\file.yml`,
-			expected: "error at [REDACTED_PATH]",
-		},
-		{
-			name:     "Windows home dir with forward slashes",
-			msg:      "error at C:/Users/shreyas/project/file.yml",
-			expected: "error at [REDACTED_PATH]",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, scrubForTelemetry(tt.msg, "", ""))
-		})
-	}
-}
-
 func TestScrubForTelemetry_AbsolutePaths(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -154,9 +116,29 @@ func TestScrubForTelemetry_AbsolutePaths(t *testing.T) {
 			expected: "config at [REDACTED_PATH] not found",
 		},
 		{
-			name:     "workspace path is redacted",
-			msg:      "uploading to /Workspace/Users/dev/.bundle/files",
-			expected: "uploading to [REDACTED_PATH]",
+			name:     "macOS home path",
+			msg:      "failed to read /Users/otheruser/some-project/file.yml",
+			expected: "failed to read [REDACTED_PATH]",
+		},
+		{
+			name:     "Linux home path",
+			msg:      "failed to read /home/runner/work/project/file.yml",
+			expected: "failed to read [REDACTED_PATH]",
+		},
+		{
+			name:     "absolute path in middle of message",
+			msg:      "error: /Users/jane/project/a.yml: not found, try again",
+			expected: "error: [REDACTED_PATH]: not found, try again",
+		},
+		{
+			name:     "Windows path with backslashes",
+			msg:      `error at C:\Users\shreyas\project\file.yml`,
+			expected: "error at [REDACTED_PATH]",
+		},
+		{
+			name:     "Windows path with forward slashes",
+			msg:      "error at C:/Users/shreyas/project/file.yml",
+			expected: "error at [REDACTED_PATH]",
 		},
 		{
 			name:     "volume path is redacted",
@@ -172,6 +154,36 @@ func TestScrubForTelemetry_AbsolutePaths(t *testing.T) {
 			name:     "single component path is not matched",
 			msg:      "POST /telemetry-ext failed",
 			expected: "POST /telemetry-ext failed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, scrubForTelemetry(tt.msg, "", ""))
+		})
+	}
+}
+
+func TestScrubForTelemetry_WorkspacePaths(t *testing.T) {
+	tests := []struct {
+		name     string
+		msg      string
+		expected string
+	}{
+		{
+			name:     "workspace user path",
+			msg:      "uploading to /Workspace/Users/dev/.bundle/files",
+			expected: "uploading to [REDACTED_WORKSPACE_PATH]",
+		},
+		{
+			name:     "workspace path with email",
+			msg:      "error at /Workspace/Users/user@example.com/.bundle/dev",
+			expected: "error at [REDACTED_WORKSPACE_PATH]",
+		},
+		{
+			name:     "workspace shared path",
+			msg:      "cannot access /Workspace/Shared/project/notebook",
+			expected: "cannot access [REDACTED_WORKSPACE_PATH]",
 		},
 	}
 
@@ -263,7 +275,7 @@ func TestScrubForTelemetry_Combined(t *testing.T) {
 
 	assert.Equal(t,
 		"failed to load [REDACTED_REL_PATH]: "+
-			"workspace [REDACTED_PATH] is invalid, "+
+			"workspace [REDACTED_WORKSPACE_PATH] is invalid, "+
 			"also tried [REDACTED_PATH], "+
 			"temp at [REDACTED_PATH], "+
 			"see [REDACTED_REL_PATH]",
