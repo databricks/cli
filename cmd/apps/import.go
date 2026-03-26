@@ -323,7 +323,10 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		}
 
 		// Bind the resource
-		tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+		tfName, ok := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+		if !ok {
+			tfName = resource.ResourceDescription().PluralName
+		}
 		phases.Bind(ctx, b, &terraform.BindOptions{
 			AutoApprove:  true,
 			ResourceType: tfName,
