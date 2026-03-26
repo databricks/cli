@@ -6,4 +6,4 @@ Error: no value assigned to required variable myvar. Variables are usually assig
 Exit code: 1
 
 >>> cat out.requests.txt
-no value assigned to required variable myvar. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_myvar environment variable, or [REDACTED_REL_PATH]
+no value assigned to required variable myvar. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_myvar environment variable, or [REDACTED_REL_PATH](json)

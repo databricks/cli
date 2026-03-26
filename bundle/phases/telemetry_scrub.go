@@ -1,6 +1,10 @@
 package phases
 
-import "regexp"
+import (
+	"path"
+	"regexp"
+	"strings"
+)
 
 // Scrub sensitive information from error messages before sending to telemetry.
 // Inspired by VS Code's telemetry path scrubbing and Sentry's @userpath pattern.
@@ -35,22 +39,62 @@ var (
 	emailRegexp = regexp.MustCompile(`[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}`)
 )
 
+// Known file extensions that are safe to retain in redacted paths.
+// These help with debugging without leaking sensitive information.
+var knownExtensions = map[string]bool{
+	".py":    true,
+	".yml":   true,
+	".yaml":  true,
+	".json":  true,
+	".toml":  true,
+	".tf":    true,
+	".sql":   true,
+	".txt":   true,
+	".whl":   true,
+	".jar":   true,
+	".cfg":   true,
+	".ipynb": true,
+}
+
 // scrubForTelemetry is a best-effort scrubber that removes sensitive path and
 // PII information from error messages before they are sent to telemetry.
 // The error message is treated as PII by the logging infrastructure but we
 // scrub to avoid collecting more information than necessary.
 func scrubForTelemetry(msg string) string {
 	// Redact absolute paths.
-	msg = windowsAbsPathRegexp.ReplaceAllString(msg, "[REDACTED_PATH]")
-	msg = workspacePathRegexp.ReplaceAllString(msg, "${1}[REDACTED_WORKSPACE_PATH]")
-	msg = absPathRegexp.ReplaceAllString(msg, "${1}[REDACTED_PATH]")
+	msg = replacePathRegexp(msg, windowsAbsPathRegexp, "[REDACTED_PATH]", false)
+	msg = replacePathRegexp(msg, workspacePathRegexp, "[REDACTED_WORKSPACE_PATH]", true)
+	msg = replacePathRegexp(msg, absPathRegexp, "[REDACTED_PATH]", true)
 
 	// Redact relative paths.
-	msg = explicitRelPathRegexp.ReplaceAllString(msg, "${1}[REDACTED_REL_PATH]")
-	msg = implicitRelPathRegexp.ReplaceAllString(msg, "${1}[REDACTED_REL_PATH]")
+	msg = replacePathRegexp(msg, explicitRelPathRegexp, "[REDACTED_REL_PATH]", true)
+	msg = replacePathRegexp(msg, implicitRelPathRegexp, "[REDACTED_REL_PATH]", true)
 
 	// Redact email addresses.
 	msg = emailRegexp.ReplaceAllString(msg, "[REDACTED_EMAIL]")
 
 	return msg
+}
+
+// replacePathRegexp replaces path matches with the given label, retaining
+// known file extensions. When hasDelimiterGroup is true, the first character
+// of the match is preserved as a delimiter prefix.
+func replacePathRegexp(msg string, re *regexp.Regexp, label string, hasDelimiterGroup bool) string {
+	return re.ReplaceAllStringFunc(msg, func(match string) string {
+		prefix := ""
+		p := match
+		if hasDelimiterGroup && len(match) > 0 {
+			first := match[0]
+			if strings.ContainsRune(" \t\n:,\"'", rune(first)) {
+				prefix = match[:1]
+				p = match[1:]
+			}
+		}
+
+		ext := path.Ext(p)
+		if knownExtensions[ext] {
+			return prefix + label + "(" + ext[1:] + ")"
+		}
+		return prefix + label
+	})
 }
