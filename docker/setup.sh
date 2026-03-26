@@ -30,3 +30,11 @@ mv zip/terraform/terraform /app/bin/terraform
 TF_PROVIDER_NAME=terraform-provider-databricks_${DATABRICKS_TF_PROVIDER_VERSION}_linux_${ARCH}.zip
 mkdir -p /app/providers/registry.terraform.io/databricks/databricks
 wget https://github.com/databricks/terraform-provider-databricks/releases/download/v${DATABRICKS_TF_PROVIDER_VERSION}/${TF_PROVIDER_NAME} -O /app/providers/registry.terraform.io/databricks/databricks/${TF_PROVIDER_NAME}
+
+# Verify the provider checksum.
+EXPECTED_PROVIDER_CHECKSUM="$(/app/databricks bundle debug terraform --output json | jq -r .terraform.providerChecksum.linux_$ARCH)"
+COMPUTED_PROVIDER_CHECKSUM=$(sha256sum /app/providers/registry.terraform.io/databricks/databricks/${TF_PROVIDER_NAME} | awk '{ print $1 }')
+if [ "$COMPUTED_PROVIDER_CHECKSUM" != "$EXPECTED_PROVIDER_CHECKSUM" ]; then
+    echo "Checksum mismatch for Terraform provider. Version: $DATABRICKS_TF_PROVIDER_VERSION, Arch: $ARCH, Expected checksum: $EXPECTED_PROVIDER_CHECKSUM, Computed checksum: $COMPUTED_PROVIDER_CHECKSUM."
+    exit 1
+fi

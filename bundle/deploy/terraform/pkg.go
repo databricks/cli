@@ -77,11 +77,12 @@ type Checksum struct {
 }
 
 type TerraformMetadata struct {
-	Version         string   `json:"version"`
-	Checksum        Checksum `json:"checksum"`
-	ProviderHost    string   `json:"providerHost"`
-	ProviderSource  string   `json:"providerSource"`
-	ProviderVersion string   `json:"providerVersion"`
+	Version          string   `json:"version"`
+	Checksum         Checksum `json:"checksum"`
+	ProviderHost     string   `json:"providerHost"`
+	ProviderSource   string   `json:"providerSource"`
+	ProviderVersion  string   `json:"providerVersion"`
+	ProviderChecksum Checksum `json:"providerChecksum"`
 }
 
 func NewTerraformMetadata(ctx context.Context) (*TerraformMetadata, error) {
@@ -98,6 +99,10 @@ func NewTerraformMetadata(ctx context.Context) (*TerraformMetadata, error) {
 		ProviderHost:    schema.ProviderHost,
 		ProviderSource:  schema.ProviderSource,
 		ProviderVersion: schema.ProviderVersion,
+		ProviderChecksum: Checksum{
+			LinuxAmd64: schema.ProviderChecksumLinuxAmd64,
+			LinuxArm64: schema.ProviderChecksumLinuxArm64,
+		},
 	}, nil
 }
 
