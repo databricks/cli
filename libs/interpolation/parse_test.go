@@ -1,6 +1,8 @@
 package interpolation
 
 import (
+	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -242,6 +244,43 @@ func TestParseErrors(t *testing.T) {
 			_, err := Parse(tt.input)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.errContains)
+		})
+	}
+}
+
+// TestParsePureVariableReferences loads shared test cases from
+// testdata/variable_references.json and verifies the Go parser agrees
+// on which strings are pure variable references.
+//
+// The same JSON file is consumed by the Python test suite
+// (python/databricks_tests/core/test_variable_references.py) to
+// verify that the Python regex stays in sync with the Go parser.
+//
+// When modifying the parser (e.g. adding new key patterns, escape
+// sequences, or reference syntax), add test cases to the JSON file
+// so both Go and Python are validated.
+func TestParsePureVariableReferences(t *testing.T) {
+	data, err := os.ReadFile("testdata/variable_references.json")
+	require.NoError(t, err)
+
+	var cases []struct {
+		Input     string  `json:"input"`
+		IsPureRef bool    `json:"is_pure_ref"`
+		Path      *string `json:"path,omitempty"`
+		Comment   string  `json:"comment"`
+	}
+	require.NoError(t, json.Unmarshal(data, &cases))
+
+	for _, tc := range cases {
+		t.Run(tc.Comment, func(t *testing.T) {
+			tokens, parseErr := Parse(tc.Input)
+
+			isPure := parseErr == nil && len(tokens) == 1 && tokens[0].Kind == TokenRef
+			assert.Equal(t, tc.IsPureRef, isPure, "input: %s", tc.Input)
+
+			if tc.IsPureRef && tc.Path != nil {
+				assert.Equal(t, *tc.Path, tokens[0].Value)
+			}
 		})
 	}
 }

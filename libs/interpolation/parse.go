@@ -45,6 +45,13 @@ const (
 // keyPattern validates a single key segment in a variable path.
 // Matches: [a-zA-Z]+([-_]*[a-zA-Z0-9]+)*
 // Examples: "foo", "my-job", "a_b_c", "abc123"
+//
+// PyDABs uses a duplicate regex to detect pure variable references
+// (python/databricks/bundles/core/_transform.py). The patterns must stay in
+// sync. Cross-language test cases live in testdata/variable_references.json
+// and are run by both Go (TestParsePureVariableReferences) and Python
+// (test_pure_variable_reference). When changing key/index/path validation,
+// add cases to that file so both languages are tested.
 var keyPattern = regexp.MustCompile(`^[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*$`)
 
 // indexPattern matches one or more [N] index suffixes.
