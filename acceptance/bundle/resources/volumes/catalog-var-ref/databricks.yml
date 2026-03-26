@@ -12,7 +12,7 @@ resources:
       name: ${var.catalog}
       comment: "My catalog"
       storage_root: s3://my-s3-path/dbx/${var.catalog}
-#
+      #
   schemas:
     raw_schema:
       name: raw
