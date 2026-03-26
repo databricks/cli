@@ -20,8 +20,8 @@ type ProviderChecksums struct {
 
 // FetchProviderChecksums downloads the SHA256SUMS file from the GitHub release
 // for the given provider version and extracts checksums for the linux_amd64 and
-// linux_arm64 archives. It also downloads the linux_amd64 zip to verify that
-// the parsed checksum is correct.
+// linux_arm64 archives. It also downloads both zips to verify that the parsed
+// checksums are correct.
 // https://github.com/databricks/terraform-provider-databricks/releases
 func FetchProviderChecksums(version string) (*ProviderChecksums, error) {
 	url := fmt.Sprintf(
@@ -68,8 +68,12 @@ func FetchProviderChecksums(version string) (*ProviderChecksums, error) {
 		return nil, fmt.Errorf("checksum not found for %s in SHA256SUMS", arm64Suffix)
 	}
 
-	// Sanity check: download the linux_amd64 zip and verify the checksum matches.
+	// Sanity check: download both zips and verify the checksums match.
 	err = verifyProviderChecksum(version, "linux_amd64", checksums.LinuxAmd64)
+	if err != nil {
+		return nil, err
+	}
+	err = verifyProviderChecksum(version, "linux_arm64", checksums.LinuxArm64)
 	if err != nil {
 		return nil, err
 	}
