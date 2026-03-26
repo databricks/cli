@@ -26,7 +26,7 @@ func TestAppStateMarshalUnmarshal(t *testing.T) {
 		Config: &resources.AppConfig{
 			Command: []string{"python", "app.py"},
 		},
-		Lifecycle: AppStateLifecycle{Started: &started},
+		Lifecycle: &AppStateLifecycle{Started: &started},
 	}
 
 	data, err := json.Marshal(original)
@@ -39,6 +39,7 @@ func TestAppStateMarshalUnmarshal(t *testing.T) {
 	assert.Equal(t, original.Description, restored.Description)
 	assert.Equal(t, original.SourceCodePath, restored.SourceCodePath)
 	assert.Equal(t, original.Config, restored.Config)
+	require.NotNil(t, restored.Lifecycle)
 	assert.Equal(t, original.Lifecycle.Started, restored.Lifecycle.Started)
 }
 

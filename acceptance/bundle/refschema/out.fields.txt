@@ -122,7 +122,7 @@ resources.apps.*.git_source.resolved_commit	string	INPUT	STATE
 resources.apps.*.git_source.source_code_path	string	INPUT	STATE
 resources.apps.*.git_source.tag	string	INPUT	STATE
 resources.apps.*.id	string	ALL
-resources.apps.*.lifecycle	dresources.AppStateLifecycle	REMOTE	STATE
+resources.apps.*.lifecycle	*dresources.AppStateLifecycle	REMOTE	STATE
 resources.apps.*.lifecycle	resources.Lifecycle	INPUT
 resources.apps.*.lifecycle	resources.LifecycleWithStarted	INPUT
 resources.apps.*.lifecycle.prevent_destroy	bool	INPUT
