@@ -57,7 +57,7 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 				if scope == installer.ScopeProject {
 					detected = filterProjectScopeAgents(detected)
 					if len(detected) == 0 {
-						return fmt.Errorf("no detected agents support project-scoped skills")
+						return errors.New("no detected agents support project-scoped skills")
 					}
 				}
 
