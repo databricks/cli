@@ -11,14 +11,14 @@ import (
 
 type captureSchemaDependency struct{}
 
-// If a user defines a UC schema in the bundle, they can refer to it in DLT pipelines
-// or UC Volumes using the `${resources.schemas.<schema_key>.name}` syntax. Using this
-// syntax allows TF to capture the deploy time dependency this DLT pipeline or UC Volume
-// has on the schema and deploy changes to the schema before deploying the pipeline or volume.
+// If a user defines a UC schema in the bundle, they can refer to it in DLT pipelines,
+// UC Volumes, or Registered Models using the `${resources.schemas.<schema_key>.name}` syntax.
+// Using this syntax allows TF to capture the deploy time dependency this resource
+// has on the schema and deploy changes to the schema before deploying the dependent resource.
 //
-// Similarly, if a user defines a UC catalog in the bundle, they can refer to it in UC schemas
-// using the `${resources.catalogs.<catalog_key>.name}` syntax. This captures the deploy time
-// dependency the schema has on the catalog.
+// Similarly, if a user defines a UC catalog in the bundle, they can refer to it in UC schemas,
+// UC Volumes, or Registered Models using the `${resources.catalogs.<catalog_key>.name}` syntax.
+// This captures the deploy time dependency the resource has on the catalog.
 //
 // This mutator translates any implicit catalog or schema references to the explicit syntax.
 func CaptureSchemaDependency() bundle.Mutator {
@@ -54,12 +54,32 @@ func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
 	if v == nil {
 		return
 	}
+	// Resolve schema first since findSchema needs the original v.CatalogName.
 	schemaK, schema := findSchema(b, v.CatalogName, v.SchemaName)
-	if schema == nil {
-		return
+	if schema != nil {
+		v.SchemaName = schemaNameRef(schemaK)
 	}
 
-	v.SchemaName = schemaNameRef(schemaK)
+	catalogK, catalog := findCatalog(b, v.CatalogName)
+	if catalog != nil {
+		v.CatalogName = catalogNameRef(catalogK)
+	}
+}
+
+func resolveRegisteredModel(rm *resources.RegisteredModel, b *bundle.Bundle) {
+	if rm == nil {
+		return
+	}
+	// Resolve schema first since findSchema needs the original rm.CatalogName.
+	schemaK, schema := findSchema(b, rm.CatalogName, rm.SchemaName)
+	if schema != nil {
+		rm.SchemaName = schemaNameRef(schemaK)
+	}
+
+	catalogK, catalog := findCatalog(b, rm.CatalogName)
+	if catalog != nil {
+		rm.CatalogName = catalogNameRef(catalogK)
+	}
 }
 
 func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
@@ -117,8 +137,14 @@ func resolveSchema(s *resources.Schema, b *bundle.Bundle) {
 }
 
 func (m *captureSchemaDependency) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	for _, s := range b.Config.Resources.Schemas {
-		resolveSchema(s, b)
+	// Resolve resources that depend on schemas before resolving schemas themselves.
+	// resolveSchema modifies schema.CatalogName, and findSchema (used by the other
+	// resolve functions) matches against the original schema.CatalogName value.
+	for _, v := range b.Config.Resources.Volumes {
+		resolveVolume(v, b)
+	}
+	for _, rm := range b.Config.Resources.RegisteredModels {
+		resolveRegisteredModel(rm, b)
 	}
 	for _, p := range b.Config.Resources.Pipelines {
 		// "schema" and "target" have the same semantics in the DLT API but are mutually
@@ -128,8 +154,8 @@ func (m *captureSchemaDependency) Apply(ctx context.Context, b *bundle.Bundle) d
 		resolvePipelineTarget(p, b)
 		resolvePipelineSchema(p, b)
 	}
-	for _, v := range b.Config.Resources.Volumes {
-		resolveVolume(v, b)
+	for _, s := range b.Config.Resources.Schemas {
+		resolveSchema(s, b)
 	}
 	return nil
 }

@@ -275,6 +275,263 @@ func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 	}
 }
 
+func TestCaptureSchemaDependencyForRegisteredModel(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Schemas: map[string]*resources.Schema{
+					"schema1": {
+						CreateSchema: catalog.CreateSchema{
+							CatalogName: "catalog1",
+							Name:        "foobar",
+						},
+					},
+					"schema2": {
+						CreateSchema: catalog.CreateSchema{
+							CatalogName: "catalog2",
+							Name:        "foobar",
+						},
+					},
+					"schema3": {
+						CreateSchema: catalog.CreateSchema{
+							CatalogName: "catalog1",
+							Name:        "barfoo",
+						},
+					},
+					"nilschema":   nil,
+					"emptyschema": {},
+				},
+				RegisteredModels: map[string]*resources.RegisteredModel{
+					"model1": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							CatalogName: "catalog1",
+							SchemaName:  "foobar",
+						},
+					},
+					"model2": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							CatalogName: "catalog2",
+							SchemaName:  "foobar",
+						},
+					},
+					"model3": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							CatalogName: "catalog1",
+							SchemaName:  "barfoo",
+						},
+					},
+					"model4": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							CatalogName: "catalogX",
+							SchemaName:  "foobar",
+						},
+					},
+					"model5": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							CatalogName: "catalog1",
+							SchemaName:  "schemaX",
+						},
+					},
+					"nilModel":   nil,
+					"emptyModel": {},
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureSchemaDependency())
+	require.Nil(t, d)
+
+	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.RegisteredModels["model1"].SchemaName)
+	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.RegisteredModels["model2"].SchemaName)
+	assert.Equal(t, "${resources.schemas.schema3.name}", b.Config.Resources.RegisteredModels["model3"].SchemaName)
+	assert.Equal(t, "foobar", b.Config.Resources.RegisteredModels["model4"].SchemaName)
+	assert.Equal(t, "schemaX", b.Config.Resources.RegisteredModels["model5"].SchemaName)
+
+	assert.Nil(t, b.Config.Resources.RegisteredModels["nilModel"])
+}
+
+func TestCaptureCatalogDependencyForVolume(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"catalog1": {
+						CreateCatalog: catalog.CreateCatalog{
+							Name: "catalog1",
+						},
+					},
+					"catalog2": {
+						CreateCatalog: catalog.CreateCatalog{
+							Name: "catalog2",
+						},
+					},
+					"nilcatalog":   nil,
+					"emptycatalog": {},
+				},
+				Volumes: map[string]*resources.Volume{
+					"volume1": {
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+							CatalogName: "catalog1",
+							SchemaName:  "foobar",
+						},
+					},
+					"volume2": {
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+							CatalogName: "catalog2",
+							SchemaName:  "foobar",
+						},
+					},
+					"volume3": {
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+							CatalogName: "catalogX",
+							SchemaName:  "foobar",
+						},
+					},
+					"volume4": {
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+							CatalogName: "",
+							SchemaName:  "foobar",
+						},
+					},
+					"nilVolume":   nil,
+					"emptyVolume": {},
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureSchemaDependency())
+	require.Nil(t, d)
+
+	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.Volumes["volume1"].CatalogName)
+	assert.Equal(t, "${resources.catalogs.catalog2.name}", b.Config.Resources.Volumes["volume2"].CatalogName)
+	assert.Equal(t, "catalogX", b.Config.Resources.Volumes["volume3"].CatalogName)
+	assert.Equal(t, "", b.Config.Resources.Volumes["volume4"].CatalogName)
+
+	assert.Nil(t, b.Config.Resources.Volumes["nilVolume"])
+}
+
+func TestCaptureCatalogDependencyForRegisteredModel(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"catalog1": {
+						CreateCatalog: catalog.CreateCatalog{
+							Name: "catalog1",
+						},
+					},
+					"catalog2": {
+						CreateCatalog: catalog.CreateCatalog{
+							Name: "catalog2",
+						},
+					},
+					"nilcatalog":   nil,
+					"emptycatalog": {},
+				},
+				RegisteredModels: map[string]*resources.RegisteredModel{
+					"model1": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							CatalogName: "catalog1",
+							SchemaName:  "foobar",
+						},
+					},
+					"model2": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							CatalogName: "catalog2",
+							SchemaName:  "foobar",
+						},
+					},
+					"model3": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							CatalogName: "catalogX",
+							SchemaName:  "foobar",
+						},
+					},
+					"model4": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							CatalogName: "",
+							SchemaName:  "foobar",
+						},
+					},
+					"nilModel":   nil,
+					"emptyModel": {},
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureSchemaDependency())
+	require.Nil(t, d)
+
+	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.RegisteredModels["model1"].CatalogName)
+	assert.Equal(t, "${resources.catalogs.catalog2.name}", b.Config.Resources.RegisteredModels["model2"].CatalogName)
+	assert.Equal(t, "catalogX", b.Config.Resources.RegisteredModels["model3"].CatalogName)
+	assert.Equal(t, "", b.Config.Resources.RegisteredModels["model4"].CatalogName)
+
+	assert.Nil(t, b.Config.Resources.RegisteredModels["nilModel"])
+}
+
+// Test that when a catalog, schema, and dependent resources (volume, registered model)
+// are all defined in the same bundle, all implicit dependencies are correctly captured.
+// This verifies the ordering fix: schemas must be resolved last since resolveSchema
+// modifies schema.CatalogName, and findSchema (used by volume/model resolution) matches
+// against the original value.
+func TestCaptureImplicitDependencyWithCatalogSchemaAndVolume(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"my_catalog": {
+						CreateCatalog: catalog.CreateCatalog{
+							Name: "mycatalog",
+						},
+					},
+				},
+				Schemas: map[string]*resources.Schema{
+					"my_schema": {
+						CreateSchema: catalog.CreateSchema{
+							CatalogName: "mycatalog",
+							Name:        "myschema",
+						},
+					},
+				},
+				Volumes: map[string]*resources.Volume{
+					"my_volume": {
+						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+							CatalogName: "mycatalog",
+							SchemaName:  "myschema",
+						},
+					},
+				},
+				RegisteredModels: map[string]*resources.RegisteredModel{
+					"my_model": {
+						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+							CatalogName: "mycatalog",
+							SchemaName:  "myschema",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureSchemaDependency())
+	require.Nil(t, d)
+
+	// Schema should have catalog dependency.
+	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.Schemas["my_schema"].CatalogName)
+
+	// Volume should have both schema and catalog dependencies.
+	assert.Equal(t, "${resources.schemas.my_schema.name}", b.Config.Resources.Volumes["my_volume"].SchemaName)
+	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.Volumes["my_volume"].CatalogName)
+
+	// Registered model should have both schema and catalog dependencies.
+	assert.Equal(t, "${resources.schemas.my_schema.name}", b.Config.Resources.RegisteredModels["my_model"].SchemaName)
+	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.RegisteredModels["my_model"].CatalogName)
+}
+
 func TestCaptureCatalogDependencyForSchema(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{

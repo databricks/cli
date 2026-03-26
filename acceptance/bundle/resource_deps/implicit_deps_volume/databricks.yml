@@ -1,0 +1,27 @@
+bundle:
+  name: test-bundle
+
+# Tests implicit dependency detection for volumes:
+# - volume should implicitly depend on schema (schema_name resolved)
+# - volume should implicitly depend on catalog (catalog_name resolved)
+resources:
+  catalogs:
+    my_catalog:
+      name: mycatalog
+  schemas:
+    my_schema:
+      catalog_name: mycatalog
+      name: myschema
+  volumes:
+    my_volume:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: myvolume
+      volume_type: MANAGED
+  pipelines:
+    mypipeline:
+      name: pipeline for ${resources.volumes.my_volume.catalog_name}.${resources.volumes.my_volume.schema_name}.${resources.volumes.my_volume.name}
+
+targets:
+  dev:
+    mode: development
