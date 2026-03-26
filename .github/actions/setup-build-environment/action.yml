@@ -34,8 +34,8 @@ runs:
       with:
         version: "0.8.9"
 
-    - name: Install Python versions for patchwheel tests
-      run: uv python install 3.9 3.10 3.11 3.12 3.13
+    - name: Install Python versions for tests
+      run: make install-pythons
       shell: bash
 
     - name: Install ruff (Python linter and formatter)
