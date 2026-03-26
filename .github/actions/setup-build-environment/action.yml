@@ -34,6 +34,10 @@ runs:
       with:
         version: "0.8.9"
 
+    - name: Install Python versions for patchwheel tests
+      run: uv python install 3.9 3.10 3.11 3.12 3.13
+      shell: bash
+
     - name: Install ruff (Python linter and formatter)
       uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6 # v3.6.1
       with:
