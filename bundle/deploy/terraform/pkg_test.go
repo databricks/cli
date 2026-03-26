@@ -44,10 +44,6 @@ func downloadAndChecksum(t *testing.T, url, expectedChecksum string) {
 }
 
 func TestTerraformArchiveChecksums(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping slow test in short mode")
-	}
-
 	tv, isDefault, err := GetTerraformVersion(t.Context())
 	require.NoError(t, err)
 	assert.True(t, isDefault)
@@ -57,7 +53,6 @@ func TestTerraformArchiveChecksums(t *testing.T) {
 	downloadAndChecksum(t, amdUrl, tv.ChecksumLinuxAmd64)
 	downloadAndChecksum(t, armUrl, tv.ChecksumLinuxArm64)
 }
-
 
 func TestGetTerraformVersionDefault(t *testing.T) {
 	// Verify that the default version is used
