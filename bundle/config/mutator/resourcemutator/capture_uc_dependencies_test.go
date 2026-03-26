@@ -276,6 +276,51 @@ func TestCaptureUCDependenciesForPipelinesWithSchema(t *testing.T) {
 	}
 }
 
+func TestCaptureUCDependenciesForPipelineCatalog(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"catalog1": {
+						CreateCatalog: catalog.CreateCatalog{
+							Name: "catalog1",
+						},
+					},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline1": {
+						CreatePipeline: pipelines.CreatePipeline{
+							Catalog: "catalog1",
+							Schema:  "foobar",
+						},
+					},
+					"pipeline2": {
+						CreatePipeline: pipelines.CreatePipeline{
+							Catalog: "catalogX",
+							Schema:  "foobar",
+						},
+					},
+					"pipeline3": {
+						CreatePipeline: pipelines.CreatePipeline{
+							Catalog: "",
+							Schema:  "foobar",
+						},
+					},
+					"nilPipeline": nil,
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
+	require.Nil(t, d)
+
+	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.Pipelines["pipeline1"].Catalog)
+	assert.Equal(t, "catalogX", b.Config.Resources.Pipelines["pipeline2"].Catalog)
+	assert.Equal(t, "", b.Config.Resources.Pipelines["pipeline3"].Catalog)
+	assert.Nil(t, b.Config.Resources.Pipelines["nilPipeline"])
+}
+
 func TestCaptureUCDependenciesForRegisteredModel(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{

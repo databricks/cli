@@ -114,6 +114,7 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		// exclusive i.e. only one can be set at a time.
 		p.Schema = resolveSchema(b, p.Catalog, p.Schema)
 		p.Target = resolveSchema(b, p.Catalog, p.Target)
+		p.Catalog = resolveCatalog(b, p.Catalog)
 	}
 	for _, qm := range b.Config.Resources.QualityMonitors {
 		if qm == nil || qm.OutputSchemaName == "" {
@@ -147,7 +148,9 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 	}
 
-	// Schemas are resolved last. See comment at the top of Apply.
+	// Schemas are resolved last because the schema catalog resolution modifies
+	// schema.CatalogName, and findSchema (used by resolveSchema above) matches
+	// against the original schema.CatalogName value.
 	for _, s := range b.Config.Resources.Schemas {
 		if s == nil {
 			continue
