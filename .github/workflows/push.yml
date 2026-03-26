@@ -306,7 +306,6 @@ jobs:
             exit 1
           fi
 
-
   validate-python-codegen:
     needs: cleanups
     runs-on: ubuntu-latest
