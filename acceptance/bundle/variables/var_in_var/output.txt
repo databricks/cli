@@ -1,13 +1,9 @@
 
 >>> [CLI] bundle validate -o json -t target_x
-Warning: nested variable references are not supported
-  at variables.final.default
-  in databricks.yml:14:14
-
 {
   "final": {
-    "default": "${var.foo_${var.tail}}",
-    "value": "${var.foo_${var.tail}}"
+    "default": "hello from foo x",
+    "value": "hello from foo x"
   },
   "foo_x": {
     "default": "hello from foo x",
@@ -24,14 +20,10 @@ Warning: nested variable references are not supported
 }
 
 >>> [CLI] bundle validate -o json -t target_y
-Warning: nested variable references are not supported
-  at variables.final.default
-  in databricks.yml:14:14
-
 {
   "final": {
-    "default": "${var.foo_${var.tail}}",
-    "value": "${var.foo_${var.tail}}"
+    "default": "hi from foo y",
+    "value": "hi from foo y"
   },
   "foo_x": {
     "default": "hello from foo x",

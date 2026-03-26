@@ -57,11 +57,16 @@ var indexPattern = regexp.MustCompile(`^(\[[0-9]+\])+$`)
 //   - "\$" produces a literal "$"
 //   - "\\" produces a literal "\"
 //
+// Nested references like "${a.${b}}" are supported by treating the outer
+// "${a." as literal text so that inner references are resolved first.
+// After resolution the resulting string (e.g. "${a.x}") is re-parsed.
+//
 // Examples:
 //   - "hello"            -> [Literal("hello")]
 //   - "${a.b}"           -> [Ref("a.b")]
 //   - "pre ${a.b} post"  -> [Literal("pre "), Ref("a.b"), Literal(" post")]
 //   - "\${a.b}"          -> [Literal("${a.b}")]
+//   - "${a.${b}}"        -> [Literal("${a."), Ref("b"), Literal("}")]
 func Parse(s string) ([]Token, error) {
 	if len(s) == 0 {
 		return nil, nil
@@ -136,16 +141,28 @@ func Parse(s string) ([]Token, error) {
 			refStart := i
 			j := i + 2 // skip "${"
 
-			// Scan until closing '}', rejecting nested '${'.
+			// Scan until closing '}', handling nested '${'.
 			pathStart := j
+			nested := false
 			for j < len(s) && s[j] != closeBrace {
 				if s[j] == dollarChar && j+1 < len(s) && s[j+1] == openBrace {
-					return nil, &ParseError{
-						Msg: "nested variable references are not supported",
-						Pos: refStart,
-					}
+					// Nested '${' found. Treat the outer "${..." prefix as
+					// literal so inner references get resolved first.
+					// E.g. "${a.${b}}" produces:
+					//   [Literal("${a."), Ref("b"), Literal("}")]
+					nested = true
+					break
 				}
 				j++
+			}
+
+			if nested {
+				if buf.Len() == 0 {
+					litStart = refStart
+				}
+				buf.WriteString(s[refStart:j])
+				i = j
+				continue
 			}
 
 			if j >= len(s) {

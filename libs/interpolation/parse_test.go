@@ -178,6 +178,33 @@ func TestParse(t *testing.T) {
 				{Kind: TokenRef, Value: "b", Start: 6, End: 10},
 			},
 		},
+		{
+			"nested_ref",
+			"${var.foo_${var.tail}}",
+			[]Token{
+				{Kind: TokenLiteral, Value: "${var.foo_", Start: 0, End: 10},
+				{Kind: TokenRef, Value: "var.tail", Start: 10, End: 21},
+				{Kind: TokenLiteral, Value: "}", Start: 21, End: 22},
+			},
+		},
+		{
+			"three_level_nested_ref",
+			"${a_${b_${c}}}",
+			[]Token{
+				{Kind: TokenLiteral, Value: "${a_${b_", Start: 0, End: 8},
+				{Kind: TokenRef, Value: "c", Start: 8, End: 12},
+				{Kind: TokenLiteral, Value: "}}", Start: 12, End: 14},
+			},
+		},
+		{
+			"nested_ref_mid_path",
+			"${a.${b.c}.d}",
+			[]Token{
+				{Kind: TokenLiteral, Value: "${a.", Start: 0, End: 4},
+				{Kind: TokenRef, Value: "b.c", Start: 4, End: 10},
+				{Kind: TokenLiteral, Value: ".d}", Start: 10, End: 13},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -191,11 +218,10 @@ func TestParse(t *testing.T) {
 
 func TestParseErrors(t *testing.T) {
 	tests := []struct {
-		name    string
-		input   string
+		name        string
+		input       string
 		errContains string
 	}{
-		{"nested_reference", "${var.foo_${var.tail}}", "nested variable references are not supported"},
 		{"unterminated_ref", "${a.b", "unterminated"},
 		{"empty_ref", "${}", "empty"},
 		{"trailing_hyphen", "${foo.bar-}", "invalid"},

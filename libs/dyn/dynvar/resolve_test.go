@@ -394,6 +394,35 @@ func TestResolveSequenceVariable(t *testing.T) {
 	assert.Equal(t, "value2", seq[1].MustString())
 }
 
+func TestResolveNestedVariableReference(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"tail":  dyn.V("x"),
+		"foo_x": dyn.V("hello"),
+		"final": dyn.V("${foo_${tail}}"),
+	})
+
+	// First pass resolves ${tail} -> "x", producing "${foo_x}" for final.
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+
+	// After one pass, the inner ref is resolved but the outer is not yet.
+	assert.Equal(t, "${foo_x}", getByPath(t, out, "final").MustString())
+}
+
+func TestResolveThreeLevelNestedVariableReference(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"c":     dyn.V("z"),
+		"b_z":   dyn.V("y"),
+		"a_y":   dyn.V("hello"),
+		"final": dyn.V("${a_${b_${c}}}"),
+	})
+
+	// First pass resolves ${c} -> "z", producing "${a_${b_z}}" for final.
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+	assert.Equal(t, "${a_${b_z}}", getByPath(t, out, "final").MustString())
+}
+
 func TestResolveEscapedRef(t *testing.T) {
 	in := dyn.V(map[string]dyn.Value{
 		"a": dyn.V("a"),
