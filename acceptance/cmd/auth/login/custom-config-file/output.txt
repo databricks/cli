@@ -17,5 +17,6 @@ OK: Default .databrickscfg does not exist
 [DEFAULT]
 
 [custom-test]
-host      = [DATABRICKS_URL]
-auth_type = databricks-cli
+host         = [DATABRICKS_URL]
+auth_type    = databricks-cli
+workspace_id = [NUMID]
