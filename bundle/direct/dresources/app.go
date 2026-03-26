@@ -72,6 +72,7 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 		SourceCodePath: input.SourceCodePath,
 		Config:         input.Config,
 		GitSource:      input.GitSource,
+		Lifecycle:      nil,
 	}
 	if input.Lifecycle.Started != nil {
 		s.Lifecycle = &AppStateLifecycle{Started: input.Lifecycle.Started}
@@ -86,8 +87,11 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 	started := !isComputeStopped(&remote.App)
 	return &AppState{
-		App:       remote.App,
-		Lifecycle: &AppStateLifecycle{Started: &started},
+		App:            remote.App,
+		SourceCodePath: "",
+		Config:         nil,
+		GitSource:      nil,
+		Lifecycle:      &AppStateLifecycle{Started: &started},
 	}
 }
 
@@ -269,5 +273,6 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 	if err != nil {
 		return nil, err
 	}
-	return &AppRemote{App: *app}, nil
+	started := !isComputeStopped(app)
+	return &AppRemote{App: *app, Lifecycle: &AppStateLifecycle{Started: &started}}, nil
 }
