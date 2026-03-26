@@ -57,8 +57,10 @@ func flattenDefsHelper(prefix string, node, result map[string]any) {
 	}
 }
 
-// rewriteRefs recursively walks a JSON value and rewrites all $ref strings
-// to use JSON Pointer ~1 escaping for flat $defs keys.
+// rewriteRefs recursively walks a JSON value and rewrites all $ref strings.
+// After flattening, $defs keys contain literal "/" characters. In JSON Pointer
+// (RFC 6901) "/" is the path separator, so these must be escaped as "~1" in
+// $ref values to be treated as a single key lookup.
 func rewriteRefs(v any) any {
 	switch val := v.(type) {
 	case map[string]any:
