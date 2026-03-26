@@ -28,9 +28,9 @@ type AppStateLifecycle struct {
 type AppState struct {
 	apps.App
 	SourceCodePath string               `json:"source_code_path,omitempty"`
-	Config         *resources.AppConfig  `json:"config,omitempty"`
-	GitSource      *apps.GitSource       `json:"git_source,omitempty"`
-	Lifecycle      AppStateLifecycle     `json:"lifecycle,omitempty"`
+	Config         *resources.AppConfig `json:"config,omitempty"`
+	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
+	Lifecycle      AppStateLifecycle    `json:"lifecycle,omitempty"`
 }
 
 // AppRemote extends apps.App with lifecycle.started so that it appears in
@@ -81,8 +81,11 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 // so they default to zero values, which prevents false drift detection.
 func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 	return &AppState{
-		App:       remote.App,
-		Lifecycle: remote.Lifecycle,
+		App:            remote.App,
+		SourceCodePath: "",
+		Config:         nil,
+		GitSource:      nil,
+		Lifecycle:      remote.Lifecycle,
 	}
 }
 
