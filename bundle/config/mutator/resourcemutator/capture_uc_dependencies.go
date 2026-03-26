@@ -53,67 +53,6 @@ func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *reso
 	return "", nil
 }
 
-func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
-	if v == nil {
-		return
-	}
-	// Resolve schema first since findSchema needs the original v.CatalogName.
-	schemaK, schema := findSchema(b, v.CatalogName, v.SchemaName)
-	if schema != nil {
-		v.SchemaName = schemaNameRef(schemaK)
-	}
-
-	catalogK, catalog := findCatalog(b, v.CatalogName)
-	if catalog != nil {
-		v.CatalogName = catalogNameRef(catalogK)
-	}
-}
-
-func resolveRegisteredModel(rm *resources.RegisteredModel, b *bundle.Bundle) {
-	if rm == nil {
-		return
-	}
-	// Resolve schema first since findSchema needs the original rm.CatalogName.
-	schemaK, schema := findSchema(b, rm.CatalogName, rm.SchemaName)
-	if schema != nil {
-		rm.SchemaName = schemaNameRef(schemaK)
-	}
-
-	catalogK, catalog := findCatalog(b, rm.CatalogName)
-	if catalog != nil {
-		rm.CatalogName = catalogNameRef(catalogK)
-	}
-}
-
-func resolvePipelineSchema(p *resources.Pipeline, b *bundle.Bundle) {
-	if p == nil {
-		return
-	}
-	if p.Schema == "" {
-		return
-	}
-	schemaK, schema := findSchema(b, p.Catalog, p.Schema)
-	if schema == nil {
-		return
-	}
-
-	p.Schema = schemaNameRef(schemaK)
-}
-
-func resolvePipelineTarget(p *resources.Pipeline, b *bundle.Bundle) {
-	if p == nil {
-		return
-	}
-	if p.Target == "" {
-		return
-	}
-	schemaK, schema := findSchema(b, p.Catalog, p.Target)
-	if schema == nil {
-		return
-	}
-	p.Target = schemaNameRef(schemaK)
-}
-
 func findCatalog(b *bundle.Bundle, catalogName string) (string, *resources.Catalog) {
 	if catalogName == "" {
 		return "", nil
@@ -127,113 +66,93 @@ func findCatalog(b *bundle.Bundle, catalogName string) (string, *resources.Catal
 	return "", nil
 }
 
-// resolveQualityMonitor resolves the OutputSchemaName field which is a compound
-// "catalog.schema" string.
-func resolveQualityMonitor(qm *resources.QualityMonitor, b *bundle.Bundle) {
-	if qm == nil {
-		return
+// resolveSchema returns the explicit schema reference if the given catalogName
+// and schemaName match a schema defined in the bundle. Otherwise returns schemaName
+// unchanged. Must be called before resolveCatalog on the same resource since
+// findSchema needs the original (unmutated) catalogName.
+func resolveSchema(b *bundle.Bundle, catalogName, schemaName string) string {
+	k, s := findSchema(b, catalogName, schemaName)
+	if s != nil {
+		return schemaNameRef(k)
 	}
-	if qm.OutputSchemaName == "" {
-		return
-	}
-
-	parts := strings.SplitN(qm.OutputSchemaName, ".", 2)
-	if len(parts) != 2 {
-		return
-	}
-	catalogName, schemaName := parts[0], parts[1]
-
-	resolvedCatalog, resolvedSchema := catalogName, schemaName
-
-	schemaK, schema := findSchema(b, catalogName, schemaName)
-	if schema != nil {
-		resolvedSchema = schemaNameRef(schemaK)
-	}
-
-	catalogK, catalog := findCatalog(b, catalogName)
-	if catalog != nil {
-		resolvedCatalog = catalogNameRef(catalogK)
-	}
-
-	if resolvedCatalog != catalogName || resolvedSchema != schemaName {
-		qm.OutputSchemaName = resolvedCatalog + "." + resolvedSchema
-	}
+	return schemaName
 }
 
-func resolveModelServingEndpoint(mse *resources.ModelServingEndpoint, b *bundle.Bundle) {
-	if mse == nil {
-		return
+// resolveCatalog returns the explicit catalog reference if catalogName matches
+// a catalog defined in the bundle. Otherwise returns catalogName unchanged.
+func resolveCatalog(b *bundle.Bundle, catalogName string) string {
+	k, c := findCatalog(b, catalogName)
+	if c != nil {
+		return catalogNameRef(k)
 	}
-
-	// Resolve AiGateway.InferenceTableConfig.
-	if mse.AiGateway != nil && mse.AiGateway.InferenceTableConfig != nil {
-		itc := mse.AiGateway.InferenceTableConfig
-
-		schemaK, schema := findSchema(b, itc.CatalogName, itc.SchemaName)
-		if schema != nil {
-			itc.SchemaName = schemaNameRef(schemaK)
-		}
-
-		catalogK, catalog := findCatalog(b, itc.CatalogName)
-		if catalog != nil {
-			itc.CatalogName = catalogNameRef(catalogK)
-		}
-	}
-
-	// Resolve Config.AutoCaptureConfig (deprecated but still in use).
-	if mse.Config != nil && mse.Config.AutoCaptureConfig != nil {
-		acc := mse.Config.AutoCaptureConfig
-
-		schemaK, schema := findSchema(b, acc.CatalogName, acc.SchemaName)
-		if schema != nil {
-			acc.SchemaName = schemaNameRef(schemaK)
-		}
-
-		catalogK, catalog := findCatalog(b, acc.CatalogName)
-		if catalog != nil {
-			acc.CatalogName = catalogNameRef(catalogK)
-		}
-	}
-}
-
-func resolveSchema(s *resources.Schema, b *bundle.Bundle) {
-	if s == nil {
-		return
-	}
-	catalogK, catalog := findCatalog(b, s.CatalogName)
-	if catalog == nil {
-		return
-	}
-
-	s.CatalogName = catalogNameRef(catalogK)
+	return catalogName
 }
 
 func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Resolve resources that depend on schemas before resolving schemas themselves.
-	// resolveSchema modifies schema.CatalogName, and findSchema (used by the other
-	// resolve functions) matches against the original schema.CatalogName value.
+	// The schema resolution below modifies schema.CatalogName, and findSchema
+	// (used by resolveSchema) matches against the original schema.CatalogName value.
 	for _, v := range b.Config.Resources.Volumes {
-		resolveVolume(v, b)
+		if v == nil {
+			continue
+		}
+		v.SchemaName = resolveSchema(b, v.CatalogName, v.SchemaName)
+		v.CatalogName = resolveCatalog(b, v.CatalogName)
 	}
 	for _, rm := range b.Config.Resources.RegisteredModels {
-		resolveRegisteredModel(rm, b)
+		if rm == nil {
+			continue
+		}
+		rm.SchemaName = resolveSchema(b, rm.CatalogName, rm.SchemaName)
+		rm.CatalogName = resolveCatalog(b, rm.CatalogName)
 	}
 	for _, p := range b.Config.Resources.Pipelines {
+		if p == nil {
+			continue
+		}
 		// "schema" and "target" have the same semantics in the DLT API but are mutually
-		// exclusive i.e. only one can be set at a time. If schema is set, the pipeline
-		// is in direct publishing mode and can write tables to multiple schemas
-		// (vs target which is limited to a single schema).
-		resolvePipelineTarget(p, b)
-		resolvePipelineSchema(p, b)
+		// exclusive i.e. only one can be set at a time.
+		p.Schema = resolveSchema(b, p.Catalog, p.Schema)
+		p.Target = resolveSchema(b, p.Catalog, p.Target)
 	}
 	for _, qm := range b.Config.Resources.QualityMonitors {
-		resolveQualityMonitor(qm, b)
+		if qm == nil || qm.OutputSchemaName == "" {
+			continue
+		}
+		// OutputSchemaName is a compound "catalog.schema" string.
+		parts := strings.SplitN(qm.OutputSchemaName, ".", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		catalogName, schemaName := parts[0], parts[1]
+		resolved := resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName)
+		if resolved != qm.OutputSchemaName {
+			qm.OutputSchemaName = resolved
+		}
 	}
 	for _, mse := range b.Config.Resources.ModelServingEndpoints {
-		resolveModelServingEndpoint(mse, b)
+		if mse == nil {
+			continue
+		}
+		if mse.AiGateway != nil && mse.AiGateway.InferenceTableConfig != nil {
+			itc := mse.AiGateway.InferenceTableConfig
+			itc.SchemaName = resolveSchema(b, itc.CatalogName, itc.SchemaName)
+			itc.CatalogName = resolveCatalog(b, itc.CatalogName)
+		}
+		// AutoCaptureConfig is deprecated but still in use.
+		if mse.Config != nil && mse.Config.AutoCaptureConfig != nil {
+			acc := mse.Config.AutoCaptureConfig
+			acc.SchemaName = resolveSchema(b, acc.CatalogName, acc.SchemaName)
+			acc.CatalogName = resolveCatalog(b, acc.CatalogName)
+		}
 	}
+
+	// Schemas are resolved last. See comment at the top of Apply.
 	for _, s := range b.Config.Resources.Schemas {
-		resolveSchema(s, b)
+		if s == nil {
+			continue
+		}
+		s.CatalogName = resolveCatalog(b, s.CatalogName)
 	}
 	return nil
 }
