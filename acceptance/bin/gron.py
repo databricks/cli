@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -7,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from print_requests import read_json_many
 
 
-def gron(obj, path="json"):
+def gron(obj, path="json", noindex=False):
     """Flatten JSON into greppable assignments.
 
     The path parameter defaults to "json" to match the original gron tool,
@@ -26,6 +27,10 @@ def gron(obj, path="json"):
     json.items[0] = "apple";
     json.items[1] = "banana";
 
+    >>> gron({"items": ["apple", "banana"]}, noindex=True)
+    json.items[] = "apple";
+    json.items[] = "banana";
+
     >>> gron({"tasks": [{"libraries": [{"whl": "file.whl"}]}]})
     json.tasks[0].libraries[0].whl = "file.whl";
 
@@ -38,31 +43,34 @@ def gron(obj, path="json"):
             print(f"{path} = {{}};")
         else:
             for key in obj:
-                gron(obj[key], f"{path}.{key}")
+                gron(obj[key], f"{path}.{key}", noindex=noindex)
     elif isinstance(obj, list):
         if not obj:
             print(f"{path} = [];")
         else:
             for i, item in enumerate(obj):
-                gron(item, f"{path}[{i}]")
+                index = "[]" if noindex else f"[{i}]"
+                gron(item, f"{path}{index}", noindex=noindex)
     else:
         print(f"{path} = {json.dumps(obj)};")
 
 
 def main():
-    if len(sys.argv) > 1:
-        with open(sys.argv[1]) as f:
-            content = f.read()
-        data = read_json_many(content)
-        if len(data) == 1:
-            data = data[0]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--noindex", action="store_true")
+    parser.add_argument("file", nargs="?")
+    args = parser.parse_args()
+
+    if args.file:
+        content = Path(args.file).read_text()
     else:
         content = sys.stdin.read()
-        data = read_json_many(content)
-        if len(data) == 1:
-            data = data[0]
 
-    gron(data)
+    data = read_json_many(content)
+    if len(data) == 1:
+        data = data[0]
+
+    gron(data, noindex=args.noindex)
 
 
 if __name__ == "__main__":
