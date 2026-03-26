@@ -43,13 +43,16 @@ var (
 // These help with debugging without leaking sensitive information.
 var knownExtensions = map[string]bool{
 	// Configuration and data formats
-	".yml":  true,
-	".yaml": true,
-	".json": true,
-	".toml": true,
-	".cfg":  true,
-	".ini":  true,
-	".env":  true,
+	".yml":        true,
+	".yaml":       true,
+	".json":       true,
+	".toml":       true,
+	".cfg":        true,
+	".ini":        true,
+	".env":        true,
+	".xml":        true,
+	".properties": true,
+	".conf":       true,
 
 	// Notebook and script languages
 	".py":    true,
@@ -68,19 +71,35 @@ var knownExtensions = map[string]bool{
 	".css":  true,
 
 	// Terraform
-	".tf":  true,
-	".hcl": true,
+	".tf":      true,
+	".hcl":     true,
+	".tfstate": true,
+	".tfvars":  true,
 
 	// Build artifacts and archives
 	".whl": true,
 	".jar": true,
+	".egg": true,
 	".zip": true,
 	".tar": true,
+	".gz":  true,
+	".tgz": true,
+	".dbc": true,
 
-	// Other
-	".txt": true,
-	".csv": true,
-	".md":  true,
+	// Data formats
+	".txt":     true,
+	".csv":     true,
+	".md":      true,
+	".parquet": true,
+	".avro":    true,
+
+	// Logs and locks
+	".log":  true,
+	".lock": true,
+
+	// Certificates and keys
+	".pem": true,
+	".crt": true,
 }
 
 // scrubForTelemetry is a best-effort scrubber that removes sensitive path and
