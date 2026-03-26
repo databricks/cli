@@ -53,7 +53,7 @@ func (r *root) Generate(path string) error {
 	return tmpl.Execute(f, r)
 }
 
-func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error {
+func Run(ctx context.Context, schema *tfjson.ProviderSchema, checksums *schemapkg.ProviderChecksums, path string) error {
 	// Generate types for resources
 	var resources []*namedBlock
 	for _, k := range sortKeys(schema.ResourceSchemas) {
@@ -151,8 +151,8 @@ func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error 
 		r := &root{
 			OutputFile:                 "root.go",
 			ProviderVersion:            schemapkg.ProviderVersion,
-			ProviderChecksumLinuxAmd64: schemapkg.ProviderChecksumLinuxAmd64,
-			ProviderChecksumLinuxArm64: schemapkg.ProviderChecksumLinuxArm64,
+			ProviderChecksumLinuxAmd64: checksums.LinuxAmd64,
+			ProviderChecksumLinuxArm64: checksums.LinuxArm64,
 		}
 		err := r.Generate(path)
 		if err != nil {
