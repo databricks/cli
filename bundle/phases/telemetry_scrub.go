@@ -42,18 +42,35 @@ var (
 // Known file extensions that are safe to retain in redacted paths.
 // These help with debugging without leaking sensitive information.
 var knownExtensions = map[string]bool{
+	// Configuration and data formats
+	".yml":  true,
+	".yaml": true,
+	".json": true,
+	".toml": true,
+	".cfg":  true,
+	".ini":  true,
+
+	// Notebook and script languages
 	".py":    true,
-	".yml":   true,
-	".yaml":  true,
-	".json":  true,
-	".toml":  true,
-	".tf":    true,
+	".r":     true,
+	".scala": true,
 	".sql":   true,
-	".txt":   true,
-	".whl":   true,
-	".jar":   true,
-	".cfg":   true,
 	".ipynb": true,
+	".sh":    true,
+
+	// Terraform
+	".tf":    true,
+	".hcl":   true,
+
+	// Build artifacts and archives
+	".whl": true,
+	".jar": true,
+	".zip": true,
+	".tar": true,
+
+	// Other
+	".txt": true,
+	".csv": true,
 }
 
 // scrubForTelemetry is a best-effort scrubber that removes sensitive path and
