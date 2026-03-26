@@ -32,13 +32,10 @@ func newListCmd() *cobra.Command {
 func defaultListSkills(cmd *cobra.Command) error {
 	ctx := cmd.Context()
 
-	src := &installer.GitHubManifestSource{}
-	latestTag, _, err := src.FetchLatestRelease(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to fetch latest release: %w", err)
-	}
+	ref := installer.GetSkillsRef(ctx)
 
-	manifest, err := src.FetchManifest(ctx, latestTag)
+	src := &installer.GitHubManifestSource{}
+	manifest, err := src.FetchManifest(ctx, ref)
 	if err != nil {
 		return fmt.Errorf("failed to fetch manifest: %w", err)
 	}
@@ -60,7 +57,7 @@ func defaultListSkills(cmd *cobra.Command) error {
 	}
 	sort.Strings(names)
 
-	version := strings.TrimPrefix(latestTag, "v")
+	version := strings.TrimPrefix(ref, "v")
 	cmdio.LogString(ctx, "Available skills (v"+version+"):")
 	cmdio.LogString(ctx, "")
 
