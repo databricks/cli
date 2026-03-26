@@ -34,6 +34,10 @@ runs:
       with:
         version: "0.8.9"
 
+    - name: Install Python versions for tests
+      run: make install-pythons
+      shell: bash
+
     - name: Install ruff (Python linter and formatter)
       uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6 # v3.6.1
       with:
