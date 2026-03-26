@@ -44,6 +44,10 @@ func downloadAndChecksum(t *testing.T, url, expectedChecksum string) {
 }
 
 func TestTerraformArchiveChecksums(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping slow test in short mode")
+	}
+
 	tv, isDefault, err := GetTerraformVersion(t.Context())
 	require.NoError(t, err)
 	assert.True(t, isDefault)
@@ -55,6 +59,10 @@ func TestTerraformArchiveChecksums(t *testing.T) {
 }
 
 func TestTerraformProviderArchiveChecksums(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping slow test in short mode")
+	}
+
 	metadata, err := NewTerraformMetadata(t.Context())
 	require.NoError(t, err)
 
