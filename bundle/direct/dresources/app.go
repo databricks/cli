@@ -179,7 +179,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 
 	// The planner computes the remote started value in RemapState based on compute status,
 	// so changes["lifecycle.started"].Action == Update means the compute state differs from the desired state.
-	startedChange := changes["lifecycle.started"]
+	startedChange := entry.Changes["lifecycle.started"]
 
 	if *config.Lifecycle.Started {
 		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
