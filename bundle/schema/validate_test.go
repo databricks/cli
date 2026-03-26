@@ -97,9 +97,7 @@ func rewriteRef(ref string) string {
 		return ref
 	}
 	path := ref[len(prefix):]
-	escaped := strings.ReplaceAll(path, "~", "~0")
-	escaped = strings.ReplaceAll(escaped, "/", "~1")
-	return prefix + escaped
+	return prefix + strings.ReplaceAll(path, "/", "~1")
 }
 
 // transformSchema flattens nested $defs and rewrites $ref values for compatibility
