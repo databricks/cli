@@ -376,7 +376,7 @@ resources:
       - field: name
         reason: immutable
     ignore_remote_changes:
-      # source_code_path, config, git_source, and started are bundle-local fields
+      # source_code_path, config, git_source, and lifecycle are bundle-local fields
       # not stored in remote state. Remote always returns empty; skip the spurious diff
       # when the local config hasn't changed these fields.
       - field: source_code_path
@@ -385,7 +385,9 @@ resources:
         reason: local_only
       - field: git_source
         reason: local_only
-      - field: started
+      - field: lifecycle
+        reason: local_only
+      - field: lifecycle.started
         reason: local_only
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/internal/providers/pluginfw/products/app/resource_app.go#L41
