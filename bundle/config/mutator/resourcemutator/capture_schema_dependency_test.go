@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -530,6 +531,160 @@ func TestCaptureImplicitDependencyWithCatalogSchemaAndVolume(t *testing.T) {
 	// Registered model should have both schema and catalog dependencies.
 	assert.Equal(t, "${resources.schemas.my_schema.name}", b.Config.Resources.RegisteredModels["my_model"].SchemaName)
 	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.RegisteredModels["my_model"].CatalogName)
+}
+
+func TestCaptureImplicitDependencyForQualityMonitor(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"my_catalog": {
+						CreateCatalog: catalog.CreateCatalog{
+							Name: "mycatalog",
+						},
+					},
+				},
+				Schemas: map[string]*resources.Schema{
+					"my_schema": {
+						CreateSchema: catalog.CreateSchema{
+							CatalogName: "mycatalog",
+							Name:        "myschema",
+						},
+					},
+				},
+				QualityMonitors: map[string]*resources.QualityMonitor{
+					// Both catalog and schema match.
+					"monitor1": {
+						CreateMonitor: catalog.CreateMonitor{
+							OutputSchemaName: "mycatalog.myschema",
+						},
+					},
+					// Only catalog matches (schema not in bundle).
+					"monitor2": {
+						CreateMonitor: catalog.CreateMonitor{
+							OutputSchemaName: "mycatalog.otherschema",
+						},
+					},
+					// Neither matches.
+					"monitor3": {
+						CreateMonitor: catalog.CreateMonitor{
+							OutputSchemaName: "othercatalog.otherschema",
+						},
+					},
+					// Empty output schema.
+					"monitor4": {
+						CreateMonitor: catalog.CreateMonitor{
+							OutputSchemaName: "",
+						},
+					},
+					// No dot separator (invalid format, should be left alone).
+					"monitor5": {
+						CreateMonitor: catalog.CreateMonitor{
+							OutputSchemaName: "nodot",
+						},
+					},
+					"nilMonitor": nil,
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureSchemaDependency())
+	require.Nil(t, d)
+
+	assert.Equal(t, "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}", b.Config.Resources.QualityMonitors["monitor1"].OutputSchemaName)
+	assert.Equal(t, "${resources.catalogs.my_catalog.name}.otherschema", b.Config.Resources.QualityMonitors["monitor2"].OutputSchemaName)
+	assert.Equal(t, "othercatalog.otherschema", b.Config.Resources.QualityMonitors["monitor3"].OutputSchemaName)
+	assert.Equal(t, "", b.Config.Resources.QualityMonitors["monitor4"].OutputSchemaName)
+	assert.Equal(t, "nodot", b.Config.Resources.QualityMonitors["monitor5"].OutputSchemaName)
+	assert.Nil(t, b.Config.Resources.QualityMonitors["nilMonitor"])
+}
+
+func TestCaptureImplicitDependencyForModelServingEndpoint(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"my_catalog": {
+						CreateCatalog: catalog.CreateCatalog{
+							Name: "mycatalog",
+						},
+					},
+				},
+				Schemas: map[string]*resources.Schema{
+					"my_schema": {
+						CreateSchema: catalog.CreateSchema{
+							CatalogName: "mycatalog",
+							Name:        "myschema",
+						},
+					},
+				},
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+					// AiGateway inference table config with matching catalog+schema.
+					"endpoint1": {
+						CreateServingEndpoint: serving.CreateServingEndpoint{
+							AiGateway: &serving.AiGatewayConfig{
+								InferenceTableConfig: &serving.AiGatewayInferenceTableConfig{
+									CatalogName: "mycatalog",
+									SchemaName:  "myschema",
+								},
+							},
+						},
+					},
+					// AutoCaptureConfig with matching catalog+schema.
+					"endpoint2": {
+						CreateServingEndpoint: serving.CreateServingEndpoint{
+							Config: &serving.EndpointCoreConfigInput{
+								AutoCaptureConfig: &serving.AutoCaptureConfigInput{
+									CatalogName: "mycatalog",
+									SchemaName:  "myschema",
+								},
+							},
+						},
+					},
+					// No matching catalog/schema.
+					"endpoint3": {
+						CreateServingEndpoint: serving.CreateServingEndpoint{
+							AiGateway: &serving.AiGatewayConfig{
+								InferenceTableConfig: &serving.AiGatewayInferenceTableConfig{
+									CatalogName: "othercatalog",
+									SchemaName:  "otherschema",
+								},
+							},
+						},
+					},
+					// Nil AiGateway and Config.
+					"endpoint4": {
+						CreateServingEndpoint: serving.CreateServingEndpoint{},
+					},
+					// AiGateway set but InferenceTableConfig is nil.
+					"endpoint5": {
+						CreateServingEndpoint: serving.CreateServingEndpoint{
+							AiGateway: &serving.AiGatewayConfig{},
+						},
+					},
+					"nilEndpoint": nil,
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureSchemaDependency())
+	require.Nil(t, d)
+
+	// AiGateway inference table config resolved.
+	assert.Equal(t, "${resources.schemas.my_schema.name}", b.Config.Resources.ModelServingEndpoints["endpoint1"].AiGateway.InferenceTableConfig.SchemaName)
+	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.ModelServingEndpoints["endpoint1"].AiGateway.InferenceTableConfig.CatalogName)
+
+	// AutoCaptureConfig resolved.
+	assert.Equal(t, "${resources.schemas.my_schema.name}", b.Config.Resources.ModelServingEndpoints["endpoint2"].Config.AutoCaptureConfig.SchemaName)
+	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.ModelServingEndpoints["endpoint2"].Config.AutoCaptureConfig.CatalogName)
+
+	// No match, left unchanged.
+	assert.Equal(t, "othercatalog", b.Config.Resources.ModelServingEndpoints["endpoint3"].AiGateway.InferenceTableConfig.CatalogName)
+	assert.Equal(t, "otherschema", b.Config.Resources.ModelServingEndpoints["endpoint3"].AiGateway.InferenceTableConfig.SchemaName)
+
+	assert.Nil(t, b.Config.Resources.ModelServingEndpoints["nilEndpoint"])
 }
 
 func TestCaptureCatalogDependencyForSchema(t *testing.T) {

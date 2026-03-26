@@ -171,9 +171,10 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): same paths — merges grant entries by principal and deduplicates privileges
 		MergeGrants(),
 
-		// Reads (typed): resources.pipelines.*.{catalog,schema,target}, resources.volumes.*.{catalog_name,schema_name}, resources.registered_models.*.{catalog_name,schema_name}
-		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.{catalog_name,schema_name}, resources.registered_models.*.{catalog_name,schema_name}, resources.schemas.*.catalog_name
-		// Translates implicit schema and catalog references in DLT pipelines, UC Volumes, and Registered Models to explicit syntax to capture dependencies
+		// Reads (typed): resources.{volumes,registered_models,pipelines,quality_monitors,model_serving_endpoints}.*.{catalog_name,schema_name,...}
+		// Updates (typed): same paths — converts implicit schema/catalog references to explicit ${resources.schemas/catalogs.<key>.name} syntax
+		// Also updates: resources.schemas.*.catalog_name (catalog dependency for schemas)
+		// Translates implicit schema and catalog references across all UC resources to explicit syntax to capture dependencies
 		CaptureSchemaDependency(),
 
 		// Reads (dynamic): resources.dashboards.*.file_path

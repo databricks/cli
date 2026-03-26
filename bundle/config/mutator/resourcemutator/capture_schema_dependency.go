@@ -3,6 +3,7 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -12,13 +13,15 @@ import (
 type captureSchemaDependency struct{}
 
 // If a user defines a UC schema in the bundle, they can refer to it in DLT pipelines,
-// UC Volumes, or Registered Models using the `${resources.schemas.<schema_key>.name}` syntax.
-// Using this syntax allows TF to capture the deploy time dependency this resource
-// has on the schema and deploy changes to the schema before deploying the dependent resource.
+// UC Volumes, Registered Models, Quality Monitors, or Model Serving Endpoints using the
+// `${resources.schemas.<schema_key>.name}` syntax. Using this syntax allows TF to capture
+// the deploy time dependency this resource has on the schema and deploy changes to the
+// schema before deploying the dependent resource.
 //
 // Similarly, if a user defines a UC catalog in the bundle, they can refer to it in UC schemas,
-// UC Volumes, or Registered Models using the `${resources.catalogs.<catalog_key>.name}` syntax.
-// This captures the deploy time dependency the resource has on the catalog.
+// UC Volumes, Registered Models, or Model Serving Endpoints using the
+// `${resources.catalogs.<catalog_key>.name}` syntax. This captures the deploy time
+// dependency the resource has on the catalog.
 //
 // This mutator translates any implicit catalog or schema references to the explicit syntax.
 func CaptureSchemaDependency() bundle.Mutator {
@@ -124,6 +127,75 @@ func findCatalog(b *bundle.Bundle, catalogName string) (string, *resources.Catal
 	return "", nil
 }
 
+// resolveQualityMonitor resolves the OutputSchemaName field which is a compound
+// "catalog.schema" string.
+func resolveQualityMonitor(qm *resources.QualityMonitor, b *bundle.Bundle) {
+	if qm == nil {
+		return
+	}
+	if qm.OutputSchemaName == "" {
+		return
+	}
+
+	parts := strings.SplitN(qm.OutputSchemaName, ".", 2)
+	if len(parts) != 2 {
+		return
+	}
+	catalogName, schemaName := parts[0], parts[1]
+
+	resolvedCatalog, resolvedSchema := catalogName, schemaName
+
+	schemaK, schema := findSchema(b, catalogName, schemaName)
+	if schema != nil {
+		resolvedSchema = schemaNameRef(schemaK)
+	}
+
+	catalogK, catalog := findCatalog(b, catalogName)
+	if catalog != nil {
+		resolvedCatalog = catalogNameRef(catalogK)
+	}
+
+	if resolvedCatalog != catalogName || resolvedSchema != schemaName {
+		qm.OutputSchemaName = resolvedCatalog + "." + resolvedSchema
+	}
+}
+
+func resolveModelServingEndpoint(mse *resources.ModelServingEndpoint, b *bundle.Bundle) {
+	if mse == nil {
+		return
+	}
+
+	// Resolve AiGateway.InferenceTableConfig.
+	if mse.AiGateway != nil && mse.AiGateway.InferenceTableConfig != nil {
+		itc := mse.AiGateway.InferenceTableConfig
+
+		schemaK, schema := findSchema(b, itc.CatalogName, itc.SchemaName)
+		if schema != nil {
+			itc.SchemaName = schemaNameRef(schemaK)
+		}
+
+		catalogK, catalog := findCatalog(b, itc.CatalogName)
+		if catalog != nil {
+			itc.CatalogName = catalogNameRef(catalogK)
+		}
+	}
+
+	// Resolve Config.AutoCaptureConfig (deprecated but still in use).
+	if mse.Config != nil && mse.Config.AutoCaptureConfig != nil {
+		acc := mse.Config.AutoCaptureConfig
+
+		schemaK, schema := findSchema(b, acc.CatalogName, acc.SchemaName)
+		if schema != nil {
+			acc.SchemaName = schemaNameRef(schemaK)
+		}
+
+		catalogK, catalog := findCatalog(b, acc.CatalogName)
+		if catalog != nil {
+			acc.CatalogName = catalogNameRef(catalogK)
+		}
+	}
+}
+
 func resolveSchema(s *resources.Schema, b *bundle.Bundle) {
 	if s == nil {
 		return
@@ -153,6 +225,12 @@ func (m *captureSchemaDependency) Apply(ctx context.Context, b *bundle.Bundle) d
 		// (vs target which is limited to a single schema).
 		resolvePipelineTarget(p, b)
 		resolvePipelineSchema(p, b)
+	}
+	for _, qm := range b.Config.Resources.QualityMonitors {
+		resolveQualityMonitor(qm, b)
+	}
+	for _, mse := range b.Config.Resources.ModelServingEndpoints {
+		resolveModelServingEndpoint(mse, b)
 	}
 	for _, s := range b.Config.Resources.Schemas {
 		resolveSchema(s, b)
