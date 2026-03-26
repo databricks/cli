@@ -48,6 +48,8 @@ require gopkg.in/yaml.v3 v3.0.1 // indirect
 // Dependencies for experimental SSH commands
 require github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 
+require github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
+
 require (
 	cloud.google.com/go/auth v0.18.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
