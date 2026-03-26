@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolveUCReferencesForVolume(t *testing.T) {
+func TestCaptureUCDependenciesForVolume(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -77,7 +77,7 @@ func TestResolveUCReferencesForVolume(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(t.Context(), b, ResolveUCReferences())
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
 	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Volumes["volume1"].SchemaName)
@@ -90,7 +90,7 @@ func TestResolveUCReferencesForVolume(t *testing.T) {
 	// assert.Nil(t, b.Config.Resources.Volumes["emptyVolume"].CreateVolumeRequestContent)
 }
 
-func TestResolveUCReferencesForPipelinesWithTarget(t *testing.T) {
+func TestCaptureUCDependenciesForPipelinesWithTarget(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -167,7 +167,7 @@ func TestResolveUCReferencesForPipelinesWithTarget(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(t.Context(), b, ResolveUCReferences())
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
 	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Pipelines["pipeline1"].Schema)
@@ -186,7 +186,7 @@ func TestResolveUCReferencesForPipelinesWithTarget(t *testing.T) {
 	}
 }
 
-func TestResolveUCReferencesForPipelinesWithSchema(t *testing.T) {
+func TestCaptureUCDependenciesForPipelinesWithSchema(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -261,7 +261,7 @@ func TestResolveUCReferencesForPipelinesWithSchema(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(t.Context(), b, ResolveUCReferences())
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Pipelines["pipeline1"].Target)
 	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.Pipelines["pipeline2"].Target)
@@ -276,7 +276,7 @@ func TestResolveUCReferencesForPipelinesWithSchema(t *testing.T) {
 	}
 }
 
-func TestResolveUCReferencesForRegisteredModel(t *testing.T) {
+func TestCaptureUCDependenciesForRegisteredModel(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -340,7 +340,7 @@ func TestResolveUCReferencesForRegisteredModel(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(t.Context(), b, ResolveUCReferences())
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
 	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.RegisteredModels["model1"].SchemaName)
@@ -352,7 +352,7 @@ func TestResolveUCReferencesForRegisteredModel(t *testing.T) {
 	assert.Nil(t, b.Config.Resources.RegisteredModels["nilModel"])
 }
 
-func TestResolveUCReferencesForVolumeCatalog(t *testing.T) {
+func TestCaptureUCDependenciesForVolumeCatalog(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -402,7 +402,7 @@ func TestResolveUCReferencesForVolumeCatalog(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(t.Context(), b, ResolveUCReferences())
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
 	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.Volumes["volume1"].CatalogName)
@@ -413,7 +413,7 @@ func TestResolveUCReferencesForVolumeCatalog(t *testing.T) {
 	assert.Nil(t, b.Config.Resources.Volumes["nilVolume"])
 }
 
-func TestResolveUCReferencesForRegisteredModelCatalog(t *testing.T) {
+func TestCaptureUCDependenciesForRegisteredModelCatalog(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -463,7 +463,7 @@ func TestResolveUCReferencesForRegisteredModelCatalog(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(t.Context(), b, ResolveUCReferences())
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
 	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.RegisteredModels["model1"].CatalogName)
@@ -479,7 +479,7 @@ func TestResolveUCReferencesForRegisteredModelCatalog(t *testing.T) {
 // This verifies the ordering fix: schemas must be resolved last since resolveSchema
 // modifies schema.CatalogName, and findSchema (used by volume/model resolution) matches
 // against the original value.
-func TestResolveUCReferencesWithCatalogSchemaAndVolume(t *testing.T) {
+func TestCaptureUCDependenciesWithCatalogSchemaAndVolume(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -518,7 +518,7 @@ func TestResolveUCReferencesWithCatalogSchemaAndVolume(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(t.Context(), b, ResolveUCReferences())
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
 	// Schema should have catalog dependency.
@@ -533,7 +533,7 @@ func TestResolveUCReferencesWithCatalogSchemaAndVolume(t *testing.T) {
 	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.RegisteredModels["my_model"].CatalogName)
 }
 
-func TestResolveUCReferencesForQualityMonitor(t *testing.T) {
+func TestCaptureUCDependenciesForQualityMonitor(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -589,7 +589,7 @@ func TestResolveUCReferencesForQualityMonitor(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(t.Context(), b, ResolveUCReferences())
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
 	assert.Equal(t, "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}", b.Config.Resources.QualityMonitors["monitor1"].OutputSchemaName)
@@ -600,7 +600,7 @@ func TestResolveUCReferencesForQualityMonitor(t *testing.T) {
 	assert.Nil(t, b.Config.Resources.QualityMonitors["nilMonitor"])
 }
 
-func TestResolveUCReferencesForModelServingEndpoint(t *testing.T) {
+func TestCaptureUCDependenciesForModelServingEndpoint(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -669,7 +669,7 @@ func TestResolveUCReferencesForModelServingEndpoint(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(t.Context(), b, ResolveUCReferences())
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
 	// AiGateway inference table config resolved.
@@ -687,7 +687,7 @@ func TestResolveUCReferencesForModelServingEndpoint(t *testing.T) {
 	assert.Nil(t, b.Config.Resources.ModelServingEndpoints["nilEndpoint"])
 }
 
-func TestResolveUCReferencesForSchemaCatalog(t *testing.T) {
+func TestCaptureUCDependenciesForSchemaCatalog(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -737,7 +737,7 @@ func TestResolveUCReferencesForSchemaCatalog(t *testing.T) {
 		},
 	}
 
-	d := bundle.Apply(t.Context(), b, ResolveUCReferences())
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
 	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.Schemas["schema1"].CatalogName)

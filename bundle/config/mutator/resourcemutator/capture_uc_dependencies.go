@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-type resolveUCReferences struct{}
+type captureUCDependencies struct{}
 
 // If a user defines a UC schema in the bundle, they can refer to it in DLT pipelines,
 // UC Volumes, Registered Models, Quality Monitors, or Model Serving Endpoints using the
@@ -24,12 +24,12 @@ type resolveUCReferences struct{}
 // dependency the resource has on the catalog.
 //
 // This mutator translates any implicit catalog or schema references to the explicit syntax.
-func ResolveUCReferences() bundle.Mutator {
-	return &resolveUCReferences{}
+func CaptureUCDependencies() bundle.Mutator {
+	return &captureUCDependencies{}
 }
 
-func (m *resolveUCReferences) Name() string {
-	return "ResolveUCReferences"
+func (m *captureUCDependencies) Name() string {
+	return "CaptureUCDependencies"
 }
 
 func schemaNameRef(key string) string {
@@ -208,7 +208,7 @@ func resolveSchema(s *resources.Schema, b *bundle.Bundle) {
 	s.CatalogName = catalogNameRef(catalogK)
 }
 
-func (m *resolveUCReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Resolve resources that depend on schemas before resolving schemas themselves.
 	// resolveSchema modifies schema.CatalogName, and findSchema (used by the other
 	// resolve functions) matches against the original schema.CatalogName value.
