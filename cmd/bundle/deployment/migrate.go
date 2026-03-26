@@ -281,6 +281,37 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return root.ErrAlreadyPrinted
 		}
 
+		// Terraform manages secret scope permissions via databricks_secret_acl resources,
+		// which are not included in the migration state. The direct engine manages them as
+		// a sub-resource (secret_scopes.*.permissions). Add state entries so that the
+		// direct engine doesn't plan a "create" action for these after migration.
+		// This runs after Apply+Finalize, so we modify the in-memory state and re-save.
+		needsResave := false
+		for key := range deploymentBundle.StateDB.Data.State {
+			if !strings.HasPrefix(key, "resources.secret_scopes.") || strings.HasSuffix(key, ".permissions") {
+				continue
+			}
+			permKey := key + ".permissions"
+			if _, exists := deploymentBundle.StateDB.Data.State[permKey]; exists {
+				continue
+			}
+			entry := deploymentBundle.StateDB.Data.State[key]
+			deploymentBundle.StateDB.Data.State[permKey] = dstate.ResourceEntry{
+				ID:    entry.ID,
+				State: json.RawMessage("{}"),
+			}
+			needsResave = true
+		}
+		if needsResave {
+			data, err := json.MarshalIndent(deploymentBundle.StateDB.Data, "", " ")
+			if err != nil {
+				return fmt.Errorf("failed to serialize state: %w", err)
+			}
+			if err := os.WriteFile(tempStatePath, data, 0o600); err != nil {
+				return fmt.Errorf("failed to write state file: %w", err)
+			}
+		}
+
 		if err := os.Rename(tempStatePath, localPath); err != nil {
 			return fmt.Errorf("renaming %s to %s: %w", tempStatePath, localPath, err)
 		}
