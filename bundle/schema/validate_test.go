@@ -14,34 +14,17 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// schemaKeywords is the set of recognized JSON Schema keywords used to distinguish
-// schema definitions from intermediate nesting nodes in $defs.
-var schemaKeywords = []string{
-	"$anchor", "$defs", "$id", "$ref", "$schema",
-	"additionalItems", "additionalProperties",
-	"allOf", "anyOf",
-	"const", "contains",
-	"default", "deprecated", "description",
-	"else", "enum", "exclusiveMaximum", "exclusiveMinimum",
-	"format", "if", "items",
-	"maxItems", "maxLength", "maxProperties",
-	"maximum", "minItems", "minLength", "minProperties",
-	"minimum", "multipleOf",
-	"not", "oneOf",
-	"pattern", "patternProperties", "prefixItems", "properties",
-	"required",
-	"then", "title", "type",
-	"uniqueItems",
-}
-
-// isSchemaNode returns true if the object is a JSON Schema definition
-// (has recognized keywords or is empty, which is the "anything" schema).
+// isSchemaNode returns true if the object is a JSON Schema definition rather
+// than an intermediate nesting node in the $defs tree. Intermediate nodes only
+// have map[string]any values (more nesting), while schema definitions always
+// have at least one non-object value ("type" is a string, "oneOf" is an array,
+// etc.). An empty object {} is also a valid schema (it accepts any value).
 func isSchemaNode(obj map[string]any) bool {
 	if len(obj) == 0 {
 		return true
 	}
-	for _, kw := range schemaKeywords {
-		if _, ok := obj[kw]; ok {
+	for _, v := range obj {
+		if _, isObj := v.(map[string]any); !isObj {
 			return true
 		}
 	}
