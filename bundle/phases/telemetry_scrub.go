@@ -15,7 +15,7 @@ import (
 var (
 	// Matches Windows absolute paths with at least two components
 	// (e.g., C:\foo\bar, D:/projects/myapp).
-	windowsAbsPathRegexp = regexp.MustCompile(`[A-Z]:[/\\][^\s:,"'/\\]+[/\\][^\s:,"']+`)
+	windowsAbsPathRegexp = regexp.MustCompile(`[A-Za-z]:[/\\][^\s:,"'/\\]+[/\\][^\s:,"']+`)
 
 	// Matches Databricks workspace paths (/Workspace/...).
 	workspacePathRegexp = regexp.MustCompile(`(^|[\s:,"'])(/Workspace/[^\s:,"']+)`)

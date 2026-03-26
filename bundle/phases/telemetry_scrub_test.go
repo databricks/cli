@@ -36,6 +36,15 @@ func TestScrubForTelemetry_BundleRootPath(t *testing.T) {
 			expected:   "path [REDACTED_REL_PATH] and [REDACTED_REL_PATH]",
 		},
 		{
+			// On Windows, replacePath strips the bundle root with native
+			// separators. On other platforms, the Windows regex catches
+			// the entire path. Both produce a redacted result.
+			name:       "Windows bundle root with backslashes",
+			msg:        `error at C:\Users\shreyas\project\databricks.yml`,
+			bundleRoot: `C:\Users\shreyas\project`,
+			expected:   "error at [REDACTED_PATH]",
+		},
+		{
 			name:       "empty bundle root is no-op",
 			msg:        "some error",
 			bundleRoot: "",
@@ -138,6 +147,11 @@ func TestScrubForTelemetry_AbsolutePaths(t *testing.T) {
 		{
 			name:     "Windows path with forward slashes",
 			msg:      "error at C:/Users/shreyas/project/file.yml",
+			expected: "error at [REDACTED_PATH]",
+		},
+		{
+			name:     "Windows path with lowercase drive letter",
+			msg:      `error at c:\Users\shreyas\project\file.yml`,
 			expected: "error at [REDACTED_PATH]",
 		},
 		{
