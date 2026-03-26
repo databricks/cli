@@ -27,7 +27,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 	return d.Delete(ctx, db, entry.ID)
 }
 
-func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, changes deployplan.Changes) error {
+func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {
 	if actionType == deployplan.Create {
 		return d.Create(ctx, db, newState)
 	}
@@ -46,7 +46,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	case deployplan.Recreate:
 		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.Update:
-		return d.Update(ctx, db, oldID, newState, changes)
+		return d.Update(ctx, db, oldID, newState, planEntry)
 	case deployplan.UpdateWithID:
 		return d.UpdateWithID(ctx, db, oldID, newState)
 	case deployplan.Resize:
@@ -103,12 +103,12 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	return d.Create(ctx, db, newState)
 }
 
-func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, changes deployplan.Changes) error {
+func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
 	if !d.Adapter.HasDoUpdate() {
 		return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 	}
 
-	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState, changes)
+	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState, planEntry)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
 	}

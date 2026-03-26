@@ -2,9 +2,9 @@
   "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
-  "serial": 1,
+  "serial": 2,
   "plan": {
-    "resources.schemas.apps_schema": {
+    "resources.schemas.grants_schema": {
       "action": "skip",
       "remote_state": {
         "browse_only": false,
@@ -18,29 +18,29 @@
           "value": "ENABLE"
         },
         "enable_predictive_optimization": "INHERIT",
-        "full_name": "main.schema_dup_grants_[UNIQUE_NAME]",
+        "full_name": "main.schema_out_of_band_principal_[UNIQUE_NAME]",
         "metastore_id": "[UUID]",
-        "name": "schema_dup_grants_[UNIQUE_NAME]",
+        "name": "schema_out_of_band_principal_[UNIQUE_NAME]",
         "owner": "[USERNAME]",
         "schema_id": "[UUID]",
         "updated_at": [UNIX_TIME_MILLIS][1],
         "updated_by": "[USERNAME]"
       }
     },
-    "resources.schemas.apps_schema.grants": {
+    "resources.schemas.grants_schema.grants": {
       "depends_on": [
         {
-          "node": "resources.schemas.apps_schema",
-          "label": "${resources.schemas.apps_schema.id}"
+          "node": "resources.schemas.grants_schema",
+          "label": "${resources.schemas.grants_schema.id}"
         }
       ],
       "action": "skip",
       "remote_state": {
         "securable_type": "schema",
-        "full_name": "main.schema_dup_grants_[UNIQUE_NAME]",
+        "full_name": "main.schema_out_of_band_principal_[UNIQUE_NAME]",
         "__embed__": [
           {
-            "principal": "deco-test-user@databricks.com",
+            "principal": "[USERNAME]",
             "privileges": [
               "CREATE_TABLE"
             ]

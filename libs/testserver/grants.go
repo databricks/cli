@@ -107,6 +107,15 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 
 	s.Grants[key] = assignments
 
+	if securableType == "schema" {
+		schema, ok := s.Schemas[fullName]
+		if ok {
+			schema.UpdatedAt = nowMilli()
+			schema.UpdatedBy = s.CurrentUser().UserName
+			s.Schemas[fullName] = schema
+		}
+	}
+
 	return Response{Body: catalog.UpdatePermissionsResponse{PrivilegeAssignments: assignments}}
 }
 

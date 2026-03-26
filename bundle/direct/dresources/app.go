@@ -68,8 +68,8 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *
 	return app.Name, nil, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, changes Changes) (*apps.App, error) {
-	updateMask := strings.Join(collectUpdatePathsWithPrefix(changes, ""), ",")
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, entry *PlanEntry) (*apps.App, error) {
+	updateMask := strings.Join(collectUpdatePathsWithPrefix(entry.Changes, ""), ",")
 
 	request := apps.AsyncUpdateAppRequest{
 		App:        config,
