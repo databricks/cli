@@ -16,23 +16,22 @@ import (
 
 // schemaKeywords is the set of recognized JSON Schema keywords used to distinguish
 // schema definitions from intermediate nesting nodes in $defs.
-var schemaKeywords = map[string]bool{
-	"$anchor": true, "$defs": true, "$id": true, "$ref": true, "$schema": true,
-	"additionalItems": true, "additionalProperties": true,
-	"allOf": true, "anyOf": true,
-	"const": true, "contains": true,
-	"default": true, "deprecated": true, "description": true,
-	"else": true, "enum": true, "exclusiveMaximum": true, "exclusiveMinimum": true,
-	"format": true,
-	"if": true, "items": true,
-	"maxItems": true, "maxLength": true, "maxProperties": true,
-	"maximum": true, "minItems": true, "minLength": true, "minProperties": true,
-	"minimum": true, "multipleOf": true,
-	"not": true, "oneOf": true,
-	"pattern": true, "patternProperties": true, "prefixItems": true, "properties": true,
-	"required": true,
-	"then": true, "title": true, "type": true,
-	"uniqueItems": true,
+var schemaKeywords = []string{
+	"$anchor", "$defs", "$id", "$ref", "$schema",
+	"additionalItems", "additionalProperties",
+	"allOf", "anyOf",
+	"const", "contains",
+	"default", "deprecated", "description",
+	"else", "enum", "exclusiveMaximum", "exclusiveMinimum",
+	"format", "if", "items",
+	"maxItems", "maxLength", "maxProperties",
+	"maximum", "minItems", "minLength", "minProperties",
+	"minimum", "multipleOf",
+	"not", "oneOf",
+	"pattern", "patternProperties", "prefixItems", "properties",
+	"required",
+	"then", "title", "type",
+	"uniqueItems",
 }
 
 // isSchemaNode returns true if the object is a JSON Schema definition
@@ -41,8 +40,8 @@ func isSchemaNode(obj map[string]any) bool {
 	if len(obj) == 0 {
 		return true
 	}
-	for key := range obj {
-		if schemaKeywords[key] {
+	for _, kw := range schemaKeywords {
+		if _, ok := obj[kw]; ok {
 			return true
 		}
 	}
@@ -59,11 +58,11 @@ func flattenDefs(defs map[string]any) map[string]any {
 	return result
 }
 
-func flattenDefsHelper(prefix string, node map[string]any, result map[string]any) {
+func flattenDefsHelper(prefix string, node, result map[string]any) {
 	for key, value := range node {
-		fullKey := key
-		if prefix != "" {
-			fullKey = prefix + "/" + key
+		fullKey := prefix + "/" + key
+		if prefix == "" {
+			fullKey = key
 		}
 
 		obj, isObj := value.(map[string]any)
