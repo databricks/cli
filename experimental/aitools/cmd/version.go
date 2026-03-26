@@ -10,9 +10,10 @@ import (
 )
 
 func newVersionCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Show installed AI skills version",
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -57,4 +58,6 @@ func newVersionCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	return cmd
 }

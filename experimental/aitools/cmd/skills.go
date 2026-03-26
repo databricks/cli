@@ -7,8 +7,6 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
-	"github.com/databricks/cli/libs/cmdio"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -50,11 +48,13 @@ func defaultPromptAgentSelection(ctx context.Context, detected []*agents.Agent) 
 
 func newSkillsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "skills",
-		Short: "Manage Databricks skills for coding agents",
-		Long:  `Manage Databricks skills that extend coding agents with Databricks-specific capabilities.`,
+		Use:    "skills",
+		Hidden: true,
+		Short:  "Manage Databricks skills for coding agents",
+		Long:   `Manage Databricks skills that extend coding agents with Databricks-specific capabilities.`,
 	}
 
+	// Subcommands delegate to the flat top-level commands.
 	cmd.AddCommand(newSkillsListCmd())
 	cmd.AddCommand(newSkillsInstallCmd())
 
@@ -66,7 +66,7 @@ func newSkillsListCmd() *cobra.Command {
 		Use:   "list",
 		Short: "List available skills",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return installer.ListSkills(cmd.Context())
+			return listSkillsFn(cmd)
 		},
 	}
 }
@@ -77,56 +77,24 @@ func newSkillsInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install [skill-name]",
 		Short: "Install Databricks skills for detected coding agents",
-		Long: `Install Databricks skills to all detected coding agents.
-
-Skills are installed globally to each agent's skills directory.
-When multiple agents are detected, skills are stored in a canonical location
-and symlinked to each agent to avoid duplication.
-
-Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSkillsInstall(cmd.Context(), args, includeExperimental)
+			// Delegate to the flat install command's logic.
+			installCmd := newInstallCmd()
+			installCmd.SetContext(cmd.Context())
+
+			var delegateArgs []string
+			if len(args) > 0 {
+				delegateArgs = append(delegateArgs, "--skills", args[0])
+			}
+			if includeExperimental {
+				delegateArgs = append(delegateArgs, "--experimental")
+			}
+			installCmd.SetArgs(delegateArgs)
+			return installCmd.Execute()
 		},
 	}
 
 	cmd.Flags().BoolVar(&includeExperimental, "experimental", false, "Include experimental skills")
 	return cmd
-}
-
-func runSkillsInstall(ctx context.Context, args []string, includeExperimental bool) error {
-	detected := agents.DetectInstalled(ctx)
-	if len(detected) == 0 {
-		cmdio.LogString(ctx, color.YellowString("No supported coding agents detected."))
-		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity")
-		cmdio.LogString(ctx, "Please install at least one coding agent first.")
-		return nil
-	}
-
-	var targetAgents []*agents.Agent
-	switch {
-	case len(detected) == 1:
-		targetAgents = detected
-	case cmdio.IsPromptSupported(ctx):
-		var err error
-		targetAgents, err = promptAgentSelection(ctx, detected)
-		if err != nil {
-			return err
-		}
-	default:
-		// Non-interactive: install for all detected agents.
-		targetAgents = detected
-	}
-
-	installer.PrintInstallingFor(ctx, targetAgents)
-
-	opts := installer.InstallOptions{
-		IncludeExperimental: includeExperimental,
-	}
-	if len(args) > 0 {
-		opts.SpecificSkills = []string{args[0]}
-	}
-
-	src := &installer.GitHubManifestSource{}
-	return installSkillsForAgentsFn(ctx, src, targetAgents, opts)
 }

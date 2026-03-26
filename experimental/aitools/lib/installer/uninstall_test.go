@@ -255,3 +255,79 @@ func TestUninstallLeavesNonSymlinkDirectories(t *testing.T) {
 	assert.NoError(t, err, "regular directory should not be removed")
 	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
 }
+
+func TestUninstallSelectiveRemovesOnlyNamedSkills(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := installTestSkills(t, tmp)
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	err := UninstallSkillsOpts(ctx, UninstallOptions{Skills: []string{"databricks-sql"}})
+	require.NoError(t, err)
+
+	// databricks-sql should be gone.
+	_, err = os.Stat(filepath.Join(globalDir, "databricks-sql"))
+	assert.True(t, os.IsNotExist(err))
+
+	// databricks-jobs should still exist.
+	_, err = os.Stat(filepath.Join(globalDir, "databricks-jobs"))
+	assert.NoError(t, err)
+
+	// State should still exist with remaining skill.
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Len(t, state.Skills, 1)
+	assert.Contains(t, state.Skills, "databricks-jobs")
+
+	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
+}
+
+func TestUninstallSelectiveUnknownSkillErrors(t *testing.T) {
+	tmp := setupTestHome(t)
+	installTestSkills(t, tmp)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	err := UninstallSkillsOpts(ctx, UninstallOptions{Skills: []string{"nonexistent"}})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not installed")
+}
+
+func TestUninstallSelectiveDuplicateNamesDeduplicates(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := installTestSkills(t, tmp)
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	// Pass duplicate: should only remove databricks-sql once, not wipe state.
+	err := UninstallSkillsOpts(ctx, UninstallOptions{Skills: []string{"databricks-sql", "databricks-sql"}})
+	require.NoError(t, err)
+
+	// databricks-sql should be gone.
+	_, err = os.Stat(filepath.Join(globalDir, "databricks-sql"))
+	assert.True(t, os.IsNotExist(err))
+
+	// databricks-jobs should still exist.
+	_, err = os.Stat(filepath.Join(globalDir, "databricks-jobs"))
+	assert.NoError(t, err, "other skills must not be removed")
+
+	// State should still exist with remaining skill.
+	state, err := LoadState(globalDir)
+	require.NoError(t, err)
+	require.NotNil(t, state, "state file must not be deleted when other skills remain")
+	assert.Len(t, state.Skills, 1)
+	assert.Contains(t, state.Skills, "databricks-jobs")
+
+	assert.Contains(t, stderr.String(), "Uninstalled 1 skill.")
+}
+
+func TestUninstallSelectiveAllRemovesStateFile(t *testing.T) {
+	tmp := setupTestHome(t)
+	globalDir := installTestSkills(t, tmp)
+
+	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
+	err := UninstallSkillsOpts(ctx, UninstallOptions{Skills: []string{"databricks-sql", "databricks-jobs"}})
+	require.NoError(t, err)
+
+	// State file should be gone since all skills were removed.
+	_, err = os.Stat(filepath.Join(globalDir, ".state.json"))
+	assert.True(t, os.IsNotExist(err))
+}

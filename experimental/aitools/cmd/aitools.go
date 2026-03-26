@@ -18,11 +18,12 @@ Provides commands to:
 	}
 
 	cmd.AddCommand(newInstallCmd())
-	cmd.AddCommand(newSkillsCmd())
-	cmd.AddCommand(newToolsCmd())
 	cmd.AddCommand(newUpdateCmd())
 	cmd.AddCommand(newUninstallCmd())
+	cmd.AddCommand(newListCmd())
 	cmd.AddCommand(newVersionCmd())
+	cmd.AddCommand(newSkillsCmd())
+	cmd.AddCommand(newToolsCmd())
 
 	return cmd
 }
