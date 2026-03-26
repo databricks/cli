@@ -10,7 +10,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-middle-test/default/files...
 Recovering state from WAL file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal
-Warn: Could not read state file WAL entry in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal: line 3: {"k":"resources.jobs.partial_write","v":{"__id__": "[ID]","state":{"name":"partial-: unexpected end of JSON input
+Warn: Could not read state file WAL entry in [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal: line 3
 Warn: Saved corrupted WAL entries to [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal.corrupted
 Recovered 2 entries from WAL file.
 Deploying resources...
