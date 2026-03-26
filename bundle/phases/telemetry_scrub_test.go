@@ -73,6 +73,11 @@ func TestScrubForTelemetry_AbsolutePaths(t *testing.T) {
 			expected: "state at [REDACTED_PATH]",
 		},
 		{
+			name:     "tilde home path",
+			msg:      "reading ~/.databricks/config.json failed",
+			expected: "reading [REDACTED_PATH] failed",
+		},
+		{
 			name:     "single component path is not matched",
 			msg:      "POST /telemetry-ext failed",
 			expected: "POST /telemetry-ext failed",
@@ -146,11 +151,6 @@ func TestScrubForTelemetry_RelativePaths(t *testing.T) {
 			name:     "dot-prefixed directory path",
 			msg:      "error reading .databricks/bundle/dev/variable-overrides.json",
 			expected: "error reading [REDACTED_REL_PATH]",
-		},
-		{
-			name:     "tilde home path",
-			msg:      "reading ~/.databricks/config.json failed",
-			expected: "reading [REDACTED_REL_PATH] failed",
 		},
 		{
 			name:     "single filename without path separator is preserved",

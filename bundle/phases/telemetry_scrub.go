@@ -17,14 +17,13 @@ var (
 	workspacePathRegexp = regexp.MustCompile(`(^|[\s:,"'])(/Workspace/[^\s:,"']+)`)
 
 	// Matches absolute Unix paths with at least two components
-	// (e.g., /home/user/..., /tmp/foo).
-	absPathRegexp = regexp.MustCompile(`(^|[\s:,"'])(/[^\s:,"'/]+/[^\s:,"']+)`)
+	// (e.g., /home/user/..., /tmp/foo, ~/.config/databricks).
+	absPathRegexp = regexp.MustCompile(`(^|[\s:,"'])(~?/[^\s:,"'/]+/[^\s:,"']+)`)
 
 	// Matches relative paths:
 	// - Explicit: ./foo, ../foo
 	// - Dot-prefixed directories: .databricks/bundle/..., .cache/foo
-	// - Home shorthand: ~/.databricks/...
-	explicitRelPathRegexp = regexp.MustCompile(`(^|[\s:,"'])((?:~|\.\.?|\.[a-zA-Z][^\s:,"'/]*)/[^\s:,"']+)`)
+	explicitRelPathRegexp = regexp.MustCompile(`(^|[\s:,"'])((?:\.\.?|\.[a-zA-Z][^\s:,"'/]*)/[^\s:,"']+)`)
 
 	// Matches implicit relative paths: at least two path components where
 	// the last component has a file extension (e.g., "resources/job.yml",
