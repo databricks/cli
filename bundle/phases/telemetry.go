@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -38,6 +39,9 @@ const maxErrorMessageLength = 500
 
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
+	homeDir, _ := env.UserHomeDir(ctx)
+	errMsg = scrubForTelemetry(errMsg, b.BundleRootPath, homeDir)
+
 	if len(errMsg) > maxErrorMessageLength {
 		errMsg = errMsg[:maxErrorMessageLength]
 	}
