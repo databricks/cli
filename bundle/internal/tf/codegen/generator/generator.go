@@ -35,8 +35,10 @@ func (c *collection) Generate(path string) error {
 }
 
 type root struct {
-	OutputFile      string
-	ProviderVersion string
+	OutputFile                 string
+	ProviderVersion            string
+	ProviderChecksumLinuxAmd64 string
+	ProviderChecksumLinuxArm64 string
 }
 
 func (r *root) Generate(path string) error {
@@ -147,8 +149,10 @@ func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error 
 	// Generate root.go
 	{
 		r := &root{
-			OutputFile:      "root.go",
-			ProviderVersion: schemapkg.ProviderVersion,
+			OutputFile:                 "root.go",
+			ProviderVersion:            schemapkg.ProviderVersion,
+			ProviderChecksumLinuxAmd64: schemapkg.ProviderChecksumLinuxAmd64,
+			ProviderChecksumLinuxArm64: schemapkg.ProviderChecksumLinuxArm64,
 		}
 		err := r.Generate(path)
 		if err != nil {

@@ -54,6 +54,17 @@ func TestTerraformArchiveChecksums(t *testing.T) {
 	downloadAndChecksum(t, armUrl, tv.ChecksumLinuxArm64)
 }
 
+func TestTerraformProviderArchiveChecksums(t *testing.T) {
+	metadata, err := NewTerraformMetadata(t.Context())
+	require.NoError(t, err)
+
+	amdUrl := fmt.Sprintf("https://github.com/databricks/terraform-provider-databricks/releases/download/v%s/terraform-provider-databricks_%s_linux_amd64.zip", metadata.ProviderVersion, metadata.ProviderVersion)
+	armUrl := fmt.Sprintf("https://github.com/databricks/terraform-provider-databricks/releases/download/v%s/terraform-provider-databricks_%s_linux_arm64.zip", metadata.ProviderVersion, metadata.ProviderVersion)
+
+	downloadAndChecksum(t, amdUrl, metadata.ProviderChecksum.LinuxAmd64)
+	downloadAndChecksum(t, armUrl, metadata.ProviderChecksum.LinuxArm64)
+}
+
 func TestGetTerraformVersionDefault(t *testing.T) {
 	// Verify that the default version is used
 	tv, isDefault, err := GetTerraformVersion(t.Context())
