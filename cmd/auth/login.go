@@ -426,6 +426,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		}
 	case config.UnifiedHost:
 		// Unified host requires an account ID for OAuth URL construction.
+		// Workspace selection happens post-OAuth via promptForWorkspaceSelection.
 		if authArguments.AccountID == "" {
 			if existingProfile != nil && existingProfile.AccountID != "" {
 				authArguments.AccountID = existingProfile.AccountID
@@ -435,20 +436,6 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 					return err
 				}
 				authArguments.AccountID = accountId
-			}
-		}
-
-		// Workspace ID is optional: with it you get workspace-level APIs,
-		// without it you get account-level APIs.
-		if authArguments.WorkspaceID == "" {
-			if existingProfile != nil && existingProfile.WorkspaceID != "" {
-				authArguments.WorkspaceID = existingProfile.WorkspaceID
-			} else {
-				workspaceId, err := promptForWorkspaceID(ctx)
-				if err != nil {
-					return err
-				}
-				authArguments.WorkspaceID = workspaceId
 			}
 		}
 	case config.WorkspaceHost:

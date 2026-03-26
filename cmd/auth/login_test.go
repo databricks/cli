@@ -259,15 +259,6 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 	assert.Equal(t, "", authArguments.WorkspaceID) // Empty is valid for account-level access
 }
 
-func TestPromptForWorkspaceIDInNonInteractiveMode(t *testing.T) {
-	// Setup non-interactive context
-	ctx, _ := cmdio.SetupTest(t.Context(), cmdio.TestOptions{})
-
-	// Test that promptForWorkspaceID returns empty string (no error) in non-interactive mode
-	workspaceID, err := promptForWorkspaceID(ctx)
-	assert.NoError(t, err)
-	assert.Equal(t, "", workspaceID)
-}
 
 func TestLoadProfileByNameAndClusterID(t *testing.T) {
 	testCases := []struct {
