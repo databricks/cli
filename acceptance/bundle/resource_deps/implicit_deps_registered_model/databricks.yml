@@ -17,9 +17,6 @@ resources:
       catalog_name: mycatalog
       schema_name: myschema
       name: mymodel
-  pipelines:
-    mypipeline:
-      name: pipeline for ${resources.registered_models.my_model.catalog_name}.${resources.registered_models.my_model.schema_name}.${resources.registered_models.my_model.name}
 
 targets:
   dev:

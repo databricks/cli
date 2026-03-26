@@ -6,21 +6,6 @@
       "name": "mycatalog"
     }
   },
-  "pipelines": {
-    "mypipeline": {
-      "channel": "CURRENT",
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/state/metadata.json"
-      },
-      "development": true,
-      "edition": "ADVANCED",
-      "name": "[dev [USERNAME]] pipeline for ${resources.registered_models.my_model.catalog_name}.${resources.registered_models.my_model.schema_name}.${resources.registered_models.my_model.name}",
-      "tags": {
-        "dev": "[USERNAME]"
-      }
-    }
-  },
   "registered_models": {
     "my_model": {
       "catalog_name": "${resources.catalogs.my_catalog.name}",

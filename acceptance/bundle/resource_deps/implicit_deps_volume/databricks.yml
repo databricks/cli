@@ -18,9 +18,6 @@ resources:
       schema_name: myschema
       name: myvolume
       volume_type: MANAGED
-  pipelines:
-    mypipeline:
-      name: pipeline for ${resources.volumes.my_volume.catalog_name}.${resources.volumes.my_volume.schema_name}.${resources.volumes.my_volume.name}
 
 targets:
   dev:
