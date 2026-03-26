@@ -121,7 +121,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				err = b.StateDB.SaveState(resourceKey, dbentry.ID, sv.Value, entry.DependsOn)
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
-				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry.Changes)
+				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			}
 
 			if err != nil {
