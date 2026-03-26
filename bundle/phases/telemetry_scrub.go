@@ -1,10 +1,6 @@
 package phases
 
-import (
-	"path/filepath"
-	"regexp"
-	"strings"
-)
+import "regexp"
 
 // Scrub sensitive information from error messages before sending to telemetry.
 // Inspired by VS Code's telemetry path scrubbing and Sentry's @userpath pattern.
@@ -44,13 +40,7 @@ var (
 // PII information from error messages before they are sent to telemetry.
 // The error message is treated as PII by the logging infrastructure but we
 // scrub to avoid collecting more information than necessary.
-func scrubForTelemetry(msg, bundleRoot, homeDir string) string {
-	// Direct string replacement for the two most important known paths.
-	// This handles the common case (path followed by separator) and the
-	// regex catch-all below handles any remaining occurrences.
-	msg = replacePath(msg, bundleRoot, ".")
-	msg = replacePath(msg, homeDir, "~")
-
+func scrubForTelemetry(msg string) string {
 	// Redact absolute paths.
 	msg = windowsAbsPathRegexp.ReplaceAllString(msg, "[REDACTED_PATH]")
 	msg = workspacePathRegexp.ReplaceAllString(msg, "${1}[REDACTED_WORKSPACE_PATH]")
@@ -63,21 +53,5 @@ func scrubForTelemetry(msg, bundleRoot, homeDir string) string {
 	// Redact email addresses.
 	msg = emailRegexp.ReplaceAllString(msg, "[REDACTED_EMAIL]")
 
-	return msg
-}
-
-// replacePath replaces occurrences of path/ with replacement/ in msg.
-// Only replaces when the path is followed by a separator to avoid partial
-// matches (e.g., "/Users/shreyas" inside "/Workspace/Users/shreyas@...").
-// Any remaining occurrences are handled by the regex catch-all patterns.
-func replacePath(msg, path, replacement string) string {
-	if path == "" {
-		return msg
-	}
-	normalized := filepath.ToSlash(path)
-	msg = strings.ReplaceAll(msg, normalized+"/", replacement+"/")
-	if path != normalized {
-		msg = strings.ReplaceAll(msg, path+string(filepath.Separator), replacement+string(filepath.Separator))
-	}
 	return msg
 }
