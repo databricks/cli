@@ -3,9 +3,11 @@ package installer
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
@@ -593,7 +595,7 @@ func TestInstallProjectScopeWritesState(t *testing.T) {
 	require.NoError(t, os.MkdirAll(projectDir, 0o755))
 	t.Chdir(projectDir)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testProjectAgent(tmp)
 
 	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{Scope: ScopeProject})
@@ -604,10 +606,11 @@ func TestInstallProjectScopeWritesState(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, state)
 	assert.Equal(t, ScopeProject, state.Scope)
-	assert.Equal(t, "v0.1.0", state.Release)
+	assert.Equal(t, defaultSkillsRepoRef, state.Release)
 	assert.Len(t, state.Skills, 2)
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.0).")
+	tag := strings.TrimPrefix(defaultSkillsRepoRef, "v")
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (v%s).", tag))
 }
 
 func TestInstallProjectScopeCreatesSymlinks(t *testing.T) {
@@ -623,7 +626,7 @@ func TestInstallProjectScopeCreatesSymlinks(t *testing.T) {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 	agent := testProjectAgent(tmp)
 
 	err = InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{Scope: ScopeProject})
@@ -661,7 +664,7 @@ func TestInstallProjectScopeFiltersIncompatibleAgents(t *testing.T) {
 	require.NoError(t, os.MkdirAll(projectDir, 0o755))
 	t.Chdir(projectDir)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 
 	compatibleAgent := testProjectAgent(tmp)
 	incompatibleAgent := &agents.Agent{
@@ -676,7 +679,7 @@ func TestInstallProjectScopeFiltersIncompatibleAgents(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, stderr.String(), "Skipped No Project Agent: does not support project-scoped skills.")
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.0).")
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (v%s).", strings.TrimPrefix(defaultSkillsRepoRef, "v")))
 }
 
 func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
@@ -688,7 +691,7 @@ func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
 	require.NoError(t, os.MkdirAll(projectDir, 0o755))
 	t.Chdir(projectDir)
 
-	src := &mockManifestSource{manifest: testManifest(), release: "v0.1.0", authoritative: true}
+	src := &mockManifestSource{manifest: testManifest()}
 
 	// Only provide agents that don't support project scope.
 	globalOnlyAgent := &agents.Agent{
