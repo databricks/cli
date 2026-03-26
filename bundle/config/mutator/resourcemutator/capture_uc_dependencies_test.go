@@ -13,702 +13,123 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCaptureUCDependenciesForVolume(t *testing.T) {
-	b := &bundle.Bundle{
+// Shared bundle with schemas for resolveSchema tests.
+func bundleWithSchemas() *bundle.Bundle {
+	return &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
 				Schemas: map[string]*resources.Schema{
-					"schema1": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog1",
-							Name:        "foobar",
-						},
-					},
-					"schema2": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog2",
-							Name:        "foobar",
-						},
-					},
-					"schema3": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog1",
-							Name:        "barfoo",
-						},
-					},
-					"nilschema":   nil,
-					"emptyschema": {},
+					"schema1": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "foobar"}},
+					"schema2": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog2", Name: "foobar"}},
+					"schema3": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "barfoo"}},
+				},
+			},
+		},
+	}
+}
+
+// Shared bundle with catalogs for resolveCatalog tests.
+func bundleWithCatalogs() *bundle.Bundle {
+	return &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"dev_catalog":  {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
+					"prod_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "catalog2"}},
+				},
+			},
+		},
+	}
+}
+
+func TestResolveSchema(t *testing.T) {
+	b := bundleWithSchemas()
+
+	tests := []struct {
+		name        string
+		catalogName string
+		schemaName  string
+		expected    string
+	}{
+		{"match_catalog1_foobar", "catalog1", "foobar", "${resources.schemas.schema1.name}"},
+		{"match_catalog2_foobar", "catalog2", "foobar", "${resources.schemas.schema2.name}"},
+		{"match_catalog1_barfoo", "catalog1", "barfoo", "${resources.schemas.schema3.name}"},
+		{"no_match_wrong_catalog", "catalogX", "foobar", "foobar"},
+		{"no_match_wrong_schema", "catalog1", "schemaX", "schemaX"},
+		{"empty_catalog", "", "foobar", "foobar"},
+		{"empty_schema", "catalog1", "", ""},
+		{"both_empty", "", "", ""},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, resolveSchema(b, tc.catalogName, tc.schemaName))
+		})
+	}
+}
+
+func TestResolveCatalog(t *testing.T) {
+	b := bundleWithCatalogs()
+
+	tests := []struct {
+		name        string
+		catalogName string
+		expected    string
+	}{
+		{"match_catalog1", "catalog1", "${resources.catalogs.dev_catalog.name}"},
+		{"match_catalog2", "catalog2", "${resources.catalogs.prod_catalog.name}"},
+		{"no_match", "catalogX", "catalogX"},
+		{"empty", "", ""},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, resolveCatalog(b, tc.catalogName))
+		})
+	}
+}
+
+// Test that all resource types are wired correctly by defining a catalog, schema,
+// and one of each resource type in a single bundle. Also verifies the ordering fix:
+// schemas must be resolved last since their CatalogName gets mutated.
+func TestCaptureUCDependencies(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"my_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "mycatalog"}},
+				},
+				Schemas: map[string]*resources.Schema{
+					"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "mycatalog", Name: "myschema"}},
 				},
 				Volumes: map[string]*resources.Volume{
-					"volume1": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "catalog1",
-							SchemaName:  "foobar",
-						},
-					},
-					"volume2": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "catalog2",
-							SchemaName:  "foobar",
-						},
-					},
-					"volume3": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "catalog1",
-							SchemaName:  "barfoo",
-						},
-					},
-					"volume4": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "catalogX",
-							SchemaName:  "foobar",
-						},
-					},
-					"volume5": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "catalog1",
-							SchemaName:  "schemaX",
-						},
-					},
-					"nilVolume":   nil,
-					"emptyVolume": {},
-				},
-			},
-		},
-	}
-
-	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
-	require.Nil(t, d)
-
-	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Volumes["volume1"].SchemaName)
-	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.Volumes["volume2"].SchemaName)
-	assert.Equal(t, "${resources.schemas.schema3.name}", b.Config.Resources.Volumes["volume3"].SchemaName)
-	assert.Equal(t, "foobar", b.Config.Resources.Volumes["volume4"].SchemaName)
-	assert.Equal(t, "schemaX", b.Config.Resources.Volumes["volume5"].SchemaName)
-
-	assert.Nil(t, b.Config.Resources.Volumes["nilVolume"])
-	// assert.Nil(t, b.Config.Resources.Volumes["emptyVolume"].CreateVolumeRequestContent)
-}
-
-func TestCaptureUCDependenciesForPipelinesWithTarget(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Schemas: map[string]*resources.Schema{
-					"schema1": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog1",
-							Name:        "foobar",
-						},
-					},
-					"schema2": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog2",
-							Name:        "foobar",
-						},
-					},
-					"schema3": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog1",
-							Name:        "barfoo",
-						},
-					},
-					"nilschema":   nil,
-					"emptyschema": {},
-				},
-				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalog1",
-							Schema:  "foobar",
-						},
-					},
-					"pipeline2": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalog2",
-							Schema:  "foobar",
-						},
-					},
-					"pipeline3": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalog1",
-							Schema:  "barfoo",
-						},
-					},
-					"pipeline4": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalogX",
-							Schema:  "foobar",
-						},
-					},
-					"pipeline5": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalog1",
-							Schema:  "schemaX",
-						},
-					},
-					"pipeline6": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "",
-							Schema:  "foobar",
-						},
-					},
-					"pipeline7": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "",
-							Schema:  "",
-							Name:    "whatever",
-						},
-					},
-					"nilPipeline":   nil,
-					"emptyPipeline": {},
-				},
-			},
-		},
-	}
-
-	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
-	require.Nil(t, d)
-
-	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Pipelines["pipeline1"].Schema)
-	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.Pipelines["pipeline2"].Schema)
-	assert.Equal(t, "${resources.schemas.schema3.name}", b.Config.Resources.Pipelines["pipeline3"].Schema)
-	assert.Equal(t, "foobar", b.Config.Resources.Pipelines["pipeline4"].Schema)
-	assert.Equal(t, "schemaX", b.Config.Resources.Pipelines["pipeline5"].Schema)
-	assert.Equal(t, "foobar", b.Config.Resources.Pipelines["pipeline6"].Schema)
-	assert.Equal(t, "", b.Config.Resources.Pipelines["pipeline7"].Schema)
-
-	assert.Nil(t, b.Config.Resources.Pipelines["nilPipeline"])
-	assert.Empty(t, b.Config.Resources.Pipelines["emptyPipeline"].Catalog)
-
-	for _, k := range []string{"pipeline1", "pipeline2", "pipeline3", "pipeline4", "pipeline5", "pipeline6", "pipeline7"} {
-		assert.Empty(t, b.Config.Resources.Pipelines[k].Target)
-	}
-}
-
-func TestCaptureUCDependenciesForPipelinesWithSchema(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Schemas: map[string]*resources.Schema{
-					"schema1": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog1",
-							Name:        "foobar",
-						},
-					},
-					"schema2": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog2",
-							Name:        "foobar",
-						},
-					},
-					"schema3": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog1",
-							Name:        "barfoo",
-						},
-					},
-					"nilschema":   nil,
-					"emptyschema": {},
-				},
-				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalog1",
-							Target:  "foobar",
-						},
-					},
-					"pipeline2": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalog2",
-							Target:  "foobar",
-						},
-					},
-					"pipeline3": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalog1",
-							Target:  "barfoo",
-						},
-					},
-					"pipeline4": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalogX",
-							Target:  "foobar",
-						},
-					},
-					"pipeline5": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalog1",
-							Target:  "schemaX",
-						},
-					},
-					"pipeline6": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "",
-							Target:  "foobar",
-						},
-					},
-					"pipeline7": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "",
-							Target:  "",
-							Name:    "whatever",
-						},
-					},
-				},
-			},
-		},
-	}
-
-	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
-	require.Nil(t, d)
-	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.Pipelines["pipeline1"].Target)
-	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.Pipelines["pipeline2"].Target)
-	assert.Equal(t, "${resources.schemas.schema3.name}", b.Config.Resources.Pipelines["pipeline3"].Target)
-	assert.Equal(t, "foobar", b.Config.Resources.Pipelines["pipeline4"].Target)
-	assert.Equal(t, "schemaX", b.Config.Resources.Pipelines["pipeline5"].Target)
-	assert.Equal(t, "foobar", b.Config.Resources.Pipelines["pipeline6"].Target)
-	assert.Equal(t, "", b.Config.Resources.Pipelines["pipeline7"].Target)
-
-	for _, k := range []string{"pipeline1", "pipeline2", "pipeline3", "pipeline4", "pipeline5", "pipeline6", "pipeline7"} {
-		assert.Empty(t, b.Config.Resources.Pipelines[k].Schema)
-	}
-}
-
-func TestCaptureUCDependenciesForPipelineCatalog(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Catalogs: map[string]*resources.Catalog{
-					"catalog1": {
-						CreateCatalog: catalog.CreateCatalog{
-							Name: "catalog1",
-						},
-					},
-				},
-				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalog1",
-							Schema:  "foobar",
-						},
-					},
-					"pipeline2": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "catalogX",
-							Schema:  "foobar",
-						},
-					},
-					"pipeline3": {
-						CreatePipeline: pipelines.CreatePipeline{
-							Catalog: "",
-							Schema:  "foobar",
-						},
-					},
-					"nilPipeline": nil,
-				},
-			},
-		},
-	}
-
-	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
-	require.Nil(t, d)
-
-	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.Pipelines["pipeline1"].Catalog)
-	assert.Equal(t, "catalogX", b.Config.Resources.Pipelines["pipeline2"].Catalog)
-	assert.Equal(t, "", b.Config.Resources.Pipelines["pipeline3"].Catalog)
-	assert.Nil(t, b.Config.Resources.Pipelines["nilPipeline"])
-}
-
-func TestCaptureUCDependenciesForRegisteredModel(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Schemas: map[string]*resources.Schema{
-					"schema1": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog1",
-							Name:        "foobar",
-						},
-					},
-					"schema2": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog2",
-							Name:        "foobar",
-						},
-					},
-					"schema3": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog1",
-							Name:        "barfoo",
-						},
-					},
-					"nilschema":   nil,
-					"emptyschema": {},
+					"my_volume": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+						CatalogName: "mycatalog", SchemaName: "myschema",
+					}},
 				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
-					"model1": {
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							CatalogName: "catalog1",
-							SchemaName:  "foobar",
-						},
-					},
-					"model2": {
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							CatalogName: "catalog2",
-							SchemaName:  "foobar",
-						},
-					},
-					"model3": {
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							CatalogName: "catalog1",
-							SchemaName:  "barfoo",
-						},
-					},
-					"model4": {
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							CatalogName: "catalogX",
-							SchemaName:  "foobar",
-						},
-					},
-					"model5": {
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							CatalogName: "catalog1",
-							SchemaName:  "schemaX",
-						},
-					},
-					"nilModel":   nil,
-					"emptyModel": {},
+					"my_model": {CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
+						CatalogName: "mycatalog", SchemaName: "myschema",
+					}},
 				},
-			},
-		},
-	}
-
-	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
-	require.Nil(t, d)
-
-	assert.Equal(t, "${resources.schemas.schema1.name}", b.Config.Resources.RegisteredModels["model1"].SchemaName)
-	assert.Equal(t, "${resources.schemas.schema2.name}", b.Config.Resources.RegisteredModels["model2"].SchemaName)
-	assert.Equal(t, "${resources.schemas.schema3.name}", b.Config.Resources.RegisteredModels["model3"].SchemaName)
-	assert.Equal(t, "foobar", b.Config.Resources.RegisteredModels["model4"].SchemaName)
-	assert.Equal(t, "schemaX", b.Config.Resources.RegisteredModels["model5"].SchemaName)
-
-	assert.Nil(t, b.Config.Resources.RegisteredModels["nilModel"])
-}
-
-func TestCaptureUCDependenciesForVolumeCatalog(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Catalogs: map[string]*resources.Catalog{
-					"catalog1": {
-						CreateCatalog: catalog.CreateCatalog{
-							Name: "catalog1",
-						},
-					},
-					"catalog2": {
-						CreateCatalog: catalog.CreateCatalog{
-							Name: "catalog2",
-						},
-					},
-					"nilcatalog":   nil,
-					"emptycatalog": {},
-				},
-				Volumes: map[string]*resources.Volume{
-					"volume1": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "catalog1",
-							SchemaName:  "foobar",
-						},
-					},
-					"volume2": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "catalog2",
-							SchemaName:  "foobar",
-						},
-					},
-					"volume3": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "catalogX",
-							SchemaName:  "foobar",
-						},
-					},
-					"volume4": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "",
-							SchemaName:  "foobar",
-						},
-					},
-					"nilVolume":   nil,
-					"emptyVolume": {},
-				},
-			},
-		},
-	}
-
-	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
-	require.Nil(t, d)
-
-	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.Volumes["volume1"].CatalogName)
-	assert.Equal(t, "${resources.catalogs.catalog2.name}", b.Config.Resources.Volumes["volume2"].CatalogName)
-	assert.Equal(t, "catalogX", b.Config.Resources.Volumes["volume3"].CatalogName)
-	assert.Equal(t, "", b.Config.Resources.Volumes["volume4"].CatalogName)
-
-	assert.Nil(t, b.Config.Resources.Volumes["nilVolume"])
-}
-
-func TestCaptureUCDependenciesForRegisteredModelCatalog(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Catalogs: map[string]*resources.Catalog{
-					"catalog1": {
-						CreateCatalog: catalog.CreateCatalog{
-							Name: "catalog1",
-						},
-					},
-					"catalog2": {
-						CreateCatalog: catalog.CreateCatalog{
-							Name: "catalog2",
-						},
-					},
-					"nilcatalog":   nil,
-					"emptycatalog": {},
-				},
-				RegisteredModels: map[string]*resources.RegisteredModel{
-					"model1": {
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							CatalogName: "catalog1",
-							SchemaName:  "foobar",
-						},
-					},
-					"model2": {
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							CatalogName: "catalog2",
-							SchemaName:  "foobar",
-						},
-					},
-					"model3": {
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							CatalogName: "catalogX",
-							SchemaName:  "foobar",
-						},
-					},
-					"model4": {
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							CatalogName: "",
-							SchemaName:  "foobar",
-						},
-					},
-					"nilModel":   nil,
-					"emptyModel": {},
-				},
-			},
-		},
-	}
-
-	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
-	require.Nil(t, d)
-
-	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.RegisteredModels["model1"].CatalogName)
-	assert.Equal(t, "${resources.catalogs.catalog2.name}", b.Config.Resources.RegisteredModels["model2"].CatalogName)
-	assert.Equal(t, "catalogX", b.Config.Resources.RegisteredModels["model3"].CatalogName)
-	assert.Equal(t, "", b.Config.Resources.RegisteredModels["model4"].CatalogName)
-
-	assert.Nil(t, b.Config.Resources.RegisteredModels["nilModel"])
-}
-
-// Test that when a catalog, schema, and dependent resources (volume, registered model)
-// are all defined in the same bundle, all implicit dependencies are correctly captured.
-// This verifies the ordering fix: schemas must be resolved last since resolveSchema
-// modifies schema.CatalogName, and findSchema (used by volume/model resolution) matches
-// against the original value.
-func TestCaptureUCDependenciesWithCatalogSchemaAndVolume(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Catalogs: map[string]*resources.Catalog{
-					"my_catalog": {
-						CreateCatalog: catalog.CreateCatalog{
-							Name: "mycatalog",
-						},
-					},
-				},
-				Schemas: map[string]*resources.Schema{
-					"my_schema": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "mycatalog",
-							Name:        "myschema",
-						},
-					},
-				},
-				Volumes: map[string]*resources.Volume{
-					"my_volume": {
-						CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
-							CatalogName: "mycatalog",
-							SchemaName:  "myschema",
-						},
-					},
-				},
-				RegisteredModels: map[string]*resources.RegisteredModel{
-					"my_model": {
-						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
-							CatalogName: "mycatalog",
-							SchemaName:  "myschema",
-						},
-					},
-				},
-			},
-		},
-	}
-
-	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
-	require.Nil(t, d)
-
-	// Schema should have catalog dependency.
-	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.Schemas["my_schema"].CatalogName)
-
-	// Volume should have both schema and catalog dependencies.
-	assert.Equal(t, "${resources.schemas.my_schema.name}", b.Config.Resources.Volumes["my_volume"].SchemaName)
-	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.Volumes["my_volume"].CatalogName)
-
-	// Registered model should have both schema and catalog dependencies.
-	assert.Equal(t, "${resources.schemas.my_schema.name}", b.Config.Resources.RegisteredModels["my_model"].SchemaName)
-	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.RegisteredModels["my_model"].CatalogName)
-}
-
-func TestCaptureUCDependenciesForQualityMonitor(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Catalogs: map[string]*resources.Catalog{
-					"my_catalog": {
-						CreateCatalog: catalog.CreateCatalog{
-							Name: "mycatalog",
-						},
-					},
-				},
-				Schemas: map[string]*resources.Schema{
-					"my_schema": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "mycatalog",
-							Name:        "myschema",
-						},
-					},
+				Pipelines: map[string]*resources.Pipeline{
+					"my_pipeline": {CreatePipeline: pipelines.CreatePipeline{
+						Catalog: "mycatalog", Schema: "myschema",
+					}},
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
-					// Both catalog and schema match.
-					"monitor1": {
-						CreateMonitor: catalog.CreateMonitor{
-							OutputSchemaName: "mycatalog.myschema",
-						},
-					},
-					// Only catalog matches (schema not in bundle).
-					"monitor2": {
-						CreateMonitor: catalog.CreateMonitor{
-							OutputSchemaName: "mycatalog.otherschema",
-						},
-					},
-					// Neither matches.
-					"monitor3": {
-						CreateMonitor: catalog.CreateMonitor{
-							OutputSchemaName: "othercatalog.otherschema",
-						},
-					},
-					// Empty output schema.
-					"monitor4": {
-						CreateMonitor: catalog.CreateMonitor{
-							OutputSchemaName: "",
-						},
-					},
-					// No dot separator (invalid format, should be left alone).
-					"monitor5": {
-						CreateMonitor: catalog.CreateMonitor{
-							OutputSchemaName: "nodot",
-						},
-					},
-					"nilMonitor": nil,
-				},
-			},
-		},
-	}
-
-	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
-	require.Nil(t, d)
-
-	assert.Equal(t, "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}", b.Config.Resources.QualityMonitors["monitor1"].OutputSchemaName)
-	assert.Equal(t, "${resources.catalogs.my_catalog.name}.otherschema", b.Config.Resources.QualityMonitors["monitor2"].OutputSchemaName)
-	assert.Equal(t, "othercatalog.otherschema", b.Config.Resources.QualityMonitors["monitor3"].OutputSchemaName)
-	assert.Equal(t, "", b.Config.Resources.QualityMonitors["monitor4"].OutputSchemaName)
-	assert.Equal(t, "nodot", b.Config.Resources.QualityMonitors["monitor5"].OutputSchemaName)
-	assert.Nil(t, b.Config.Resources.QualityMonitors["nilMonitor"])
-}
-
-func TestCaptureUCDependenciesForModelServingEndpoint(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Catalogs: map[string]*resources.Catalog{
-					"my_catalog": {
-						CreateCatalog: catalog.CreateCatalog{
-							Name: "mycatalog",
-						},
-					},
-				},
-				Schemas: map[string]*resources.Schema{
-					"my_schema": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "mycatalog",
-							Name:        "myschema",
-						},
-					},
+					"my_monitor": {CreateMonitor: catalog.CreateMonitor{
+						OutputSchemaName: "mycatalog.myschema",
+					}},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
-					// AiGateway inference table config with matching catalog+schema.
-					"endpoint1": {
-						CreateServingEndpoint: serving.CreateServingEndpoint{
-							AiGateway: &serving.AiGatewayConfig{
-								InferenceTableConfig: &serving.AiGatewayInferenceTableConfig{
-									CatalogName: "mycatalog",
-									SchemaName:  "myschema",
-								},
+					"my_endpoint": {CreateServingEndpoint: serving.CreateServingEndpoint{
+						AiGateway: &serving.AiGatewayConfig{
+							InferenceTableConfig: &serving.AiGatewayInferenceTableConfig{
+								CatalogName: "mycatalog", SchemaName: "myschema",
 							},
 						},
-					},
-					// AutoCaptureConfig with matching catalog+schema.
-					"endpoint2": {
-						CreateServingEndpoint: serving.CreateServingEndpoint{
-							Config: &serving.EndpointCoreConfigInput{
-								AutoCaptureConfig: &serving.AutoCaptureConfigInput{
-									CatalogName: "mycatalog",
-									SchemaName:  "myschema",
-								},
-							},
-						},
-					},
-					// No matching catalog/schema.
-					"endpoint3": {
-						CreateServingEndpoint: serving.CreateServingEndpoint{
-							AiGateway: &serving.AiGatewayConfig{
-								InferenceTableConfig: &serving.AiGatewayInferenceTableConfig{
-									CatalogName: "othercatalog",
-									SchemaName:  "otherschema",
-								},
-							},
-						},
-					},
-					// Nil AiGateway and Config.
-					"endpoint4": {
-						CreateServingEndpoint: serving.CreateServingEndpoint{},
-					},
-					// AiGateway set but InferenceTableConfig is nil.
-					"endpoint5": {
-						CreateServingEndpoint: serving.CreateServingEndpoint{
-							AiGateway: &serving.AiGatewayConfig{},
-						},
-					},
-					"nilEndpoint": nil,
+					}},
 				},
 			},
 		},
@@ -717,66 +138,78 @@ func TestCaptureUCDependenciesForModelServingEndpoint(t *testing.T) {
 	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
-	// AiGateway inference table config resolved.
-	assert.Equal(t, "${resources.schemas.my_schema.name}", b.Config.Resources.ModelServingEndpoints["endpoint1"].AiGateway.InferenceTableConfig.SchemaName)
-	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.ModelServingEndpoints["endpoint1"].AiGateway.InferenceTableConfig.CatalogName)
+	schemaRef := "${resources.schemas.my_schema.name}"
+	catalogRef := "${resources.catalogs.my_catalog.name}"
 
-	// AutoCaptureConfig resolved.
-	assert.Equal(t, "${resources.schemas.my_schema.name}", b.Config.Resources.ModelServingEndpoints["endpoint2"].Config.AutoCaptureConfig.SchemaName)
-	assert.Equal(t, "${resources.catalogs.my_catalog.name}", b.Config.Resources.ModelServingEndpoints["endpoint2"].Config.AutoCaptureConfig.CatalogName)
+	// Schema catalog dependency.
+	assert.Equal(t, catalogRef, b.Config.Resources.Schemas["my_schema"].CatalogName)
 
-	// No match, left unchanged.
-	assert.Equal(t, "othercatalog", b.Config.Resources.ModelServingEndpoints["endpoint3"].AiGateway.InferenceTableConfig.CatalogName)
-	assert.Equal(t, "otherschema", b.Config.Resources.ModelServingEndpoints["endpoint3"].AiGateway.InferenceTableConfig.SchemaName)
+	// Volume.
+	assert.Equal(t, schemaRef, b.Config.Resources.Volumes["my_volume"].SchemaName)
+	assert.Equal(t, catalogRef, b.Config.Resources.Volumes["my_volume"].CatalogName)
 
-	assert.Nil(t, b.Config.Resources.ModelServingEndpoints["nilEndpoint"])
+	// Registered model.
+	assert.Equal(t, schemaRef, b.Config.Resources.RegisteredModels["my_model"].SchemaName)
+	assert.Equal(t, catalogRef, b.Config.Resources.RegisteredModels["my_model"].CatalogName)
+
+	// Pipeline.
+	assert.Equal(t, schemaRef, b.Config.Resources.Pipelines["my_pipeline"].Schema)
+	assert.Equal(t, catalogRef, b.Config.Resources.Pipelines["my_pipeline"].Catalog)
+
+	// Quality monitor (compound "catalog.schema" field).
+	assert.Equal(t, catalogRef+"."+schemaRef, b.Config.Resources.QualityMonitors["my_monitor"].OutputSchemaName)
+
+	// Model serving endpoint.
+	itc := b.Config.Resources.ModelServingEndpoints["my_endpoint"].AiGateway.InferenceTableConfig
+	assert.Equal(t, schemaRef, itc.SchemaName)
+	assert.Equal(t, catalogRef, itc.CatalogName)
 }
 
-func TestCaptureUCDependenciesForSchemaCatalog(t *testing.T) {
+// Pipeline schema and target are mutually exclusive; only the populated field
+// should be resolved.
+func TestCaptureUCDependenciesPipelineSchemaTarget(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Schemas: map[string]*resources.Schema{
+					"s": {CreateSchema: catalog.CreateSchema{CatalogName: "c", Name: "n"}},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"with_schema": {CreatePipeline: pipelines.CreatePipeline{Catalog: "c", Schema: "n"}},
+					"with_target": {CreatePipeline: pipelines.CreatePipeline{Catalog: "c", Target: "n"}},
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
+	require.Nil(t, d)
+
+	ref := "${resources.schemas.s.name}"
+
+	assert.Equal(t, ref, b.Config.Resources.Pipelines["with_schema"].Schema)
+	assert.Empty(t, b.Config.Resources.Pipelines["with_schema"].Target)
+
+	assert.Equal(t, ref, b.Config.Resources.Pipelines["with_target"].Target)
+	assert.Empty(t, b.Config.Resources.Pipelines["with_target"].Schema)
+}
+
+func TestCaptureUCDependenciesQualityMonitorEdgeCases(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"catalog1": {
-						CreateCatalog: catalog.CreateCatalog{
-							Name: "catalog1",
-						},
-					},
-					"catalog2": {
-						CreateCatalog: catalog.CreateCatalog{
-							Name: "catalog2",
-						},
-					},
-					"nilcatalog":   nil,
-					"emptycatalog": {},
+					"my_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "mycatalog"}},
 				},
 				Schemas: map[string]*resources.Schema{
-					"schema1": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog1",
-							Name:        "schema1",
-						},
-					},
-					"schema2": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalog2",
-							Name:        "schema2",
-						},
-					},
-					"schema3": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "catalogX",
-							Name:        "schema3",
-						},
-					},
-					"schema4": {
-						CreateSchema: catalog.CreateSchema{
-							CatalogName: "",
-							Name:        "schema4",
-						},
-					},
-					"nilschema":   nil,
-					"emptyschema": {},
+					"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "mycatalog", Name: "myschema"}},
+				},
+				QualityMonitors: map[string]*resources.QualityMonitor{
+					"catalog_only": {CreateMonitor: catalog.CreateMonitor{OutputSchemaName: "mycatalog.other"}},
+					"no_match":     {CreateMonitor: catalog.CreateMonitor{OutputSchemaName: "other.other"}},
+					"empty":        {CreateMonitor: catalog.CreateMonitor{OutputSchemaName: ""}},
+					"no_dot":       {CreateMonitor: catalog.CreateMonitor{OutputSchemaName: "nodot"}},
+					"nil_monitor":  nil,
 				},
 			},
 		},
@@ -785,10 +218,82 @@ func TestCaptureUCDependenciesForSchemaCatalog(t *testing.T) {
 	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
 
-	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.Schemas["schema1"].CatalogName)
-	assert.Equal(t, "${resources.catalogs.catalog2.name}", b.Config.Resources.Schemas["schema2"].CatalogName)
-	assert.Equal(t, "catalogX", b.Config.Resources.Schemas["schema3"].CatalogName)
-	assert.Equal(t, "", b.Config.Resources.Schemas["schema4"].CatalogName)
+	assert.Equal(t, "${resources.catalogs.my_catalog.name}.other", b.Config.Resources.QualityMonitors["catalog_only"].OutputSchemaName)
+	assert.Equal(t, "other.other", b.Config.Resources.QualityMonitors["no_match"].OutputSchemaName)
+	assert.Equal(t, "", b.Config.Resources.QualityMonitors["empty"].OutputSchemaName)
+	assert.Equal(t, "nodot", b.Config.Resources.QualityMonitors["no_dot"].OutputSchemaName)
+	assert.Nil(t, b.Config.Resources.QualityMonitors["nil_monitor"])
+}
 
-	assert.Nil(t, b.Config.Resources.Schemas["nilschema"])
+func TestCaptureUCDependenciesModelServingEndpointEdgeCases(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"my_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "mycatalog"}},
+				},
+				Schemas: map[string]*resources.Schema{
+					"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "mycatalog", Name: "myschema"}},
+				},
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+					// AutoCaptureConfig path.
+					"auto_capture": {CreateServingEndpoint: serving.CreateServingEndpoint{
+						Config: &serving.EndpointCoreConfigInput{
+							AutoCaptureConfig: &serving.AutoCaptureConfigInput{
+								CatalogName: "mycatalog", SchemaName: "myschema",
+							},
+						},
+					}},
+					// No match.
+					"no_match": {CreateServingEndpoint: serving.CreateServingEndpoint{
+						AiGateway: &serving.AiGatewayConfig{
+							InferenceTableConfig: &serving.AiGatewayInferenceTableConfig{
+								CatalogName: "other", SchemaName: "other",
+							},
+						},
+					}},
+					// Various nil nesting levels.
+					"nil_gateway":         {CreateServingEndpoint: serving.CreateServingEndpoint{}},
+					"nil_inference_table": {CreateServingEndpoint: serving.CreateServingEndpoint{AiGateway: &serving.AiGatewayConfig{}}},
+					"nil_endpoint":        nil,
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
+	require.Nil(t, d)
+
+	schemaRef := "${resources.schemas.my_schema.name}"
+	catalogRef := "${resources.catalogs.my_catalog.name}"
+
+	acc := b.Config.Resources.ModelServingEndpoints["auto_capture"].Config.AutoCaptureConfig
+	assert.Equal(t, schemaRef, acc.SchemaName)
+	assert.Equal(t, catalogRef, acc.CatalogName)
+
+	itc := b.Config.Resources.ModelServingEndpoints["no_match"].AiGateway.InferenceTableConfig
+	assert.Equal(t, "other", itc.CatalogName)
+	assert.Equal(t, "other", itc.SchemaName)
+
+	assert.Nil(t, b.Config.Resources.ModelServingEndpoints["nil_endpoint"])
+}
+
+// Nil and empty resources should not panic.
+func TestCaptureUCDependenciesNilResources(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Schemas:               map[string]*resources.Schema{"nil": nil, "empty": {}},
+				Catalogs:              map[string]*resources.Catalog{"nil": nil, "empty": {}},
+				Volumes:               map[string]*resources.Volume{"nil": nil, "empty": {}},
+				RegisteredModels:      map[string]*resources.RegisteredModel{"nil": nil, "empty": {}},
+				Pipelines:             map[string]*resources.Pipeline{"nil": nil, "empty": {}},
+				QualityMonitors:       map[string]*resources.QualityMonitor{"nil": nil, "empty": {}},
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{"nil": nil, "empty": {}},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
+	require.Nil(t, d)
 }
