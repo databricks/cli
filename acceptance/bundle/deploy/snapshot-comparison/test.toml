@@ -5,7 +5,7 @@ RecordRequests = true
 Ignore = [
     ".databricks",
     "databricks.yml",
-    "out.*",
+    "tmp.*",
     "bundle1",
     "bundle2"
 ]

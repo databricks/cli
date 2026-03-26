@@ -5,7 +5,7 @@ Cloud = false
 RecordRequests = false
 RequiresWarehouse = true
 
-Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "out.app-run"]
+Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "tmp.app-run"]
 
 # Apps can take longer to deploy
 TimeoutCloud = "5m"

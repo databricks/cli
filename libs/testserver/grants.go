@@ -40,6 +40,25 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 		}
 	}
 
+	// Validate: reject duplicate privileges in Add and Remove for the same principal
+	for _, change := range request.Changes {
+		addSet := make(map[catalog.Privilege]bool, len(change.Add))
+		for _, p := range change.Add {
+			addSet[p] = true
+		}
+		for _, p := range change.Remove {
+			if addSet[p] {
+				return Response{
+					StatusCode: http.StatusBadRequest,
+					Body: map[string]string{
+						"error_code": "INVALID_PARAMETER_VALUE",
+						"message":    fmt.Sprintf("Duplicate privileges to add and delete for principal %s.", change.Principal),
+					},
+				}
+			}
+		}
+	}
+
 	// Apply changes
 	for _, change := range request.Changes {
 		if change.Principal == "" {
@@ -87,6 +106,15 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	}
 
 	s.Grants[key] = assignments
+
+	if securableType == "schema" {
+		schema, ok := s.Schemas[fullName]
+		if ok {
+			schema.UpdatedAt = nowMilli()
+			schema.UpdatedBy = s.CurrentUser().UserName
+			s.Schemas[fullName] = schema
+		}
+	}
 
 	return Response{Body: catalog.UpdatePermissionsResponse{PrivilegeAssignments: assignments}}
 }

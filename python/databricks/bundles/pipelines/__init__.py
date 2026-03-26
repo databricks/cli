@@ -21,6 +21,11 @@ __all__ = [
     "ConnectionParameters",
     "ConnectionParametersDict",
     "ConnectionParametersParam",
+    "ConnectorType",
+    "ConnectorTypeParam",
+    "DataStagingOptions",
+    "DataStagingOptionsDict",
+    "DataStagingOptionsParam",
     "DayOfWeek",
     "DayOfWeekParam",
     "DbfsStorageInfo",
@@ -193,6 +198,15 @@ from databricks.bundles.pipelines._models.connection_parameters import (
     ConnectionParameters,
     ConnectionParametersDict,
     ConnectionParametersParam,
+)
+from databricks.bundles.pipelines._models.connector_type import (
+    ConnectorType,
+    ConnectorTypeParam,
+)
+from databricks.bundles.pipelines._models.data_staging_options import (
+    DataStagingOptions,
+    DataStagingOptionsDict,
+    DataStagingOptionsParam,
 )
 from databricks.bundles.pipelines._models.day_of_week import DayOfWeek, DayOfWeekParam
 from databricks.bundles.pipelines._models.dbfs_storage_info import (

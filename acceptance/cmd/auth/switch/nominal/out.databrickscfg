@@ -2,12 +2,12 @@
 [DEFAULT]
 
 [profile-a]
-host      = https://profile-a.cloud.databricks.com
+host      = [DATABRICKS_URL]
 token     = token-a
 auth_type = pat
 
 [profile-b]
-host      = https://profile-b.cloud.databricks.com
+host      = [DATABRICKS_URL]
 token     = token-b
 auth_type = pat
 

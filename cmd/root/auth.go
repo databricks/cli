@@ -56,16 +56,39 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
-	prompt := false
-	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
-		// Prompt to select a profile if the current configuration is not an account client.
-		prompt = prompt || errors.Is(err, databricks.ErrNotAccountClient)
-		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
-		prompt = prompt || errors.Is(err, config.ErrCannotConfigureDefault)
+	// If auth succeeded and we have an account ID, trust the SDK's resolution.
+	// The SDK resolves host metadata (including .well-known/databricks-config)
+	// during config initialization, so a successful auth means the config is valid
+	// regardless of what HostType() returns from URL pattern matching.
+	if err == nil && cfg.AccountID != "" {
+		return a, nil
 	}
 
-	if !prompt {
-		// If we are not prompting, we can return early.
+	// Determine if we should prompt for a profile based on host type.
+	// The SDK no longer returns ErrNotAccountClient from NewAccountClient
+	// (as of v0.125.0, host-type validation was removed in favor of host
+	// metadata resolution). Use HostType() to detect the wrong host type.
+	var needsPrompt bool
+	switch cfg.HostType() {
+	case config.AccountHost, config.UnifiedHost:
+		// Valid host type for account client, but still need account ID.
+		needsPrompt = cfg.AccountID == ""
+	default:
+		// WorkspaceHost or unknown: wrong type for account client.
+		needsPrompt = true
+	}
+	if !needsPrompt && err != nil && errors.Is(err, config.ErrCannotConfigureDefault) {
+		needsPrompt = true
+	}
+
+	if !needsPrompt {
+		return a, err
+	}
+
+	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+		if err == nil {
+			err = databricks.ErrNotAccountClient
+		}
 		return a, err
 	}
 
@@ -91,9 +114,9 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 		return false, nil
 	}
 
-	// If the error is other than "not a workspace client error" or "no workspace profiles",
-	// return it because configuration is for workspace client
-	// and we don't want to try to create an account client.
+	// If the error indicates a wrong config type (workspace host used for account client,
+	// or config type mismatch detected by workspaceClientOrPrompt), fall through to try
+	// account client.
 	if !errors.Is(werr, databricks.ErrNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
 		return false, werr
 	}
@@ -158,16 +181,33 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
-	prompt := false
-	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
-		// Prompt to select a profile if the current configuration is not a workspace client.
-		prompt = prompt || errors.Is(err, databricks.ErrNotWorkspaceClient)
-		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
-		prompt = prompt || errors.Is(err, config.ErrCannotConfigureDefault)
+	// If auth succeeded, trust the SDK's resolution. The SDK resolves host
+	// metadata (including .well-known/databricks-config) during config
+	// initialization, so a successful auth means the config is valid
+	// regardless of what HostType() returns from URL pattern matching.
+	if err == nil {
+		return w, nil
 	}
 
-	if !prompt {
-		// If we are not prompting, we can return early.
+	// Determine if we should prompt for a profile. The SDK no longer returns
+	// ErrNotWorkspaceClient from NewWorkspaceClient (as of v0.125.0, host-type
+	// validation was removed in favor of host metadata resolution). Use
+	// HostType() to detect wrong host type, and check for ErrCannotConfigureDefault.
+	wrongHostType := cfg.HostType() == config.AccountHost
+	needsPrompt := wrongHostType || errors.Is(err, config.ErrCannotConfigureDefault)
+
+	if !needsPrompt {
+		return w, err
+	}
+
+	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+		// Only synthesize ErrNotWorkspaceClient for wrong host type so that
+		// callers like MustAnyClient can fall through to account client.
+		// For other errors (e.g. ErrCannotConfigureDefault), return the
+		// original error to preserve actionable error messages.
+		if wrongHostType {
+			return w, databricks.ErrNotWorkspaceClient
+		}
 		return w, err
 	}
 

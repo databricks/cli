@@ -1,5 +1,6 @@
 
 === Profiles with workspace_id (JSON output)
+Warn: Failed to resolve host metadata: fetching host metadata from "https://test.cloud.databricks.com/.well-known/databricks-config": Get "https://test.cloud.databricks.com/.well-known/databricks-config": dial tcp: lookup test.cloud.databricks.com: no such host. Falling back to user config.
 {
   "profiles": [
     {

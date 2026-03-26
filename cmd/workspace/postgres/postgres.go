@@ -68,6 +68,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newUpdateDatabase())
 	cmd.AddCommand(newUpdateEndpoint())
 	cmd.AddCommand(newUpdateProject())
+	cmd.AddCommand(newUpdateRole())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -606,8 +607,8 @@ func newCreateRole() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-role PARENT"
-	cmd.Short = `Create a postgres role for a branch.`
-	cmd.Long = `Create a postgres role for a branch.
+	cmd.Short = `Create a Postgres Role for a Branch.`
+	cmd.Long = `Create a Postgres Role for a Branch.
 
   Creates a new Postgres role in the branch.
 
@@ -619,9 +620,6 @@ func newCreateRole() *cobra.Command {
   Arguments:
     PARENT: The Branch where this Role is created. Format:
       projects/{project_id}/branches/{branch_id}`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1123,8 +1121,8 @@ func newDeleteRole() *cobra.Command {
 	cmd.Flags().StringVar(&deleteRoleReq.ReassignOwnedTo, "reassign-owned-to", deleteRoleReq.ReassignOwnedTo, `Reassign objects.`)
 
 	cmd.Use = "delete-role NAME"
-	cmd.Short = `Delete a postgres role in a branch.`
-	cmd.Long = `Delete a postgres role in a branch.
+	cmd.Short = `Delete a Postgres Role from a Branch.`
+	cmd.Long = `Delete a Postgres Role from a Branch.
 
   Deletes the specified Postgres role.
 
@@ -1136,9 +1134,6 @@ func newDeleteRole() *cobra.Command {
   Arguments:
     NAME: The full resource path of the role to delete. Format:
       projects/{project_id}/branches/{branch_id}/roles/{role_id}`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1588,8 +1583,8 @@ func newGetRole() *cobra.Command {
 	var getRoleReq postgres.GetRoleRequest
 
 	cmd.Use = "get-role NAME"
-	cmd.Short = `Get a postgres role in a branch.`
-	cmd.Long = `Get a postgres role in a branch.
+	cmd.Short = `Get a Postgres Role for a Branch.`
+	cmd.Long = `Get a Postgres Role for a Branch.
 
   Retrieves information about the specified Postgres role, including its
   authentication method and permissions.
@@ -1597,9 +1592,6 @@ func newGetRole() *cobra.Command {
   Arguments:
     NAME: The full resource path of the role to retrieve. Format:
       projects/{project_id}/branches/{branch_id}/roles/{role_id}`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1878,17 +1870,14 @@ func newListRoles() *cobra.Command {
 	cmd.Flags().StringVar(&listRolesReq.PageToken, "page-token", listRolesReq.PageToken, `Page token from a previous response.`)
 
 	cmd.Use = "list-roles PARENT"
-	cmd.Short = `List postgres roles in a branch.`
-	cmd.Long = `List postgres roles in a branch.
+	cmd.Short = `List Postgres Roles for a Branch.`
+	cmd.Long = `List Postgres Roles for a Branch.
 
   Returns a paginated list of Postgres roles in the branch.
 
   Arguments:
     PARENT: The Branch that owns this collection of roles. Format:
       projects/{project_id}/branches/{branch_id}`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2419,6 +2408,131 @@ func newUpdateProject() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateProjectOverrides {
 		fn(cmd, &updateProjectReq)
+	}
+
+	return cmd
+}
+
+// start update-role command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateRoleOverrides []func(
+	*cobra.Command,
+	*postgres.UpdateRoleRequest,
+)
+
+func newUpdateRole() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateRoleReq postgres.UpdateRoleRequest
+	updateRoleReq.Role = postgres.Role{}
+	var updateRoleJson flags.JsonFlag
+
+	var updateRoleSkipWait bool
+	var updateRoleTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateRoleSkipWait, "no-wait", updateRoleSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&updateRoleTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&updateRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateRoleReq.Role.Name, "name", updateRoleReq.Role.Name, `Output only.`)
+	// TODO: complex arg: spec
+	// TODO: complex arg: status
+
+	cmd.Use = "update-role NAME UPDATE_MASK"
+	cmd.Short = `Update a Postgres Role for a Branch.`
+	cmd.Long = `Update a Postgres Role for a Branch.
+
+  Update a role for a branch.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: Output only. The full resource path of the role. Format:
+      projects/{project_id}/branches/{branch_id}/roles/{role_id}
+    UPDATE_MASK: The list of fields to update in Postgres Role. If unspecified, all fields
+      will be updated when possible.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateRoleJson.Unmarshal(&updateRoleReq.Role)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateRoleReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateRoleReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case updateRoleSkipWait:
+			wait, err := w.Postgres.UpdateRole(ctx, updateRoleReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.UpdateRole(ctx, updateRoleReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for update-role to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(updateRoleTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateRoleOverrides {
+		fn(cmd, &updateRoleReq)
 	}
 
 	return cmd
