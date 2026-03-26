@@ -175,7 +175,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed): same paths — converts implicit schema/catalog references to explicit ${resources.schemas/catalogs.<key>.name} syntax
 		// Also updates: resources.schemas.*.catalog_name (catalog dependency for schemas)
 		// Translates implicit schema and catalog references across all UC resources to explicit syntax to capture dependencies
-		CaptureSchemaDependency(),
+		ResolveUCReferences(),
 
 		// Reads (dynamic): resources.dashboards.*.file_path
 		// Updates (dynamic): resources.dashboards.*.serialized_dashboard
