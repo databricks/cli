@@ -70,6 +70,10 @@ links:
 checks: tidy ws links
 
 
+.PHONY: install-pythons
+install-pythons:
+	uv python install 3.9 3.10 3.11 3.12 3.13
+
 # Run short unit and acceptance tests (testing.Short() is true).
 .PHONY: test
 test: test-unit test-acc
