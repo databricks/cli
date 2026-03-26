@@ -259,7 +259,6 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 	assert.Equal(t, "", authArguments.WorkspaceID) // Empty is valid for account-level access
 }
 
-
 func TestLoadProfileByNameAndClusterID(t *testing.T) {
 	testCases := []struct {
 		name              string

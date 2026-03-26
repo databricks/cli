@@ -59,5 +59,3 @@ func promptForAccountID(ctx context.Context) (string, error) {
 	prompt.AllowEdit = true
 	return prompt.Run()
 }
-
-
