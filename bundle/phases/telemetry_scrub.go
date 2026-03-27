@@ -47,7 +47,7 @@ var (
 )
 
 // Known file extensions that are safe to retain in redacted paths.
-// These help with debugging without leaking sensitive information.
+// These help understand usage patterns without capturing sensitive information.
 var knownExtensions = map[string]bool{
 	// Configuration and data formats
 	".yml":        true,
