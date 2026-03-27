@@ -98,6 +98,9 @@ jobs:
           echo "::add-mask::$accessToken"
           echo "AZURE_VAULT_TOKEN=$accessToken" >> $env:GITHUB_ENV
 
+      # AzureSignTool is installed from nuget.org (https://www.nuget.org/packages/AzureSignTool/7.0.1)
+      # Security: On Windows, NuGet verifies repository signatures by default. The package is
+      # version-pinned and pulled over HTTPS from nuget.org's CDN. Source: https://github.com/vcsjones/AzureSignTool
       - name: Install AzureSignTool
         shell: pwsh
         run: |
