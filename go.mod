@@ -14,6 +14,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/databricks/databricks-sdk-go v0.126.0 // Apache 2.0
 	github.com/fatih/color v1.19.0 // MIT
+	github.com/google/jsonschema-go v0.4.2 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD 2-Clause

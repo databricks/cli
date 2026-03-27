@@ -74,6 +74,10 @@ License - https://github.com/manifoldco/promptui/blob/master/LICENSE.md
 
 This Software contains code from the following open source projects, licensed under the MIT license:
 
+google/jsonschema-go - https://github.com/google/jsonschema-go
+Copyright 2025 Google LLC
+License - https://github.com/google/jsonschema-go/blob/main/LICENSE
+
 charmbracelet/bubbles - https://github.com/charmbracelet/bubbles
 Copyright (c) 2020-2025 Charmbracelet, Inc
 License - https://github.com/charmbracelet/bubbles/blob/master/LICENSE

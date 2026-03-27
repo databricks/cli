@@ -3,9 +3,11 @@ package installer
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
@@ -567,4 +569,158 @@ func TestInstallAllSkillsSignaturePreserved(t *testing.T) {
 	// Compile-time check that InstallAllSkills satisfies func(context.Context) error.
 	callback := func(fn func(context.Context) error) { _ = fn }
 	callback(InstallAllSkills)
+}
+
+// --- Project scope tests ---
+
+func testProjectAgent(tmpHome string) *agents.Agent {
+	return &agents.Agent{
+		Name:                 "test-project-agent",
+		DisplayName:          "Test Project Agent",
+		SupportsProjectScope: true,
+		ProjectConfigDir:     ".test-project-agent",
+		ConfigDir: func(_ context.Context) (string, error) {
+			return filepath.Join(tmpHome, ".test-project-agent"), nil
+		},
+	}
+}
+
+func TestInstallProjectScopeWritesState(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	setupFetchMock(t)
+
+	// Use project dir as cwd.
+	projectDir := filepath.Join(tmp, "myproject")
+	require.NoError(t, os.MkdirAll(projectDir, 0o755))
+	t.Chdir(projectDir)
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testProjectAgent(tmp)
+
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{Scope: ScopeProject})
+	require.NoError(t, err)
+
+	projectSkillsDir := filepath.Join(projectDir, ".databricks", "aitools", "skills")
+	state, err := LoadState(projectSkillsDir)
+	require.NoError(t, err)
+	require.NotNil(t, state)
+	assert.Equal(t, ScopeProject, state.Scope)
+	assert.Equal(t, defaultSkillsRepoRef, state.Release)
+	assert.Len(t, state.Skills, 2)
+
+	tag := strings.TrimPrefix(defaultSkillsRepoRef, "v")
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (v%s).", tag))
+}
+
+func TestInstallProjectScopeCreatesSymlinks(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+
+	projectDir := filepath.Join(tmp, "myproject")
+	require.NoError(t, os.MkdirAll(projectDir, 0o755))
+	t.Chdir(projectDir)
+
+	// Use os.Getwd() to match the path the installer sees (macOS may resolve symlinks).
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	src := &mockManifestSource{manifest: testManifest()}
+	agent := testProjectAgent(tmp)
+
+	err = InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{Scope: ScopeProject})
+	require.NoError(t, err)
+
+	// Check that agent's project skills dir has relative symlinks.
+	agentSkillDir := filepath.Join(projectDir, ".test-project-agent", "skills")
+	for _, skill := range []string{"databricks-sql", "databricks-jobs"} {
+		link := filepath.Join(agentSkillDir, skill)
+		fi, err := os.Lstat(link)
+		require.NoError(t, err, "symlink should exist for %s", skill)
+		assert.NotEqual(t, os.FileMode(0), fi.Mode()&os.ModeSymlink, "should be a symlink for %s", skill)
+
+		target, err := os.Readlink(link)
+		require.NoError(t, err)
+		// Project scope should use relative symlinks for portability.
+		expectedRel := filepath.Join("..", "..", ".databricks", "aitools", "skills", skill)
+		assert.Equal(t, expectedRel, target)
+
+		// Verify the symlink resolves to a valid directory with the expected content.
+		resolved, err := filepath.EvalSymlinks(link)
+		require.NoError(t, err)
+		expectedResolved, err := filepath.EvalSymlinks(filepath.Join(cwd, ".databricks", "aitools", "skills", skill))
+		require.NoError(t, err)
+		assert.Equal(t, expectedResolved, resolved)
+	}
+}
+
+func TestInstallProjectScopeFiltersIncompatibleAgents(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
+	setupFetchMock(t)
+
+	projectDir := filepath.Join(tmp, "myproject")
+	require.NoError(t, os.MkdirAll(projectDir, 0o755))
+	t.Chdir(projectDir)
+
+	src := &mockManifestSource{manifest: testManifest()}
+
+	compatibleAgent := testProjectAgent(tmp)
+	incompatibleAgent := &agents.Agent{
+		Name:        "no-project-agent",
+		DisplayName: "No Project Agent",
+		ConfigDir: func(_ context.Context) (string, error) {
+			return filepath.Join(tmp, ".no-project-agent"), nil
+		},
+	}
+
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{compatibleAgent, incompatibleAgent}, InstallOptions{Scope: ScopeProject})
+	require.NoError(t, err)
+
+	assert.Contains(t, stderr.String(), "Skipped No Project Agent: does not support project-scoped skills.")
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (v%s).", strings.TrimPrefix(defaultSkillsRepoRef, "v")))
+}
+
+func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+	setupFetchMock(t)
+
+	projectDir := filepath.Join(tmp, "myproject")
+	require.NoError(t, os.MkdirAll(projectDir, 0o755))
+	t.Chdir(projectDir)
+
+	src := &mockManifestSource{manifest: testManifest()}
+
+	// Only provide agents that don't support project scope.
+	globalOnlyAgent := &agents.Agent{
+		Name:        "no-project-agent",
+		DisplayName: "No Project Agent",
+		ConfigDir: func(_ context.Context) (string, error) {
+			return filepath.Join(tmp, ".no-project-agent"), nil
+		},
+	}
+
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{globalOnlyAgent}, InstallOptions{Scope: ScopeProject})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no agents support project-scoped skills")
+	assert.Contains(t, err.Error(), "No Project Agent")
+}
+
+func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
+	expected := map[string]bool{
+		"claude-code": true,
+		"cursor":      true,
+		"codex":       false,
+		"opencode":    false,
+		"copilot":     false,
+		"antigravity": false,
+	}
+
+	for _, agent := range agents.Registry {
+		want, ok := expected[agent.Name]
+		require.True(t, ok, "missing expected entry for %s", agent.Name)
+		assert.Equal(t, want, agent.SupportsProjectScope, "SupportsProjectScope for %s", agent.Name)
+	}
 }

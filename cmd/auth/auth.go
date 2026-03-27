@@ -59,16 +59,3 @@ func promptForAccountID(ctx context.Context) (string, error) {
 	prompt.AllowEdit = true
 	return prompt.Run()
 }
-
-func promptForWorkspaceID(ctx context.Context) (string, error) {
-	if !cmdio.IsPromptSupported(ctx) {
-		// Workspace ID is optional for unified hosts, so return empty string in non-interactive mode
-		return "", nil
-	}
-
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks workspace ID (optional - provide only if using this profile for workspace operations, leave empty for account operations)"
-	prompt.Default = ""
-	prompt.AllowEdit = true
-	return prompt.Run()
-}

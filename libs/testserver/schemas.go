@@ -9,6 +9,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
+const testMetastoreName = "deco-uc-prod-isolated-aws-us-east-1"
+
 func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -28,7 +30,15 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	schema.UpdatedAt = schema.CreatedAt
 	schema.CreatedBy = s.CurrentUser().UserName
 	schema.UpdatedBy = s.CurrentUser().UserName
+	schema.EffectivePredictiveOptimizationFlag = &catalog.EffectivePredictiveOptimizationFlag{
+		InheritedFromName: testMetastoreName,
+		InheritedFromType: catalog.EffectivePredictiveOptimizationFlagInheritedFromType("METASTORE"),
+		Value:             catalog.EnablePredictiveOptimizationEnable,
+	}
+	schema.EnablePredictiveOptimization = catalog.EnablePredictiveOptimizationInherit
+	schema.MetastoreId = TestMetastore.MetastoreId
 	schema.Owner = s.CurrentUser().UserName
+	schema.SchemaId = nextUUID()
 	s.Schemas[schema.FullName] = schema
 
 	return Response{

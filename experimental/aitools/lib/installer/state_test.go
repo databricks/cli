@@ -87,10 +87,11 @@ func TestGlobalSkillsDir(t *testing.T) {
 	assert.Equal(t, filepath.Join("/fake/home", ".databricks", "aitools", "skills"), dir)
 }
 
-func TestProjectSkillsDirNotImplemented(t *testing.T) {
+func TestProjectSkillsDirReturnsCwdBased(t *testing.T) {
 	dir, err := ProjectSkillsDir(t.Context())
-	assert.ErrorIs(t, err, ErrNotImplemented)
-	assert.Empty(t, dir)
+	require.NoError(t, err)
+	cwd, _ := os.Getwd()
+	assert.Equal(t, filepath.Join(cwd, ".databricks", "aitools", "skills"), dir)
 }
 
 func TestSaveAndLoadStateWithOptionalFields(t *testing.T) {

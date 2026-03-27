@@ -109,7 +109,7 @@ func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, id string,
 	return state.ScopeName, nil, nil
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, changes Changes) (*SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, _ *PlanEntry) (*SecretScopeAclsState, error) {
 	_, _, err := r.DoUpdateWithID(ctx, id, state)
 	return nil, err
 }

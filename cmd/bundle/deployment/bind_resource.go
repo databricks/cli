@@ -43,7 +43,10 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 		return fmt.Errorf("%s with an id '%s' is not found", resource.ResourceDescription().SingularName, resourceId)
 	}
 
-	tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+	tfName, ok := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+	if !ok {
+		tfName = resource.ResourceDescription().PluralName
+	}
 	phases.Bind(ctx, b, &terraform.BindOptions{
 		AutoApprove:  autoApprove,
 		ResourceType: tfName,
