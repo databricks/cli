@@ -23,31 +23,61 @@ func TestCollectEscapeTelemetry(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name:  "double dollar",
-			value: "prefix-$${foo}",
-			expected: []protos.BoolMapEntry{
-				{Key: "config_has_double_dollar", Value: true},
-			},
-		},
-		{
-			name:  "backslash dollar",
-			value: "prefix-\\${foo}",
-			expected: []protos.BoolMapEntry{
-				{Key: "config_has_backslash_dollar", Value: true},
-			},
-		},
-		{
-			name:  "both patterns",
-			value: "$${a}-\\${b}",
-			expected: []protos.BoolMapEntry{
-				{Key: "config_has_double_dollar", Value: true},
-				{Key: "config_has_backslash_dollar", Value: true},
-			},
-		},
-		{
 			name:     "single dollar is not matched",
 			value:    "cost is $100",
 			expected: nil,
+		},
+		{
+			name:  "double dollar with brace",
+			value: "prefix-$${foo}",
+			expected: []protos.BoolMapEntry{
+				{Key: "config_has_double_dollar_brace", Value: true},
+			},
+		},
+		{
+			name:  "double dollar without brace",
+			value: "price is $$5",
+			expected: []protos.BoolMapEntry{
+				{Key: "config_has_double_dollar", Value: true},
+			},
+		},
+		{
+			name:  "double dollar at end of string",
+			value: "ends with $$",
+			expected: []protos.BoolMapEntry{
+				{Key: "config_has_double_dollar", Value: true},
+			},
+		},
+		{
+			name:  "backslash dollar with brace",
+			value: "prefix-\\${foo}",
+			expected: []protos.BoolMapEntry{
+				{Key: "config_has_backslash_dollar_brace", Value: true},
+			},
+		},
+		{
+			name:  "backslash dollar without brace",
+			value: "price is \\$5",
+			expected: []protos.BoolMapEntry{
+				{Key: "config_has_backslash_dollar", Value: true},
+			},
+		},
+		{
+			name:  "backslash dollar at end of string",
+			value: "ends with \\$",
+			expected: []protos.BoolMapEntry{
+				{Key: "config_has_backslash_dollar", Value: true},
+			},
+		},
+		{
+			name:  "all four patterns",
+			value: "$${a}-$$b-\\${c}-\\$d",
+			expected: []protos.BoolMapEntry{
+				{Key: "config_has_double_dollar_brace", Value: true},
+				{Key: "config_has_double_dollar", Value: true},
+				{Key: "config_has_backslash_dollar_brace", Value: true},
+				{Key: "config_has_backslash_dollar", Value: true},
+			},
 		},
 	}
 
