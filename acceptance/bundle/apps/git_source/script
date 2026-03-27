@@ -17,6 +17,7 @@ trace $CLI bundle plan
 
 title "Deploy bundle"
 trace $CLI bundle deploy
+trace $CLI bundle run my_app > /dev/null || true
 
 title "Get app details and verify git_source configuration"
 app_name=$(trace $CLI bundle summary --output json | jq -r '.resources.apps.my_app.name')
