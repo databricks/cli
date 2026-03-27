@@ -321,6 +321,9 @@ func classifyValue(v dyn.Value) (int, string) {
 		}
 	case dyn.KindInt, dyn.KindFloat:
 		return completionKindValue, "number"
+	case dyn.KindInvalid, dyn.KindNil, dyn.KindTime:
+		// These kinds are not expected in bundle YAML but are handled
+		// for exhaustiveness.
 	}
 	return completionKindField, ""
 }
@@ -330,11 +333,18 @@ func classifyValue(v dyn.Value) (int, string) {
 var computedKeys = []string{
 	"bundle.target",
 	"bundle.environment",
+	"bundle.git.branch",
+	"bundle.git.origin_url",
 	"bundle.git.commit",
 	"bundle.git.actual_branch",
 	"bundle.git.bundle_root_path",
 	"workspace.current_user.short_name",
 	"workspace.current_user.user_name",
+	"workspace.root_path",
+	"workspace.file_path",
+	"workspace.resource_path",
+	"workspace.artifact_path",
+	"workspace.state_path",
 }
 
 // computedCompletions returns completion items for computed keys matching the partial path prefix.

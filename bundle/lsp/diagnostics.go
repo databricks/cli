@@ -10,12 +10,18 @@ import (
 const diagnosticSource = "databricks-bundle-lsp"
 
 // computedPrefixes are path prefixes that are populated at deploy time and
-// should not be flagged as unresolved references.
+// should not be flagged as unresolved references. Prefixes ending in "."
+// match any sub-path; others require an exact match.
 var computedPrefixes = []string{
 	"bundle.target",
 	"bundle.environment",
 	"bundle.git.",
 	"workspace.current_user.",
+	"workspace.root_path",
+	"workspace.file_path",
+	"workspace.resource_path",
+	"workspace.artifact_path",
+	"workspace.state_path",
 }
 
 // DiagnoseInterpolations checks all ${...} interpolation references in the document
@@ -58,8 +64,16 @@ func isComputedPath(path string) bool {
 	// var.* references are rewritten to variables.* by ResolveDefinition,
 	// so we only need to handle the other computed prefixes here.
 	for _, prefix := range computedPrefixes {
-		if path == prefix || strings.HasPrefix(path, prefix) {
-			return true
+		if strings.HasSuffix(prefix, ".") {
+			// Dot-terminated: match any sub-path.
+			if strings.HasPrefix(path, prefix) {
+				return true
+			}
+		} else {
+			// Exact match only.
+			if path == prefix {
+				return true
+			}
 		}
 	}
 	return false

@@ -62,7 +62,7 @@ resources:
 	loc, ok := lsp.ResolveDefinition(tree, "resources.jobs.my_job")
 	require.True(t, ok)
 	assert.Equal(t, "test.yml", loc.File)
-	assert.Greater(t, loc.Line, 0)
+	assert.Positive(t, loc.Line)
 }
 
 func TestResolveDefinitionVarShorthand(t *testing.T) {

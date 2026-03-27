@@ -54,15 +54,17 @@ func newTestClientServer(t *testing.T, srv *Server) *jrpc2.Client {
 	t.Helper()
 
 	mux := handler.Map{
-		"initialize":                handler.New(srv.handleInitialize),
-		"initialized":               handler.New(srv.handleInitialized),
-		"shutdown":                  handler.New(srv.handleShutdown),
-		"textDocument/didOpen":      handler.New(srv.handleTextDocumentDidOpen),
-		"textDocument/didChange":    handler.New(srv.handleTextDocumentDidChange),
-		"textDocument/didClose":     handler.New(srv.handleTextDocumentDidClose),
-		"textDocument/documentLink": handler.New(srv.handleDocumentLink),
-		"textDocument/hover":        handler.New(srv.handleHover),
-		"textDocument/definition":   handler.New(srv.handleDefinition),
+		"initialize":                      handler.New(srv.handleInitialize),
+		"initialized":                     handler.New(srv.handleInitialized),
+		"shutdown":                        handler.New(srv.handleShutdown),
+		"textDocument/didOpen":            handler.New(srv.handleTextDocumentDidOpen),
+		"textDocument/didChange":          handler.New(srv.handleTextDocumentDidChange),
+		"textDocument/didClose":           handler.New(srv.handleTextDocumentDidClose),
+		"textDocument/documentLink":       handler.New(srv.handleDocumentLink),
+		"textDocument/hover":              handler.New(srv.handleHover),
+		"textDocument/definition":         handler.New(srv.handleDefinition),
+		"textDocument/completion":         handler.New(srv.handleCompletion),
+		"workspace/didChangeWatchedFiles": handler.New(srv.handleDidChangeWatchedFiles),
 	}
 
 	clientCh, serverCh := channel.Direct()

@@ -48,17 +48,18 @@ func NewServer() *Server {
 // Run starts the LSP server on stdin/stdout.
 func (s *Server) Run(ctx context.Context) error {
 	mux := handler.Map{
-		"initialize":                           handler.New(s.handleInitialize),
-		"initialized":                          handler.New(s.handleInitialized),
-		"shutdown":                             handler.New(s.handleShutdown),
-		"textDocument/didOpen":                 handler.New(s.handleTextDocumentDidOpen),
-		"textDocument/didChange":               handler.New(s.handleTextDocumentDidChange),
-		"textDocument/didClose":                handler.New(s.handleTextDocumentDidClose),
-		"textDocument/documentLink":            handler.New(s.handleDocumentLink),
-		"textDocument/hover":                   handler.New(s.handleHover),
-		"textDocument/definition":              handler.New(s.handleDefinition),
-		"textDocument/completion":              handler.New(s.handleCompletion),
-		"workspace/didChangeWatchedFiles":      handler.New(s.handleDidChangeWatchedFiles),
+		"initialize":                      handler.New(s.handleInitialize),
+		"initialized":                     handler.New(s.handleInitialized),
+		"shutdown":                        handler.New(s.handleShutdown),
+		"exit":                            handler.New(s.handleExit),
+		"textDocument/didOpen":            handler.New(s.handleTextDocumentDidOpen),
+		"textDocument/didChange":          handler.New(s.handleTextDocumentDidChange),
+		"textDocument/didClose":           handler.New(s.handleTextDocumentDidClose),
+		"textDocument/documentLink":       handler.New(s.handleDocumentLink),
+		"textDocument/hover":              handler.New(s.handleHover),
+		"textDocument/definition":         handler.New(s.handleDefinition),
+		"textDocument/completion":         handler.New(s.handleCompletion),
+		"workspace/didChangeWatchedFiles": handler.New(s.handleDidChangeWatchedFiles),
 	}
 
 	srv := jrpc2.NewServer(mux, &jrpc2.ServerOptions{
@@ -105,6 +106,11 @@ func (s *Server) handleInitialized(ctx context.Context) error {
 }
 
 func (s *Server) handleShutdown(_ context.Context) error {
+	return nil
+}
+
+func (s *Server) handleExit(_ context.Context) error {
+	os.Exit(0)
 	return nil
 }
 
@@ -515,7 +521,7 @@ func (s *Server) buildHoverContent(entry ResourceEntry) string {
 	}
 	if hasState && info.URL != "" {
 		fmt.Fprintf(&b, "[Open in Databricks](%s)", info.URL)
-	} else {
+	} else if !hasState || info.ID == "" {
 		b.WriteString("_Not yet deployed. Run `databricks bundle deploy` to create this resource._")
 	}
 

@@ -167,9 +167,9 @@ type RegistrationParams struct {
 
 // Registration describes a capability registration.
 type Registration struct {
-	ID              string      `json:"id"`
-	Method          string      `json:"method"`
-	RegisterOptions any `json:"registerOptions,omitempty"`
+	ID              string `json:"id"`
+	Method          string `json:"method"`
+	RegisterOptions any    `json:"registerOptions,omitempty"`
 }
 
 // DidChangeWatchedFilesRegistrationOptions describes options for file watchers.
@@ -196,10 +196,7 @@ type FileEvent struct {
 
 // Diagnostic severity constants.
 const (
-	DiagnosticSeverityError       = 1
-	DiagnosticSeverityWarning     = 2
-	DiagnosticSeverityInformation = 3
-	DiagnosticSeverityHint        = 4
+	DiagnosticSeverityWarning = 2
 )
 
 // Diagnostic represents a diagnostic (error, warning, etc.) in a document.
