@@ -97,7 +97,7 @@ func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
 	return result, ok
 }
 
-func (db *DeploymentState) Open(path string) error {
+func (db *DeploymentState) Open(_ context.Context, path string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -132,7 +132,7 @@ func (db *DeploymentState) Open(path string) error {
 	return nil
 }
 
-func (db *DeploymentState) Finalize() error {
+func (db *DeploymentState) Finalize(_ context.Context) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 

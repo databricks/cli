@@ -153,7 +153,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	})
 
 	// This must run even if deploy failed:
-	err = b.StateDB.Finalize()
+	err = b.StateDB.Finalize(ctx)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
