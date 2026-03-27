@@ -174,6 +174,9 @@ func TestSchemaValidateFailCases(t *testing.T) {
 	sch := compileSchema(t)
 
 	// Each entry maps a test file to the expected schema path in the error.
+	// The bundle schema wraps every type in oneOf for interpolation patterns,
+	// and the Google library discards per-branch errors on oneOf failure, so
+	// we can only assert on the schema path, not the specific failure reason.
 	tests := map[string]string{
 		"basic.yml":                           "config.Bundle",
 		"deprecated_job_field_format.yml":     "config.Resources",

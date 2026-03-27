@@ -14,6 +14,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/databricks/databricks-sdk-go v0.126.0 // Apache 2.0
 	github.com/fatih/color v1.19.0 // MIT
+	github.com/google/jsonschema-go v0.4.2 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD 2-Clause
@@ -47,8 +48,6 @@ require gopkg.in/yaml.v3 v3.0.1 // indirect
 
 // Dependencies for experimental SSH commands
 require github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
-
-require github.com/google/jsonschema-go v0.4.2 // MIT
 
 require (
 	cloud.google.com/go/auth v0.18.1 // indirect
