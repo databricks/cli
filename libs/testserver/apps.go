@@ -92,7 +92,7 @@ func (s *FakeWorkspace) AppsGetUpdate(_ Request, name string) Response {
 func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response {
 	defer s.LockUnlock()()
 
-	_, ok := s.Apps[name]
+	app, ok := s.Apps[name]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
@@ -107,6 +107,9 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 		State:   apps.AppDeploymentStateSucceeded,
 		Message: "Deployment succeeded.",
 	}
+
+	app.ActiveDeployment = &deployment
+	s.Apps[name] = app
 
 	return Response{Body: deployment}
 }

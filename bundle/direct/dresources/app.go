@@ -266,9 +266,9 @@ func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
 	if len(d.Command) == 0 && len(d.EnvVars) == 0 {
 		return nil
 	}
-	config := &resources.AppConfig{}
-	if len(d.Command) > 0 {
-		config.Command = d.Command
+	config := &resources.AppConfig{
+		Command: d.Command,
+		Env:     nil,
 	}
 	if len(d.EnvVars) > 0 {
 		config.Env = make([]resources.AppEnvVar, len(d.EnvVars))
@@ -321,7 +321,12 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 		return nil, err
 	}
 	started := !isComputeStopped(app)
-	remote := &AppRemote{App: *app, Lifecycle: &AppStateLifecycle{Started: &started}}
+	remote := &AppRemote{
+		App:       *app,
+		Config:    nil,
+		GitSource: nil,
+		Lifecycle: &AppStateLifecycle{Started: &started},
+	}
 	if app.ActiveDeployment != nil {
 		remote.GitSource = app.ActiveDeployment.GitSource
 		remote.Config = deploymentToAppConfig(app.ActiveDeployment)

@@ -1,0 +1,118 @@
+{
+  "active_deployment": {
+    "action": "skip",
+    "reason": "spec:output_only",
+    "remote": {
+      "command": [
+        "streamlit",
+        "run",
+        "dashboard.py"
+      ],
+      "deployment_id": "deploy-[NUMID]",
+      "env_vars": [
+        {
+          "name": "MY_VAR",
+          "value": "changed_value"
+        },
+        {
+          "name": "NEW_VAR",
+          "value": "new_value"
+        }
+      ],
+      "mode": "SNAPSHOT",
+      "source_code_path": "./app",
+      "status": {
+        "message": "Deployment succeeded.",
+        "state": "SUCCEEDED"
+      }
+    }
+  },
+  "app_status": {
+    "action": "skip",
+    "reason": "spec:output_only",
+    "remote": {
+      "message": "Application is running.",
+      "state": "RUNNING"
+    }
+  },
+  "compute_status": {
+    "action": "skip",
+    "reason": "spec:output_only",
+    "remote": {
+      "message": "App compute is active.",
+      "state": "ACTIVE"
+    }
+  },
+  "config.command": {
+    "action": "update",
+    "old": [
+      "python",
+      "app.py"
+    ],
+    "new": [
+      "python",
+      "app.py"
+    ],
+    "remote": [
+      "streamlit",
+      "run",
+      "dashboard.py"
+    ]
+  },
+  "config.env": {
+    "action": "update",
+    "old": [
+      {
+        "name": "MY_VAR",
+        "value": "original_value"
+      }
+    ],
+    "new": [
+      {
+        "name": "MY_VAR",
+        "value": "original_value"
+      }
+    ],
+    "remote": [
+      {
+        "name": "MY_VAR",
+        "value": "changed_value"
+      },
+      {
+        "name": "NEW_VAR",
+        "value": "new_value"
+      }
+    ]
+  },
+  "id": {
+    "action": "skip",
+    "reason": "spec:output_only",
+    "remote": "1000"
+  },
+  "service_principal_client_id": {
+    "action": "skip",
+    "reason": "spec:output_only",
+    "remote": "[UUID]"
+  },
+  "service_principal_id": {
+    "action": "skip",
+    "reason": "spec:output_only",
+    "remote": [NUMID]
+  },
+  "service_principal_name": {
+    "action": "skip",
+    "reason": "spec:output_only",
+    "remote": "app-[UNIQUE_NAME]"
+  },
+  "source_code_path": {
+    "action": "skip",
+    "reason": "local_only",
+    "old": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files/app",
+    "new": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files/app"
+  },
+  "url": {
+    "action": "skip",
+    "reason": "spec:output_only",
+    "remote": "[UNIQUE_NAME]-123.cloud.databricksapps.com"
+  }
+}
