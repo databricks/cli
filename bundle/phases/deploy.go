@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -221,6 +222,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	_, localPath := b.StateFilenameDirect(ctx)
+
 	if plan != nil {
 		// Initialize DeploymentBundle for applying the loaded plan
 		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
@@ -230,6 +233,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	} else {
 		plan = RunPlan(ctx, b, engine)
+		err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(true))
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+
 	}
 
 	if logdiag.HasError(ctx) {
