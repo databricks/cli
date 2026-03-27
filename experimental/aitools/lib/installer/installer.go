@@ -25,7 +25,7 @@ const (
 	skillsRepoOwner      = "databricks"
 	skillsRepoName       = "databricks-agent-skills"
 	skillsRepoPath       = "skills"
-	defaultSkillsRepoRef = "v0.1.3"
+	defaultSkillsRepoRef = "v0.1.4"
 )
 
 // fetchFileFn is the function used to download individual skill files.
@@ -73,9 +73,20 @@ func FetchManifest(ctx context.Context) (*Manifest, error) {
 	return src.FetchManifest(ctx, ref)
 }
 
+// sharedFilePrefix marks files in the manifest that live at the repo root
+// rather than under skills/<name>/. The CLI strips this prefix when writing
+// to disk and adjusts the download URL accordingly.
+const sharedFilePrefix = "@root:"
+
 func fetchSkillFile(ctx context.Context, ref, skillName, filePath string) ([]byte, error) {
-	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s/%s/%s",
-		skillsRepoOwner, skillsRepoName, ref, skillsRepoPath, skillName, filePath)
+	var url string
+	if rootPath, ok := strings.CutPrefix(filePath, sharedFilePrefix); ok {
+		url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s",
+			skillsRepoOwner, skillsRepoName, ref, rootPath)
+	} else {
+		url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s/%s/%s",
+			skillsRepoOwner, skillsRepoName, ref, skillsRepoPath, skillName, filePath)
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -506,6 +517,11 @@ func installSkillToDir(ctx context.Context, ref, skillName, destDir string, file
 			return err
 		}
 
+		// Strip the @root: prefix so shared assets land at a local path
+		// (e.g. "@root:assets/databricks.svg" → "assets/databricks.svg").
+		if rootPath, ok := strings.CutPrefix(file, sharedFilePrefix); ok {
+			file = rootPath
+		}
 		destPath := filepath.Join(destDir, file)
 
 		if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {

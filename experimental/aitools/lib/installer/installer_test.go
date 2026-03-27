@@ -208,7 +208,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 	assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.4).")
 }
 
 func TestInstallSkillForSingleWritesState(t *testing.T) {
@@ -231,7 +231,7 @@ func TestInstallSkillForSingleWritesState(t *testing.T) {
 	assert.Len(t, state.Skills, 1)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 
-	assert.Contains(t, stderr.String(), "Installed 1 skill (v0.1.3).")
+	assert.Contains(t, stderr.String(), "Installed 1 skill (v0.1.4).")
 }
 
 func TestInstallSkillsSpecificNotFound(t *testing.T) {
@@ -274,7 +274,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-experimental")
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.4).")
 }
 
 func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
@@ -304,7 +304,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 	assert.Contains(t, state.Skills, "databricks-experimental")
 	assert.True(t, state.IncludeExperimental)
 
-	assert.Contains(t, stderr.String(), "Installed 3 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), "Installed 3 skills (v0.1.4).")
 }
 
 func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
@@ -338,7 +338,7 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-future")
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.4).")
 	assert.Contains(t, logBuf.String(), "requires CLI version 0.300.0")
 }
 
@@ -723,4 +723,82 @@ func TestSupportsProjectScopeSetCorrectly(t *testing.T) {
 		require.True(t, ok, "missing expected entry for %s", agent.Name)
 		assert.Equal(t, want, agent.SupportsProjectScope, "SupportsProjectScope for %s", agent.Name)
 	}
+}
+
+// --- @root: prefix tests ---
+
+func TestFetchSharedFilePrefix(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+
+	var capturedURLs []string
+	orig := fetchFileFn
+	t.Cleanup(func() { fetchFileFn = orig })
+	fetchFileFn = func(_ context.Context, _, skillName, filePath string) ([]byte, error) {
+		capturedURLs = append(capturedURLs, skillName+":"+filePath)
+		return []byte("content-" + filePath), nil
+	}
+
+	src := &mockManifestSource{manifest: &Manifest{
+		Version:   "1",
+		UpdatedAt: "2024-01-01",
+		Skills: map[string]SkillMeta{
+			"databricks": {
+				Version: "0.1.0",
+				Files: []string{
+					"SKILL.md",
+					"agents/openai.yaml",
+					"@root:assets/databricks.svg",
+				},
+			},
+		},
+	}}
+
+	agent := testAgent(tmp)
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
+	require.NoError(t, err)
+
+	// Verify files were fetched with the correct paths (including @root: prefix).
+	assert.Contains(t, capturedURLs, "databricks:SKILL.md")
+	assert.Contains(t, capturedURLs, "databricks:agents/openai.yaml")
+	assert.Contains(t, capturedURLs, "databricks:@root:assets/databricks.svg")
+}
+
+func TestSharedFilePrefixStrippedOnDisk(t *testing.T) {
+	tmp := setupTestHome(t)
+	ctx := cmdio.MockDiscard(t.Context())
+
+	orig := fetchFileFn
+	t.Cleanup(func() { fetchFileFn = orig })
+	fetchFileFn = func(_ context.Context, _, _, filePath string) ([]byte, error) {
+		return []byte("content-" + filePath), nil
+	}
+
+	src := &mockManifestSource{manifest: &Manifest{
+		Version:   "1",
+		UpdatedAt: "2024-01-01",
+		Skills: map[string]SkillMeta{
+			"databricks": {
+				Version: "0.1.0",
+				Files: []string{
+					"SKILL.md",
+					"@root:assets/databricks.svg",
+					"@root:assets/databricks.png",
+				},
+			},
+		},
+	}}
+
+	agent := testAgent(tmp)
+	err := InstallSkillsForAgents(ctx, src, []*agents.Agent{agent}, InstallOptions{})
+	require.NoError(t, err)
+
+	// Canonical dir should have stripped prefix paths.
+	globalDir := filepath.Join(tmp, ".databricks", "aitools", "skills", "databricks")
+	_, err = os.Stat(filepath.Join(globalDir, "SKILL.md"))
+	assert.NoError(t, err)
+	_, err = os.Stat(filepath.Join(globalDir, "assets", "databricks.svg"))
+	assert.NoError(t, err, "shared asset should be written under assets/ with @root: stripped")
+	_, err = os.Stat(filepath.Join(globalDir, "assets", "databricks.png"))
+	assert.NoError(t, err)
 }
