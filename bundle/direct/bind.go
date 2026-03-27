@@ -62,7 +62,7 @@ type BindResult struct {
 func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
 	// Check if the resource is already managed (bound to a different ID)
 	var checkStateDB dstate.DeploymentState
-	if err := checkStateDB.Open(ctx, statePath); err == nil {
+	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(true)); err == nil {
 		if existingID := checkStateDB.GetResourceID(resourceKey); existingID != "" {
 			return nil, ErrResourceAlreadyBound{
 				ResourceKey: resourceKey,
@@ -82,7 +82,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Open temp state
-	err := b.StateDB.Open(ctx, tmpStatePath)
+	err := b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(true))
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -96,7 +96,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Finalize to persist temp state to disk
-	err = b.StateDB.Finalize(ctx)
+	err = b.StateDB.Close(ctx)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -138,7 +138,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			return nil, err
 		}
 
-		err = b.StateDB.Finalize(ctx)
+		err = b.StateDB.Close(ctx)
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
@@ -188,7 +188,7 @@ func (result *BindResult) Cancel() {
 // Unbind removes a resource from direct engine state without deleting
 // the workspace resource. Also removes associated permissions/grants entries.
 func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey string) error {
-	err := b.StateDB.Open(ctx, statePath)
+	err := b.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(true))
 	if err != nil {
 		return err
 	}
@@ -216,5 +216,5 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 		}
 	}
 
-	return b.StateDB.Finalize(ctx)
+	return b.StateDB.Close(ctx)
 }
