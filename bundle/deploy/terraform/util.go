@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
@@ -75,32 +76,37 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 			continue
 		}
 		for _, instance := range resource.Instances {
-			groupName, ok := TerraformToGroupName[resource.Type]
-
-			if !ok {
-				// secret_acls
-				continue
-			}
-
 			var resourceKey string
 			var resourceState ResourceState
 
-			switch groupName {
-			case "apps", "secret_scopes", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_endpoints":
-				resourceKey = "resources." + groupName + "." + resource.Name
-				resourceState = ResourceState{ID: instance.Attributes.Name}
-			case "dashboards":
-				resourceKey = "resources." + groupName + "." + resource.Name
-				resourceState = ResourceState{ID: instance.Attributes.ID, ETag: instance.Attributes.ETag}
-			case "permissions":
-				resourceKey = convertPermissionsResourceNameToKey(resource.Name)
+			if resource.Type == "databricks_secret_acl" {
+				// Multiple databricks_secret_acl resources map to a single .permissions entry.
+				// The ID is resolved to the scope name in the post-processing step below.
+				resourceKey = convertSecretAclResourceNameToKey(resource.Name)
 				resourceState = ResourceState{ID: instance.Attributes.ID}
-			case "grants":
-				resourceKey = convertGrantsResourceNameToKey(resource.Name)
-				resourceState = ResourceState{ID: instance.Attributes.ID}
-			default:
-				resourceKey = "resources." + groupName + "." + resource.Name
-				resourceState = ResourceState{ID: instance.Attributes.ID}
+			} else {
+				groupName, ok := TerraformToGroupName[resource.Type]
+				if !ok {
+					continue
+				}
+
+				switch groupName {
+				case "apps", "secret_scopes", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_endpoints":
+					resourceKey = "resources." + groupName + "." + resource.Name
+					resourceState = ResourceState{ID: instance.Attributes.Name}
+				case "dashboards":
+					resourceKey = "resources." + groupName + "." + resource.Name
+					resourceState = ResourceState{ID: instance.Attributes.ID, ETag: instance.Attributes.ETag}
+				case "permissions":
+					resourceKey = convertPermissionsResourceNameToKey(resource.Name)
+					resourceState = ResourceState{ID: instance.Attributes.ID}
+				case "grants":
+					resourceKey = convertGrantsResourceNameToKey(resource.Name)
+					resourceState = ResourceState{ID: instance.Attributes.ID}
+				default:
+					resourceKey = "resources." + groupName + "." + resource.Name
+					resourceState = ResourceState{ID: instance.Attributes.ID}
+				}
 			}
 
 			if resourceKey == "" {
@@ -108,6 +114,18 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 			}
 
 			result[resourceKey] = resourceState
+		}
+	}
+
+	// Resolve secret scope permission IDs: use the scope name (which is the scope's ID)
+	// instead of the Terraform ACL ID. The direct engine expects the scope name.
+	for key := range result {
+		if !strings.HasPrefix(key, "resources.secret_scopes.") || !strings.HasSuffix(key, ".permissions") {
+			continue
+		}
+		scopeKey := strings.TrimSuffix(key, ".permissions")
+		if scopeEntry, ok := result[scopeKey]; ok {
+			result[key] = ResourceState{ID: scopeEntry.ID}
 		}
 	}
 

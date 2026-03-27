@@ -76,3 +76,24 @@ func TestPopulatePlan(t *testing.T) {
 	// Unknown resource type should not be in the plan
 	assert.NotContains(t, plan.Plan, "resources.recreate whatever")
 }
+
+func TestConvertSecretAclResourceNameToKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		expected string
+	}{
+		{"secret_acl_my_scope_0", "resources.secret_scopes.my_scope.permissions"},
+		{"secret_acl_my_scope_1", "resources.secret_scopes.my_scope.permissions"},
+		{"secret_acl_scope_with_underscores_42", "resources.secret_scopes.scope_with_underscores.permissions"},
+		{"secret_acl__0", ""},      // empty scope key
+		{"not_a_secret_acl", ""},   // wrong prefix
+		{"secret_acl_", ""},        // no key or index
+		{"secret_acl_foo", ""},     // no index suffix
+		{"secret_acl_foo_abc", ""}, // non-numeric index
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, convertSecretAclResourceNameToKey(tt.name))
+		})
+	}
+}
