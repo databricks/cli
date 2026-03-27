@@ -381,7 +381,6 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 }
 
 func (db *DeploymentState) unlockedSave() error {
-	db.AssertOpenedForWrite()
 	data, err := json.MarshalIndent(db.Data, "", " ")
 	if err != nil {
 		return err
