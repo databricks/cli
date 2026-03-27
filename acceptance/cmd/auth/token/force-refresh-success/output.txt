@@ -1,0 +1,3 @@
+
+>>> [CLI] auth token --profile test-profile --force-refresh
+"oauth-token"
