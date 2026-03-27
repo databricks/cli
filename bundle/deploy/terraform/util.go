@@ -117,15 +117,20 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 		}
 	}
 
-	// Resolve secret scope permission IDs: use the scope name (which is the scope's ID)
-	// instead of the Terraform ACL ID. The direct engine expects the scope name.
-	for key := range result {
-		if !strings.HasPrefix(key, "resources.secret_scopes.") || !strings.HasSuffix(key, ".permissions") {
+	// Ensure every secret scope has a .permissions entry. The direct engine manages
+	// permissions as a sub-resource (SecretScopeFixups adds MANAGE for the current user).
+	// For scopes with databricks_secret_acl in state, resolve the ACL ID to the scope name.
+	// For scopes without ACLs, create a .permissions entry with the scope name as ID.
+	for key, entry := range result {
+		if !strings.HasPrefix(key, "resources.secret_scopes.") || strings.Contains(key, ".permissions") {
 			continue
 		}
-		scopeKey := strings.TrimSuffix(key, ".permissions")
-		if scopeEntry, ok := result[scopeKey]; ok {
-			result[key] = ResourceState{ID: scopeEntry.ID}
+		permKey := key + ".permissions"
+		if _, exists := result[permKey]; exists {
+			// Resolve ACL ID → scope name (the direct engine expects scope name as ID).
+			result[permKey] = ResourceState{ID: entry.ID}
+		} else {
+			result[permKey] = ResourceState{ID: entry.ID}
 		}
 	}
 

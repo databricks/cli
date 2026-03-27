@@ -152,8 +152,10 @@ func TestParseResourcesStateSecretScopeWithoutAcls(t *testing.T) {
 	state, err := parseResourcesState(ctx, path)
 	require.NoError(t, err)
 
-	// No ACLs → no permissions entry; migrate.go fixup handles this case.
+	// Even without ACLs, a .permissions entry is created for every secret scope,
+	// so the direct engine doesn't plan a phantom "create" after migration.
 	assert.Equal(t, ExportedResourcesMap{
-		"resources.secret_scopes.my_scope": {ID: "my-scope-name"},
+		"resources.secret_scopes.my_scope":             {ID: "my-scope-name"},
+		"resources.secret_scopes.my_scope.permissions": {ID: "my-scope-name"},
 	}, state)
 }
