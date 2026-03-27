@@ -41,64 +41,6 @@ func TestParseValidPaths(t *testing.T) {
 	}
 }
 
-func TestParseEscapeSequences(t *testing.T) {
-	tests := []struct {
-		name   string
-		input  string
-		tokens []Token
-	}{
-		{
-			"escaped_dollar",
-			`\$`,
-			[]Token{{Kind: TokenLiteral, Value: "$", Start: 0, End: 2}},
-		},
-		{
-			"escaped_ref",
-			`\${a}`,
-			[]Token{{Kind: TokenLiteral, Value: "${a}", Start: 0, End: 5}},
-		},
-		{
-			"escaped_backslash",
-			`\\`,
-			[]Token{{Kind: TokenLiteral, Value: `\`, Start: 0, End: 2}},
-		},
-		{
-			"double_escaped_backslash",
-			`\\\\`,
-			[]Token{{Kind: TokenLiteral, Value: `\\`, Start: 0, End: 4}},
-		},
-		{
-			"escaped_backslash_then_ref",
-			`\\${a.b}`,
-			[]Token{
-				{Kind: TokenLiteral, Value: `\`, Start: 0, End: 2},
-				{Kind: TokenRef, Value: "a.b", Start: 2, End: 8},
-			},
-		},
-		{
-			"backslash_before_non_special",
-			`\n`,
-			[]Token{{Kind: TokenLiteral, Value: `\n`, Start: 0, End: 2}},
-		},
-		{
-			"escaped_dollar_then_ref",
-			`\$\$${a.b}`,
-			[]Token{
-				{Kind: TokenLiteral, Value: "$$", Start: 0, End: 4},
-				{Kind: TokenRef, Value: "a.b", Start: 4, End: 10},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tokens, err := Parse(tt.input)
-			require.NoError(t, err)
-			assert.Equal(t, tt.tokens, tokens)
-		})
-	}
-}
-
 func TestParse(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -165,20 +107,6 @@ func TestParse(t *testing.T) {
 			"backslash_at_end",
 			`abc\`,
 			[]Token{{Kind: TokenLiteral, Value: `abc\`, Start: 0, End: 4}},
-		},
-		{
-			"escaped_ref",
-			`\${a}`,
-			[]Token{{Kind: TokenLiteral, Value: "${a}", Start: 0, End: 5}},
-		},
-		{
-			"escape_between_refs",
-			`${a}\$${b}`,
-			[]Token{
-				{Kind: TokenRef, Value: "a", Start: 0, End: 4},
-				{Kind: TokenLiteral, Value: "$", Start: 4, End: 6},
-				{Kind: TokenRef, Value: "b", Start: 6, End: 10},
-			},
 		},
 		{
 			"nested_ref",
@@ -256,9 +184,9 @@ func TestParseErrors(t *testing.T) {
 // (python/databricks_tests/core/test_variable_references.py) to
 // verify that the Python regex stays in sync with the Go parser.
 //
-// When modifying the parser (e.g. adding new key patterns, escape
-// sequences, or reference syntax), add test cases to the JSON file
-// so both Go and Python are validated.
+// When modifying the parser (e.g. adding new key patterns or
+// reference syntax), add test cases to the JSON file so both Go
+// and Python are validated.
 func TestParsePureVariableReferences(t *testing.T) {
 	data, err := os.ReadFile("testdata/variable_references.json")
 	require.NoError(t, err)

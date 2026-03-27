@@ -9,8 +9,7 @@ DABs variable interpolation (`${...}`) was regex-based. This caused:
 
 1. **Silent failures** — `${foo.bar-}` silently treated as literal text with no warning.
 2. **No suggestions** — `${bundle.nme}` produces "reference does not exist" with no hint.
-3. **No escape mechanism** — no way to produce a literal `${` in output.
-4. **No extensibility** — cannot support structured path features like key-value references `tasks[task_key="x"]` that exist in `libs/structs/structpath`.
+3. **No extensibility** — cannot support structured path features like key-value references `tasks[task_key="x"]` that exist in `libs/structs/structpath`.
 
 ## Background: How Other Systems Parse `${...}`
 
@@ -25,7 +24,7 @@ DABs variable interpolation (`${...}`) was regex-based. This caused:
 For a syntax as simple as `${path.to.var[0]}` (no nesting, no functions, no
 operators), a full recursive descent parser is overkill. A **two-mode character
 scanner** — the same core pattern used by Go's `text/template` and HCL — gives
-proper error reporting and escape support without the complexity.
+proper error reporting without the complexity.
 
 ## Design Decisions
 
@@ -36,22 +35,26 @@ No AST, no recursive descent. Easy to port to the Python implementation.
 
 See `libs/interpolation/parse.go`.
 
-### Nested `${` rejection
+### Nested `${` support
 
 Nested `${...}` inside a reference (e.g., `${var.foo_${var.tail}}`) is
-rejected as an error. This construct is ambiguous and was never intentionally
-supported — the old regex happened to match only the innermost pair by
-coincidence.
+supported. When the parser encounters a nested `${` inside an outer
+reference, it treats the outer `${...` prefix as literal text so the inner
+reference is resolved first. Multi-round resolution (up to 11 rounds in
+`resolve_variable_references.go`) then progressively resolves from inside
+out. For example, `${a_${b_${c}}}` resolves in 3 rounds.
 
-### `\$` escape sequence
+### No escape sequences
 
-`\$` produces a literal `$`, and `\\` produces a literal `\`. This follows
-the same convention used by Bash for escaping `$` and is the least
-surprising option for users working in shell environments.
-
-A standalone `\` before any character other than `$` or `\` is passed
-through as a literal backslash, so existing configurations that happen to
-contain backslashes are not affected.
+Escape sequences (e.g. `\$` → `$`) are intentionally omitted. Variable
+resolution uses multi-round processing (up to 11 rounds) where each round
+re-parses all string values. Escape sequences consumed in round N would
+produce bare `${...}` text that round N+1 would incorrectly resolve as a
+real variable reference. A safe escape mechanism would require either
+deferred consumption (escapes survive all rounds and are consumed in a
+final pass) or sentinel characters, adding significant complexity. Since
+there is no existing user demand for literal `${` in output, we defer
+escape support to a follow-up if needed.
 
 ### Malformed reference warnings
 
@@ -68,5 +71,9 @@ loop. Each `TokenRef` maps 1:1 to a resolved value, eliminating the ambiguity.
 
 ## Python sync
 
-The Python regex in `python/databricks/bundles/core/_transform.py` needs a
-corresponding update in a follow-up PR.
+PyDABs uses a regex in `python/databricks/bundles/core/_transform.py` to
+detect pure variable references (entire string is a single `${...}`). This
+regex must stay in sync with the Go parser's key/path validation. Shared
+test cases in `libs/interpolation/testdata/variable_references.json` are
+consumed by both Go (`TestParsePureVariableReferences`) and Python
+(`test_pure_variable_reference`) to verify agreement.

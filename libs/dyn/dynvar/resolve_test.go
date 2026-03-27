@@ -423,15 +423,3 @@ func TestResolveThreeLevelNestedVariableReference(t *testing.T) {
 	assert.Equal(t, "${a_${b_z}}", getByPath(t, out, "final").MustString())
 }
 
-func TestResolveEscapedRef(t *testing.T) {
-	in := dyn.V(map[string]dyn.Value{
-		"a": dyn.V("a"),
-		"b": dyn.V(`\${a}`),
-	})
-
-	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
-	require.NoError(t, err)
-
-	// Escaped reference should produce literal ${a}.
-	assert.Equal(t, "${a}", getByPath(t, out, "b").MustString())
-}

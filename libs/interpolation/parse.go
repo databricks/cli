@@ -36,10 +36,9 @@ type Token struct {
 }
 
 const (
-	dollarChar    = '$'
-	openBrace     = '{'
-	closeBrace    = '}'
-	backslashChar = '\\'
+	dollarChar = '$'
+	openBrace  = '{'
+	closeBrace = '}'
 )
 
 // keyPattern validates a single key segment in a variable path.
@@ -50,8 +49,8 @@ const (
 // (python/databricks/bundles/core/_transform.py). The patterns must stay in
 // sync. Cross-language test cases live in testdata/variable_references.json
 // and are run by both Go (TestParsePureVariableReferences) and Python
-// (test_pure_variable_reference). When changing key/index/path validation,
-// add cases to that file so both languages are tested.
+// (test_pure_variable_reference). When changing key/index/path validation
+// or reference syntax, add cases to that file so both languages are tested.
 var keyPattern = regexp.MustCompile(`^[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*$`)
 
 // indexPattern matches one or more [N] index suffixes.
@@ -59,10 +58,6 @@ var indexPattern = regexp.MustCompile(`^(\[[0-9]+\])+$`)
 
 // Parse parses a string that may contain ${...} variable references.
 // It returns a slice of tokens representing literal text and variable references.
-//
-// Escape sequences:
-//   - "\$" produces a literal "$"
-//   - "\\" produces a literal "\"
 //
 // Nested references like "${a.${b}}" are supported by treating the outer
 // "${a." as literal text so that inner references are resolved first.
@@ -72,7 +67,6 @@ var indexPattern = regexp.MustCompile(`^(\[[0-9]+\])+$`)
 //   - "hello"            -> [Literal("hello")]
 //   - "${a.b}"           -> [Ref("a.b")]
 //   - "pre ${a.b} post"  -> [Literal("pre "), Ref("a.b"), Literal(" post")]
-//   - "\${a.b}"          -> [Literal("${a.b}")]
 //   - "${a.${b}}"        -> [Literal("${a."), Ref("b"), Literal("}")]
 func Parse(s string) ([]Token, error) {
 	if len(s) == 0 {
@@ -98,30 +92,6 @@ func Parse(s string) ([]Token, error) {
 
 	for i < len(s) {
 		switch s[i] {
-		case backslashChar:
-			// Handle escape sequences: \$ -> $, \\ -> \
-			if buf.Len() == 0 {
-				litStart = i
-			}
-			if i+1 < len(s) {
-				switch s[i+1] {
-				case dollarChar:
-					buf.WriteByte(dollarChar)
-					i += 2
-				case backslashChar:
-					buf.WriteByte(backslashChar)
-					i += 2
-				default:
-					// Not a recognized escape; treat backslash as literal.
-					buf.WriteByte(backslashChar)
-					i++
-				}
-			} else {
-				// Trailing backslash at end of string: treat as literal.
-				buf.WriteByte(backslashChar)
-				i++
-			}
-
 		case dollarChar:
 			// We see '$'. Look ahead.
 			if i+1 >= len(s) {

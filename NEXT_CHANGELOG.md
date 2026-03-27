@@ -12,7 +12,7 @@
 * Deduplicate grant entries with duplicate principals or privileges during initialization ([#4801](https://github.com/databricks/cli/pull/4801))
 * engine/direct: Fix unwanted recreation of secret scopes when scope_backend_type is not set ([#4834](https://github.com/databricks/cli/pull/4834))
 
-* Replace regex-based variable interpolation with a character scanner. Escape sequences `\$` and `\\` are now supported ([#4747](https://github.com/databricks/cli/pull/4747)).
+* Replace regex-based variable interpolation with a character scanner ([#4747](https://github.com/databricks/cli/pull/4747)).
 
 ### Dependency updates
 

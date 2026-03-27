@@ -57,8 +57,7 @@ func newRef(v dyn.Value) (Ref, bool, diag.Diagnostics) {
 		}}
 	}
 
-	// Check if any token is a variable reference or if escape sequences
-	// were processed (the reconstructed string differs from the original).
+	// Check if any token is a variable reference.
 	hasRef := false
 	for _, t := range tokens {
 		if t.Kind == interpolation.TokenRef {
@@ -68,11 +67,7 @@ func newRef(v dyn.Value) (Ref, bool, diag.Diagnostics) {
 	}
 
 	if !hasRef {
-		// Even without references, if escape sequences were processed we need
-		// to return a Ref so the resolver can reconstruct the literal string.
-		if !hasEscapes(s, tokens) {
-			return Ref{}, false, nil
-		}
+		return Ref{}, false, nil
 	}
 
 	return Ref{
@@ -98,18 +93,6 @@ func (v Ref) References() []string {
 		}
 	}
 	return out
-}
-
-// hasEscapes checks whether escape sequences were processed during parsing.
-// Escape processing shortens the output (e.g., `\$` becomes `$`), so if the
-// sum of token value lengths is less than the original string length, escapes
-// were present.
-func hasEscapes(original string, tokens []interpolation.Token) bool {
-	n := 0
-	for _, t := range tokens {
-		n += len(t.Value)
-	}
-	return n < len(original)
 }
 
 // IsPureVariableReference returns true if s is a single variable reference

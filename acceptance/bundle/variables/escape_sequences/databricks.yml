@@ -1,6 +1,0 @@
-bundle:
-  name: 'literal \${not_a_ref} and ${var.greeting}'
-
-variables:
-  greeting:
-    default: hello
