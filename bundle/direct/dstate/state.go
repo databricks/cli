@@ -146,7 +146,7 @@ func (db *DeploymentState) GetResourceID(key string) string {
 		return ""
 	}
 
-	entry, _ := db.Data.State[key]
+	entry := db.Data.State[key]
 	return entry.ID
 }
 
@@ -164,7 +164,9 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	}
 
 	db.Path = path
-	db.Reload(ctx)
+	if err := db.Reload(ctx); err != nil {
+		return err
+	}
 
 	walPath := db.Path + walSuffix
 	_, walError := os.Stat(walPath)
@@ -175,7 +177,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 				return err
 			}
 		} else {
-			return fmt.Errorf("Unexpected WAL file found at %s", walPath)
+			return fmt.Errorf("unexpected WAL file found at %s", walPath)
 		}
 	}
 
@@ -293,7 +295,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 		} else {
 			var entry WALEntry
 			if err := json.Unmarshal(line, &entry); err != nil {
-				return hasUpdates, fmt.Errorf("failed to parse WAL entry %s:%s: %q: %w", walPath, lineNumber, entry, err)
+				return hasUpdates, fmt.Errorf("failed to parse WAL entry %s:%d: %q: %w", walPath, lineNumber, line, err)
 			}
 			hasUpdates = true
 			if entry.Value == nil {
