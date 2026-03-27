@@ -183,8 +183,8 @@ func startLocalServer(t *testing.T,
 		s.ResponseCallback = logResponseCallback(t)
 	}
 
-	// Track remaining kill counts per pattern (for KillCaller > 0)
 	killCounters := make(map[string]int)
+	offsetCounters := make(map[string]int)
 	killCountersMu := &sync.Mutex{}
 
 	for ind := range stubs {
@@ -195,9 +195,9 @@ func startLocalServer(t *testing.T,
 		items := strings.Split(stub.Pattern, " ")
 		require.Len(t, items, 2)
 
-		// Initialize kill counter for this pattern
 		if stub.KillCaller > 0 {
 			killCounters[stub.Pattern] = stub.KillCaller
+			offsetCounters[stub.Pattern] = stub.KillCallerOffset
 		}
 
 		s.Handle(items[0], items[1], func(req testserver.Request) any {
@@ -218,7 +218,7 @@ func startLocalServer(t *testing.T,
 				}
 			}
 
-			if shouldKillCaller(stub, killCounters, killCountersMu) {
+			if shouldKillCaller(stub, offsetCounters, killCounters, killCountersMu) {
 				killCaller(t, stub.Pattern, req.Headers)
 			}
 
@@ -231,12 +231,18 @@ func startLocalServer(t *testing.T,
 	return s.URL
 }
 
-func shouldKillCaller(stub ServerStub, killCounters map[string]int, mu *sync.Mutex) bool {
+func shouldKillCaller(stub ServerStub, offsetCounters, killCounters map[string]int, mu *sync.Mutex) bool {
 	if stub.KillCaller <= 0 {
 		return false
 	}
 	mu.Lock()
 	defer mu.Unlock()
+
+	if offsetCounters[stub.Pattern] > 0 {
+		offsetCounters[stub.Pattern]--
+		return false
+	}
+
 	if killCounters[stub.Pattern] <= 0 {
 		return false
 	}

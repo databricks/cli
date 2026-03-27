@@ -11,3 +11,7 @@ New = ''
 [[Repls]]
 Old = ' mutator=[A-Za-z]+'
 New = ''
+
+[[Repls]]
+Old = 'Updating deployment state...\n'
+New = ''

@@ -3,6 +3,7 @@ package dstate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,9 +19,11 @@ import (
 const currentStateVersion = 2
 
 type DeploymentState struct {
-	Path string
-	Data Database
-	mu   sync.Mutex
+	Path             string
+	Data             Database
+	mu               sync.Mutex
+	wal              *WAL
+	recoveredFromWAL bool
 }
 
 type Database struct {
@@ -56,16 +59,25 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
-	jsonMessage, err := json.MarshalIndent(state, "  ", " ")
+	jsonMessage, err := json.MarshalIndent(state, "", " ")
 	if err != nil {
 		return err
 	}
 
-	db.Data.State[key] = ResourceEntry{
+	entry := ResourceEntry{
 		ID:        newID,
 		State:     json.RawMessage(jsonMessage),
 		DependsOn: dependsOn,
 	}
+
+	if err := db.ensureWALOpen(); err != nil {
+		return fmt.Errorf("failed to open WAL: %w", err)
+	}
+	if err := db.wal.writeJSON(WALEntry{K: key, V: &entry}); err != nil {
+		return fmt.Errorf("failed to write WAL entry: %w", err)
+	}
+
+	db.Data.State[key] = entry
 
 	return nil
 }
@@ -79,8 +91,42 @@ func (db *DeploymentState) DeleteState(key string) error {
 		return nil
 	}
 
+	if err := db.ensureWALOpen(); err != nil {
+		return fmt.Errorf("failed to open WAL: %w", err)
+	}
+	if err := db.wal.writeJSON(WALEntry{K: key}); err != nil {
+		return fmt.Errorf("failed to write WAL entry: %w", err)
+	}
+
 	delete(db.Data.State, key)
 
+	return nil
+}
+
+func (db *DeploymentState) ensureWALOpen() error {
+	if db.wal != nil {
+		return nil
+	}
+
+	wal, err := openWAL(db.Path)
+	if err != nil {
+		return err
+	}
+
+	lineage := db.Data.Lineage
+	if lineage == "" {
+		lineage = uuid.New().String()
+		db.Data.Lineage = lineage
+	}
+
+	walSerial := db.Data.Serial + 1
+
+	if err := wal.writeJSON(WALHeader{Lineage: lineage, Serial: walSerial}); err != nil {
+		wal.close()
+		return err
+	}
+
+	db.wal = wal
 	return nil
 }
 
@@ -97,7 +143,7 @@ func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
 	return result, ok
 }
 
-func (db *DeploymentState) Open(path string) error {
+func (db *DeploymentState) Open(ctx context.Context, path string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -111,24 +157,40 @@ func (db *DeploymentState) Open(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// Create new database with serial=0, will be incremented to 1 in Finalize()
 			db.Data = NewDatabase("", 0)
 			db.Path = path
-			return nil
+			if err := db.unlockedSave(); err != nil {
+				return err
+			}
+		} else {
+			return err
 		}
-		return err
+	} else {
+		err = json.Unmarshal(data, &db.Data)
+		if err != nil {
+			return err
+		}
+		db.Path = path
 	}
 
-	err = json.Unmarshal(data, &db.Data)
+	recovered, err := recoverFromWAL(ctx, path, &db.Data)
 	if err != nil {
-		return err
+		return fmt.Errorf("WAL recovery failed: %w", err)
 	}
 
 	if err := migrateState(&db.Data); err != nil {
 		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
-	db.Path = path
+	if recovered {
+		if err := db.unlockedSave(); err != nil {
+			return err
+		}
+		if err := cleanupWAL(path); err != nil {
+			return err
+		}
+		db.recoveredFromWAL = true
+	}
 	return nil
 }
 
@@ -136,20 +198,73 @@ func (db *DeploymentState) Finalize() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	// Generate lineage on first save
+	hadOpenWAL := db.wal != nil
+	if hadOpenWAL {
+		if err := db.wal.close(); err != nil {
+			return err
+		}
+		db.wal = nil
+
+		validationDB := db.Data
+		replayResult, err := replayWAL(db.Path, &validationDB)
+		if err != nil {
+			return fmt.Errorf("failed to replay WAL during finalize: %w", err)
+		}
+		if !replayResult.recovered {
+			return errors.New("failed to replay WAL during finalize: WAL file not found or stale")
+		}
+		if len(replayResult.corruptedEntries) > 0 {
+			first := replayResult.corruptedEntries[0]
+			return fmt.Errorf("failed to replay WAL during finalize: corrupted entry at line %d: %v", first.lineNumber, first.parseErr)
+		}
+	}
+
+	if db.Data.Lineage == "" && !hadOpenWAL && len(db.Data.State) == 0 {
+		return nil
+	}
+
 	if db.Data.Lineage == "" {
 		db.Data.Lineage = uuid.New().String()
 	}
 
 	db.Data.Serial++
 
-	return db.unlockedSave()
+	if err := db.unlockedSave(); err != nil {
+		return err
+	}
+
+	if hadOpenWAL {
+		if err := cleanupWAL(db.Path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Close closes the WAL file without saving state.
+func (db *DeploymentState) Close() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if db.wal != nil {
+		if err := db.wal.close(); err != nil {
+			return err
+		}
+		db.wal = nil
+	}
+	return nil
 }
 
 func (db *DeploymentState) AssertOpened() {
 	if db.Path == "" {
 		panic("internal error: DeploymentState must be opened first")
 	}
+}
+
+// RecoveredFromWAL reports whether Open recovered state from the WAL.
+func (db *DeploymentState) RecoveredFromWAL() bool {
+	return db.recoveredFromWAL
 }
 
 func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
@@ -182,7 +297,6 @@ func (db *DeploymentState) unlockedSave() error {
 		return err
 	}
 
-	// Create parent directories if they don't exist
 	dir := filepath.Dir(db.Path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory %#v: %w", dir, err)
