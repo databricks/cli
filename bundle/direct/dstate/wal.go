@@ -15,16 +15,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type WALHeader struct {
-	Lineage string `json:"lineage"`
-	Serial  int    `json:"serial"`
-}
-
-type WALEntry struct {
-	K string         `json:"k"`
-	V *ResourceEntry `json:"v,omitempty"` // nil means delete
-}
-
 type WAL struct {
 	file *os.File
 }
@@ -255,7 +245,7 @@ func recoverFromWAL(ctx context.Context, statePath string, db *Database) (bool, 
 	}
 
 	if replayResult.stale {
-		log.Debugf(ctx, "Deleting stale WAL (serial behind current state)")
+		log.Warnf(ctx, "Deleting stale WAL (serial=%s behind current state serial=)")
 		if err := cleanupWAL(statePath); err != nil {
 			return false, err
 		}

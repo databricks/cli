@@ -96,7 +96,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Finalize to persist temp state to disk
-	err = b.StateDB.Finalize()
+	err = b.StateDB.Finalize(ctx)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -138,7 +138,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			return nil, err
 		}
 
-		err = b.StateDB.Finalize()
+		err = b.StateDB.Finalize(ctx)
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
@@ -216,5 +216,5 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 		}
 	}
 
-	return b.StateDB.Finalize()
+	return b.StateDB.Finalize(ctx)
 }

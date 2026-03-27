@@ -21,11 +21,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	}
 
 	if len(plan.Plan) == 0 {
-		if b.StateDB.RecoveredFromWAL() {
-			if err := b.StateDB.Finalize(); err != nil {
-				logdiag.LogError(ctx, err)
-			}
-		}
+		// Avoid creating state file if nothing to deploy
 		return
 	}
 
