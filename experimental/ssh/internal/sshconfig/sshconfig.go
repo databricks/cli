@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 )
@@ -80,11 +81,25 @@ func EnsureIncludeDirective(ctx context.Context, configPath string) error {
 	// Convert path to forward slashes for SSH config compatibility across platforms
 	configDirUnix := filepath.ToSlash(configDir)
 
-	includeLine := fmt.Sprintf("Include %s/*", configDirUnix)
-	if strings.Contains(string(content), includeLine) {
+	// Quoted to handle paths with spaces; OpenSSH still expands globs inside quotes.
+	includeLine := fmt.Sprintf(`Include "%s/*"`, configDirUnix)
+	if containsLine(content, includeLine) {
 		return nil
 	}
 
+	// Migrate unquoted Include written by older versions of the CLI.
+	oldIncludeLine := fmt.Sprintf("Include %s/*", configDirUnix)
+	if containsLine(content, oldIncludeLine) {
+		if err := fileutil.BackupFile(ctx, configPath, content); err != nil {
+			return fmt.Errorf("failed to backup SSH config before migration: %w", err)
+		}
+		migrated := strings.Replace(string(content), oldIncludeLine, includeLine, 1)
+		return os.WriteFile(configPath, []byte(migrated), 0o600)
+	}
+
+	if err := fileutil.BackupFile(ctx, configPath, content); err != nil {
+		return fmt.Errorf("failed to backup SSH config: %w", err)
+	}
 	newContent := includeLine + "\n"
 	if len(content) > 0 && !strings.HasPrefix(string(content), "\n") {
 		newContent += "\n"
@@ -97,6 +112,17 @@ func EnsureIncludeDirective(ctx context.Context, configPath string) error {
 	}
 
 	return nil
+}
+
+// containsLine reports whether data contains line as an exact line match,
+// trimming \r to handle Windows line endings.
+func containsLine(data []byte, line string) bool {
+	for l := range strings.SplitSeq(string(data), "\n") {
+		if strings.TrimRight(l, "\r") == line {
+			return true
+		}
+	}
+	return false
 }
 
 func GetHostConfigPath(ctx context.Context, hostName string) (string, error) {

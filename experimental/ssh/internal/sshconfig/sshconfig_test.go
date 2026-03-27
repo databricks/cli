@@ -80,9 +80,9 @@ func TestEnsureIncludeDirective_AlreadyExists(t *testing.T) {
 	configDir, err := GetConfigDir(t.Context())
 	require.NoError(t, err)
 
-	// Use forward slashes as that's what SSH config uses
+	// Use forward slashes and quotes as that's what SSH config uses
 	configDirUnix := filepath.ToSlash(configDir)
-	existingContent := "Include " + configDirUnix + "/*\n\nHost example\n    User test\n"
+	existingContent := `Include "` + configDirUnix + `/*"` + "\n\nHost example\n    User test\n"
 	err = os.MkdirAll(filepath.Dir(configPath), 0o700)
 	require.NoError(t, err)
 	err = os.WriteFile(configPath, []byte(existingContent), 0o600)
@@ -94,6 +94,59 @@ func TestEnsureIncludeDirective_AlreadyExists(t *testing.T) {
 	content, err := os.ReadFile(configPath)
 	assert.NoError(t, err)
 	assert.Equal(t, existingContent, string(content))
+}
+
+func TestEnsureIncludeDirective_MigratesOldUnquotedFormat(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	configPath := filepath.Join(tmpDir, ".ssh", "config")
+
+	configDir, err := GetConfigDir(t.Context())
+	require.NoError(t, err)
+
+	configDirUnix := filepath.ToSlash(configDir)
+	oldContent := "Include " + configDirUnix + "/*\n\nHost example\n    User test\n"
+	err = os.MkdirAll(filepath.Dir(configPath), 0o700)
+	require.NoError(t, err)
+	err = os.WriteFile(configPath, []byte(oldContent), 0o600)
+	require.NoError(t, err)
+
+	err = EnsureIncludeDirective(t.Context(), configPath)
+	assert.NoError(t, err)
+
+	content, err := os.ReadFile(configPath)
+	assert.NoError(t, err)
+	configStr := string(content)
+
+	assert.Contains(t, configStr, `Include "`+configDirUnix+`/*"`)
+	assert.NotContains(t, configStr, "Include "+configDirUnix+"/*\n")
+	assert.Contains(t, configStr, "Host example")
+}
+
+func TestEnsureIncludeDirective_NotFooledBySubstring(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	configPath := filepath.Join(tmpDir, ".ssh", "config")
+
+	configDir, err := GetConfigDir(t.Context())
+	require.NoError(t, err)
+
+	configDirUnix := filepath.ToSlash(configDir)
+	// The include path appears only inside a comment, not as a standalone directive.
+	existingContent := `# Include "` + configDirUnix + `/*"` + "\nHost example\n    User test\n"
+	require.NoError(t, os.MkdirAll(filepath.Dir(configPath), 0o700))
+	require.NoError(t, os.WriteFile(configPath, []byte(existingContent), 0o600))
+
+	err = EnsureIncludeDirective(t.Context(), configPath)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+	assert.Contains(t, string(content), `Include "`+configDirUnix+`/*"`)
 }
 
 func TestEnsureIncludeDirective_PrependsToExisting(t *testing.T) {
@@ -125,6 +178,27 @@ func TestEnsureIncludeDirective_PrependsToExisting(t *testing.T) {
 	includeIndex := len("Include")
 	hostIndex := len(configStr) - len(existingContent)
 	assert.Less(t, includeIndex, hostIndex, "Include directive should come before existing content")
+}
+
+func TestContainsLine(t *testing.T) {
+	tests := []struct {
+		name  string
+		data  string
+		line  string
+		found bool
+	}{
+		{"exact match", `Include "/path/*"` + "\nHost example\n", `Include "/path/*"`, true},
+		{"not present", "Host example\n", `Include "/path/*"`, false},
+		{"substring only", `# Include "/path/*"`, `Include "/path/*"`, false},
+		{"commented line", `# Include "/path/*"` + "\n" + `Include "/path/*"` + "\n", `Include "/path/*"`, true},
+		{"windows line ending", `Include "/path/*"` + "\r\nHost example\r\n", `Include "/path/*"`, true},
+		{"empty data", "", `Include "/path/*"`, false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.found, containsLine([]byte(tc.data), tc.line))
+		})
+	}
 }
 
 func TestGetHostConfigPath(t *testing.T) {
