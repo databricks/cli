@@ -15,6 +15,8 @@
 * engine/direct: Fix bind and unbind for non-Terraform resources ([#4850](https://github.com/databricks/cli/pull/4850))
 * engine/direct: Fix deploying removed principals ([#4824](https://github.com/databricks/cli/pull/4824))
 
+* Replace regex-based variable interpolation with a character scanner ([#4747](https://github.com/databricks/cli/pull/4747)).
+
 ### Dependency updates
 
 ### API Changes

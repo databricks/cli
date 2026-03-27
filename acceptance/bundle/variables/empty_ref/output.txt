@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate
+Warning: empty variable reference
+  at bundle.name
+  in databricks.yml:2:9
+
+Name: ${}
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/${}/default
+
+Found 1 warning

@@ -3,6 +3,7 @@ package dynvar
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,6 +46,23 @@ func TestNewRefInvalidPattern(t *testing.T) {
 		_, ok := NewRef(dyn.V(v))
 		require.False(t, ok, "should not match invalid pattern: %s", v)
 	}
+}
+
+func TestNewRefWithDiagnosticsMalformed(t *testing.T) {
+	v := dyn.NewValue("${foo.bar-}", []dyn.Location{{File: "test.yml", Line: 1, Column: 1}})
+	_, ok, diags := NewRefWithDiagnostics(v)
+	assert.False(t, ok)
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Warning, diags[0].Severity)
+	assert.Contains(t, diags[0].Summary, "invalid")
+}
+
+func TestNewRefWithDiagnosticsValid(t *testing.T) {
+	v := dyn.V("${foo.bar}")
+	ref, ok, diags := NewRefWithDiagnostics(v)
+	assert.True(t, ok)
+	assert.Empty(t, diags)
+	assert.Equal(t, []string{"foo.bar"}, ref.References())
 }
 
 func TestIsPureVariableReference(t *testing.T) {

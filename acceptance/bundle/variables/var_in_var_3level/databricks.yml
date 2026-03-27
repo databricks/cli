@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+variables:
+  env:
+    default: prod
+  region_prod:
+    default: us
+  endpoint_us:
+    default: https://us.example.com
+  result:
+    default: ${var.endpoint_${var.region_${var.env}}}

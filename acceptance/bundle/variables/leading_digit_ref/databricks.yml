@@ -1,0 +1,6 @@
+bundle:
+  name: '${0foo}'
+
+variables:
+  a:
+    default: hello

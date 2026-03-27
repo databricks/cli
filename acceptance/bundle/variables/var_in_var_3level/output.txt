@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "endpoint_us": {
+    "default": "https://us.example.com",
+    "value": "https://us.example.com"
+  },
+  "env": {
+    "default": "prod",
+    "value": "prod"
+  },
+  "region_prod": {
+    "default": "us",
+    "value": "us"
+  },
+  "result": {
+    "default": "https://us.example.com",
+    "value": "https://us.example.com"
+  }
+}
