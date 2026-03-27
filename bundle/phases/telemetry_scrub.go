@@ -9,6 +9,13 @@ import (
 // Scrub sensitive information from error messages before sending to telemetry.
 // Inspired by VS Code's telemetry path scrubbing and Sentry's @userpath pattern.
 //
+// Path regexes use [\s:,"'] as boundary characters to delimit where a path
+// ends. While these characters are technically valid in file paths, in error
+// messages they act as delimiters (e.g. "error: /path/to/file: not found",
+// or "failed to read '/some/path', skipping"). This is a practical tradeoff:
+// paths containing colons, commas, or quotes are extremely rare, and without
+// these boundaries the regexes would over-match into surrounding message text.
+//
 // References:
 // - VS Code: https://github.com/microsoft/vscode/blob/main/src/vs/platform/telemetry/common/telemetryUtils.ts
 // - Sentry: https://github.com/getsentry/relay (PII rule: @userpath)
