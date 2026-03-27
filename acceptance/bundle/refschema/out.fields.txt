@@ -93,14 +93,14 @@ resources.apps.*.compute_status	*apps.ComputeStatus	ALL
 resources.apps.*.compute_status.active_instances	int	ALL
 resources.apps.*.compute_status.message	string	ALL
 resources.apps.*.compute_status.state	apps.ComputeState	ALL
-resources.apps.*.config	*resources.AppConfig	INPUT	STATE
-resources.apps.*.config.command	[]string	INPUT	STATE
-resources.apps.*.config.command[*]	string	INPUT	STATE
-resources.apps.*.config.env	[]resources.AppEnvVar	INPUT	STATE
-resources.apps.*.config.env[*]	resources.AppEnvVar	INPUT	STATE
-resources.apps.*.config.env[*].name	string	INPUT	STATE
-resources.apps.*.config.env[*].value	string	INPUT	STATE
-resources.apps.*.config.env[*].value_from	string	INPUT	STATE
+resources.apps.*.config	*resources.AppConfig	ALL
+resources.apps.*.config.command	[]string	ALL
+resources.apps.*.config.command[*]	string	ALL
+resources.apps.*.config.env	[]resources.AppEnvVar	ALL
+resources.apps.*.config.env[*]	resources.AppEnvVar	ALL
+resources.apps.*.config.env[*].name	string	ALL
+resources.apps.*.config.env[*].value	string	ALL
+resources.apps.*.config.env[*].value_from	string	ALL
 resources.apps.*.create_time	string	ALL
 resources.apps.*.creator	string	ALL
 resources.apps.*.default_source_code_path	string	ALL
@@ -112,15 +112,15 @@ resources.apps.*.effective_user_api_scopes[*]	string	ALL
 resources.apps.*.git_repository	*apps.GitRepository	ALL
 resources.apps.*.git_repository.provider	string	ALL
 resources.apps.*.git_repository.url	string	ALL
-resources.apps.*.git_source	*apps.GitSource	INPUT	STATE
-resources.apps.*.git_source.branch	string	INPUT	STATE
-resources.apps.*.git_source.commit	string	INPUT	STATE
-resources.apps.*.git_source.git_repository	*apps.GitRepository	INPUT	STATE
-resources.apps.*.git_source.git_repository.provider	string	INPUT	STATE
-resources.apps.*.git_source.git_repository.url	string	INPUT	STATE
-resources.apps.*.git_source.resolved_commit	string	INPUT	STATE
-resources.apps.*.git_source.source_code_path	string	INPUT	STATE
-resources.apps.*.git_source.tag	string	INPUT	STATE
+resources.apps.*.git_source	*apps.GitSource	ALL
+resources.apps.*.git_source.branch	string	ALL
+resources.apps.*.git_source.commit	string	ALL
+resources.apps.*.git_source.git_repository	*apps.GitRepository	ALL
+resources.apps.*.git_source.git_repository.provider	string	ALL
+resources.apps.*.git_source.git_repository.url	string	ALL
+resources.apps.*.git_source.resolved_commit	string	ALL
+resources.apps.*.git_source.source_code_path	string	ALL
+resources.apps.*.git_source.tag	string	ALL
 resources.apps.*.id	string	ALL
 resources.apps.*.lifecycle	*dresources.AppStateLifecycle	REMOTE	STATE
 resources.apps.*.lifecycle	resources.Lifecycle	INPUT
