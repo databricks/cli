@@ -1,0 +1,81 @@
+
+=== (started omitted) -> deploy: app created with no_compute=true, no start/stop requests
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_app_requests
+{
+  "body": {
+    "description": "my_app_description",
+    "name": "[UNIQUE_NAME]"
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  }
+}
+
+=== (started omitted) -> started: false -> deploy: no start/stop requests
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_app_requests
+
+=== started: false -> (started omitted) -> deploy: no start/stop requests
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_app_requests
+
+=== (started omitted) -> started: true -> deploy: app started
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
+Deploying resources...
+✓ Deployment succeeded.
+Updating deployment state...
+Deployment complete!
+
+>>> print_app_requests
+{
+  "body": {},
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/start"
+}
+{
+  "body": {
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files/app"
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments"
+}
+
+=== started: true -> (started omitted) -> deploy: no start/stop requests (compute stays as-is)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_app_requests
+
+=== (started omitted, app running) -> bundle plan shows no driftPlan: no drift detected
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.mykey
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

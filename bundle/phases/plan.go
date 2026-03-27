@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -14,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 // PreDeployChecks is common set of mutators between "bundle plan" and "bundle deploy".
@@ -33,27 +33,31 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine 
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.
 // If it does, it returns an error.
 func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error {
+	root := b.Config.Value()
 	var errs []error
 	for _, action := range actions {
 		if action.ActionType != deployplan.Recreate && action.ActionType != deployplan.Delete {
 			continue
 		}
 
-		// ResourceKey format: "resources.{type}.{key}"
-		parts := strings.SplitN(action.ResourceKey, ".", 3)
-		if len(parts) != 3 || parts[0] != "resources" {
+		path, err := dyn.NewPathFromString(action.ResourceKey)
+		if err != nil {
+			return fmt.Errorf("failed to parse %q", action.ResourceKey)
+		}
+
+		path = append(path, dyn.Key("lifecycle"), dyn.Key("prevent_destroy"))
+
+		preventDestroyV, err := dyn.GetByPath(root, path)
+		if err != nil {
 			continue
 		}
-		resourceType, resourceKey := parts[1], parts[2]
 
-		for _, group := range b.Config.Resources.AllResources() {
-			if group.Description.PluralName != resourceType {
-				continue
-			}
-			if r, ok := group.Resources[resourceKey]; ok && r.GetLifecycle().HasPreventDestroy() {
-				errs = append(errs, fmt.Errorf("%s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s", action.ResourceKey, action.ResourceKey))
-			}
-			break
+		preventDestroy, ok := preventDestroyV.AsBool()
+		if !ok {
+			return fmt.Errorf("internal error: prevent_destroy is not a boolean for %s", action.ResourceKey)
+		}
+		if preventDestroy {
+			errs = append(errs, fmt.Errorf("%s has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed. To avoid this error, disable lifecycle.prevent_destroy for %s", action.ResourceKey, action.ResourceKey))
 		}
 	}
 

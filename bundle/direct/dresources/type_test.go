@@ -16,10 +16,7 @@ import (
 // These are known issues that should be fixed. If a field listed here is found in RemoteType,
 // the test fails to ensure the entry is removed from this map.
 var knownMissingInRemoteType = map[string][]string{
-	// source_code_path, config, and git_source are bundle-specific deployment fields not present in the remote App state.
 	"apps": {
-		"config",
-		"git_source",
 		"source_code_path",
 	},
 	"clusters": {

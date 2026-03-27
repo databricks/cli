@@ -33,11 +33,13 @@ type AppState struct {
 	Lifecycle      *AppStateLifecycle   `json:"lifecycle,omitempty"`
 }
 
-// AppRemote extends apps.App with lifecycle.started so that it appears in
-// RemoteType and can be used for $resource resolution.
+// AppRemote extends apps.App with lifecycle.started and deployment fields so
+// that they appear in RemoteType and can be used for $resource resolution and drift detection.
 type AppRemote struct {
 	apps.App
-	Lifecycle *AppStateLifecycle `json:"lifecycle,omitempty"`
+	Config    *resources.AppConfig `json:"config,omitempty"`
+	GitSource *apps.GitSource      `json:"git_source,omitempty"`
+	Lifecycle *AppStateLifecycle   `json:"lifecycle,omitempty"`
 }
 
 // Custom marshalers needed because embedded apps.App has its own MarshalJSON
@@ -81,16 +83,17 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 }
 
 // RemapState maps the remote AppRemote to AppState for diff comparison.
-// Deploy-only fields (SourceCodePath, Config, GitSource) are not in remote state,
-// so they default to zero values, which prevents false drift detection.
+// Config and GitSource are populated from the active deployment when one exists,
+// enabling drift detection for out-of-band redeploys.
+// SourceCodePath is not tracked for drift (it's a local-only deployment path).
 // Started is derived from compute status so the planner can detect start/stop changes.
 func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 	started := !isComputeStopped(&remote.App)
 	return &AppState{
 		App:            remote.App,
 		SourceCodePath: "",
-		Config:         nil,
-		GitSource:      nil,
+		Config:         remote.Config,
+		GitSource:      remote.GitSource,
 		Lifecycle:      &AppStateLifecycle{Started: &started},
 	}
 }
@@ -101,7 +104,17 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 		return nil, err
 	}
 	started := !isComputeStopped(app)
-	return &AppRemote{App: *app, Lifecycle: &AppStateLifecycle{Started: &started}}, nil
+	remote := &AppRemote{
+		App:       *app,
+		Config:    nil,
+		GitSource: nil,
+		Lifecycle: &AppStateLifecycle{Started: &started},
+	}
+	if app.ActiveDeployment != nil {
+		remote.GitSource = app.ActiveDeployment.GitSource
+		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
+	}
+	return remote, nil
 }
 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *AppRemote, error) {
@@ -173,7 +186,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 
 		if response.Status.State != apps.AppUpdateUpdateStatusUpdateStateSucceeded {
-			return nil, fmt.Errorf("failed to update app %s: %s", id, response.Status.Message)
+			return nil, fmt.Errorf("update status: %s: %s", response.Status.State, response.Status.Message)
 		}
 	}
 
@@ -181,20 +194,19 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		return nil, nil
 	}
 
-	// The planner computes the remote started value in RemapState based on compute status,
-	// so changes["lifecycle.started"].Action == Update means the compute state differs from the desired state.
-	startedChange := entry.Changes["lifecycle.started"]
+	desiredStarted := *config.Lifecycle.Started
+	remoteStarted := remoteIsStarted(entry)
 
-	if *config.Lifecycle.Started {
+	if desiredStarted {
 		// lifecycle.started=true: ensure the app compute is running and deploy the latest code.
-		if startedChange != nil && startedChange.Action == deployplan.Update {
+		if !remoteStarted {
 			startWaiter, err := r.client.Apps.Start(ctx, apps.StartAppRequest{Name: id})
 			if err != nil {
-				return nil, fmt.Errorf("failed to start app %s: %w", id, err)
+				return nil, err
 			}
 			startedApp, err := startWaiter.Get()
 			if err != nil {
-				return nil, fmt.Errorf("failed to wait for app %s to start: %w", id, err)
+				return nil, err
 			}
 			if err := appdeploy.WaitForDeploymentToComplete(ctx, r.client, startedApp); err != nil {
 				return nil, err
@@ -206,13 +218,13 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		}
 	} else {
 		// lifecycle.started=false: ensure the app compute is stopped.
-		if startedChange != nil && startedChange.Action == deployplan.Update {
+		if remoteStarted {
 			stopWaiter, err := r.client.Apps.Stop(ctx, apps.StopAppRequest{Name: id})
 			if err != nil {
-				return nil, fmt.Errorf("failed to stop app %s: %w", id, err)
+				return nil, err
 			}
 			if _, err = stopWaiter.Get(); err != nil {
-				return nil, fmt.Errorf("failed to wait for app %s to stop: %w", id, err)
+				return nil, err
 			}
 		}
 	}
@@ -234,6 +246,41 @@ func isComputeStopped(app *apps.App) bool {
 	return app.ComputeStatus == nil ||
 		app.ComputeStatus.State == apps.ComputeStateStopped ||
 		app.ComputeStatus.State == apps.ComputeStateError
+}
+
+// remoteIsStarted reads the compute started state from the plan entry's remote state.
+func remoteIsStarted(entry *PlanEntry) bool {
+	if entry.RemoteState == nil {
+		return false
+	}
+	remote, ok := entry.RemoteState.(*AppRemote)
+	if !ok || remote.Lifecycle == nil || remote.Lifecycle.Started == nil {
+		return false
+	}
+	return *remote.Lifecycle.Started
+}
+
+// deploymentToAppConfig extracts an AppConfig from an active deployment.
+// Returns nil if the deployment has no command or env vars.
+func deploymentToAppConfig(d *apps.AppDeployment) *resources.AppConfig {
+	if len(d.Command) == 0 && len(d.EnvVars) == 0 {
+		return nil
+	}
+	config := &resources.AppConfig{}
+	if len(d.Command) > 0 {
+		config.Command = d.Command
+	}
+	if len(d.EnvVars) > 0 {
+		config.Env = make([]resources.AppEnvVar, len(d.EnvVars))
+		for i, ev := range d.EnvVars {
+			config.Env[i] = resources.AppEnvVar{
+				Name:      ev.Name,
+				Value:     ev.Value,
+				ValueFrom: ev.ValueFrom,
+			}
+		}
+	}
+	return config
 }
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
@@ -274,5 +321,10 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 		return nil, err
 	}
 	started := !isComputeStopped(app)
-	return &AppRemote{App: *app, Lifecycle: &AppStateLifecycle{Started: &started}}, nil
+	remote := &AppRemote{App: *app, Lifecycle: &AppStateLifecycle{Started: &started}}
+	if app.ActiveDeployment != nil {
+		remote.GitSource = app.ActiveDeployment.GitSource
+		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
+	}
+	return remote, nil
 }

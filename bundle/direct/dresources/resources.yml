@@ -376,15 +376,11 @@ resources:
       - field: name
         reason: immutable
     ignore_remote_changes:
-      # source_code_path, config, git_source, and lifecycle are bundle-local fields
-      # not stored in remote state. Remote always returns empty; skip the spurious diff
-      # when the local config hasn't changed these fields.
       - field: source_code_path
         reason: local_only
-      - field: config
-        reason: local_only
-      - field: git_source
-        reason: local_only
+      # lifecycle fields are managed by the planner based on compute status.
+      # When lifecycle.started is omitted from config, it should be untracked
+      # and remote changes to compute state should not cause drift.
       - field: lifecycle
         reason: local_only
       - field: lifecycle.started
@@ -393,19 +389,28 @@ resources:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/internal/providers/pluginfw/products/app/resource_app.go#L41
       # s["compute_size"] = s["compute_size"].SetComputed()
       - field: compute_size
-      # Output-only fields assigned by the platform; never set by users in bundle config.
       - field: app_status
+        reason: output_only
       - field: compute_status
+        reason: output_only
       - field: url
-      - field: id
+        reason: output_only
       - field: service_principal_client_id
+        reason: output_only
       - field: service_principal_id
+        reason: output_only
       - field: service_principal_name
+        reason: output_only
       - field: create_time
+        reason: output_only
       - field: update_time
+        reason: output_only
       - field: creator
+        reason: output_only
       - field: updater
+        reason: output_only
       - field: effective_budget_policy_id
+        reason: output_only
 
   secret_scopes:
     backend_defaults:
