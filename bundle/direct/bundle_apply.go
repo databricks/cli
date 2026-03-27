@@ -25,7 +25,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
-	b.StateDB.AssertOpened()
 	b.RemoteStateCache.Clear()
 
 	g, err := makeGraph(plan)

@@ -1,6 +1,7 @@
 package dstate
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -16,13 +17,19 @@ import (
 	"github.com/google/uuid"
 )
 
-const currentStateVersion = 2
+const (
+	currentStateVersion = 2
+	initialBufferSize   = 64 * 1024
+	maxWalEntrySize     = 1024 * 1024
+	walSuffix           = ".WAL"
+)
 
 type DeploymentState struct {
-	Path    string
-	Data    Database
-	mu      sync.Mutex
-	walFile *os.File
+	Path     string
+	Data     Database
+	mu       sync.Mutex
+	walFile  *os.File
+	stateIDs map[string]string
 }
 
 type Database struct {
@@ -47,8 +54,8 @@ type WALHeader struct {
 }
 
 type WALEntry struct {
-	K string         `json:"k"`
-	V *ResourceEntry `json:"v,omitempty"` // nil means delete
+	Key   string         `json:"k"`
+	Value *ResourceEntry `json:"v,omitempty"` // nil means delete
 }
 
 func NewDatabase(lineage string, serial int) Database {
@@ -70,6 +77,7 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
+	// don't indent so that every WAL entry remains on a single line
 	jsonMessage, err := json.Marshal(state)
 	if err != nil {
 		return err
@@ -81,8 +89,11 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		DependsOn: dependsOn,
 	}
 
-	db.Data.State[key] = entry
-	return appendJSONLine(db.walFile, WALEntry{K: key, V: &entry})
+	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
+	if err == nil {
+		db.stateIDs[key] = newID
+	}
+	return err
 }
 
 func (db *DeploymentState) DeleteState(key string) error {
@@ -94,12 +105,15 @@ func (db *DeploymentState) DeleteState(key string) error {
 		return nil
 	}
 
-	delete(db.Data.State, key)
-	return appendJSONLine(db.walFile, WALEntry{K: key})
+	err := appendJSONLine(db.walFile, WALEntry{Key: key})
+	if err == nil {
+		delete(db.stateIDs, key)
+	}
+	return err
 }
 
-func (db *DeploymentState) getResourceEntry(key string) (ResourceEntry, bool) {
-	db.AssertOpened()
+func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
+	db.AssertOpenedForRead()
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -111,14 +125,28 @@ func (db *DeploymentState) getResourceEntry(key string) (ResourceEntry, bool) {
 	return result, ok
 }
 
-// GetResourceEntry returns the full resource entry for the given key.
-func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
-	return db.getResourceEntry(key)
-}
-
 // GetResourceID returns the ID of the resource for the given key, or an empty string if not found.
 func (db *DeploymentState) GetResourceID(key string) string {
-	entry, _ := db.getResourceEntry(key)
+	db.AssertOpenedForReadOrWrite()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if db.walFile != nil {
+		// in write-mode new IDs are written to WAL and stored in this map
+		id := db.stateIDs[key]
+		if id != "" {
+			return id
+		}
+	}
+
+	// in read mode State is the source of IDs for all requests
+	// in write mode State is the source of IDs for all resources that were not updated
+
+	if db.Data.State == nil {
+		return ""
+	}
+
+	entry, _ := db.Data.State[key]
 	return entry.ID
 }
 
@@ -135,33 +163,19 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			// Not initializing lineage yet, we might have that saved in WAL
-			db.Data = NewDatabase("", 0)
-			db.Path = path
-		} else {
-			return err
-		}
-	} else {
-		err = json.Unmarshal(data, &db.Data)
-		if err != nil {
-			return err
-		}
-		db.Path = path
-	}
+	db.Path = path
+	db.Reload(ctx)
 
-	walPath := walPath(db.Path)
+	walPath := db.Path + walSuffix
 	_, walError := os.Stat(walPath)
 	if walError == nil {
 		if withRecovery {
-			err := db.mergeWalIntoState(ctx)
+			err := db.replayWAL(ctx)
 			if err != nil {
 				return err
 			}
 		} else {
-			return fmt.Errorf("unprocessed WAL exists: %s", walPath)
+			return fmt.Errorf("Unexpected WAL file found at %s", walPath)
 		}
 	}
 
@@ -170,66 +184,171 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 	}
 
 	if withWrite {
-		db.walFile, err = os.OpenFile(walPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		walFile, err := os.OpenFile(walPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 		if err != nil {
 			return fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
 		}
+		db.walFile = walFile
 		lineage := db.Data.Lineage
 		if lineage == "" {
+			// state file is new, does not have lineage yet; store lineage in the WAL only
 			lineage = uuid.New().String()
 		}
-		// Set our Serial to the next one
-		db.Data.Serial += 1
 		walHead := WALHeader{
 			Lineage:      lineage,
-			Serial:       db.Data.Serial, // next serial
+			Serial:       db.Data.Serial + 1,
 			StateVersion: currentStateVersion,
 			CLIVersion:   build.GetInfo().Version,
 		}
-		err := appendJSONLine(db.walFile, walHead)
-		if err != nil {
-			return err
-		}
+		return appendJSONLine(db.walFile, walHead)
 	}
 
 	return nil
 }
 
-func (db *DeploymentState) mergeWalIntoState(ctx context.Context) error {
-}
+func (db *DeploymentState) Reload(ctx context.Context) error {
+	
 
-func (db *DeploymentState) Finalize(ctx context.Context) error {
-	db.AssertOpenedForWrite()
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	db.walFile.Close()
-	db.walFile = nil
-	return db.mergeWalIntoState(ctx)
-}
-
-// Close closes the WAL file without saving state.
-func (db *DeploymentState) Close() error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	if db.wal != nil {
-		if err := db.wal.close(); err != nil {
+	data, err := os.ReadFile(db.Path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			// Not initializing lineage yet, we might have that saved in WAL
+			db.Data = NewDatabase("", 0)
+		} else {
 			return err
 		}
-		db.wal = nil
+	} else {
+		return json.Unmarshal(data, &db.Data)
 	}
 	return nil
 }
 
-func (db *DeploymentState) AssertOpened() {
+func (db *DeploymentState) replayWAL(ctx context.Context) error {
+	walPath := db.Path + walSuffix
+	hasUpdates, err := db.mergeWalIntoState(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to apply WAL file %s: %w", walPath, err)
+	}
+	if hasUpdates {
+		if err := db.unlockedSave(); err != nil {
+			return err
+		}
+	}
+	err = os.Remove(walPath)
+	if err != nil {
+		return fmt.Errorf("failed to remove WAL file %s: %w", walPath, err)
+	}
+	return nil
+}
+
+func (db *DeploymentState) validateWALHeader(ctx context.Context, header *WALHeader) error {
+	if header.CLIVersion != db.Data.CLIVersion {
+		return fmt.Errorf("cli_version in the header (%q) does not match the one in the state (%q)", header.CLIVersion, db.Data.CLIVersion)
+	}
+
+	if header.StateVersion != db.Data.StateVersion {
+		return fmt.Errorf("state_version in the header (%q) does not match the one in the state (%q)", header.StateVersion, db.Data.StateVersion)
+	}
+
+	if header.Lineage != db.Data.Lineage {
+		return fmt.Errorf("lineage in the header (%q) does not match the one in the state (%q)", header.Lineage, db.Data.Lineage)
+	}
+
+	if header.Serial != db.Data.Serial+1 {
+		return fmt.Errorf("serial in the header (%q) is not one higher than the one in the state (%q)", header.Serial, db.Data.Serial)
+	}
+
+	return nil
+}
+
+func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) {
+	if db.walFile != nil {
+		panic("internal error: walFile must be closed")
+	}
+
+	hasUpdates := false
+	walPath := db.Path + walSuffix
+	walFile, err := os.Open(walPath)
+	if err != nil {
+		return false, fmt.Errorf("failed to open WAL file %s: %w", walPath, err)
+	}
+	defer walFile.Close()
+
+	scanner := bufio.NewScanner(walFile)
+	scanner.Buffer(make([]byte, 0, initialBufferSize), maxWalEntrySize)
+	lineNumber := 0
+
+	for scanner.Scan() {
+		lineNumber += 1
+		line := scanner.Bytes()
+		if lineNumber == 1 {
+			var header WALHeader
+			if err := json.Unmarshal(line, &header); err != nil {
+				return hasUpdates, fmt.Errorf("failed to parse WAL header: %w", err)
+			}
+			if err := db.validateWALHeader(ctx, &header); err != nil {
+				return hasUpdates, err
+			}
+		} else {
+			var entry WALEntry
+			if err := json.Unmarshal(line, &entry); err != nil {
+				return hasUpdates, fmt.Errorf("failed to parse WAL entry %s:%s: %q: %w", walPath, lineNumber, entry, err)
+			}
+			hasUpdates = true
+			if entry.Value == nil {
+				delete(db.Data.State, entry.Key)
+			} else {
+				db.Data.State[entry.Key] = *entry.Value
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return hasUpdates, err
+	}
+
+	if hasUpdates {
+		// only assume WAL file's serial if we read any data from it
+		db.Data.Serial += 1
+	}
+
+	return hasUpdates, nil
+}
+
+func (db *DeploymentState) Close(ctx context.Context) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	var err error
+
+	if db.walFile != nil {
+		db.walFile.Close()
+		db.walFile = nil
+		err = db.replayWAL(ctx)
+	}
+
+	db.Path = ""
+	db.Data = Database{}
+	db.stateIDs = make(map[string]string)
+
+	return err
+}
+
+func (db *DeploymentState) AssertOpenedForReadOrWrite() {
 	if db.Path == "" {
 		panic("internal error: DeploymentState must be opened first")
 	}
 }
 
+func (db *DeploymentState) AssertOpenedForRead() {
+	db.AssertOpenedForReadOrWrite()
+	if db.walFile != nil {
+		panic("internal error: DeploymentState must be opened in read mode")
+	}
+}
+
 func (db *DeploymentState) AssertOpenedForWrite() {
-	db.AssertOpened()
+	db.AssertOpenedForReadOrWrite()
 	if db.walFile == nil {
 		panic("internal error: DeploymentState must be opened in write mode")
 	}
