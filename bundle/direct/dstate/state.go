@@ -209,6 +209,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 func (db *DeploymentState) Reload(ctx context.Context) error {
 	
 
+	db.stateIDs = make(map[string]string)
 	data, err := os.ReadFile(db.Path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -250,7 +251,7 @@ func (db *DeploymentState) validateWALHeader(ctx context.Context, header *WALHea
 		return fmt.Errorf("state_version in the header (%q) does not match the one in the state (%q)", header.StateVersion, db.Data.StateVersion)
 	}
 
-	if header.Lineage != db.Data.Lineage {
+	if header.Lineage != db.Data.Lineage && db.Data.Lineage != "" {
 		return fmt.Errorf("lineage in the header (%q) does not match the one in the state (%q)", header.Lineage, db.Data.Lineage)
 	}
 
