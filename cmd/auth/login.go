@@ -725,7 +725,8 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 
 	workspaces, err := a.Workspaces.List(ctx)
 	if err != nil {
-		return "", err
+		log.Warnf(ctx, "Failed to load workspaces (this can happen if the user has no account-level access): %v", err)
+		return promptForWorkspaceID(ctx)
 	}
 
 	if len(workspaces) == 0 {
@@ -762,6 +763,19 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		return "", err
 	}
 	return selected, nil
+}
+
+// promptForWorkspaceID asks the user to manually enter a workspace ID.
+// Returns empty string if the user provides no input.
+func promptForWorkspaceID(ctx context.Context) (string, error) {
+	prompt := cmdio.Prompt(ctx)
+	prompt.Label = "Enter workspace ID (empty to skip)"
+	prompt.AllowEdit = true
+	result, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(result), nil
 }
 
 // getBrowserFunc returns a function that opens the given URL in the browser.
