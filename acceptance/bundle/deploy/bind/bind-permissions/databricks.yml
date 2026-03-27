@@ -1,0 +1,21 @@
+bundle:
+  name: test-bind-permissions
+
+resources:
+  jobs:
+    foo:
+      name: test-job
+      tasks:
+        - task_key: test
+          notebook_task:
+            notebook_path: ./nb.py
+      permissions:
+        - group_name: users
+          level: CAN_MANAGE
+
+targets:
+  default:
+    bind:
+      jobs.permissions:
+        foo:
+          id: "12345"

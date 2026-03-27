@@ -152,7 +152,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return diag.FromErr(fmt.Errorf("failed to create uninterpolated config: %w", err))
 	}
 
-	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &uninterpolatedConfig, snapshotPath)
+	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &uninterpolatedConfig, snapshotPath, nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

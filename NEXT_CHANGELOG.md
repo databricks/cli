@@ -14,6 +14,8 @@
 * engine/direct: Fix bind and unbind for non-Terraform resources ([#4850](https://github.com/databricks/cli/pull/4850))
 * engine/direct: Fix deploying removed principals ([#4824](https://github.com/databricks/cli/pull/4824))
 
+* Add declarative bind support for direct deployment engine ([#4630](https://github.com/databricks/cli/pull/4630)).
+
 ### Dependency updates
 
 ### API Changes

@@ -28,34 +28,43 @@ type ActionType string
 // If case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	Undefined    ActionType = ""
-	Skip         ActionType = "skip"
-	Resize       ActionType = "resize"
-	Update       ActionType = "update"
-	UpdateWithID ActionType = "update_id"
-	Create       ActionType = "create"
-	Recreate     ActionType = "recreate"
-	Delete       ActionType = "delete"
+	Undefined     ActionType = ""
+	Skip          ActionType = "skip"
+	Resize        ActionType = "resize"
+	Update        ActionType = "update"
+	UpdateWithID  ActionType = "update_id"
+	Bind          ActionType = "bind"
+	BindAndUpdate ActionType = "bind_and_update"
+	Create        ActionType = "create"
+	Recreate      ActionType = "recreate"
+	Delete        ActionType = "delete"
 )
 
 var actionOrder = map[ActionType]int{
-	Undefined:    0,
-	Skip:         1,
-	Resize:       2,
-	Update:       3,
-	UpdateWithID: 4,
-	Create:       5,
-	Recreate:     6,
-	Delete:       7,
+	Undefined:     0,
+	Skip:          1,
+	Resize:        2,
+	Update:        3,
+	UpdateWithID:  4,
+	Bind:          5,
+	BindAndUpdate: 6,
+	Create:        7,
+	Recreate:      8,
+	Delete:        9,
 }
 
 func (a ActionType) KeepsID() bool {
 	switch a {
-	case Create, UpdateWithID, Recreate, Delete:
+	case Create, UpdateWithID, Recreate, Delete, Bind, BindAndUpdate:
 		return false
 	default:
 		return true
 	}
+}
+
+// IsBind returns true if the action is a bind action.
+func (a ActionType) IsBind() bool {
+	return a == Bind || a == BindAndUpdate
 }
 
 // StringShort short version of action string, without suffix

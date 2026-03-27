@@ -56,6 +56,40 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 }
 
+// DeclarativeBind handles binding an existing workspace resource into the bundle state.
+// For Bind action, it just saves the state with the bind ID.
+// For BindAndUpdate action, it also applies config changes to the resource.
+func (d *DeploymentUnit) DeclarativeBind(ctx context.Context, db *dstate.DeploymentState, bindID string, newState any, actionType deployplan.ActionType, changes deployplan.Changes) error {
+	if actionType == deployplan.BindAndUpdate {
+		// Apply updates to the bound resource
+		if !d.Adapter.HasDoUpdate() {
+			return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
+		}
+
+		remoteState, err := d.Adapter.DoUpdate(ctx, bindID, newState, changes)
+		if err != nil {
+			return fmt.Errorf("updating bound resource id=%s: %w", bindID, err)
+		}
+
+		err = d.SetRemoteState(remoteState)
+		if err != nil {
+			return err
+		}
+
+		log.Infof(ctx, "Bound and updated %s id=%s", d.ResourceKey, bindID)
+	} else {
+		log.Infof(ctx, "Bound %s id=%s", d.ResourceKey, bindID)
+	}
+
+	// Save state with the bound ID
+	err := db.SaveState(d.ResourceKey, bindID, newState, d.DependsOn)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", bindID, err)
+	}
+
+	return nil
+}
+
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
 	newID, remoteState, err := d.Adapter.DoCreate(ctx, newState)
 	if err != nil {
