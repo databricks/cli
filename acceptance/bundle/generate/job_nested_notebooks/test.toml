@@ -1,0 +1,42 @@
+Ignore = ["src"]
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+Response.Body = '''
+{
+    "job_id": 11223344,
+    "settings": {
+        "name": "dev.my_repo.my_job",
+        "tasks": [
+            {
+                "task_key": "my_notebook_task",
+                "notebook_task": {
+                    "notebook_path": "/my_data_product/dev/my_folder/my_notebook"
+                }
+            },
+            {
+                "task_key": "other_notebook_task",
+                "notebook_task": {
+                    "notebook_path": "/my_data_product/dev/other_folder/other_notebook"
+                }
+            }
+        ]
+    }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/get-status"
+Response.Body = '''
+{
+    "object_type": "NOTEBOOK",
+    "language": "PYTHON",
+    "repos_export_format": "SOURCE"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/export"
+Response.Body = '''
+print("Hello, World!")
+'''
