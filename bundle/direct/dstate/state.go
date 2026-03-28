@@ -113,10 +113,7 @@ func (db *DeploymentState) Open(path string) error {
 	defer db.mu.Unlock()
 
 	if db.Path != "" {
-		if db.Path == path {
-			return nil
-		}
-		return fmt.Errorf("already read state %v, cannot open %v", db.Path, path)
+		panic("state already opened: %v, cannot open %v", db.Path, path)
 	}
 
 	data, err := os.ReadFile(path)
