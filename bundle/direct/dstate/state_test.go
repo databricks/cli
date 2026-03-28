@@ -57,7 +57,7 @@ func TestFinalizeRetryAfterWriteFailure(t *testing.T) {
 
 	// Make directory read-only so WriteFile fails.
 	require.NoError(t, os.Chmod(dir, 0o500))
-	t.Cleanup(func() { os.Chmod(dir, 0o755) })
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
 
 	err := db.Finalize()
 	require.Error(t, err)
@@ -110,7 +110,7 @@ func TestPanicOnDoubleOpen(t *testing.T) {
 	require.NoError(t, db.Open(path))
 
 	assert.Panics(t, func() {
-		db.Open(path)
+		_ = db.Open(path)
 	})
 }
 
