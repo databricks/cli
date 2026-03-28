@@ -33,8 +33,12 @@ import (
 // If a cycle is detected in the variable references, an error is returned.
 // If for some path the resolution function returns [ErrSkipResolution], the variable reference is left in place.
 // This is useful when some variable references are not yet ready to be interpolated.
-func Resolve(in dyn.Value, fn Lookup) (out dyn.Value, err error) {
-	return resolver{in: in, fn: fn}.run()
+func Resolve(in dyn.Value, fn Lookup, opts ...ResolveOption) (out dyn.Value, err error) {
+	r := resolver{in: in, fn: fn}
+	for _, opt := range opts {
+		opt(&r)
+	}
+	return r.run()
 }
 
 type lookupResult struct {
@@ -45,6 +49,10 @@ type lookupResult struct {
 type resolver struct {
 	in dyn.Value
 	fn Lookup
+
+	// suggestFn is called when a reference cannot be resolved to generate
+	// a "Did you mean?" suggestion.
+	suggestFn SuggestFn
 
 	refs     map[string]Ref
 	resolved map[string]dyn.Value
@@ -198,7 +206,13 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 	v, err := r.fn(p)
 	if err != nil {
 		if dyn.IsNoSuchKeyError(err) {
-			err = fmt.Errorf("reference does not exist: ${%s}", key)
+			msg := fmt.Sprintf("reference does not exist: ${%s}", key)
+			if r.suggestFn != nil {
+				if suggestion := r.suggestFn(key); suggestion != "" {
+					msg += fmt.Sprintf(". Did you mean ${%s}?", suggestion)
+				}
+			}
+			err = errors.New(msg)
 		}
 
 		// Cache the return value and return to the caller.

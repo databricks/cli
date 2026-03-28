@@ -1,0 +1,11 @@
+bundle:
+  name: did-you-mean
+
+variables:
+  my_cluster_id:
+    default: "abc-123"
+
+resources:
+  jobs:
+    my_job:
+      name: "test-${var.my_clster_id}"
