@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -340,10 +341,10 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	defer db.mu.Unlock()
 
 	if db.Path == "" {
-		return fmt.Errorf("internal error: DeploymentState must be opened first")
+		return errors.New("internal error: DeploymentState must be opened first")
 	}
 	if db.walFile != nil {
-		return fmt.Errorf("internal error: DeploymentState is already open for write")
+		return errors.New("internal error: DeploymentState is already open for write")
 	}
 
 	walPath := db.Path + walSuffix
