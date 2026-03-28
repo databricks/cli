@@ -176,6 +176,13 @@ Example usage:
 		}
 		cmd.SetContext(ctx)
 
+		if stateDesc.Engine.IsDirect() {
+			_, localPath := b.StateFilenameDirect(ctx)
+			if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+				return err
+			}
+		}
+
 		bundle.ApplySeqContext(ctx, b,
 			statemgmt.Load(stateDesc.Engine, statemgmt.ErrorOnEmptyState),
 		)
