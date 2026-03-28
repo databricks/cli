@@ -135,7 +135,11 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 		_, statePath = b.StateFilenameConfigSnapshot(ctx)
 	}
 
-	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, statePath)
+	if err := deployBundle.StateDB.Open(statePath); err != nil {
+		return nil, fmt.Errorf("failed to open state: %w", err)
+	}
+
+	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate plan: %w", err)
 	}

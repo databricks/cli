@@ -74,13 +74,10 @@ func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
 // This is used when --plan is specified to skip the planning phase.
-func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, statePath string, plan *deployplan.Plan) error {
-	err := b.StateDB.Open(statePath)
-	if err != nil {
-		return fmt.Errorf("reading state from %s: %w", statePath, err)
-	}
+func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
+	b.StateDB.AssertOpened()
 
-	err = b.init(client)
+	err := b.init(client)
 	if err != nil {
 		return err
 	}
@@ -110,13 +107,10 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
-	err := b.StateDB.Open(statePath)
-	if err != nil {
-		return nil, fmt.Errorf("reading state from %s: %w", statePath, err)
-	}
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+	b.StateDB.AssertOpened()
 
-	err = b.init(client)
+	err := b.init(client)
 	if err != nil {
 		return nil, err
 	}

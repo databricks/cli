@@ -164,6 +164,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 		cmd.SetContext(ctx)
 
+		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
+		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "")
+		if needDirectState {
+			_, localPath := b.StateFilenameDirect(ctx)
+			if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+		}
+
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.
 		if opts.InitIDs || opts.ErrorOnEmptyState {
 			var modes []statemgmt.LoadMode

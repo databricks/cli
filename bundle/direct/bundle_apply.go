@@ -152,11 +152,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return true
 	})
 
-	// This must run even if deploy failed:
-	err = b.StateDB.Finalize()
-	if err != nil {
-		logdiag.LogError(ctx, err)
-	}
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
