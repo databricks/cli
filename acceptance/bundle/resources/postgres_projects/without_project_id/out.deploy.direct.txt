@@ -11,4 +11,3 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Field 'project_id' is required, expected non-default value (not "")!
 
-Updating deployment state...

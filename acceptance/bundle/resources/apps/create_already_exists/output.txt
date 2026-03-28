@@ -27,7 +27,6 @@ HTTP Status: 409 Conflict
 API error_code: RESOURCE_ALREADY_EXISTS
 API message: An app with the same name already exists: test-app-already-exists
 
-Updating deployment state...
 
 >>> [CLI] apps delete test-app-already-exists
 {
