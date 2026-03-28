@@ -135,8 +135,12 @@ func (db *DeploymentState) Open(path string) error {
 		return err
 	}
 
+	versionBefore := db.Data.StateVersion
 	if err := migrateState(&db.Data); err != nil {
 		return fmt.Errorf("migrating state %s: %w", path, err)
+	}
+	if db.Data.StateVersion != versionBefore {
+		db.modified = true
 	}
 
 	db.Path = path
@@ -160,9 +164,15 @@ func (db *DeploymentState) Finalize() error {
 	}
 
 	db.Data.Serial++
-	db.modified = false
 
-	return db.unlockedSave()
+	if err := db.unlockedSave(); err != nil {
+		// Restore serial so a retry doesn't double-increment.
+		db.Data.Serial--
+		return err
+	}
+
+	db.modified = false
+	return nil
 }
 
 func (db *DeploymentState) AssertOpened() {
