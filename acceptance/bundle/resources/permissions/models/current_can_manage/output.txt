@@ -23,6 +23,10 @@
 The following resources will be deleted:
   delete resources.models.foo
 
+
+This action will result in the deletion or recreation of the following MLflow models along with all their versions and artifacts:
+  delete resources.models.foo
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Deleting files...

@@ -40,8 +40,11 @@ Deployment complete!
 === change scope name (should recreate scope and update permissions)
 >>> [CLI] bundle plan
 
->>> [CLI] bundle deploy
+>>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following secret scopes. All secrets stored in them will be permanently lost:
+  recreate resources.secret_scopes.my_scope
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -59,6 +62,10 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.secret_scopes.my_scope
+
+
+This action will result in the deletion or recreation of the following secret scopes. All secrets stored in them will be permanently lost:
   delete resources.secret_scopes.my_scope
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default

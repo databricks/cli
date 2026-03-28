@@ -53,7 +53,8 @@ Error: resource with key "foo" not found
 The following resources will be deleted:
   delete resources.schemas.foo
 
-This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+
+This action will result in the deletion or recreation of the following UC schemas along with all the tables and views they contain:
   delete resources.schemas.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default

@@ -14,5 +14,5 @@ grep -v DELETE < databricks.yml > databricks.yml.tmp && mv databricks.yml.tmp da
 trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 rm out.requests.txt
 
-trace $CLI bundle deploy
+trace $CLI bundle deploy --auto-approve
 trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' &> out.deploy.requests.txt

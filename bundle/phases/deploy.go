@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -26,6 +27,17 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
+// resourceDestroyWarning returns the warning message for a given resource type,
+// or an empty string if the resource is safe to delete/recreate.
+// For child resources (e.g. permissions, grants), the parent type is used.
+func resourceDestroyWarning(action deployplan.Action) string {
+	resourceType := config.GetResourceTypeFromKey(action.ResourceKey)
+	if base, _, ok := strings.Cut(resourceType, "."); ok {
+		resourceType = base
+	}
+	return resourceDestroyMessage[resourceType]
+}
+
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
 
@@ -34,51 +46,14 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		return false, err
 	}
 
-	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
-	schemaActions := filterGroup(actions, "schemas", types...)
-	dltActions := filterGroup(actions, "pipelines", types...)
-	volumeActions := filterGroup(actions, "volumes", types...)
-	dashboardActions := filterGroup(actions, "dashboards", types...)
+	destructiveActions := collectDestructiveActions(actions)
 
 	// We don't need to display any prompts in this case.
-	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
+	if len(destructiveActions) == 0 {
 		return true, nil
 	}
 
-	// One or more UC schema resources will be deleted or recreated.
-	if len(schemaActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateSchemaMessage)
-		for _, action := range schemaActions {
-			if action.IsChildResource() {
-				continue
-			}
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more DLT pipelines is being recreated.
-	if len(dltActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreatePipelineMessage)
-		for _, action := range dltActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more volumes is being recreated.
-	if len(volumeActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateVolumeMessage)
-		for _, action := range volumeActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-
-	// One or more dashboards is being recreated.
-	if len(dashboardActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDashboardMessage)
-		for _, action := range dashboardActions {
-			cmdio.Log(ctx, action)
-		}
-	}
+	logDestructiveActions(ctx, destructiveActions)
 
 	if b.AutoApprove {
 		return true, nil
@@ -95,6 +70,48 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	}
 
 	return approved, nil
+}
+
+// collectDestructiveActions returns delete/recreate actions for resource types
+// that are not safe to destroy. Child resources (permissions, grants) are excluded.
+func collectDestructiveActions(actions []deployplan.Action) []deployplan.Action {
+	var result []deployplan.Action
+	for _, action := range actions {
+		if action.IsChildResource() {
+			continue
+		}
+		if action.ActionType != deployplan.Recreate && action.ActionType != deployplan.Delete {
+			continue
+		}
+		if resourceDestroyWarning(action) == "" {
+			continue
+		}
+		result = append(result, action)
+	}
+	return result
+}
+
+// logDestructiveActions prints grouped warning messages for destructive actions.
+// Actions are grouped by their warning message so that each unique message is
+// printed once, followed by the affected resources.
+func logDestructiveActions(ctx context.Context, actions []deployplan.Action) {
+	// Use a slice to preserve insertion order of messages.
+	var messages []string
+	groups := map[string][]deployplan.Action{}
+	for _, action := range actions {
+		msg := resourceDestroyWarning(action)
+		if _, seen := groups[msg]; !seen {
+			messages = append(messages, msg)
+		}
+		groups[msg] = append(groups[msg], action)
+	}
+
+	for _, msg := range messages {
+		cmdio.LogString(ctx, "\n"+msg)
+		for _, action := range groups[msg] {
+			cmdio.Log(ctx, action)
+		}
+	}
 }
 
 func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) {

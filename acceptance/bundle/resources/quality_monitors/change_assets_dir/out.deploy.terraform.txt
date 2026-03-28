@@ -1,5 +1,5 @@
 
->>> errcode [CLI] bundle deploy
+>>> errcode [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Error: terraform apply: exit status 1

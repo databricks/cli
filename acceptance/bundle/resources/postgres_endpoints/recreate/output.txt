@@ -147,6 +147,13 @@ The following resources will be deleted:
   delete resources.postgres_endpoints.my_endpoint
   delete resources.postgres_projects.my_project
 
+
+This action will result in the deletion or recreation of the following Postgres branches along with all data they contain:
+  delete resources.postgres_branches.main
+
+This action will result in the deletion or recreation of the following Postgres projects along with all their branches, databases, and endpoints:
+  delete resources.postgres_projects.my_project
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-recreate-[UNIQUE_NAME]/default
 
 Deleting files...

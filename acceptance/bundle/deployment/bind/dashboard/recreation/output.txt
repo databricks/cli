@@ -15,8 +15,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 
-This action will result in the deletion or recreation of the following dashboards.
-This will result in changed IDs and permanent URLs of the dashboards that will be recreated:
+This action will result in the deletion or recreation of the following dashboards. Recreated dashboards will have new IDs and permanent URLs:
   recreate resources.dashboards.dashboard1
 Error: the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed
 

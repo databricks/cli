@@ -24,6 +24,10 @@ Table main.qm_test_[UNIQUE_NAME].test_table is now visible (catalog_name=main)
 The following resources will be deleted:
   delete resources.quality_monitors.monitor1
 
+
+This action will result in the deletion or recreation of the following quality monitors. Associated metric tables may be lost or orphaned:
+  delete resources.quality_monitors.monitor1
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default
 
 Deleting files...

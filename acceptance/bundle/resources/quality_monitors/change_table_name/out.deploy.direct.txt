@@ -1,6 +1,9 @@
 
->>> errcode [CLI] bundle deploy
+>>> errcode [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following quality monitors. Associated metric tables may be lost or orphaned:
+  recreate resources.quality_monitors.monitor1
 Deploying resources...
 Updating deployment state...
 Deployment complete!

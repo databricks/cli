@@ -29,6 +29,10 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.experiments.foo
 
+
+This action will result in the deletion or recreation of the following MLflow experiments along with all their runs, metrics, and artifacts:
+  delete resources.experiments.foo
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Deleting files...

@@ -25,6 +25,6 @@ trace errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 trace errcode $CLI bundle plan -o json &> out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
-trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace errcode $CLI bundle deploy --auto-approve &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace errcode $CLI bundle plan &> out.plan_after_deploy.$DATABRICKS_BUNDLE_ENGINE.txt
