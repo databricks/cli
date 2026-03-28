@@ -62,8 +62,10 @@ type BindResult struct {
 func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
 	// Check if the resource is already managed (bound to a different ID)
 	var checkStateDB dstate.DeploymentState
-	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(true)); err == nil {
-		if existingID := checkStateDB.GetResourceID(resourceKey); existingID != "" {
+	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err == nil {
+		existingID := checkStateDB.GetResourceID(resourceKey)
+		checkStateDB.Close(ctx)
+		if existingID != "" {
 			return nil, ErrResourceAlreadyBound{
 				ResourceKey: resourceKey,
 				ExistingID:  existingID,
@@ -105,11 +107,17 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	log.Infof(ctx, "Bound %s to id=%s (in temp state)", resourceKey, resourceID)
 
 	// First plan + update: populate state with resolved config
+	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false))
+	if err != nil {
+		os.Remove(tmpStatePath)
+		return nil, err
+	}
 	plan, err := b.CalculatePlan(ctx, client, configRoot)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
+	b.StateDB.Close(ctx)
 
 	// Populate the state with the resolved config
 	entry := plan.Plan[resourceKey]
@@ -132,6 +140,12 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			}
 		}
 
+		err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(true))
+		if err != nil {
+			os.Remove(tmpStatePath)
+			return nil, err
+		}
+
 		err = b.StateDB.SaveState(resourceKey, resourceID, sv.Value, dependsOn)
 		if err != nil {
 			os.Remove(tmpStatePath)
@@ -146,7 +160,13 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Second plan: this is the plan to present to the user (change between remote resource and config)
+	err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(false))
+	if err != nil {
+		os.Remove(tmpStatePath)
+		return nil, err
+	}
 	plan, err = b.CalculatePlan(ctx, client, configRoot)
+	b.StateDB.Close(ctx)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err

@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
@@ -75,16 +76,33 @@ type ProcessOptions struct {
 	// (after state is opened and IDs loaded, before deferred Finalize).
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
+	// If true, compute the deployment plan and return it via ProcessBundleRetWithPlan.
+	// The plan is computed after PreDeployChecks while state is still open for read.
+	ComputePlan bool
+
+
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
 }
 
 func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, error) {
-	b, _, err := ProcessBundleRet(cmd, opts)
+	b, _, _, err := processBundleRetInternal(cmd, opts)
 	return b, err
 }
 
-func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, retErr error) {
+func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, *statemgmt.StateDesc, error) {
+	b, stateDesc, _, err := processBundleRetInternal(cmd, opts)
+	return b, stateDesc, err
+}
+
+// ProcessBundleRetWithPlan is like ProcessBundleRet but also computes and returns a deployment plan.
+// opts.ComputePlan must be true.
+func ProcessBundleRetWithPlan(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, *statemgmt.StateDesc, *deployplan.Plan, error) {
+	opts.ComputePlan = true
+	return processBundleRetInternal(cmd, opts)
+}
+
+func processBundleRetInternal(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, plan *deployplan.Plan, retErr error) {
 	var err error
 	ctx := cmd.Context()
 	if opts.SkipInitContext {
@@ -116,20 +134,20 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	if logdiag.HasError(ctx) {
-		return b, nil, root.ErrAlreadyPrinted
+		return b, nil, nil, root.ErrAlreadyPrinted
 	}
 
 	variables, err := cmd.Flags().GetStringSlice("var")
 	if err != nil {
 		logdiag.LogDiag(ctx, diag.FromErr(err)[0])
-		return b, nil, err
+		return b, nil, nil, err
 	}
 
 	// Initialize variables by assigning them values passed as command line flags
 	configureVariables(cmd, b, variables)
 
 	if b == nil || logdiag.HasError(ctx) {
-		return b, nil, root.ErrAlreadyPrinted
+		return b, nil, nil, root.ErrAlreadyPrinted
 	}
 	ctx = cmd.Context()
 
@@ -152,19 +170,19 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if opts.IncludeLocations {
 			bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
 			if logdiag.HasError(ctx) {
-				return b, nil, root.ErrAlreadyPrinted
+				return b, nil, nil, root.ErrAlreadyPrinted
 			}
 		}
 	}
 
 	if logdiag.HasError(ctx) {
-		return b, nil, root.ErrAlreadyPrinted
+		return b, nil, nil, root.ErrAlreadyPrinted
 	}
 
 	if opts.PostInitFunc != nil {
 		err := opts.PostInitFunc(ctx, b)
 		if err != nil {
-			return b, nil, err
+			return b, nil, nil, err
 		}
 	}
 
@@ -173,24 +191,27 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	if shouldReadState {
 		requiredEngine, err := ResolveEngineSetting(ctx, b)
 		if err != nil {
-			return b, nil, err
+			return b, nil, nil, err
 		}
 
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, nil, root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
 
-		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
-		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
-		if needDirectState {
+		// Open state for read (with WAL recovery) so that ExportState, CalculatePlan, etc. can access it.
+		// Caller is responsible for closing state when done (Deploy closes read + reopens for write).
+		if stateDesc.Engine.IsDirect() {
 			_, localPath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+				return b, stateDesc, nil, err
 			}
+			defer func() {
+				// Close is idempotent — no-op if already closed by Deploy
+				b.DeploymentBundle.StateDB.Close(ctx)
+			}()
 		}
 
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.
@@ -208,17 +229,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 			bundle.ApplySeqContext(ctx, b, mutators...)
 			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
+				return b, stateDesc, nil, root.ErrAlreadyPrinted
 			}
 		}
 	}
 
-	var plan *deployplan.Plan
-
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
 			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, nil, root.ErrAlreadyPrinted
 		}
 		opts.Build = false
 		opts.PreDeployChecks = false
@@ -227,7 +246,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, nil, root.ErrAlreadyPrinted
 		}
 		currentVersion := build.GetInfo().Version
 		if plan.CLIVersion != currentVersion {
@@ -236,10 +255,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		// Validate that the plan's lineage and serial match the current state
 		// This must happen before any file operations
-		err = direct.ValidatePlanAgainstState(ctx, &b.DeploymentBundle.StateDB, plan)
+		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, nil, root.ErrAlreadyPrinted
 		}
 	} else if opts.Deploy {
 		opts.Build = true
@@ -255,14 +274,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, nil, root.ErrAlreadyPrinted
 		}
 
 		// Pipeline CLI only validation.
 		if opts.IsPipelinesCLI {
 			rejectDefinitions(ctx, b)
 			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
+				return b, stateDesc, nil, root.ErrAlreadyPrinted
 			}
 		}
 	}
@@ -270,7 +289,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	if opts.Validate {
 		validate.Validate(ctx, b)
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, nil, root.ErrAlreadyPrinted
 		}
 	}
 
@@ -285,7 +304,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, nil, root.ErrAlreadyPrinted
 		}
 	}
 
@@ -294,7 +313,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
 
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, nil, root.ErrAlreadyPrinted
+		}
+	}
+
+	// Compute plan while state is open for read (before Deploy upgrades to write)
+	if opts.ComputePlan && plan == nil {
+		plan = phases.RunPlan(ctx, b, stateDesc.Engine)
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, nil, root.ErrAlreadyPrinted
 		}
 	}
 
@@ -314,25 +341,25 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		})
 
 		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+			return b, stateDesc, nil, root.ErrAlreadyPrinted
 		}
 
 		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && stateDesc.HasRemoteTerraformState() {
 			statemgmt.BackupRemoteTerraformState(ctx, b)
 
 			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
+				return b, stateDesc, nil, root.ErrAlreadyPrinted
 			}
 		}
 	}
 
 	if opts.PostStateFunc != nil {
 		if err := opts.PostStateFunc(ctx, b, stateDesc); err != nil {
-			return b, stateDesc, err
+			return b, stateDesc, nil, err
 		}
 	}
 
-	return b, stateDesc, nil
+	return b, stateDesc, plan, nil
 }
 
 // ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.
