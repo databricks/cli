@@ -37,24 +37,17 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-// ValidatePlanAgainstState validates that a plan's lineage and serial match the current state.
-// This should be called early in the deployment process, before any file operations.
+// ValidatePlanAgainstState validates that a plan's lineage and serial match the given state.
 // If the plan has no lineage (first deployment), validation is skipped.
-func ValidatePlanAgainstState(ctx context.Context, stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
-	// If plan has no lineage, this is a first deployment before any state exists
-	// No validation needed
+func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
 	if plan.Lineage == "" {
 		return nil
 	}
 
-	stateDB.AssertOpened()
-
-	// Validate that the plan's lineage matches the current state's lineage
 	if plan.Lineage != stateDB.Data.Lineage {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
 	}
 
-	// Validate that the plan's serial matches the current state's serial
 	if plan.Serial != stateDB.Data.Serial {
 		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
 	}
@@ -63,9 +56,9 @@ func ValidatePlanAgainstState(ctx context.Context, stateDB *dstate.DeploymentSta
 }
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
-// This is used when --plan is specified to skip the planning phase.
+// StateDB must already be open for write before calling this function.
 func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
-	b.StateDB.AssertOpened()
+	b.StateDB.AssertOpenedForWrite()
 
 	err := b.init(client)
 	if err != nil {
@@ -97,8 +90,10 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
+// CalculatePlan computes the deployment plan by comparing local config against remote state.
+// StateDB must already be open for read before calling this function.
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
-	b.StateDB.AssertOpened()
+	b.StateDB.AssertOpenedForRead()
 
 	err := b.init(client)
 	if err != nil {

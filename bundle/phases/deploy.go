@@ -154,6 +154,18 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
 
+	// Close state to replay WAL into state file, then reopen for read.
+	// PushResourcesState needs the file on disk, Load needs the state in memory.
+	if targetEngine.IsDirect() {
+		if err := b.DeploymentBundle.StateDB.Close(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+		}
+		_, localPath := b.StateFilenameDirect(ctx)
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+			logdiag.LogError(ctx, err)
+		}
+	}
+
 	// Even if deployment failed, there might be updates in states that we need to upload
 	statemgmt.PushResourcesState(ctx, b, targetEngine)
 	if logdiag.HasError(ctx) {
@@ -222,9 +234,19 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	_, localPath := b.StateFilenameDirect(ctx)
-
 	if plan != nil {
+		if engine.IsDirect() {
+			// Upgrade from read (opened by process.go) to write mode
+			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			defer func() {
+				if err := b.DeploymentBundle.StateDB.Close(ctx); err != nil {
+					logdiag.LogError(ctx, err)
+				}
+			}()
+		}
 		// Initialize DeploymentBundle for applying the loaded plan
 		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
 		if err != nil {
@@ -232,13 +254,20 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			return
 		}
 	} else {
+		// State is already open for read by process.go (for direct engine)
 		plan = RunPlan(ctx, b, engine)
-		err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(true))
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+		if engine.IsDirect() {
+			// Upgrade from read to write mode (Apply needs write access)
+			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			defer func() {
+				if err := b.DeploymentBundle.StateDB.Close(ctx); err != nil {
+					logdiag.LogError(ctx, err)
+				}
+			}()
 		}
-
 	}
 
 	if logdiag.HasError(ctx) {

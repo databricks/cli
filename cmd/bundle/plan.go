@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
@@ -56,14 +55,13 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			}
 		}
 
-		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
+		_, _, plan, err := utils.ProcessBundleRetWithPlan(cmd, opts)
 		if err != nil {
 			return err
 		}
 		ctx := cmd.Context()
 
-		plan := phases.RunPlan(ctx, b, stateDesc.Engine)
-		if logdiag.HasError(ctx) {
+		if plan == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 

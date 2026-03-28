@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
@@ -138,6 +139,11 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 			return nil, fmt.Errorf("failed to open state: %w", err)
 		}
 	}
+
+	if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+		return nil, fmt.Errorf("failed to open state: %w", err)
+	}
+	defer deployBundle.StateDB.Close(ctx)
 
 	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 	if err != nil {
