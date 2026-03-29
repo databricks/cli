@@ -181,6 +181,11 @@ Example usage:
 			if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
 				return err
 			}
+			defer func() {
+				if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
+					logdiag.LogError(ctx, err)
+				}
+			}()
 		}
 
 		bundle.ApplySeqContext(ctx, b,
