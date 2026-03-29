@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# /// script
+# dependencies = ["PyGithub>=2,<3", "pyjwt<2.12.0", "charset-normalizer<3.4.6"]
+# ///
+
 import os
 import re
 import argparse

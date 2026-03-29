@@ -1,9 +1,14 @@
 package internal
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestExpandEnvMatrix(t *testing.T) {
@@ -194,6 +199,103 @@ func TestExpandEnvMatrix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ExpandEnvMatrix(tt.matrix, tt.exclude, tt.extraVars)
 			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestSubsetExpanded_DirectBias(t *testing.T) {
+	// Across many test dirs, DATABRICKS_BUNDLE_ENGINE=direct should be selected ~10/11 of the time.
+	expanded := [][]string{
+		{"DATABRICKS_BUNDLE_ENGINE=terraform"},
+		{"DATABRICKS_BUNDLE_ENGINE=direct"},
+	}
+	directCount := 0
+	total := 1000
+	for i := range total {
+		r := SubsetExpanded(expanded, fmt.Sprintf("test/dir%d", i), false)
+		if r[0][0] == "DATABRICKS_BUNDLE_ENGINE=direct" {
+			directCount++
+		}
+	}
+	ratio := float64(directCount) / float64(total)
+	assert.InDelta(t, float64(10)/11, ratio, 0.05, "expected ~10/11 direct, got %.1f%%", ratio*100)
+}
+
+func TestSubsetExpanded_ScriptUsesEngine(t *testing.T) {
+	// When script uses $DATABRICKS_BUNDLE_ENGINE, one combo per engine value is returned.
+	expanded := [][]string{
+		{"DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN="},
+		{"DATABRICKS_BUNDLE_ENGINE=direct", "READPLAN="},
+		{"DATABRICKS_BUNDLE_ENGINE=direct", "READPLAN=1"},
+	}
+	result := SubsetExpanded(expanded, "test/dir", true)
+	require.Len(t, result, 2)
+	engines := make(map[string]bool)
+	for _, envset := range result {
+		for _, kv := range envset {
+			if strings.HasPrefix(kv, "DATABRICKS_BUNDLE_ENGINE=") {
+				engines[kv] = true
+			}
+		}
+	}
+	assert.True(t, engines["DATABRICKS_BUNDLE_ENGINE=terraform"])
+	assert.True(t, engines["DATABRICKS_BUNDLE_ENGINE=direct"])
+}
+
+func TestLoadConfigPhaseIsNotInherited(t *testing.T) {
+	tests := []struct {
+		name       string
+		files      map[string]string
+		dir        string
+		wantPhase  int
+		wantConfig string
+	}{
+		{
+			name: "missing leaf config defaults to zero",
+			files: map[string]string{
+				"test.toml": "Phase = 3\n",
+			},
+			dir:        "suite/test",
+			wantPhase:  0,
+			wantConfig: "test.toml",
+		},
+		{
+			name: "leaf config without phase resets inherited value",
+			files: map[string]string{
+				"test.toml":            "Phase = 3\n",
+				"suite/test/test.toml": "Local = true\n",
+			},
+			dir:        "suite/test",
+			wantPhase:  0,
+			wantConfig: "test.toml, suite/test/test.toml",
+		},
+		{
+			name: "leaf phase wins",
+			files: map[string]string{
+				"test.toml":            "Phase = 3\n",
+				"suite/test/test.toml": "Local = true\nPhase = 1\n",
+			},
+			dir:        "suite/test",
+			wantPhase:  1,
+			wantConfig: "test.toml, suite/test/test.toml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			t.Chdir(root)
+
+			for path, contents := range tt.files {
+				absPath := filepath.Join(root, filepath.FromSlash(path))
+				require.NoError(t, os.MkdirAll(filepath.Dir(absPath), 0o755))
+				require.NoError(t, os.WriteFile(absPath, []byte(contents), 0o644))
+			}
+
+			config, configPath := LoadConfig(t, tt.dir)
+
+			assert.Equal(t, tt.wantPhase, config.Phase)
+			assert.Equal(t, tt.wantConfig, configPath)
 		})
 	}
 }

@@ -690,8 +690,9 @@ func TestGet_PointerToStructWithZeroValues(t *testing.T) {
 		NestedNoOmit: &NestedStruct{ID: 0, Name: "", Count: 0},
 	}
 
-	// The pointer was explicitly set, so it should return the struct even with zero values
-	testGet(t, obj, "nested_omit", &NestedStruct{ID: 0, Name: "", Count: 0})
+	// The pointer was explicitly set; it should return the dereferenced struct (not nil).
+	// JSON omitempty only omits nil pointers, not pointers to zero values.
+	testGet(t, obj, "nested_omit", NestedStruct{ID: 0, Name: "", Count: 0})
 	testGet(t, obj, "nested_omit.id", int64(0))
 	testGet(t, obj, "nested_omit.name", "")
 	testGet(t, obj, "nested_omit.count", 0)
@@ -725,7 +726,7 @@ func TestGetJobSettings(t *testing.T) {
 		},
 	}
 
-	testGet(t, &jobSettings, "tasks[0].run_job_task", &jobs.RunJobTask{})
+	testGet(t, &jobSettings, "tasks[0].run_job_task", jobs.RunJobTask{})
 	testGet(t, &jobSettings, "tasks[0].run_job_task.job_id", int64(0))
 }
 
@@ -736,6 +737,82 @@ func TestPipeline(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, "ingestion_definition: cannot access nil value", err.Error())
 	require.Nil(t, v)
+}
+
+func TestGet_EmbedTag(t *testing.T) {
+	type Item struct {
+		Name  string `json:"name"`
+		Level string `json:"level,omitempty"`
+	}
+
+	type Container struct {
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
+	}
+
+	c := Container{
+		ObjectID: "abc",
+		EmbeddedSlice: []Item{
+			{Name: "alice", Level: "admin"},
+			{Name: "bob", Level: "reader"},
+		},
+	}
+
+	// Access non-embed field normally.
+	testGet(t, c, "object_id", "abc")
+
+	// Access EmbeddedSlice elements via index.
+	testGet(t, c, "[0].name", "alice")
+	testGet(t, c, "[1].level", "reader")
+
+	// Access via key-value selector.
+	testGet(t, c, "[name='bob'].level", "reader")
+
+	// Out of range.
+	_, err := GetByString(c, "[5].name")
+	require.Error(t, err)
+	var notFound *NotFoundError
+	require.ErrorAs(t, err, &notFound)
+
+	// EmbeddedSlice field is not accessible by json tag name.
+	_, err = GetByString(c, "items")
+	require.Error(t, err)
+	require.NotErrorAs(t, err, &notFound)
+}
+
+func TestValidate_EmbedTag(t *testing.T) {
+	type Item struct {
+		Name  string `json:"name"`
+		Level string `json:"level,omitempty"`
+	}
+
+	type Container struct {
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []Item `json:"items,omitempty"`
+	}
+
+	typ := reflect.TypeOf(Container{})
+
+	// Valid paths through EmbeddedSlice.
+	require.NoError(t, ValidateByString(typ, "[0].name"))
+	require.NoError(t, ValidateByString(typ, "[*].level"))
+	require.NoError(t, ValidateByString(typ, "[name='alice'].level"))
+	require.NoError(t, ValidateByString(typ, "object_id"))
+
+	// EmbeddedSlice itself is not accessible by json tag name.
+	require.Error(t, ValidateByString(typ, "items"))
+	require.Error(t, ValidateByString(typ, "items[0].name"))
+}
+
+func TestGet_EmbedTagEmpty(t *testing.T) {
+	type Container struct {
+		ObjectID      string `json:"object_id"`
+		EmbeddedSlice []int  `json:"items,omitempty"`
+	}
+
+	// Empty embed slice with omitempty: index should fail.
+	_, err := GetByString(Container{ObjectID: "abc"}, "[0]")
+	require.Error(t, err)
 }
 
 func TestGetKeyValue_NestedMultiple(t *testing.T) {

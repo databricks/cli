@@ -41,8 +41,9 @@ echo INPUT_CONFIG_OK
 
 # Check both text and JSON plan for no changes
 # Note, expect that there maybe more than one resource unchanged
-$CLI bundle plan -o json &> LOG.planjson
-cat LOG.planjson | contains.py '!panic' '!internal error' > /dev/null
+$CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
+cat LOG.planjson.err | contains.py '!panic' '!internal error' > /dev/null
 verify_no_drift.py LOG.planjson
 
-$CLI bundle plan | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
+$CLI bundle plan 2>LOG.plan.err | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
+cat LOG.plan.err | contains.py '!panic' '!internal error' > /dev/null

@@ -180,15 +180,15 @@
           "attributes": {
             "catalog_name": "main",
             "comment": null,
-            "enable_predictive_optimization": null,
+            "enable_predictive_optimization": "INHERIT",
             "force_destroy": true,
             "id": "main.schema_grants",
-            "metastore_id": null,
+            "metastore_id": "[UUID]",
             "name": "schema_grants",
             "owner": "[USERNAME]",
             "properties": null,
             "provider_config": [],
-            "schema_id": "",
+            "schema_id": "[UUID]",
             "storage_root": null
           },
           "sensitive_attributes": [],

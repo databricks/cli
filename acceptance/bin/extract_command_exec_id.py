@@ -8,34 +8,31 @@ from pathlib import Path
 def extract_cmd_exec_id():
     requests_file = Path("out.requests.txt")
 
-    # Read until we find a complete JSON object. This is required because we pretty
-    # print the JSON object (with new lines) in the out.requests.txt file.
+    # Read JSON objects one at a time and find the first one with a cmd-exec-id
+    # in the User-Agent header. Some requests (e.g. .well-known/databricks-config)
+    # are made before the command execution context is set and lack cmd-exec-id.
     with requests_file.open("r") as f:
         json_str = ""
         while True:
             line = f.readline()
             if not line:
-                raise SystemExit("Requests file is empty")
+                break
 
             json_str += line
             try:
-                # Try to parse the accumulated string as JSON
                 data = json.loads(json_str)
-                break
             except json.JSONDecodeError:
-                # If incomplete, continue reading
                 continue
 
-        user_agent = data["headers"]["User-Agent"][0]
+            # Reset for next JSON object
+            json_str = ""
 
-        if not user_agent:
-            raise SystemExit("User-Agent header is empty")
+            user_agent = data.get("headers", {}).get("User-Agent", [""])[0]
+            match = re.search(r"cmd-exec-id/([^\s]+)", user_agent)
+            if match:
+                return match.group(1)
 
-        match = re.search(r"cmd-exec-id/([^\s]+)", user_agent)
-        if match:
-            return match.group(1)
-
-        raise SystemExit(f"No command execution ID found in User-Agent: {user_agent}")
+    raise SystemExit("No command execution ID found in any request in out.requests.txt")
 
 
 if __name__ == "__main__":

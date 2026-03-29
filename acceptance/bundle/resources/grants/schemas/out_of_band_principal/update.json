@@ -1,0 +1,8 @@
+{
+  "changes": [
+    {
+      "principal": "deco-test-user@databricks.com",
+      "add": ["USE_SCHEMA"]
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
 )
 
@@ -148,7 +149,7 @@ func LaunchIDE(ctx context.Context, ideOption, connectionName, userName, databri
 	remoteURI := fmt.Sprintf("ssh-remote+%s@%s", userName, connectionName)
 	remotePath := fmt.Sprintf("/Workspace/Users/%s/", databricksUserName)
 
-	cmdio.LogString(ctx, fmt.Sprintf("Launching %s with remote URI: %s and path: %s", ideOption, remoteURI, remotePath))
+	log.Infof(ctx, "Launching %s with remote URI: %s and path: %s", ideOption, remoteURI, remotePath)
 
 	ideCmd := exec.CommandContext(ctx, ide.Command, "--remote", remoteURI, remotePath)
 	ideCmd.Stdout = os.Stdout

@@ -213,13 +213,13 @@ func newCreate() *cobra.Command {
 		if createSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
 			status := i.State.ConfigUpdate
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -299,13 +299,13 @@ func newCreateProvisionedThroughputEndpoint() *cobra.Command {
 		if createProvisionedThroughputEndpointSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
 			status := i.State.ConfigUpdate
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(createProvisionedThroughputEndpointTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -680,6 +680,7 @@ func newHttpRequest() *cobra.Command {
 	cmd.Flags().StringVar(&httpRequestReq.Headers, "headers", httpRequestReq.Headers, `Additional headers for the request.`)
 	cmd.Flags().StringVar(&httpRequestReq.Json, "json", httpRequestReq.Json, `The JSON payload to send in the request body.`)
 	cmd.Flags().StringVar(&httpRequestReq.Params, "params", httpRequestReq.Params, `Query parameters for the request.`)
+	cmd.Flags().StringVar(&httpRequestReq.SubDomain, "sub-domain", httpRequestReq.SubDomain, `Optional subdomain to prepend to the connection URL's host.`)
 
 	cmd.Use = "http-request CONNECTION_NAME METHOD PATH"
 	cmd.Short = `Make external services call using the credentials stored in UC Connection.`
@@ -1298,13 +1299,13 @@ func newUpdateConfig() *cobra.Command {
 		if updateConfigSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
 			status := i.State.ConfigUpdate
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(updateConfigTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}
@@ -1540,13 +1541,13 @@ func newUpdateProvisionedThroughputEndpointConfig() *cobra.Command {
 		if updateProvisionedThroughputEndpointConfigSkipWait {
 			return cmdio.Render(ctx, wait.Response)
 		}
-		spinner := cmdio.Spinner(ctx)
+		sp := cmdio.NewSpinner(ctx)
 		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
 			status := i.State.ConfigUpdate
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			spinner <- statusMessage
+			sp.Update(statusMessage)
 		}).GetWithTimeout(updateProvisionedThroughputEndpointConfigTimeout)
-		close(spinner)
+		sp.Close()
 		if err != nil {
 			return err
 		}

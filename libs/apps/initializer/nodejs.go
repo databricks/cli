@@ -20,12 +20,14 @@ type InitializerNodeJs struct {
 func (i *InitializerNodeJs) Initialize(ctx context.Context, workDir string) *InitResult {
 	i.workDir = workDir
 
-	// Step 1: Run npm install
-	if err := i.runNpmInstall(ctx, workDir); err != nil {
-		return &InitResult{
-			Success: false,
-			Message: "Failed to install dependencies",
-			Error:   err,
+	// Step 1: Run npm install (skip if node_modules already exists from a background install)
+	if !fileExists(filepath.Join(workDir, "node_modules")) {
+		if err := i.runNpmInstall(ctx, workDir); err != nil {
+			return &InitResult{
+				Success: false,
+				Message: "Failed to install dependencies",
+				Error:   err,
+			}
 		}
 	}
 

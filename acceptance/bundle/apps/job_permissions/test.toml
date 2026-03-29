@@ -1,11 +1,6 @@
-# Direct engine error: cannot plan resources.jobs.my_job.permissions: cannot update
-# [0].service_principal_name: failed to navigate to parent [0]: [0]: cannot index struct.
-# This is a bug in structaccess.Set() where it fails to index into a struct when
-# setting permissions with service_principal_name.
-# See https://github.com/databricks/cli/pull/4644
-Badness = "Direct engine fails to plan permissions with service_principal_name on jobs"
 Cloud = true
+RequiresUnityCatalog = true
 RecordRequests = false
 
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

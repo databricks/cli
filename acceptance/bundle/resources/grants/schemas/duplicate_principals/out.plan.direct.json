@@ -1,0 +1,52 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.schemas.apps_schema": {
+      "action": "skip",
+      "remote_state": {
+        "browse_only": false,
+        "catalog_name": "main",
+        "catalog_type": "MANAGED_CATALOG",
+        "created_at": [UNIX_TIME_MILLIS][0],
+        "created_by": "[USERNAME]",
+        "effective_predictive_optimization_flag": {
+          "inherited_from_name": "deco-uc-prod-isolated-aws-us-east-1",
+          "inherited_from_type": "METASTORE",
+          "value": "ENABLE"
+        },
+        "enable_predictive_optimization": "INHERIT",
+        "full_name": "main.schema_dup_grants_[UNIQUE_NAME]",
+        "metastore_id": "[UUID]",
+        "name": "schema_dup_grants_[UNIQUE_NAME]",
+        "owner": "[USERNAME]",
+        "schema_id": "[UUID]",
+        "updated_at": [UNIX_TIME_MILLIS][1],
+        "updated_by": "[USERNAME]"
+      }
+    },
+    "resources.schemas.apps_schema.grants": {
+      "depends_on": [
+        {
+          "node": "resources.schemas.apps_schema",
+          "label": "${resources.schemas.apps_schema.id}"
+        }
+      ],
+      "action": "skip",
+      "remote_state": {
+        "securable_type": "schema",
+        "full_name": "main.schema_dup_grants_[UNIQUE_NAME]",
+        "__embed__": [
+          {
+            "principal": "deco-test-user@databricks.com",
+            "privileges": [
+              "CREATE_TABLE"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

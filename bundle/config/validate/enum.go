@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/validation/generated"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 type enum struct{}
@@ -50,6 +51,12 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// Get the string value for comparison
 		strValue, ok := v.AsString()
 		if !ok {
+			return nil
+		}
+
+		// Skip validation for values containing variable references (e.g.
+		// ${resources.jobs.my_job.id}) since they are not yet resolved.
+		if dynvar.ContainsVariableReference(strValue) {
 			return nil
 		}
 

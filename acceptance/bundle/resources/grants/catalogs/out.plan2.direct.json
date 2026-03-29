@@ -25,7 +25,7 @@
       "new_state": {
         "value": {
           "full_name": "catalog_grants_[UNIQUE_NAME]",
-          "grants": [
+          "__embed__": [
             {
               "principal": "deco-test-user@databricks.com",
               "privileges": [
@@ -38,7 +38,7 @@
       },
       "remote_state": {
         "full_name": "catalog_grants_[UNIQUE_NAME]",
-        "grants": [
+        "__embed__": [
           {
             "principal": "deco-test-user@databricks.com",
             "privileges": [
@@ -49,13 +49,13 @@
         ]
       },
       "changes": {
-        "grants[0].privileges[0]": {
+        "[principal='deco-test-user@databricks.com'].privileges[0]": {
           "action": "update",
           "old": "CREATE_SCHEMA",
           "new": "USE_CATALOG",
           "remote": "CREATE_SCHEMA"
         },
-        "grants[0].privileges[1]": {
+        "[principal='deco-test-user@databricks.com'].privileges[1]": {
           "action": "update",
           "old": "USE_CATALOG",
           "new": "USE_SCHEMA",
