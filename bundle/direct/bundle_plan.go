@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"os"
 	"reflect"
 	"slices"
 	"strings"
@@ -42,22 +41,14 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 // ValidatePlanAgainstState validates that a plan's lineage and serial match the current state.
 // This should be called early in the deployment process, before any file operations.
 // If the plan has no lineage (first deployment), validation is skipped.
-func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
+func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
 	// If plan has no lineage, this is a first deployment before any state exists
 	// No validation needed
 	if plan.Lineage == "" {
 		return nil
 	}
 
-	var stateDB dstate.DeploymentState
-	err := stateDB.Open(statePath)
-	if err != nil {
-		// If state file doesn't exist but plan has lineage, something is wrong
-		if os.IsNotExist(err) {
-			return fmt.Errorf("plan has lineage %q but state file does not exist at %s; the state may have been deleted", plan.Lineage, statePath)
-		}
-		return fmt.Errorf("reading state from %s: %w", statePath, err)
-	}
+	stateDB.AssertOpened()
 
 	// Validate that the plan's lineage matches the current state's lineage
 	if plan.Lineage != stateDB.Data.Lineage {

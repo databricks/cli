@@ -116,6 +116,23 @@ func TestPanicOnDoubleOpen(t *testing.T) {
 	})
 }
 
+func TestDeleteNonExistentKeyDoesNotSetModified(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+
+	var db DeploymentState
+	require.NoError(t, db.Open(path))
+	require.NoError(t, db.SaveState("jobs.my_job", "123", map[string]string{}, nil))
+	require.NoError(t, db.Finalize())
+
+	// Delete a key that doesn't exist — should not mark state as modified.
+	require.NoError(t, db.DeleteState("jobs.nonexistent"))
+	require.NoError(t, db.Finalize())
+
+	var db2 DeploymentState
+	require.NoError(t, db2.Open(path))
+	assert.Equal(t, 1, db2.Data.Serial)
+}
+
 func TestDeleteStateSetsModified(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "state.json")
 

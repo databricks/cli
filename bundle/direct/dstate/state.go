@@ -81,6 +81,10 @@ func (db *DeploymentState) DeleteState(key string) error {
 		return nil
 	}
 
+	if _, ok := db.Data.State[key]; !ok {
+		return nil
+	}
+
 	delete(db.Data.State, key)
 
 	db.modified = true
