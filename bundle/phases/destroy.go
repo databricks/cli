@@ -160,16 +160,6 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	var plan *deployplan.Plan
 	if engine.IsDirect() {
-		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		defer func() {
-			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
-				logdiag.LogError(ctx, err)
-			}
-		}()
 		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil)
 		if err != nil {
 			logdiag.LogError(ctx, err)

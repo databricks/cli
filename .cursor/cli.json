@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit(path:/Users/denis.bilenko/work/prompts/features/open-top/*)",
+      "Write(path:/Users/denis.bilenko/work/prompts/features/open-top/*)",
+      "Edit(path:/Users/denis.bilenko/work/prompts/logs/open-top/*)",
+      "Write(path:/Users/denis.bilenko/work/prompts/logs/open-top/*)",
+      "Read",
+      "Shell(*)",
+      "WebFetch",
+      "WebSearch"
+    ],
+    "deny": []
+  }
+}

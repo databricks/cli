@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/env"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/bundle/run/output"
@@ -132,117 +131,83 @@ Example usage:
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
-			SkipInitialize: true,
-		})
-		if err != nil {
-			return err
-		}
-		ctx := cmd.Context()
-
-		// If user runs the bundle run command as:
-		// databricks bundle run -- <command> <args>
-		// we execute the command inline.
+		// Inline execution (databricks bundle run -- <command>) doesn't need Initialize or state.
 		if cmd.ArgsLenAtDash() == 0 && len(args) > 0 {
+			b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{SkipInitialize: true})
+			if err != nil {
+				return err
+			}
 			return executeInline(cmd, args, b)
 		}
 
-		phases.Initialize(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		key, args, err := resolveRunArgument(ctx, b, args)
-		if err != nil {
-			return err
-		}
-
-		if _, ok := b.Config.Scripts[key]; ok {
-			if len(args) > 0 {
-				return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: FOO=bar databricks bundle run my_script", args)
-			}
-
-			content := b.Config.Scripts[key].Content
-			return executeScript(content, cmd, b)
-		}
-
-		requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
-		if err != nil {
-			return err
-		}
-		ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-		cmd.SetContext(ctx)
-
-		if stateDesc.Engine.IsDirect() {
-			_, localPath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
-				return err
-			}
-			defer func() {
-				if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
-					logdiag.LogError(ctx, err)
-				}
-			}()
-		}
-
-		bundle.ApplySeqContext(ctx, b,
-			statemgmt.Load(stateDesc.Engine, statemgmt.ErrorOnEmptyState),
-		)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		runner, err := keyToRunner(b, key)
-		if err != nil {
-			return err
-		}
-
-		// Parse additional positional arguments.
-		err = runner.ParseArgs(args, &runOptions)
-		if err != nil {
-			return err
-		}
-
-		runOptions.NoWait = noWait
-		var output output.RunOutput
-		if restart {
-			output, err = runner.Restart(ctx, &runOptions)
-		} else {
-			output, err = runner.Run(ctx, &runOptions)
-		}
-		if err != nil {
-			return err
-		}
-
-		if output != nil {
-			switch root.OutputType(cmd) {
-			case flags.OutputText:
-				resultString, err := output.String()
+		// Normal run path: full initialization with state management handled by ProcessBundleRet.
+		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
+			InitIDs:           true,
+			ErrorOnEmptyState: true,
+			AlwaysPull:        true,
+			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
+				key, runArgs, err := resolveRunArgument(ctx, b, args)
 				if err != nil {
 					return err
 				}
-				_, err = cmd.OutOrStdout().Write([]byte(resultString))
+
+				if _, ok := b.Config.Scripts[key]; ok {
+					if len(runArgs) > 0 {
+						return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: FOO=bar databricks bundle run my_script", runArgs)
+					}
+					return executeScript(b.Config.Scripts[key].Content, cmd, b)
+				}
+
+				runner, err := keyToRunner(b, key)
 				if err != nil {
 					return err
 				}
-			case flags.OutputJSON:
-				b, err := json.MarshalIndent(output, "", "  ")
+
+				err = runner.ParseArgs(runArgs, &runOptions)
 				if err != nil {
 					return err
 				}
-				_, err = cmd.OutOrStdout().Write(b)
+
+				runOptions.NoWait = noWait
+				var runOutput output.RunOutput
+				if restart {
+					runOutput, err = runner.Restart(ctx, &runOptions)
+				} else {
+					runOutput, err = runner.Run(ctx, &runOptions)
+				}
 				if err != nil {
 					return err
 				}
-				_, _ = cmd.OutOrStdout().Write([]byte{'\n'})
-			default:
-				return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
-			}
-		}
-		return nil
+
+				if runOutput != nil {
+					switch root.OutputType(cmd) {
+					case flags.OutputText:
+						resultString, err := runOutput.String()
+						if err != nil {
+							return err
+						}
+						_, err = cmd.OutOrStdout().Write([]byte(resultString))
+						if err != nil {
+							return err
+						}
+					case flags.OutputJSON:
+						b, err := json.MarshalIndent(runOutput, "", "  ")
+						if err != nil {
+							return err
+						}
+						_, err = cmd.OutOrStdout().Write(b)
+						if err != nil {
+							return err
+						}
+						_, _ = cmd.OutOrStdout().Write([]byte{'\n'})
+					default:
+						return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
+					}
+				}
+				return nil
+			},
+		})
+		return err
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

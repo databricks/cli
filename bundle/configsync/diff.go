@@ -127,20 +127,20 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 		return nil, fmt.Errorf("state snapshot not available: %w", err)
 	}
 
-	deployBundle := &direct.DeploymentBundle{}
-	var statePath string
+	var deployBundle *direct.DeploymentBundle
 	if engine.IsDirect() {
-		_, statePath = b.StateFilenameDirect(ctx)
+		// For direct engine, state is already opened by the caller (process.go).
+		deployBundle = &b.DeploymentBundle
 	} else {
-		_, statePath = b.StateFilenameConfigSnapshot(ctx)
+		deployBundle = &direct.DeploymentBundle{}
+		_, statePath := b.StateFilenameConfigSnapshot(ctx)
+		if err := deployBundle.StateDB.Open(statePath); err != nil {
+			return nil, fmt.Errorf("failed to open state: %w", err)
+		}
+		defer func() {
+			_ = deployBundle.StateDB.Finalize()
+		}()
 	}
-
-	if err := deployBundle.StateDB.Open(statePath); err != nil {
-		return nil, fmt.Errorf("failed to open state: %w", err)
-	}
-	defer func() {
-		_ = deployBundle.StateDB.Finalize()
-	}()
 
 	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
 	if err != nil {
