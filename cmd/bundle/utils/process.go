@@ -194,10 +194,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 			if opts.ErrorOnEmptyState {
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
-			bundle.ApplySeqContext(ctx, b,
+			mutators := []bundle.Mutator{
 				statemgmt.Load(stateDesc.Engine, modes...),
-				mutator.InitializeURLs(),
-			)
+			}
+			// InitializeURLs makes an extra API call; only run it when URLs are needed.
+			if opts.InitIDs {
+				mutators = append(mutators, mutator.InitializeURLs())
+			}
+			bundle.ApplySeqContext(ctx, b, mutators...)
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
