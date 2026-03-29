@@ -135,12 +135,8 @@ func (db *DeploymentState) Open(path string) error {
 		return err
 	}
 
-	versionBefore := db.Data.StateVersion
 	if err := migrateState(&db.Data); err != nil {
 		return fmt.Errorf("migrating state %s: %w", path, err)
-	}
-	if db.Data.StateVersion != versionBefore {
-		db.modified = true
 	}
 
 	db.Path = path

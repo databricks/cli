@@ -72,7 +72,7 @@ func TestFinalizeRetryAfterWriteFailure(t *testing.T) {
 	assert.Equal(t, "123", db2.GetResourceID("jobs.my_job"))
 }
 
-func TestMigrateStateSetsModified(t *testing.T) {
+func TestMigrateStateOnTheFly(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "state.json")
 
@@ -88,19 +88,21 @@ func TestMigrateStateSetsModified(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(path, data, 0o600))
 
-	// Open triggers migration.
+	// Open triggers migration on the fly.
 	var db DeploymentState
 	require.NoError(t, db.Open(path))
 	assert.Equal(t, currentStateVersion, db.Data.StateVersion)
 
-	// Finalize should write the migrated state (modified=true from migration).
+	// Finalize is a no-op because migration alone does not mark state as modified.
 	require.NoError(t, db.Finalize())
 
-	// Re-read and verify version was persisted.
-	var db2 DeploymentState
-	require.NoError(t, db2.Open(path))
-	assert.Equal(t, currentStateVersion, db2.Data.StateVersion)
-	assert.Equal(t, 6, db2.Data.Serial)
+	// Re-read: the on-disk version is still v0 (unmigrated), serial unchanged.
+	raw, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var ondisk Database
+	require.NoError(t, json.Unmarshal(raw, &ondisk))
+	assert.Equal(t, 0, ondisk.StateVersion)
+	assert.Equal(t, 5, ondisk.Serial)
 }
 
 func TestPanicOnDoubleOpen(t *testing.T) {
