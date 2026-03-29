@@ -1,6 +1,9 @@
 
 >>> [CLI] bundle run stdin
-Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
+abc
 
+>>> [CLI] bundle run stdout
+hello from stdout
 
-Exit code: 1
+>>> [CLI] bundle run stderr
+hello from stderr

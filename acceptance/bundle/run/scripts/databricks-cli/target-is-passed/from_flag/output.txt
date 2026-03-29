@@ -1,6 +1,3 @@
 
 >>> [CLI] bundle run validate -t oauth
-Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
-
-
-Exit code: 1
+"oauth"
