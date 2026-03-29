@@ -8,3 +8,4 @@ unset DATABRICKS_TOKEN
 
 # This should use myprofile, which uses oauth.
 trace $CLI bundle run me --profile myprofile
+print_requests.py // --sort --get > out.requests.txt

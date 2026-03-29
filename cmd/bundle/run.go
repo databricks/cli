@@ -140,8 +140,7 @@ Example usage:
 			return executeInline(cmd, args, b)
 		}
 
-		// Normal run path: full initialization with state opened by ProcessBundleRet.
-		// State loading (InitIDs) is deferred to PostStateFunc because scripts don't need it.
+		// Normal run path: full initialization with state managed by ProcessBundleRet.
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			AlwaysPull:      true,
 			NeedDirectState: true,

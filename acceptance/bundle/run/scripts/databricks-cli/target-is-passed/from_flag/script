@@ -10,3 +10,4 @@ unset DATABRICKS_TOKEN
 # both the right target and the right auth credentials are
 # being passed to the script invocation.
 trace $CLI bundle run validate -t oauth | jq .bundle.target
+print_requests.py // --sort --get > out.requests.txt

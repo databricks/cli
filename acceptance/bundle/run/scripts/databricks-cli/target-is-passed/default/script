@@ -8,3 +8,4 @@ unset DATABRICKS_TOKEN
 
 # Should use default target, which is pat based authentication
 trace $CLI bundle run validate | jq .bundle.target
+print_requests.py // --sort --get > out.requests.txt
