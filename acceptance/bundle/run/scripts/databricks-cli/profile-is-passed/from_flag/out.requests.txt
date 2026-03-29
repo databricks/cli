@@ -26,22 +26,17 @@
   "path": "/api/2.0/preview/scim/v2/Me"
 }
 {
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
-  "method": "GET",
-  "path": "/oidc/.well-known/oauth-authorization-server"
-}
-{
   "headers": {
     "Authorization": [
-      "Basic [ENCODED_AUTH]"
+      "Bearer oauth-token"
     ]
   },
-  "method": "POST",
-  "path": "/oidc/v1/token",
-  "raw_body": "grant_type=client_credentials\u0026scope=all-apis"
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
 }
 {
   "headers": {
@@ -50,5 +45,9 @@
     ]
   },
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/foobar/default/state/resources.json",
+    "return_export_info": "true"
+  }
 }

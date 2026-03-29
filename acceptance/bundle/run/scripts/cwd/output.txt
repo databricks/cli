@@ -2,4 +2,7 @@
 >>> cd a/b/c
 
 >>> [CLI] bundle run foo
-[TEST_TMP_DIR]
+Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
+
+
+Exit code: 1

@@ -140,11 +140,11 @@ Example usage:
 			return executeInline(cmd, args, b)
 		}
 
-		// Normal run path: full initialization with state management handled by ProcessBundleRet.
+		// Normal run path: full initialization with state opened by ProcessBundleRet.
+		// State loading (InitIDs) is deferred to PostStateFunc because scripts don't need it.
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
-			InitIDs:           true,
-			ErrorOnEmptyState: true,
-			AlwaysPull:        true,
+			AlwaysPull:      true,
+			NeedDirectState: true,
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 				key, runArgs, err := resolveRunArgument(ctx, b, args)
 				if err != nil {
@@ -156,6 +156,14 @@ Example usage:
 						return fmt.Errorf("additional arguments are not supported for scripts. Got: %v. We recommend using environment variables to pass runtime arguments to a script. For example: FOO=bar databricks bundle run my_script", runArgs)
 					}
 					return executeScript(b.Config.Scripts[key].Content, cmd, b)
+				}
+
+				// Load state and initialize resource IDs (only needed for resource runs, not scripts).
+				bundle.ApplySeqContext(ctx, b,
+					statemgmt.Load(stateDesc.Engine, statemgmt.ErrorOnEmptyState),
+				)
+				if logdiag.HasError(ctx) {
+					return root.ErrAlreadyPrinted
 				}
 
 				runner, err := keyToRunner(b, key)

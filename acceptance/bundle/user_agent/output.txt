@@ -96,11 +96,13 @@ MISS	run.direct	/api/2.0/preview/scim/v2/Me	'cli/[DEV_VERSION] databricks-sdk-go
 MISS	run.direct	/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	run.direct	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	run.direct	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
+OK  	run.direct	/api/2.0/preview/scim/v2/Me	engine/direct
 MISS	run.direct	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
 MISS	run.terraform	/api/2.0/preview/scim/v2/Me	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	run.terraform	/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	run.terraform	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	run.terraform	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] interactive/none auth/pat'
+OK  	run.terraform	/api/2.0/preview/scim/v2/Me	engine/terraform
 MISS	run.terraform	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
 MISS	summary.direct	/api/2.0/preview/scim/v2/Me	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	summary.direct	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'

@@ -1,7 +1,8 @@
 
 === no run key specified
 >>> [CLI] bundle run
-Error: expected a KEY of the resource to run
+Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
+
 
 Exit code: 1
 
