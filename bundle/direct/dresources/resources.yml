@@ -494,3 +494,8 @@ resources:
         reason: immutable
       - field: endpoint_id
         reason: immutable
+
+  vector_search_endpoints:
+    recreate_on_changes:
+      - field: endpoint_type
+        reason: immutable
