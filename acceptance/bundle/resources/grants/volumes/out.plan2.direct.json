@@ -33,14 +33,14 @@
         "name": "volume_name",
         "owner": "[USERNAME]",
         "schema_name": "schema_grants_[UNIQUE_NAME]",
-        "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+        "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
         "volume_type": "MANAGED"
       },
       "changes": {
         "storage_location": {
           "action": "skip",
           "reason": "backend_default",
-          "remote": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+          "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
         }
       }
     },

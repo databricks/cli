@@ -613,24 +613,33 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 		return discoveryErr("login succeeded but no workspace host was discovered", nil)
 	}
 
-	// Get the token for introspection
+	// Run host metadata discovery on the discovered host to detect SPOG hosts
+	// and populate account_id/workspace_id. This ensures profiles created via
+	// login.databricks.com have the same metadata as profiles created via the
+	// regular --host login path.
+	hostArgs := &auth.AuthArguments{Host: discoveredHost}
+	runHostDiscovery(ctx, hostArgs)
+	accountID := hostArgs.AccountID
+	workspaceID := hostArgs.WorkspaceID
+
+	// Best-effort introspection as a fallback for workspace_id when host
+	// metadata discovery didn't return it (e.g. classic workspace hosts).
 	tok, err := persistentAuth.Token()
 	if err != nil {
 		return fmt.Errorf("retrieving token after login: %w", err)
 	}
 
-	// Best-effort introspection for metadata.
-	var workspaceID string
 	introspection, err := dc.IntrospectToken(ctx, discoveredHost, tok.AccessToken)
 	if err != nil {
 		log.Debugf(ctx, "token introspection failed (non-fatal): %v", err)
 	} else {
-		// TODO: Save introspection.AccountID once the SDKs are ready to use
-		// account_id as part of the profile/cache key. Adding it now would break
-		// existing auth flows that don't expect account_id on workspace profiles.
-		workspaceID = introspection.WorkspaceID
+		if workspaceID == "" {
+			workspaceID = introspection.WorkspaceID
+		}
+		if accountID == "" {
+			accountID = introspection.AccountID
+		}
 
-		// Warn if the detected account_id differs from what's already saved in the profile.
 		if existingProfile != nil && existingProfile.AccountID != "" && introspection.AccountID != "" &&
 			existingProfile.AccountID != introspection.AccountID {
 			log.Warnf(ctx, "detected account ID %q differs from existing profile account ID %q",
@@ -641,10 +650,10 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	clearKeys := oauthLoginClearKeys()
 	// Discovery login always produces a workspace-level profile pointing at the
-	// discovered host. Any previous routing metadata (account_id, workspace_id,
-	// is_unified_host, cluster_id, serverless_compute_id) from a prior login to
-	// a different host type must be cleared so they don't leak into the new
-	// profile. workspace_id is re-added only when introspection succeeds.
+	// discovered host. Any previous routing metadata (is_unified_host,
+	// cluster_id, serverless_compute_id) from a prior login to a different host
+	// type must be cleared so they don't leak into the new profile. account_id
+	// and workspace_id are re-added from discovery/introspection results.
 	clearKeys = append(clearKeys,
 		"account_id",
 		"workspace_id",
@@ -656,6 +665,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 		Profile:     profileName,
 		Host:        discoveredHost,
 		AuthType:    authTypeDatabricksCLI,
+		AccountID:   accountID,
 		WorkspaceID: workspaceID,
 		Scopes:      scopesList,
 		ConfigFile:  configFile,
@@ -715,7 +725,8 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 
 	workspaces, err := a.Workspaces.List(ctx)
 	if err != nil {
-		return "", err
+		log.Debugf(ctx, "Failed to load workspaces (this can happen if the user has no account-level access): %v", err)
+		return promptForWorkspaceID(ctx)
 	}
 
 	if len(workspaces) == 0 {
@@ -752,6 +763,19 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		return "", err
 	}
 	return selected, nil
+}
+
+// promptForWorkspaceID asks the user to manually enter a workspace ID.
+// Returns empty string if the user provides no input.
+func promptForWorkspaceID(ctx context.Context) (string, error) {
+	prompt := cmdio.Prompt(ctx)
+	prompt.Label = "Enter workspace ID (empty to skip)"
+	prompt.AllowEdit = true
+	result, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(result), nil
 }
 
 // getBrowserFunc returns a function that opens the given URL in the browser.
