@@ -9,14 +9,6 @@ Deployment complete!
 
 >>> [CLI] bundle plan -o json
 
->>> jq .plan["resources.schemas.grants_schema.grants"].remote_state.__embed__ out.plan.direct.json
-json[].principal = "[USERNAME]";
-json[].principal = "deco-test-user@databricks.com";
-json[].privileges[] = "CREATE_TABLE";
-json[].privileges[] = "USE_SCHEMA";
-
->>> jq del(.plan["resources.schemas.grants_schema.grants"].remote_state.__embed__) out.plan.direct.json
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-out-of-band-principal-[UNIQUE_NAME]/default/files...
 Deploying resources...
