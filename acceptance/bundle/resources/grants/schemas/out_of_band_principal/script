@@ -13,5 +13,9 @@ trace $CLI bundle deploy
 trace $CLI grants update schema "$SCHEMA_FULL_NAME" --json @update.json > /dev/null
 $CLI grants get schema "$SCHEMA_FULL_NAME" | gron.py --noindex | sort | contains.py "$CURRENT_USER_NAME" 'deco-test-user@databricks.com' > /dev/null
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# remote_state.__embed__ order is non-deterministic; extract and sort separately
+trace jq '.plan["resources.schemas.grants_schema.grants"].remote_state.__embed__' out.plan.$DATABRICKS_BUNDLE_ENGINE.json | gron.py --noindex | sort_lines.py --repl
+tmp=$(mktemp)
+trace jq 'del(.plan["resources.schemas.grants_schema.grants"].remote_state.__embed__)' out.plan.$DATABRICKS_BUNDLE_ENGINE.json > "$tmp" && mv "$tmp" out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace $CLI bundle plan -o json > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
