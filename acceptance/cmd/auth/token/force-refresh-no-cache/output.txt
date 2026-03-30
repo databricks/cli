@@ -1,0 +1,3 @@
+Error: cache: databricks OAuth is not configured for this host. Try logging in again with `databricks auth login --profile test-profile` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new
+
+Exit code: 1
