@@ -1,0 +1,33 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+print_requests() {
+    local name=$1
+    trace print_requests.py --keep '//vector-search/endpoints' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
+    rm -f out.requests.txt
+}
+
+title "Initial deployment"
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests create
+
+endpoint_name="vs-endpoint-${UNIQUE_NAME}"
+trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{name, endpoint_type}'
+
+title "Update min_qps"
+trace update_file.py databricks.yml "min_qps: 1" "min_qps: 2"
+
+trace $CLI bundle plan
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests update
+
+trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{name, endpoint_type}'

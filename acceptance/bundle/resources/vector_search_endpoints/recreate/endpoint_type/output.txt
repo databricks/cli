@@ -1,0 +1,52 @@
+
+=== Initial deployment with STANDARD endpoint_type
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-vs-endpoint-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep //vector-search/endpoints
+
+=== Change endpoint_type (should trigger recreation)
+>>> update_file.py databricks.yml endpoint_type: STANDARD endpoint_type: STORAGE_OPTIMIZED
+
+>>> [CLI] bundle plan
+Warning: invalid value "STORAGE_OPTIMIZED" for enum field. Valid values are [STANDARD]
+  at resources.vector_search_endpoints.my_endpoint.endpoint_type
+  in databricks.yml:11:22
+
+recreate vector_search_endpoints.my_endpoint
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Warning: invalid value "STORAGE_OPTIMIZED" for enum field. Valid values are [STANDARD]
+  at resources.vector_search_endpoints.my_endpoint.endpoint_type
+  in databricks.yml:11:22
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-vs-endpoint-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep //vector-search/endpoints
+
+>>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STORAGE_OPTIMIZED"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+Warning: invalid value "STORAGE_OPTIMIZED" for enum field. Valid values are [STANDARD]
+  at resources.vector_search_endpoints.my_endpoint.endpoint_type
+  in databricks.yml:11:22
+
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-vs-endpoint-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

@@ -1,0 +1,46 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-min-qps-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep //vector-search/endpoints
+
+>>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+=== Update min_qps
+>>> update_file.py databricks.yml min_qps: 1 min_qps: 2
+
+>>> [CLI] bundle plan
+update vector_search_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-min-qps-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep //vector-search/endpoints
+
+>>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-min-qps-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

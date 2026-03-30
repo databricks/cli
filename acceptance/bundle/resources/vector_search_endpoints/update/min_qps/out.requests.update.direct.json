@@ -1,0 +1,7 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]",
+  "body": {
+    "min_qps": 2
+  }
+}

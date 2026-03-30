@@ -1,0 +1,26 @@
+
+=== Initial deployment (no budget_policy_id)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-budget-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Simulate remote change: set effective_budget_policy_id (e.g. inherited workspace policy)
+>>> [CLI] vector-search-endpoints update-endpoint-budget-policy vs-endpoint-[UNIQUE_NAME] inherited-policy
+{
+  "effective_budget_policy_id":"inherited-policy"
+}
+
+=== Plan shows no drift: remote budget_policy_id changes are ignored
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-budget-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

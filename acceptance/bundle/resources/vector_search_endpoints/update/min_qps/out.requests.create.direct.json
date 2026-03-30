@@ -1,0 +1,9 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/vector-search/endpoints",
+  "body": {
+    "endpoint_type": "STANDARD",
+    "min_qps": 1,
+    "name": "vs-endpoint-[UNIQUE_NAME]"
+  }
+}
