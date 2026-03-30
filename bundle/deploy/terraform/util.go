@@ -126,12 +126,9 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 			continue
 		}
 		permKey := key + ".permissions"
-		if _, exists := result[permKey]; exists {
-			// Resolve ACL ID → scope name (the direct engine expects scope name as ID).
-			result[permKey] = ResourceState{ID: entry.ID}
-		} else {
-			result[permKey] = ResourceState{ID: entry.ID}
-		}
+		// Use scope name as ID (the direct engine expects it).
+		// This overwrites the ACL compound ID if ACLs were present.
+		result[permKey] = ResourceState{ID: entry.ID}
 	}
 
 	return result, nil
