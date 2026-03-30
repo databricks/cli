@@ -52,8 +52,10 @@ func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 			return true
 		}
 
-		// Anonymous embedded structs are transparent in JSON; skip them as standalone fields.
-		if field.Anonymous {
+		// Fields without a json tag (e.g. anonymous embeds) have no independent
+		// JSON key and cannot be required. Continue walking their children.
+		rawTag := field.Tag.Get("json")
+		if rawTag == "" {
 			return true
 		}
 
@@ -64,7 +66,7 @@ func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 		}
 
 		// The "omitempty" tag indicates the field is optional in bundle config.
-		jsonTag := structtag.JSONTag(field.Tag.Get("json"))
+		jsonTag := structtag.JSONTag(rawTag)
 		if jsonTag.OmitEmpty() {
 			return true
 		}

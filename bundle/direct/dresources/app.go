@@ -23,8 +23,8 @@ type AppStateLifecycle struct {
 	Started *bool `json:"started,omitempty"`
 }
 
-// AppState is the state type for App resources. It extends apps.App with fields
-// needed for app deployments (Apps.Deploy) that are not part of the remote state.
+// AppState is the state type for App resources. It extends apps.App with deployment-related
+// fields (source_code_path, config, git_source, lifecycle) that are persisted in state.
 type AppState struct {
 	apps.App
 	SourceCodePath string               `json:"source_code_path,omitempty"`
@@ -33,13 +33,14 @@ type AppState struct {
 	Lifecycle      *AppStateLifecycle   `json:"lifecycle,omitempty"`
 }
 
-// AppRemote extends apps.App with lifecycle.started and deployment fields so
-// that they appear in RemoteType and can be used for $resource resolution and drift detection.
+// AppRemote extends apps.App with the same deployment fields as AppState so they
+// appear in RemoteType and can be used for $resource resolution and drift detection.
 type AppRemote struct {
 	apps.App
-	Config    *resources.AppConfig `json:"config,omitempty"`
-	GitSource *apps.GitSource      `json:"git_source,omitempty"`
-	Lifecycle *AppStateLifecycle   `json:"lifecycle,omitempty"`
+	SourceCodePath string               `json:"source_code_path,omitempty"`
+	Config         *resources.AppConfig `json:"config,omitempty"`
+	GitSource      *apps.GitSource      `json:"git_source,omitempty"`
+	Lifecycle      *AppStateLifecycle   `json:"lifecycle,omitempty"`
 }
 
 // Custom marshalers needed because embedded apps.App has its own MarshalJSON
@@ -74,24 +75,22 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 		SourceCodePath: input.SourceCodePath,
 		Config:         input.Config,
 		GitSource:      input.GitSource,
-		Lifecycle:      nil,
 	}
-	if input.Lifecycle.Started != nil {
+	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
 		s.Lifecycle = &AppStateLifecycle{Started: input.Lifecycle.Started}
 	}
 	return s
 }
 
 // RemapState maps the remote AppRemote to AppState for diff comparison.
-// Config and GitSource are populated from the active deployment when one exists,
-// enabling drift detection for out-of-band redeploys.
-// SourceCodePath is not tracked for drift (it's a local-only deployment path).
+// Config, GitSource, and SourceCodePath are populated from the active deployment
+// when one exists, enabling drift detection for out-of-band redeploys.
 // Started is derived from compute status so the planner can detect start/stop changes.
 func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
 	started := !isComputeStopped(&remote.App)
 	return &AppState{
 		App:            remote.App,
-		SourceCodePath: "",
+		SourceCodePath: remote.SourceCodePath,
 		Config:         remote.Config,
 		GitSource:      remote.GitSource,
 		Lifecycle:      &AppStateLifecycle{Started: &started},
@@ -111,6 +110,7 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 		Lifecycle: &AppStateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
+		remote.SourceCodePath = app.ActiveDeployment.SourceCodePath
 		remote.GitSource = app.ActiveDeployment.GitSource
 		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
 	}
@@ -159,12 +159,22 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 }
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
-	// Build update mask excluding local-only fields that have no counterpart in the API.
-	var maskPaths []string
+	// Build update mask excluding local-only fields that have no counterpart in the App Update API.
+	// Paths are truncated at the first index because the API only supports entire collection fields,
+	// not individual elements (e.g. "resources" instead of "resources[0].name").
+	maskSet := make(map[string]bool)
 	for path, change := range entry.Changes {
-		if change.Action == deployplan.Update && !localOnlyFields[path] {
-			maskPaths = append(maskPaths, path)
+		if change.Action != deployplan.Update {
+			continue
 		}
+		truncated := truncateAtIndex(path)
+		if !deployOnlyFields[truncated] {
+			maskSet[truncated] = true
+		}
+	}
+	maskPaths := make([]string, 0, len(maskSet))
+	for p := range maskSet {
+		maskPaths = append(maskPaths, p)
 	}
 	slices.Sort(maskPaths)
 	updateMask := strings.Join(maskPaths, ",")
@@ -232,9 +242,10 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 	return nil, nil
 }
 
-// localOnlyFields are AppState fields that have no counterpart in the remote state.
-// They must not appear in the App update_mask.
-var localOnlyFields = map[string]bool{
+// deployOnlyFields are AppState fields managed via the Deploy API, not the App Update API.
+// They have remote counterparts (populated from active deployment and compute status),
+// but must not appear in the App update_mask.
+var deployOnlyFields = map[string]bool{
 	"source_code_path":  true,
 	"config":            true,
 	"git_source":        true,
@@ -328,6 +339,7 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 		Lifecycle: &AppStateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
+		remote.SourceCodePath = app.ActiveDeployment.SourceCodePath
 		remote.GitSource = app.ActiveDeployment.GitSource
 		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
 	}

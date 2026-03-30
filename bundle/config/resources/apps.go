@@ -38,7 +38,7 @@ type App struct {
 	// Note: apps.App already includes GitRepository field from the SDK
 
 	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
-	Lifecycle LifecycleWithStarted `json:"lifecycle,omitempty"`
+	Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"`
 
 	// SourceCodePath is a required field used by DABs to point to Databricks app source code
 	// on local disk and to the corresponding workspace path during app deployment.
@@ -58,7 +58,10 @@ type App struct {
 
 // GetLifecycle returns the lifecycle settings, using LifecycleWithStarted.
 func (a *App) GetLifecycle() LifecycleConfig {
-	return a.Lifecycle
+	if a.Lifecycle == nil {
+		return LifecycleWithStarted{}
+	}
+	return *a.Lifecycle
 }
 
 func (a *App) UnmarshalJSON(b []byte) error {

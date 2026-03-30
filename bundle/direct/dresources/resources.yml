@@ -376,8 +376,6 @@ resources:
       - field: name
         reason: immutable
     ignore_remote_changes:
-      - field: source_code_path
-        reason: local_only
       # lifecycle fields are managed by the planner based on compute status.
       # When lifecycle.started is omitted from config, it should be untracked
       # and remote changes to compute state should not cause drift.

@@ -61,3 +61,17 @@ func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 	}
 	return paths
 }
+
+// truncateAtIndex truncates a field path at the first bracket index (e.g. "[0]", "[*]",
+// "[key=value]"). Most update_mask APIs only support referencing entire collection
+// fields, not individual elements within them.
+// Examples: "resources[0].name" -> "resources", "description" -> "description",
+// "config.env[0].name" -> "config.env".
+func truncateAtIndex(path string) string {
+	for i, c := range path {
+		if c == '[' {
+			return path[:i]
+		}
+	}
+	return path
+}
