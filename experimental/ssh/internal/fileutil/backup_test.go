@@ -3,6 +3,7 @@ package fileutil_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
@@ -62,5 +63,23 @@ func TestBackupFile_SubsequentBackup(t *testing.T) {
 
 func TestBackupFile_WriteError(t *testing.T) {
 	err := fileutil.BackupFile(t.Context(), "/nonexistent/dir/file.json", []byte("data"))
+	assert.Error(t, err)
+}
+
+func TestBackupFile_StatError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod is not supported on windows")
+	}
+
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "file.json")
+
+	// Create the .original.bak file so os.Stat would find it — but make the
+	// parent directory unreadable so Stat returns a permission error instead.
+	require.NoError(t, os.WriteFile(path+fileutil.SuffixOriginalBak, []byte("existing"), 0o600))
+	require.NoError(t, os.Chmod(tmpDir, 0o000))
+	t.Cleanup(func() { _ = os.Chmod(tmpDir, 0o700) })
+
+	err := fileutil.BackupFile(t.Context(), path, []byte("data"))
 	assert.Error(t, err)
 }

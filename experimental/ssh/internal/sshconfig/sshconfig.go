@@ -93,8 +93,7 @@ func EnsureIncludeDirective(ctx context.Context, configPath string) error {
 		if err := fileutil.BackupFile(ctx, configPath, content); err != nil {
 			return fmt.Errorf("failed to backup SSH config before migration: %w", err)
 		}
-		migrated := strings.Replace(string(content), oldIncludeLine, includeLine, 1)
-		return os.WriteFile(configPath, []byte(migrated), 0o600)
+		return os.WriteFile(configPath, replaceLine(content, oldIncludeLine, includeLine), 0o600)
 	}
 
 	if err := fileutil.BackupFile(ctx, configPath, content); err != nil {
@@ -114,15 +113,29 @@ func EnsureIncludeDirective(ctx context.Context, configPath string) error {
 	return nil
 }
 
-// containsLine reports whether data contains line as an exact line match,
-// trimming \r to handle Windows line endings.
+// containsLine reports whether data contains line as a line match,
+// trimming leading whitespace and \r (Windows line endings) before comparing.
 func containsLine(data []byte, line string) bool {
 	for l := range strings.SplitSeq(string(data), "\n") {
-		if strings.TrimRight(l, "\r") == line {
+		if strings.TrimLeft(strings.TrimRight(l, "\r"), " \t") == line {
 			return true
 		}
 	}
 	return false
+}
+
+// replaceLine replaces the first line in data whose trimmed content matches old
+// with new. Uses the same trim logic as containsLine. Returns data unchanged if
+// no match.
+func replaceLine(data []byte, old, new string) []byte {
+	lines := strings.Split(string(data), "\n")
+	for i, l := range lines {
+		if strings.TrimLeft(strings.TrimRight(l, "\r"), " \t") == old {
+			lines[i] = new
+			break
+		}
+	}
+	return []byte(strings.Join(lines, "\n"))
 }
 
 func GetHostConfigPath(ctx context.Context, hostName string) (string, error) {

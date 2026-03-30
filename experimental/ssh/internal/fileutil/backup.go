@@ -22,7 +22,11 @@ func BackupFile(ctx context.Context, path string, data []byte) error {
 	originalBak := path + SuffixOriginalBak
 	latestBak := path + SuffixLatestBak
 	var bakPath string
-	if _, err := os.Stat(originalBak); os.IsNotExist(err) {
+	_, statErr := os.Stat(originalBak)
+	if statErr != nil && !os.IsNotExist(statErr) {
+		return statErr
+	}
+	if os.IsNotExist(statErr) {
 		bakPath = originalBak
 	} else {
 		bakPath = latestBak

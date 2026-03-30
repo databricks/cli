@@ -459,9 +459,30 @@ func TestCheckAndUpdateSettings_CreatesBackup(t *testing.T) {
 	err = CheckAndUpdateSettings(ctx, "cursor", "my-host")
 	require.NoError(t, err)
 
-	content, err := os.ReadFile(settingsPath + fileutil.SuffixOriginalBak)
+	originalBakContent, err := os.ReadFile(settingsPath + fileutil.SuffixOriginalBak)
 	require.NoError(t, err)
-	assert.Equal(t, originalContent, content)
+	assert.Equal(t, originalContent, originalBakContent)
+
+	// Second update for a new connection triggers another backup into .latest.bak.
+	postFirstContent, err := os.ReadFile(settingsPath)
+	require.NoError(t, err)
+
+	go func() {
+		_, _ = tst.Stdin.WriteString("y\n")
+		_ = tst.Stdin.Flush()
+	}()
+
+	err = CheckAndUpdateSettings(ctx, "cursor", "my-host-2")
+	require.NoError(t, err)
+
+	latestBakContent, err := os.ReadFile(settingsPath + fileutil.SuffixLatestBak)
+	require.NoError(t, err)
+	assert.Equal(t, postFirstContent, latestBakContent)
+
+	// .original.bak must still hold the very first snapshot.
+	originalBakContent2, err := os.ReadFile(settingsPath + fileutil.SuffixOriginalBak)
+	require.NoError(t, err)
+	assert.Equal(t, originalContent, originalBakContent2)
 }
 
 func TestSaveSettings_Formatting(t *testing.T) {
