@@ -72,8 +72,9 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 
 	if entry.Changes.HasChange(pathMinQps) {
 		_, err := r.client.VectorSearchEndpoints.PatchEndpoint(ctx, vectorsearch.PatchEndpointRequest{
-			EndpointName: id,
-			MinQps:       config.MinQps,
+			EndpointName:    id,
+			MinQps:          config.MinQps,
+			ForceSendFields: utils.FilterFields[vectorsearch.PatchEndpointRequest](config.ForceSendFields, "MinQps"),
 		})
 		if err != nil {
 			return nil, err
