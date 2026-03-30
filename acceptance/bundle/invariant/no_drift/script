@@ -34,6 +34,10 @@ trap cleanup EXIT
 
 trace $CLI bundle deploy &> LOG.deploy
 cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
+POST_DEPLOY_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-post-deploy.sh"
+if [ -f "$POST_DEPLOY_SCRIPT" ]; then
+    source "$POST_DEPLOY_SCRIPT" &> LOG.post_deploy
+fi
 
 # Special message to fuzzer that generated config was fine.
 # Any failures after this point will be considered as "bug detected" by fuzzer.
