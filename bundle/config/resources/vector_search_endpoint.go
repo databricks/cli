@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
@@ -26,7 +27,10 @@ func (e VectorSearchEndpoint) MarshalJSON() ([]byte, error) {
 func (e *VectorSearchEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.VectorSearchEndpoints.GetEndpoint(ctx, vectorsearch.GetEndpointRequest{EndpointName: name})
 	if err != nil {
-		log.Debugf(ctx, "vector search endpoint %s does not exist", name)
+		log.Debugf(ctx, "vector search endpoint %s does not exist: %v", name, err)
+		if apierr.IsMissing(err) {
+			return false, nil
+		}
 		return false, err
 	}
 	return true, nil
