@@ -74,7 +74,7 @@ Error: Resource catalog.SchemaInfo not found: main.myschema
   "created_at":[UNIX_TIME_MILLIS][0],
   "created_by":"[USERNAME]",
   "effective_predictive_optimization_flag": {
-    "inherited_from_name":"deco-uc-prod-isolated-aws-us-east-1",
+    "inherited_from_name":"[METASTORE_NAME]",
     "inherited_from_type":"METASTORE",
     "value":"ENABLE"
   },
