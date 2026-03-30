@@ -222,7 +222,7 @@
               "myjob_timeout": "0",
               "myvolume_id": "mycat.myschema.myvol",
               "volume_catalog_name": "mycat",
-              "volume_storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+              "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
             },
             "target": null,
             "timeouts": null,
@@ -255,7 +255,7 @@
             "owner": "[USERNAME]",
             "provider_config": [],
             "schema_name": "myschema",
-            "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+            "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
             "volume_path": "/Volumes/mycat/myschema/myvol",
             "volume_type": "MANAGED"
           },
