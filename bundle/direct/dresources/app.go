@@ -75,6 +75,7 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 		SourceCodePath: input.SourceCodePath,
 		Config:         input.Config,
 		GitSource:      input.GitSource,
+		Lifecycle:      nil,
 	}
 	if input.Lifecycle != nil && input.Lifecycle.Started != nil {
 		s.Lifecycle = &AppStateLifecycle{Started: input.Lifecycle.Started}
@@ -104,10 +105,11 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 	}
 	started := !isComputeStopped(app)
 	remote := &AppRemote{
-		App:       *app,
-		Config:    nil,
-		GitSource: nil,
-		Lifecycle: &AppStateLifecycle{Started: &started},
+		App:            *app,
+		Config:         nil,
+		GitSource:      nil,
+		SourceCodePath: "",
+		Lifecycle:      &AppStateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
 		remote.SourceCodePath = app.ActiveDeployment.SourceCodePath
@@ -333,10 +335,11 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 	}
 	started := !isComputeStopped(app)
 	remote := &AppRemote{
-		App:       *app,
-		Config:    nil,
-		GitSource: nil,
-		Lifecycle: &AppStateLifecycle{Started: &started},
+		App:            *app,
+		Config:         nil,
+		GitSource:      nil,
+		SourceCodePath: "",
+		Lifecycle:      &AppStateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
 		remote.SourceCodePath = app.ActiveDeployment.SourceCodePath
