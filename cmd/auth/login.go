@@ -725,7 +725,7 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 
 	workspaces, err := a.Workspaces.List(ctx)
 	if err != nil {
-		log.Warnf(ctx, "Failed to load workspaces (this can happen if the user has no account-level access): %v", err)
+		log.Debugf(ctx, "Failed to load workspaces (this can happen if the user has no account-level access): %v", err)
 		return promptForWorkspaceID(ctx)
 	}
 
