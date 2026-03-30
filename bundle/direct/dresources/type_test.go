@@ -74,6 +74,10 @@ var knownMissingInRemoteType = map[string][]string{
 		"pg_version",
 		"project_id",
 	},
+	"vector_search_endpoints": {
+		"budget_policy_id",
+		"min_qps",
+	},
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.

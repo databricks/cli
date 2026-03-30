@@ -290,6 +290,14 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Vector Search Endpoints: Prefix
+	for _, e := range r.VectorSearchEndpoints {
+		if e == nil {
+			continue
+		}
+		e.Name = normalizePrefix(prefix) + e.Name
+	}
+
 	return diags
 }
 

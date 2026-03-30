@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,7 +48,8 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.alerts.test_alert":                                 {ID: "1"},
 		"resources.postgres_projects.test_postgres_project":           {ID: "projects/test-project"},
 		"resources.postgres_branches.test_postgres_branch":            {ID: "projects/test-project/branches/main"},
-		"resources.postgres_endpoints.test_postgres_endpoint":         {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.postgres_endpoints.test_postgres_endpoint":              {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -115,6 +117,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "projects/test-project/branches/main/endpoints/primary", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -287,6 +292,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+				"test_vector_search_endpoint": {
+					CreateEndpoint: vectorsearch.CreateEndpoint{
+						Name: "test_vector_search_endpoint",
+					},
+				},
+			},
 		},
 	}
 
@@ -361,6 +373,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -646,6 +661,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+				"test_vector_search_endpoint": {
+					CreateEndpoint: vectorsearch.CreateEndpoint{
+						Name: "test_vector_search_endpoint",
+					},
+				},
+				"test_vector_search_endpoint_new": {
+					CreateEndpoint: vectorsearch.CreateEndpoint{
+						Name: "test_vector_search_endpoint_new",
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
@@ -687,8 +714,10 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.postgres_projects.test_postgres_project_old":    {ID: "projects/test-project-old"},
 		"resources.postgres_branches.test_postgres_branch":         {ID: "projects/test-project/branches/main"},
 		"resources.postgres_branches.test_postgres_branch_old":     {ID: "projects/test-project/branches/old"},
-		"resources.postgres_endpoints.test_postgres_endpoint":      {ID: "projects/test-project/branches/main/endpoints/primary"},
-		"resources.postgres_endpoints.test_postgres_endpoint_old":  {ID: "projects/test-project/branches/main/endpoints/old"},
+		"resources.postgres_endpoints.test_postgres_endpoint":               {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.postgres_endpoints.test_postgres_endpoint_old":           {ID: "projects/test-project/branches/main/endpoints/old"},
+		"resources.vector_search_endpoints.test_vector_search_endpoint":     {ID: "vs-endpoint-1"},
+		"resources.vector_search_endpoints.test_vector_search_endpoint_old": {ID: "vs-endpoint-old"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -834,6 +863,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint_old"].ModifiedStatus)
 	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ModifiedStatus)
+
+	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
+	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
+	assert.Equal(t, "vs-endpoint-old", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
