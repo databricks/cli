@@ -146,7 +146,16 @@ func (m *resolveVariableReferences) suggest(
 	}
 
 	// Handle var.X → variables.X.value rewriting for internal lookup.
+	// Also detect typos in the "var" prefix itself (e.g., "vr", "va").
 	isVar := path.HasPrefix(varPath)
+	varPrefixCorrected := false
+	if !isVar && len(path) >= 2 {
+		if c, _ := closestMatch(path[0].Key(), []string{"var"}); c != "" {
+			isVar = true
+			varPrefixCorrected = true
+		}
+	}
+
 	if isVar {
 		newPath := dyn.NewPath(dyn.Key("variables"), path[1], dyn.Key("value"))
 		if len(path) > 2 {
@@ -162,6 +171,15 @@ func (m *resolveVariableReferences) suggest(
 	}
 
 	suggestion := suggestPath(segments, normalized)
+
+	// If suggestPath found no deeper fixes but the var prefix itself was
+	// corrected, verify the rewritten path is valid and use it.
+	if suggestion == "" && varPrefixCorrected {
+		if _, err := dyn.GetByPath(normalized, path); err == nil {
+			suggestion = path.String()
+		}
+	}
+
 	if suggestion == "" {
 		return ""
 	}

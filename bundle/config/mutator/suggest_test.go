@@ -218,6 +218,32 @@ func TestSuggestVarRewriting(t *testing.T) {
 	require.Equal(t, "var.my_cluster_id", suggestion)
 }
 
+func TestSuggestVarPrefixTypo(t *testing.T) {
+	normalized := dyn.V(map[string]dyn.Value{
+		"variables": dyn.V(map[string]dyn.Value{
+			"my_cluster_id": dyn.V(map[string]dyn.Value{
+				"value": dyn.V("abc-123"),
+			}),
+		}),
+	})
+
+	m := &resolveVariableReferences{
+		prefixes: defaultPrefixes,
+	}
+
+	prefixes := []dyn.Path{dyn.MustPathFromString("variables")}
+	varPath := dyn.NewPath(dyn.Key("var"))
+
+	// Typo in var prefix only, variable name is correct.
+	assert.Equal(t, "var.my_cluster_id", m.suggest("vr.my_cluster_id", normalized, prefixes, varPath))
+
+	// Typo in var prefix AND variable name.
+	assert.Equal(t, "var.my_cluster_id", m.suggest("vr.my_clster_id", normalized, prefixes, varPath))
+
+	// Var prefix typo but no matching variable.
+	assert.Equal(t, "", m.suggest("vr.nonexistent", normalized, prefixes, varPath))
+}
+
 func TestSuggestNoSuggestionForCorrectPath(t *testing.T) {
 	normalized := dyn.V(map[string]dyn.Value{
 		"variables": dyn.V(map[string]dyn.Value{
