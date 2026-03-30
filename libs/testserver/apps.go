@@ -109,6 +109,7 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 	}
 
 	app.ActiveDeployment = &deployment
+	app.DefaultSourceCodePath = deployment.SourceCodePath
 	s.Apps[name] = app
 
 	return Response{Body: deployment}

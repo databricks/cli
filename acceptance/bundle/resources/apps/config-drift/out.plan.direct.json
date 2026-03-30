@@ -84,6 +84,11 @@
       }
     ]
   },
+  "default_source_code_path": {
+    "action": "skip",
+    "reason": "spec:output_only",
+    "remote": "./app"
+  },
   "id": {
     "action": "skip",
     "reason": "spec:output_only",
@@ -105,10 +110,10 @@
     "remote": "app-[UNIQUE_NAME]"
   },
   "source_code_path": {
-    "action": "skip",
-    "reason": "local_only",
+    "action": "update",
     "old": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files/app",
-    "new": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files/app"
+    "new": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files/app",
+    "remote": "./app"
   },
   "url": {
     "action": "skip",

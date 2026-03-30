@@ -112,7 +112,9 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error)
 		Lifecycle:      &AppStateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
-		remote.SourceCodePath = app.ActiveDeployment.SourceCodePath
+		// The source code path in active deployment is snapshotted version of the source code path in the app.
+		// We need to use the default source code path to get the correct source code path for drift detection.
+		remote.SourceCodePath = app.DefaultSourceCodePath
 		remote.GitSource = app.ActiveDeployment.GitSource
 		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
 	}
@@ -342,7 +344,7 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 		Lifecycle:      &AppStateLifecycle{Started: &started},
 	}
 	if app.ActiveDeployment != nil {
-		remote.SourceCodePath = app.ActiveDeployment.SourceCodePath
+		remote.SourceCodePath = app.DefaultSourceCodePath
 		remote.GitSource = app.ActiveDeployment.GitSource
 		remote.Config = deploymentToAppConfig(app.ActiveDeployment)
 	}
