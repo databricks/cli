@@ -113,6 +113,11 @@ test-update-templates:
 generate-out-test-toml:
 	go test ./acceptance -run '^TestAccept$$' -only-out-test-toml -timeout=${LOCAL_TIMEOUT}
 
+# Regenerate refschema for new resources
+.PHONY: generate-refschema
+generate-refschema:
+	go test ./acceptance -run '^TestAccept/bundle/refschema$$' -update -timeout=${LOCAL_TIMEOUT}
+
 # Updates acceptance test output (integration tests, requires access)
 .PHONY: test-update-aws
 test-update-aws:
