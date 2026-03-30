@@ -43,8 +43,10 @@ var defaultPrefixes = []string{
 	"variables",
 }
 
-var artifactPath = dyn.MustPathFromString("artifacts")
-var resourcesPath = dyn.MustPathFromString("resources")
+var (
+	artifactPath  = dyn.MustPathFromString("artifacts")
+	resourcesPath = dyn.MustPathFromString("resources")
+)
 
 type resolveVariableReferences struct {
 	prefixes    []string
@@ -259,25 +261,16 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 					return dyn.InvalidValue, dynvar.ErrSkipResolution
 				}
 
-				// Check for prefix typos before skipping. If the first
-				// component is close to a valid prefix, emit a warning
-				// with a suggestion. The reference is left unresolved to
-				// avoid breaking existing behavior.
-				if len(path) > 0 {
-					firstKey := path[0].Key()
-					prefixNames := m.suggestPrefixNames(prefixes)
-					best, dist := closestMatch(firstKey, prefixNames)
-					if best != "" && dist > 0 {
-						corrected := make(dyn.Path, len(path))
-						copy(corrected, path)
-						corrected[0] = dyn.Key(best)
-						suggestion := rewriteToVarShorthand(corrected.String())
-						key := rewriteToVarShorthand(path.String())
-						diags = diags.Append(diag.Diagnostic{
-							Severity: diag.Warning,
-							Summary:  fmt.Sprintf("reference does not exist: ${%s}. Did you mean ${%s}?", key, suggestion),
-						})
-					}
+				// Check for prefix typos before skipping. Use the full
+				// suggestFn to correct all segments (not just the prefix).
+				// The reference is left unresolved to avoid breaking
+				// existing behavior.
+				key := rewriteToVarShorthand(path.String())
+				if suggestion := suggestFn(key); suggestion != "" {
+					diags = diags.Append(diag.Diagnostic{
+						Severity: diag.Warning,
+						Summary:  fmt.Sprintf("reference does not exist: ${%s}. Did you mean ${%s}?", key, suggestion),
+					})
 				}
 
 				return dyn.InvalidValue, dynvar.ErrSkipResolution

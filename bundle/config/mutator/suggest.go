@@ -112,29 +112,6 @@ func rewriteToVarShorthand(key string) string {
 	return key
 }
 
-// suggestPrefixNames returns the list of prefix names used for suggestion
-// matching. This includes the resolution prefixes plus additional well-known
-// prefixes like "var" and "resources" that users commonly reference.
-func (m *resolveVariableReferences) suggestPrefixNames(prefixes []dyn.Path) []string {
-	seen := map[string]bool{}
-	var names []string
-	for _, p := range prefixes {
-		key := p[0].Key()
-		if !seen[key] {
-			seen[key] = true
-			names = append(names, key)
-		}
-	}
-	// Add well-known prefixes that may not be in the resolution set.
-	for _, extra := range []string{"var", "resources"} {
-		if !seen[extra] {
-			seen[extra] = true
-			names = append(names, extra)
-		}
-	}
-	return names
-}
-
 // makeSuggestFn builds a SuggestFn that uses Go type information and runtime
 // dyn values to generate suggestions for unresolved variable references.
 //

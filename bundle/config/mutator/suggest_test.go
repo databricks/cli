@@ -76,7 +76,7 @@ func TestStructFieldNames(t *testing.T) {
 
 	assert.Contains(t, names, "embedded_field")
 	assert.Contains(t, names, "name")
-	assert.Contains(t, names, "id")            // readonly should be included
+	assert.Contains(t, names, "id")                // readonly should be included
 	assert.NotContains(t, names, "internal_field") // internal should be excluded
 	assert.NotContains(t, names, "-")
 	assert.NotContains(t, names, "NoTag") // No json tag → excluded
@@ -109,9 +109,9 @@ func TestRewriteToVarShorthand(t *testing.T) {
 	}{
 		{"variables.my_cluster.value", "var.my_cluster"},
 		{"variables.x.value", "var.x"},
-		{"bundle.name", "bundle.name"},                           // not a variables path
-		{"variables.foo.bar.value", "variables.foo.bar.value"},   // nested - don't rewrite
-		{"variables.foo.default", "variables.foo.default"},       // not .value suffix
+		{"bundle.name", "bundle.name"},                         // not a variables path
+		{"variables.foo.bar.value", "variables.foo.bar.value"}, // nested - don't rewrite
+		{"variables.foo.default", "variables.foo.default"},     // not .value suffix
 	}
 	for _, tt := range tests {
 		assert.Equal(t, tt.want, rewriteToVarShorthand(tt.in), "in=%q", tt.in)
