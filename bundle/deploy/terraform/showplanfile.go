@@ -63,28 +63,6 @@ func convertGrantsResourceNameToKey(terraformName string) string {
 	return ""
 }
 
-// convertSecretAclResourceNameToKey converts terraform secret ACL resource names back to hierarchical resource keys.
-// Terraform creates N separate databricks_secret_acl resources per scope (one per principal),
-// named "secret_acl_<scope_key>_<index>". They all map to a single permissions sub-resource.
-// e.g., "secret_acl_my_scope_0" -> "resources.secret_scopes.my_scope.permissions"
-func convertSecretAclResourceNameToKey(terraformName string) string {
-	name, found := strings.CutPrefix(terraformName, "secret_acl_")
-	if !found {
-		return ""
-	}
-	lastUnderscore := strings.LastIndex(name, "_")
-	if lastUnderscore <= 0 {
-		return ""
-	}
-	// Verify suffix is the ACL index (digits only).
-	for _, c := range name[lastUnderscore+1:] {
-		if c < '0' || c > '9' {
-			return ""
-		}
-	}
-	return "resources.secret_scopes." + name[:lastUnderscore] + ".permissions"
-}
-
 // populatePlan populates a deployplan.Plan from Terraform resource changes.
 func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.ResourceChange) {
 	for _, rc := range changes {
