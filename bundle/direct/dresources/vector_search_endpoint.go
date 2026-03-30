@@ -29,7 +29,7 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 }
 
 func (*ResourceVectorSearchEndpoint) RemapState(remote *vectorsearch.EndpointInfo) *vectorsearch.CreateEndpoint {
-	budgetPolicyId := remote.EffectiveBudgetPolicyId
+	budgetPolicyId := remote.EffectiveBudgetPolicyId // TODO: use remote.BudgetPolicyId when available
 	var minQps int64
 	if remote.ScalingInfo != nil {
 		minQps = remote.ScalingInfo.RequestedMinQps
