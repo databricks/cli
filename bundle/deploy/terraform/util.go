@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/libs/log"
@@ -88,10 +86,16 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 
 			switch groupName {
 			case "secret_acls":
-				// Secret ACLs are handled by the post-processing loop below that creates
-				// .permissions entries for all secret scopes.
+				// Secret ACLs don't have their own state entries; permissions are
+				// created alongside the scope in the "secret_scopes" case below.
 				continue
-			case "apps", "secret_scopes", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_endpoints":
+			case "secret_scopes":
+				resourceKey = "resources." + groupName + "." + resource.Name
+				resourceState = ResourceState{ID: instance.Attributes.Name}
+				// The direct engine manages permissions as a sub-resource
+				// (SecretScopeFixups adds MANAGE ACL for the current user).
+				result[resourceKey+".permissions"] = ResourceState{ID: instance.Attributes.Name}
+			case "apps", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_endpoints":
 				resourceKey = "resources." + groupName + "." + resource.Name
 				resourceState = ResourceState{ID: instance.Attributes.Name}
 			case "dashboards":
@@ -114,16 +118,6 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 
 			result[resourceKey] = resourceState
 		}
-	}
-
-	// Ensure every secret scope has a .permissions entry. The direct engine manages
-	// permissions as a sub-resource (SecretScopeFixups adds MANAGE for the current user).
-	for key, entry := range result {
-		if !strings.HasPrefix(key, "resources.secret_scopes.") || strings.Contains(key, ".permissions") {
-			continue
-		}
-		permKey := key + ".permissions"
-		result[permKey] = ResourceState{ID: entry.ID}
 	}
 
 	return result, nil
