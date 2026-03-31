@@ -1,0 +1,55 @@
+name: scan-snapshot
+
+on:
+  push:
+    branches:
+      - "eval-*"
+
+  workflow_dispatch:
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download snapshot release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download snapshot --repo ${{ github.repository }} --pattern '*.tar.gz' --dir dist
+
+      - name: Upload macOS binaries
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: cli_darwin_snapshot
+          path: dist/*darwin*
+
+      - name: Upload Linux binaries
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: cli_linux_snapshot
+          path: dist/*linux*
+
+      - name: Upload Windows binaries
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: cli_windows_snapshot
+          path: dist/*windows*
+
+  scan:
+    needs: download
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        artifact:
+          - cli_darwin_snapshot
+          - cli_linux_snapshot
+          - cli_windows_snapshot
+
+    steps:
+      - name: Scan artifact
+        uses: databricks/gh-action-scan@3599451f16bfeaecaf4fc7dc0853bcd6d89e9ea1
+        with:
+          download-artifact: ${{ matrix.artifact }}
+          artifact-name: ${{ matrix.artifact }}

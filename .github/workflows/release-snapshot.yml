@@ -98,21 +98,3 @@ jobs:
           files: |-
             dist/databricks_cli_*.zip
             dist/databricks_cli_*.tar.gz
-
-  scan:
-    needs: goreleaser
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        artifact:
-          - cli_darwin_snapshot
-          - cli_linux_snapshot
-          - cli_windows_snapshot
-
-    steps:
-      - name: Scan artifact
-        uses: databricks/gh-action-scan@3599451f16bfeaecaf4fc7dc0853bcd6d89e9ea1
-        with:
-          download-artifact: ${{ matrix.artifact }}
-          artifact-name: ${{ matrix.artifact }}
