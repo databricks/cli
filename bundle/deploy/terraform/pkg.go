@@ -131,8 +131,9 @@ var GroupToTerraformName = map[string]string{
 	"postgres_endpoints":      "databricks_postgres_endpoint",
 
 	// 3 level groups: resources.*.GROUP
-	"permissions": "databricks_permissions",
-	"grants":      "databricks_grants",
+	"permissions":  "databricks_permissions",
+	"grants":       "databricks_grants",
+	"secret_acls":  "databricks_secret_acl",
 }
 
 var TerraformToGroupName = func() map[string]string {

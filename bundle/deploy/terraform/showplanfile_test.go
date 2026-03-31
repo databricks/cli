@@ -76,3 +76,33 @@ func TestPopulatePlan(t *testing.T) {
 	// Unknown resource type should not be in the plan
 	assert.NotContains(t, plan.Plan, "resources.recreate whatever")
 }
+
+func TestPopulatePlanSecretAcl(t *testing.T) {
+	ctx := t.Context()
+	changes := []*tfjson.ResourceChange{
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionCreate}},
+			Name:   "secret_acl_my_scope_0",
+		},
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionDelete, tfjson.ActionCreate}},
+			Name:   "secret_acl_my_scope_1",
+		},
+	}
+
+	plan := deployplan.NewPlanTerraform()
+	populatePlan(ctx, plan, changes)
+
+	// Multiple ACL changes for the same scope are merged with highest severity.
+	assert.Equal(t, map[string]*deployplan.PlanEntry{
+		"resources.secret_scopes.my_scope.permissions": {Action: deployplan.Recreate},
+	}, plan.Plan)
+}
+
+func TestConvertSecretAclNameToScopeKey(t *testing.T) {
+	assert.Equal(t, "resources.secret_scopes.my_scope.permissions", convertSecretAclNameToScopeKey("secret_acl_my_scope_0"))
+	assert.Equal(t, "resources.secret_scopes.my_scope.permissions", convertSecretAclNameToScopeKey("secret_acl_my_scope_1"))
+	assert.Equal(t, "resources.secret_scopes.scope_123.permissions", convertSecretAclNameToScopeKey("secret_acl_scope_123_2"))
+}

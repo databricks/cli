@@ -82,14 +82,15 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 
 			groupName, ok := TerraformToGroupName[resource.Type]
 			if !ok {
-				// databricks_secret_acl is managed automatically by DABs as part of secret scope deployment.
-				if resource.Type != "databricks_secret_acl" {
-					log.Warnf(ctx, "Unknown Terraform resource type: %s", resource.Type)
-				}
+				log.Warnf(ctx, "Unknown Terraform resource type: %s", resource.Type)
 				continue
 			}
 
 			switch groupName {
+			case "secret_acls":
+				// Secret ACLs are handled by the post-processing loop below that creates
+				// .permissions entries for all secret scopes.
+				continue
 			case "apps", "secret_scopes", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_endpoints":
 				resourceKey = "resources." + groupName + "." + resource.Name
 				resourceState = ResourceState{ID: instance.Attributes.Name}
