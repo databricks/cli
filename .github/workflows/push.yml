@@ -125,20 +125,26 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup JFrog CLI with OIDC
-        if: matrix.os.name == 'linux'
-        uses: jfrog/setup-jfrog-cli@279b1f629f43dd5bc658d8361ac4802a7ef8d2d5 # v4.9.1
-        env:
-          JF_URL: https://databricks.jfrog.io
-        with:
-          oidc-provider-name: github-actions
-
       - name: Configure Go to use JFrog proxy
         if: matrix.os.name == 'linux'
         run: |
-          # Extract access token from JFrog CLI config for use with native go commands
-          JFROG_TOKEN=$(jf config show --format json | jq -r '.[0].accessToken')
+          set -euo pipefail
+          # Get GitHub OIDC ID token
+          ID_TOKEN=$(curl -sLS \
+            -H "User-Agent: actions/oidc-client" \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=jfrog-github" | jq -r '.value')
+          echo "::add-mask::${ID_TOKEN}"
+          # Exchange for JFrog access token
+          JFROG_TOKEN=$(curl -sLS -X POST \
+            -H "Content-Type: application/json" \
+            "https://databricks.jfrog.io/access/api/v1/oidc/token" \
+            -d "{\"grant_type\": \"urn:ietf:params:oauth:grant-type:token-exchange\", \"subject_token_type\":\"urn:ietf:params:oauth:token-type:id-token\", \"subject_token\": \"${ID_TOKEN}\", \"provider_name\": \"github-actions\"}" | jq -r '.access_token')
           echo "::add-mask::${JFROG_TOKEN}"
+          if [ -z "$JFROG_TOKEN" ]; then
+            echo "FAIL: Could not extract JFrog access token"
+            exit 1
+          fi
           # Configure .netrc for Go module authentication
           echo "machine databricks.jfrog.io login _ password ${JFROG_TOKEN}" >> ~/.netrc
           chmod 600 ~/.netrc
