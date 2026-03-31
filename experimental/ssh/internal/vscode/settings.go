@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -96,8 +97,10 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 		return nil
 	}
 
-	if err := backupSettings(ctx, settingsPath); err != nil {
-		log.Warnf(ctx, "Failed to backup settings: %v. Continuing with update.", err)
+	if data, err := os.ReadFile(settingsPath); err == nil {
+		if err := fileutil.BackupFile(ctx, settingsPath, data); err != nil {
+			return fmt.Errorf("failed to backup settings: %w", err)
+		}
 	}
 
 	if err := updateSettings(&settings, connectionName, missing); err != nil {
@@ -275,27 +278,6 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 
 	cmdio.LogString(ctx, fmt.Sprintf("Created %s settings at %s", getIDE(ide).Name, filepath.ToSlash(settingsPath)))
 	return nil
-}
-
-func backupSettings(ctx context.Context, path string) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	if len(data) == 0 {
-		return nil
-	}
-
-	originalBak := path + ".original.bak"
-	latestBak := path + ".latest.bak"
-
-	if _, err := os.Stat(originalBak); os.IsNotExist(err) {
-		log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(originalBak))
-		return os.WriteFile(originalBak, data, 0o600)
-	}
-
-	log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(latestBak))
-	return os.WriteFile(latestBak, data, 0o600)
 }
 
 // subKeyOp returns a patch op that sets key/subKey=value, creating the parent object if absent.
