@@ -80,6 +80,10 @@ jobs:
     name: "make test (${{matrix.os.name}}, ${{matrix.deployment}})"
     runs-on: ${{ matrix.os.runner }}
 
+    permissions:
+      id-token: write
+      contents: read
+
     strategy:
       fail-fast: false
       matrix:
@@ -120,6 +124,18 @@ jobs:
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup JFrog CLI with OIDC
+        if: matrix.os.name == 'linux'
+        uses: jfrog/setup-jfrog-cli@279b1f629f43dd5bc658d8361ac4802a7ef8d2d5 # v4.9.1
+        env:
+          JF_URL: https://databricks.jfrog.io
+        with:
+          oidc-provider-name: github-actions
+
+      - name: Configure Go to use JFrog proxy
+        if: matrix.os.name == 'linux'
+        run: jf goc --repo-resolve=db-golang
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
