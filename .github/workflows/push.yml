@@ -88,8 +88,8 @@ jobs:
         os:
           - name: linux
             runner:
-              group: databricks-protected-runner-group-large
-              labels: linux-ubuntu-latest-large
+              group: databricks-eng-protected-runner-group-hardened-optin
+              labels: linux-ubuntu-latest-hardened
 
           - name: windows
             runner:
