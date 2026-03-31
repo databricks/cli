@@ -72,6 +72,9 @@ func appResourceRef(r apps.AppResource) (appResourceReference, bool) {
 	case r.Experiment != nil:
 		return appResourceReference{"experiments", r.Experiment.ExperimentId, string(r.Experiment.Permission)}, true
 	case r.Postgres != nil:
+		if r.Postgres.Branch != "" {
+			return appResourceReference{"postgres_projects", r.Postgres.Branch, string(r.Postgres.Permission)}, true
+		}
 		return appResourceReference{
 			"database_instances", r.Postgres.Database, string(r.Postgres.Permission),
 		}, true
