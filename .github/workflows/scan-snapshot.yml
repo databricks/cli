@@ -57,7 +57,6 @@ jobs:
         with:
           repository: databricks/gh-action-scan
           ref: 3599451f16bfeaecaf4fc7dc0853bcd6d89e9ea1
-          token: ${{ secrets.DECO_GITHUB_TOKEN }}
           path: .gh-action-scan
 
       - name: Scan artifact
