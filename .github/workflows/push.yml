@@ -135,7 +135,16 @@ jobs:
 
       - name: Configure Go to use JFrog proxy
         if: matrix.os.name == 'linux'
-        run: jf goc --repo-resolve=db-golang
+        run: |
+          # Extract access token from JFrog CLI config for use with native go commands
+          JFROG_TOKEN=$(jf config show --format json | jq -r '.[0].accessToken')
+          echo "::add-mask::${JFROG_TOKEN}"
+          # Configure .netrc for Go module authentication
+          echo "machine databricks.jfrog.io login _ password ${JFROG_TOKEN}" >> ~/.netrc
+          chmod 600 ~/.netrc
+          # Route Go module downloads through JFrog and skip sum.golang.org (blocked)
+          echo "GOPROXY=https://databricks.jfrog.io/artifactory/api/go/db-golang,direct" >> "$GITHUB_ENV"
+          echo "GONOSUMDB=*" >> "$GITHUB_ENV"
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
