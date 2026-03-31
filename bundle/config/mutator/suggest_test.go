@@ -126,7 +126,7 @@ func TestSuggestPathSingleSegmentFix(t *testing.T) {
 		}),
 	})
 
-	result := suggestPath([]string{"bundle", "nme"}, normalized)
+	result := suggestPath([]string{"bundle", "nme"}, normalized, false)
 	assert.Equal(t, "bundle.name", result)
 }
 
@@ -138,7 +138,7 @@ func TestSuggestPathMultiSegmentFix(t *testing.T) {
 		}),
 	})
 
-	result := suggestPath([]string{"bundl", "nme"}, normalized)
+	result := suggestPath([]string{"bundl", "nme"}, normalized, false)
 	assert.Equal(t, "bundle.name", result)
 }
 
@@ -150,7 +150,7 @@ func TestSuggestPathAllCorrect(t *testing.T) {
 	})
 
 	// All segments match exactly → no suggestion needed.
-	result := suggestPath([]string{"bundle", "name"}, normalized)
+	result := suggestPath([]string{"bundle", "name"}, normalized, false)
 	assert.Equal(t, "", result)
 }
 
@@ -162,7 +162,7 @@ func TestSuggestPathNoMatch(t *testing.T) {
 	})
 
 	// "zzzzz" is too far from any candidate.
-	result := suggestPath([]string{"bundle", "zzzzz"}, normalized)
+	result := suggestPath([]string{"bundle", "zzzzz"}, normalized, false)
 	assert.Equal(t, "", result)
 }
 
@@ -176,7 +176,7 @@ func TestSuggestPathMapKey(t *testing.T) {
 		}),
 	})
 
-	result := suggestPath([]string{"variables", "my_clster", "value"}, normalized)
+	result := suggestPath([]string{"variables", "my_clster", "value"}, normalized, false)
 	assert.Equal(t, "variables.my_cluster.value", result)
 }
 
@@ -194,7 +194,7 @@ func TestSuggestPathResourceField(t *testing.T) {
 		}),
 	})
 
-	result := suggestPath([]string{"resources", "jobs", "my_job", "nme"}, normalized)
+	result := suggestPath([]string{"resources", "jobs", "my_job", "nme"}, normalized, false)
 	assert.Equal(t, "resources.jobs.my_job.name", result)
 }
 
@@ -211,10 +211,7 @@ func TestSuggestVarRewriting(t *testing.T) {
 		prefixes: defaultPrefixes,
 	}
 
-	prefixes := []dyn.Path{dyn.MustPathFromString("variables")}
-	varPath := dyn.NewPath(dyn.Key("var"))
-
-	suggestion := m.suggest("var.my_clster_id", normalized, prefixes, varPath)
+	suggestion := m.suggest("var.my_clster_id", normalized)
 	require.Equal(t, "var.my_cluster_id", suggestion)
 }
 
@@ -231,17 +228,14 @@ func TestSuggestVarPrefixTypo(t *testing.T) {
 		prefixes: defaultPrefixes,
 	}
 
-	prefixes := []dyn.Path{dyn.MustPathFromString("variables")}
-	varPath := dyn.NewPath(dyn.Key("var"))
-
 	// Typo in var prefix only, variable name is correct.
-	assert.Equal(t, "var.my_cluster_id", m.suggest("vr.my_cluster_id", normalized, prefixes, varPath))
+	assert.Equal(t, "var.my_cluster_id", m.suggest("vr.my_cluster_id", normalized))
 
 	// Typo in var prefix AND variable name.
-	assert.Equal(t, "var.my_cluster_id", m.suggest("vr.my_clster_id", normalized, prefixes, varPath))
+	assert.Equal(t, "var.my_cluster_id", m.suggest("vr.my_clster_id", normalized))
 
 	// Var prefix typo but no matching variable.
-	assert.Equal(t, "", m.suggest("vr.nonexistent", normalized, prefixes, varPath))
+	assert.Equal(t, "", m.suggest("vr.nonexistent", normalized))
 }
 
 func TestSuggestNoSuggestionForCorrectPath(t *testing.T) {
@@ -257,9 +251,6 @@ func TestSuggestNoSuggestionForCorrectPath(t *testing.T) {
 		prefixes: defaultPrefixes,
 	}
 
-	prefixes := []dyn.Path{dyn.MustPathFromString("variables")}
-	varPath := dyn.NewPath(dyn.Key("var"))
-
-	suggestion := m.suggest("var.my_cluster_id", normalized, prefixes, varPath)
+	suggestion := m.suggest("var.my_cluster_id", normalized)
 	assert.Equal(t, "", suggestion)
 }

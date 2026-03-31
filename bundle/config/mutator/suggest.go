@@ -3,6 +3,7 @@ package mutator
 import (
 	"math"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -125,19 +126,15 @@ func rewriteToVarShorthand(key string) string {
 //   - Map types: candidates come from the actual runtime dyn.Value keys.
 func (m *resolveVariableReferences) makeSuggestFn(
 	normalized dyn.Value,
-	prefixes []dyn.Path,
-	varPath dyn.Path,
 ) dynvar.SuggestFn {
 	return func(key string) string {
-		return m.suggest(key, normalized, prefixes, varPath)
+		return m.suggest(key, normalized)
 	}
 }
 
 func (m *resolveVariableReferences) suggest(
 	key string,
 	normalized dyn.Value,
-	prefixes []dyn.Path,
-	varPath dyn.Path,
 ) string {
 	// Parse the key into path segments.
 	path, err := dyn.NewPathFromString(key)
@@ -170,16 +167,7 @@ func (m *resolveVariableReferences) suggest(
 		segments[i] = c.Key()
 	}
 
-	suggestion := suggestPath(segments, normalized)
-
-	// If suggestPath found no deeper fixes but the var prefix itself was
-	// corrected, verify the rewritten path is valid and use it.
-	if suggestion == "" && varPrefixCorrected {
-		if _, err := dyn.GetByPath(normalized, path); err == nil {
-			suggestion = path.String()
-		}
-	}
-
+	suggestion := suggestPath(segments, normalized, varPrefixCorrected)
 	if suggestion == "" {
 		return ""
 	}
@@ -193,11 +181,11 @@ func (m *resolveVariableReferences) suggest(
 // suggestPath walks the config type tree and dyn value tree segment by segment,
 // greedily correcting each wrong segment. Returns the corrected dot-separated
 // path if any corrections were made, or "" if no suggestion can be produced.
-func suggestPath(segments []string, normalized dyn.Value) string {
+func suggestPath(segments []string, normalized dyn.Value, initialHasFix bool) string {
 	currentType := reflect.TypeOf(config.Root{})
 	currentDyn := normalized
 	corrected := make([]string, len(segments))
-	hasFix := false
+	hasFix := initialHasFix
 
 	for i, seg := range segments {
 		// Dereference pointer types.
@@ -216,18 +204,9 @@ func suggestPath(segments []string, normalized dyn.Value) string {
 		case reflect.Struct:
 			candidates = structFieldNames(currentType)
 
-			// Try exact match first.
-			sf, _, ok := structaccess.FindStructFieldByKeyType(currentType, seg)
-			if ok {
+			if slices.Contains(candidates, seg) {
 				corrected[i] = seg
-				nextType = sf.Type
-			} else {
-				// Exact match failed. Also check readonly fields that
-				// FindStructFieldByKeyType skips.
-				if hasFieldName(currentType, seg) {
-					corrected[i] = seg
-					nextType = fieldTypeByName(currentType, seg)
-				}
+				nextType = fieldTypeByName(currentType, seg)
 			}
 
 		case reflect.Map:
@@ -259,12 +238,7 @@ func suggestPath(segments []string, normalized dyn.Value) string {
 
 			// Advance type using the corrected segment.
 			if currentType.Kind() == reflect.Struct {
-				sf, _, ok := structaccess.FindStructFieldByKeyType(currentType, best)
-				if ok {
-					nextType = sf.Type
-				} else {
-					nextType = fieldTypeByName(currentType, best)
-				}
+				nextType = fieldTypeByName(currentType, best)
 			}
 			// For maps, nextType is already set to the map element type.
 		}
@@ -289,44 +263,8 @@ func suggestPath(segments []string, normalized dyn.Value) string {
 	return strings.Join(corrected, ".")
 }
 
-// hasFieldName checks if a struct type has a field with the given JSON name,
-// including readonly fields (which FindStructFieldByKeyType skips).
-func hasFieldName(t reflect.Type, name string) bool {
-	for t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-	if t.Kind() != reflect.Struct {
-		return false
-	}
-	for i := range t.NumField() {
-		sf := t.Field(i)
-		if sf.PkgPath != "" {
-			continue
-		}
-		if sf.Anonymous && sf.Tag.Get("json") == "" {
-			ft := sf.Type
-			for ft.Kind() == reflect.Pointer {
-				ft = ft.Elem()
-			}
-			if hasFieldName(ft, name) {
-				return true
-			}
-			continue
-		}
-		jsonName := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if jsonName == name {
-			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
-			if btag.Internal() {
-				continue
-			}
-			return true
-		}
-	}
-	return false
-}
-
 // fieldTypeByName returns the reflect.Type of a struct field identified by its
-// JSON name, searching embedded structs. Includes readonly fields.
+// JSON name, searching embedded structs.
 func fieldTypeByName(t reflect.Type, name string) reflect.Type {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()

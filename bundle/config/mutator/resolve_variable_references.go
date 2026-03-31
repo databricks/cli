@@ -46,6 +46,7 @@ var defaultPrefixes = []string{
 var (
 	artifactPath  = dyn.MustPathFromString("artifacts")
 	resourcesPath = dyn.MustPathFromString("resources")
+	varPath       = dyn.NewPath(dyn.Key("var"))
 )
 
 type resolveVariableReferences struct {
@@ -149,15 +150,11 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		prefixes[i] = dyn.MustPathFromString(prefix)
 	}
 
-	// The path ${var.foo} is a shorthand for ${variables.foo.value}.
-	// We rewrite it here to make the resolution logic simpler.
-	varPath := dyn.NewPath(dyn.Key("var"))
-
 	var diags diag.Diagnostics
 	maxRounds := 1 + m.extraRounds
 
 	for round := range maxRounds {
-		hasUpdates, newDiags := m.resolveOnce(b, prefixes, varPath)
+		hasUpdates, newDiags := m.resolveOnce(b, prefixes)
 
 		diags = diags.Extend(newDiags)
 
@@ -186,7 +183,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	return diags
 }
 
-func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path, varPath dyn.Path) (bool, diag.Diagnostics) {
+func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn.Path) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	hasUpdates := false
 	err := m.selectivelyMutate(b, func(root dyn.Value) (dyn.Value, error) {
@@ -205,7 +202,7 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		//
 		normalized, _ := convert.Normalize(b.Config, root, convert.IncludeMissingFields)
 
-		suggestFn := m.makeSuggestFn(normalized, prefixes, varPath)
+		suggestFn := m.makeSuggestFn(normalized)
 
 		// If the pattern is nil, we resolve references in the entire configuration.
 		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
