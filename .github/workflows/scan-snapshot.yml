@@ -52,8 +52,15 @@ jobs:
           - cli_windows_snapshot
 
     steps:
+      - name: Checkout scan action
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: databricks/gh-action-scan
+          ref: 3599451f16bfeaecaf4fc7dc0853bcd6d89e9ea1
+          path: .gh-action-scan
+
       - name: Scan artifact
-        uses: databricks/gh-action-scan@3599451f16bfeaecaf4fc7dc0853bcd6d89e9ea1
+        uses: ./.gh-action-scan
         with:
           download-artifact: ${{ matrix.artifact }}
           artifact-name: ${{ matrix.artifact }}
