@@ -14,6 +14,7 @@
 * engine/direct: Fix unwanted recreation of secret scopes when scope_backend_type is not set ([#4834](https://github.com/databricks/cli/pull/4834))
 * engine/direct: Fix bind and unbind for non-Terraform resources ([#4850](https://github.com/databricks/cli/pull/4850))
 * engine/direct: Fix deploying removed principals ([#4824](https://github.com/databricks/cli/pull/4824))
+* Fix grants/volumes test failure on azure-ucws ([#4880](https://github.com/databricks/cli/pull/4880))
 
 ### Dependency updates
 
