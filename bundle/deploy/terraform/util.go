@@ -82,7 +82,8 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 
 			groupName, ok := TerraformToGroupName[resource.Type]
 			if !ok {
-				if !silentlyUpdatedResources[resource.Type] {
+				// databricks_secret_acl is managed automatically by DABs as part of secret scope deployment.
+				if resource.Type != "databricks_secret_acl" {
 					log.Warnf(ctx, "Unknown Terraform resource type: %s", resource.Type)
 				}
 				continue

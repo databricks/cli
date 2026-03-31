@@ -10,12 +10,6 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-// silentlyUpdatedResources contains resource types that are automatically created by DABs,
-// no need to show them in the plan
-var silentlyUpdatedResources = map[string]bool{
-	"databricks_secret_acl": true,
-}
-
 var prefixToGroup = []struct{ prefix, group string }{
 	{"job_", "jobs"},
 	{"pipeline_", "pipelines"},
@@ -88,7 +82,8 @@ func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.
 
 		group, ok := TerraformToGroupName[rc.Type]
 		if !ok {
-			if !silentlyUpdatedResources[rc.Type] {
+			// databricks_secret_acl is managed automatically by DABs as part of secret scope deployment.
+			if rc.Type != "databricks_secret_acl" {
 				log.Warnf(ctx, "unknown resource type '%s'", rc.Type)
 			}
 			continue
