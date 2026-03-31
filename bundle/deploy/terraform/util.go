@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/libs/log"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
@@ -81,6 +82,7 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 
 			groupName, ok := TerraformToGroupName[resource.Type]
 			if !ok {
+				log.Warnf(ctx, "Unknown Terraform resource type: %s", resource.Type)
 				continue
 			}
 
