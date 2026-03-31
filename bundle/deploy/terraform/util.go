@@ -82,7 +82,9 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 
 			groupName, ok := TerraformToGroupName[resource.Type]
 			if !ok {
-				log.Warnf(ctx, "Unknown Terraform resource type: %s", resource.Type)
+				if !silentlyUpdatedResources[resource.Type] {
+					log.Warnf(ctx, "Unknown Terraform resource type: %s", resource.Type)
+				}
 				continue
 			}
 
