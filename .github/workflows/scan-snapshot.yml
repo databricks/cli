@@ -9,7 +9,9 @@ on:
 
 jobs:
   download:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     steps:
       - name: Download snapshot release assets
@@ -38,7 +40,9 @@ jobs:
 
   scan:
     needs: download
-    runs-on: ubuntu-latest
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     strategy:
       matrix:
