@@ -197,6 +197,37 @@ func TestInitCmdBranchAndVersionMutuallyExclusive(t *testing.T) {
 	assert.Contains(t, err.Error(), "--branch and --version are mutually exclusive")
 }
 
+func TestInitCmdInteractiveFlagDefaultsToTrue(t *testing.T) {
+	cmd := newInitCmd()
+	f := cmd.Flags().Lookup("interactive")
+	require.NotNil(t, f)
+	assert.Equal(t, "true", f.DefValue)
+}
+
+func TestGenerateProjectName(t *testing.T) {
+	dir := t.TempDir()
+
+	// First call returns "my-app" when nothing exists
+	name := generateProjectName(dir)
+	assert.Equal(t, "my-app", name)
+
+	// Create "my-app" directory, next call should return "my-app-1"
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "my-app"), 0o755))
+	name = generateProjectName(dir)
+	assert.Equal(t, "my-app-1", name)
+
+	// Create "my-app-1" too, should return "my-app-2"
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "my-app-1"), 0o755))
+	name = generateProjectName(dir)
+	assert.Equal(t, "my-app-2", name)
+}
+
+func TestGenerateProjectNameNoOutputDir(t *testing.T) {
+	// With empty outputDir, checks current directory
+	name := generateProjectName("")
+	assert.Contains(t, name, "my-app")
+}
+
 func TestNormalizeVersion(t *testing.T) {
 	tests := []struct {
 		input    string

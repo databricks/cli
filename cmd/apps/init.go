@@ -71,6 +71,7 @@ func newInitCmd() *cobra.Command {
 		deploy       bool
 		run          string
 		setValues    []string
+		interactive  bool
 	)
 
 	cmd := &cobra.Command{
@@ -79,9 +80,9 @@ func newInitCmd() *cobra.Command {
 		Hidden: true,
 		Long: `Initialize a new AppKit application from a template.
 
-When run without arguments, uses the default AppKit template and an interactive prompt
-guides you through the setup. When run with --name, runs in non-interactive mode
-(all required flags must be provided).
+By default, an interactive prompt guides you through the setup. Flags like --name
+and --deploy pre-fill values but the prompt still runs. Use --interactive=false to
+skip all prompts and use defaults for anything not provided via flags.
 
 By default, the command uses the latest released version of AppKit. Use --version
 to specify a different version, or --version latest to use the main branch.
@@ -90,31 +91,29 @@ Examples:
   # Interactive mode with default template (recommended)
   databricks apps init
 
+  # Interactive with pre-filled name
+  databricks apps init --name my-app
+
   # Use a specific AppKit version
   databricks apps init --version v0.2.0
 
   # Use the latest development version (main branch)
   databricks apps init --version latest
 
-  # Non-interactive with flags
-  databricks apps init --name my-app
+  # Fully non-interactive with flags
+  databricks apps init --interactive=false --name my-app
 
   # With analytics feature and SQL Warehouse
-  databricks apps init --name my-app --features=analytics \
+  databricks apps init --interactive=false --name my-app --features=analytics \
     --set analytics.sql-warehouse.id=abc123
 
   # With database resource (all fields required together)
-  databricks apps init --name my-app --features=analytics \
+  databricks apps init --interactive=false --name my-app --features=analytics \
     --set analytics.database.instance_name=myinst \
     --set analytics.database.database_name=mydb
 
-  # Multiple plugins with different warehouses
-  databricks apps init --name my-app --features=analytics,reporting \
-    --set analytics.sql-warehouse.id=wh1 \
-    --set reporting.sql-warehouse.id=wh2
-
-  # Create, deploy, and run with dev-remote
-  databricks apps init --name my-app --deploy --run=dev-remote
+  # Create and deploy
+  databricks apps init --name my-app --deploy
 
   # With a custom template from a local path
   databricks apps init --template /path/to/template --name my-app
@@ -144,7 +143,6 @@ Environment variables:
 				branch:         branch,
 				version:        version,
 				name:           name,
-				nameProvided:   cmd.Flags().Changed("name"),
 				warehouseID:    warehouseID,
 				description:    description,
 				outputDir:      outputDir,
@@ -152,9 +150,9 @@ Environment variables:
 				deploy:         deploy,
 				deployChanged:  cmd.Flags().Changed("deploy"),
 				run:            run,
-				runChanged:     cmd.Flags().Changed("run"),
 				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
 				setValues:      setValues,
+				interactive:    interactive,
 			})
 		},
 	}
@@ -172,7 +170,9 @@ Environment variables:
 	cmd.Flags().StringSliceVar(&pluginsFlag, "plugins", nil, "Alias for --features")
 	_ = cmd.Flags().MarkHidden("plugins")
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
-	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
+	cmd.Flags().StringVar(&run, "run", "", "Deprecated: auto-run removed, use 'databricks apps dev' after init")
+	_ = cmd.Flags().MarkDeprecated("run", "auto-run has been removed; use 'databricks apps dev' after init")
+	cmd.Flags().BoolVar(&interactive, "interactive", true, "Run in interactive mode (default true, use --interactive=false to skip prompts)")
 
 	return cmd
 }
@@ -182,7 +182,6 @@ type createOptions struct {
 	branch         string
 	version        string
 	name           string
-	nameProvided   bool // true if --name flag was explicitly set (enables "flags mode")
 	warehouseID    string
 	description    string
 	outputDir      string
@@ -190,9 +189,9 @@ type createOptions struct {
 	deploy         bool
 	deployChanged  bool // true if --deploy flag was explicitly set
 	run            string
-	runChanged     bool     // true if --run flag was explicitly set
 	pluginsChanged bool     // true if --plugins flag was explicitly set
 	setValues      []string // --set plugin.resourceKey.field=value pairs
+	interactive    bool     // true (default) = show prompts; false = use defaults for unprovided values
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -303,8 +302,7 @@ func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, erro
 }
 
 // promptForPluginsAndDeps prompts for plugins and their resource dependencies using the manifest.
-// skipDeployRunPrompt indicates whether to skip prompting for deploy/run (because flags were provided).
-func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt bool) (*prompt.CreateProjectConfig, error) {
+func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string) (*prompt.CreateProjectConfig, error) {
 	config := &prompt.CreateProjectConfig{
 		Dependencies: make(map[string]string),
 		Features:     preSelectedPlugins, // Reuse Features field for plugin names
@@ -364,30 +362,6 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 		}
 		for k, v := range values {
 			config.Dependencies[k] = v
-		}
-	}
-
-	// Step 4: Description
-	config.Description = prompt.DefaultAppDescription
-	err := huh.NewInput().
-		Title("Description").
-		Placeholder(prompt.DefaultAppDescription).
-		Value(&config.Description).
-		WithTheme(theme).
-		Run()
-	if err != nil {
-		return nil, err
-	}
-	if config.Description == "" {
-		config.Description = prompt.DefaultAppDescription
-	}
-	prompt.PrintAnswered(ctx, "Description", config.Description)
-
-	// Step 5: Deploy and run options (skip if any deploy/run flag was provided)
-	if !skipDeployRunPrompt {
-		config.Deploy, config.RunMode, err = prompt.PromptForDeployAndRun(ctx)
-		if err != nil {
-			return nil, err
 		}
 	}
 
@@ -515,8 +489,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var selectedPlugins []string
 	var resourceValues map[string]string
 	var shouldDeploy bool
-	var runMode prompt.RunMode
-	isInteractive := cmdio.IsPromptSupported(ctx)
+	isInteractive := opts.interactive && cmdio.IsPromptSupported(ctx)
 
 	// Use plugins from flags if provided
 	if len(opts.plugins) > 0 {
@@ -554,22 +527,22 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 
 	if opts.name == "" {
-		if !isInteractive {
-			return errors.New("--name is required in non-interactive mode")
+		if isInteractive {
+			// Prompt includes validation for name format AND directory existence
+			name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
+			if err != nil {
+				return err
+			}
+			opts.name = name
+		} else {
+			opts.name = generateProjectName(opts.outputDir)
 		}
-		// Prompt includes validation for name format AND directory existence
-		name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
-		if err != nil {
-			return err
-		}
-		opts.name = name
 		// Update destDir with the actual name
 		destDir = opts.name
 		if opts.outputDir != "" {
 			destDir = filepath.Join(opts.outputDir, opts.name)
 		}
 	} else {
-		// Non-interactive mode: validate name and directory existence
 		if err := prompt.ValidateProjectName(opts.name); err != nil {
 			return err
 		}
@@ -623,41 +596,29 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		m = &manifest.Manifest{Plugins: map[string]manifest.Plugin{}}
 	}
 
-	// When --name is provided, user is in "flags mode" - use defaults instead of prompting
-	flagsMode := opts.nameProvided
-
-	// Skip deploy/run prompts if in flags mode or if deploy/run flags were explicitly set
-	skipDeployRunPrompt := flagsMode || opts.deployChanged || opts.runChanged
-
-	if isInteractive && !opts.pluginsChanged && !flagsMode {
-		// Interactive mode without --plugins flag: prompt for plugins, dependencies, description
-		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt)
+	if isInteractive && !opts.pluginsChanged {
+		// Interactive mode without --plugins flag: prompt for plugins and dependencies
+		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins)
 		if err != nil {
 			return err
 		}
 		selectedPlugins = config.Features // Features field holds plugin names
 		resourceValues = config.Dependencies
-		if config.Description != "" {
-			opts.description = config.Description
-		}
-		if !skipDeployRunPrompt {
-			shouldDeploy = config.Deploy
-			runMode = config.RunMode
-		}
 	} else {
-		// --plugins flag or flags/non-interactive mode: validate plugin names
+		// --plugins flag or non-interactive mode: validate plugin names
 		if len(selectedPlugins) > 0 {
 			if err := m.ValidatePluginNames(selectedPlugins); err != nil {
 				return err
 			}
 		}
-		// Prompt for deploy/run in interactive mode when no flags were set
-		if isInteractive && !skipDeployRunPrompt {
-			var err error
-			shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
-			if err != nil {
-				return err
-			}
+	}
+
+	// Prompt for deploy only if interactive and --deploy was not explicitly set
+	if isInteractive && !opts.deployChanged {
+		var err error
+		shouldDeploy, err = prompt.PromptForDeploy(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -689,8 +650,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
-	// In flags/non-interactive mode, validate that all required resources are provided.
-	if flagsMode || !isInteractive {
+	// In non-interactive mode, validate that all required resources are provided.
+	if !isInteractive {
 		resources := m.CollectResources(selectedPlugins)
 		for _, r := range resources {
 			found := false
@@ -710,11 +671,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
-	// Apply flag values for deploy/run when in flags mode, flags were explicitly set, or non-interactive
-	if skipDeployRunPrompt || !isInteractive {
-		var err error
-		shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
-		if err != nil {
+	// Apply flag values for deploy/run when flags were explicitly set or non-interactive
+	if opts.deployChanged || !isInteractive {
+		shouldDeploy = opts.deploy
+	}
+	// Validate --run flag value if provided (even though we don't auto-run)
+	if opts.run != "" {
+		if _, _, err := parseDeployAndRunFlags(shouldDeploy, opts.run); err != nil {
 			return err
 		}
 	}
@@ -825,24 +788,12 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		nextStepsCmd = projectInitializer.NextSteps()
 	}
 
-	// Validate dev-remote is only supported for appkit projects
-	if runMode == prompt.RunModeDevRemote {
-		if projectInitializer == nil || !projectInitializer.SupportsDevRemote() {
-			return errors.New("--run=dev-remote is only supported for Node.js projects with @databricks/appkit")
-		}
-	}
-
-	// Show next steps only if user didn't choose to deploy or run
-	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
-	if showNextSteps {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd)
-	} else {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
-	}
+	// Always show next steps with the run command
+	prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd)
 
 	// Recommend skills installation if coding agents are detected without skills.
-	// In flags mode, only print a hint — never prompt interactively.
-	if flagsMode {
+	// In non-interactive mode, only print a hint — never prompt interactively.
+	if !isInteractive {
 		if !agents.HasDatabricksSkillsInstalled() {
 			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
 		}
@@ -850,31 +801,19 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		log.Warnf(ctx, "Skills recommendation failed: %v", err)
 	}
 
-	// Execute post-creation actions (deploy and/or run)
-	if shouldDeploy || runMode != prompt.RunModeNone {
-		// Change to project directory for subsequent commands
+	// Execute post-creation deploy if requested
+	if shouldDeploy {
 		if err := os.Chdir(absOutputDir); err != nil {
 			return fmt.Errorf("failed to change to project directory: %w", err)
 		}
 		if profile == "" {
-			// If the profile is not set, it means the DEFAULT profile was used to infer the workspace host, we set it so that it's used for the deploy and dev-remote commands
 			profile = defaultProfile
 		}
-	}
-
-	if shouldDeploy {
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, "Deploying app...")
 		if err := runPostCreateDeploy(ctx, profile); err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("⚠ Deploy failed: %v", err))
 			cmdio.LogString(ctx, "  You can deploy manually with: databricks apps deploy")
-		}
-	}
-
-	if runMode != prompt.RunModeNone {
-		cmdio.LogString(ctx, "")
-		if err := runPostCreateDev(ctx, runMode, projectInitializer, absOutputDir, profile); err != nil {
-			return err
 		}
 	}
 
@@ -899,34 +838,23 @@ func runPostCreateDeploy(ctx context.Context, profile string) error {
 	return cmd.Run()
 }
 
-// runPostCreateDev runs the dev or dev-remote command in the current directory.
-func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit initializer.Initializer, workDir, profile string) error {
-	switch mode {
-	case prompt.RunModeDev:
-		if projectInit != nil {
-			return projectInit.RunDev(ctx, workDir)
+
+const defaultProjectName = "my-app"
+
+// generateProjectName returns a unique project name by appending a numeric
+// suffix when the base name directory already exists.
+func generateProjectName(outputDir string) string {
+	candidate := defaultProjectName
+	for i := 1; ; i++ {
+		dir := candidate
+		if outputDir != "" {
+			dir = filepath.Join(outputDir, candidate)
 		}
-		// Fallback for unknown project types
-		cmdio.LogString(ctx, "⚠ Unknown project type, cannot start development server automatically")
-		return nil
-	case prompt.RunModeDevRemote:
-		cmdio.LogString(ctx, "Starting remote development server...")
-		executable, err := os.Executable()
-		if err != nil {
-			return fmt.Errorf("failed to get executable path: %w", err)
+		if _, err := os.Stat(dir); err != nil {
+			// Directory doesn't exist (or can't be checked) — use this name.
+			return candidate
 		}
-		args := []string{"apps", "dev-remote"}
-		if profile != "" {
-			// We ensure the same profile is used for the dev-remote command as the one used for the init command
-			args = append(args, "--profile", profile)
-		}
-		cmd := exec.CommandContext(ctx, executable, args...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
-		return cmd.Run()
-	default:
-		return nil
+		candidate = fmt.Sprintf("%s-%d", defaultProjectName, i)
 	}
 }
 

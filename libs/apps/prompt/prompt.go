@@ -70,11 +70,8 @@ const (
 // CreateProjectConfig holds the configuration gathered from the interactive prompt.
 type CreateProjectConfig struct {
 	ProjectName  string
-	Description  string
 	Features     []string
 	Dependencies map[string]string // e.g., {"sql_warehouse_id": "abc123"}
-	Deploy       bool              // Whether to deploy the app after creation
-	RunMode      RunMode           // How to run the app after creation
 }
 
 // App name constraints.
@@ -162,19 +159,19 @@ func PromptForProjectName(ctx context.Context, outputDir string) (string, error)
 	return name, nil
 }
 
-// PromptForDeployAndRun prompts for post-creation deploy and run options.
-func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, err error) {
+// PromptForDeploy prompts for whether to deploy the app after creation.
+func PromptForDeploy(ctx context.Context) (bool, error) {
 	theme := AppkitTheme()
 
-	// Deploy after creation?
-	err = huh.NewConfirm().
+	var deploy bool
+	err := huh.NewConfirm().
 		Title("Deploy after creation?").
 		Description("Run 'databricks apps deploy' after setup").
 		Value(&deploy).
 		WithTheme(theme).
 		Run()
 	if err != nil {
-		return false, RunModeNone, err
+		return false, err
 	}
 	if deploy {
 		printAnswered(ctx, "Deploy after creation", "Yes")
@@ -182,36 +179,7 @@ func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, e
 		printAnswered(ctx, "Deploy after creation", "No")
 	}
 
-	// Build run options - dev-remote requires deploy (needs a deployed app to connect to)
-	runOptions := []huh.Option[string]{
-		huh.NewOption("No, I'll run it later", string(RunModeNone)),
-		huh.NewOption("Yes, run locally (npm run dev)", string(RunModeDev)),
-	}
-	if deploy {
-		runOptions = append(runOptions, huh.NewOption("Yes, run with remote bridge (dev-remote)", string(RunModeDevRemote)))
-	}
-
-	// Run the app?
-	runModeStr := string(RunModeNone)
-	err = huh.NewSelect[string]().
-		Title("Run the app after creation?").
-		Description("Choose how to start the development server").
-		Options(runOptions...).
-		Value(&runModeStr).
-		WithTheme(theme).
-		Run()
-	if err != nil {
-		return false, RunModeNone, err
-	}
-
-	runModeLabels := map[string]string{
-		string(RunModeNone):      "No",
-		string(RunModeDev):       "Yes (local)",
-		string(RunModeDevRemote): "Yes (remote)",
-	}
-	printAnswered(ctx, "Run after creation", runModeLabels[runModeStr])
-
-	return deploy, RunMode(runModeStr), nil
+	return deploy, nil
 }
 
 // ListSQLWarehouses fetches all SQL warehouses the user has access to.
@@ -479,7 +447,11 @@ func PromptForUCConnection(ctx context.Context, r manifest.Resource, required bo
 	return promptForResourceFromLister(ctx, r, required, "Select UC Connection", "no connections found", "Fetching connections...", ListConnections)
 }
 
+// defaultDatabaseBranch is the Lakebase branch used for all new apps.
+const defaultDatabaseBranch = "production"
+
 // PromptForDatabase shows a two-step picker for database instance and database name.
+// The branch is always set to "production".
 func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	// Step 1: pick a Lakebase instance
 	var instances []ListItem
@@ -517,10 +489,24 @@ func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) 
 		return nil, nil
 	}
 
-	return map[string]string{
+	result := map[string]string{
 		r.Key() + ".instance_name": instanceName,
 		r.Key() + ".database_name": dbName,
-	}, nil
+	}
+
+	// Auto-fill branch fields with "production" instead of prompting.
+	branchSet := false
+	for _, fieldName := range r.FieldNames() {
+		if fieldName == "branch" || fieldName == "branch_name" {
+			result[r.Key()+"."+fieldName] = defaultDatabaseBranch
+			branchSet = true
+		}
+	}
+	if branchSet {
+		printAnswered(ctx, "Database branch", defaultDatabaseBranch)
+	}
+
+	return result, nil
 }
 
 // PromptForGenieSpace shows a picker for Genie spaces.
