@@ -125,37 +125,25 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Configure Go to use JFrog proxy
+      - name: Setup JFrog CLI with OIDC
         if: matrix.os.name == 'linux'
-        run: |
-          set -euo pipefail
-          # Get GitHub OIDC ID token
-          ID_TOKEN=$(curl -sLS \
-            -H "User-Agent: actions/oidc-client" \
-            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=jfrog-github" | jq -r '.value')
-          echo "::add-mask::${ID_TOKEN}"
-          # Exchange for JFrog access token
-          JFROG_TOKEN=$(curl -sLS -X POST \
-            -H "Content-Type: application/json" \
-            "https://databricks.jfrog.io/access/api/v1/oidc/token" \
-            -d "{\"grant_type\": \"urn:ietf:params:oauth:grant-type:token-exchange\", \"subject_token_type\":\"urn:ietf:params:oauth:token-type:id-token\", \"subject_token\": \"${ID_TOKEN}\", \"provider_name\": \"github-actions\"}" | jq -r '.access_token')
-          echo "::add-mask::${JFROG_TOKEN}"
-          if [ -z "$JFROG_TOKEN" ]; then
-            echo "FAIL: Could not extract JFrog access token"
-            exit 1
-          fi
-          # Configure .netrc for Go module authentication
-          echo "machine databricks.jfrog.io login _ password ${JFROG_TOKEN}" >> ~/.netrc
-          chmod 600 ~/.netrc
-          # Route Go module downloads through JFrog and skip sum.golang.org (blocked)
-          echo "GOPROXY=https://databricks.jfrog.io/artifactory/api/go/db-golang,direct" >> "$GITHUB_ENV"
-          echo "GONOSUMDB=*" >> "$GITHUB_ENV"
+        uses: jfrog/setup-jfrog-cli@279b1f629f43dd5bc658d8361ac4802a7ef8d2d5 # v4.9.1
+        env:
+          JF_URL: https://databricks.jfrog.io
+        with:
+          oidc-provider-name: github-actions
 
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           cache-key: test-${{ matrix.deployment }}
+
+      - name: Download Go modules via JFrog
+        if: matrix.os.name == 'linux'
+        run: |
+          jf goc --repo-resolve=db-golang
+          jf go mod download
+          jf go mod download -modfile=tools/go.mod
 
       - name: Run tests without coverage
         # We run tests without coverage on PR, merge_group, and schedule because we don't make use of coverage information
