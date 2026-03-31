@@ -101,6 +101,29 @@ func TestPopulatePlanSecretAcl(t *testing.T) {
 	}, plan.Plan)
 }
 
+func TestPopulatePlanSecretAclMixedCreateDelete(t *testing.T) {
+	ctx := t.Context()
+	changes := []*tfjson.ResourceChange{
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionDelete}},
+			Name:   "secret_acl_my_scope_0",
+		},
+		{
+			Type:   "databricks_secret_acl",
+			Change: &tfjson.Change{Actions: tfjson.Actions{tfjson.ActionCreate}},
+			Name:   "secret_acl_my_scope_1",
+		},
+	}
+
+	plan := deployplan.NewPlanTerraform()
+	populatePlan(ctx, plan, changes)
+
+	assert.Equal(t, map[string]*deployplan.PlanEntry{
+		"resources.secret_scopes.my_scope.permissions": {Action: deployplan.Update},
+	}, plan.Plan)
+}
+
 func TestConvertSecretAclNameToScopeKey(t *testing.T) {
 	assert.Equal(t, "resources.secret_scopes.my_scope.permissions", convertSecretAclNameToScopeKey("secret_acl_my_scope_0"))
 	assert.Equal(t, "resources.secret_scopes.my_scope.permissions", convertSecretAclNameToScopeKey("secret_acl_my_scope_1"))

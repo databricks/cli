@@ -68,6 +68,11 @@ func convertSecretAclNameToScopeKey(name string) string {
 	return "resources.secret_scopes." + name + ".permissions"
 }
 
+// isCreateDeleteMix returns true if one action is Create and the other is Delete (in either order).
+func isCreateDeleteMix(a, b deployplan.ActionType) bool {
+	return (a == deployplan.Create && b == deployplan.Delete) || (a == deployplan.Delete && b == deployplan.Create)
+}
+
 // populatePlan populates a deployplan.Plan from Terraform resource changes.
 func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.ResourceChange) {
 	for _, rc := range changes {
@@ -110,7 +115,12 @@ func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.
 		}
 
 		if existing, ok := plan.Plan[key]; ok {
-			existing.Action = deployplan.GetHigherAction(existing.Action, actionType)
+			// For secret ACLs, mixed create+delete means the permissions are being updated, not deleted.
+			if group == "secret_acls" && isCreateDeleteMix(existing.Action, actionType) {
+				existing.Action = deployplan.Update
+			} else {
+				existing.Action = deployplan.GetHigherAction(existing.Action, actionType)
+			}
 		} else {
 			plan.Plan[key] = &deployplan.PlanEntry{Action: actionType}
 		}
