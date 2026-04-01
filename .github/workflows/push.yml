@@ -140,6 +140,7 @@ jobs:
 
       - name: Download Go modules via JFrog
         if: matrix.os.name != 'macos'
+        shell: bash
         run: |
           jf goc --repo-resolve=db-golang
           jf go mod download
