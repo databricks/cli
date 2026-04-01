@@ -298,6 +298,14 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		e.Name = normalizePrefix(prefix) + e.Name
 	}
 
+	// Vector Search Indexes: Prefix
+	for _, e := range r.VectorSearchIndexes {
+		if e == nil {
+			continue
+		}
+		e.Name = normalizePrefix(prefix) + e.Name
+	}
+
 	return diags
 }
 

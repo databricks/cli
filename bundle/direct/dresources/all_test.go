@@ -247,6 +247,19 @@ var testConfig map[string]any = map[string]any{
 			EndpointType: vectorsearch.EndpointTypeStandard,
 		},
 	},
+
+	"vector_search_indexes": &resources.VectorSearchIndex{
+		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+			Name:         "my-index",
+			EndpointName: "my-endpoint",
+			PrimaryKey:   "id",
+			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+			DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+				SourceTable:  "main.default.source_table",
+				PipelineType: vectorsearch.PipelineTypeTriggered,
+			},
+		},
+	},
 }
 
 type prepareWorkspace func(ctx context.Context, client *databricks.WorkspaceClient) (any, error)

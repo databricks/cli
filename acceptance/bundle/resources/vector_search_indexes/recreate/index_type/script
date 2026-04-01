@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+print_requests() {
+    local name=$1
+    trace print_requests.py --keep '//vector-search/indexes' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
+    rm -f out.requests.txt
+}
+
+title "Initial deployment with DELTA_SYNC index_type"
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests create
+
+title "Change index_type (should trigger recreation)"
+trace update_file.py databricks.yml "index_type: DELTA_SYNC" "index_type: DIRECT_ACCESS"
+trace update_file.py databricks.yml "delta_sync_index_spec:" "direct_access_index_spec:"
+trace update_file.py databricks.yml "source_table: main.default.source_${UNIQUE_NAME}" "schema_json: '{\"columns\":[{\"name\":\"id\",\"type\":\"integer\"}]}'"
+trace update_file.py databricks.yml "pipeline_type: TRIGGERED" ""
+
+trace $CLI bundle plan
+rm -f out.requests.txt
+trace $CLI bundle deploy --auto-approve
+
+print_requests recreate
+
+index_name="vs-index-${UNIQUE_NAME}"
+trace $CLI vector-search-indexes get-index "${index_name}" | jq '{name, endpoint_name, index_type, primary_key}'

@@ -18,6 +18,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 		"catalogs",
 		"external_locations",
 		"vector_search_endpoints",
+		"vector_search_indexes",
 	}
 
 	for resourceType := range supportedResources {

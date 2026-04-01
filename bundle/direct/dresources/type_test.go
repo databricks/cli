@@ -79,6 +79,10 @@ var knownMissingInRemoteType = map[string][]string{
 		"min_qps",
 		"usage_policy_id",
 	},
+	"vector_search_indexes": {
+		// columns_to_sync is in the request spec but not in the response spec
+		"delta_sync_index_spec.columns_to_sync",
+	},
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.

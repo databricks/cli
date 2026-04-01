@@ -252,6 +252,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "vector_search_endpoints":
     "description": |-
       PLACEHOLDER
+  "vector_search_indexes":
+    "description": |-
+      PLACEHOLDER
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
@@ -981,6 +984,26 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
     "description": |-
       PLACEHOLDER
   "usage_policy_id":
+github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
+  "delta_sync_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "direct_access_index_spec":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_name":
+    "description": |-
+      PLACEHOLDER
+  "index_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "primary_key":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
