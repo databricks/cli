@@ -184,11 +184,11 @@ jobs:
             runner:
               labels: macos-latest
 
-          # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
-          # - name: windows
-          #   runner:
-          #     group: databricks-protected-runner-group-large
-          #     labels: windows-server-latest-large
+        # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
+        # - name: windows
+        #   runner:
+        #     group: databricks-protected-runner-group-large
+        #     labels: windows-server-latest-large
 
     steps:
       - name: Checkout repository and submodules
