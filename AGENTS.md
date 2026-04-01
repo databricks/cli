@@ -1,6 +1,6 @@
 This file provides guidance to AI assistants when working with code in this repository.
 
-Also consider the `.agents` directory.
+Also consider the `.agent/` directory.
 - `rules/*.md` can be intelligently loaded through its YAML frontmatter
 - `skills/*/SKILL.md` contains specific instructions that can be pulled in when needed for specific tasks (consult SKILL.md frontmatter)
 
