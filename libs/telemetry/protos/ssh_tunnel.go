@@ -12,9 +12,9 @@ type SshTunnelClientMode string
 
 const (
 	SshTunnelClientModeUnspecified SshTunnelClientMode = "TYPE_UNSPECIFIED"
-	SshTunnelClientModeSSH        SshTunnelClientMode = "SSH_CLIENT"
-	SshTunnelClientModeProxy      SshTunnelClientMode = "PROXY"
-	SshTunnelClientModeIDE        SshTunnelClientMode = "IDE"
+	SshTunnelClientModeSSH         SshTunnelClientMode = "SSH_CLIENT"
+	SshTunnelClientModeProxy       SshTunnelClientMode = "PROXY"
+	SshTunnelClientModeIDE         SshTunnelClientMode = "IDE"
 )
 
 // SshTunnelEvent is emitted when a user establishes an SSH tunnel connection
