@@ -1,0 +1,48 @@
+
+=== Initial deployment with DELTA_SYNC index_type
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep //vector-search/indexes
+
+=== Change index_type (should trigger recreation)
+>>> update_file.py databricks.yml index_type: DELTA_SYNC index_type: DIRECT_ACCESS
+
+>>> update_file.py databricks.yml delta_sync_index_spec: direct_access_index_spec:
+
+>>> update_file.py databricks.yml source_table: main.default.source_[UNIQUE_NAME] schema_json: '{"columns":[{"name":"id","type":"integer"}]}'
+
+>>> update_file.py databricks.yml pipeline_type: TRIGGERED 
+
+>>> [CLI] bundle plan
+recreate vector_search_indexes.my_index
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep //vector-search/indexes
+
+>>> [CLI] vector-search-indexes get-index vs-index-[UNIQUE_NAME]
+{
+  "name": "vs-index-[UNIQUE_NAME]",
+  "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
+  "index_type": "DIRECT_ACCESS",
+  "primary_key": "id"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_indexes.my_index
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

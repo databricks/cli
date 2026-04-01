@@ -1,0 +1,58 @@
+
+>>> [CLI] bundle validate
+Name: deploy-vs-index-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-vs-index-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default
+Resources:
+  Vector Search Indexes:
+    my_index:
+      Name: vs-index-[UNIQUE_NAME]
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] vector-search-indexes get-index vs-index-[UNIQUE_NAME]
+{
+  "name": "vs-index-[UNIQUE_NAME]",
+  "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
+  "index_type": "DELTA_SYNC",
+  "primary_key": "id"
+}
+
+>>> [CLI] bundle summary
+Name: deploy-vs-index-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default
+Resources:
+  Vector Search Indexes:
+    my_index:
+      Name: vs-index-[UNIQUE_NAME]
+      URL:  [DATABRICKS_URL]/compute/vector-search/indexes/vs-index-[UNIQUE_NAME]?o=[NUMID]
+
+>>> print_requests.py //vector-search/indexes
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_indexes.my_index
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

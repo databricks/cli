@@ -244,6 +244,8 @@ var RequiredFields = map[string][]string{
 	"resources.vector_search_endpoints.*":                {"endpoint_type", "name"},
 	"resources.vector_search_endpoints.*.permissions[*]": {"level"},
 
+	"resources.vector_search_indexes.*": {"endpoint_name", "index_type", "name", "primary_key"},
+
 	"resources.volumes.*": {"catalog_name", "name", "schema_name", "volume_type"},
 
 	"scripts.*": {"content"},

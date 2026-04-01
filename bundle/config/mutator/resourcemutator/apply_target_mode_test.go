@@ -255,6 +255,16 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+					"vs_index1": {
+						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+							Name:         "vs_index1",
+							EndpointName: "vs_endpoint1",
+							PrimaryKey:   "id",
+							IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
+						},
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),

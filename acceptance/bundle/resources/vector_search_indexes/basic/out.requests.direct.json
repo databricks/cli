@@ -1,0 +1,14 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/vector-search/indexes",
+  "body": {
+    "delta_sync_index_spec": {
+      "pipeline_type": "TRIGGERED",
+      "source_table": "main.default.source_[UNIQUE_NAME]"
+    },
+    "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
+    "index_type": "DELTA_SYNC",
+    "name": "vs-index-[UNIQUE_NAME]",
+    "primary_key": "id"
+  }
+}

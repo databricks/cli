@@ -294,6 +294,14 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// (it's what GET/UPDATE/DELETE address by), so prefixing it would change
 	// the resource's identity rather than just its display name.
 
+	// Vector Search Indexes: Prefix
+	for _, e := range r.VectorSearchIndexes {
+		if e == nil {
+			continue
+		}
+		e.Name = normalizePrefix(prefix) + e.Name
+	}
+
 	return diags
 }
 
