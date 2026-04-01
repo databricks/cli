@@ -125,26 +125,10 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup JFrog CLI with OIDC
-        if: matrix.os.name != 'macos'
-        uses: jfrog/setup-jfrog-cli@279b1f629f43dd5bc658d8361ac4802a7ef8d2d5 # v4.9.1
-        env:
-          JF_URL: https://databricks.jfrog.io
-        with:
-          oidc-provider-name: github-actions
-
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
           cache-key: test-${{ matrix.deployment }}
-
-      - name: Download Go modules via JFrog
-        if: matrix.os.name != 'macos'
-        shell: bash
-        run: |
-          jf goc --repo-resolve=db-golang
-          jf go mod download
-          jf go mod download -modfile=tools/go.mod
 
       - name: Run tests without coverage
         # We run tests without coverage on PR, merge_group, and schedule because we don't make use of coverage information
@@ -183,6 +167,10 @@ jobs:
     name: "make test-exp-aitools"
     runs-on: ${{ matrix.os }}
 
+    permissions:
+      id-token: write
+      contents: read
+
     strategy:
       fail-fast: false
       matrix:
@@ -215,6 +203,10 @@ jobs:
     name: "make test-exp-ssh"
     runs-on: ${{ matrix.os }}
 
+    permissions:
+      id-token: write
+      contents: read
+
     strategy:
       fail-fast: false
       matrix:
@@ -245,6 +237,10 @@ jobs:
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') }}
     name: "make test-pipelines"
     runs-on: ${{ matrix.os }}
+
+    permissions:
+      id-token: write
+      contents: read
 
     strategy:
       fail-fast: false
