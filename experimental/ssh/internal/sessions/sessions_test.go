@@ -19,24 +19,20 @@ func TestLoadEmpty(t *testing.T) {
 	assert.Empty(t, store.Sessions)
 }
 
-func TestSaveAndLoad(t *testing.T) {
+func TestAddAndLoad(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
 
-	store := &SessionStore{
-		Sessions: []Session{
-			{
-				Name:          "gpu-a10-abcd1234",
-				Accelerator:   "GPU_1xA10",
-				WorkspaceHost: "https://test.databricks.com",
-				CreatedAt:     time.Date(2026, 3, 10, 12, 0, 0, 0, time.UTC),
-				ClusterID:     "0310-120000-abc",
-			},
-		},
+	s := Session{
+		Name:          "gpu-a10-abcd1234",
+		Accelerator:   "GPU_1xA10",
+		WorkspaceHost: "https://test.databricks.com",
+		CreatedAt:     time.Date(2026, 3, 10, 12, 0, 0, 0, time.UTC),
+		ClusterID:     "0310-120000-abc",
 	}
 
-	err := Save(t.Context(), store)
+	err := Add(t.Context(), s)
 	require.NoError(t, err)
 
 	loaded, err := Load(t.Context())
