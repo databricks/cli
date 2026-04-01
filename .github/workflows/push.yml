@@ -126,7 +126,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup JFrog CLI with OIDC
-        if: matrix.os.name == 'linux'
+        if: matrix.os.name != 'macos'
         uses: jfrog/setup-jfrog-cli@279b1f629f43dd5bc658d8361ac4802a7ef8d2d5 # v4.9.1
         env:
           JF_URL: https://databricks.jfrog.io
@@ -139,7 +139,7 @@ jobs:
           cache-key: test-${{ matrix.deployment }}
 
       - name: Download Go modules via JFrog
-        if: matrix.os.name == 'linux'
+        if: matrix.os.name != 'macos'
         run: |
           jf goc --repo-resolve=db-golang
           jf go mod download
