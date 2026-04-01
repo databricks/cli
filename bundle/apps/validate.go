@@ -154,7 +154,7 @@ func warnForAppResourcePermissions(b *bundle.Bundle, appKey string, app *resourc
 			continue
 		}
 
-		appPath := fmt.Sprintf("resources.apps.%s", appKey)
+		appPath := "resources.apps." + appKey
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  fmt.Sprintf("app %q references %s %q which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the %s permissions", appKey, refType, resourceKey, refType),
