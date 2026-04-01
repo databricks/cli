@@ -799,10 +799,11 @@ func (o *ClientOptions) resolveServerlessSession(ctx context.Context, client *da
 
 // cleanupStaleSession removes all local and remote artifacts for a stale session.
 func cleanupStaleSession(ctx context.Context, client *databricks.WorkspaceClient, s sessions.Session, version string) {
-	// Remove local SSH keys.
+	// Remove local SSH keys (only the session-specific files, not the shared directory).
 	keyPath, err := keys.GetLocalSSHKeyPath(ctx, s.Name, "")
 	if err == nil {
-		os.RemoveAll(filepath.Dir(keyPath))
+		os.Remove(keyPath)
+		os.Remove(keyPath + ".pub")
 	}
 
 	// Remove SSH config entry.
