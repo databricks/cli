@@ -164,8 +164,8 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
-    name: "make test-exp-aitools"
-    runs-on: ${{ matrix.os }}
+    name: "make test-exp-aitools (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
 
     permissions:
       id-token: write
@@ -175,10 +175,20 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - ubuntu-latest
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
+
           # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
-          # - windows-latest
+          # - name: windows
+          #   runner:
+          #     group: databricks-protected-runner-group-large
+          #     labels: windows-server-latest-large
 
     steps:
       - name: Checkout repository and submodules
@@ -200,8 +210,8 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
-    name: "make test-exp-ssh"
-    runs-on: ${{ matrix.os }}
+    name: "make test-exp-ssh (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
 
     permissions:
       id-token: write
@@ -211,9 +221,19 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
 
     steps:
       - name: Checkout repository and submodules
@@ -235,8 +255,8 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') }}
-    name: "make test-pipelines"
-    runs-on: ${{ matrix.os }}
+    name: "make test-pipelines (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
 
     permissions:
       id-token: write
@@ -246,9 +266,19 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
 
     steps:
       - name: Checkout repository and submodules
