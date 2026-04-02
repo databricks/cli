@@ -22,8 +22,8 @@ on:
 jobs:
   goreleaser:
     runs-on:
-      group: databricks-large-runner-group
-      labels: ubuntu-latest-large
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
 
     permissions:
       id-token: write
