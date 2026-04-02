@@ -17,4 +17,5 @@ Deployment complete!
 === Step 4: Record deployed job_2 ID from stateDeployed job_2 ID: [JOB_2_ID]
 
 === Step 5: Restore stale local state (only job_1, serial=1)
-=== Step 6: Create external job and try to bind (should fail: remote state already has job_2)External job ID: [EXTERNAL_JOB_ID]
+=== Step 6: Create external job and try to bind (should fail: remote state already has job_2)
+External job ID: [EXTERNAL_JOB_ID]
