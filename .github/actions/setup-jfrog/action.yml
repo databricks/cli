@@ -40,6 +40,15 @@ runs:
           exit 1
         fi
 
+        # Verify the token works.
+        HTTP_STATUS=$(curl -sL -o /dev/null -w "%{http_code}" \
+          -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+          "https://databricks.jfrog.io/artifactory/api/system/version")
+        if [ "$HTTP_STATUS" != "200" ]; then
+          echo "::error::JFrog auth check failed (HTTP ${HTTP_STATUS})."
+          exit 1
+        fi
+
         echo "JFROG_ACCESS_TOKEN=${ACCESS_TOKEN}" >> "$GITHUB_ENV"
 
     - name: Configure Go and Python to use JFrog proxy
