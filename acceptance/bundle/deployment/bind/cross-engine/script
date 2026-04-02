@@ -1,0 +1,25 @@
+title "Step 1: Deploy empty bundle with terraform engine"
+cp databricks_empty.yml databricks.yml
+DATABRICKS_BUNDLE_ENGINE=terraform trace $CLI bundle deploy
+
+title "Step 2: Add pipeline_1 and bind with terraform engine"
+cp databricks_p1.yml databricks.yml
+p1_id=$($CLI pipelines create --json '{"name": "External Pipeline 1"}' | jq -r '.pipeline_id')
+add_repl.py "$p1_id" PIPELINE_1_ID
+DATABRICKS_BUNDLE_ENGINE=terraform trace $CLI bundle deployment bind pipeline_1 $p1_id --auto-approve
+
+title "Step 3: Remove local state"
+trace rm -rf .databricks
+
+title "Step 4: Add pipeline_2 config and bind with direct engine"
+cat >> databricks.yml <<YAML
+
+    pipeline_2:
+      name: Pipeline 2
+YAML
+p2_id=$($CLI pipelines create --json '{"name": "External Pipeline 2"}' | jq -r '.pipeline_id')
+add_repl.py "$p2_id" PIPELINE_2_ID
+DATABRICKS_BUNDLE_ENGINE=direct trace $CLI bundle deployment bind pipeline_2 $p2_id --auto-approve
+
+title "Step 5: Run summary"
+trace errcode $CLI bundle summary

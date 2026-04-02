@@ -1,0 +1,7 @@
+bundle:
+  name: cross-engine-bind
+
+resources:
+  pipelines:
+    pipeline_1:
+      name: Pipeline 1

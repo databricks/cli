@@ -1,0 +1,32 @@
+
+=== Step 1: Deploy empty bundle with terraform engine
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/cross-engine-bind/default/files...
+Deploying resources...
+Deployment complete!
+
+=== Step 2: Add pipeline_1 and bind with terraform engine
+>>> [CLI] bundle deployment bind pipeline_1 [PIPELINE_1_ID] --auto-approve
+Updating deployment state...
+Successfully bound pipeline with an id '[PIPELINE_1_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Step 3: Remove local state
+>>> rm -rf .databricks
+
+=== Step 4: Add pipeline_2 config and bind with direct engine
+>>> [CLI] bundle deployment bind pipeline_2 [PIPELINE_2_ID] --auto-approve
+Updating deployment state...
+Successfully bound pipeline with an id '[PIPELINE_2_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Step 5: Run summary
+>>> errcode [CLI] bundle summary
+Error: lineage mismatch in state files
+
+Available state files:
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="[UUID]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[UUID]"
+
+
+Exit code: 1
