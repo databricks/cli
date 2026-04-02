@@ -1,20 +1,24 @@
+if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
+  state_file=".databricks/bundle/default/resources.json"
+else
+  state_file=".databricks/bundle/default/terraform/terraform.tfstate"
+fi
+
 title "Step 1: Deploy with job_1 only"
 trace $CLI bundle deploy
 
 title "Step 2: Save stale local state (has only job_1, serial=1)"
-cp .databricks/bundle/default/resources.json stale_state.json
+cp "$state_file" stale_state.json
 
 title "Step 3: Add job_2 to config and deploy again"
 cp databricks_v2.yml databricks.yml
 trace $CLI bundle deploy
 
 title "Step 4: Record deployed job_2 ID from state"
-deployed_job2_id=$(cat .databricks/bundle/default/resources.json | jq -r '.state["resources.jobs.job_2"].__id__')
-add_repl.py "$deployed_job2_id" DEPLOYED_JOB2_ID
-echo "Deployed job_2 ID: $deployed_job2_id"
+echo "Deployed job_2 ID: $(read_id.py job_2)"
 
 title "Step 5: Restore stale local state (only job_1, serial=1)"
-cp stale_state.json .databricks/bundle/default/resources.json
+cp stale_state.json "$state_file"
 
 title "Step 6: Create external job and bind"
 job_id=$($CLI jobs create --json '{"name": "External Job"}' | jq -r '.job_id')

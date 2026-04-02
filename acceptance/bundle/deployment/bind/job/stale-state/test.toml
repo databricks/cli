@@ -6,4 +6,4 @@ Ignore = [
 ]
 
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["direct"]
+DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
