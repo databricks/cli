@@ -11,7 +11,7 @@ trace $CLI bundle deploy
 
 grep -v DELETE < databricks.yml > databricks.yml.tmp && mv databricks.yml.tmp databricks.yml
 
-trace $CLI bundle plan &> out.plan.txt
+trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 rm out.requests.txt
 
 trace $CLI bundle deploy
