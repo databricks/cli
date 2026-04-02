@@ -61,3 +61,20 @@ runs:
         echo "GONOSUMDB=*" >> "$GITHUB_ENV"
         echo "UV_INDEX_URL=https://${CREDS}@databricks.jfrog.io/artifactory/api/pypi/db-pypi/simple" >> "$GITHUB_ENV"
         echo "PIP_INDEX_URL=https://${CREDS}@databricks.jfrog.io/artifactory/api/pypi/db-pypi/simple" >> "$GITHUB_ENV"
+
+    - name: Verify Go proxy access
+      shell: bash
+      run: |
+        set -euo pipefail
+        BASE="https://databricks.jfrog.io/artifactory/api/go/db-golang"
+        AUTH="gha-service-account:${JFROG_ACCESS_TOKEN}"
+        # Fetch .info (metadata) and .zip (artifact) for the SDK to compare.
+        curl -sL -u "${AUTH}" -w "\nHTTP %{http_code}\n" \
+          "${BASE}/github.com/databricks/databricks-sdk-go/@v/v0.126.0.info"
+        curl -sL -o /dev/null -u "${AUTH}" -w "HTTP %{http_code}\n" \
+          "${BASE}/github.com/databricks/databricks-sdk-go/@v/v0.126.0.zip"
+        # Same for a known-good package.
+        curl -sL -u "${AUTH}" -w "\nHTTP %{http_code}\n" \
+          "${BASE}/golang.org/x/sys/@v/v0.31.0.info"
+        curl -sL -o /dev/null -u "${AUTH}" -w "HTTP %{http_code}\n" \
+          "${BASE}/golang.org/x/sys/@v/v0.31.0.zip"
