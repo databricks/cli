@@ -15,14 +15,19 @@ on:
       - reopened
     paths:
       - ".github/workflows/release-snapshot.yml"
+      - ".github/actions/setup-jfrog/**"
 
   workflow_dispatch:
 
 jobs:
   goreleaser:
     runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
+      group: databricks-large-runner-group
+      labels: ubuntu-latest-large
+
+    permissions:
+      id-token: write
+      contents: write
 
     steps:
       - name: Checkout repository and submodules
@@ -30,6 +35,9 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+
+      - name: Setup JFrog
+        uses: ./.github/actions/setup-jfrog
 
       - name: Setup Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
