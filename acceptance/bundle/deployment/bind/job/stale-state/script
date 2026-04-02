@@ -20,12 +20,8 @@ echo "Deployed job_2 ID: $(read_id.py job_2)"
 title "Step 5: Restore stale local state (only job_1, serial=1)"
 cp stale_state.json "$state_file"
 
-title "Step 6: Create external job and bind"
+title "Step 6: Create external job and try to bind (should fail: remote state already has job_2)"
 job_id=$($CLI jobs create --json '{"name": "External Job"}' | jq -r '.job_id')
 add_repl.py "$job_id" EXTERNAL_JOB_ID
 echo "External job ID: $job_id"
-trace $CLI bundle deployment bind job_2 $job_id --auto-approve
-
-title "Step 7: Remove local state and run plan to see remote state effect"
-rm -rf .databricks
-trace $CLI bundle plan
+trace errcode $CLI bundle deployment bind job_2 $job_id --auto-approve &> out.bind.$DATABRICKS_BUNDLE_ENGINE.txt

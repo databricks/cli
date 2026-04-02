@@ -18,7 +18,7 @@ import (
 func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprove, forceLock, skipInitContext bool) error {
 	b, stateDesc, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 		SkipInitContext: skipInitContext,
-		ReadState:       true,
+		AlwaysPull:      true,
 		InitFunc: func(b *bundle.Bundle) {
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
 		},
