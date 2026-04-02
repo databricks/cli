@@ -39,4 +39,5 @@ java -jar "${JSIGN_JAR}" \
   --storepass "${AZURE_VAULT_TOKEN}" \
   --alias deco-sign \
   --tsaurl http://timestamp.digicert.com \
+  --tsmode RFC3161 \
   "$binary"
