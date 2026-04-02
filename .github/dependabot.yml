@@ -4,6 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 14
     ignore:
       # Ignore Databricks Go SDK because its upgrade requires code generation
       - dependency-name: github.com/databricks/databricks-sdk-go
@@ -11,6 +13,8 @@ updates:
     directory: "/tools"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 14
   # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#directories
   - package-ecosystem: "github-actions"
     directories:
