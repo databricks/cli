@@ -42,23 +42,13 @@ runs:
 
         echo "JFROG_ACCESS_TOKEN=${ACCESS_TOKEN}" >> "$GITHUB_ENV"
 
-    - name: Configure Go to use JFrog proxy
+    - name: Configure Go and Python to use JFrog proxy
       shell: bash
       run: |
         set -euo pipefail
-        echo "GOPROXY=https://databricks.jfrog.io/artifactory/api/go/db-golang,direct" >> "$GITHUB_ENV"
+        CREDS="gha-service-account:${JFROG_ACCESS_TOKEN}"
+        echo "::add-mask::${CREDS}"
+        echo "GOPROXY=https://${CREDS}@databricks.jfrog.io/artifactory/api/go/db-golang,direct" >> "$GITHUB_ENV"
         echo "GONOSUMDB=*" >> "$GITHUB_ENV"
-        cat > ~/.netrc <<EOF
-        machine databricks.jfrog.io
-        login gha-service-account
-        password ${JFROG_ACCESS_TOKEN}
-        EOF
-        chmod 600 ~/.netrc
-
-    - name: Configure Python (uv/pip) to use JFrog proxy
-      shell: bash
-      run: |-
-        set -euo pipefail
-        echo "::add-mask::gha-service-account:${JFROG_ACCESS_TOKEN}"
-        echo "UV_INDEX_URL=https://gha-service-account:${JFROG_ACCESS_TOKEN}@databricks.jfrog.io/artifactory/api/pypi/db-pypi/simple" >> "$GITHUB_ENV"
-        echo "PIP_INDEX_URL=https://gha-service-account:${JFROG_ACCESS_TOKEN}@databricks.jfrog.io/artifactory/api/pypi/db-pypi/simple" >> "$GITHUB_ENV"
+        echo "UV_INDEX_URL=https://${CREDS}@databricks.jfrog.io/artifactory/api/pypi/db-pypi/simple" >> "$GITHUB_ENV"
+        echo "PIP_INDEX_URL=https://${CREDS}@databricks.jfrog.io/artifactory/api/pypi/db-pypi/simple" >> "$GITHUB_ENV"
