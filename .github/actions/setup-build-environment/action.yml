@@ -12,13 +12,8 @@ runs:
     - name: Checkout repository and submodules
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-    - name: Setup JFrog CLI with OIDC
-      if: runner.os != 'macOS'
-      uses: jfrog/setup-jfrog-cli@279b1f629f43dd5bc658d8361ac4802a7ef8d2d5 # v4.9.1
-      env:
-        JF_URL: https://databricks.jfrog.io
-      with:
-        oidc-provider-name: github-actions
+    - name: Setup JFrog
+      uses: ./.github/actions/setup-jfrog
 
     - name: Create cache identifier
       run: echo "${{ inputs.cache-key }}" > cache.txt
@@ -31,14 +26,6 @@ runs:
         cache-dependency-path: |
           go.sum
           cache.txt
-
-    - name: Download Go modules via JFrog
-      if: runner.os != 'macOS'
-      shell: bash
-      run: |
-        jf goc --repo-resolve=db-golang
-        jf go mod download
-        jf go mod download -modfile=tools/go.mod
 
     - name: Setup Python
       uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
