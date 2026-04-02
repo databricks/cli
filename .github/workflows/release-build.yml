@@ -21,7 +21,7 @@ jobs:
 
     permissions:
       id-token: write
-      contents: write
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -76,10 +76,8 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         with:
-          version: ~> v2
+          version: v2.14.3
           args: release --skip=publish ${{ !startsWith(github.ref, 'refs/tags/') && '--snapshot' || '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify Windows binary signatures
         run: |
@@ -99,25 +97,6 @@ jobs:
             dist/*.zip
             dist/*.tar.gz
             dist/*SHA256SUMS*
-
-      # For snapshot builds on main: update the snapshot tag and release.
-      - name: Update snapshot tag
-        if: github.ref == 'refs/heads/main'
-        run: |
-          git tag snapshot
-          git push origin snapshot --force
-
-      - name: Update snapshot release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
-        with:
-          name: Snapshot
-          prerelease: true
-          tag_name: snapshot
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: |-
-            dist/databricks_cli_*.zip
-            dist/databricks_cli_*.tar.gz
 
   wheel:
     runs-on:
