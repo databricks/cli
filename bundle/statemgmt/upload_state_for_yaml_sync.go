@@ -57,13 +57,16 @@ func (m *uploadStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) di
 	_, snapshotPath := b.StateFilenameConfigSnapshot(ctx)
 
 	created, diags := m.convertState(ctx, b, snapshotPath)
-	if diags.HasError() || !created {
-		return diags
+	if diags.HasError() {
+		return diag.Warningf("Failed to create config snapshot: %v", diags.Error())
+	}
+	if !created {
+		return nil
 	}
 
 	err := uploadState(ctx, b)
 	if err != nil {
-		return diags.Extend(diag.Warningf("Failed to upload config snapshot to workspace: %v", err))
+		return diag.Warningf("Failed to upload config snapshot to workspace: %v", err)
 	}
 
 	log.Infof(ctx, "Config snapshot created at %s", snapshotPath)
