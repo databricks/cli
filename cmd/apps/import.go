@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
@@ -295,8 +296,9 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		bindCmd.Flags().StringSlice("var", []string{}, "set values for variables defined in bundle config")
 
 		// Initialize the bundle
+		var stateDesc *statemgmt.StateDesc
 		var err error
-		b, err = bundleutils.ProcessBundle(bindCmd, bundleutils.ProcessOptions{
+		b, stateDesc, err = bundleutils.ProcessBundleRet(bindCmd, bundleutils.ProcessOptions{
 			SkipInitContext: true,
 			ReadState:       true,
 			InitFunc: func(b *bundle.Bundle) {
@@ -332,7 +334,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			ResourceType: tfName,
 			ResourceKey:  appKey,
 			ResourceId:   app.Name,
-		})
+		}, stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return errors.New("failed to bind resource")
 		}
