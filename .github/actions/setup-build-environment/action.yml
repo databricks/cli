@@ -14,7 +14,7 @@ runs:
 
     - name: Setup JFrog CLI with OIDC
       if: runner.os != 'macOS'
-      uses: jfrog/setup-jfrog-cli@279b1f629f43dd5bc658d8361ac4802a7ef8d2d5 # v4.9.1
+      uses: jfrog/setup-jfrog-cli@1641575d87647fb969c0545f0b6a76873e328b7c # v5.0.0
       env:
         JF_URL: https://databricks.jfrog.io
       with:
