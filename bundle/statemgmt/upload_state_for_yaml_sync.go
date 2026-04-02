@@ -54,21 +54,23 @@ func (m *uploadStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) di
 
 	_, snapshotPath := b.StateFilenameConfigSnapshot(ctx)
 
-	created, diags := m.convertState(ctx, b, snapshotPath)
-	if diags.HasError() {
-		return diag.Warningf("Failed to create config snapshot: %v", diags.Error())
+	created, err := m.convertState(ctx, b, snapshotPath)
+	if err != nil {
+		log.Warnf(ctx, "Failed to create config snapshot: %v", err)
+		return nil
 	}
 	if !created {
 		return nil
 	}
 
-	err := uploadState(ctx, b)
+	err = uploadState(ctx, b)
 	if err != nil {
-		return diag.Warningf("Failed to upload config snapshot to workspace: %v", err)
+		log.Warnf(ctx, "Failed to upload config snapshot: %v", err)
+		return nil
 	}
 
 	log.Infof(ctx, "Config snapshot created at %s", snapshotPath)
-	return diags
+	return nil
 }
 
 func uploadState(ctx context.Context, b *bundle.Bundle) error {
@@ -95,10 +97,10 @@ func uploadState(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bundle, snapshotPath string) (bool, diag.Diagnostics) {
+func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bundle, snapshotPath string) (bool, error) {
 	terraformResources, err := terraform.ParseResourcesState(ctx, b)
 	if err != nil {
-		return false, diag.FromErr(fmt.Errorf("failed to parse terraform state for config snapshot: %w", err))
+		return false, fmt.Errorf("failed to parse terraform state: %w", err)
 	}
 
 	// ParseResourcesState returns nil when the terraform state file doesn't exist
@@ -110,7 +112,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	data, err := os.ReadFile(localTerraformPath)
 	if err != nil {
-		return false, diag.FromErr(fmt.Errorf("failed to read terraform state for config snapshot: %w", err))
+		return false, fmt.Errorf("failed to read terraform state: %w", err)
 	}
 
 	state := make(map[string]dstate.ResourceEntry)
@@ -131,7 +133,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		Serial  int    `json:"serial"`
 	}
 	if err := json.Unmarshal(data, &tfState); err != nil {
-		return false, diag.FromErr(err)
+		return false, err
 	}
 
 	migratedDB := dstate.NewDatabase(tfState.Lineage, tfState.Serial+1)
@@ -144,13 +146,13 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		},
 	}
 
-	// Get the dynamic value from b.Config and reverse the interpolation
+	// Get the dynamic value from b.Config and reverse the interpolation.
 	// b.Config has been modified by terraform.Interpolate which converts bundle-style
-	// references (${resources.pipelines.x.id}) to terraform-style (${databricks_pipeline.x.id})
+	// references (${resources.pipelines.x.id}) to terraform-style (${databricks_pipeline.x.id}).
 	interpolatedRoot := b.Config.Value()
 	uninterpolatedRoot, err := reverseInterpolate(interpolatedRoot)
 	if err != nil {
-		return false, diag.FromErr(fmt.Errorf("failed to reverse interpolation: %w", err))
+		return false, fmt.Errorf("failed to reverse interpolation: %w", err)
 	}
 
 	var uninterpolatedConfig config.Root
@@ -158,19 +160,18 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return uninterpolatedRoot, nil
 	})
 	if err != nil {
-		return false, diag.FromErr(fmt.Errorf("failed to create uninterpolated config: %w", err))
+		return false, fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
 	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &uninterpolatedConfig, snapshotPath)
 	if err != nil {
-		return false, diag.FromErr(err)
+		return false, err
 	}
 
 	for _, entry := range plan.Plan {
 		entry.Action = deployplan.Update
 	}
 
-	var diags diag.Diagnostics
 	for key := range plan.Plan {
 		etag := etags[key]
 		if etag == "" {
@@ -182,13 +183,13 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		}
 		err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag)
 		if err != nil {
-			diags = diags.Extend(diag.Warningf("Failed to set etag on %q: %v", key, err))
+			log.Warnf(ctx, "Failed to set etag on %q: %v", key, err)
 		}
 	}
 
 	deploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(true))
 
-	return true, diags
+	return true, nil
 }
 
 // reverseInterpolate reverses the terraform.Interpolate transformation.
