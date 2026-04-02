@@ -1,0 +1,154 @@
+name: release-build
+
+on:
+  push:
+    tags:
+      - "v*"
+    branches:
+      - "main"
+      - "split-release-workflows"
+
+  workflow_dispatch:
+
+jobs:
+  cli:
+    environment:
+      name: sign
+      deployment: false
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    permissions:
+      id-token: write
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup JFrog
+        uses: ./.github/actions/setup-jfrog
+
+      - name: Setup Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            .goreleaser.yaml
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Setup Java
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # jsign 7.4 from https://github.com/ebourg/jsign/releases/tag/7.4
+      - name: Download and verify jsign
+        run: |
+          curl -sfL -o "$RUNNER_TEMP/jsign.jar" \
+            https://github.com/ebourg/jsign/releases/download/7.4/jsign-7.4.jar
+          echo "2abf2ade9ea322acc2d60c24794eadc465ff9380938fca4c932d09e0b25f1c28  $RUNNER_TEMP/jsign.jar" | sha256sum -c -
+          echo "JSIGN_JAR=$RUNNER_TEMP/jsign.jar" >> $GITHUB_ENV
+
+      - name: Get Azure Key Vault access token
+        run: |
+          TOKEN=$(curl -sf -X POST \
+            "https://login.microsoftonline.com/${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}/oauth2/v2.0/token" \
+            -d "client_id=${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}" \
+            -d "client_secret=${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}" \
+            -d "scope=https://vault.azure.net/.default" \
+            -d "grant_type=client_credentials" | jq -r '.access_token')
+          echo "::add-mask::$TOKEN"
+          echo "AZURE_VAULT_TOKEN=$TOKEN" >> $GITHUB_ENV
+
+      - name: Hide snapshot tag to outsmart GoReleaser
+        run: git tag -d snapshot || true
+
+      # Use --snapshot for branch builds (non-tag refs).
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
+        with:
+          version: ~> v2
+          args: release --skip=publish ${{ !startsWith(github.ref, 'refs/tags/') && '--snapshot' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Windows binary signatures
+        run: |
+          for exe in dist/windows_*/databricks.exe; do
+            echo "=== $exe ==="
+            java -jar "$JSIGN_JAR" extract --format PEM "$exe"
+            openssl pkcs7 -in "${exe}.sig.pem" -inform PEM -print_certs -text -noout
+            rm "${exe}.sig.pem"
+            echo
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: cli
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+            dist/*SHA256SUMS*
+
+      # For snapshot builds on main: update the snapshot tag and release.
+      - name: Update snapshot tag
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git tag snapshot
+          git push origin snapshot --force
+
+      - name: Update snapshot release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        with:
+          name: Snapshot
+          prerelease: true
+          tag_name: snapshot
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |-
+            dist/databricks_cli_*.zip
+            dist/databricks_cli_*.tar.gz
+
+  wheel:
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup JFrog
+        uses: ./.github/actions/setup-jfrog
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          version: "0.6.5"
+
+      - name: Build wheel
+        working-directory: python
+        run: make build
+
+      - name: Upload Python wheel
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: wheel
+          path: python/dist/*
