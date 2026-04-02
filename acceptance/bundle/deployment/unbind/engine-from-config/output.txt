@@ -8,13 +8,6 @@ Deployment complete!
 .databricks/bundle/default/resources.json
 
 >>> [CLI] bundle deployment unbind job_1
-Error: terraform state rm: exit status 1
-No state file was found!
-
-State management commands require a state file. Run this command
-in a directory where Terraform has been run or use the -state flag
-to point the command to a specific state location.
-
-
+Updating deployment state...
 === State files after unbind ===
 .databricks/bundle/default/resources.json

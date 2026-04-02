@@ -1,8 +1,6 @@
 Cloud = false # test leaves deployed job
 Ignore = [".databricks"]
 
-# Override inherited EnvMatrix to NOT set DATABRICKS_BUNDLE_ENGINE.
-# This demonstrates that bind ignores bundle.engine config and existing state:
-# deploy reads bundle.engine from config, but bind only reads the env var.
+# Use ["direct"] to verify bind respects bundle.engine config (not just env var).
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = []
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]
