@@ -53,7 +53,7 @@ runs:
 
     - name: Configure Go and Python to use JFrog proxy
       shell: bash
-      run: |
+      run: |-
         set -euo pipefail
         CREDS="gha-service-account:${JFROG_ACCESS_TOKEN}"
         echo "::add-mask::${CREDS}"
