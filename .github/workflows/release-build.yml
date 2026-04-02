@@ -81,7 +81,7 @@ jobs:
 
       - name: Verify Windows binary signatures
         run: |
-          for exe in dist/windows_*/databricks.exe; do
+          for exe in dist/*_windows_*/databricks.exe; do
             echo "=== $exe ==="
             java -jar "$JSIGN_JAR" extract --format PEM "$exe"
             openssl pkcs7 -in "${exe}.sig.pem" -inform PEM -print_certs -text -noout
