@@ -1,0 +1,8 @@
+Cloud = false # test leaves deployed job
+Ignore = [".databricks"]
+
+# Override inherited EnvMatrix to NOT set DATABRICKS_BUNDLE_ENGINE.
+# This demonstrates that unbind ignores bundle.engine config and existing state:
+# deploy reads bundle.engine from config, but unbind only reads the env var.
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = []
