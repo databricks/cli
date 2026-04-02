@@ -3,6 +3,7 @@
 ## Release v0.296.0
 
 ### Notable Changes
+* Direct deployment engine for DABs is now in public preview. Documentation at [docs/direct.md](docs/direct.md).
 
 ### CLI
 * Add `--force-refresh` flag to `databricks auth token` to force a token refresh even when the cached token is still valid ([#4767](https://github.com/databricks/cli/pull/4767)).
