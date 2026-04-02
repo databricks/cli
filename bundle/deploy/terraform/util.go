@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/libs/log"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
@@ -75,18 +76,27 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 			continue
 		}
 		for _, instance := range resource.Instances {
-			groupName, ok := TerraformToGroupName[resource.Type]
-
-			if !ok {
-				// secret_acls
-				continue
-			}
-
 			var resourceKey string
 			var resourceState ResourceState
 
+			groupName, ok := TerraformToGroupName[resource.Type]
+			if !ok {
+				log.Warnf(ctx, "Unknown Terraform resource type: %s", resource.Type)
+				continue
+			}
+
 			switch groupName {
-			case "apps", "secret_scopes", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_endpoints":
+			case "secret_acls":
+				// Secret ACLs don't have their own state entries; permissions are
+				// created alongside the scope in the "secret_scopes" case below.
+				continue
+			case "secret_scopes":
+				resourceKey = "resources." + groupName + "." + resource.Name
+				resourceState = ResourceState{ID: instance.Attributes.Name}
+				// The direct engine manages permissions as a sub-resource
+				// (SecretScopeFixups adds MANAGE ACL for the current user).
+				result[resourceKey+".permissions"] = ResourceState{ID: instance.Attributes.Name}
+			case "apps", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_endpoints":
 				resourceKey = "resources." + groupName + "." + resource.Name
 				resourceState = ResourceState{ID: instance.Attributes.Name}
 			case "dashboards":
