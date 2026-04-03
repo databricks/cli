@@ -73,7 +73,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		cmdio.LogString(ctx, output)
 
 		if !cmdio.IsPromptSupported(ctx) {
-			return diag.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nUsing --auto-approve will bind resources without reviewing the changes.\nOnly use --auto-approve if you have reviewed what will be bound.%s", agent.AgentNotice(ctx))
+			return diag.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed without confirmation, use --auto-approve after reviewing the changes above.%s", agent.AgentNotice())
 		}
 
 		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")

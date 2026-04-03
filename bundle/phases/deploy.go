@@ -88,10 +88,9 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 
 	if !cmdio.IsPromptSupported(ctx) {
 		return false, fmt.Errorf("the deployment requires destructive actions, but the current console does not support prompting.\n"+
-			"Schemas, pipelines, and volumes may be permanently deleted, resulting in data loss.\n"+
-			"Using --auto-approve will skip all confirmation prompts and proceed with these destructive changes.\n"+
-			"Only use --auto-approve if you have reviewed the plan above and accept the consequences.%s",
-			agent.AgentNotice(ctx))
+			"To proceed, use --auto-approve after reviewing the plan above. Deleted schemas, pipelines,\n"+
+			"and volumes may result in permanent data loss.%s",
+			agent.AgentNotice())
 	}
 
 	cmdio.LogString(ctx, "")

@@ -50,11 +50,11 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 	// We require auto-approve for non-interactive terminals since prompts are not possible.
 	if !cmdio.IsPromptSupported(cmd.Context()) && !autoApprove {
 		return fmt.Errorf("this will permanently destroy all resources and data in the bundle target.\n"+
-			"This includes deleting schemas and their underlying data, pipelines and their streaming\n"+
-			"tables, managed volume files, and all workspace files in the deployment directory.\n"+
-			"Using --auto-approve will skip all confirmation prompts and proceed with the destruction.\n"+
-			"Only use --auto-approve if you are certain you want to permanently delete everything.%s",
-			agent.AgentNotice(cmd.Context()))
+			"This includes schemas (with underlying data), pipelines (with streaming tables),\n"+
+			"managed volume files, and all workspace files in the deployment directory.\n"+
+			"To proceed without confirmation, use --auto-approve. This will permanently delete all\n"+
+			"the above resources and cannot be undone.%s",
+			agent.AgentNotice())
 	}
 
 	// Check if context is already initialized (e.g., when called from apps delete override)

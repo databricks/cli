@@ -107,15 +107,15 @@ func (locker *Locker) assertLockHeld(ctx context.Context) error {
 	}
 	if activeLockState.ID != locker.State.ID && !activeLockState.IsForced {
 		return fmt.Errorf("deploy lock acquired by %s at %v.\n"+
-			"Another deployment is likely in progress. Overriding with --force-lock risks corrupting that deployment.\n"+
-			"Only use --force-lock if you are certain the other deployment is no longer active.%s",
-			activeLockState.User, activeLockState.AcquisitionTime, agent.AgentNotice(ctx))
+			"Another deployment is likely in progress. If you are certain that deployment is no longer active,\n"+
+			"use --force-lock to override the lock. Overriding while a deployment is in progress may corrupt it.%s",
+			activeLockState.User, activeLockState.AcquisitionTime, agent.AgentNotice())
 	}
 	if activeLockState.ID != locker.State.ID && activeLockState.IsForced {
 		return fmt.Errorf("deploy lock force-acquired by %s at %v.\n"+
-			"Another deployment is likely in progress. Overriding with --force-lock risks corrupting that deployment.\n"+
-			"Only use --force-lock if you are certain the other deployment is no longer active.%s",
-			activeLockState.User, activeLockState.AcquisitionTime, agent.AgentNotice(ctx))
+			"Another deployment is likely in progress. If you are certain that deployment is no longer active,\n"+
+			"use --force-lock to override the lock. Overriding while a deployment is in progress may corrupt it.%s",
+			activeLockState.User, activeLockState.AcquisitionTime, agent.AgentNotice())
 	}
 	return nil
 }

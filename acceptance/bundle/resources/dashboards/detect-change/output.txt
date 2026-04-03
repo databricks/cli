@@ -60,8 +60,8 @@ These modifications are untracked and will be overwritten on deploy.
 Make sure that the local dashboard definition matches what you intend to deploy
 before proceeding with the deployment.
 
-Use --force only if you want to discard the remote changes and overwrite
-the dashboard with your local version.
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be permanently lost.
 
 update dashboards.file_reference
 
@@ -78,8 +78,8 @@ These modifications are untracked and will be overwritten on deploy.
 Make sure that the local dashboard definition matches what you intend to deploy
 before proceeding with the deployment.
 
-Use --force only if you want to discard the remote changes and overwrite
-the dashboard with your local version.
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be permanently lost.
 
 
 >>> errcode [CLI] bundle deploy
@@ -93,8 +93,8 @@ These modifications are untracked and will be overwritten on deploy.
 Make sure that the local dashboard definition matches what you intend to deploy
 before proceeding with the deployment.
 
-Use --force only if you want to discard the remote changes and overwrite
-the dashboard with your local version.
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be permanently lost.
 
 
 Exit code: 1

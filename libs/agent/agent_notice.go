@@ -1,18 +1,20 @@
 package agent
 
 import (
-	"context"
 	"fmt"
+
+	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
-// AgentNotice returns a notice string for AI agents to append to error messages.
-// Returns an empty string if no agent is detected.
-func AgentNotice(ctx context.Context) string {
-	if !isDetected(ctx) {
+// AgentNotice returns a notice string to append to error messages when an AI
+// agent is detected. Returns an empty string for non-agent callers.
+func AgentNotice() string {
+	agent := useragent.AgentProvider()
+	if agent == "" {
 		return ""
 	}
 	return fmt.Sprintf("\n\nNote for AI agents (%s): do not retry this operation with --auto-approve,\n"+
 		"--force-lock, or --force unless the user has explicitly approved it.\n"+
 		"These flags skip safety prompts and may cause irreversible data loss.",
-		Product(ctx))
+		agent)
 }
