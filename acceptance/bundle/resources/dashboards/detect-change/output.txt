@@ -60,7 +60,8 @@ These modifications are untracked and will be overwritten on deploy.
 Make sure that the local dashboard definition matches what you intend to deploy
 before proceeding with the deployment.
 
-Run `databricks bundle deploy --force` to bypass this error.
+Use --force only if you want to discard the remote changes and overwrite
+the dashboard with your local version.
 
 update dashboards.file_reference
 
@@ -77,7 +78,8 @@ These modifications are untracked and will be overwritten on deploy.
 Make sure that the local dashboard definition matches what you intend to deploy
 before proceeding with the deployment.
 
-Run `databricks bundle deploy --force` to bypass this error.
+Use --force only if you want to discard the remote changes and overwrite
+the dashboard with your local version.
 
 
 >>> errcode [CLI] bundle deploy
@@ -91,7 +93,8 @@ These modifications are untracked and will be overwritten on deploy.
 Make sure that the local dashboard definition matches what you intend to deploy
 before proceeding with the deployment.
 
-Run `databricks bundle deploy --force` to bypass this error.
+Use --force only if you want to discard the remote changes and overwrite
+the dashboard with your local version.
 
 
 Exit code: 1

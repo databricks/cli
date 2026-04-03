@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -80,6 +81,7 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withUpstreamInUserAgent(ctx)
 		ctx = withInteractiveModeInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
+		ctx = agent.Detect(ctx)
 		cmd.SetContext(ctx)
 		return nil
 	}

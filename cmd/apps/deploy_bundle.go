@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/apps/validation"
 	"github.com/databricks/cli/libs/cmdio"
@@ -51,6 +52,9 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 
 		originalRunE := deployCmd.RunE
 		deployCmd.RunE = func(cmd *cobra.Command, args []string) error {
+			if err := agent.CheckConsentForFlags(cmd); err != nil {
+				return err
+			}
 			if len(args) == 0 {
 				b := root.TryConfigureBundle(cmd)
 				if b != nil {

@@ -4,8 +4,12 @@
 
 === test deployment without force-lock (should fail)
 >>> errcode [CLI] pipelines deploy
-Error: Failed to acquire deployment lock: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC. Use --force-lock to override
-Error: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC. Use --force-lock to override
+Error: Failed to acquire deployment lock: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC.
+Another deployment is likely in progress. Overriding with --force-lock risks corrupting that deployment.
+Only use --force-lock if you are certain the other deployment is no longer active
+Error: deploy lock acquired by user-with-lock@databricks.com at [TIMESTAMP] +0000 UTC.
+Another deployment is likely in progress. Overriding with --force-lock risks corrupting that deployment.
+Only use --force-lock if you are certain the other deployment is no longer active
 
 
 Exit code: 1
