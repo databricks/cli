@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -20,6 +21,7 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -85,9 +87,11 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		return false, errors.New("the deployment requires destructive actions (resources will be deleted), but the current console does not support prompting.\n" +
-			"Using --auto-approve will skip all confirmation prompts and proceed with the destructive changes.\n" +
-			"Only use --auto-approve if you have reviewed the plan and accept the deletions")
+		return false, fmt.Errorf("the deployment requires destructive actions, but the current console does not support prompting.\n"+
+			"Schemas, pipelines, and volumes may be permanently deleted, resulting in data loss.\n"+
+			"Using --auto-approve will skip all confirmation prompts and proceed with these destructive changes.\n"+
+			"Only use --auto-approve if you have reviewed the plan above and accept the consequences.%s",
+			agent.AgentNotice(ctx))
 	}
 
 	cmdio.LogString(ctx, "")

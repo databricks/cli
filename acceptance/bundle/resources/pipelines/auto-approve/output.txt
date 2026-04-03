@@ -50,9 +50,10 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   delete resources.pipelines.bar
-Error: the deployment requires destructive actions (resources will be deleted), but the current console does not support prompting.
-Using --auto-approve will skip all confirmation prompts and proceed with the destructive changes.
-Only use --auto-approve if you have reviewed the plan and accept the deletions
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Schemas, pipelines, and volumes may be permanently deleted, resulting in data loss.
+Using --auto-approve will skip all confirmation prompts and proceed with these destructive changes.
+Only use --auto-approve if you have reviewed the plan above and accept the consequences.
 
 
 Exit code: 1

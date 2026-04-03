@@ -2,7 +2,6 @@ package apps
 
 import (
 	"github.com/databricks/cli/cmd/bundle"
-	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -23,9 +22,6 @@ func BundleDeleteOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 
 		originalRunE := deleteCmd.RunE
 		deleteCmd.RunE = func(cmd *cobra.Command, args []string) error {
-			if err := agent.CheckConsentForFlags(cmd); err != nil {
-				return err
-			}
 			if len(args) == 0 && hasBundleConfig() {
 				return bundle.CommandBundleDestroy(cmd, args, autoApprove, forceDestroy)
 			}

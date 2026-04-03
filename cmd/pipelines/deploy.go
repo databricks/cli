@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	libsutils "github.com/databricks/cli/libs/utils"
@@ -36,9 +35,6 @@ func deployCommand() *cobra.Command {
 	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := agent.CheckConsentForFlags(cmd); err != nil {
-			return err
-		}
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Deployment.Lock.Force = forceLock

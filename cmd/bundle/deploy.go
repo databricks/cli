@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/agent"
 	"github.com/spf13/cobra"
 )
 
@@ -45,10 +44,6 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := agent.CheckConsentForFlags(cmd); err != nil {
-			return err
-		}
-
 		_, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Force = force

@@ -57,9 +57,10 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   delete resources.schemas.bar
-Error: the deployment requires destructive actions (resources will be deleted), but the current console does not support prompting.
-Using --auto-approve will skip all confirmation prompts and proceed with the destructive changes.
-Only use --auto-approve if you have reviewed the plan and accept the deletions
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Schemas, pipelines, and volumes may be permanently deleted, resulting in data loss.
+Using --auto-approve will skip all confirmation prompts and proceed with these destructive changes.
+Only use --auto-approve if you have reviewed the plan above and accept the consequences.
 
 
 === Test cleanup

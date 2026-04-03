@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -72,7 +73,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		cmdio.LogString(ctx, output)
 
 		if !cmdio.IsPromptSupported(ctx) {
-			return diag.Errorf("This bind operation requires user confirmation, but the current console does not support prompting.\nUsing --auto-approve will bind resources without reviewing the changes.\nOnly use --auto-approve if you have reviewed what will be bound.")
+			return diag.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nUsing --auto-approve will bind resources without reviewing the changes.\nOnly use --auto-approve if you have reviewed what will be bound.%s", agent.AgentNotice(ctx))
 		}
 
 		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")

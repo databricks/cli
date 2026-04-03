@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -35,10 +34,6 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := agent.CheckConsentForFlags(cmd); err != nil {
-			return err
-		}
-
 		opts := utils.ProcessOptions{
 			AlwaysPull:      true,
 			FastValidate:    true,

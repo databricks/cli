@@ -11,6 +11,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
@@ -107,14 +108,14 @@ func (locker *Locker) assertLockHeld(ctx context.Context) error {
 	if activeLockState.ID != locker.State.ID && !activeLockState.IsForced {
 		return fmt.Errorf("deploy lock acquired by %s at %v.\n"+
 			"Another deployment is likely in progress. Overriding with --force-lock risks corrupting that deployment.\n"+
-			"Only use --force-lock if you are certain the other deployment is no longer active",
-			activeLockState.User, activeLockState.AcquisitionTime)
+			"Only use --force-lock if you are certain the other deployment is no longer active.%s",
+			activeLockState.User, activeLockState.AcquisitionTime, agent.AgentNotice(ctx))
 	}
 	if activeLockState.ID != locker.State.ID && activeLockState.IsForced {
 		return fmt.Errorf("deploy lock force-acquired by %s at %v.\n"+
 			"Another deployment is likely in progress. Overriding with --force-lock risks corrupting that deployment.\n"+
-			"Only use --force-lock if you are certain the other deployment is no longer active",
-			activeLockState.User, activeLockState.AcquisitionTime)
+			"Only use --force-lock if you are certain the other deployment is no longer active.%s",
+			activeLockState.User, activeLockState.AcquisitionTime, agent.AgentNotice(ctx))
 	}
 	return nil
 }

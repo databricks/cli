@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -122,7 +123,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 				"before proceeding with the deployment.\n" +
 				"\n" +
 				"Use --force only if you want to discard the remote changes and overwrite\n" +
-				"the dashboard with your local version.",
+				"the dashboard with your local version." + agent.AgentNotice(ctx),
 			Paths:     []dyn.Path{path},
 			Locations: []dyn.Location{loc},
 		})
