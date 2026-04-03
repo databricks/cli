@@ -8,6 +8,7 @@ import (
 	ssh "github.com/databricks/cli/experimental/ssh/cmd"
 
 	"github.com/databricks/cli/cmd/account"
+	agentcmd "github.com/databricks/cli/cmd/agent"
 	"github.com/databricks/cli/cmd/api"
 	"github.com/databricks/cli/cmd/auth"
 	"github.com/databricks/cli/cmd/bundle"
@@ -93,6 +94,7 @@ func New(ctx context.Context) *cobra.Command {
 	}
 
 	// Add other subcommands.
+	cli.AddCommand(agentcmd.New())
 	cli.AddCommand(api.New())
 	cli.AddCommand(auth.New())
 	cli.AddCommand(completion.New())

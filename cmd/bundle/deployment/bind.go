@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
@@ -50,6 +51,9 @@ Any manual changes made in the workspace UI may be overwritten on deployment.`,
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if err := agent.CheckConsentForFlags(cmd); err != nil {
+			return err
+		}
 		err := BindResource(cmd, args[0], args[1], autoApprove, forceLock, false)
 		if err != nil {
 			return err
