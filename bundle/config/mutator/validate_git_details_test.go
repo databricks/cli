@@ -40,10 +40,8 @@ func TestValidateGitDetailsNonMatchingBranches(t *testing.T) {
 	m := ValidateGitDetails()
 	diags := bundle.Apply(t.Context(), b, m)
 
-	assert.ErrorContains(t, diags.Error(), "not on the right Git branch")
-	assert.ErrorContains(t, diags.Error(), "expected according to configuration: main")
-	assert.ErrorContains(t, diags.Error(), "actual: feature")
-	assert.ErrorContains(t, diags.Error(), "Only use --force if you intentionally want to deploy from this branch")
+	expectedError := "not on the right Git branch:\n  expected according to configuration: main\n  actual: feature\nuse --force to override"
+	assert.EqualError(t, diags.Error(), expectedError)
 }
 
 func TestValidateGitDetailsNotUsingGit(t *testing.T) {

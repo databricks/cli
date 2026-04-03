@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
@@ -53,9 +52,6 @@ To re-bind the resource later, use:
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := agent.CheckConsentForFlags(cmd); err != nil {
-			return err
-		}
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Deployment.Lock.Force = forceLock

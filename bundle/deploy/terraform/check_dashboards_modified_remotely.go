@@ -121,8 +121,8 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 				"Make sure that the local dashboard definition matches what you intend to deploy\n" +
 				"before proceeding with the deployment.\n" +
 				"\n" +
-				"Use --force only if you want to discard the remote changes and overwrite\n" +
-				"the dashboard with your local version.",
+				"Run `databricks bundle deploy --force` to bypass this error." +
+				"",
 			Paths:     []dyn.Path{path},
 			Locations: []dyn.Location{loc},
 		})

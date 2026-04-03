@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -40,9 +39,6 @@ Typical use cases:
 	cmd.Flags().BoolVar(&forceDestroy, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := agent.CheckConsentForFlags(cmd); err != nil {
-			return err
-		}
 		return CommandBundleDestroy(cmd, args, autoApprove, forceDestroy)
 	}
 
@@ -52,7 +48,7 @@ Typical use cases:
 func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceDestroy bool) error {
 	// We require auto-approve for non-interactive terminals since prompts are not possible.
 	if !cmdio.IsPromptSupported(cmd.Context()) && !autoApprove {
-		return errors.New("this will permanently destroy all deployed resources in the target.\nUsing --auto-approve will skip all confirmation prompts and proceed with destruction.\nOnly use --auto-approve if you are certain you want to delete all resources")
+		return errors.New("please specify --auto-approve since terminal does not support interactive prompts")
 	}
 
 	// Check if context is already initialized (e.g., when called from apps delete override)

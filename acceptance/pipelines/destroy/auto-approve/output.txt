@@ -8,9 +8,7 @@ Deployment complete!
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 >>> errcode [CLI] pipelines destroy
-Error: this will permanently destroy all deployed resources in the target.
-Using --auto-approve will skip all confirmation prompts and proceed with destruction.
-Only use --auto-approve if you are certain you want to delete all resources
+Error: please specify --auto-approve since terminal does not support interactive prompts
 
 Exit code: 1
 

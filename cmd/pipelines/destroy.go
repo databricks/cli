@@ -4,7 +4,6 @@ package pipelines
 
 import (
 	"github.com/databricks/cli/cmd/bundle"
-	"github.com/databricks/cli/libs/agent"
 	"github.com/spf13/cobra"
 )
 
@@ -21,9 +20,6 @@ func destroyCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&forceDestroy, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := agent.CheckConsentForFlags(cmd); err != nil {
-			return err
-		}
 		return bundle.CommandBundleDestroy(cmd, args, autoApprove, forceDestroy)
 	}
 
