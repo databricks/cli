@@ -83,7 +83,7 @@ func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, config *QualityMo
 	return response.TableName, response, nil
 }
 
-func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config *QualityMonitorState, _ Changes) (*catalog.MonitorInfo, error) {
+func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config *QualityMonitorState, _ *PlanEntry) (*catalog.MonitorInfo, error) {
 	updateRequest := catalog.UpdateMonitor{
 		TableName:                id,
 		BaselineTableName:        config.BaselineTableName,

@@ -22,7 +22,7 @@ To use `databricks-bundles`, you must first:
 3. To create a new project, initialize a bundle using the `experimental-jobs-as-code` template:
 
   ```bash
-  databricks bundle init experimental-jobs-as-code
+  databricks bundle init pydabs
   ```
 
 ## Privacy Notice

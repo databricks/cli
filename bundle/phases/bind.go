@@ -39,7 +39,10 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	if engine.IsDirect() {
 		// Direct engine: import into temp state, run plan, check for changes
 		// This follows the same pattern as terraform import
-		groupName := terraform.TerraformToGroupName[opts.ResourceType]
+		groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
+		if !ok {
+			groupName = opts.ResourceType
+		}
 		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
 
@@ -136,7 +139,10 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 	}()
 
 	if engine.IsDirect() {
-		groupName := terraform.TerraformToGroupName[tfResourceType]
+		groupName, ok := terraform.TerraformToGroupName[tfResourceType]
+		if !ok {
+			groupName = tfResourceType
+		}
 		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
 		err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)

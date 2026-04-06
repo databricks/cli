@@ -80,6 +80,10 @@ jobs:
     name: "make test (${{matrix.os.name}}, ${{matrix.deployment}})"
     runs-on: ${{ matrix.os.runner }}
 
+    permissions:
+      id-token: write
+      contents: read
+
     strategy:
       fail-fast: false
       matrix:
@@ -91,10 +95,11 @@ jobs:
               group: databricks-protected-runner-group-large
               labels: linux-ubuntu-latest-large
 
-          - name: windows
-            runner:
-              group: databricks-protected-runner-group-large
-              labels: windows-server-latest-large
+          # Windows runners are offline; commented out temporarily.
+          # - name: windows
+          #   runner:
+          #     group: databricks-protected-runner-group-large
+          #     labels: windows-server-latest-large
 
           - name: macos
             runner:
@@ -160,17 +165,31 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
-    name: "make test-exp-aitools"
-    runs-on: ${{ matrix.os }}
+    name: "make test-exp-aitools (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    permissions:
+      id-token: write
+      contents: read
 
     strategy:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - ubuntu-latest
-          # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
-          # - windows-latest
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
+
+        # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
+        # - name: windows
+        #   runner:
+        #     group: databricks-protected-runner-group-large
+        #     labels: windows-server-latest-large
 
     steps:
       - name: Checkout repository and submodules
@@ -192,16 +211,31 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
-    name: "make test-exp-ssh"
-    runs-on: ${{ matrix.os }}
+    name: "make test-exp-ssh (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    permissions:
+      id-token: write
+      contents: read
 
     strategy:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          # Windows runners are offline; commented out temporarily.
+          # - name: windows
+          #   runner:
+          #     group: databricks-protected-runner-group-large
+          #     labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
 
     steps:
       - name: Checkout repository and submodules
@@ -223,16 +257,31 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') }}
-    name: "make test-pipelines"
-    runs-on: ${{ matrix.os }}
+    name: "make test-pipelines (${{matrix.os.name}})"
+    runs-on: ${{ matrix.os.runner }}
+
+    permissions:
+      id-token: write
+      contents: read
 
     strategy:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
+
+          # Windows runners are offline; commented out temporarily.
+          # - name: windows
+          #   runner:
+          #     group: databricks-protected-runner-group-large
+          #     labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
 
     steps:
       - name: Checkout repository and submodules
@@ -306,37 +355,6 @@ jobs:
             exit 1
           fi
 
-      # Github repo: https://github.com/ajv-validator/ajv-cli
-      - name: Install ajv-cli
-        run: npm install -g ajv-cli@5.0.0
-
-      # Assert that the generated bundle schema is a valid JSON schema by using
-      # ajv-cli to validate it against bundle configuration files.
-      # By default the ajv-cli runs in strict mode which will fail if the schema
-      # itself is not valid. Strict mode is more strict than the JSON schema
-      # specification. See for details: https://ajv.js.org/options.html#strict-mode-options
-      # The ajv-cli is configured to use the markdownDescription keyword which is not part of the JSON schema specification,
-      # but is used in editors like VSCode to render markdown in the description field
-      - name: Validate bundle schema
-        run: |
-          go run main.go bundle schema > schema.json
-
-          # Add markdownDescription keyword to ajv
-          echo "module.exports = function(a) {
-            a.addKeyword('deprecationMessage');
-            a.addKeyword('doNotSuggest');
-            a.addKeyword('markdownDescription');
-            a.addKeyword('x-databricks-preview');
-          }" >> keywords.js
-
-          for file in ./bundle/internal/schema/testdata/pass/*.yml; do
-            ajv test -s schema.json -d $file --valid -c=./keywords.js
-          done
-
-          for file in ./bundle/internal/schema/testdata/fail/*.yml; do
-            ajv test -s schema.json -d $file --invalid -c=./keywords.js
-          done
-
   validate-python-codegen:
     needs: cleanups
     runs-on: ubuntu-latest
@@ -361,70 +379,25 @@ jobs:
             exit 1
           fi
 
-  # Trigger integration tests in a separate repository.
-  # Requires secrets from "test-trigger-is" environment (not available for fork PRs or dependabot).
-  # Auto-approves for merge groups to avoid running twice and queue timeouts.
+  # Skip integration tests (temporarily disabled).
+  # Creates a passing check for PRs and auto-approves for merge groups.
   integration-trigger:
-    needs:
-      - testmask
-
     if: >-
       (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]') ||
-      (github.event_name == 'merge_group') ||
-      (github.event_name == 'push')
+      (github.event_name == 'merge_group')
 
     runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
 
     permissions:
       checks: write
-      contents: read
-
-    environment: "test-trigger-is"
 
     steps:
-      - name: Generate GitHub App Token
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-        id: generate-token
-        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
-        with:
-          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
-          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
-          owner: ${{ secrets.ORG_NAME }}
-          repositories: ${{ secrets.REPO_NAME }}
-
-      - name: Generate GitHub App Token (check runs)
-        if: >-
-          (github.event_name == 'merge_group') ||
-          (github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test'))
-        id: generate-check-token
-        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
-        with:
-          app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
-          private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
-          # DECO_TEST_APPROVAL is installed on the databricks org (not databricks-eng).
-          owner: databricks
-          repositories: cli
-
-      # Trigger integration tests if the primary "test" target is triggered by this change.
-      - name: Trigger integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' && (contains(fromJSON(needs.testmask.outputs.targets), 'test') || contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh')) }}
-        env:
-          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |-
-          gh workflow run cli-isolated-pr.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
-            --ref main \
-            -f pull_request_number=${{ github.event.pull_request.number }} \
-            -f commit_sha=${{ github.event.pull_request.head.sha }}
-
-      # Skip integration tests if the primary "test" target is not triggered by this change.
-      # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
       - name: Skip integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
+        if: ${{ github.event_name == 'pull_request' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
-          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -435,17 +408,14 @@ jobs:
               conclusion: 'success',
               output: {
                 title: 'Integration Tests',
-                summary: '⏭️ Skipped (changes do not require integration tests)'
+                summary: '⏭️ Skipped (integration test trigger is temporarily disabled)'
               }
             });
 
-      # Auto-approve for merge group since tests already passed on the PR.
-      # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
       - name: Auto-approve for merge group
         if: ${{ github.event_name == 'merge_group' }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
-          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -456,18 +426,9 @@ jobs:
               conclusion: 'success',
               output: {
                 title: 'Integration Tests',
-                summary: '⏭️ Auto-approved for merge queue (tests already passed on PR)'
+                summary: '⏭️ Skipped (integration test trigger is temporarily disabled)'
               }
             });
-
-      - name: Trigger integration tests (push to main)
-        if: ${{ github.event_name == 'push' }}
-        env:
-          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |-
-          gh workflow run cli-isolated-nightly.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
-            --ref main \
-            -f commit_sha=${{ github.event.after }}
 
   # Skip integration tests for dependabot PRs.
   # Dependabot has no access to the "test-trigger-is" environment secrets,

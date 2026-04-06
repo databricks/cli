@@ -129,5 +129,6 @@ func authArgumentsFromConfig(cfg *config.Config) AuthArguments {
 		WorkspaceID:   cfg.WorkspaceID,
 		IsUnifiedHost: cfg.Experimental_IsUnifiedHost,
 		Profile:       cfg.Profile,
+		DiscoveryURL:  cfg.DiscoveryURL,
 	}
 }

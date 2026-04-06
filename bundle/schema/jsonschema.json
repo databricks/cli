@@ -2627,6 +2627,10 @@
                 {
                   "type": "object",
                   "properties": {
+                    "account_id": {
+                      "description": "The Databricks account ID.",
+                      "$ref": "#/$defs/string"
+                    },
                     "artifact_path": {
                       "description": "The artifact path to use within the workspace for both deployments and workflow runs",
                       "$ref": "#/$defs/string"

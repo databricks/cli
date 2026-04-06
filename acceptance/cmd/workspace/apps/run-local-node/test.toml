@@ -1,5 +1,6 @@
+Badness = "need to enable NPM registry access"
 Cloud = false
-Local = true
+Local = false
 RecordRequests = false
 Timeout = '2m'
 TimeoutWindows = '10m'
