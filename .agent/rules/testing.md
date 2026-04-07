@@ -2,6 +2,8 @@
 description: Rules for the testing strategy of this repo
 ---
 
+# Rules for the testing strategy of this repo
+
 ## Test Types
 
 - **Unit tests**: Standard Go tests alongside source files

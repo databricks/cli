@@ -5,6 +5,8 @@ paths:
   - "**/*.py"
 ---
 
+# Style Guide for Python
+
 ## General guidance
 
 When writing Python scripts, we bias for conciseness. We think of Python in this code base as scripts.

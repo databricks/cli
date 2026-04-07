@@ -46,6 +46,8 @@ paths:
   - "python/databricks/bundles/*/_models/*.py"
 ---
 
+# Rules for how to deal with auto-generated files
+
 ## Identification
 
 The files matching this rule glob pattern are most likely generated artifacts. Auto-generated files generally have a comment (if the file type allows for comments) at or near the top of the file indicating that they are generated, or their file name/path may indicate they are generated. You may also consult Makefile as starting point to determine if a file is auto-generated.

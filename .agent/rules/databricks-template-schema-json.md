@@ -5,6 +5,8 @@ paths:
   - "**/databricks_template_schema.json"
 ---
 
+# Databricks template schema file reference template and guidance
+
 A `databricks_template_schema.json` file is used to configure bundle templates.
 
 ## Reference template

@@ -5,6 +5,8 @@ paths:
   - "**/*.go"
 ---
 
+# Style Guide for Go
+
 ## General guidance
 
 Please make sure code that you author is consistent with the codebase and concise.
