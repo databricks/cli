@@ -52,7 +52,7 @@ To re-bind the resource later, use:
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+		b, stateDesc, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 			},
@@ -73,7 +73,7 @@ To re-bind the resource later, use:
 		if !ok {
 			tfName = rd.PluralName
 		}
-		phases.Unbind(ctx, b, rd.SingularName, tfName, args[0])
+		phases.Unbind(ctx, b, rd.SingularName, tfName, args[0], stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
