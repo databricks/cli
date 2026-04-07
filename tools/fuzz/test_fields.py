@@ -105,9 +105,9 @@ def field_yaml_path(field_path):
     if len(parts) < 4 or parts[0] != "resources" or parts[2] != "*":
         return None
     remainder = parts[3:]
-    # Skip fields that involve array indexing in the middle
+    # Skip fields that involve array indexing or map wildcards
     for p in remainder:
-        if "[*]" in p:
+        if "[*]" in p or p == "*":
             return None
     return remainder
 
@@ -197,12 +197,12 @@ def set_yaml_value(lines, key_path, value):
     instance_indent = None
     instance_start = None
     for i, line in enumerate(lines):
-        stripped = line.rstrip()
-        if not stripped or stripped.startswith("#"):
+        content = line.strip()
+        if not content or content.startswith("#"):
             continue
         indent = len(line) - len(line.lstrip())
         # Resource instances are at 4-space indent (under "  <resource_type>:")
-        if indent == 4 and ":" in stripped and not stripped.startswith("-"):
+        if indent == 4 and ":" in content and not content.startswith("-"):
             instance_indent = indent
             instance_start = i
             break
@@ -213,8 +213,8 @@ def set_yaml_value(lines, key_path, value):
     # Find the end of this instance block
     instance_end = len(lines)
     for i in range(instance_start + 1, len(lines)):
-        stripped = lines[i].rstrip()
-        if not stripped or stripped.startswith("#"):
+        content = lines[i].strip()
+        if not content or content.startswith("#"):
             continue
         indent = len(lines[i]) - len(lines[i].lstrip())
         if indent <= instance_indent:
@@ -229,11 +229,11 @@ def set_yaml_value(lines, key_path, value):
         # Look for existing key at current indent level
         found = False
         for i in range(instance_start + 1, instance_end):
-            stripped = lines[i].rstrip()
-            if not stripped:
+            content = lines[i].strip()
+            if not content:
                 continue
             indent = len(lines[i]) - len(lines[i].lstrip())
-            if indent == current_indent and stripped.startswith(key + ":"):
+            if indent == current_indent and content.startswith(key + ":"):
                 insert_pos = i + 1
                 current_indent += 2
                 found = True
@@ -249,11 +249,11 @@ def set_yaml_value(lines, key_path, value):
     # Insert or replace the final key
     final_key = key_path[-1]
     for i in range(instance_start + 1, instance_end):
-        stripped = lines[i].rstrip()
-        if not stripped:
+        content = lines[i].strip()
+        if not content:
             continue
         indent = len(lines[i]) - len(lines[i].lstrip())
-        if indent == current_indent and stripped.startswith(final_key + ":"):
+        if indent == current_indent and content.startswith(final_key + ":"):
             # Replace existing value
             lines[i] = " " * current_indent + final_key + ": " + yaml_encode(value) + "\n"
             return lines
@@ -269,11 +269,11 @@ def remove_yaml_key(lines, key_path):
     instance_indent = None
     instance_start = None
     for i, line in enumerate(lines):
-        stripped = line.rstrip()
-        if not stripped or stripped.startswith("#"):
+        content = line.strip()
+        if not content or content.startswith("#"):
             continue
         indent = len(line) - len(line.lstrip())
-        if indent == 4 and ":" in stripped and not stripped.startswith("-"):
+        if indent == 4 and ":" in content and not content.startswith("-"):
             instance_indent = indent
             instance_start = i
             break
@@ -283,8 +283,8 @@ def remove_yaml_key(lines, key_path):
 
     instance_end = len(lines)
     for i in range(instance_start + 1, len(lines)):
-        stripped = lines[i].rstrip()
-        if not stripped or stripped.startswith("#"):
+        content = lines[i].strip()
+        if not content or content.startswith("#"):
             continue
         indent = len(lines[i]) - len(lines[i].lstrip())
         if indent <= instance_indent:
@@ -299,16 +299,16 @@ def remove_yaml_key(lines, key_path):
     for key in key_path[:-1]:
         found = False
         for i in range(search_start, search_end):
-            stripped = lines[i].rstrip()
-            if not stripped:
+            content = lines[i].strip()
+            if not content:
                 continue
             indent = len(lines[i]) - len(lines[i].lstrip())
-            if indent == current_indent and stripped.startswith(key + ":"):
+            if indent == current_indent and content.startswith(key + ":"):
                 search_start = i + 1
                 current_indent += 2
                 # Find end of this key's block
                 for j in range(i + 1, search_end):
-                    s = lines[j].rstrip()
+                    s = lines[j].strip()
                     if not s:
                         continue
                     ind = len(lines[j]) - len(lines[j].lstrip())
@@ -323,11 +323,11 @@ def remove_yaml_key(lines, key_path):
     # Find and remove the final key
     final_key = key_path[-1]
     for i in range(search_start, search_end):
-        stripped = lines[i].rstrip()
-        if not stripped:
+        content = lines[i].strip()
+        if not content:
             continue
         indent = len(lines[i]) - len(lines[i].lstrip())
-        if indent == current_indent and stripped.startswith(final_key + ":"):
+        if indent == current_indent and content.startswith(final_key + ":"):
             # Remove this line and any indented children
             remove_end = i + 1
             for j in range(i + 1, search_end):
@@ -477,6 +477,8 @@ def run_cli(cli_path, args, cwd, env, timeout=300):
         return result.returncode, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
         return -1, "", "timeout"
+    except FileNotFoundError:
+        return -1, "", f"CLI not found: {cli_path}"
 
 
 def run_test_case(cli_path, config_content, unique_name, verbose=False):
@@ -603,6 +605,24 @@ def save_generated_config(config_name, field_path, index, config_content):
     return dest
 
 
+def setup_env_defaults():
+    """Set default env vars needed by config templates if not already set."""
+    defaults = {
+        "NODE_TYPE_ID": "i3.xlarge",
+        "DEFAULT_SPARK_VERSION": "13.3.x-snapshot-scala2.12",
+    }
+    for key, value in defaults.items():
+        if key not in os.environ:
+            os.environ[key] = value
+
+    # Verify workspace credentials
+    if "DATABRICKS_HOST" not in os.environ:
+        print(
+            "Warning: DATABRICKS_HOST not set. Set workspace credentials or use a Databricks profile.",
+            file=sys.stderr,
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Fuzz-test bundle fields for drift")
     parser.add_argument("--config", default="", help="Substring filter for config names")
@@ -627,10 +647,13 @@ def main():
                 if p.exists():
                     cli_path = p
                     break
-    cli_path = Path(cli_path)
+    cli_path = Path(cli_path).resolve()
     if not args.dry_run and not cli_path.exists():
         print(f"CLI binary not found at {cli_path}. Run 'make build' first or pass --cli.", file=sys.stderr)
         sys.exit(1)
+
+    if not args.dry_run:
+        setup_env_defaults()
 
     # Parse fields
     if not FIELDS_FILE.exists():
