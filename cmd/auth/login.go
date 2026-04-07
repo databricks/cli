@@ -131,9 +131,9 @@ depends on the existing profiles you have set in your configuration file
    not the case before.
 
 3. If a profile with the specified name exists and specifies a host, but you
-   specify a host using --host (or as the [HOST] positional arg), the profile will
-   be updated to use the newly specified host. The auth type will be updated to
-   "databricks-cli" if that was not the case before.
+   specify a different host using --host (or as the [HOST] positional arg), the
+   command returns an error. Use --profile alone to log in with the profile's
+   configured host, or omit --profile to log in with the specified host.
 
 4. If a profile with the specified name does not exist, a new profile will be
    created with the specified host. The auth type will be set to "databricks-cli".
@@ -155,6 +155,8 @@ depends on the existing profiles you have set in your configuration file
 		"Skip workspace selection for account-level access")
 	cmd.Flags().StringVar(&scopes, "scopes", "",
 		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
+
+	cmd.PreRunE = profileHostConflictCheck
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()

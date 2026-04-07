@@ -71,6 +71,8 @@ and secret is not supported.`,
 	cmd.Flags().BoolVar(&forceRefresh, "force-refresh", false,
 		"Force a token refresh even if the cached token is still valid.")
 
+	cmd.PreRunE = profileHostConflictCheck
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profileName := ""

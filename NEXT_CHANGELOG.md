@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### CLI
+* Auth commands now error when --profile and --host conflict ([#4841](https://github.com/databricks/cli/pull/4841))
 * Add `--force-refresh` flag to `databricks auth token` to force a token refresh even when the cached token is still valid ([#4767](https://github.com/databricks/cli/pull/4767)).
 
 ### Bundles
