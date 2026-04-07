@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -89,7 +88,7 @@ func TestResolvePositionalArg(t *testing.T) {
 			profiler := profile.InMemoryProfiler{Profiles: tc.profiles}
 			profileName, host, err := resolvePositionalArg(ctx, tc.arg, profiler)
 			if tc.wantErr != nil {
-				assert.True(t, errors.Is(err, tc.wantErr), "expected %v, got %v", tc.wantErr, err)
+				assert.ErrorIs(t, err, tc.wantErr)
 				return
 			}
 			require.NoError(t, err)

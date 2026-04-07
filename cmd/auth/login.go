@@ -168,9 +168,6 @@ Note: URLs containing "?" must be quoted to prevent shell interpretation.
 		}
 
 		// Resolve positional argument as profile or host.
-		if len(args) > 0 && cmd.Flag("profile").Changed {
-			return errors.New("please only provide a positional argument or --profile, not both")
-		}
 		if len(args) > 0 && authArguments.Host != "" {
 			return errors.New("please only provide a positional argument or --host, not both")
 		}
