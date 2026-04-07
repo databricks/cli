@@ -1,7 +1,8 @@
 ---
-name: databricks-template-schema-json
 description: Databricks template schema file reference template and guidance
 globs: "**/databricks_template_schema.json"
+paths:
+  - "**/databricks_template_schema.json"
 ---
 
 A `databricks_template_schema.json` file is used to configure bundle templates.

@@ -1,7 +1,8 @@
 ---
-name: style-guide-go
 description: Style Guide for Go
 globs: "**/*.go"
+paths:
+  - "**/*.go"
 ---
 
 ## General guidance

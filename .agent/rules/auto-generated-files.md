@@ -1,7 +1,28 @@
 ---
-name: auto-generated-files
 description: Rules for how to deal with auto-generated files
 globs:
+  - ".codegen/openapi.json"
+  - ".gitattributes"
+  - "acceptance/**/out*"
+  - "acceptance/**/output.txt"
+  - "acceptance/**/output.*.txt"
+  - "acceptance/**/output/**"
+  - "cmd/account/*.go"
+  - "cmd/account/**/*.go"
+  - "cmd/workspace/*.go"
+  - "cmd/workspace/**/*.go"
+  - "internal/genkit/tagging.py"
+  - "internal/mocks/**/*.go"
+  - "bundle/direct/dresources/*.generated.yml"
+  - "bundle/docsgen/output/**/*.md"
+  - "bundle/internal/schema/annotations_openapi.yml"
+  - "bundle/internal/validation/generated/*.go"
+  - "bundle/schema/jsonschema.json"
+  - "bundle/schema/jsonschema_for_docs.json"
+  - "python/databricks/bundles/version.py"
+  - "python/databricks/bundles/*/__init__.py"
+  - "python/databricks/bundles/*/_models/*.py"
+paths:
   - ".codegen/openapi.json"
   - ".gitattributes"
   - "acceptance/**/out*"

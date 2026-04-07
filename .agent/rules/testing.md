@@ -1,5 +1,4 @@
 ---
-name: testing
 description: Rules for the testing strategy of this repo
 ---
 

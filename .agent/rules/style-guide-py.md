@@ -1,7 +1,8 @@
 ---
-name: style-guide-py
 description: Style Guide for Python
 globs: "**/*.py"
+paths:
+  - "**/*.py"
 ---
 
 ## General guidance
