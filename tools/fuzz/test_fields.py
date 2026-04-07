@@ -17,6 +17,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 import uuid
 from pathlib import Path
 
@@ -24,9 +25,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 FIELDS_FILE = REPO_ROOT / "acceptance" / "bundle" / "refschema" / "out.fields.txt"
 CONFIGS_DIR = REPO_ROOT / "acceptance" / "bundle" / "invariant" / "configs"
 DATA_DIR = REPO_ROOT / "acceptance" / "bundle" / "invariant" / "data"
+TEST_TOML = REPO_ROOT / "acceptance" / "bundle" / "invariant" / "test.toml"
 GENERATED_PREFIX = "generated__"
 
-# Configs that need special init/cleanup scripts or external setup — skip in fuzzer.
+# Configs from test.toml that the fuzzer can't handle (e.g., pydabs needs special setup).
 SKIP_CONFIGS = {
     "job_pydabs_10_tasks.yml.tmpl",
     "job_pydabs_1000_tasks.yml.tmpl",
@@ -145,6 +147,20 @@ def interesting_values(field_type):
     return ["test-fuzz-value"]
 
 
+def load_config_names_from_toml(toml_path):
+    """Load INPUT_CONFIG list from test.toml EnvMatrix.
+
+    >>> names = load_config_names_from_toml(TEST_TOML)
+    >>> "job.yml.tmpl" in names
+    True
+    >>> len(names) > 10
+    True
+    """
+    with open(toml_path, "rb") as f:
+        data = tomllib.load(f)
+    return data.get("EnvMatrix", {}).get("INPUT_CONFIG", [])
+
+
 def parse_config_resource_types(config_path):
     """Extract resource type keys from a config template.
 
@@ -190,6 +206,12 @@ def find_resource_instance(lines, resource_type):
     """Find the first resource instance under the given resource type section.
 
     Returns (instance_start, instance_indent, instance_end) or (None, None, None).
+
+    >>> lines = "resources:\\n  jobs:\\n    foo:\\n      name: bar\\n".splitlines(keepends=True)
+    >>> find_resource_instance(lines, "jobs")
+    (2, 4, 4)
+    >>> find_resource_instance(lines, "schemas")
+    (None, None, None)
     """
     # First, find the resource type key at indent 2 (e.g., "  jobs:")
     type_line = None
@@ -242,6 +264,20 @@ def set_yaml_value(lines, key_path, value, resource_type=None):
 
     This is a simple line-based YAML manipulation (not a full parser).
     Returns modified lines.
+
+    >>> lines = "resources:\\n  jobs:\\n    foo:\\n      name: bar\\n".splitlines(keepends=True)
+    >>> "".join(set_yaml_value(lines, ["description"], "hello", "jobs"))
+    'resources:\\n  jobs:\\n    foo:\\n      name: bar\\n      description: hello\\n'
+
+    Nested field with intermediate key creation:
+    >>> lines = "resources:\\n  jobs:\\n    foo:\\n      name: bar\\n".splitlines(keepends=True)
+    >>> "".join(set_yaml_value(lines, ["email_notifications", "on_failure"], [], "jobs"))
+    'resources:\\n  jobs:\\n    foo:\\n      name: bar\\n      email_notifications:\\n        on_failure: []\\n'
+
+    Replaces existing value:
+    >>> lines = "resources:\\n  jobs:\\n    foo:\\n      name: bar\\n".splitlines(keepends=True)
+    >>> "".join(set_yaml_value(lines, ["name"], "baz", "jobs"))
+    'resources:\\n  jobs:\\n    foo:\\n      name: baz\\n'
     """
     instance_start, instance_indent, instance_end = find_resource_instance(lines, resource_type)
 
@@ -292,7 +328,29 @@ def set_yaml_value(lines, key_path, value, resource_type=None):
 
 
 def remove_yaml_key(lines, key_path, resource_type=None):
-    """Remove a YAML key from the resource instance. Returns (modified_lines, was_removed)."""
+    """Remove a YAML key from the resource instance. Returns (modified_lines, was_removed).
+
+    >>> lines = "resources:\\n  jobs:\\n    foo:\\n      name: bar\\n      desc: x\\n".splitlines(keepends=True)
+    >>> result, removed = remove_yaml_key(lines, ["name"], "jobs")
+    >>> removed
+    True
+    >>> "".join(result)
+    'resources:\\n  jobs:\\n    foo:\\n      desc: x\\n'
+
+    Remove a key with children:
+    >>> lines = "resources:\\n  jobs:\\n    foo:\\n      email_notifications:\\n        on_failure: a\\n        on_success: b\\n      name: bar\\n".splitlines(keepends=True)
+    >>> result, removed = remove_yaml_key(lines, ["email_notifications"], "jobs")
+    >>> removed
+    True
+    >>> "".join(result)
+    'resources:\\n  jobs:\\n    foo:\\n      name: bar\\n'
+
+    Key not found:
+    >>> lines = "resources:\\n  jobs:\\n    foo:\\n      name: bar\\n".splitlines(keepends=True)
+    >>> _, removed = remove_yaml_key(lines, ["missing"], "jobs")
+    >>> removed
+    False
+    """
     instance_start, instance_indent, instance_end = find_resource_instance(lines, resource_type)
 
     if instance_start is None or instance_indent is None:
@@ -430,7 +488,7 @@ def build_test_cases(fields, configs, config_filter, field_filter):
                 continue
 
             # Check if field is already present in config
-            field_present = is_field_in_config(config_content, yaml_path)
+            field_present = is_field_in_config(config_content, yaml_path, resource_type=res_type)
 
             # Generate "add" test cases with interesting values
             for value in interesting_values(field_type):
@@ -443,14 +501,64 @@ def build_test_cases(fields, configs, config_filter, field_filter):
     return cases
 
 
-def is_field_in_config(content, yaml_path):
-    """Check if a field path exists in the config content."""
-    final_key = yaml_path[-1]
-    for line in content.splitlines():
-        stripped = line.strip()
-        if stripped.startswith(final_key + ":"):
-            return True
-    return False
+def is_field_in_config(content, yaml_path, resource_type=None):
+    """Check if a field key path exists under the correct resource instance.
+
+    Uses find_resource_instance + indent-level walking to verify the full path,
+    not just the leaf key.
+
+    >>> is_field_in_config(
+    ...     "bundle:\\n  name: x\\nresources:\\n  jobs:\\n    foo:\\n      name: bar\\n",
+    ...     ["name"], resource_type="jobs")
+    True
+    >>> is_field_in_config(
+    ...     "bundle:\\n  name: x\\nresources:\\n  jobs:\\n    foo:\\n      name: bar\\n"
+    ...     "      permissions:\\n        - level: CAN_VIEW\\n          group_name: users\\n",
+    ...     ["run_as", "group_name"], resource_type="jobs")
+    False
+    >>> is_field_in_config(
+    ...     "bundle:\\n  name: x\\nresources:\\n  jobs:\\n    foo:\\n      name: bar\\n"
+    ...     "      run_as:\\n        group_name: admins\\n",
+    ...     ["run_as", "group_name"], resource_type="jobs")
+    True
+    """
+    lines = content.splitlines(keepends=True)
+    instance_start, instance_indent, instance_end = find_resource_instance(lines, resource_type)
+    if instance_start is None:
+        return False
+
+    current_indent = instance_indent + 2
+    search_start = instance_start + 1
+    search_end = instance_end
+
+    for key in yaml_path:
+        found = False
+        for i in range(search_start, search_end):
+            line = lines[i]
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            indent = len(line) - len(line.lstrip())
+            if indent == current_indent and stripped.startswith(key + ":"):
+                # Found this key; narrow search to its children
+                search_start = i + 1
+                current_indent += 2
+                # Find end of this key's block
+                for j in range(i + 1, search_end):
+                    s = lines[j].strip()
+                    if not s:
+                        continue
+                    ind = len(lines[j]) - len(lines[j].lstrip())
+                    if ind <= current_indent - 2:
+                        search_end = j
+                        break
+                found = True
+                break
+            if indent < current_indent and indent <= instance_indent:
+                break
+        if not found:
+            return False
+    return True
 
 
 def generate_modified_config(config_content, yaml_path, value, action, resource_type=None):
@@ -687,17 +795,20 @@ def main():
     fields = parse_fields(FIELDS_FILE)
     print(f"Loaded {len(fields)} fields from {FIELDS_FILE.name}")
 
-    # Parse configs
+    # Parse configs from test.toml EnvMatrix
+    config_names = load_config_names_from_toml(TEST_TOML)
     configs = {}
-    for config_path in sorted(CONFIGS_DIR.glob("*.yml.tmpl")):
-        if config_path.name.startswith(GENERATED_PREFIX):
+    for name in sorted(config_names):
+        config_path = CONFIGS_DIR / name
+        if not config_path.exists():
+            print(f"Warning: config {name} from test.toml not found, skipping", file=sys.stderr)
             continue
         resource_types = parse_config_resource_types(config_path)
-        configs[config_path.name] = {
+        configs[name] = {
             "resource_types": resource_types,
             "content": config_path.read_text(),
         }
-    print(f"Loaded {len(configs)} configs from {CONFIGS_DIR.name}")
+    print(f"Loaded {len(configs)} configs from {TEST_TOML.name}")
 
     # Build test cases
     cases = build_test_cases(fields, configs, args.config, args.field)
