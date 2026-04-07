@@ -1,9 +1,5 @@
 This file provides guidance to AI assistants when working with code in this repository.
 
-Also consider the `.agent/` directory.
-- `rules/*.md` can be intelligently loaded through its YAML frontmatter
-- `skills/*/SKILL.md` contains specific instructions that can be pulled in when needed for specific tasks (consult SKILL.md frontmatter)
-
 # Project Overview
 
 This is the Databricks CLI, a command-line interface for interacting with Databricks workspaces and managing Declarative Automation Bundles (DABs), formerly known as Databricks Asset Bundles. The project is written in Go and follows a modular architecture.
