@@ -97,47 +97,29 @@ func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 		Use:   "login [HOST]",
 		Short: "Log into a Databricks workspace or account",
 		Long: fmt.Sprintf(`Log into a Databricks workspace or account.
-This command logs you into the Databricks workspace or account and saves
-the authentication configuration in a profile (in %s by default).
 
-This profile can then be used to authenticate other Databricks CLI commands by
-specifying the --profile flag. This profile can also be used to authenticate
-other Databricks tooling that supports the Databricks Unified Authentication
-Specification. This includes the Databricks Go, Python, and Java SDKs. For more information,
-you can refer to the documentation linked below.
+This command authenticates via OAuth in the browser and saves the result
+to a configuration profile (in %s by default). Other Databricks CLI
+commands and SDKs can use this profile via the --profile flag. For more
+information, see:
   AWS: https://docs.databricks.com/dev-tools/auth/index.html
   Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
   GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html
 
+If no host is provided, the CLI opens login.databricks.com where you can
+authenticate and select a workspace.
 
-If no host is provided (via --host, as a positional argument, or from an existing
-profile), the CLI will open login.databricks.com where you can authenticate and
-select a workspace. The workspace URL will be discovered automatically.
+The host can be provided as a positional argument, via --host, or from an
+existing profile. The host URL may include query parameters to set the
+workspace and account ID:
 
-A profile name (using --profile) can be specified. If you don't specify these
-values, you'll be prompted for values at runtime.
+  databricks auth login --host "https://<host>?o=<workspace_id>&account_id=<id>"
 
-While this command always logs you into the specified host, the runtime behaviour
-depends on the existing profiles you have set in your configuration file
-(at %s by default).
+Note: URLs containing "?" must be quoted to prevent shell interpretation.
 
-1. If a profile with the specified name exists and specifies a host, you'll
-   be logged into the host specified by the profile. The profile will be updated
-   to use "databricks-cli" as the auth type if that was not the case before.
-
-2. If a profile with the specified name exists but does not specify a host,
-   you'll be prompted to specify a host. The profile will be updated to use the
-   specified host. The auth type will be updated to "databricks-cli" if that was
-   not the case before.
-
-3. If a profile with the specified name exists and specifies a host, but you
-   specify a different host using --host (or as the [HOST] positional arg), the
-   command returns an error. Use --profile alone to log in with the profile's
-   configured host, or omit --profile to log in with the specified host.
-
-4. If a profile with the specified name does not exist, a new profile will be
-   created with the specified host. The auth type will be set to "databricks-cli".
-`, defaultConfigPath, defaultConfigPath),
+If a profile with the given name already exists, it is updated. Otherwise
+a new profile is created.
+`, defaultConfigPath),
 	}
 
 	var loginTimeout time.Duration
