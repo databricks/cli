@@ -153,7 +153,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 	// the migrated state and config agree on .permissions entries.
 	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
 	if logdiag.HasError(ctx) {
-		return false, fmt.Errorf("failed to apply secret scope fixups")
+		return false, errors.New("failed to apply secret scope fixups")
 	}
 
 	// Get the dynamic value from b.Config and reverse the interpolation.
