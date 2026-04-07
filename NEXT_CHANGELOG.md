@@ -3,6 +3,7 @@
 ## Release v0.296.0
 
 ### Notable Changes
+* Direct deployment engine for DABs is now in Public Preview. Documentation at [docs/direct.md](docs/direct.md).
 
 ### CLI
 * Auth commands now error when --profile and --host conflict ([#4841](https://github.com/databricks/cli/pull/4841))
