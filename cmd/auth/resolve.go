@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
 )
+
+var errNoProfileFound = errors.New("no matching profile found")
 
 // looksLikeHost returns true if the argument looks like a host URL rather than
 // a profile name. Profile names are short identifiers (e.g., "logfood",
@@ -45,7 +48,7 @@ func resolvePositionalArg(ctx context.Context, arg string, profiler profile.Prof
 		return "", arg, nil
 	}
 
-	return "", "", fmt.Errorf("no profile named %q found", arg)
+	return "", "", fmt.Errorf("%w: %q", errNoProfileFound, arg)
 }
 
 // resolveHostToProfile resolves a host URL to a profile name. If multiple

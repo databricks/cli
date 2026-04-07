@@ -74,14 +74,11 @@ the profile is an error.
 		ctx := cmd.Context()
 		profiler := profile.DefaultProfiler
 
-		profileName := ""
 		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil {
-			profileName = profileFlag.Value.String()
-		}
+		profileName := profileFlag.Value.String()
 
 		// Resolve the positional argument to a profile name.
-		if profileFlag != nil && profileFlag.Changed && len(args) == 1 {
+		if profileFlag.Changed && len(args) == 1 {
 			return errors.New("providing both --profile and a positional argument is not supported")
 		}
 		if profileName == "" && len(args) == 1 {

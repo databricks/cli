@@ -75,11 +75,7 @@ and secret is not supported.`,
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		profileName := ""
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil {
-			profileName = profileFlag.Value.String()
-		}
+		profileName := cmd.Flag("profile").Value.String()
 
 		t, err := loadToken(ctx, loadTokenArgs{
 			authArguments:      authArguments,

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -16,7 +17,7 @@ func TestResolvePositionalArg(t *testing.T) {
 		arg         string
 		wantProfile string
 		wantHost    string
-		wantErr     string
+		wantErr     error
 	}{
 		{
 			name: "matches profile",
@@ -49,7 +50,7 @@ func TestResolvePositionalArg(t *testing.T) {
 				{Name: "logfood", Host: "https://logfood.cloud.databricks.com"},
 			},
 			arg:     "e2-logfood",
-			wantErr: `no profile named "e2-logfood" found`,
+			wantErr: errNoProfileFound,
 		},
 		{
 			name:        "http prefix",
@@ -69,7 +70,7 @@ func TestResolvePositionalArg(t *testing.T) {
 			name:     "empty profiles error",
 			profiles: profile.Profiles{},
 			arg:      "myprofile",
-			wantErr:  `no profile named "myprofile" found`,
+			wantErr:  errNoProfileFound,
 		},
 		{
 			name: "profile with dot in name",
@@ -87,8 +88,8 @@ func TestResolvePositionalArg(t *testing.T) {
 			ctx := cmdio.MockDiscard(t.Context())
 			profiler := profile.InMemoryProfiler{Profiles: tc.profiles}
 			profileName, host, err := resolvePositionalArg(ctx, tc.arg, profiler)
-			if tc.wantErr != "" {
-				assert.ErrorContains(t, err, tc.wantErr)
+			if tc.wantErr != nil {
+				assert.True(t, errors.Is(err, tc.wantErr), "expected %v, got %v", tc.wantErr, err)
 				return
 			}
 			require.NoError(t, err)

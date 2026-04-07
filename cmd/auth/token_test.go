@@ -406,7 +406,7 @@ func TestToken_loadToken(t *testing.T) {
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
 			},
-			wantErr: `no profile named "e2-logfood" found`,
+			wantErr: `no matching profile found: "e2-logfood"`,
 		},
 		{
 			name: "scheme-less account host ambiguity detected correctly",
@@ -719,7 +719,7 @@ func TestToken_loadToken(t *testing.T) {
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
 			},
-			wantErr: `no profile named "e2-logfood" found`,
+			wantErr: `no matching profile found: "e2-logfood"`,
 		},
 		{
 			name: "host flag with profile env var disambiguates multi-profile",
