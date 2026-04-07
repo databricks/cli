@@ -35,10 +35,6 @@ cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
 echo INPUT_CONFIG_OK
 
 trace $CLI bundle deployment migrate &> LOG.migrate
-POST_DEPLOY_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-post-deploy.sh"
-if [ -f "$POST_DEPLOY_SCRIPT" ]; then
-    source "$POST_DEPLOY_SCRIPT" &> LOG.post_deploy
-fi
 
 cat LOG.migrate | contains.py '!panic:' '!internal error' > /dev/null
 
