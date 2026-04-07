@@ -1,0 +1,9 @@
+
+>>> errcode [CLI] bundle deployment bind job_2 [EXTERNAL_JOB_ID] --auto-approve
+Error: Resource already managed
+
+The bundle is already managing a resource for resources.jobs.job_2 with ID '[JOB_2_ID]'.
+To bind to a different resource with ID '[EXTERNAL_JOB_ID]', you must first unbind the existing resource.
+
+
+Exit code: 1

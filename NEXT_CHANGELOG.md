@@ -16,6 +16,7 @@
 * engine/direct: Fix bind and unbind for non-Terraform resources ([#4850](https://github.com/databricks/cli/pull/4850))
 * engine/direct: Fix deploying removed principals ([#4824](https://github.com/databricks/cli/pull/4824))
 * engine/direct: Fix secret scope permissions migration from Terraform to Direct engine ([#4866](https://github.com/databricks/cli/pull/4866))
+* Fix `bundle deployment bind` to always pull remote state before modifying ([#4892](https://github.com/databricks/cli/pull/4892))
 
 ### Dependency updates
 

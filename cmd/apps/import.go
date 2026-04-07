@@ -300,7 +300,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		var err error
 		b, stateDesc, err = bundleutils.ProcessBundleRet(bindCmd, bundleutils.ProcessOptions{
 			SkipInitContext: true,
-			ReadState:       true,
+			AlwaysPull:      true,
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Deployment.Lock.Force = false
 			},
