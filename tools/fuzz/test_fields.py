@@ -278,6 +278,14 @@ def set_yaml_value(lines, key_path, value, resource_type=None):
     >>> lines = "resources:\\n  jobs:\\n    foo:\\n      name: bar\\n".splitlines(keepends=True)
     >>> "".join(set_yaml_value(lines, ["name"], "baz", "jobs"))
     'resources:\\n  jobs:\\n    foo:\\n      name: baz\\n'
+
+    Sibling collision: setting email_notifications.on_failure when webhook_notifications.on_failure exists:
+    >>> lines = "resources:\\n  jobs:\\n    foo:\\n      webhook_notifications:\\n        on_failure: old\\n      name: bar\\n".splitlines(keepends=True)
+    >>> result = "".join(set_yaml_value(lines, ["email_notifications", "on_failure"], "new", "jobs"))
+    >>> "webhook_notifications:" in result and "on_failure: old" in result
+    True
+    >>> "email_notifications:" in result and "on_failure: new" in result
+    True
     """
     instance_start, instance_indent, instance_end = find_resource_instance(lines, resource_type)
 
@@ -286,19 +294,31 @@ def set_yaml_value(lines, key_path, value, resource_type=None):
 
     # Navigate/create the key path within the instance
     current_indent = instance_indent + 2  # 6 spaces for first level under instance
+    search_start = instance_start + 1
+    search_end = instance_end
     insert_pos = instance_end
 
     for key in key_path[:-1]:
         # Look for existing key at current indent level
         found = False
-        for i in range(instance_start + 1, instance_end):
+        for i in range(search_start, search_end):
             content = lines[i].strip()
             if not content:
                 continue
             indent = len(lines[i]) - len(lines[i].lstrip())
             if indent == current_indent and content.startswith(key + ":"):
-                insert_pos = i + 1
+                search_start = i + 1
                 current_indent += 2
+                # Narrow search_end to this key's block
+                for j in range(i + 1, search_end):
+                    s = lines[j].strip()
+                    if not s:
+                        continue
+                    ind = len(lines[j]) - len(lines[j].lstrip())
+                    if ind <= current_indent - 2:
+                        search_end = j
+                        break
+                insert_pos = search_end
                 found = True
                 break
         if not found:
@@ -306,12 +326,14 @@ def set_yaml_value(lines, key_path, value, resource_type=None):
             new_line = " " * current_indent + key + ":\n"
             lines.insert(insert_pos, new_line)
             instance_end += 1
+            search_start = insert_pos + 1
+            search_end = insert_pos + 1
             insert_pos += 1
             current_indent += 2
 
     # Insert or replace the final key
     final_key = key_path[-1]
-    for i in range(instance_start + 1, instance_end):
+    for i in range(search_start, search_end):
         content = lines[i].strip()
         if not content:
             continue
@@ -725,6 +747,9 @@ def setup_env_defaults(cli_path):
     defaults = {
         "NODE_TYPE_ID": "i3.xlarge",
         "DEFAULT_SPARK_VERSION": "13.3.x-snapshot-scala2.12",
+        "TEST_DEFAULT_WAREHOUSE_ID": "8ec9edc1-db0c-40df-af8d-7580020fe61e",
+        "TEST_DEFAULT_CLUSTER_ID": "0123-456789-cluster0",
+        "TEST_INSTANCE_POOL_ID": "0123-456789-pool0",
     }
     for key, value in defaults.items():
         if key not in os.environ:
