@@ -1,6 +1,6 @@
 ---
 description: Databricks template schema file reference template and guidance
-globs: "**/databricks_template_schema.json"
+globs: **/databricks_template_schema.json
 paths:
   - "**/databricks_template_schema.json"
 ---

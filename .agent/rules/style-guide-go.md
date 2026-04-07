@@ -1,6 +1,6 @@
 ---
 description: Style Guide for Go
-globs: "**/*.go"
+globs: **/*.go
 paths:
   - "**/*.go"
 ---

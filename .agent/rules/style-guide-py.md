@@ -1,6 +1,6 @@
 ---
 description: Style Guide for Python
-globs: "**/*.py"
+globs: **/*.py
 paths:
   - "**/*.py"
 ---
