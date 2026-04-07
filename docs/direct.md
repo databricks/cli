@@ -1,6 +1,6 @@
 ## Status
 
-Status: public preview.
+Status: Public Preview.
 Known issues: https://github.com/databricks/cli/issues?q=state%3Aopen%20label%3Aengine%2Fdirect
 
 ## Reporting bugs
