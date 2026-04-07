@@ -186,29 +186,42 @@ def substitute_env_vars(text):
     return re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)", replace_var, text)
 
 
-def set_yaml_value(lines, key_path, value):
-    """Insert or modify a YAML value given a key path within a resource instance.
+def find_resource_instance(lines, resource_type):
+    """Find the first resource instance under the given resource type section.
 
-    This is a simple line-based YAML manipulation (not a full parser).
-    Returns modified lines.
+    Returns (instance_start, instance_indent, instance_end) or (None, None, None).
     """
-    # Find the resource instance block (indented under resource type)
-    # We look for the first resource instance (4-space indent under resource type)
-    instance_indent = None
-    instance_start = None
+    # First, find the resource type key at indent 2 (e.g., "  jobs:")
+    type_line = None
     for i, line in enumerate(lines):
         content = line.strip()
         if not content or content.startswith("#"):
             continue
         indent = len(line) - len(line.lstrip())
-        # Resource instances are at 4-space indent (under "  <resource_type>:")
+        if indent == 2 and content == resource_type + ":":
+            type_line = i
+            break
+
+    if type_line is None:
+        return None, None, None
+
+    # Find the first instance at indent 4 under this resource type
+    instance_start = None
+    instance_indent = None
+    for i in range(type_line + 1, len(lines)):
+        content = lines[i].strip()
+        if not content or content.startswith("#"):
+            continue
+        indent = len(lines[i]) - len(lines[i].lstrip())
+        if indent <= 2:
+            break  # Left the resource type section
         if indent == 4 and ":" in content and not content.startswith("-"):
             instance_indent = indent
             instance_start = i
             break
 
     if instance_start is None or instance_indent is None:
-        return lines
+        return None, None, None
 
     # Find the end of this instance block
     instance_end = len(lines)
@@ -220,6 +233,20 @@ def set_yaml_value(lines, key_path, value):
         if indent <= instance_indent:
             instance_end = i
             break
+
+    return instance_start, instance_indent, instance_end
+
+
+def set_yaml_value(lines, key_path, value, resource_type=None):
+    """Insert or modify a YAML value given a key path within a resource instance.
+
+    This is a simple line-based YAML manipulation (not a full parser).
+    Returns modified lines.
+    """
+    instance_start, instance_indent, instance_end = find_resource_instance(lines, resource_type)
+
+    if instance_start is None or instance_indent is None:
+        return lines
 
     # Navigate/create the key path within the instance
     current_indent = instance_indent + 2  # 6 spaces for first level under instance
@@ -264,32 +291,12 @@ def set_yaml_value(lines, key_path, value):
     return lines
 
 
-def remove_yaml_key(lines, key_path):
+def remove_yaml_key(lines, key_path, resource_type=None):
     """Remove a YAML key from the resource instance. Returns (modified_lines, was_removed)."""
-    instance_indent = None
-    instance_start = None
-    for i, line in enumerate(lines):
-        content = line.strip()
-        if not content or content.startswith("#"):
-            continue
-        indent = len(line) - len(line.lstrip())
-        if indent == 4 and ":" in content and not content.startswith("-"):
-            instance_indent = indent
-            instance_start = i
-            break
+    instance_start, instance_indent, instance_end = find_resource_instance(lines, resource_type)
 
     if instance_start is None or instance_indent is None:
         return lines, False
-
-    instance_end = len(lines)
-    for i in range(instance_start + 1, len(lines)):
-        content = lines[i].strip()
-        if not content or content.startswith("#"):
-            continue
-        indent = len(lines[i]) - len(lines[i].lstrip())
-        if indent <= instance_indent:
-            instance_end = i
-            break
 
     current_indent = instance_indent + 2
     search_start = instance_start + 1
@@ -446,18 +453,18 @@ def is_field_in_config(content, yaml_path):
     return False
 
 
-def generate_modified_config(config_content, yaml_path, value, action):
+def generate_modified_config(config_content, yaml_path, value, action, resource_type=None):
     """Generate a modified config with the field set or removed."""
     lines = config_content.splitlines(keepends=True)
     if not lines[-1].endswith("\n"):
         lines[-1] += "\n"
 
     if action == "remove":
-        lines, removed = remove_yaml_key(lines, yaml_path)
+        lines, removed = remove_yaml_key(lines, yaml_path, resource_type=resource_type)
         if not removed:
             return None
     else:
-        lines = set_yaml_value(lines, yaml_path, value)
+        lines = set_yaml_value(lines, yaml_path, value, resource_type=resource_type)
 
     return "".join(lines)
 
@@ -605,7 +612,7 @@ def save_generated_config(config_name, field_path, index, config_content):
     return dest
 
 
-def setup_env_defaults():
+def setup_env_defaults(cli_path):
     """Set default env vars needed by config templates if not already set."""
     defaults = {
         "NODE_TYPE_ID": "i3.xlarge",
@@ -616,11 +623,27 @@ def setup_env_defaults():
             os.environ[key] = value
 
     # Verify workspace credentials
-    if "DATABRICKS_HOST" not in os.environ:
+    if "DATABRICKS_HOST" not in os.environ and "DATABRICKS_CONFIG_PROFILE" not in os.environ:
         print(
             "Warning: DATABRICKS_HOST not set. Set workspace credentials or use a Databricks profile.",
             file=sys.stderr,
         )
+
+    # Fetch current user name if not set
+    if "CURRENT_USER_NAME" not in os.environ:
+        try:
+            result = subprocess.run(
+                [str(cli_path), "current-user", "me", "-o", "json"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if result.returncode == 0:
+                user = json.loads(result.stdout)
+                os.environ["CURRENT_USER_NAME"] = user.get("userName", "")
+                print(f"Detected user: {os.environ['CURRENT_USER_NAME']}")
+        except Exception as e:
+            print(f"Warning: could not detect current user: {e}", file=sys.stderr)
 
 
 def main():
@@ -653,7 +676,7 @@ def main():
         sys.exit(1)
 
     if not args.dry_run:
-        setup_env_defaults()
+        setup_env_defaults(cli_path)
 
     # Parse fields
     if not FIELDS_FILE.exists():
@@ -720,7 +743,8 @@ def main():
         # Generate modified config
         config_content = configs[config_name]["content"]
         yaml_path = field_yaml_path(field_path)
-        modified = generate_modified_config(config_content, yaml_path, value, action)
+        res_type = extract_resource_type(field_path)
+        modified = generate_modified_config(config_content, yaml_path, value, action, resource_type=res_type)
         if modified is None:
             print("SKIP (modification failed)")
             stats["skip"] += 1
