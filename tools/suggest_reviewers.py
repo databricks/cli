@@ -16,10 +16,10 @@ MARKER = "<!-- REVIEWER_SUGGESTION -->"
 _login_cache: dict[str, str | None] = {}
 
 
-def classify_file(path: str) -> float:
+def classify_file(path: str, total_files: int) -> float:
     p = Path(path)
     if p.name.startswith("out.") or p.name == "output.txt":
-        return 0.0
+        return 0.01 / max(total_files, 1)
     if path.startswith(("acceptance/", "integration/")):
         return 0.2
     if path.endswith("_test.go"):
@@ -113,10 +113,9 @@ def score_contributors(
     scored_count = 0
     author_login = pr_author.lower()
 
+    total_files = len(files)
     for filepath in files:
-        weight = classify_file(filepath)
-        if weight == 0.0:
-            continue
+        weight = classify_file(filepath, total_files)
         history = git_log(filepath)
         if not history:
             parent = str(Path(filepath).parent)
@@ -165,11 +164,21 @@ def select_reviewers(ss: list[tuple[str, float]]) -> list[tuple[str, float]]:
 
 
 def compute_confidence(ss: list[tuple[str, float]], scored_count: int) -> str:
-    if scored_count < 3 or len(ss) < 2:
+    if not ss:
         return "low"
-    if len(ss) >= 3 and ss[0][1] > 2 * ss[2][1]:
+    if len(ss) == 1:
         return "high"
-    if len(ss) >= 3 and ss[0][1] > 1.5 * ss[2][1]:
+    if len(ss) == 2:
+        if ss[0][1] > 2 * ss[1][1]:
+            return "high"
+        if ss[0][1] > 1.5 * ss[1][1]:
+            return "medium"
+        return "low"
+    if scored_count < 3:
+        return "low"
+    if ss[0][1] > 2 * ss[2][1]:
+        return "high"
+    if ss[0][1] > 1.5 * ss[2][1]:
         return "medium"
     return "low"
 

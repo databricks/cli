@@ -678,11 +678,12 @@ func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
 	assert.Contains(t, logBuf.String(), "new-account-id")
 	assert.Contains(t, logBuf.String(), "old-account-id")
 
-	// Verify the profile was saved without account_id (not overwritten).
+	// Account ID from introspection is now saved to the profile.
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
 	require.NoError(t, err)
 	require.NotNil(t, savedProfile)
 	assert.Equal(t, "https://workspace.example.com", savedProfile.Host)
+	assert.Equal(t, "new-account-id", savedProfile.AccountID)
 	assert.Equal(t, "12345", savedProfile.WorkspaceID)
 }
 
@@ -816,6 +817,83 @@ func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {
 	assert.Equal(t, "all-apis", savedProfile.Scopes)
 }
 
+func TestDiscoveryLogin_SPOGHostPopulatesAccountIDFromDiscovery(t *testing.T) {
+	// Start a mock server that returns SPOG discovery metadata.
+	server := newDiscoveryServer(t, map[string]any{
+		"account_id":    "discovered-account",
+		"workspace_id":  "discovered-ws",
+		"oidc_endpoint": "https://spog.example.com/oidc/accounts/discovered-account",
+	})
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost(server.URL)
+
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		// Introspection returns different values to verify discovery takes precedence.
+		introspection: &auth.IntrospectionResult{
+			AccountID:   "introspection-account",
+			WorkspaceID: "introspection-ws",
+		},
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", nil, func(string) error { return nil })
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, server.URL, savedProfile.Host)
+	assert.Equal(t, "discovered-account", savedProfile.AccountID, "account_id should come from host discovery")
+	assert.Equal(t, "discovered-ws", savedProfile.WorkspaceID, "workspace_id should come from host discovery")
+}
+
+func TestDiscoveryLogin_IntrospectionFallsBackWhenDiscoveryFails(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	// Use a host that won't respond to .well-known/databricks-config.
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspection: &auth.IntrospectionResult{
+			AccountID:   "introspection-account",
+			WorkspaceID: "introspection-ws",
+		},
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", nil, func(string) error { return nil })
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "https://workspace.example.com", savedProfile.Host)
+	assert.Equal(t, "introspection-account", savedProfile.AccountID, "account_id should fall back to introspection")
+	assert.Equal(t, "introspection-ws", savedProfile.WorkspaceID, "workspace_id should fall back to introspection")
+}
+
 func TestDiscoveryLogin_ClearsStaleRoutingFieldsFromUnifiedProfile(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
@@ -911,5 +989,6 @@ auth_type = databricks-cli
 	require.NoError(t, err)
 	require.NotNil(t, savedProfile)
 	assert.Equal(t, "https://new-workspace.example.com", savedProfile.Host)
+	assert.Equal(t, "fresh-account", savedProfile.AccountID, "account_id should be saved from introspection")
 	assert.Equal(t, "222222", savedProfile.WorkspaceID, "workspace_id should be updated to fresh introspection value")
 }

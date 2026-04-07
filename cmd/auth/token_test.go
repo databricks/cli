@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -15,6 +18,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 )
+
+type failOnCallTransport struct{}
+
+func (failOnCallTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, errors.New("unexpected HTTP call")
+}
 
 var refreshFailureTokenResponse = fixtures.HTTPFixture{
 	MatchAny: true,
@@ -135,6 +144,10 @@ func TestToken_loadToken(t *testing.T) {
 				Host:                 "https://m2m.cloud.databricks.com",
 				HasClientCredentials: true,
 			},
+			{
+				Name: "valid-token",
+				Host: "https://valid-token.cloud.databricks.com",
+			},
 		},
 	}
 	tokenCache := &inMemoryTokenCache{
@@ -181,11 +194,16 @@ func TestToken_loadToken(t *testing.T) {
 				RefreshToken: "dup1",
 				Expiry:       time.Now().Add(1 * time.Hour),
 			},
+			"valid-token": {
+				AccessToken:  "cached-access-token",
+				RefreshToken: "valid-token",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
 		},
 	}
-	validateToken := func(resp *oauth2.Token) {
-		assert.Equal(t, "new-access-token", resp.AccessToken)
-		assert.Equal(t, "Bearer", resp.TokenType)
+	validateToken := func(got *oauth2.Token) {
+		assert.Equal(t, "new-access-token", got.AccessToken)
+		assert.Equal(t, "Bearer", got.TokenType)
 	}
 
 	cases := []struct {
@@ -699,6 +717,59 @@ func TestToken_loadToken(t *testing.T) {
 			},
 			validateToken: validateToken,
 		},
+		{
+			name: "default path reuses valid cached token without refresh",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "valid-token",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: failOnCallTransport{}}),
+				},
+			},
+			validateToken: func(got *oauth2.Token) {
+				assert.Equal(t, "cached-access-token", got.AccessToken)
+			},
+		},
+		{
+			name: "force refresh refreshes valid cached token",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "valid-token",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				forceRefresh:  true,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "force refresh preserves error handling on refresh failure",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "valid-token",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				forceRefresh:  true,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureTokenResponse}}),
+				},
+			},
+			wantErr: `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ databricks auth login --profile valid-token`,
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -728,4 +799,28 @@ func (e errProfiler) LoadProfiles(context.Context, profile.ProfileMatchFunction)
 
 func (e errProfiler) GetPath(context.Context) (string, error) {
 	return "<error>", nil
+}
+
+func TestWriteTokenOutput(t *testing.T) {
+	token := &oauth2.Token{
+		AccessToken: "my-access-token",
+		TokenType:   "Bearer",
+	}
+
+	t.Run("json mode", func(t *testing.T) {
+		var buf bytes.Buffer
+		err := writeTokenOutput(&buf, token, false)
+		assert.NoError(t, err)
+
+		raw, err := json.MarshalIndent(token, "", "  ")
+		assert.NoError(t, err)
+		assert.Equal(t, string(raw), buf.String())
+	})
+
+	t.Run("text mode", func(t *testing.T) {
+		var buf bytes.Buffer
+		err := writeTokenOutput(&buf, token, true)
+		assert.NoError(t, err)
+		assert.Equal(t, "my-access-token\n", buf.String())
+	})
 }

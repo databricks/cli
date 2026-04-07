@@ -212,7 +212,7 @@
             "owner": "[USERNAME]",
             "provider_config": [],
             "schema_name": "schema_grants",
-            "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+            "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
             "volume_path": "/Volumes/main/schema_grants/volume_name",
             "volume_type": "MANAGED"
           },

@@ -84,6 +84,9 @@ func (s *FakeWorkspace) GrantsUpdate(req Request, securableType, fullName string
 	}
 
 	// Convert back to assignments with sorted privileges
+	// Note order of assignments is randomized due to map. This is intentional, azure backend behaves the same way
+	// (deco env run -i -n azure-prod-ucws -- go test ./acceptance -run ^TestAccept$/^bundle$/^resources$/^grants$/^schemas$/^out_of_band_principal$/direct -count=10 -failfast -timeout=1h)
+
 	var assignments []catalog.PrivilegeAssignment
 	for principal, privs := range principalPrivs {
 		if len(privs) == 0 {

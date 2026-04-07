@@ -415,6 +415,9 @@ github.com/databricks/cli/bundle/config.Target:
     "description": |-
       The Databricks workspace for the target.
 github.com/databricks/cli/bundle/config.Workspace:
+  "account_id":
+    "description": |-
+      The Databricks account ID.
   "artifact_path":
     "description": |-
       The artifact path to use within the workspace for both deployments and workflow runs

@@ -392,7 +392,7 @@ func TestGenerateResourceYAMLAllTypes(t *testing.T) {
 			expectContains: []string{
 				"- name: endpoint",
 				"serving_endpoint:",
-				"name: ${var.endpoint_id}",
+				"name: ${var.endpoint_name}",
 				"permission: CAN_QUERY",
 			},
 		},

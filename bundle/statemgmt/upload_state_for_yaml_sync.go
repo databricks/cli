@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -22,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
@@ -133,6 +135,14 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 			Path: snapshotPath,
 			Data: migratedDB,
 		},
+	}
+
+	// Apply SecretScopeFixups so the config matches what the direct engine expects.
+	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
+	// the migrated state and config agree on .permissions entries.
+	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
+	if logdiag.HasError(ctx) {
+		return diag.Errorf("failed to apply secret scope fixups")
 	}
 
 	// Get the dynamic value from b.Config and reverse the interpolation
