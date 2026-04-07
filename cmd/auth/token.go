@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -90,18 +91,19 @@ and secret is not supported.`,
 		if err != nil {
 			return err
 		}
-		return writeTokenOutput(cmd, t)
+		// Only honor the explicit --output text flag, not implicit text mode
+		// (e.g. from DATABRICKS_OUTPUT_FORMAT). auth token defaults to JSON,
+		// and changing that implicitly would break scripts that parse JSON output.
+		textMode := cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText
+		return writeTokenOutput(cmd.OutOrStdout(), t, textMode)
 	}
 
 	return cmd
 }
 
-func writeTokenOutput(cmd *cobra.Command, t *oauth2.Token) error {
-	// Only honor the explicit --output text flag, not implicit text mode
-	// (e.g. from DATABRICKS_OUTPUT_FORMAT). auth token defaults to JSON,
-	// and changing that implicitly would break scripts that parse JSON output.
-	if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
-		_, err := fmt.Fprintln(cmd.OutOrStdout(), t.AccessToken)
+func writeTokenOutput(w io.Writer, t *oauth2.Token, textMode bool) error {
+	if textMode {
+		_, err := fmt.Fprintln(w, t.AccessToken)
 		return err
 	}
 
@@ -109,7 +111,7 @@ func writeTokenOutput(cmd *cobra.Command, t *oauth2.Token) error {
 	if err != nil {
 		return err
 	}
-	_, err = cmd.OutOrStdout().Write(raw)
+	_, err = w.Write(raw)
 	return err
 }
 
