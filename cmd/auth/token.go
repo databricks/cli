@@ -5,14 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -88,15 +91,28 @@ and secret is not supported.`,
 		if err != nil {
 			return err
 		}
-		raw, err := json.MarshalIndent(t, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, _ = cmd.OutOrStdout().Write(raw)
-		return nil
+		// Only honor the explicit --output text flag, not implicit text mode
+		// (e.g. from DATABRICKS_OUTPUT_FORMAT). auth token defaults to JSON,
+		// and changing that implicitly would break scripts that parse JSON output.
+		textMode := cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText
+		return writeTokenOutput(cmd.OutOrStdout(), t, textMode)
 	}
 
 	return cmd
+}
+
+func writeTokenOutput(w io.Writer, t *oauth2.Token, textMode bool) error {
+	if textMode {
+		_, err := fmt.Fprintln(w, t.AccessToken)
+		return err
+	}
+
+	raw, err := json.MarshalIndent(t, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(raw)
+	return err
 }
 
 type loadTokenArgs struct {
