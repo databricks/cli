@@ -94,7 +94,7 @@ func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
 	}
 	cmd := &cobra.Command{
-		Use:   "login [PROFILE_OR_HOST]",
+		Use:   "login [PROFILE]",
 		Short: "Log into a Databricks workspace or account",
 		Long: fmt.Sprintf(`Log into a Databricks workspace or account.
 
@@ -110,16 +110,34 @@ If no host is provided, the CLI opens login.databricks.com where you can
 authenticate and select a workspace.
 
 The positional argument is resolved as a profile name first. If no profile with
-that name exists and the argument looks like a URL, it is used as a host. The
-host URL may include query parameters to set the workspace and account ID:
+that name exists and the argument looks like a URL, it is used as a host. If no
+host is provided (via --host, the positional argument, or from an existing
+profile), the CLI will open login.databricks.com where you can authenticate and
+select a workspace. The workspace URL will be discovered automatically.
+
+The host URL may include query parameters to set the workspace and account ID:
 
   databricks auth login --host "https://<host>?o=<workspace_id>&account_id=<id>"
 
 Note: URLs containing "?" must be quoted to prevent shell interpretation.
 
-If a profile with the given name already exists, it is updated. Otherwise
-a new profile is created.
-`, defaultConfigPath),
+1. If a profile with the specified name exists and specifies a host, you'll
+   be logged into the host specified by the profile. The profile will be updated
+   to use "databricks-cli" as the auth type if that was not the case before.
+
+2. If a profile with the specified name exists but does not specify a host,
+   you'll be prompted to specify a host. The profile will be updated to use the
+   specified host. The auth type will be updated to "databricks-cli" if that was
+   not the case before.
+
+3. If a profile with the specified name exists and specifies a host, but you
+   specify a different host using --host, the profile will
+   be updated to use the newly specified host. The auth type will be updated to
+   "databricks-cli" if that was not the case before.
+
+4. If a profile with the specified name does not exist, a new profile will be
+   created with the specified host. The auth type will be set to "databricks-cli".
+`, defaultConfigPath, defaultConfigPath),
 	}
 
 	var loginTimeout time.Duration

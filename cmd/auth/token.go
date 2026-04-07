@@ -54,7 +54,7 @@ func applyUnifiedHostFlags(p *profile.Profile, args *auth.AuthArguments) {
 
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "token [PROFILE_OR_HOST]",
+		Use:   "token [PROFILE]",
 		Short: "Get authentication token",
 		Long: `Get authentication token from the local cache in ~/.databricks/token-cache.json.
 Refresh the access token if it is expired or close to expiry. Use --force-refresh

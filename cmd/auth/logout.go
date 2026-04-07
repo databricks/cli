@@ -28,7 +28,7 @@ You will need to run {{ "databricks auth login" | bold }} to re-authenticate.
 
 func newLogoutCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "logout [PROFILE_OR_HOST]",
+		Use:    "logout [PROFILE]",
 		Short:  "Log out of a Databricks profile",
 		Args:   cobra.MaximumNArgs(1),
 		Hidden: true,
