@@ -9,6 +9,9 @@ ALL FILE PATHS AND COMMANDS ARE REFERENCED FROM/TO BE EXECUTED FROM THE `databri
 
 DO NOT EDIT AUTO-GENERATED FILES! RUN THE APPROPRIATE `make` COMMAND INSTEAD!
 
+README files in repo directories are the source of truth for contributor-facing behavior and long-lived implementation policy.
+This skill keeps only the execution order and concise checklists.
+
 ## Steps
 
 1. [test-server.md](./steps/test-server.md)
@@ -21,6 +24,7 @@ DO NOT EDIT AUTO-GENERATED FILES! RUN THE APPROPRIATE `make` COMMAND INSTEAD!
 ## Index of other resources
 
 - [acceptance/README.md](../../../acceptance/README.md)
+- [acceptance/bundle/deployment/README.md](../../../acceptance/bundle/deployment/README.md)
 - [acceptance/bundle/invariant/README.md](../../../acceptance/bundle/invariant/README.md)
 - [bundle/tests/README.md](../../../bundle/tests/README.md)
 - [bundle/direct/dresources/README.md](../../../bundle/direct/dresources/README.md)

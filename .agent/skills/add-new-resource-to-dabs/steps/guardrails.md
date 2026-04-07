@@ -1,5 +1,9 @@
 # Guardrails
 
-If the resource is non-ephemeral in nature, deletion should trigger a warning + confirmation. Implement this in [deploy.go](./bundle/phases/deploy.go).
+Checklist:
+- If deleting a resource is non-ephemeral/high-impact, require warning + confirmation in deploy flows.
+- If recreate-on-change can cause downtime or costly rebuilds, require warning + confirmation.
+- Implement guardrail behavior in `bundle/phases/deploy.go` and related deployment checks.
 
-Likewise, if deleting + recreating the resource causes significant downtime (e.g. vector search index requiring re-indexing post-deploy), this should trigger a warning + confirmation, too.
+Canonical guardrail intent for deployment-facing behavior lives in:
+- `acceptance/bundle/deployment/README.md`

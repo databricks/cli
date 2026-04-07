@@ -2,6 +2,8 @@
 
 Going forward, Terraform engine will be deprecated and new resources should not be added there.
 
-For new resources that don't include terraform, make sure to add it to exclude lists when TF-related unit tests are failing (or seem suitable due to having a list of unuspported TF resources).
+For direct-only resources:
+- Update Terraform-related unsupported/exclude lists when relevant tests expect them.
+- Update `bundle/config/mutator/validate_direct_only_resources.go` to keep direct-only validation accurate.
 
-There's also logic in [validate_direct_only_resources.go](./bundle/config/mutator/validate_direct_only_resources.go) which needs to be edited.
+This step is intentionally short because Terraform support is not the default path for new resources.
