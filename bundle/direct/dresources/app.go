@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -163,31 +162,13 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 }
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
-	// Build update mask excluding local-only fields that have no counterpart in the App Update API.
-	// Paths are truncated at the first index because the API only supports entire collection fields,
-	// not individual elements (e.g. "resources" instead of "resources[0].name").
-	maskSet := make(map[string]bool)
-	for path, change := range entry.Changes {
-		if change.Action != deployplan.Update {
-			continue
-		}
-		truncated := truncateAtIndex(path)
-		if !deployOnlyFields[truncated] {
-			maskSet[truncated] = true
-		}
-	}
-	maskPaths := make([]string, 0, len(maskSet))
-	for p := range maskSet {
-		maskPaths = append(maskPaths, p)
-	}
-	slices.Sort(maskPaths)
-	updateMask := strings.Join(maskPaths, ",")
-
-	if updateMask != "" {
+	// Use "*" to update all App API fields. Deploy-only fields (source_code_path, config,
+	// git_source, lifecycle) are not part of apps.App and thus excluded from the request body.
+	if hasAppChanges(entry) {
 		request := apps.AsyncUpdateAppRequest{
 			App:        &config.App,
 			AppName:    id,
-			UpdateMask: updateMask,
+			UpdateMask: "*",
 		}
 		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
 		if err != nil {
@@ -255,6 +236,27 @@ var deployOnlyFields = map[string]bool{
 	"git_source":        true,
 	"lifecycle":         true,
 	"lifecycle.started": true,
+}
+
+// hasAppChanges reports whether the plan entry contains any Update changes
+// to fields that belong to the App Update API (i.e., not deploy-only fields).
+func hasAppChanges(entry *PlanEntry) bool {
+	for path, change := range entry.Changes {
+		if change.Action == deployplan.Update && !deployOnlyFields[truncateAtIndex(path)] {
+			return true
+		}
+	}
+	return false
+}
+
+// OverrideChangeDesc skips source_code_path drift when the remote value is empty.
+// This happens when an app has no deployment yet (DefaultSourceCodePath is unset).
+func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *AppRemote) error {
+	if path.String() == "source_code_path" && remote.SourceCodePath == "" {
+		change.Action = deployplan.Skip
+		change.Reason = "no deployment"
+	}
+	return nil
 }
 
 func isComputeStopped(app *apps.App) bool {

@@ -6,7 +6,6 @@ print_requests() {
 
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace $CLI bundle run mykey
 trace print_requests > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle summary
 
@@ -14,7 +13,6 @@ title "Update description and re-deploy"
 trace update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace $CLI bundle run mykey
 trace print_requests >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle summary
 
@@ -23,7 +21,6 @@ trace update_file.py databricks.yml myappname mynewappname
 trace $CLI bundle plan
 trace $CLI bundle summary
 trace $CLI bundle deploy
-trace $CLI bundle run mykey
 trace print_requests >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle plan

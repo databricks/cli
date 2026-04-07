@@ -22,16 +22,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] bundle run my_app
-✓ Getting the status of the app [APP_NAME]
-✓ App is in RUNNING state
-✓ App compute is in STOPPED state
-✓ Starting the app [APP_NAME]
-✓ App is starting...
-✓ App is started!
-✓ Deployment succeeded.
-You can access the app at [APP_NAME]-123.cloud.databricksapps.com
-
 === Get app details and verify git_source configuration
 >>> [CLI] bundle summary --output json
 
@@ -48,13 +38,18 @@ You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 
 === Verify no drift after deployment
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+update apps.my_app
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === Run the app to verify it works
 >>> cat tmp.app-run
 ✓ Getting the status of the app [APP_NAME]
 ✓ App is in RUNNING state
-✓ App compute is in ACTIVE state
+✓ App compute is in STOPPED state
+✓ Starting the app [APP_NAME]
+✓ App is starting...
+✓ App is started!
 ✓ Deployment succeeded.
 You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 

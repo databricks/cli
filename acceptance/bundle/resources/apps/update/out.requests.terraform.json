@@ -10,19 +10,6 @@
   }
 }
 {
-  "body": {},
-  "method": "POST",
-  "path": "/api/2.0/apps/myappname/start"
-}
-{
-  "body": {
-    "mode": "SNAPSHOT",
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
-  },
-  "method": "POST",
-  "path": "/api/2.0/apps/myappname/deployments"
-}
-{
   "body": {
     "description": "MY_APP_DESCRIPTION",
     "name": "myappname",
@@ -32,14 +19,6 @@
   },
   "method": "PATCH",
   "path": "/api/2.0/apps/myappname"
-}
-{
-  "body": {
-    "mode": "SNAPSHOT",
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
-  },
-  "method": "POST",
-  "path": "/api/2.0/apps/myappname/deployments"
 }
 {
   "body": {},
@@ -56,19 +35,6 @@
   "q": {
     "no_compute": "true"
   }
-}
-{
-  "body": {},
-  "method": "POST",
-  "path": "/api/2.0/apps/mynewappname/start"
-}
-{
-  "body": {
-    "mode": "SNAPSHOT",
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
-  },
-  "method": "POST",
-  "path": "/api/2.0/apps/mynewappname/deployments"
 }
 {
   "body": {},

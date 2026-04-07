@@ -23,10 +23,7 @@ func BuildDeployment(sourcePath string, config *resources.AppConfig, gitSource *
 	deployment := sdkapps.AppDeployment{
 		Mode:           sdkapps.AppDeploymentModeSnapshot,
 		SourceCodePath: sourcePath,
-	}
-
-	if gitSource != nil {
-		deployment.GitSource = gitSource
+		GitSource:      gitSource,
 	}
 
 	if config != nil {

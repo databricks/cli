@@ -10,16 +10,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] bundle run mykey
-✓ Getting the status of the app myappname
-✓ App is in RUNNING state
-✓ App compute is in STOPPED state
-✓ Starting the app myappname
-✓ App is starting...
-✓ App is started!
-✓ Deployment succeeded.
-You can access the app at myappname-123.cloud.databricksapps.com
-
 >>> print_requests
 
 >>> [CLI] bundle summary
@@ -47,13 +37,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> [CLI] bundle run mykey
-✓ Getting the status of the app myappname
-✓ App is in RUNNING state
-✓ App compute is in ACTIVE state
-✓ Deployment succeeded.
-You can access the app at myappname-123.cloud.databricksapps.com
 
 >>> print_requests
 
@@ -94,16 +77,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-
->>> [CLI] bundle run mykey
-✓ Getting the status of the app mynewappname
-✓ App is in RUNNING state
-✓ App compute is in STOPPED state
-✓ Starting the app mynewappname
-✓ App is starting...
-✓ App is started!
-✓ Deployment succeeded.
-You can access the app at mynewappname-123.cloud.databricksapps.com
 
 >>> print_requests
 

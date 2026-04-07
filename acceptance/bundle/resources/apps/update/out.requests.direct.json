@@ -10,36 +10,15 @@
   }
 }
 {
-  "body": {},
-  "method": "POST",
-  "path": "/api/2.0/apps/myappname/start"
-}
-{
-  "body": {
-    "mode": "SNAPSHOT",
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
-  },
-  "method": "POST",
-  "path": "/api/2.0/apps/myappname/deployments"
-}
-{
   "body": {
     "app": {
       "description": "MY_APP_DESCRIPTION",
       "name": "myappname"
     },
-    "update_mask": "description"
+    "update_mask": "*"
   },
   "method": "POST",
   "path": "/api/2.0/apps/myappname/update"
-}
-{
-  "body": {
-    "mode": "SNAPSHOT",
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
-  },
-  "method": "POST",
-  "path": "/api/2.0/apps/myappname/deployments"
 }
 {
   "body": {},
@@ -56,19 +35,6 @@
   "q": {
     "no_compute": "true"
   }
-}
-{
-  "body": {},
-  "method": "POST",
-  "path": "/api/2.0/apps/mynewappname/start"
-}
-{
-  "body": {
-    "mode": "SNAPSHOT",
-    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/app"
-  },
-  "method": "POST",
-  "path": "/api/2.0/apps/mynewappname/deployments"
 }
 {
   "body": {},
