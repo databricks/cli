@@ -15,5 +15,5 @@ When writing Python scripts, we bias for conciseness. We think of Python in this
 - use pathlib.Path in almost all cases over os.path unless it makes code longer
 - Do not add redundant comments.
 - Try to keep your code small and the number of abstractions low.
-- After done, format you code with `ruff format -n <path>`
+- After done, format your code with `ruff format -n <path>`
 - Use `#!/usr/bin/env python3` shebang.
