@@ -85,18 +85,42 @@ def extract_resource_type(field_path):
     return None
 
 
-def field_yaml_path(field_path):
+def build_sequence_prefixes(fields):
+    """Build set of field path prefixes that are list-backed containers.
+
+    For each field with [*] (e.g., 'resources.jobs.*.permissions[*]'),
+    the prefix without [*] is added (e.g., 'resources.jobs.*.permissions').
+
+    >>> fields = [("resources.jobs.*.permissions[*]", "struct", ["ALL"]),
+    ...           ("resources.jobs.*.name", "string", ["ALL"])]
+    >>> sorted(build_sequence_prefixes(fields))
+    ['resources.jobs.*.permissions']
+    """
+    prefixes = set()
+    for field_path, _, _ in fields:
+        for i, part in enumerate(field_path.split(".")):
+            if "[*]" in part:
+                prefix_parts = field_path.split(".")[:i] + [part.replace("[*]", "")]
+                prefixes.add(".".join(prefix_parts))
+    return prefixes
+
+
+def field_yaml_path(field_path, sequence_prefixes=frozenset()):
     """Convert field path to YAML key path relative to resource instance.
 
     'resources.jobs.*.name' -> ['name']
     'resources.jobs.*.email_notifications.on_failure' -> ['email_notifications', 'on_failure']
     'resources.jobs.*.tasks[*].task_key' -> None  (array elements not supported for simple insertion)
+    'resources.jobs.*.permissions.object_id' -> None  (permissions is list-backed)
 
     >>> field_yaml_path("resources.jobs.*.name")
     ['name']
     >>> field_yaml_path("resources.jobs.*.email_notifications.on_failure")
     ['email_notifications', 'on_failure']
     >>> field_yaml_path("resources.jobs.*.tasks[*].task_key") is None
+    True
+    >>> seq = {"resources.jobs.*.permissions"}
+    >>> field_yaml_path("resources.jobs.*.permissions.object_id", seq) is None
     True
     """
     # Skip the "resources.<type>.*" prefix
@@ -107,6 +131,11 @@ def field_yaml_path(field_path):
     # Skip fields that involve array indexing or map wildcards
     for p in remainder:
         if "[*]" in p or p == "*":
+            return None
+    # Skip fields whose intermediate components are list-backed containers
+    for i in range(len(remainder) - 1):
+        prefix = ".".join(parts[: 3 + i + 1])
+        if prefix in sequence_prefixes:
             return None
     return remainder
 
@@ -551,7 +580,7 @@ def yaml_encode(value):
     return str(value)
 
 
-def build_test_cases(fields, configs, config_filter, field_filter):
+def build_test_cases(fields, configs, config_filter, field_filter, sequence_prefixes=frozenset()):
     """Build list of (config_name, field_path, field_type, value, action) test cases."""
     cases = []
 
@@ -572,7 +601,7 @@ def build_test_cases(fields, configs, config_filter, field_filter):
             if res_type not in resource_types:
                 continue
 
-            yaml_path = field_yaml_path(field_path)
+            yaml_path = field_yaml_path(field_path, sequence_prefixes)
             if yaml_path is None:
                 continue
 
@@ -831,7 +860,8 @@ def main():
     print(f"Loaded {len(configs)} configs from {TEST_TOML.name}")
 
     # Build test cases
-    cases = build_test_cases(fields, configs, args.config, args.field)
+    sequence_prefixes = build_sequence_prefixes(fields)
+    cases = build_test_cases(fields, configs, args.config, args.field, sequence_prefixes)
     print(f"Generated {len(cases)} test cases")
 
     if not cases:
