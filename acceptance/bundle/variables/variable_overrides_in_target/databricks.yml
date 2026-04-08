@@ -43,6 +43,12 @@ targets:
       foo: "overridden_string"
       baz: false
 
-  override-lookup-variable:
+  override-lookup-variable-with-value:
     variables:
       w_lookup: "my-specific-cluster-id"
+
+  override-lookup-variable-with-lookup:
+    variables:
+      w_lookup:
+        lookup:
+          cluster: "some-other-cluster" # id 9876
