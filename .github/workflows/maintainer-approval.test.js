@@ -1,4 +1,4 @@
-const { describe, it, before, after, beforeEach } = require("node:test");
+const { describe, it, before, after } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const os = require("os");
@@ -29,6 +29,7 @@ function makeContext({ author = "someuser", sha = "abc123", prNumber = 42 } = {}
     issue: { number: prNumber },
     payload: {
       pull_request: {
+        number: prNumber,
         user: { login: author },
         head: { sha },
       },
@@ -53,16 +54,21 @@ function makeCore() {
  * @param {Array} opts.reviews - PR reviews to return
  * @param {Array} opts.files - PR files to return (objects with .filename)
  * @param {Object} opts.teamMembers - { teamSlug: [logins] }
+ * @param {Array} opts.existingComments - Existing PR comments to return
  */
-function makeGithub({ reviews = [], files = [], teamMembers = {} } = {}) {
+function makeGithub({ reviews = [], files = [], teamMembers = {}, existingComments = [] } = {}) {
   const listReviews = Symbol("listReviews");
   const listFiles = Symbol("listFiles");
+  const listComments = Symbol("listComments");
   const statuses = [];
+  const createdComments = [];
+  const deletedCommentIds = [];
 
   const github = {
     paginate: async (endpoint, _opts) => {
       if (endpoint === listReviews) return reviews;
       if (endpoint === listFiles) return files;
+      if (endpoint === listComments) return existingComments;
       return [];
     },
     rest: {
@@ -73,6 +79,15 @@ function makeGithub({ reviews = [], files = [], teamMembers = {} } = {}) {
       repos: {
         createCommitStatus: async (params) => {
           statuses.push(params);
+        },
+      },
+      issues: {
+        listComments,
+        deleteComment: async (params) => {
+          deletedCommentIds.push(params.comment_id);
+        },
+        createComment: async (params) => {
+          createdComments.push(params);
         },
       },
       teams: {
@@ -87,6 +102,8 @@ function makeGithub({ reviews = [], files = [], teamMembers = {} } = {}) {
       },
     },
     _statuses: statuses,
+    _comments: createdComments,
+    _deletedCommentIds: deletedCommentIds,
   };
   return github;
 }
@@ -318,5 +335,135 @@ describe("maintainer-approval", () => {
 
     process.env.GITHUB_WORKSPACE = oldWorkspace;
     fs.rmSync(noWildcardDir, { recursive: true });
+  });
+
+  // --- Comment posting tests ---
+
+  it("posts a comment with MARKER on every run", async () => {
+    const github = makeGithub({
+      reviews: [],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._comments.length, 1);
+    assert.ok(github._comments[0].body.includes("<!-- MAINTAINER_APPROVAL -->"));
+  });
+
+  it("maintainer approval posts simple approved comment", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "maintainer1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._comments.length, 1);
+    assert.ok(github._comments[0].body.includes("Approved by @maintainer1"));
+    assert.ok(github._comments[0].body.includes("<!-- MAINTAINER_APPROVAL -->"));
+  });
+
+  it("deletes existing comment before posting new one", async () => {
+    const github = makeGithub({
+      reviews: [],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+      existingComments: [
+        { id: 999, body: "<!-- MAINTAINER_APPROVAL -->\nOld comment" },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._deletedCommentIds.length, 1);
+    assert.equal(github._deletedCommentIds[0], 999);
+    assert.equal(github._comments.length, 1);
+    assert.ok(github._comments[0].body.includes("<!-- MAINTAINER_APPROVAL -->"));
+  });
+
+  it("does not delete comments without the marker", async () => {
+    const github = makeGithub({
+      reviews: [],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+      existingComments: [
+        { id: 888, body: "Some unrelated comment" },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._deletedCommentIds.length, 0);
+    assert.equal(github._comments.length, 1);
+  });
+
+  it("pending single-domain comment includes waiting header", async () => {
+    const github = makeGithub({
+      reviews: [],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._comments.length, 1);
+    assert.ok(github._comments[0].body.includes("## Waiting for approval"));
+  });
+
+  it("pending cross-domain comment includes per-group sections", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "jefferycheng1" } },
+      ],
+      files: [
+        { filename: "cmd/pipelines/foo.go" },
+        { filename: "bundle/config.go" },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._comments.length, 1);
+    const body = github._comments[0].body;
+    assert.ok(body.includes("## Approval status: pending"));
+    assert.ok(body.includes("`/cmd/pipelines/`"));
+    assert.ok(body.includes("`/bundle/`"));
+    assert.ok(body.includes("approved by @jefferycheng1"));
+    assert.ok(body.includes("needs approval"));
+  });
+
+  it("all groups approved comment shows per-group detail", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "jefferycheng1" } },
+        { state: "APPROVED", user: { login: "bundleowner" } },
+      ],
+      files: [
+        { filename: "cmd/pipelines/foo.go" },
+        { filename: "bundle/config.go" },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._comments.length, 1);
+    const body = github._comments[0].body;
+    assert.ok(body.includes("## All ownership groups approved"));
+    assert.ok(body.includes("Approved by: @jefferycheng1"));
+    assert.ok(body.includes("Approved by: @bundleowner"));
   });
 });
