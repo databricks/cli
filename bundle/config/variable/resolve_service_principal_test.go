@@ -22,7 +22,7 @@ func TestResolveServicePrincipal_ResolveSuccess(t *testing.T) {
 	})
 	api.EXPECT().
 		List(mock.Anything, iam.ListServicePrincipalsRequest{
-			Filter: "display_name == 'service-principal'",
+			Filter: "displayName eq 'service-principal'",
 		}).
 		Return(&iterator)
 
@@ -40,7 +40,7 @@ func TestResolveServicePrincipal_ResolveNotFound(t *testing.T) {
 	iterator := listing.SliceIterator[iam.ServicePrincipal]([]iam.ServicePrincipal{})
 	api.EXPECT().
 		List(mock.Anything, iam.ListServicePrincipalsRequest{
-			Filter: "display_name == 'service-principal'",
+			Filter: "displayName eq 'service-principal'",
 		}).
 		Return(&iterator)
 

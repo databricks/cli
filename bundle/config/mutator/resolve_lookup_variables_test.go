@@ -142,7 +142,7 @@ func TestResolveServicePrincipal(t *testing.T) {
 	})
 	api.EXPECT().
 		List(mock.Anything, iam.ListServicePrincipalsRequest{
-			Filter: fmt.Sprintf("display_name == '%s'", spName),
+			Filter: fmt.Sprintf("displayName eq '%s'", spName),
 		}).
 		Return(&iterator)
 
