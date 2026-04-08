@@ -1,0 +1,11 @@
+*                         @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum
+/cmd/bundle/              @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @lennartkats-db
+/libs/template/           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @lennartkats-db
+/acceptance/pipelines/    @jefferycheng1 @kanterov @lennartkats-db
+/cmd/pipelines/           @jefferycheng1 @kanterov @lennartkats-db
+/cmd/labs/                @alexott @nfx
+/cmd/apps/                @databricks/eng-apps-devex
+/cmd/workspace/apps/      @databricks/eng-apps-devex
+/libs/apps/               @databricks/eng-apps-devex
+/acceptance/apps/         @databricks/eng-apps-devex
+/experimental/aitools/    @databricks/eng-apps-devex @lennartkats-db
