@@ -58,6 +58,7 @@ function findOwners(filepath, rules) {
 // If ALL changed files are owned by non-core-team owners that include the
 // author, the PR can merge with any approval (not necessarily core team).
 function isExempted(authorLogin, files, rules, coreTeam) {
+  if (files.length === 0) return false;
   const coreSet = new Set(coreTeam);
   for (const { filename } of files) {
     const owners = findOwners(filename, rules);
@@ -87,11 +88,15 @@ module.exports = async ({ github, context, core }) => {
   });
 
   const coreTeamApproved = reviews.some(
-    ({ state, user: { login } }) =>
-      state === "APPROVED" && coreTeam.includes(login)
+    ({ state, user }) =>
+      state === "APPROVED" && user && coreTeam.includes(user.login)
   );
 
   if (coreTeamApproved) {
+    const approver = reviews.find(
+      ({ state, user }) => state === "APPROVED" && user && coreTeam.includes(user.login)
+    );
+    core.info(`Core team approval from @${approver.user.login}`);
     return;
   }
 

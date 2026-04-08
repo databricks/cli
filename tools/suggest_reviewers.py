@@ -5,9 +5,10 @@
 
 import fnmatch
 import os
+import random
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 MENTION_REVIEWERS = True
@@ -189,6 +190,38 @@ def fmt_eligible(owners: list[str]) -> str:
     return ", ".join(o.lstrip("@") for o in owners)
 
 
+def count_recent_reviews(repo: str, logins: list[str], days: int = 30) -> dict[str, int]:
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
+    counts: dict[str, int] = {}
+    for login in logins:
+        r = subprocess.run(
+            [
+                "gh",
+                "api",
+                "search/issues",
+                "-f",
+                f"q=repo:{repo} reviewed-by:{login} is:pr created:>{since}",
+                "--jq",
+                ".total_count",
+            ],
+            capture_output=True,
+            encoding="utf-8",
+        )
+        if r.returncode == 0 and r.stdout.strip().isdigit():
+            counts[login] = int(r.stdout.strip())
+    return counts
+
+
+def select_round_robin(repo: str, eligible_owners: list[str], pr_author: str) -> str | None:
+    candidates = [o.lstrip("@") for o in eligible_owners if "/" not in o and o.lstrip("@").lower() != pr_author.lower()]
+    if not candidates:
+        return None
+    counts = count_recent_reviews(repo, candidates)
+    if not counts:
+        return random.choice(candidates)
+    return min(candidates, key=lambda c: counts.get(c, 0))
+
+
 def build_comment(
     sorted_scores: list[tuple[str, float]],
     dir_scores: dict[str, dict[str, float]],
@@ -196,6 +229,7 @@ def build_comment(
     scored_count: int,
     eligible_owners: list[str],
     pr_author: str,
+    round_robin_reviewer: str | None = None,
 ) -> str:
     reviewers = select_reviewers(sorted_scores)
     suggested_logins = {login.lower() for login, _ in reviewers}
@@ -226,13 +260,34 @@ def build_comment(
                 fmt_eligible(eligible),
             ]
     elif eligible:
-        lines += [
-            "## Eligible reviewers",
-            "",
-            "Could not determine reviewers from git history. Based on CODEOWNERS, these people or teams could review:",
-            "",
-            fmt_eligible(eligible),
-        ]
+        if round_robin_reviewer:
+            mention = f"@{round_robin_reviewer}" if MENTION_REVIEWERS else round_robin_reviewer
+            remaining = [o for o in eligible if o.lstrip("@").lower() != round_robin_reviewer.lower()]
+            lines += [
+                "## Suggested reviewer",
+                "",
+                "Could not determine reviewers from git history.",
+                "Round-robin suggestion (based on recent review load):",
+                "",
+                f"- {mention}",
+            ]
+            if remaining:
+                lines += [
+                    "",
+                    "## Eligible reviewers",
+                    "",
+                    "Based on CODEOWNERS, these people or teams could also review:",
+                    "",
+                    fmt_eligible(remaining),
+                ]
+        else:
+            lines += [
+                "## Eligible reviewers",
+                "",
+                "Could not determine reviewers from git history. Based on CODEOWNERS, these people or teams could review:",
+                "",
+                fmt_eligible(eligible),
+            ]
     else:
         lines += [
             "## Suggested reviewers",
@@ -286,7 +341,12 @@ def main():
     scores, dir_scores, scored_count = score_contributors(files, pr_author, now, repo)
     sorted_scores = sorted(scores.items(), key=lambda x: -x[1])
     eligible = parse_codeowners(files)
-    comment = build_comment(sorted_scores, dir_scores, len(files), scored_count, eligible, pr_author)
+
+    round_robin = None
+    if not select_reviewers(sorted_scores) and eligible:
+        round_robin = select_round_robin(repo, eligible, pr_author)
+
+    comment = build_comment(sorted_scores, dir_scores, len(files), scored_count, eligible, pr_author, round_robin)
 
     print(comment)
     existing_id = find_existing_comment(repo, pr_number)
