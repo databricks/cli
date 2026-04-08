@@ -76,6 +76,8 @@ async function checkPerPathApproval(files, rules, approverLogins, github, org) {
   return { allCovered: uncovered.length === 0, uncovered };
 }
 
+const STATUS_CONTEXT = "maintainer-approval";
+
 module.exports = async ({ github, context, core }) => {
   const ownersPath = path.join(
     process.env.GITHUB_WORKSPACE,
@@ -91,6 +93,14 @@ module.exports = async ({ github, context, core }) => {
     );
     return;
   }
+
+  const sha = context.payload.pull_request.head.sha;
+  const statusParams = {
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    sha,
+    context: STATUS_CONTEXT,
+  };
 
   const reviews = await github.paginate(github.rest.pulls.listReviews, {
     owner: context.repo.owner,
@@ -109,6 +119,11 @@ module.exports = async ({ github, context, core }) => {
         state === "APPROVED" && user && maintainers.includes(user.login)
     );
     core.info(`Maintainer approval from @${approver.user.login}`);
+    await github.rest.repos.createCommitStatus({
+      ...statusParams,
+      state: "success",
+      description: `Approved by @${approver.user.login}`,
+    });
     return;
   }
 
@@ -140,15 +155,25 @@ module.exports = async ({ github, context, core }) => {
 
   if (result.allCovered && approverLogins.length > 0) {
     core.info("All ownership groups have per-path approval.");
+    await github.rest.repos.createCommitStatus({
+      ...statusParams,
+      state: "success",
+      description: "All ownership groups approved",
+    });
     return;
   }
 
   if (result.hasWildcardFiles) {
-    core.setFailed(
-      `Some files only match the wildcard (*) rule and require a maintainer: ` +
-        `${result.wildcardFiles.join(", ")}. ` +
-        `Maintainers: ${maintainers.join(", ")}.`
-    );
+    const fileList = result.wildcardFiles.join(", ");
+    const msg =
+      `Files need maintainer review: ${fileList}. ` +
+      `Maintainers: ${maintainers.join(", ")}`;
+    core.info(msg);
+    await github.rest.repos.createCommitStatus({
+      ...statusParams,
+      state: "pending",
+      description: msg.length > 140 ? msg.slice(0, 137) + "..." : msg,
+    });
     return;
   }
 
@@ -156,14 +181,23 @@ module.exports = async ({ github, context, core }) => {
     const groupList = result.uncovered
       .map(({ pattern, owners }) => `${pattern} (needs: ${owners.join(", ")})`)
       .join("; ");
-    core.setFailed(
-      `Missing per-path approval. Uncovered groups: ${groupList}. ` +
-        `Alternatively, any maintainer can approve: ${maintainers.join(", ")}.`
+    const msg = `Needs approval: ${groupList}`;
+    core.info(
+      `${msg}. Alternatively, any maintainer can approve: ${maintainers.join(", ")}.`
     );
+    await github.rest.repos.createCommitStatus({
+      ...statusParams,
+      state: "pending",
+      description: msg.length > 140 ? msg.slice(0, 137) + "..." : msg,
+    });
     return;
   }
 
-  core.setFailed(
-    `Requires approval from a maintainer: ${maintainers.join(", ")}.`
-  );
+  const msg = `Waiting for maintainer approval: ${maintainers.join(", ")}`;
+  core.info(msg);
+  await github.rest.repos.createCommitStatus({
+    ...statusParams,
+    state: "pending",
+    description: msg.length > 140 ? msg.slice(0, 137) + "..." : msg,
+  });
 };
