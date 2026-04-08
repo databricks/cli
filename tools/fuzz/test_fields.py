@@ -158,6 +158,18 @@ def load_config_names_from_toml(toml_path):
     return data.get("EnvMatrix", {}).get("INPUT_CONFIG", [])
 
 
+def load_env_matrix_key(toml_path, key):
+    """Load a specific key from test.toml EnvMatrix.
+
+    >>> values = load_env_matrix_key(TEST_TOML, "DATABRICKS_BUNDLE_ENGINE")
+    >>> "direct" in values
+    True
+    """
+    with open(toml_path, "rb") as f:
+        data = tomllib.load(f)
+    return data.get("EnvMatrix", {}).get(key, [])
+
+
 def load_exclude_rules(toml_path):
     """Load EnvMatrixExclude rules from test.toml.
 
@@ -247,6 +259,11 @@ def find_resource_instance(lines, resource_type):
     (2, 4, 4)
     >>> find_resource_instance(lines, "schemas")
     (None, None, None)
+
+    Multiple instances with inter-instance comments:
+    >>> lines = "resources:\\n  jobs:\\n    foo:\\n      name: bar\\n\\n    # second job\\n    baz:\\n      name: qux\\n".splitlines(keepends=True)
+    >>> find_resource_instance(lines, "jobs")
+    (2, 4, 4)
     """
     # First, find the resource type key at indent 2 (e.g., "  jobs:")
     type_line = None
@@ -280,18 +297,18 @@ def find_resource_instance(lines, resource_type):
     if instance_start is None or instance_indent is None:
         return None, None, None
 
-    # Find the end of this instance block
-    instance_end = len(lines)
+    # Find the end of this instance block by tracking the last meaningful child line
+    last_child = instance_start
     for i in range(instance_start + 1, len(lines)):
         content = lines[i].strip()
         if not content or content.startswith("#"):
             continue
         indent = len(lines[i]) - len(lines[i].lstrip())
         if indent <= instance_indent:
-            instance_end = i
             break
+        last_child = i
 
-    return instance_start, instance_indent, instance_end
+    return instance_start, instance_indent, last_child + 1
 
 
 def set_yaml_value(lines, key_path, value, resource_type=None):
@@ -321,6 +338,11 @@ def set_yaml_value(lines, key_path, value, resource_type=None):
     True
     >>> "email_notifications:" in result and "on_failure: new" in result
     True
+
+    Replacing a key with children removes the children:
+    >>> lines = "resources:\\n  jobs:\\n    foo:\\n      tags:\\n        perm_group: users\\n      name: bar\\n".splitlines(keepends=True)
+    >>> "".join(set_yaml_value(lines, ["tags"], {"env": "test"}, "jobs"))
+    'resources:\\n  jobs:\\n    foo:\\n      tags: {env: test}\\n      name: bar\\n'
     """
     instance_start, instance_indent, instance_end = find_resource_instance(lines, resource_type)
 
@@ -374,8 +396,19 @@ def set_yaml_value(lines, key_path, value, resource_type=None):
             continue
         indent = len(lines[i]) - len(lines[i].lstrip())
         if indent == current_indent and content.startswith(final_key + ":"):
-            # Replace existing value
+            # Replace existing value and remove any child lines
             lines[i] = " " * current_indent + final_key + ": " + yaml_encode(value) + "\n"
+            remove_end = i + 1
+            for j in range(i + 1, search_end):
+                s = lines[j].rstrip()
+                if not s:
+                    remove_end = j + 1
+                    continue
+                if len(lines[j]) - len(lines[j].lstrip()) > current_indent:
+                    remove_end = j + 1
+                else:
+                    break
+            del lines[i + 1 : remove_end]
             return lines
 
     # Insert new key
@@ -632,7 +665,7 @@ def generate_modified_config(config_content, yaml_path, value, action, resource_
     return "".join(lines)
 
 
-def run_test_via_harness(config_name, config_content, test_name="no_drift", verbose=False):
+def run_test_via_harness(config_name, config_content, test_name="no_drift", engine="direct", verbose=False):
     """Run an invariant test against a modified config using the acceptance test harness.
 
     Overwrites the config in configs/ temporarily, invokes `go test` targeting the
@@ -652,7 +685,7 @@ def run_test_via_harness(config_name, config_content, test_name="no_drift", verb
 
         escaped_name = re.escape(config_name)
         run_filter = (
-            f"TestAccept/bundle/invariant/{test_name}/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG={escaped_name}"
+            f"TestAccept/bundle/invariant/{test_name}/DATABRICKS_BUNDLE_ENGINE={engine}/INPUT_CONFIG={escaped_name}"
         )
         cmd = [
             "go",
@@ -691,7 +724,7 @@ def run_test_via_harness(config_name, config_content, test_name="no_drift", verb
             if "no tests to run" in output or "no test files" in output:
                 return "error", "no matching test found"
             if "--- SKIP" in output:
-                return "skip", "test skipped by harness"
+                return "error", "test skipped by harness (config not tested)"
             return "skip", "config rejected (validation/deploy failed)"
 
         # Test failed after INPUT_CONFIG_OK — bug detected
@@ -724,6 +757,7 @@ def main():
     parser.add_argument("--seed", type=int, default=None, help="Random seed")
     parser.add_argument("-n", type=int, default=None, help="Max test cases to run")
     parser.add_argument("--test", default="no_drift", help="Invariant test to run (default: no_drift)")
+    parser.add_argument("--engine", default="", help="Bundle engine (default: first from EnvMatrix)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--dry-run", action="store_true", help="List test cases without running")
     args = parser.parse_args()
@@ -746,6 +780,20 @@ def main():
     if per_test_toml.exists():
         per_test_rules = load_exclude_rules(per_test_toml)
         exclude_rules.update(per_test_rules)
+
+    # Resolve engine: --engine flag > first from EnvMatrix (per-test overrides parent)
+    engines = load_env_matrix_key(TEST_TOML, "DATABRICKS_BUNDLE_ENGINE")
+    if per_test_toml.exists():
+        per_test_engines = load_env_matrix_key(per_test_toml, "DATABRICKS_BUNDLE_ENGINE")
+        if per_test_engines:
+            engines = per_test_engines
+    if args.engine:
+        engine = args.engine
+    elif engines:
+        engine = engines[0]
+    else:
+        engine = "direct"
+    print(f"Using engine: {engine}")
 
     is_cloud = bool(os.environ.get("CLOUD_ENV"))
 
@@ -816,7 +864,9 @@ def main():
             stats["skip"] += 1
             continue
 
-        status, details = run_test_via_harness(config_name, modified, test_name=args.test, verbose=args.verbose)
+        status, details = run_test_via_harness(
+            config_name, modified, test_name=args.test, engine=engine, verbose=args.verbose
+        )
         stats[status] += 1
         print(f"{status.upper()}: {details}")
 
