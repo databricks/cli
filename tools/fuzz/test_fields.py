@@ -183,6 +183,11 @@ def should_exclude_config(config_name, exclude_rules, is_cloud):
     False
     >>> should_exclude_config("job.yml.tmpl", rules, is_cloud=True)
     False
+
+    Unknown condition keys are treated as non-matching:
+    >>> rules2 = {"eng": ["DATABRICKS_BUNDLE_ENGINE=terraform", "INPUT_CONFIG=job.yml.tmpl"]}
+    >>> should_exclude_config("job.yml.tmpl", rules2, is_cloud=True)
+    False
     """
     for conditions in exclude_rules.values():
         all_match = True
@@ -196,7 +201,11 @@ def should_exclude_config(config_name, exclude_rules, is_cloud):
                 if value != config_name:
                     all_match = False
                     break
-            # Other conditions (e.g., DATABRICKS_BUNDLE_ENGINE) are not relevant for config filtering
+            else:
+                # Unknown condition (e.g., DATABRICKS_BUNDLE_ENGINE) — can't evaluate,
+                # treat as non-matching to avoid incorrect exclusion.
+                all_match = False
+                break
         if all_match:
             return True
     return False
@@ -679,6 +688,10 @@ def run_test_via_harness(config_name, config_content, test_name="no_drift", verb
             return "pass", "no drift"
 
         if not has_config_ok:
+            if "no tests to run" in output or "no test files" in output:
+                return "error", "no matching test found"
+            if "--- SKIP" in output:
+                return "skip", "test skipped by harness"
             return "skip", "config rejected (validation/deploy failed)"
 
         # Test failed after INPUT_CONFIG_OK — bug detected
@@ -727,6 +740,13 @@ def main():
     # Parse configs from test.toml EnvMatrix, applying exclusion rules
     config_names = load_config_names_from_toml(TEST_TOML)
     exclude_rules = load_exclude_rules(TEST_TOML)
+
+    # Merge per-test exclusion rules (e.g., invariant/migrate/test.toml)
+    per_test_toml = REPO_ROOT / "acceptance" / "bundle" / "invariant" / args.test / "test.toml"
+    if per_test_toml.exists():
+        per_test_rules = load_exclude_rules(per_test_toml)
+        exclude_rules.update(per_test_rules)
+
     is_cloud = bool(os.environ.get("CLOUD_ENV"))
 
     configs = {}
