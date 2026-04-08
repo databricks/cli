@@ -65,4 +65,28 @@ function getMaintainers(rules) {
   return catchAll ? catchAll.owners : [];
 }
 
-module.exports = { parseOwnersFile, ownersMatch, findOwners, getMaintainers };
+/**
+ * Group files by their matched OWNERS rule (last-match-wins).
+ * Returns Map<pattern, { owners: string[], files: string[] }>
+ */
+function getOwnershipGroups(filenames, rules) {
+  const groups = new Map();
+  for (const filepath of filenames) {
+    let matchedPattern = null;
+    let matchedOwners = [];
+    for (const rule of rules) {
+      if (ownersMatch(rule.pattern, filepath)) {
+        matchedPattern = rule.pattern;
+        matchedOwners = rule.owners;
+      }
+    }
+    if (!matchedPattern) continue;
+    if (!groups.has(matchedPattern)) {
+      groups.set(matchedPattern, { owners: [...matchedOwners], files: [] });
+    }
+    groups.get(matchedPattern).files.push(filepath);
+  }
+  return groups;
+}
+
+module.exports = { parseOwnersFile, ownersMatch, findOwners, getMaintainers, getOwnershipGroups };
