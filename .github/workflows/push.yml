@@ -97,8 +97,7 @@ jobs:
 
           - name: windows
             runner:
-              group: databricks-protected-runner-group
-              labels: windows-server-latest
+              labels: windows-latest
 
           - name: macos
             runner:
@@ -228,8 +227,7 @@ jobs:
 
           - name: windows
             runner:
-              group: databricks-protected-runner-group
-              labels: windows-server-latest
+              labels: windows-latest
 
           - name: macos
             runner:
@@ -273,8 +271,7 @@ jobs:
 
           - name: windows
             runner:
-              group: databricks-protected-runner-group
-              labels: windows-server-latest
+              labels: windows-latest
 
           - name: macos
             runner:
