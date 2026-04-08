@@ -1,7 +1,6 @@
 const path = require("path");
 const {
   parseOwnersFile,
-  findOwners,
   getMaintainers,
   getOwnershipGroups,
 } = require("../scripts/owners");
@@ -10,15 +9,27 @@ const {
  * Check if an approver is a member of a GitHub team.
  * Requires org read access on the token; falls back to false if unavailable.
  */
-async function isTeamMember(github, org, teamSlug, login) {
+async function isTeamMember(github, org, teamSlug, login, core) {
   try {
-    await github.rest.teams.getMembershipForUserInOrg({
+    const { data } = await github.rest.teams.getMembershipForUserInOrg({
       org,
       team_slug: teamSlug,
       username: login,
     });
-    return true;
-  } catch {
+    return data.state === "active";
+  } catch (err) {
+    if (err.status === 404) {
+      // User is genuinely not a member of this team.
+      return false;
+    }
+    // Permission denied or other error. Log it so it's visible.
+    if (core) {
+      core.warning(
+        `Could not verify team membership for ${login} in ${org}/${teamSlug} ` +
+        `(HTTP ${err.status || "unknown"}). Team-based approval may not work ` +
+        `without a token with org:read scope.`
+      );
+    }
     return false;
   }
 }
@@ -27,11 +38,11 @@ async function isTeamMember(github, org, teamSlug, login) {
  * Check if any approver matches an owner entry.
  * Owner can be a plain login or an org/team ref (containing "/").
  */
-async function ownerHasApproval(owner, approverSet, github, org) {
+async function ownerHasApproval(owner, approverSet, github, org, core) {
   if (owner.includes("/")) {
     const teamSlug = owner.split("/")[1];
     for (const approver of approverSet) {
-      if (await isTeamMember(github, org, teamSlug, approver)) {
+      if (await isTeamMember(github, org, teamSlug, approver, core)) {
         return true;
       }
     }
@@ -44,11 +55,7 @@ async function ownerHasApproval(owner, approverSet, github, org) {
  * Per-path approval check. Each ownership group needs at least one
  * approval from its owners. Files matching only "*" require a maintainer.
  */
-async function checkPerPathApproval(files, rules, approverLogins, github, org) {
-  const rulesWithTeams = parseOwnersFile(
-    path.join(process.env.GITHUB_WORKSPACE, ".github", "OWNERS"),
-    { includeTeams: true }
-  );
+async function checkPerPathApproval(files, rulesWithTeams, approverLogins, github, org, core) {
   const groups = getOwnershipGroups(files.map(f => f.filename), rulesWithTeams);
   const approverSet = new Set(approverLogins.map(l => l.toLowerCase()));
 
@@ -64,7 +71,7 @@ async function checkPerPathApproval(files, rules, approverLogins, github, org) {
   for (const [pattern, { owners }] of groups) {
     let hasApproval = false;
     for (const owner of owners) {
-      if (await ownerHasApproval(owner, approverSet, github, org)) {
+      if (await ownerHasApproval(owner, approverSet, github, org, core)) {
         hasApproval = true;
         break;
       }
@@ -84,8 +91,8 @@ module.exports = async ({ github, context, core }) => {
     ".github",
     "OWNERS"
   );
-  const rules = parseOwnersFile(ownersPath);
-  const maintainers = getMaintainers(rules);
+  const rulesWithTeams = parseOwnersFile(ownersPath, { includeTeams: true });
+  const maintainers = getMaintainers(rulesWithTeams);
 
   if (maintainers.length === 0) {
     core.setFailed(
@@ -147,10 +154,11 @@ module.exports = async ({ github, context, core }) => {
 
   const result = await checkPerPathApproval(
     files,
-    rules,
+    rulesWithTeams,
     approverLogins,
     github,
-    context.repo.owner
+    context.repo.owner,
+    core
   );
 
   if (result.allCovered && approverLogins.length > 0) {

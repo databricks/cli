@@ -335,19 +335,23 @@ function buildPerGroupComment(
     lines.push("### General files (require maintainer)");
     lines.push(`Files: ${starGroup.files.map((f) => `\`${f}\``).join(", ")}`);
 
-    const sortedScores = Object.entries(scores)
-      .filter(([login]) => login.toLowerCase() !== authorLower)
+    // Only suggest maintainers for wildcard files, since only they can approve.
+    const maintainerSet = new Set(maintainers.map((m) => m.toLowerCase()));
+    const maintainerScores = Object.entries(scores)
+      .filter(
+        ([login]) =>
+          login.toLowerCase() !== authorLower &&
+          maintainerSet.has(login.toLowerCase())
+      )
       .sort((a, b) => b[1] - a[1]);
 
-    if (sortedScores.length > 0 && sortedScores[0][1] > 0) {
-      const [login] = sortedScores[0];
+    if (maintainerScores.length > 0 && maintainerScores[0][1] > 0) {
+      const [login] = maintainerScores[0];
       const dirs = topDirs(dirScores[login]);
       lines.push("Based on git history:");
       lines.push(fmtReviewer(login, dirs));
     } else {
-      lines.push(
-        `Pick a maintainer from ${OWNERS_LINK}.`
-      );
+      lines.push(`Pick a maintainer from ${OWNERS_LINK}.`);
     }
     lines.push("");
   }

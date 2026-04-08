@@ -15,6 +15,9 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
     timeout-minutes: 5
+    # Note: team membership resolution in per-path approval requires a token
+    # with org:read scope. The default GITHUB_TOKEN may lack this, causing
+    # team-based ownership checks to fall back to maintainer approval.
     permissions:
       pull-requests: read
       statuses: write
