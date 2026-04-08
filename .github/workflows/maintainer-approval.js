@@ -1,58 +1,9 @@
-const fs = require("fs");
 const path = require("path");
-
-// Parse .github/OWNERS (same format as CODEOWNERS).
-// Returns array of { pattern, owners } rules.
-function parseOwners() {
-  const ownersPath = path.join(
-    process.env.GITHUB_WORKSPACE,
-    ".github",
-    "OWNERS"
-  );
-  const lines = fs.readFileSync(ownersPath, "utf-8").split("\n");
-  const rules = [];
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const parts = line.split(/\s+/);
-    if (parts.length < 2) continue;
-    const pattern = parts[0];
-    // Strip @ prefix, skip team refs (org/team).
-    const owners = parts
-      .slice(1)
-      .filter((p) => p.startsWith("@") && !p.includes("/"))
-      .map((p) => p.slice(1));
-    rules.push({ pattern, owners });
-  }
-  return rules;
-}
-
-// Get core team from the * catch-all rule.
-function getCoreTeam(rules) {
-  const catchAll = rules.find((r) => r.pattern === "*");
-  return catchAll ? catchAll.owners : [];
-}
-
-// Match a filepath against an OWNERS pattern.
-// Supports: "*" (catch-all), "/dir/" (prefix), "/path/file" (exact).
-function ownersMatch(pattern, filepath) {
-  if (pattern === "*") return true;
-  let p = pattern;
-  if (p.startsWith("/")) p = p.slice(1);
-  if (p.endsWith("/")) return filepath.startsWith(p);
-  return filepath === p;
-}
-
-// Find which owners match a given file (last match wins, like CODEOWNERS).
-function findOwners(filepath, rules) {
-  let matched = [];
-  for (const rule of rules) {
-    if (ownersMatch(rule.pattern, filepath)) {
-      matched = rule.owners;
-    }
-  }
-  return matched;
-}
+const {
+  parseOwnersFile,
+  findOwners,
+  getCoreTeam,
+} = require("../scripts/owners");
 
 // Check if the PR author is exempted.
 // If ALL changed files are owned by non-core-team owners that include the
@@ -71,7 +22,12 @@ function isExempted(authorLogin, files, rules, coreTeam) {
 }
 
 module.exports = async ({ github, context, core }) => {
-  const rules = parseOwners();
+  const ownersPath = path.join(
+    process.env.GITHUB_WORKSPACE,
+    ".github",
+    "OWNERS"
+  );
+  const rules = parseOwnersFile(ownersPath);
   const coreTeam = getCoreTeam(rules);
 
   if (coreTeam.length === 0) {
@@ -94,7 +50,8 @@ module.exports = async ({ github, context, core }) => {
 
   if (coreTeamApproved) {
     const approver = reviews.find(
-      ({ state, user }) => state === "APPROVED" && user && coreTeam.includes(user.login)
+      ({ state, user }) =>
+        state === "APPROVED" && user && coreTeam.includes(user.login)
     );
     core.info(`Core team approval from @${approver.user.login}`);
     return;
