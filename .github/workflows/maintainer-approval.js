@@ -101,7 +101,9 @@ module.exports = async ({ github, context, core }) => {
     return;
   }
 
-  const sha = context.payload.pull_request.head.sha;
+  const { pull_request: pr } = context.payload;
+  const authorLogin = pr?.user?.login;
+  const sha = pr.head.sha;
   const statusParams = {
     owner: context.repo.owner,
     repo: context.repo.repo,
@@ -134,11 +136,25 @@ module.exports = async ({ github, context, core }) => {
     return;
   }
 
+  // If the PR author is a maintainer, any approval suffices (second pair of eyes).
+  if (authorLogin && maintainers.includes(authorLogin)) {
+    const hasAnyApproval = reviews.some(
+      ({ state, user }) =>
+        state === "APPROVED" && user && user.login !== authorLogin
+    );
+    if (hasAnyApproval) {
+      core.info(`Maintainer-authored PR approved by a reviewer.`);
+      await github.rest.repos.createCommitStatus({
+        ...statusParams,
+        state: "success",
+        description: "Approved (maintainer-authored PR)",
+      });
+      return;
+    }
+  }
+
   // Gather approved logins (excluding the PR author, since GitHub prevents
   // self-approval, but we filter defensively in case of API edge cases).
-  const { pull_request: pr } = context.payload;
-  const authorLogin = pr?.user?.login;
-
   const approverLogins = reviews
     .filter(
       ({ state, user }) =>
