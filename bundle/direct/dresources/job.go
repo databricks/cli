@@ -59,9 +59,24 @@ func getTaskKey(x jobs.Task) (string, string) {
 	return "task_key", x.TaskKey
 }
 
+func getParameterName(x jobs.JobParameterDefinition) (string, string) {
+	return "name", x.Name
+}
+
+func getJobClusterKey(x jobs.JobCluster) (string, string) {
+	return "job_cluster_key", x.JobClusterKey
+}
+
+func getEnvironmentKey(x jobs.JobEnvironment) (string, string) {
+	return "environment_key", x.EnvironmentKey
+}
+
 func (*ResourceJob) KeyedSlices() map[string]any {
 	return map[string]any{
-		"tasks": getTaskKey,
+		"tasks":        getTaskKey,
+		"parameters":   getParameterName,
+		"job_clusters": getJobClusterKey,
+		"environments": getEnvironmentKey,
 	}
 }
 
