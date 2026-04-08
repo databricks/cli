@@ -390,14 +390,18 @@ function buildSingleDomainPendingComment(sortedScores, dirScores, scoredCount, e
 
 // --- Comment management ---
 
+const LEGACY_MARKER = "<!-- REVIEWER_SUGGESTION -->";
+
 async function postComment(github, owner, repo, prNumber, comment) {
   const comments = await github.paginate(github.rest.issues.listComments, {
     owner, repo, issue_number: prNumber,
   });
-  const existing = comments.find(c => c.body && c.body.includes(MARKER));
-  if (existing) {
+  const toDelete = comments.filter(c =>
+    c.body && (c.body.includes(MARKER) || c.body.includes(LEGACY_MARKER))
+  );
+  for (const c of toDelete) {
     await github.rest.issues.deleteComment({
-      owner, repo, comment_id: existing.id,
+      owner, repo, comment_id: c.id,
     });
   }
   await github.rest.issues.createComment({
