@@ -3,22 +3,77 @@ const {
   parseOwnersFile,
   findOwners,
   getMaintainers,
+  getOwnershipGroups,
 } = require("../scripts/owners");
 
-// Check if the PR author is exempted.
-// If ALL changed files are owned by non-maintainer owners that include the
-// author, the PR can merge with any approval (not necessarily a maintainer).
-function isExempted(authorLogin, files, rules, maintainers) {
-  if (files.length === 0) return false;
-  const maintainerSet = new Set(maintainers);
-  for (const { filename } of files) {
-    const owners = findOwners(filename, rules);
-    const nonMaintainers = owners.filter((o) => !maintainerSet.has(o));
-    if (nonMaintainers.length === 0 || !nonMaintainers.includes(authorLogin)) {
-      return false;
+/**
+ * Check if an approver is a member of a GitHub team.
+ * Requires org read access on the token; falls back to false if unavailable.
+ */
+async function isTeamMember(github, org, teamSlug, login) {
+  try {
+    await github.rest.teams.getMembershipForUserInOrg({
+      org,
+      team_slug: teamSlug,
+      username: login,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if any approver matches an owner entry.
+ * Owner can be a plain login or an org/team ref (containing "/").
+ */
+async function ownerHasApproval(owner, approverSet, github, org) {
+  if (owner.includes("/")) {
+    const teamSlug = owner.split("/")[1];
+    for (const approver of approverSet) {
+      if (await isTeamMember(github, org, teamSlug, approver)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return approverSet.has(owner.toLowerCase());
+}
+
+/**
+ * Per-path approval check. Each ownership group needs at least one
+ * approval from its owners. Files matching only "*" require a maintainer.
+ */
+async function checkPerPathApproval(files, rules, approverLogins, github, org) {
+  const rulesWithTeams = parseOwnersFile(
+    path.join(process.env.GITHUB_WORKSPACE, ".github", "OWNERS"),
+    { includeTeams: true }
+  );
+  const groups = getOwnershipGroups(files.map(f => f.filename), rulesWithTeams);
+  const approverSet = new Set(approverLogins.map(l => l.toLowerCase()));
+
+  if (groups.has("*")) {
+    return {
+      allCovered: false,
+      hasWildcardFiles: true,
+      wildcardFiles: groups.get("*").files,
+    };
+  }
+
+  const uncovered = [];
+  for (const [pattern, { owners }] of groups) {
+    let hasApproval = false;
+    for (const owner of owners) {
+      if (await ownerHasApproval(owner, approverSet, github, org)) {
+        hasApproval = true;
+        break;
+      }
+    }
+    if (!hasApproval) {
+      uncovered.push({ pattern, owners });
     }
   }
-  return true;
+  return { allCovered: uncovered.length === 0, uncovered };
 }
 
 module.exports = async ({ github, context, core }) => {
@@ -57,9 +112,17 @@ module.exports = async ({ github, context, core }) => {
     return;
   }
 
-  // Check exemption rules based on file ownership.
+  // Gather approved logins (excluding the PR author, since GitHub prevents
+  // self-approval, but we filter defensively in case of API edge cases).
   const { pull_request: pr } = context.payload;
   const authorLogin = pr?.user?.login;
+
+  const approverLogins = reviews
+    .filter(
+      ({ state, user }) =>
+        state === "APPROVED" && user && user.login !== authorLogin
+    )
+    .map(({ user }) => user.login);
 
   const files = await github.paginate(github.rest.pulls.listFiles, {
     owner: context.repo.owner,
@@ -67,13 +130,36 @@ module.exports = async ({ github, context, core }) => {
     pull_number: context.issue.number,
   });
 
-  if (authorLogin && isExempted(authorLogin, files, rules, maintainers)) {
-    const hasAnyApproval = reviews.some(({ state }) => state === "APPROVED");
-    if (!hasAnyApproval) {
-      core.setFailed(
-        "PR from exempted author still needs at least one approval."
-      );
-    }
+  const result = await checkPerPathApproval(
+    files,
+    rules,
+    approverLogins,
+    github,
+    context.repo.owner
+  );
+
+  if (result.allCovered && approverLogins.length > 0) {
+    core.info("All ownership groups have per-path approval.");
+    return;
+  }
+
+  if (result.hasWildcardFiles) {
+    core.setFailed(
+      `Some files only match the wildcard (*) rule and require a maintainer: ` +
+        `${result.wildcardFiles.join(", ")}. ` +
+        `Maintainers: ${maintainers.join(", ")}.`
+    );
+    return;
+  }
+
+  if (result.uncovered && result.uncovered.length > 0) {
+    const groupList = result.uncovered
+      .map(({ pattern, owners }) => `${pattern} (needs: ${owners.join(", ")})`)
+      .join("; ");
+    core.setFailed(
+      `Missing per-path approval. Uncovered groups: ${groupList}. ` +
+        `Alternatively, any maintainer can approve: ${maintainers.join(", ")}.`
+    );
     return;
   }
 
