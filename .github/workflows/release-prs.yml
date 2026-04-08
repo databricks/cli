@@ -1,0 +1,242 @@
+name: release-prs
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.295.0)"
+        required: true
+        type: string
+      dry_run:
+        description: "Dry run (log what would happen, skip actual dispatches)"
+        required: false
+        type: boolean
+        default: true
+      setup_cli:
+        description: "Create setup-cli release PR"
+        required: false
+        type: boolean
+        default: false
+      homebrew_tap:
+        description: "Create homebrew-tap release PR"
+        required: false
+        type: boolean
+        default: false
+      vscode_extension:
+        description: "Create VS Code extension update PR"
+        required: false
+        type: boolean
+        default: false
+      winget:
+        description: "Publish to winget-pkgs"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  create-setup-cli-release-pr:
+    if: ${{ inputs.setup_cli }}
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    steps:
+      - name: Derive version from tag
+        run: |
+          VERSION="${{ inputs.tag }}"
+          echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
+
+      - name: Log dispatch
+        run: |
+          echo "Repository: databricks/setup-cli"
+          echo "Workflow:   release-pr.yml"
+          echo "Version:    $VERSION"
+          echo "Dry run:    ${{ inputs.dry_run }}"
+
+      - name: Dispatch setup-cli release PR
+        if: ${{ !inputs.dry_run }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'databricks',
+              repo: 'setup-cli',
+              workflow_id: 'release-pr.yml',
+              ref: 'main',
+              inputs: {
+                version: "${{ env.VERSION }}",
+              }
+            });
+
+  create-homebrew-tap-release-pr:
+    if: ${{ inputs.homebrew_tap }}
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    steps:
+      - name: Derive version from tag
+        run: |
+          VERSION="${{ inputs.tag }}"
+          echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
+
+      - name: Download checksums from release
+        run: |
+          gh release download "${{ inputs.tag }}" \
+            --pattern "databricks_cli_${VERSION}_SHA256SUMS" \
+            --dir . \
+            --repo "${{ github.repository }}"
+          echo "SHA256SUMS contents:"
+          cat "databricks_cli_${VERSION}_SHA256SUMS"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract per-platform checksums
+        run: |
+          extract_sha() {
+            grep "databricks_cli_${VERSION}_${1}.zip" "databricks_cli_${VERSION}_SHA256SUMS" | awk '{print $1}'
+          }
+          {
+            echo "DARWIN_AMD64_SHA=$(extract_sha darwin_amd64)"
+            echo "DARWIN_ARM64_SHA=$(extract_sha darwin_arm64)"
+            echo "LINUX_AMD64_SHA=$(extract_sha linux_amd64)"
+            echo "LINUX_ARM64_SHA=$(extract_sha linux_arm64)"
+          } >> $GITHUB_ENV
+
+      - name: Log dispatch
+        run: |
+          echo "Repository:       databricks/homebrew-tap"
+          echo "Workflow:         release-pr.yml"
+          echo "Version:          $VERSION"
+          echo "darwin_amd64_sha: $DARWIN_AMD64_SHA"
+          echo "darwin_arm64_sha: $DARWIN_ARM64_SHA"
+          echo "linux_amd64_sha:  $LINUX_AMD64_SHA"
+          echo "linux_arm64_sha:  $LINUX_ARM64_SHA"
+          echo "Dry run:          ${{ inputs.dry_run }}"
+
+      - name: Dispatch homebrew-tap release PR
+        if: ${{ !inputs.dry_run }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'databricks',
+              repo: 'homebrew-tap',
+              workflow_id: 'release-pr.yml',
+              ref: 'main',
+              inputs: {
+                version: "${{ env.VERSION }}",
+                darwin_amd64_sha: "${{ env.DARWIN_AMD64_SHA }}",
+                darwin_arm64_sha: "${{ env.DARWIN_ARM64_SHA }}",
+                linux_amd64_sha: "${{ env.LINUX_AMD64_SHA }}",
+                linux_arm64_sha: "${{ env.LINUX_ARM64_SHA }}",
+              }
+            });
+
+  create-vscode-extension-update-pr:
+    if: ${{ inputs.vscode_extension }}
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    steps:
+      - name: Derive version from tag
+        run: |
+          VERSION="${{ inputs.tag }}"
+          echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
+
+      - name: Log dispatch
+        run: |
+          echo "Repository: databricks/databricks-vscode"
+          echo "Workflow:   update-cli-version.yml"
+          echo "Version:    $VERSION"
+          echo "Dry run:    ${{ inputs.dry_run }}"
+
+      - name: Dispatch VS Code extension update PR
+        if: ${{ !inputs.dry_run }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'databricks',
+              repo: 'databricks-vscode',
+              workflow_id: 'update-cli-version.yml',
+              ref: 'main',
+              inputs: {
+                version: "${{ env.VERSION }}",
+              }
+            });
+
+  publish-to-winget-pkgs:
+    if: ${{ inputs.winget }}
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    environment: release
+
+    steps:
+      - name: Derive version from tag
+        run: |
+          VERSION="${{ inputs.tag }}"
+          echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
+
+      - name: Get URLs of signed Windows binaries
+        id: get_windows_urls
+        run: |
+          urls=$(
+            gh api "repos/${{ github.repository }}/releases/tags/${{ inputs.tag }}" | \
+            jq -r .assets[].browser_download_url | \
+            grep -E '_windows_.*\.zip$' | \
+            tr '\n' ' '
+          )
+          if [ -z "$urls" ]; then
+            echo "No signed Windows binaries found" >&2
+            exit 1
+          fi
+          echo "urls=$urls" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log publish
+        run: |
+          echo "Package:  Databricks.DatabricksCLI"
+          echo "Version:  $VERSION"
+          echo "URLs:     ${{ steps.get_windows_urls.outputs.urls }}"
+          echo "Dry run:  ${{ inputs.dry_run }}"
+
+      # When updating the version of komac, make sure to update the checksum in the next step.
+      # Find both at https://github.com/russellbanks/Komac/releases.
+      - name: Download komac binary
+        if: ${{ !inputs.dry_run }}
+        run: |
+          curl -s -L -o $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz https://github.com/russellbanks/Komac/releases/download/v2.9.0/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz
+
+      - name: Verify komac binary
+        if: ${{ !inputs.dry_run }}
+        run: |
+          echo "d07a12831ad5418fee715488542a98ce3c0e591d05c850dd149fe78432be8c4c  $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz" | sha256sum -c -
+
+      - name: Untar komac binary to temporary path
+        if: ${{ !inputs.dry_run }}
+        run: |
+          mkdir -p $RUNNER_TEMP/komac
+          tar -xzf $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz -C $RUNNER_TEMP/komac
+
+      - name: Add komac to PATH
+        if: ${{ !inputs.dry_run }}
+        run: echo "$RUNNER_TEMP/komac" >> $GITHUB_PATH
+
+      - name: Publish to Winget
+        if: ${{ !inputs.dry_run }}
+        run: |
+          komac update Databricks.DatabricksCLI \
+            --version $VERSION \
+            --submit \
+            --urls ${{ steps.get_windows_urls.outputs.urls }}
+        env:
+          KOMAC_FORK_OWNER: eng-dev-ecosystem-bot
+          GITHUB_TOKEN: ${{ secrets.ENG_DEV_ECOSYSTEM_BOT_TOKEN }}

@@ -13,7 +13,7 @@
         "created_at": [UNIX_TIME_MILLIS][0],
         "created_by": "[USERNAME]",
         "effective_predictive_optimization_flag": {
-          "inherited_from_name": "deco-uc-prod-isolated-aws-us-east-1",
+          "inherited_from_name": "[METASTORE_NAME]",
           "inherited_from_type": "METASTORE",
           "value": "ENABLE"
         },
@@ -51,21 +51,7 @@
       },
       "remote_state": {
         "securable_type": "schema",
-        "full_name": "main.schema_out_of_band_principal_[UNIQUE_NAME]",
-        "__embed__": [
-          {
-            "principal": "[USERNAME]",
-            "privileges": [
-              "CREATE_TABLE"
-            ]
-          },
-          {
-            "principal": "deco-test-user@databricks.com",
-            "privileges": [
-              "USE_SCHEMA"
-            ]
-          }
-        ]
+        "full_name": "main.schema_out_of_band_principal_[UNIQUE_NAME]"
       },
       "changes": {
         "[principal='deco-test-user@databricks.com']": {

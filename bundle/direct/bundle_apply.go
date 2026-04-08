@@ -113,12 +113,12 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 			if migrateMode {
 				// In migration mode we're reading resources in DAG order so that we have fully resolved config snapshots stored
-				dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
-				if !hasEntry || dbentry.ID == "" {
+				id := b.StateDB.GetResourceID(resourceKey)
+				if id == "" {
 					logdiag.LogError(ctx, fmt.Errorf("state entry not found for %q", resourceKey))
 					return false
 				}
-				err = b.StateDB.SaveState(resourceKey, dbentry.ID, sv.Value, entry.DependsOn)
+				err = b.StateDB.SaveState(resourceKey, id, sv.Value, entry.DependsOn)
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
 				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
@@ -135,13 +135,13 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		//       already resolved and should not play a role here.
 		needRemoteState := len(g.Adj[resourceKey]) > 0
 		if needRemoteState {
-			entry, _ := b.StateDB.GetResourceEntry(d.ResourceKey)
-			if entry.ID == "" {
+			id := b.StateDB.GetResourceID(d.ResourceKey)
+			if id == "" {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing entry in state after deploy", errorPrefix))
 				return false
 			}
 
-			err = d.refreshRemoteState(ctx, entry.ID)
+			err = d.refreshRemoteState(ctx, id)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read remote state: %w", errorPrefix, err))
 				return false
@@ -180,11 +180,11 @@ func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *
 	}
 
 	if fieldPathS == "id" {
-		dbentry, hasEntry := b.StateDB.GetResourceEntry(targetResourceKey)
-		if !hasEntry || dbentry.ID == "" {
+		id := b.StateDB.GetResourceID(targetResourceKey)
+		if id == "" {
 			return nil, errors.New("internal error: no db entry")
 		}
-		return dbentry.ID, nil
+		return id, nil
 	}
 
 	remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)

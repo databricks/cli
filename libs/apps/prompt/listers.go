@@ -382,7 +382,7 @@ func ListServingEndpoints(ctx context.Context) (*PagedFetcher, error) {
 		if name == "" {
 			name = e.Id
 		}
-		return ListItem{ID: e.Id, Label: name}
+		return ListItem{ID: e.Name, Label: name}
 	}
 	items, hasMore, err := collectN(ctx, iter, pageSize, mapFn)
 	if err != nil {

@@ -5,14 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -54,14 +57,21 @@ func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 		Use:   "token [HOST_OR_PROFILE]",
 		Short: "Get authentication token",
 		Long: `Get authentication token from the local cache in ~/.databricks/token-cache.json.
-Refresh the access token if it is expired. Note: This command only works with
-U2M authentication (using the 'databricks auth login' command). M2M authentication
-using a client ID and secret is not supported.`,
+Refresh the access token if it is expired or close to expiry. Use --force-refresh
+to bypass expiry checks. Note: This command only works with U2M authentication
+(using the 'databricks auth login' command). M2M authentication using a client ID
+and secret is not supported.`,
 	}
 
 	var tokenTimeout time.Duration
 	cmd.Flags().DurationVar(&tokenTimeout, "timeout", defaultTimeout,
 		"Timeout for acquiring a token.")
+
+	var forceRefresh bool
+	cmd.Flags().BoolVar(&forceRefresh, "force-refresh", false,
+		"Force a token refresh even if the cached token is still valid.")
+
+	cmd.PreRunE = profileHostConflictCheck
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -76,21 +86,35 @@ using a client ID and secret is not supported.`,
 			profileName:        profileName,
 			args:               args,
 			tokenTimeout:       tokenTimeout,
+			forceRefresh:       forceRefresh,
 			profiler:           profile.DefaultProfiler,
 			persistentAuthOpts: nil,
 		})
 		if err != nil {
 			return err
 		}
-		raw, err := json.MarshalIndent(t, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, _ = cmd.OutOrStdout().Write(raw)
-		return nil
+		// Only honor the explicit --output text flag, not implicit text mode
+		// (e.g. from DATABRICKS_OUTPUT_FORMAT). auth token defaults to JSON,
+		// and changing that implicitly would break scripts that parse JSON output.
+		textMode := cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText
+		return writeTokenOutput(cmd.OutOrStdout(), t, textMode)
 	}
 
 	return cmd
+}
+
+func writeTokenOutput(w io.Writer, t *oauth2.Token, textMode bool) error {
+	if textMode {
+		_, err := fmt.Fprintln(w, t.AccessToken)
+		return err
+	}
+
+	raw, err := json.MarshalIndent(t, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(raw)
+	return err
 }
 
 type loadTokenArgs struct {
@@ -105,6 +129,9 @@ type loadTokenArgs struct {
 
 	// tokenTimeout is the timeout for retrieving (and potentially refreshing) an OAuth token.
 	tokenTimeout time.Duration
+
+	// forceRefresh forces a token refresh even if the cached token is still valid.
+	forceRefresh bool
 
 	// profiler is the profiler to use for reading the host and account ID from the .databrickscfg file.
 	profiler profile.Profiler
@@ -248,7 +275,12 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
 		return nil, fmt.Errorf("%w. %s", err, helpMsg)
 	}
-	t, err := persistentAuth.Token()
+	var t *oauth2.Token
+	if args.forceRefresh {
+		t, err = persistentAuth.ForceRefreshToken()
+	} else {
+		t, err = persistentAuth.Token()
+	}
 	if err != nil {
 		if errors.Is(err, cache.ErrNotFound) {
 			// The error returned by the SDK when the token cache doesn't exist or doesn't contain a token
