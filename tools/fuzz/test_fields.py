@@ -196,6 +196,13 @@ def should_exclude_config(config_name, exclude_rules, is_cloud):
     >>> should_exclude_config("job.yml.tmpl", rules, is_cloud=True)
     False
 
+    CONFIG_Cloud=false matches only when is_cloud is False:
+    >>> rules_false = {"local_only": ["CONFIG_Cloud=false", "INPUT_CONFIG=x.yml.tmpl"]}
+    >>> should_exclude_config("x.yml.tmpl", rules_false, is_cloud=True)
+    False
+    >>> should_exclude_config("x.yml.tmpl", rules_false, is_cloud=False)
+    True
+
     Unknown condition keys are treated as non-matching:
     >>> rules2 = {"eng": ["DATABRICKS_BUNDLE_ENGINE=terraform", "INPUT_CONFIG=job.yml.tmpl"]}
     >>> should_exclude_config("job.yml.tmpl", rules2, is_cloud=True)
@@ -206,7 +213,7 @@ def should_exclude_config(config_name, exclude_rules, is_cloud):
         for cond in conditions:
             key, value = cond.split("=", 1)
             if key == "CONFIG_Cloud":
-                if not is_cloud:
+                if (value == "true") != is_cloud:
                     all_match = False
                     break
             elif key == "INPUT_CONFIG":
@@ -722,9 +729,9 @@ def run_test_via_harness(config_name, config_content, test_name="no_drift", engi
 
         if not has_config_ok:
             if "no tests to run" in output or "no test files" in output:
-                return "error", "no matching test found"
+                return "not_run", "no matching test found"
             if "--- SKIP" in output:
-                return "error", "test skipped by harness (config not tested)"
+                return "not_run", "test skipped by harness (config not tested)"
             return "skip", "config rejected (validation/deploy failed)"
 
         # Test failed after INPUT_CONFIG_OK — bug detected
@@ -771,6 +778,8 @@ def main():
     fields = parse_fields(FIELDS_FILE)
     print(f"Loaded {len(fields)} fields from {FIELDS_FILE.name}")
 
+    is_cloud = bool(os.environ.get("CLOUD_ENV"))
+
     # Parse configs from test.toml EnvMatrix, applying exclusion rules
     config_names = load_config_names_from_toml(TEST_TOML)
     exclude_rules = load_exclude_rules(TEST_TOML)
@@ -780,6 +789,15 @@ def main():
     if per_test_toml.exists():
         per_test_rules = load_exclude_rules(per_test_toml)
         exclude_rules.update(per_test_rules)
+        # Check Cloud/Local eligibility
+        with open(per_test_toml, "rb") as f:
+            per_test_data = tomllib.load(f)
+        if per_test_data.get("Cloud") is False and is_cloud:
+            print(f"Test '{args.test}' has Cloud=false, skipping (CLOUD_ENV is set)")
+            return
+        if per_test_data.get("Local") is False and not is_cloud:
+            print(f"Test '{args.test}' has Local=false, skipping (not on cloud)")
+            return
 
     # Resolve engine: --engine flag > first from EnvMatrix (per-test overrides parent)
     engines = load_env_matrix_key(TEST_TOML, "DATABRICKS_BUNDLE_ENGINE")
@@ -794,8 +812,6 @@ def main():
     else:
         engine = "direct"
     print(f"Using engine: {engine}")
-
-    is_cloud = bool(os.environ.get("CLOUD_ENV"))
 
     configs = {}
     for name in sorted(config_names):
@@ -844,7 +860,7 @@ def main():
         return
 
     # Run tests
-    stats = {"skip": 0, "pass": 0, "drift": 0, "error": 0}
+    stats = {"skip": 0, "pass": 0, "drift": 0, "error": 0, "not_run": 0}
     saved_configs = []
     gen_index = 0
 
@@ -878,7 +894,9 @@ def main():
 
     # Summary
     print(f"\n{'=' * 60}")
-    print(f"Results: {stats['pass']} pass, {stats['drift']} drift, {stats['skip']} skip, {stats['error']} error")
+    print(
+        f"Results: {stats['pass']} pass, {stats['drift']} drift, {stats['skip']} skip, {stats['error']} error, {stats['not_run']} not_run"
+    )
 
     if saved_configs:
         print(f"\nIssues detected in {len(saved_configs)} cases:")
