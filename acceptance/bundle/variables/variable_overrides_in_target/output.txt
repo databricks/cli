@@ -86,3 +86,6 @@
     }
   }
 }
+
+>>> [CLI] bundle validate -o json -t override-lookup-variable
+"4321"
