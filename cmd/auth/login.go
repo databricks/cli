@@ -94,7 +94,7 @@ func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
 	}
 	cmd := &cobra.Command{
-		Use:   "login [PROFILE_OR_HOST]",
+		Use:   "login [PROFILE]",
 		Short: "Log into a Databricks workspace or account",
 		Long: fmt.Sprintf(`Log into a Databricks workspace or account.
 
