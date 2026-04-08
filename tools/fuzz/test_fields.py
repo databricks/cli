@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 Fuzz-test bundle field handling by iterating over all INPUT fields from refschema,
-generating modified configs, and running the no_drift test against each.
+generating modified configs, and running invariant tests via the acceptance test harness.
 
 Usage:
     python3 tools/fuzz/test_fields.py --config job --field description -n 5
     python3 tools/fuzz/test_fields.py --seed 42 -n 100
+    python3 tools/fuzz/test_fields.py --test migrate --config schema -n 3
 """
 
 import argparse
@@ -13,18 +14,14 @@ import json
 import os
 import random
 import re
-import shutil
 import subprocess
 import sys
-import tempfile
 import tomllib
-import uuid
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 FIELDS_FILE = REPO_ROOT / "acceptance" / "bundle" / "refschema" / "out.fields.txt"
 CONFIGS_DIR = REPO_ROOT / "acceptance" / "bundle" / "invariant" / "configs"
-DATA_DIR = REPO_ROOT / "acceptance" / "bundle" / "invariant" / "data"
 TEST_TOML = REPO_ROOT / "acceptance" / "bundle" / "invariant" / "test.toml"
 GENERATED_PREFIX = "generated__"
 
@@ -161,6 +158,50 @@ def load_config_names_from_toml(toml_path):
     return data.get("EnvMatrix", {}).get("INPUT_CONFIG", [])
 
 
+def load_exclude_rules(toml_path):
+    """Load EnvMatrixExclude rules from test.toml.
+
+    >>> rules = load_exclude_rules(TEST_TOML)
+    >>> any("INPUT_CONFIG=alert.yml.tmpl" in r for r in rules.values())
+    True
+    """
+    with open(toml_path, "rb") as f:
+        data = tomllib.load(f)
+    return data.get("EnvMatrixExclude", {})
+
+
+def should_exclude_config(config_name, exclude_rules, is_cloud):
+    """Check if a config should be excluded based on EnvMatrixExclude rules.
+
+    Each rule is a list of conditions that must ALL match for the config to be excluded.
+    CONFIG_Cloud=true matches only when is_cloud is True.
+
+    >>> rules = {"no_alert": ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]}
+    >>> should_exclude_config("alert.yml.tmpl", rules, is_cloud=True)
+    True
+    >>> should_exclude_config("alert.yml.tmpl", rules, is_cloud=False)
+    False
+    >>> should_exclude_config("job.yml.tmpl", rules, is_cloud=True)
+    False
+    """
+    for conditions in exclude_rules.values():
+        all_match = True
+        for cond in conditions:
+            key, value = cond.split("=", 1)
+            if key == "CONFIG_Cloud":
+                if not is_cloud:
+                    all_match = False
+                    break
+            elif key == "INPUT_CONFIG":
+                if value != config_name:
+                    all_match = False
+                    break
+            # Other conditions (e.g., DATABRICKS_BUNDLE_ENGINE) are not relevant for config filtering
+        if all_match:
+            return True
+    return False
+
+
 def parse_config_resource_types(config_path):
     """Extract resource type keys from a config template.
 
@@ -185,21 +226,6 @@ def parse_config_resource_types(config_path):
             if m:
                 resource_types.add(m.group(1))
     return resource_types
-
-
-def substitute_env_vars(text):
-    """Substitute $VAR and ${VAR} patterns with environment variables.
-
-    >>> os.environ['_TEST_VAR'] = 'hello'
-    >>> substitute_env_vars('$_TEST_VAR world')
-    'hello world'
-    """
-
-    def replace_var(match):
-        var_name = match.group(1) or match.group(2)
-        return os.environ.get(var_name, "")
-
-    return re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)", replace_var, text)
 
 
 def find_resource_instance(lines, resource_type):
@@ -481,8 +507,6 @@ def build_test_cases(fields, configs, config_filter, field_filter):
     cases = []
 
     for config_name in sorted(configs.keys()):
-        if config_name in SKIP_CONFIGS:
-            continue
         if config_filter and config_filter not in config_name:
             continue
 
@@ -599,27 +623,11 @@ def generate_modified_config(config_content, yaml_path, value, action, resource_
     return "".join(lines)
 
 
-def run_cli(cli_path, args, cwd, env, timeout=300):
-    """Run a CLI command and return (returncode, stdout, stderr)."""
-    cmd = [str(cli_path)] + args
-    try:
-        result = subprocess.run(
-            cmd,
-            cwd=cwd,
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        return result.returncode, result.stdout, result.stderr
-    except subprocess.TimeoutExpired:
-        return -1, "", "timeout"
-    except FileNotFoundError:
-        return -1, "", f"CLI not found: {cli_path}"
+def run_test_via_harness(config_name, config_content, test_name="no_drift", verbose=False):
+    """Run an invariant test against a modified config using the acceptance test harness.
 
-
-def run_test_case(cli_path, config_content, unique_name, verbose=False):
-    """Run the no_drift test against a single config.
+    Overwrites the config in configs/ temporarily, invokes `go test` targeting the
+    specific invariant test variant, then restores the original config.
 
     Returns: (status, details) where status is one of:
         "skip" — config failed validation or deploy
@@ -627,109 +635,63 @@ def run_test_case(cli_path, config_content, unique_name, verbose=False):
         "drift" — drift detected (bug found!)
         "error" — unexpected error
     """
-    tmpdir = tempfile.mkdtemp(prefix="fuzz_field_")
+    config_path = CONFIGS_DIR / config_name
+    original_content = config_path.read_text()
 
     try:
-        # Copy data files
-        if DATA_DIR.exists():
-            for item in DATA_DIR.iterdir():
-                dest = Path(tmpdir) / item.name
-                if item.is_dir():
-                    shutil.copytree(item, dest)
-                else:
-                    shutil.copy2(item, dest)
+        config_path.write_text(config_content)
 
-        # Write config with env var substitution
-        os.environ["UNIQUE_NAME"] = unique_name
-        config_resolved = substitute_env_vars(config_content)
-        config_path = Path(tmpdir) / "databricks.yml"
-        config_path.write_text(config_resolved)
+        escaped_name = re.escape(config_name)
+        run_filter = (
+            f"TestAccept/bundle/invariant/{test_name}/DATABRICKS_BUNDLE_ENGINE=direct/INPUT_CONFIG={escaped_name}"
+        )
+        cmd = [
+            "go",
+            "test",
+            "./acceptance",
+            "-run",
+            run_filter,
+            "-v",
+            "-tail",
+            "-count=1",
+            "-timeout",
+            "10m",
+        ]
 
-        # Initialize git repo (required by bundle)
-        subprocess.run(
-            ["git", "init", "-qb", "main"],
-            cwd=tmpdir,
+        result = subprocess.run(
+            cmd,
+            cwd=str(REPO_ROOT),
             capture_output=True,
-        )
-        subprocess.run(
-            ["git", "config", "user.name", "Fuzzer"],
-            cwd=tmpdir,
-            capture_output=True,
-        )
-        subprocess.run(
-            ["git", "config", "user.email", "fuzzer@test.com"],
-            cwd=tmpdir,
-            capture_output=True,
-        )
-        subprocess.run(
-            ["git", "add", "."],
-            cwd=tmpdir,
-            capture_output=True,
-        )
-        subprocess.run(
-            ["git", "commit", "-qm", "init"],
-            cwd=tmpdir,
-            capture_output=True,
+            text=True,
+            timeout=700,
         )
 
-        env = dict(os.environ)
-        env["DATABRICKS_BUNDLE_ENGINE"] = "direct"
+        output = result.stdout + result.stderr
+        has_config_ok = "INPUT_CONFIG_OK" in output
 
-        # Validate
-        rc, stdout, stderr = run_cli(cli_path, ["bundle", "validate"], tmpdir, env)
-        if rc != 0:
-            if verbose:
-                print(f"    validate failed: {stderr[:200]}", file=sys.stderr)
-            return "skip", f"validate failed (rc={rc})"
+        if verbose:
+            # Print last 20 lines of output for debugging
+            lines = output.strip().splitlines()
+            for line in lines[-20:]:
+                print(f"    | {line}", file=sys.stderr)
 
-        # Check for panics/internal errors
-        if "panic" in stderr.lower() or "internal error" in stderr.lower():
-            return "error", f"validate: panic/internal error: {stderr[:200]}"
+        if result.returncode == 0 and has_config_ok:
+            return "pass", "no drift"
 
-        # Deploy
-        rc, stdout, stderr = run_cli(cli_path, ["bundle", "deploy"], tmpdir, env, timeout=600)
-        if rc != 0:
-            if verbose:
-                print(f"    deploy failed: {stderr[:200]}", file=sys.stderr)
-            return "skip", f"deploy failed (rc={rc})"
+        if not has_config_ok:
+            return "skip", "config rejected (validation/deploy failed)"
 
-        if "panic" in stderr.lower() or "internal error" in stderr.lower():
-            return "error", f"deploy: panic/internal error: {stderr[:200]}"
+        # Test failed after INPUT_CONFIG_OK — bug detected
+        if "panic" in output.lower():
+            return "error", "panic after deploy"
+        if "Unexpected action=" in output:
+            return "drift", "drift detected"
+        return "error", f"test failed (rc={result.returncode})"
 
-        # Plan (JSON)
-        rc, stdout, stderr = run_cli(cli_path, ["bundle", "plan", "-o", "json"], tmpdir, env)
-        if "panic" in stderr.lower() or "internal error" in stderr.lower():
-            return "error", f"plan: panic/internal error: {stderr[:200]}"
-
-        if rc != 0:
-            return "error", f"plan failed (rc={rc}): {stderr[:200]}"
-
-        # Check plan for drift
-        try:
-            plan_data = json.loads(stdout)
-            drift_actions = {}
-            for key, value in plan_data.get("plan", {}).items():
-                action = value.get("action")
-                if action != "skip":
-                    drift_actions[key] = action
-            if drift_actions:
-                return "drift", f"drift detected: {drift_actions}"
-        except (json.JSONDecodeError, KeyError) as e:
-            return "error", f"plan parse error: {e}"
-
-        return "pass", "no drift"
-
+    except subprocess.TimeoutExpired:
+        return "error", "test timed out"
     finally:
-        # Destroy (cleanup)
-        env = dict(os.environ)
-        env["DATABRICKS_BUNDLE_ENGINE"] = "direct"
-        run_cli(cli_path, ["bundle", "destroy", "--auto-approve"], tmpdir, env, timeout=300)
-        shutil.rmtree(tmpdir, ignore_errors=True)
-
-
-def generate_unique_name():
-    """Generate a unique name similar to acceptance test framework."""
-    return "fuzz-" + uuid.uuid4().hex[:20]
+        config_path.write_text(original_content)
 
 
 def save_generated_config(config_name, field_path, index, config_content):
@@ -742,74 +704,16 @@ def save_generated_config(config_name, field_path, index, config_content):
     return dest
 
 
-def setup_env_defaults(cli_path):
-    """Set default env vars needed by config templates if not already set."""
-    defaults = {
-        "NODE_TYPE_ID": "i3.xlarge",
-        "DEFAULT_SPARK_VERSION": "13.3.x-snapshot-scala2.12",
-        "TEST_DEFAULT_WAREHOUSE_ID": "8ec9edc1-db0c-40df-af8d-7580020fe61e",
-        "TEST_DEFAULT_CLUSTER_ID": "0123-456789-cluster0",
-        "TEST_INSTANCE_POOL_ID": "0123-456789-pool0",
-    }
-    for key, value in defaults.items():
-        if key not in os.environ:
-            os.environ[key] = value
-
-    # Verify workspace credentials
-    if "DATABRICKS_HOST" not in os.environ and "DATABRICKS_CONFIG_PROFILE" not in os.environ:
-        print(
-            "Warning: DATABRICKS_HOST not set. Set workspace credentials or use a Databricks profile.",
-            file=sys.stderr,
-        )
-
-    # Fetch current user name if not set
-    if "CURRENT_USER_NAME" not in os.environ:
-        try:
-            result = subprocess.run(
-                [str(cli_path), "current-user", "me", "-o", "json"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            if result.returncode == 0:
-                user = json.loads(result.stdout)
-                os.environ["CURRENT_USER_NAME"] = user.get("userName", "")
-                print(f"Detected user: {os.environ['CURRENT_USER_NAME']}")
-        except Exception as e:
-            print(f"Warning: could not detect current user: {e}", file=sys.stderr)
-
-
 def main():
     parser = argparse.ArgumentParser(description="Fuzz-test bundle fields for drift")
     parser.add_argument("--config", default="", help="Substring filter for config names")
     parser.add_argument("--field", default="", help="Substring filter for field names")
     parser.add_argument("--seed", type=int, default=None, help="Random seed")
     parser.add_argument("-n", type=int, default=None, help="Max test cases to run")
-    parser.add_argument("--cli", default=None, help="Path to CLI binary")
+    parser.add_argument("--test", default="no_drift", help="Invariant test to run (default: no_drift)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--dry-run", action="store_true", help="List test cases without running")
     args = parser.parse_args()
-
-    # Find CLI binary
-    cli_path = args.cli
-    if cli_path is None:
-        cli_path = REPO_ROOT / "cli"
-        if not cli_path.exists():
-            # Try common build locations
-            for p in [
-                REPO_ROOT / "build" / "databricks",
-                REPO_ROOT / "databricks",
-            ]:
-                if p.exists():
-                    cli_path = p
-                    break
-    cli_path = Path(cli_path).resolve()
-    if not args.dry_run and not cli_path.exists():
-        print(f"CLI binary not found at {cli_path}. Run 'make build' first or pass --cli.", file=sys.stderr)
-        sys.exit(1)
-
-    if not args.dry_run:
-        setup_env_defaults(cli_path)
 
     # Parse fields
     if not FIELDS_FILE.exists():
@@ -820,10 +724,17 @@ def main():
     fields = parse_fields(FIELDS_FILE)
     print(f"Loaded {len(fields)} fields from {FIELDS_FILE.name}")
 
-    # Parse configs from test.toml EnvMatrix
+    # Parse configs from test.toml EnvMatrix, applying exclusion rules
     config_names = load_config_names_from_toml(TEST_TOML)
+    exclude_rules = load_exclude_rules(TEST_TOML)
+    is_cloud = bool(os.environ.get("CLOUD_ENV"))
+
     configs = {}
     for name in sorted(config_names):
+        if name in SKIP_CONFIGS:
+            continue
+        if should_exclude_config(name, exclude_rules, is_cloud):
+            continue
         config_path = CONFIGS_DIR / name
         if not config_path.exists():
             print(f"Warning: config {name} from test.toml not found, skipping", file=sys.stderr)
@@ -866,11 +777,10 @@ def main():
 
     # Run tests
     stats = {"skip": 0, "pass": 0, "drift": 0, "error": 0}
-    drift_configs = []
+    saved_configs = []
     gen_index = 0
 
     for i, (config_name, field_path, field_type, value, action) in enumerate(cases[:n]):
-        unique_name = generate_unique_name()
         label = f"[{i + 1}/{n}] {config_name} | {field_path} | {action}"
         if action == "set":
             label += f"={yaml_encode(value)}"
@@ -886,24 +796,24 @@ def main():
             stats["skip"] += 1
             continue
 
-        status, details = run_test_case(cli_path, modified, unique_name, verbose=args.verbose)
+        status, details = run_test_via_harness(config_name, modified, test_name=args.test, verbose=args.verbose)
         stats[status] += 1
         print(f"{status.upper()}: {details}")
 
-        if status == "drift":
+        if status in ("drift", "error"):
             gen_index += 1
             saved = save_generated_config(config_name, field_path, gen_index, modified)
-            drift_configs.append((config_name, field_path, value, action, saved))
+            saved_configs.append((config_name, field_path, value, action, status, saved))
             print(f"    -> Saved to {saved.relative_to(REPO_ROOT)}")
 
     # Summary
     print(f"\n{'=' * 60}")
     print(f"Results: {stats['pass']} pass, {stats['drift']} drift, {stats['skip']} skip, {stats['error']} error")
 
-    if drift_configs:
-        print(f"\nDrift detected in {len(drift_configs)} cases:")
-        for config_name, field_path, value, action, saved in drift_configs:
-            print(f"  - {config_name} | {field_path} | {action}={value}")
+    if saved_configs:
+        print(f"\nIssues detected in {len(saved_configs)} cases:")
+        for config_name, field_path, value, action, status, saved in saved_configs:
+            print(f"  - [{status}] {config_name} | {field_path} | {action}={value}")
             print(f"    Config: {saved.relative_to(REPO_ROOT)}")
 
 
