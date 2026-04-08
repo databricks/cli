@@ -57,12 +57,12 @@ function findOwners(filepath, rules) {
 }
 
 /**
- * Get core team from the * catch-all rule.
+ * Get maintainers from the * catch-all rule.
  * @returns {string[]} logins
  */
-function getCoreTeam(rules) {
+function getMaintainers(rules) {
   const catchAll = rules.find((r) => r.pattern === "*");
   return catchAll ? catchAll.owners : [];
 }
 
-module.exports = { parseOwnersFile, ownersMatch, findOwners, getCoreTeam };
+module.exports = { parseOwnersFile, ownersMatch, findOwners, getMaintainers };
