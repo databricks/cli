@@ -105,7 +105,7 @@ func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response 
 	deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
 	deployment.Status = &apps.AppDeploymentStatus{
 		State:   apps.AppDeploymentStateSucceeded,
-		Message: "Deployment succeeded.",
+		Message: "Deployment succeeded",
 	}
 
 	app.ActiveDeployment = &deployment
@@ -127,7 +127,7 @@ func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) 
 		DeploymentId: deploymentID,
 		Status: &apps.AppDeploymentStatus{
 			State:   apps.AppDeploymentStateSucceeded,
-			Message: "Deployment succeeded.",
+			Message: "Deployment succeeded",
 		},
 	}}
 }

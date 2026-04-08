@@ -22,7 +22,7 @@
       "mode": "SNAPSHOT",
       "source_code_path": "./app",
       "status": {
-        "message": "Deployment succeeded.",
+        "message": "Deployment succeeded",
         "state": "SUCCEEDED"
       }
     }

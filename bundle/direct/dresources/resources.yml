@@ -375,18 +375,18 @@ resources:
     recreate_on_changes:
       - field: name
         reason: immutable
-    ignore_remote_changes:
-      # lifecycle fields are managed by the planner based on compute status.
-      # When lifecycle.started is omitted from config, it should be untracked
-      # and remote changes to compute state should not cause drift.
-      - field: lifecycle
-        reason: local_only
-      - field: lifecycle.started
-        reason: local_only
     backend_defaults:
+      # lifecycle.started is derived from remote compute status in RemapState, so the
+      # remote side always has a value. When the user omits lifecycle from config,
+      # both old and new are nil and backend_defaults correctly skips the remote value.
+      # When the user explicitly sets lifecycle.started, old/new are non-nil and normal
+      # drift detection applies (e.g. detecting out-of-band stop).
+      - field: lifecycle
+      - field: lifecycle.started
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/internal/providers/pluginfw/products/app/resource_app.go#L41
       # s["compute_size"] = s["compute_size"].SetComputed()
       - field: compute_size
+        reason: output_only
       - field: app_status
         reason: output_only
       - field: compute_status
