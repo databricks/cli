@@ -547,7 +547,7 @@ func TestToken_loadToken(t *testing.T) {
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 				},
 			},
-			wantErr: "providing both a profile and host is not supported",
+			wantErr: `argument "workspace-a" cannot be combined with --host or --profile. Use the --host and --profile flags instead`,
 		},
 		{
 			name: "no args, profiles exist, non-interactive — error with profile hint",

@@ -167,11 +167,13 @@ Note: URLs containing "?" must be quoted to prevent shell interpretation.
 			return errors.New("please either configure serverless or cluster, not both")
 		}
 
-		// Resolve positional argument as profile or host.
-		if len(args) > 0 && authArguments.Host != "" {
-			return errors.New("please only provide a positional argument or --host, not both")
+		// The positional argument is a shorthand that resolves to either a
+		// profile or a host. It cannot be combined with explicit flags.
+		// Use "databricks auth login --host X --profile Y" instead.
+		if len(args) > 0 && (authArguments.Host != "" || profileName != "") {
+			return fmt.Errorf("argument %q cannot be combined with --host or --profile. Use the --host and --profile flags instead", args[0])
 		}
-		if profileName == "" && len(args) == 1 {
+		if len(args) == 1 {
 			resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args[0], profile.DefaultProfiler)
 			if err != nil {
 				return err

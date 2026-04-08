@@ -270,7 +270,7 @@ func TestLogoutProfileFlagAndPositionalArgConflict(t *testing.T) {
 	parent.AddCommand(cmd)
 	parent.SetArgs([]string{"logout", "myprofile", "--profile", "other"})
 	err := parent.Execute()
-	assert.ErrorContains(t, err, "providing both --profile and a positional argument is not supported")
+	assert.ErrorContains(t, err, `argument "myprofile" cannot be combined with --profile`)
 }
 
 func TestLogoutDeleteClearsDefaultProfile(t *testing.T) {

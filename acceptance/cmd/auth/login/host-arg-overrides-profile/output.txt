@@ -3,8 +3,8 @@
 [override-test]
 host = https://old-host.cloud.databricks.com
 
-=== Login with positional host argument (should override profile)
->>> [CLI] auth login [DATABRICKS_URL] --profile override-test
+=== Login with --host flag (should override profile)
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile override-test
 Profile override-test was successfully saved
 
 === Profile after login (host should be updated)

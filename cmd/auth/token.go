@@ -140,16 +140,17 @@ type loadTokenArgs struct {
 // the provided profiler if not explicitly provided. If the token cannot be refreshed, a helpful error message
 // is printed to the user with steps to reauthenticate.
 func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
-	// If a profile is provided we read the host from the .databrickscfg file
-	if args.profileName != "" && len(args.args) > 0 {
-		return nil, errors.New("providing both a profile and host is not supported")
+	// The positional argument is a shorthand that resolves to either a
+	// profile or a host. It cannot be combined with explicit flags.
+	if len(args.args) > 0 && (args.authArguments.Host != "" || args.profileName != "") {
+		return nil, fmt.Errorf("argument %q cannot be combined with --host or --profile. Use the --host and --profile flags instead", args.args[0])
 	}
 
 	// Resolve the positional arg as a profile name first, then as a host.
 	// Error if it matches neither. This runs before the DATABRICKS_CONFIG_PROFILE
 	// env var check so that an explicit positional argument always goes through
 	// profile-first resolution.
-	if args.profileName == "" && len(args.args) == 1 {
+	if len(args.args) == 1 {
 		resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args.args[0], args.profiler)
 		if err != nil {
 			return nil, err

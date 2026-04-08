@@ -13,10 +13,10 @@ cat "./home/.databrickscfg"
 # and follows the redirect back to localhost.
 export BROWSER="browser.py"
 
-# Login with profile but provide a different host as positional argument
-# The positional argument should override the profile's host
-title "Login with positional host argument (should override profile)"
-trace $CLI auth login $DATABRICKS_HOST --profile override-test
+# Login with profile but provide a different host via --host flag.
+# The --host flag should override the profile's stored host.
+title "Login with --host flag (should override profile)"
+trace $CLI auth login --host $DATABRICKS_HOST --profile override-test
 
 title "Profile after login (host should be updated)\n"
 cat "./home/.databrickscfg"

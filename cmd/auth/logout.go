@@ -77,11 +77,12 @@ the profile is an error.
 		profileFlag := cmd.Flag("profile")
 		profileName := profileFlag.Value.String()
 
-		// Resolve the positional argument to a profile name.
+		// The positional argument is a shorthand that resolves to either a
+		// profile or a host. It cannot be combined with explicit flags.
 		if profileFlag.Changed && len(args) == 1 {
-			return errors.New("providing both --profile and a positional argument is not supported")
+			return fmt.Errorf("argument %q cannot be combined with --profile. Use the --profile flag instead", args[0])
 		}
-		if profileName == "" && len(args) == 1 {
+		if len(args) == 1 {
 			resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args[0], profiler)
 			if err != nil {
 				return err
