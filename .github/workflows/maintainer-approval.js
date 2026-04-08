@@ -2,19 +2,19 @@ const path = require("path");
 const {
   parseOwnersFile,
   findOwners,
-  getCoreTeam,
+  getMaintainers,
 } = require("../scripts/owners");
 
 // Check if the PR author is exempted.
-// If ALL changed files are owned by non-core-team owners that include the
-// author, the PR can merge with any approval (not necessarily core team).
-function isExempted(authorLogin, files, rules, coreTeam) {
+// If ALL changed files are owned by non-maintainer owners that include the
+// author, the PR can merge with any approval (not necessarily a maintainer).
+function isExempted(authorLogin, files, rules, maintainers) {
   if (files.length === 0) return false;
-  const coreSet = new Set(coreTeam);
+  const maintainerSet = new Set(maintainers);
   for (const { filename } of files) {
     const owners = findOwners(filename, rules);
-    const nonCoreOwners = owners.filter((o) => !coreSet.has(o));
-    if (nonCoreOwners.length === 0 || !nonCoreOwners.includes(authorLogin)) {
+    const nonMaintainers = owners.filter((o) => !maintainerSet.has(o));
+    if (nonMaintainers.length === 0 || !nonMaintainers.includes(authorLogin)) {
       return false;
     }
   }
@@ -28,11 +28,11 @@ module.exports = async ({ github, context, core }) => {
     "OWNERS"
   );
   const rules = parseOwnersFile(ownersPath);
-  const coreTeam = getCoreTeam(rules);
+  const maintainers = getMaintainers(rules);
 
-  if (coreTeam.length === 0) {
+  if (maintainers.length === 0) {
     core.setFailed(
-      "Could not determine core team from .github/OWNERS (no * rule found)."
+      "Could not determine maintainers from .github/OWNERS (no * rule found)."
     );
     return;
   }
@@ -43,17 +43,17 @@ module.exports = async ({ github, context, core }) => {
     pull_number: context.issue.number,
   });
 
-  const coreTeamApproved = reviews.some(
+  const maintainerApproved = reviews.some(
     ({ state, user }) =>
-      state === "APPROVED" && user && coreTeam.includes(user.login)
+      state === "APPROVED" && user && maintainers.includes(user.login)
   );
 
-  if (coreTeamApproved) {
+  if (maintainerApproved) {
     const approver = reviews.find(
       ({ state, user }) =>
-        state === "APPROVED" && user && coreTeam.includes(user.login)
+        state === "APPROVED" && user && maintainers.includes(user.login)
     );
-    core.info(`Core team approval from @${approver.user.login}`);
+    core.info(`Maintainer approval from @${approver.user.login}`);
     return;
   }
 
@@ -67,7 +67,7 @@ module.exports = async ({ github, context, core }) => {
     pull_number: context.issue.number,
   });
 
-  if (authorLogin && isExempted(authorLogin, files, rules, coreTeam)) {
+  if (authorLogin && isExempted(authorLogin, files, rules, maintainers)) {
     const hasAnyApproval = reviews.some(({ state }) => state === "APPROVED");
     if (!hasAnyApproval) {
       core.setFailed(
@@ -78,6 +78,6 @@ module.exports = async ({ github, context, core }) => {
   }
 
   core.setFailed(
-    `Requires approval from a core team member: ${coreTeam.join(", ")}.`
+    `Requires approval from a maintainer: ${maintainers.join(", ")}.`
   );
 };

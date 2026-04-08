@@ -11,7 +11,9 @@ defaults:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
     timeout-minutes: 5
     permissions:
       pull-requests: read
