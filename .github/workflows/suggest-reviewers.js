@@ -3,6 +3,8 @@ const { execSync } = require("child_process");
 const {
   parseOwnersFile,
   findOwners,
+  getMaintainers,
+  getOwnershipGroups,
 } = require("../scripts/owners");
 
 const MENTION_REVIEWERS = true;
@@ -278,6 +280,95 @@ function buildComment(
   return lines.join("\n") + "\n";
 }
 
+function buildPerGroupComment(
+  groups,
+  scores,
+  dirScores,
+  maintainers,
+  prAuthor,
+  totalFiles
+) {
+  const authorLower = prAuthor.toLowerCase();
+  const lines = [MARKER, "## Reviewers by ownership area", ""];
+  lines.push(
+    "This PR crosses multiple ownership areas. Each area needs at least one",
+    "approval from its owners (or any maintainer can approve everything).",
+    ""
+  );
+
+  for (const [pattern, { owners, files }] of groups) {
+    if (pattern === "*") continue;
+
+    lines.push(`### \`${pattern}\``);
+    lines.push(`Files: ${files.map((f) => `\`${f}\``).join(", ")}`);
+
+    const teams = owners.filter((o) => o.includes("/"));
+    const individuals = owners.filter(
+      (o) => !o.includes("/") && o.toLowerCase() !== authorLower
+    );
+
+    if (teams.length > 0) {
+      lines.push(`Teams: ${teams.map((t) => `@${t}`).join(", ")}`);
+    }
+
+    if (individuals.length > 0) {
+      const scored = individuals
+        .map((o) => [o, scores[o] || 0])
+        .sort((a, b) => b[1] - a[1]);
+
+      if (scored[0][1] > 0) {
+        const mention = MENTION_REVIEWERS ? `@${scored[0][0]}` : scored[0][0];
+        lines.push(`Suggested: ${mention}`);
+        const rest = scored.slice(1).map(([o]) => o);
+        if (rest.length > 0) {
+          lines.push(`Also eligible: ${fmtEligible(rest)}`);
+        }
+      } else {
+        lines.push(`Eligible: ${fmtEligible(individuals)}`);
+      }
+    }
+    lines.push("");
+  }
+
+  const starGroup = groups.get("*");
+  if (starGroup) {
+    lines.push("### General files (require maintainer)");
+    lines.push(`Files: ${starGroup.files.map((f) => `\`${f}\``).join(", ")}`);
+
+    // Only suggest maintainers for wildcard files, since only they can approve.
+    const maintainerSet = new Set(maintainers.map((m) => m.toLowerCase()));
+    const maintainerScores = Object.entries(scores)
+      .filter(
+        ([login]) =>
+          login.toLowerCase() !== authorLower &&
+          maintainerSet.has(login.toLowerCase())
+      )
+      .sort((a, b) => b[1] - a[1]);
+
+    if (maintainerScores.length > 0 && maintainerScores[0][1] > 0) {
+      const [login] = maintainerScores[0];
+      const dirs = topDirs(dirScores[login]);
+      lines.push("Based on git history:");
+      lines.push(fmtReviewer(login, dirs));
+    } else {
+      lines.push(`Pick a maintainer from ${OWNERS_LINK}.`);
+    }
+    lines.push("");
+  }
+
+  const maintainerList = maintainers
+    .filter((m) => m.toLowerCase() !== authorLower)
+    .map((m) => (MENTION_REVIEWERS ? `@${m}` : m))
+    .join(", ");
+
+  lines.push(
+    `<sub>Any maintainer (${maintainerList}) can approve all areas.`,
+    `See ${OWNERS_LINK} for ownership rules.</sub>`
+  );
+
+  return lines.join("\n") + "\n";
+}
+
 async function findExistingComment(github, owner, repo, prNumber) {
   const comments = await github.paginate(github.rest.issues.listComments, {
     owner,
@@ -318,20 +409,36 @@ module.exports = async ({ github, context, core }) => {
   const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   const eligible = parseOwnersForFiles(files, ownersPath);
 
-  let roundRobin = null;
-  if (selectReviewers(sortedScores).length === 0 && eligible.length > 0) {
-    roundRobin = await selectRoundRobin(github, owner, repo, eligible, prAuthor);
-  }
+  const rulesWithTeams = parseOwnersFile(ownersPath, { includeTeams: true });
+  const groups = getOwnershipGroups(files, rulesWithTeams);
+  const maintainers = getMaintainers(rulesWithTeams);
 
-  const comment = buildComment(
-    sortedScores,
-    dirScores,
-    files.length,
-    scoredCount,
-    eligible,
-    prAuthor,
-    roundRobin
-  );
+  let comment;
+  if (groups.size >= 2) {
+    comment = buildPerGroupComment(
+      groups,
+      scores,
+      dirScores,
+      maintainers,
+      prAuthor,
+      files.length
+    );
+  } else {
+    let roundRobin = null;
+    if (selectReviewers(sortedScores).length === 0 && eligible.length > 0) {
+      roundRobin = await selectRoundRobin(github, owner, repo, eligible, prAuthor);
+    }
+
+    comment = buildComment(
+      sortedScores,
+      dirScores,
+      files.length,
+      scoredCount,
+      eligible,
+      prAuthor,
+      roundRobin
+    );
+  }
 
   core.info(comment);
 

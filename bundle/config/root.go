@@ -347,12 +347,28 @@ func (r *Root) MergeTargetOverrides(name string) error {
 			if vDefault.Kind() != dyn.KindInvalid {
 				defaultPath := varPath.Append(dyn.Key("default"))
 				root, err = dyn.SetByPath(root, defaultPath, vDefault)
+				if err != nil {
+					return root, err
+				}
+
+				// If the target explicitly sets a default value, drop any lookup from the
+				// root variable definition so SetVariables can assign this default.
+				lookupPath := varPath.Append(dyn.Key("lookup"))
+				root, err = dyn.SetByPath(root, lookupPath, dyn.NilValue)
 			}
 
 			vLookup := variable.Get("lookup")
 			if vLookup.Kind() != dyn.KindInvalid {
 				lookupPath := varPath.Append(dyn.Key("lookup"))
 				root, err = dyn.SetByPath(root, lookupPath, vLookup)
+				if err != nil {
+					return root, err
+				}
+
+				// If the target explicitly sets a lookup, drop any default value from the
+				// root variable definition so lookup resolution remains authoritative.
+				defaultPath := varPath.Append(dyn.Key("default"))
+				root, err = dyn.SetByPath(root, defaultPath, dyn.NilValue)
 			}
 
 			return root, err
