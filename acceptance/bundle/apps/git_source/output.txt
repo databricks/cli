@@ -29,7 +29,7 @@ Deployment complete!
 ✓ Starting the app [APP_NAME]
 ✓ App is starting...
 ✓ App is started!
-✓ Deployment succeeded.
+✓ Deployment succeeded
 You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 
 === Get app details and verify git_source configuration
@@ -55,7 +55,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ✓ Getting the status of the app [APP_NAME]
 ✓ App is in RUNNING state
 ✓ App compute is in ACTIVE state
-✓ Deployment succeeded.
+✓ Deployment succeeded
 You can access the app at [APP_NAME]-123.cloud.databricksapps.com
 
 === Update git_source branch and redeploy
