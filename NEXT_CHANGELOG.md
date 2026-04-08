@@ -3,8 +3,10 @@
 ## Release v0.296.0
 
 ### Notable Changes
+* Direct deployment engine for DABs is now in Public Preview. Documentation at [docs/direct.md](docs/direct.md).
 
 ### CLI
+* Auth commands now error when --profile and --host conflict ([#4841](https://github.com/databricks/cli/pull/4841))
 * Add `--force-refresh` flag to `databricks auth token` to force a token refresh even when the cached token is still valid ([#4767](https://github.com/databricks/cli/pull/4767)).
 
 ### Bundles
@@ -15,6 +17,7 @@
 * engine/direct: Fix bind and unbind for non-Terraform resources ([#4850](https://github.com/databricks/cli/pull/4850))
 * engine/direct: Fix deploying removed principals ([#4824](https://github.com/databricks/cli/pull/4824))
 * engine/direct: Fix secret scope permissions migration from Terraform to Direct engine ([#4866](https://github.com/databricks/cli/pull/4866))
+* Fix `bundle deployment bind` to always pull remote state before modifying ([#4892](https://github.com/databricks/cli/pull/4892))
 
 ### Dependency updates
 
