@@ -35,6 +35,10 @@ resources:
         reason: managed
 
     backend_defaults:
+      # Backend returns PERFORMANCE_OPTIMIZED for serverless jobs when not set
+      - field: performance_target
+        values: ["PERFORMANCE_OPTIMIZED"]
+
       # Same as clusters.enable_elastic_disk — see clusters/resource_cluster.go#L331
       # s.SchemaPath("enable_elastic_disk").SetComputed()
       - field: tasks[*].new_cluster.enable_elastic_disk
@@ -44,11 +48,6 @@ resources:
       # s.SchemaPath("enable_local_disk_encryption").SetComputed()
       - field: tasks[*].new_cluster.enable_local_disk_encryption
       - field: job_clusters[*].new_cluster.enable_local_disk_encryption
-
-      # Same as clusters.node_type_id — see clusters/resource_cluster.go#L333
-      # s.SchemaPath("node_type_id").SetComputed()
-      - field: tasks[*].new_cluster.node_type_id
-      - field: job_clusters[*].new_cluster.node_type_id
 
       # Same as clusters.driver_node_type_id — see clusters/resource_cluster.go#L334
       # s.SchemaPath("driver_node_type_id").SetComputed()
@@ -149,10 +148,6 @@ resources:
       # s.SchemaPath("storage").SetCustomSuppressDiff(suppressStorageDiff)
       # Backend generates storage path like dbfs:/pipelines/<id> when not set by user.
       - field: storage
-
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L218
-      # s.SchemaPath("cluster", "node_type_id").SetComputed()
-      - field: clusters[*].node_type_id
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L219
       # s.SchemaPath("cluster", "driver_node_type_id").SetComputed()
@@ -429,10 +424,6 @@ resources:
       # s.SchemaPath("enable_local_disk_encryption").SetComputed()
       - field: enable_local_disk_encryption
 
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L333
-      # s.SchemaPath("node_type_id").SetComputed()
-      - field: node_type_id
-
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L334
       # s.SchemaPath("driver_node_type_id").SetComputed()
       - field: driver_node_type_id
@@ -471,6 +462,10 @@ resources:
       # common.CustomizeSchemaPath(m, "min_num_clusters").SetSuppressDiff()
       - field: min_num_clusters
         reason: managed
+
+      # creator_name is output-only, not settable by user. When set produces "Error: Value for unconfigurable attribute" error
+      - field: creator_name
+        reason: output_only
 
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L69
