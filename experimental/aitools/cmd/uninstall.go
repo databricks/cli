@@ -17,7 +17,9 @@ func newUninstallCmd() *cobra.Command {
 By default, removes all skills. Use --skills to remove specific skills only.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			scope, err := resolveScope(projectFlag, globalFlag)
+			ctx := cmd.Context()
+
+			scope, err := resolveScopeForUninstall(ctx, projectFlag, globalFlag)
 			if err != nil {
 				return err
 			}
@@ -26,7 +28,7 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 				Scope: scope,
 			}
 			opts.Skills = splitAndTrim(skillsFlag)
-			return installer.UninstallSkillsOpts(cmd.Context(), opts)
+			return installer.UninstallSkillsOpts(ctx, opts)
 		},
 	}
 

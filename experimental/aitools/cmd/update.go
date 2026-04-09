@@ -1,6 +1,8 @@
 package aitools
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
@@ -24,28 +26,35 @@ preview what would change without downloading.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			scope, err := resolveScope(projectFlag, globalFlag)
+			scopes, err := resolveScopeForUpdate(ctx, projectFlag, globalFlag)
 			if err != nil {
 				return err
 			}
 
 			installed := agents.DetectInstalled(ctx)
 			src := &installer.GitHubManifestSource{}
+			skills := splitAndTrim(skillsFlag)
 
-			opts := installer.UpdateOptions{
-				Check: check,
-				Force: force,
-				NoNew: noNew,
-				Scope: scope,
-			}
-			opts.Skills = splitAndTrim(skillsFlag)
+			for _, scope := range scopes {
+				if len(scopes) > 1 {
+					cmdio.LogString(ctx, fmt.Sprintf("Updating %s skills...", scope))
+				}
 
-			result, err := installer.UpdateSkills(ctx, src, installed, opts)
-			if err != nil {
-				return err
-			}
-			if result != nil && (len(result.Updated) > 0 || len(result.Added) > 0) {
-				cmdio.LogString(ctx, installer.FormatUpdateResult(result, check))
+				opts := installer.UpdateOptions{
+					Check: check,
+					Force: force,
+					NoNew: noNew,
+					Scope: scope,
+				}
+				opts.Skills = skills
+
+				result, err := installer.UpdateSkills(ctx, src, installed, opts)
+				if err != nil {
+					return err
+				}
+				if result != nil && (len(result.Updated) > 0 || len(result.Added) > 0) {
+					cmdio.LogString(ctx, installer.FormatUpdateResult(result, check))
+				}
 			}
 			return nil
 		},

@@ -3,6 +3,7 @@ package aitools
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -14,6 +15,12 @@ import (
 
 // promptScopeSelection is a package-level var so tests can replace it with a mock.
 var promptScopeSelection = defaultPromptScopeSelection
+
+// promptUpdateScopeSelection is a package-level var for the update scope prompt (3 options: global/project/both).
+var promptUpdateScopeSelection = defaultPromptUpdateScopeSelection
+
+// promptUninstallScopeSelection is a package-level var for the uninstall scope prompt (2 options: global/project).
+var promptUninstallScopeSelection = defaultPromptUninstallScopeSelection
 
 // resolveScope validates --project and --global flags and returns the scope.
 func resolveScope(project, global bool) (string, error) {
@@ -60,6 +67,220 @@ func defaultPromptScopeSelection(ctx context.Context) (string, error) {
 	var scope string
 	err = huh.NewSelect[string]().
 		Title("Where should skills be installed?").
+		Options(
+			huh.NewOption(globalLabel, installer.ScopeGlobal),
+			huh.NewOption(projectLabel, installer.ScopeProject),
+		).
+		Value(&scope).
+		Run()
+	if err != nil {
+		return "", err
+	}
+
+	return scope, nil
+}
+
+const scopeBoth = "both"
+
+// detectInstalledScopes checks which scopes have a .state.json file present.
+func detectInstalledScopes(ctx context.Context) (global, project bool, err error) {
+	globalDir, err := installer.GlobalSkillsDir(ctx)
+	if err != nil {
+		return false, false, err
+	}
+	globalState, err := installer.LoadState(globalDir)
+	if err != nil {
+		return false, false, err
+	}
+
+	projectDir, err := installer.ProjectSkillsDir(ctx)
+	if err != nil {
+		return false, false, err
+	}
+	projectState, err := installer.LoadState(projectDir)
+	if err != nil {
+		return false, false, err
+	}
+
+	return globalState != nil, projectState != nil, nil
+}
+
+// resolveScopeForUpdate resolves scopes for the update command.
+// Returns one or more scopes to update. When both flags are set, both scopes are returned.
+func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool) ([]string, error) {
+	if projectFlag && globalFlag {
+		return []string{installer.ScopeGlobal, installer.ScopeProject}, nil
+	}
+	if projectFlag {
+		return withExplicitScopeCheck(ctx, installer.ScopeProject)
+	}
+	if globalFlag {
+		return withExplicitScopeCheck(ctx, installer.ScopeGlobal)
+	}
+
+	// No flags: auto-detect.
+	hasGlobal, hasProject, err := detectInstalledScopes(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	switch {
+	case hasGlobal && hasProject:
+		if !cmdio.IsPromptSupported(ctx) {
+			return nil, errors.New("skills are installed in both global and project scopes; use --global, --project, or both flags to specify which to update")
+		}
+		scopes, err := promptUpdateScopeSelection(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return scopes, nil
+
+	case hasGlobal:
+		return []string{installer.ScopeGlobal}, nil
+
+	case hasProject:
+		return []string{installer.ScopeProject}, nil
+
+	default:
+		return nil, errors.New("no skills installed. Run 'databricks experimental aitools install' to install")
+	}
+}
+
+// resolveScopeForUninstall resolves the scope for the uninstall command.
+// Unlike update, uninstall never allows "both" scopes at once.
+func resolveScopeForUninstall(ctx context.Context, projectFlag, globalFlag bool) (string, error) {
+	if projectFlag && globalFlag {
+		return "", errors.New("cannot uninstall both scopes at once; run uninstall separately for --global and --project")
+	}
+	if projectFlag {
+		scopes, err := withExplicitScopeCheck(ctx, installer.ScopeProject)
+		if err != nil {
+			return "", err
+		}
+		return scopes[0], nil
+	}
+	if globalFlag {
+		scopes, err := withExplicitScopeCheck(ctx, installer.ScopeGlobal)
+		if err != nil {
+			return "", err
+		}
+		return scopes[0], nil
+	}
+
+	// No flags: auto-detect.
+	hasGlobal, hasProject, err := detectInstalledScopes(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	switch {
+	case hasGlobal && hasProject:
+		if !cmdio.IsPromptSupported(ctx) {
+			return "", errors.New("skills are installed in both global and project scopes; use --global or --project to specify which to uninstall")
+		}
+		scope, err := promptUninstallScopeSelection(ctx)
+		if err != nil {
+			return "", err
+		}
+		return scope, nil
+
+	case hasGlobal:
+		return installer.ScopeGlobal, nil
+
+	case hasProject:
+		return installer.ScopeProject, nil
+
+	default:
+		return "", errors.New("no skills installed")
+	}
+}
+
+// withExplicitScopeCheck validates that the explicitly requested scope has an installation.
+// Returns a helpful error with CWD guidance for project scope.
+func withExplicitScopeCheck(ctx context.Context, scope string) ([]string, error) {
+	var dir string
+	var err error
+
+	if scope == installer.ScopeProject {
+		dir, err = installer.ProjectSkillsDir(ctx)
+	} else {
+		dir, err = installer.GlobalSkillsDir(ctx)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	state, err := installer.LoadState(dir)
+	if err != nil {
+		return nil, err
+	}
+	if state == nil {
+		if scope == installer.ScopeProject {
+			cwd, _ := os.Getwd()
+			return nil, fmt.Errorf("no project-scoped skills installed in %s. Make sure you're in the project root where skills were installed", cwd)
+		}
+		return nil, errors.New("no globally-scoped skills installed. Run 'databricks experimental aitools install --global' to install")
+	}
+
+	return []string{scope}, nil
+}
+
+func defaultPromptUpdateScopeSelection(ctx context.Context) ([]string, error) {
+	homeDir, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return nil, err
+	}
+	globalPath := filepath.Join(homeDir, ".databricks", "aitools", "skills")
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	projectPath := filepath.Join(cwd, ".databricks", "aitools", "skills")
+
+	globalLabel := "Global (" + globalPath + "/)"
+	projectLabel := "Project (" + projectPath + "/)"
+	bothLabel := "Both global and project"
+
+	var scope string
+	err = huh.NewSelect[string]().
+		Title("Which installation should be updated?").
+		Options(
+			huh.NewOption(globalLabel, installer.ScopeGlobal),
+			huh.NewOption(projectLabel, installer.ScopeProject),
+			huh.NewOption(bothLabel, scopeBoth),
+		).
+		Value(&scope).
+		Run()
+	if err != nil {
+		return nil, err
+	}
+
+	if scope == scopeBoth {
+		return []string{installer.ScopeGlobal, installer.ScopeProject}, nil
+	}
+	return []string{scope}, nil
+}
+
+func defaultPromptUninstallScopeSelection(ctx context.Context) (string, error) {
+	homeDir, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	globalPath := filepath.Join(homeDir, ".databricks", "aitools", "skills")
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	projectPath := filepath.Join(cwd, ".databricks", "aitools", "skills")
+
+	globalLabel := "Global (" + globalPath + "/)"
+	projectLabel := "Project (" + projectPath + "/)"
+
+	var scope string
+	err = huh.NewSelect[string]().
+		Title("Which installation should be uninstalled?").
 		Options(
 			huh.NewOption(globalLabel, installer.ScopeGlobal),
 			huh.NewOption(projectLabel, installer.ScopeProject),
