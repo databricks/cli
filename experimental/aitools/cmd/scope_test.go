@@ -13,16 +13,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupScopeTest(t *testing.T) (homeDir string, projectDir string) {
+func setupScopeTest(t *testing.T) (homeDir, projectDir string) {
 	t.Helper()
 	homeDir = t.TempDir()
 	t.Setenv("HOME", homeDir)
 
 	projectDir = t.TempDir()
-	origDir, err := os.Getwd()
-	require.NoError(t, err)
-	require.NoError(t, os.Chdir(projectDir))
-	t.Cleanup(func() { os.Chdir(origDir) })
+	t.Chdir(projectDir)
 
 	return homeDir, projectDir
 }
