@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/retries"
 )
 
@@ -68,10 +69,9 @@ func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 // Examples: "resources[0].name" -> "resources", "description" -> "description",
 // "config.env[0].name" -> "config.env".
 func truncateAtIndex(path string) string {
-	for i, c := range path {
-		if c == '[' {
-			return path[:i]
-		}
+	p, err := structpath.ParsePath(path)
+	if err != nil {
+		return path
 	}
-	return path
+	return p.Prefix(1).String()
 }

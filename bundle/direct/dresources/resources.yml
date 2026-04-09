@@ -383,32 +383,6 @@ resources:
       # drift detection applies (e.g. detecting out-of-band stop).
       - field: lifecycle
       - field: lifecycle.started
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/internal/providers/pluginfw/products/app/resource_app.go#L41
-      # s["compute_size"] = s["compute_size"].SetComputed()
-      - field: compute_size
-        reason: output_only
-      - field: app_status
-        reason: output_only
-      - field: compute_status
-        reason: output_only
-      - field: url
-        reason: output_only
-      - field: service_principal_client_id
-        reason: output_only
-      - field: service_principal_id
-        reason: output_only
-      - field: service_principal_name
-        reason: output_only
-      - field: create_time
-        reason: output_only
-      - field: update_time
-        reason: output_only
-      - field: creator
-        reason: output_only
-      - field: updater
-        reason: output_only
-      - field: effective_budget_policy_id
-        reason: output_only
 
   secret_scopes:
     backend_defaults:
