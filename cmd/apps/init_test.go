@@ -1,15 +1,15 @@
 package apps
 
 import (
-	"bytes"
+	"context"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -624,44 +624,33 @@ func TestAppendUniqueNoValues(t *testing.T) {
 	assert.Equal(t, []string{"a", "b"}, result)
 }
 
+func runManifestCommand(t *testing.T, ctx context.Context, args ...string) string {
+	t.Helper()
+
+	ctx, stdout := cmdio.NewTestContextWithStdout(ctx)
+	cmd := newManifestCmd()
+	cmd.SetContext(ctx)
+	cmd.SetOut(stdout)
+	cmd.SetArgs(args)
+
+	require.NoError(t, cmd.Execute())
+	return stdout.String()
+}
+
 func TestRunManifestOnlyFound(t *testing.T) {
 	dir := t.TempDir()
 	manifestPath := filepath.Join(dir, manifest.ManifestFileName)
 	content := `{"$schema":"https://example.com/schema","version":"1.0","plugins":{"analytics":{"name":"analytics","resources":{"required":[],"optional":[]}}}}`
 	require.NoError(t, os.WriteFile(manifestPath, []byte(content), 0o644))
 
-	old := os.Stdout
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-	os.Stdout = w
-
-	err = runManifestOnly(t.Context(), dir, "", "")
-	w.Close()
-	os.Stdout = old
-	require.NoError(t, err)
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	out := buf.String()
+	out := runManifestCommand(t, t.Context(), "--template", dir)
 	assert.Equal(t, content, out)
 }
 
 func TestRunManifestOnlyNotFound(t *testing.T) {
 	dir := t.TempDir()
 
-	old := os.Stdout
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-	os.Stdout = w
-
-	err = runManifestOnly(t.Context(), dir, "", "")
-	w.Close()
-	os.Stdout = old
-	require.NoError(t, err)
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	out := buf.String()
+	out := runManifestCommand(t, t.Context(), "--template", dir)
 	assert.Equal(t, "No appkit.plugins.json manifest found in this template.\n", out)
 }
 
@@ -671,19 +660,7 @@ func TestRunManifestOnlyUsesTemplatePathEnvVar(t *testing.T) {
 	content := `{"version":"1.0","scaffolding":{"command":"databricks apps init"}}`
 	require.NoError(t, os.WriteFile(manifestPath, []byte(content), 0o644))
 
-	old := os.Stdout
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-	os.Stdout = w
-
 	ctx := env.Set(t.Context(), templatePathEnvVar, dir)
-	err = runManifestOnly(ctx, "", "", "")
-	w.Close()
-	os.Stdout = old
-	require.NoError(t, err)
-
-	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, r)
-	out := buf.String()
+	out := runManifestCommand(t, ctx)
 	assert.Equal(t, content, out)
 }

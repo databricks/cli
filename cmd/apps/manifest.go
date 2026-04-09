@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -13,7 +14,7 @@ import (
 )
 
 // runManifestOnly resolves the template, loads appkit.plugins.json if present, and prints it to stdout (or a message if not found).
-func runManifestOnly(ctx context.Context, templatePath, branch, version string) error {
+func runManifestOnly(ctx context.Context, out io.Writer, templatePath, branch, version string) error {
 	templateSrc := templatePath
 	if templateSrc == "" {
 		templateSrc = env.Get(ctx, templatePathEnvVar)
@@ -59,14 +60,14 @@ func runManifestOnly(ctx context.Context, templatePath, branch, version string) 
 		if err != nil {
 			return fmt.Errorf("read manifest: %w", err)
 		}
-		_, err = os.Stdout.Write(data)
+		_, err = out.Write(data)
 		if err != nil {
 			return fmt.Errorf("write manifest: %w", err)
 		}
 		return nil
 	}
 
-	fmt.Fprintln(os.Stdout, "No appkit.plugins.json manifest found in this template.")
+	fmt.Fprintln(out, "No appkit.plugins.json manifest found in this template.")
 	return nil
 }
 
@@ -102,7 +103,7 @@ Examples:
 			if cmd.Flags().Changed("branch") && cmd.Flags().Changed("version") {
 				return errors.New("--branch and --version are mutually exclusive")
 			}
-			return runManifestOnly(ctx, templatePath, branch, version)
+			return runManifestOnly(ctx, cmd.OutOrStdout(), templatePath, branch, version)
 		},
 	}
 
