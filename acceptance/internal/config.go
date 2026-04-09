@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"hash/fnv"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -427,17 +428,66 @@ func filterExcludedEnvSets(envSets [][]string, exclude map[string][]string) [][]
 	return filtered
 }
 
+// SubsetExpanded selects one variant per DATABRICKS_BUNDLE_ENGINE value (if scriptUsesEngine)
+// or one variant total from an already-expanded and exclusion-filtered list.
+// DATABRICKS_BUNDLE_ENGINE=direct has weight 10; all other variants have weight 1.
+func SubsetExpanded(expanded [][]string, testDir string, scriptUsesEngine bool) [][]string {
+	if len(expanded) <= 1 {
+		return expanded
+	}
+	if scriptUsesEngine {
+		// Collect candidates per engine key, preserving first-seen order.
+		// keyToIdx maps engine value -> index in result/groups slices.
+		var result [][]string
+		var groups [][][]string
+		keyToIdx := make(map[string]int)
+		for _, envset := range expanded {
+			engine := ""
+			for _, kv := range envset {
+				if v, ok := strings.CutPrefix(kv, "DATABRICKS_BUNDLE_ENGINE="); ok {
+					engine = v
+					break
+				}
+			}
+			idx, ok := keyToIdx[engine]
+			if !ok {
+				idx = len(result)
+				keyToIdx[engine] = idx
+				result = append(result, nil)
+				groups = append(groups, nil)
+			}
+			groups[idx] = append(groups[idx], envset)
+		}
+		for i, group := range groups {
+			result[i] = weightedSelect(group, testDir)
+		}
+		return result
+	}
+	return [][]string{weightedSelect(expanded, testDir)}
+}
+
+// weightedSelect picks one envset using weighted consistent hashing.
+// DATABRICKS_BUNDLE_ENGINE=direct has weight 10; all other envsets have weight 1.
+func weightedSelect(envsets [][]string, testDir string) []string {
+	var weighted [][]string
+	for _, envset := range envsets {
+		weight := 1
+		if slices.Contains(envset, "DATABRICKS_BUNDLE_ENGINE=direct") {
+			weight = 10
+		}
+		for range weight {
+			weighted = append(weighted, envset)
+		}
+	}
+	h := fnv.New64a()
+	h.Write([]byte(testDir))
+	return weighted[h.Sum64()%uint64(len(weighted))]
+}
+
 // matchesExclusionRule returns true if envSet contains all KEY=value pairs from excludeRule.
 func matchesExclusionRule(envSet, excludeRule []string) bool {
 	for _, excludePair := range excludeRule {
-		found := false
-		for _, envPair := range envSet {
-			if envPair == excludePair {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(envSet, excludePair) {
 			return false
 		}
 	}

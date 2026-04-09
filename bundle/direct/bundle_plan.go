@@ -168,19 +168,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		if entry.Action == deployplan.Delete {
-			dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
-			if !hasEntry {
+			id := b.StateDB.GetResourceID(resourceKey)
+			if id == "" {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
 				return false
 			}
 
-			remoteState, err := adapter.DoRead(ctx, dbentry.ID)
+			remoteState, err := adapter.DoRead(ctx, id)
 			if err != nil {
 				if isResourceGone(err) {
 					// no such resource
 					plan.RemoveEntry(resourceKey)
 				} else {
-					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, dbentry.ID, err)
+					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, id, err)
 					// This is not an error during deletion, so don't return false here
 				}
 			}
@@ -605,12 +605,11 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	if fieldPathS == "id" {
 		if targetAction.KeepsID() {
-			dbentry, hasEntry := b.StateDB.GetResourceEntry(targetResourceKey)
-			idValue := dbentry.ID
-			if !hasEntry || idValue == "" {
+			id := b.StateDB.GetResourceID(targetResourceKey)
+			if id == "" {
 				return nil, errors.New("internal error: no db entry")
 			}
-			return idValue, nil
+			return id, nil
 		}
 		// id may change after deployment, this needs to be done later
 		return nil, errDelayed

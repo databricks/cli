@@ -84,7 +84,7 @@ func (db *DeploymentState) DeleteState(key string) error {
 	return nil
 }
 
-func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
+func (db *DeploymentState) getResourceEntry(key string) (ResourceEntry, bool) {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -95,6 +95,17 @@ func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
 
 	result, ok := db.Data.State[key]
 	return result, ok
+}
+
+// GetResourceEntry returns the full resource entry for the given key.
+func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
+	return db.getResourceEntry(key)
+}
+
+// GetResourceID returns the ID of the resource for the given key, or an empty string if not found.
+func (db *DeploymentState) GetResourceID(key string) string {
+	entry, _ := db.getResourceEntry(key)
+	return entry.ID
 }
 
 func (db *DeploymentState) Open(path string) error {

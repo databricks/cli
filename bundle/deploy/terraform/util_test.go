@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseResourcesStateWithNoFile(t *testing.T) {
@@ -93,4 +94,68 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 		"resources.pipelines.test_pipeline": {ID: "123"},
 	}
 	assert.Equal(t, expected, state)
+}
+
+func TestParseResourcesStateSecretScopeWithAcls(t *testing.T) {
+	ctx := t.Context()
+	data := []byte(`{
+		"version": 4,
+		"resources": [
+		{
+			"mode": "managed",
+			"type": "databricks_secret_scope",
+			"name": "my_scope",
+			"instances": [{"attributes": {"id": "123", "name": "actual-scope-name"}}]
+		},
+		{
+			"mode": "managed",
+			"type": "databricks_secret_acl",
+			"name": "secret_acl_my_scope_0",
+			"instances": [{"attributes": {"id": "actual-scope-name|||user@example.com"}}]
+		},
+		{
+			"mode": "managed",
+			"type": "databricks_secret_acl",
+			"name": "secret_acl_my_scope_1",
+			"instances": [{"attributes": {"id": "actual-scope-name|||data-team"}}]
+		}
+		]
+	}`)
+	path := filepath.Join(t.TempDir(), "state.json")
+	require.NoError(t, os.WriteFile(path, data, 0o600))
+
+	state, err := parseResourcesState(ctx, path)
+	require.NoError(t, err)
+
+	assert.Equal(t, ExportedResourcesMap{
+		"resources.secret_scopes.my_scope":             {ID: "actual-scope-name"},
+		"resources.secret_scopes.my_scope.permissions": {ID: "actual-scope-name"},
+	}, state)
+}
+
+func TestParseResourcesStateSecretScopeWithoutAcls(t *testing.T) {
+	ctx := t.Context()
+	data := []byte(`{
+		"version": 4,
+		"resources": [
+		{
+			"mode": "managed",
+			"type": "databricks_secret_scope",
+			"name": "my_scope",
+			"instances": [{"attributes": {"id": "123", "name": "my-scope-name"}}]
+		}
+		]
+	}`)
+	path := filepath.Join(t.TempDir(), "state.json")
+	require.NoError(t, os.WriteFile(path, data, 0o600))
+
+	state, err := parseResourcesState(ctx, path)
+	require.NoError(t, err)
+
+	// Even without ACLs, a .permissions entry is created for every secret scope,
+	// so the direct engine doesn't plan a phantom "create" after migration.
+	assert.Equal(t, ExportedResourcesMap{
+		"resources.secret_scopes.my_scope":             {ID: "my-scope-name"},
+		"resources.secret_scopes.my_scope.permissions": {ID: "my-scope-name"},
+	}, state)
 }

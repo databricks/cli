@@ -2,15 +2,14 @@ trace $CLI bundle init experimental-jobs-as-code --config-file ./input.json --ou
 
 cd output/my_jobs_as_code
 
-# silence uv output because it's non-deterministic
-#
-# with -f we add pre-build wheel, in addition to PyPi index,
-# if PyPi package is not yet published, it will be used instead
-uv -q sync -f $(dirname $DATABRICKS_BUNDLES_WHEEL)
+# with -f we add pre-built wheel, in addition to vendored packages;
+# if PyPi package is not yet published, it will be used instead.
+# Note: -f overrides UV_FIND_LINKS, so we must pass vendored dir explicitly.
+uv -q sync --no-index -f $VENDORED_PY_PACKAGES -f $(dirname $DATABRICKS_BUNDLES_WHEEL)
 
 trace $CLI bundle validate -t dev --output json | jq ".resources"
 
-uv build -q
+uv build -q --no-index
 trace unzip -Z1 dist/my_jobs_as_code-0.0.1-py3-none-any.whl
 
 rm -fr .venv resources/__pycache__ uv.lock src/my_jobs_as_code.egg-info dist

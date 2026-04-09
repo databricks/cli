@@ -2,11 +2,13 @@ package vscode
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
@@ -428,45 +430,59 @@ func TestUpdateSettings_PartialUpdate(t *testing.T) {
 	assert.Len(t, exts, 2)
 }
 
-func TestBackupSettings(t *testing.T) {
+func TestCheckAndUpdateSettings_CreatesBackup(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("path setup differs on windows")
+	}
+
 	tmpDir := t.TempDir()
-	settingsPath := filepath.Join(tmpDir, "settings.json")
-	originalBak := settingsPath + ".original.bak"
-	latestBak := settingsPath + ".latest.bak"
+	t.Setenv("HOME", tmpDir)
 
-	originalContent := []byte(`{"key": "value"}`)
-	err := os.WriteFile(settingsPath, originalContent, 0o600)
+	ctx, tst := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer tst.Done()
+
+	settingsPath, err := getDefaultSettingsPath(ctx, "cursor")
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Dir(settingsPath), 0o755))
+
+	// Settings file with no Databricks-required keys → triggers an update prompt.
+	originalContent := []byte(`{}`)
+	require.NoError(t, os.WriteFile(settingsPath, originalContent, 0o600))
+
+	// Drain stderr (where the prompt is written) and feed "y" to stdin.
+	go func() { _, _ = io.Copy(io.Discard, tst.Stderr) }()
+	go func() {
+		_, _ = tst.Stdin.WriteString("y\n")
+		_ = tst.Stdin.Flush()
+	}()
+
+	err = CheckAndUpdateSettings(ctx, "cursor", "my-host")
 	require.NoError(t, err)
 
-	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
+	originalBakContent, err := os.ReadFile(settingsPath + fileutil.SuffixOriginalBak)
+	require.NoError(t, err)
+	assert.Equal(t, originalContent, originalBakContent)
 
-	// First backup: should create .original.bak
-	err = backupSettings(ctx, settingsPath)
+	// Second update for a new connection triggers another backup into .latest.bak.
+	postFirstContent, err := os.ReadFile(settingsPath)
 	require.NoError(t, err)
 
-	content, err := os.ReadFile(originalBak)
-	require.NoError(t, err)
-	assert.Equal(t, originalContent, content)
-	_, err = os.Stat(latestBak)
-	assert.True(t, os.IsNotExist(err))
+	go func() {
+		_, _ = tst.Stdin.WriteString("y\n")
+		_ = tst.Stdin.Flush()
+	}()
 
-	// Second backup: .original.bak exists, should create .latest.bak
-	updatedContent := []byte(`{"key": "updated"}`)
-	err = os.WriteFile(settingsPath, updatedContent, 0o600)
+	err = CheckAndUpdateSettings(ctx, "cursor", "my-host-2")
 	require.NoError(t, err)
 
-	err = backupSettings(ctx, settingsPath)
+	latestBakContent, err := os.ReadFile(settingsPath + fileutil.SuffixLatestBak)
 	require.NoError(t, err)
+	assert.Equal(t, postFirstContent, latestBakContent)
 
-	// .original.bak must remain unchanged
-	content, err = os.ReadFile(originalBak)
+	// .original.bak must still hold the very first snapshot.
+	originalBakContent2, err := os.ReadFile(settingsPath + fileutil.SuffixOriginalBak)
 	require.NoError(t, err)
-	assert.Equal(t, originalContent, content)
-
-	// .latest.bak should have the updated content
-	content, err = os.ReadFile(latestBak)
-	require.NoError(t, err)
-	assert.Equal(t, updatedContent, content)
+	assert.Equal(t, originalContent, originalBakContent2)
 }
 
 func TestSaveSettings_Formatting(t *testing.T) {

@@ -64,6 +64,7 @@ OK  	destroy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USE
 OK  	destroy.terraform	/api/2.0/workspace/delete	engine/terraform
 MISS	destroy.terraform	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
 MISS	destroy.terraform	/api/2.1/unity-catalog/schemas/mycatalog.myschema	'databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
+MISS	destroy.terraform	/api/2.1/unity-catalog/current-metastore-assignment	'databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	destroy.terraform	/api/2.1/unity-catalog/schemas/mycatalog.myschema	'databricks-tf-provider/1.111.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
 MISS	plan.direct	/api/2.0/preview/scim/v2/Me	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	plan.direct	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'

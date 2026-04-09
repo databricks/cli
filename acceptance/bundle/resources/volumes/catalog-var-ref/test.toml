@@ -1,0 +1,8 @@
+Badness = "No depends_on for volume resource"
+
+Local = true
+Cloud = false
+RecordRequests = false
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]
