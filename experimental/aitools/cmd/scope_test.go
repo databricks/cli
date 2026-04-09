@@ -148,18 +148,20 @@ func TestResolveScopeForUpdateBothFlagsOnlyProjectInstalled(t *testing.T) {
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
+	// Global always passes through, project state found.
 	scopes, err := resolveScopeForUpdate(ctx, true, true)
 	require.NoError(t, err)
-	assert.Equal(t, []string{installer.ScopeProject}, scopes)
+	assert.Equal(t, []string{installer.ScopeGlobal, installer.ScopeProject}, scopes)
 }
 
 func TestResolveScopeForUpdateBothFlagsNeitherInstalled(t *testing.T) {
 	setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := resolveScopeForUpdate(ctx, true, true)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no skills installed")
+	// Global always passes through, project check fails silently.
+	scopes, err := resolveScopeForUpdate(ctx, true, true)
+	require.NoError(t, err)
+	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
 
 func TestResolveScopeForUpdateProjectFlagWithState(t *testing.T) {
@@ -198,10 +200,10 @@ func TestResolveScopeForUpdateGlobalFlagNoInstall(t *testing.T) {
 	setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := resolveScopeForUpdate(ctx, false, true)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no globally-scoped skills installed")
-	assert.Contains(t, err.Error(), "install --global")
+	// Global flag always passes through to installer layer (for legacy install detection).
+	scopes, err := resolveScopeForUpdate(ctx, false, true)
+	require.NoError(t, err)
+	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
 
 func TestResolveScopeForUpdateNoFlagsGlobalOnly(t *testing.T) {
@@ -315,9 +317,10 @@ func TestResolveScopeForUninstallGlobalFlagNoInstall(t *testing.T) {
 	setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := resolveScopeForUninstall(ctx, false, true)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no globally-scoped skills installed")
+	// Global flag always passes through to installer layer (for legacy install detection).
+	scope, err := resolveScopeForUninstall(ctx, false, true)
+	require.NoError(t, err)
+	assert.Equal(t, installer.ScopeGlobal, scope)
 }
 
 func TestResolveScopeForUninstallNoFlagsGlobalOnly(t *testing.T) {
@@ -392,7 +395,7 @@ func TestWithExplicitScopeCheckProjectPresent(t *testing.T) {
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	scopes, err := withExplicitScopeCheck(ctx, installer.ScopeProject)
+	scopes, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "update")
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeProject}, scopes)
 }
@@ -402,7 +405,7 @@ func TestWithExplicitScopeCheckGlobalPresent(t *testing.T) {
 	installGlobalState(t, homeDir)
 	ctx := nonInteractiveCtx(t)
 
-	scopes, err := withExplicitScopeCheck(ctx, installer.ScopeGlobal)
+	scopes, err := withExplicitScopeCheck(ctx, installer.ScopeGlobal, "update")
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
@@ -411,7 +414,7 @@ func TestWithExplicitScopeCheckProjectMissing(t *testing.T) {
 	setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject)
+	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "update")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no project-scoped skills found")
 	assert.Contains(t, err.Error(), "install --project")
@@ -422,7 +425,7 @@ func TestWithExplicitScopeCheckGlobalMissing(t *testing.T) {
 	setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeGlobal)
+	_, err := withExplicitScopeCheck(ctx, installer.ScopeGlobal, "update")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no globally-scoped skills installed")
 	assert.Contains(t, err.Error(), "install --global")
@@ -430,15 +433,26 @@ func TestWithExplicitScopeCheckGlobalMissing(t *testing.T) {
 
 // --- cross-scope hint tests ---
 
-func TestWithExplicitScopeCheckProjectMissingHintsGlobal(t *testing.T) {
+func TestWithExplicitScopeCheckProjectMissingHintsGlobalUpdate(t *testing.T) {
 	homeDir, _ := setupScopeTest(t)
 	installGlobalState(t, homeDir)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject)
+	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "update")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Global skills are installed")
-	assert.Contains(t, err.Error(), "without --project")
+	assert.Contains(t, err.Error(), "without --project to update those")
+}
+
+func TestWithExplicitScopeCheckProjectMissingHintsGlobalUninstall(t *testing.T) {
+	homeDir, _ := setupScopeTest(t)
+	installGlobalState(t, homeDir)
+	ctx := nonInteractiveCtx(t)
+
+	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "uninstall")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Global skills are installed")
+	assert.Contains(t, err.Error(), "without --project to uninstall those")
 }
 
 func TestWithExplicitScopeCheckGlobalMissingHintsProject(t *testing.T) {
@@ -446,18 +460,84 @@ func TestWithExplicitScopeCheckGlobalMissingHintsProject(t *testing.T) {
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeGlobal)
+	_, err := withExplicitScopeCheck(ctx, installer.ScopeGlobal, "update")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Project-scoped skills are installed")
-	assert.Contains(t, err.Error(), "without --global")
+	assert.Contains(t, err.Error(), "without --global to update those")
 }
 
 func TestWithExplicitScopeCheckNoHintWhenNeitherInstalled(t *testing.T) {
 	setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject)
+	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "update")
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), "Global skills are installed")
 	assert.NotContains(t, err.Error(), "Project-scoped skills are installed")
+}
+
+// --- legacy global install passthrough tests ---
+
+func TestResolveScopeForUpdateGlobalFlagLegacyInstall(t *testing.T) {
+	homeDir, _ := setupScopeTest(t)
+	// Create skill directories on disk but no .state.json (legacy install).
+	globalDir := filepath.Join(homeDir, ".databricks", "aitools", "skills", "some-skill")
+	require.NoError(t, os.MkdirAll(globalDir, 0o755))
+	ctx := nonInteractiveCtx(t)
+
+	// Global flag should pass through to installer layer, not block on missing state.
+	scopes, err := resolveScopeForUpdate(ctx, false, true)
+	require.NoError(t, err)
+	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
+}
+
+func TestResolveScopeForUninstallGlobalFlagLegacyInstall(t *testing.T) {
+	homeDir, _ := setupScopeTest(t)
+	// Create skill directories on disk but no .state.json (legacy install).
+	globalDir := filepath.Join(homeDir, ".databricks", "aitools", "skills", "some-skill")
+	require.NoError(t, os.MkdirAll(globalDir, 0o755))
+	ctx := nonInteractiveCtx(t)
+
+	// Global flag should pass through to installer layer, not block on missing state.
+	scope, err := resolveScopeForUninstall(ctx, false, true)
+	require.NoError(t, err)
+	assert.Equal(t, installer.ScopeGlobal, scope)
+}
+
+func TestResolveScopeForUpdateBothFlagsLegacyGlobal(t *testing.T) {
+	homeDir, projectDir := setupScopeTest(t)
+	// Global has a legacy install (dirs on disk, no state), project has state.
+	globalDir := filepath.Join(homeDir, ".databricks", "aitools", "skills", "some-skill")
+	require.NoError(t, os.MkdirAll(globalDir, 0o755))
+	installProjectState(t, projectDir)
+	ctx := nonInteractiveCtx(t)
+
+	// Global passes through (for legacy detection), project has state so it's included.
+	scopes, err := resolveScopeForUpdate(ctx, true, true)
+	require.NoError(t, err)
+	assert.Equal(t, []string{installer.ScopeGlobal, installer.ScopeProject}, scopes)
+}
+
+// --- uninstall cross-scope hint verb tests ---
+
+func TestResolveScopeForUninstallProjectFlagHintsUninstall(t *testing.T) {
+	homeDir, _ := setupScopeTest(t)
+	installGlobalState(t, homeDir)
+	ctx := nonInteractiveCtx(t)
+
+	// Project flag with no project state should hint about global using "uninstall" verb.
+	_, err := resolveScopeForUninstall(ctx, true, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "without --project to uninstall those")
+}
+
+func TestResolveScopeForUpdateProjectFlagHintsUpdate(t *testing.T) {
+	homeDir, _ := setupScopeTest(t)
+	installGlobalState(t, homeDir)
+	ctx := nonInteractiveCtx(t)
+
+	// Project flag with no project state should hint about global using "update" verb.
+	_, err := resolveScopeForUpdate(ctx, true, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "without --project to update those")
 }
