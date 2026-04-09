@@ -137,9 +137,6 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 		if err := deployBundle.StateDB.Open(statePath); err != nil {
 			return nil, fmt.Errorf("failed to open state: %w", err)
 		}
-		defer func() {
-			_ = deployBundle.StateDB.Finalize()
-		}()
 	}
 
 	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)

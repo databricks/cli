@@ -13,5 +13,6 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit
 
+Updating deployment state...
 
 Exit code: 1

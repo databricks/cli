@@ -91,14 +91,14 @@ Deployment complete!
 
 >>> print_state.py
 3
-13
+15
 contains error: '12' not found in the output.
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
 [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=13 lineage="test-lineage"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=15 lineage="test-lineage"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
 [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
-resources.json: remote direct state serial=13 lineage="test-lineage"
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=13 lineage="test-lineage"
+resources.json: remote direct state serial=15 lineage="test-lineage"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=15 lineage="test-lineage"

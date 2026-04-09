@@ -181,11 +181,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
-			defer func() {
-				if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
-					logdiag.LogError(ctx, err)
-				}
-			}()
 		}
 
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.

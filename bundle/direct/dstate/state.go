@@ -18,10 +18,9 @@ import (
 const currentStateVersion = 2
 
 type DeploymentState struct {
-	Path     string
-	Data     Database
-	mu       sync.Mutex
-	modified bool
+	Path string
+	Data Database
+	mu   sync.Mutex
 }
 
 type Database struct {
@@ -68,7 +67,6 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		DependsOn: dependsOn,
 	}
 
-	db.modified = true
 	return nil
 }
 
@@ -81,13 +79,8 @@ func (db *DeploymentState) DeleteState(key string) error {
 		return nil
 	}
 
-	if _, ok := db.Data.State[key]; !ok {
-		return nil
-	}
-
 	delete(db.Data.State, key)
 
-	db.modified = true
 	return nil
 }
 
@@ -147,16 +140,9 @@ func (db *DeploymentState) Open(path string) error {
 	return nil
 }
 
-// Finalize writes the state to disk if it was modified since Open or the last Finalize.
-// It increments the serial number and generates a lineage UUID on first save.
-// It is a no-op if the state was not modified.
 func (db *DeploymentState) Finalize() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-
-	if !db.modified {
-		return nil
-	}
 
 	// Generate lineage on first save
 	if db.Data.Lineage == "" {
@@ -165,14 +151,7 @@ func (db *DeploymentState) Finalize() error {
 
 	db.Data.Serial++
 
-	if err := db.unlockedSave(); err != nil {
-		// Restore serial so a retry doesn't double-increment.
-		db.Data.Serial--
-		return err
-	}
-
-	db.modified = false
-	return nil
+	return db.unlockedSave()
 }
 
 func (db *DeploymentState) AssertOpened() {
