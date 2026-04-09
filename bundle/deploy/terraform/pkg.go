@@ -133,6 +133,7 @@ var GroupToTerraformName = map[string]string{
 	// 3 level groups: resources.*.GROUP
 	"permissions": "databricks_permissions",
 	"grants":      "databricks_grants",
+	"secret_acls": "databricks_secret_acl",
 }
 
 var TerraformToGroupName = func() map[string]string {
