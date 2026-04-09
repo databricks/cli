@@ -1,0 +1,15 @@
+# Verify that unbind respects bundle.engine config setting.
+#
+# bundle.engine is set to "direct" in databricks.yml.
+# Both deploy and unbind should use the direct engine.
+
+trace $CLI bundle deploy
+
+echo "=== State files after deploy ==="
+find.py 'resources\.json|terraform\.tfstate$'
+
+# Unbind uses direct engine (reads bundle.engine from config).
+trace $CLI bundle deployment unbind job_1
+
+echo "=== State files after unbind ==="
+find.py 'resources\.json|terraform\.tfstate$'

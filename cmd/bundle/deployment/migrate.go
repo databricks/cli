@@ -133,8 +133,6 @@ lineage and incremented serial number.
 
 Note, the migration is performed locally only. To finalize it, run 'bundle deploy'. This will synchronize the state file
 to the workspace so that subsequent deploys of this bundle use direct deployment engine as well.
-
-WARNING: Both direct deployment engine and this command are experimental and not recommended for production targets yet.
 `,
 		Args: root.NoArgs,
 	}

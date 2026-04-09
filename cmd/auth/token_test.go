@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"testing"
@@ -797,4 +799,28 @@ func (e errProfiler) LoadProfiles(context.Context, profile.ProfileMatchFunction)
 
 func (e errProfiler) GetPath(context.Context) (string, error) {
 	return "<error>", nil
+}
+
+func TestWriteTokenOutput(t *testing.T) {
+	token := &oauth2.Token{
+		AccessToken: "my-access-token",
+		TokenType:   "Bearer",
+	}
+
+	t.Run("json mode", func(t *testing.T) {
+		var buf bytes.Buffer
+		err := writeTokenOutput(&buf, token, false)
+		assert.NoError(t, err)
+
+		raw, err := json.MarshalIndent(token, "", "  ")
+		assert.NoError(t, err)
+		assert.Equal(t, string(raw), buf.String())
+	})
+
+	t.Run("text mode", func(t *testing.T) {
+		var buf bytes.Buffer
+		err := writeTokenOutput(&buf, token, true)
+		assert.NoError(t, err)
+		assert.Equal(t, "my-access-token\n", buf.String())
+	})
 }
