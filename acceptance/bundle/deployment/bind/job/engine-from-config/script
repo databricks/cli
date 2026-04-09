@@ -1,0 +1,21 @@
+# Verify that bind respects bundle.engine config setting.
+#
+# bundle.engine is set to "direct" in databricks.yml.
+# Both deploy and bind should use the direct engine.
+
+trace $CLI bundle deploy
+
+echo "=== State files after deploy ==="
+find.py 'resources\.json|terraform\.tfstate$'
+
+# Unbind so we can rebind
+trace $CLI bundle deployment unbind job_1
+
+# Create a new job to bind to
+job_id=$(trace $CLI jobs create --json '{"name": "My Job"}' | jq -r '.job_id')
+
+# Bind uses direct engine (reads bundle.engine from config).
+trace $CLI bundle deployment bind job_1 $job_id --auto-approve
+
+echo "=== State files after bind ==="
+find.py 'resources\.json|terraform\.tfstate$'

@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle
+
+# Tests implicit dependency detection for quality monitors:
+# - output_schema_name (format "catalog.schema") should resolve both parts
+resources:
+  catalogs:
+    my_catalog:
+      name: mycatalog
+  schemas:
+    my_schema:
+      catalog_name: mycatalog
+      name: myschema
+  quality_monitors:
+    my_monitor:
+      table_name: mycatalog.myschema.mytable
+      output_schema_name: mycatalog.myschema
+
+targets:
+  dev:
+    mode: development

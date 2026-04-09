@@ -11,34 +11,35 @@ type targetMapping struct {
 	target   string
 }
 
-// goTriggerPatterns lists patterns that trigger all Go-dependent targets.
-var goTriggerPatterns = []string{
+// commonTriggerPatterns lists patterns that trigger all test targets.
+var commonTriggerPatterns = []string{
 	"go.mod",
 	"go.sum",
+	".github/actions/setup-build-environment/",
 }
 
 var fileTargetMappings = []targetMapping{
 	{
-		prefixes: slices.Concat(goTriggerPatterns, []string{
+		prefixes: slices.Concat(commonTriggerPatterns, []string{
 			// Specify files that match targets below and should still trigger the "test" target.
 		}),
 		target: "test",
 	},
 	{
-		prefixes: slices.Concat(goTriggerPatterns, []string{
+		prefixes: slices.Concat(commonTriggerPatterns, []string{
 			"experimental/aitools/",
 		}),
 		target: "test-exp-aitools",
 	},
 	{
-		prefixes: slices.Concat(goTriggerPatterns, []string{
+		prefixes: slices.Concat(commonTriggerPatterns, []string{
 			"experimental/ssh/",
 			"acceptance/ssh/",
 		}),
 		target: "test-exp-ssh",
 	},
 	{
-		prefixes: slices.Concat(goTriggerPatterns, []string{
+		prefixes: slices.Concat(commonTriggerPatterns, []string{
 			"cmd/pipelines/",
 			"acceptance/pipelines/",
 		}),

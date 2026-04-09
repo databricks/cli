@@ -18,14 +18,8 @@ import (
 	"github.com/databricks/cli/libs/utils"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
+func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) {
 	log.Info(ctx, "Phase: bind")
-
-	engine, err := engine.FromEnv(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
 
 	bundle.ApplyContext(ctx, b, lock.Acquire())
 	if logdiag.HasError(ctx) {
@@ -120,14 +114,8 @@ func jsonDump(ctx context.Context, v any, field string) string {
 	return string(b)
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string) {
+func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) {
 	log.Info(ctx, "Phase: unbind")
-
-	engine, err := engine.FromEnv(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
 
 	bundle.ApplyContext(ctx, b, lock.Acquire())
 	if logdiag.HasError(ctx) {

@@ -1,0 +1,10 @@
+bundle:
+  name: stale_state_test
+
+resources:
+  jobs:
+    job_1:
+      name: Job 1
+
+    job_2:
+      name: Job 2
