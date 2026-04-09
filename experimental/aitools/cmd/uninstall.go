@@ -34,6 +34,6 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to uninstall (comma-separated)")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Uninstall project-scoped skills")
-	cmd.Flags().BoolVar(&globalFlag, "global", false, "Uninstall globally-scoped skills (default)")
+	cmd.Flags().BoolVar(&globalFlag, "global", false, "Uninstall globally-scoped skills")
 	return cmd
 }

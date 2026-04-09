@@ -65,6 +65,6 @@ preview what would change without downloading.`,
 	cmd.Flags().BoolVar(&noNew, "no-new", false, "Don't auto-install new skills from manifest")
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to update (comma-separated)")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Update project-scoped skills")
-	cmd.Flags().BoolVar(&globalFlag, "global", false, "Update globally-scoped skills (default)")
+	cmd.Flags().BoolVar(&globalFlag, "global", false, "Update globally-scoped skills")
 	return cmd
 }
