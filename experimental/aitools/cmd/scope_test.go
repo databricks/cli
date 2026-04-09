@@ -13,20 +13,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupScopeTest(t *testing.T) (homeDir, projectDir string) {
+func setupScopeTest(t *testing.T) (globalDir, projectDir string) {
 	t.Helper()
-	homeDir = t.TempDir()
-	t.Setenv("HOME", homeDir)
-
-	projectDir = t.TempDir()
-	t.Chdir(projectDir)
-
-	return homeDir, projectDir
+	homeDir := t.TempDir()
+	projectRoot := t.TempDir()
+	globalDir = filepath.Join(homeDir, ".databricks", "aitools", "skills")
+	projectDir = filepath.Join(projectRoot, ".databricks", "aitools", "skills")
+	return globalDir, projectDir
 }
 
-func installGlobalState(t *testing.T, homeDir string) {
+func installGlobalState(t *testing.T, globalDir string) {
 	t.Helper()
-	globalDir := filepath.Join(homeDir, ".databricks", "aitools", "skills")
 	require.NoError(t, os.MkdirAll(globalDir, 0o755))
 	require.NoError(t, installer.SaveState(globalDir, &installer.InstallState{
 		SchemaVersion: 1,
@@ -37,9 +34,8 @@ func installGlobalState(t *testing.T, homeDir string) {
 
 func installProjectState(t *testing.T, projectDir string) {
 	t.Helper()
-	projSkillsDir := filepath.Join(projectDir, ".databricks", "aitools", "skills")
-	require.NoError(t, os.MkdirAll(projSkillsDir, 0o755))
-	require.NoError(t, installer.SaveState(projSkillsDir, &installer.InstallState{
+	require.NoError(t, os.MkdirAll(projectDir, 0o755))
+	require.NoError(t, installer.SaveState(projectDir, &installer.InstallState{
 		SchemaVersion: 1,
 		Release:       "v0.1.0",
 		Skills:        map[string]string{"test-skill": "1.0.0"},
@@ -71,121 +67,244 @@ func interactiveCtx(t *testing.T) (context.Context, func()) {
 	return ctx, test.Done
 }
 
-// --- detectInstalledScopes tests ---
+// --- detectInstalledScopes tests (table-driven) ---
 
-func TestDetectInstalledScopesBoth(t *testing.T) {
-	homeDir, projectDir := setupScopeTest(t)
-	installGlobalState(t, homeDir)
-	installProjectState(t, projectDir)
+func TestDetectInstalledScopes(t *testing.T) {
+	tests := []struct {
+		name        string
+		installGlob bool
+		installProj bool
+		wantGlobal  bool
+		wantProject bool
+	}{
+		{"Both", true, true, true, true},
+		{"GlobalOnly", true, false, true, false},
+		{"ProjectOnly", false, true, false, true},
+		{"Neither", false, false, false, false},
+	}
 
-	ctx := nonInteractiveCtx(t)
-	hasGlobal, hasProject, err := detectInstalledScopes(ctx)
-	require.NoError(t, err)
-	assert.True(t, hasGlobal)
-	assert.True(t, hasProject)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			globalDir, projectDir := setupScopeTest(t)
+			if tt.installGlob {
+				installGlobalState(t, globalDir)
+			}
+			if tt.installProj {
+				installProjectState(t, projectDir)
+			}
+
+			hasGlobal, hasProject, err := detectInstalledScopes(globalDir, projectDir)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantGlobal, hasGlobal)
+			assert.Equal(t, tt.wantProject, hasProject)
+		})
+	}
 }
 
-func TestDetectInstalledScopesGlobalOnly(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+// --- withExplicitScopeCheck tests (table-driven) ---
 
-	ctx := nonInteractiveCtx(t)
-	hasGlobal, hasProject, err := detectInstalledScopes(ctx)
-	require.NoError(t, err)
-	assert.True(t, hasGlobal)
-	assert.False(t, hasProject)
+func TestWithExplicitScopeCheck(t *testing.T) {
+	tests := []struct {
+		name        string
+		scope       string
+		installGlob bool
+		installProj bool
+		wantScopes  []string
+		wantErr     string
+	}{
+		{
+			name:        "ProjectPresent",
+			scope:       installer.ScopeProject,
+			installProj: true,
+			wantScopes:  []string{installer.ScopeProject},
+		},
+		{
+			name:        "GlobalPresent",
+			scope:       installer.ScopeGlobal,
+			installGlob: true,
+			wantScopes:  []string{installer.ScopeGlobal},
+		},
+		{
+			name:    "ProjectMissing",
+			scope:   installer.ScopeProject,
+			wantErr: "no project-scoped skills found",
+		},
+		{
+			name:    "GlobalMissing",
+			scope:   installer.ScopeGlobal,
+			wantErr: "no globally-scoped skills installed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			globalDir, projectDir := setupScopeTest(t)
+			if tt.installGlob {
+				installGlobalState(t, globalDir)
+			}
+			if tt.installProj {
+				installProjectState(t, projectDir)
+			}
+
+			hasGlobal, hasProject, err := detectInstalledScopes(globalDir, projectDir)
+			require.NoError(t, err)
+
+			var dir string
+			if tt.scope == installer.ScopeProject {
+				dir = projectDir
+			} else {
+				dir = globalDir
+			}
+
+			scopes, err := withExplicitScopeCheck(dir, tt.scope, "update", projectDir, hasGlobal, hasProject)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.wantScopes, scopes)
+			}
+		})
+	}
 }
 
-func TestDetectInstalledScopesProjectOnly(t *testing.T) {
-	_, projectDir := setupScopeTest(t)
-	installProjectState(t, projectDir)
+// --- cross-scope hint tests ---
 
-	ctx := nonInteractiveCtx(t)
-	hasGlobal, hasProject, err := detectInstalledScopes(ctx)
-	require.NoError(t, err)
-	assert.False(t, hasGlobal)
-	assert.True(t, hasProject)
+func TestCrossScopeHint(t *testing.T) {
+	tests := []struct {
+		name      string
+		scope     string
+		verb      string
+		hasGlobal bool
+		hasProj   bool
+		wantHint  string
+	}{
+		{
+			name:      "ProjectMissingHintsGlobalUpdate",
+			scope:     installer.ScopeProject,
+			verb:      "update",
+			hasGlobal: true,
+			wantHint:  "without --project to update those",
+		},
+		{
+			name:      "ProjectMissingHintsGlobalUninstall",
+			scope:     installer.ScopeProject,
+			verb:      "uninstall",
+			hasGlobal: true,
+			wantHint:  "without --project to uninstall those",
+		},
+		{
+			name:     "GlobalMissingHintsProject",
+			scope:    installer.ScopeGlobal,
+			verb:     "update",
+			hasProj:  true,
+			wantHint: "without --global to update those",
+		},
+		{
+			name:  "NeitherInstalledNoHint",
+			scope: installer.ScopeProject,
+			verb:  "update",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hint := crossScopeHint(tt.scope, tt.verb, tt.hasGlobal, tt.hasProj)
+			if tt.wantHint != "" {
+				assert.Contains(t, hint, tt.wantHint)
+			} else {
+				assert.Empty(t, hint)
+			}
+		})
+	}
 }
 
-func TestDetectInstalledScopesNeither(t *testing.T) {
-	setupScopeTest(t)
+// --- scopeNotInstalledError tests ---
 
-	ctx := nonInteractiveCtx(t)
-	hasGlobal, hasProject, err := detectInstalledScopes(ctx)
-	require.NoError(t, err)
-	assert.False(t, hasGlobal)
-	assert.False(t, hasProject)
+func TestScopeNotInstalledErrorProjectIncludesPath(t *testing.T) {
+	projectDir := "/some/project"
+	err := scopeNotInstalledError(installer.ScopeProject, "update", projectDir, false, false)
+	assert.Contains(t, err.Error(), "no project-scoped skills found")
+	assert.Contains(t, err.Error(), "install --project")
+	assert.Contains(t, err.Error(), "Expected location:")
+	assert.Contains(t, err.Error(), "/some/project/.databricks/aitools/skills/")
+}
+
+func TestScopeNotInstalledErrorGlobal(t *testing.T) {
+	err := scopeNotInstalledError(installer.ScopeGlobal, "update", "/irrelevant", false, false)
+	assert.Contains(t, err.Error(), "no globally-scoped skills installed")
+	assert.Contains(t, err.Error(), "install --global")
 }
 
 // --- resolveScopeForUpdate tests ---
 
 func TestResolveScopeForUpdateBothFlagsBothInstalled(t *testing.T) {
-	homeDir, projectDir := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	scopes, err := resolveScopeForUpdate(ctx, true, true)
+	scopes, err := resolveScopeForUpdate(ctx, true, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal, installer.ScopeProject}, scopes)
 }
 
 func TestResolveScopeForUpdateBothFlagsOnlyGlobalInstalled(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	ctx := nonInteractiveCtx(t)
 
-	scopes, err := resolveScopeForUpdate(ctx, true, true)
+	scopes, err := resolveScopeForUpdate(ctx, true, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
 
 func TestResolveScopeForUpdateBothFlagsOnlyProjectInstalled(t *testing.T) {
-	_, projectDir := setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
 	// Global always passes through, project state found.
-	scopes, err := resolveScopeForUpdate(ctx, true, true)
+	scopes, err := resolveScopeForUpdate(ctx, true, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal, installer.ScopeProject}, scopes)
 }
 
 func TestResolveScopeForUpdateBothFlagsNeitherInstalled(t *testing.T) {
-	setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
 	// Global always passes through, project check fails silently.
-	scopes, err := resolveScopeForUpdate(ctx, true, true)
+	scopes, err := resolveScopeForUpdate(ctx, true, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
 
 func TestResolveScopeForUpdateProjectFlagWithState(t *testing.T) {
-	_, projectDir := setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	scopes, err := resolveScopeForUpdate(ctx, true, false)
+	scopes, err := resolveScopeForUpdate(ctx, true, false, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeProject}, scopes)
 }
 
 func TestResolveScopeForUpdateGlobalFlagWithState(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	ctx := nonInteractiveCtx(t)
 
-	scopes, err := resolveScopeForUpdate(ctx, false, true)
+	scopes, err := resolveScopeForUpdate(ctx, false, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
 
 func TestResolveScopeForUpdateProjectFlagNoInstall(t *testing.T) {
-	setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := resolveScopeForUpdate(ctx, true, false)
+	_, err := resolveScopeForUpdate(ctx, true, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no project-scoped skills found")
 	assert.Contains(t, err.Error(), "install --project")
@@ -194,42 +313,42 @@ func TestResolveScopeForUpdateProjectFlagNoInstall(t *testing.T) {
 }
 
 func TestResolveScopeForUpdateGlobalFlagNoInstall(t *testing.T) {
-	setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
 	// Global flag always passes through to installer layer (for legacy install detection).
-	scopes, err := resolveScopeForUpdate(ctx, false, true)
+	scopes, err := resolveScopeForUpdate(ctx, false, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
 
 func TestResolveScopeForUpdateNoFlagsGlobalOnly(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	ctx := nonInteractiveCtx(t)
 
-	scopes, err := resolveScopeForUpdate(ctx, false, false)
+	scopes, err := resolveScopeForUpdate(ctx, false, false, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
 
 func TestResolveScopeForUpdateNoFlagsProjectOnly(t *testing.T) {
-	_, projectDir := setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	scopes, err := resolveScopeForUpdate(ctx, false, false)
+	scopes, err := resolveScopeForUpdate(ctx, false, false, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeProject}, scopes)
 }
 
 func TestResolveScopeForUpdateNoFlagsBothNonInteractive(t *testing.T) {
-	homeDir, projectDir := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := resolveScopeForUpdate(ctx, false, false)
+	_, err := resolveScopeForUpdate(ctx, false, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "skills are installed in both global and project scopes")
 	assert.Contains(t, err.Error(), "--global")
@@ -237,8 +356,8 @@ func TestResolveScopeForUpdateNoFlagsBothNonInteractive(t *testing.T) {
 }
 
 func TestResolveScopeForUpdateNoFlagsBothInteractive(t *testing.T) {
-	homeDir, projectDir := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	installProjectState(t, projectDir)
 
 	orig := promptUpdateScopeSelection
@@ -252,18 +371,18 @@ func TestResolveScopeForUpdateNoFlagsBothInteractive(t *testing.T) {
 	ctx, done := interactiveCtx(t)
 	defer done()
 
-	scopes, err := resolveScopeForUpdate(ctx, false, false)
+	scopes, err := resolveScopeForUpdate(ctx, false, false, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.True(t, promptCalled)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
 
 func TestResolveScopeForUpdateNoFlagsNeitherInstalled(t *testing.T) {
-	setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
 	// Falls through to global so the installer layer can handle legacy installs.
-	scopes, err := resolveScopeForUpdate(ctx, false, false)
+	scopes, err := resolveScopeForUpdate(ctx, false, false, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
@@ -271,39 +390,39 @@ func TestResolveScopeForUpdateNoFlagsNeitherInstalled(t *testing.T) {
 // --- resolveScopeForUninstall tests ---
 
 func TestResolveScopeForUninstallBothFlagsError(t *testing.T) {
-	setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := resolveScopeForUninstall(ctx, true, true)
+	_, err := resolveScopeForUninstall(ctx, true, true, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot uninstall both scopes at once")
 }
 
 func TestResolveScopeForUninstallProjectFlagWithState(t *testing.T) {
-	_, projectDir := setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	scope, err := resolveScopeForUninstall(ctx, true, false)
+	scope, err := resolveScopeForUninstall(ctx, true, false, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, installer.ScopeProject, scope)
 }
 
 func TestResolveScopeForUninstallGlobalFlagWithState(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	ctx := nonInteractiveCtx(t)
 
-	scope, err := resolveScopeForUninstall(ctx, false, true)
+	scope, err := resolveScopeForUninstall(ctx, false, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, installer.ScopeGlobal, scope)
 }
 
 func TestResolveScopeForUninstallProjectFlagNoInstall(t *testing.T) {
-	setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := resolveScopeForUninstall(ctx, true, false)
+	_, err := resolveScopeForUninstall(ctx, true, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no project-scoped skills found")
 	assert.Contains(t, err.Error(), "install --project")
@@ -311,42 +430,42 @@ func TestResolveScopeForUninstallProjectFlagNoInstall(t *testing.T) {
 }
 
 func TestResolveScopeForUninstallGlobalFlagNoInstall(t *testing.T) {
-	setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
 	// Global flag always passes through to installer layer (for legacy install detection).
-	scope, err := resolveScopeForUninstall(ctx, false, true)
+	scope, err := resolveScopeForUninstall(ctx, false, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, installer.ScopeGlobal, scope)
 }
 
 func TestResolveScopeForUninstallNoFlagsGlobalOnly(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	ctx := nonInteractiveCtx(t)
 
-	scope, err := resolveScopeForUninstall(ctx, false, false)
+	scope, err := resolveScopeForUninstall(ctx, false, false, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, installer.ScopeGlobal, scope)
 }
 
 func TestResolveScopeForUninstallNoFlagsProjectOnly(t *testing.T) {
-	_, projectDir := setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	scope, err := resolveScopeForUninstall(ctx, false, false)
+	scope, err := resolveScopeForUninstall(ctx, false, false, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, installer.ScopeProject, scope)
 }
 
 func TestResolveScopeForUninstallNoFlagsBothNonInteractive(t *testing.T) {
-	homeDir, projectDir := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	_, err := resolveScopeForUninstall(ctx, false, false)
+	_, err := resolveScopeForUninstall(ctx, false, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "skills are installed in both global and project scopes")
 	assert.Contains(t, err.Error(), "--global")
@@ -354,8 +473,8 @@ func TestResolveScopeForUninstallNoFlagsBothNonInteractive(t *testing.T) {
 }
 
 func TestResolveScopeForUninstallNoFlagsBothInteractive(t *testing.T) {
-	homeDir, projectDir := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	installProjectState(t, projectDir)
 
 	orig := promptUninstallScopeSelection
@@ -369,148 +488,60 @@ func TestResolveScopeForUninstallNoFlagsBothInteractive(t *testing.T) {
 	ctx, done := interactiveCtx(t)
 	defer done()
 
-	scope, err := resolveScopeForUninstall(ctx, false, false)
+	scope, err := resolveScopeForUninstall(ctx, false, false, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.True(t, promptCalled)
 	assert.Equal(t, installer.ScopeProject, scope)
 }
 
 func TestResolveScopeForUninstallNoFlagsNeitherInstalled(t *testing.T) {
-	setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
 	// Falls through to global so the installer layer can handle legacy installs.
-	scope, err := resolveScopeForUninstall(ctx, false, false)
+	scope, err := resolveScopeForUninstall(ctx, false, false, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, installer.ScopeGlobal, scope)
-}
-
-// --- withExplicitScopeCheck tests ---
-
-func TestWithExplicitScopeCheckProjectPresent(t *testing.T) {
-	_, projectDir := setupScopeTest(t)
-	installProjectState(t, projectDir)
-	ctx := nonInteractiveCtx(t)
-
-	scopes, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "update")
-	require.NoError(t, err)
-	assert.Equal(t, []string{installer.ScopeProject}, scopes)
-}
-
-func TestWithExplicitScopeCheckGlobalPresent(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
-	ctx := nonInteractiveCtx(t)
-
-	scopes, err := withExplicitScopeCheck(ctx, installer.ScopeGlobal, "update")
-	require.NoError(t, err)
-	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
-}
-
-func TestWithExplicitScopeCheckProjectMissing(t *testing.T) {
-	setupScopeTest(t)
-	ctx := nonInteractiveCtx(t)
-
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "update")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no project-scoped skills found")
-	assert.Contains(t, err.Error(), "install --project")
-	assert.Contains(t, err.Error(), "Expected location:")
-}
-
-func TestWithExplicitScopeCheckGlobalMissing(t *testing.T) {
-	setupScopeTest(t)
-	ctx := nonInteractiveCtx(t)
-
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeGlobal, "update")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no globally-scoped skills installed")
-	assert.Contains(t, err.Error(), "install --global")
-}
-
-// --- cross-scope hint tests ---
-
-func TestWithExplicitScopeCheckProjectMissingHintsGlobalUpdate(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
-	ctx := nonInteractiveCtx(t)
-
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "update")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "Global skills are installed")
-	assert.Contains(t, err.Error(), "without --project to update those")
-}
-
-func TestWithExplicitScopeCheckProjectMissingHintsGlobalUninstall(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
-	ctx := nonInteractiveCtx(t)
-
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "uninstall")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "Global skills are installed")
-	assert.Contains(t, err.Error(), "without --project to uninstall those")
-}
-
-func TestWithExplicitScopeCheckGlobalMissingHintsProject(t *testing.T) {
-	_, projectDir := setupScopeTest(t)
-	installProjectState(t, projectDir)
-	ctx := nonInteractiveCtx(t)
-
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeGlobal, "update")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "Project-scoped skills are installed")
-	assert.Contains(t, err.Error(), "without --global to update those")
-}
-
-func TestWithExplicitScopeCheckNoHintWhenNeitherInstalled(t *testing.T) {
-	setupScopeTest(t)
-	ctx := nonInteractiveCtx(t)
-
-	_, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "update")
-	require.Error(t, err)
-	assert.NotContains(t, err.Error(), "Global skills are installed")
-	assert.NotContains(t, err.Error(), "Project-scoped skills are installed")
 }
 
 // --- legacy global install passthrough tests ---
 
 func TestResolveScopeForUpdateGlobalFlagLegacyInstall(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	// Create skill directories on disk but no .state.json (legacy install).
-	globalDir := filepath.Join(homeDir, ".databricks", "aitools", "skills", "some-skill")
-	require.NoError(t, os.MkdirAll(globalDir, 0o755))
+	legacyDir := filepath.Join(globalDir, "some-skill")
+	require.NoError(t, os.MkdirAll(legacyDir, 0o755))
 	ctx := nonInteractiveCtx(t)
 
 	// Global flag should pass through to installer layer, not block on missing state.
-	scopes, err := resolveScopeForUpdate(ctx, false, true)
+	scopes, err := resolveScopeForUpdate(ctx, false, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
 }
 
 func TestResolveScopeForUninstallGlobalFlagLegacyInstall(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	// Create skill directories on disk but no .state.json (legacy install).
-	globalDir := filepath.Join(homeDir, ".databricks", "aitools", "skills", "some-skill")
-	require.NoError(t, os.MkdirAll(globalDir, 0o755))
+	legacyDir := filepath.Join(globalDir, "some-skill")
+	require.NoError(t, os.MkdirAll(legacyDir, 0o755))
 	ctx := nonInteractiveCtx(t)
 
 	// Global flag should pass through to installer layer, not block on missing state.
-	scope, err := resolveScopeForUninstall(ctx, false, true)
+	scope, err := resolveScopeForUninstall(ctx, false, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, installer.ScopeGlobal, scope)
 }
 
 func TestResolveScopeForUpdateBothFlagsLegacyGlobal(t *testing.T) {
-	homeDir, projectDir := setupScopeTest(t)
+	globalDir, projectDir := setupScopeTest(t)
 	// Global has a legacy install (dirs on disk, no state), project has state.
-	globalDir := filepath.Join(homeDir, ".databricks", "aitools", "skills", "some-skill")
-	require.NoError(t, os.MkdirAll(globalDir, 0o755))
+	legacyDir := filepath.Join(globalDir, "some-skill")
+	require.NoError(t, os.MkdirAll(legacyDir, 0o755))
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
 	// Global passes through (for legacy detection), project has state so it's included.
-	scopes, err := resolveScopeForUpdate(ctx, true, true)
+	scopes, err := resolveScopeForUpdate(ctx, true, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal, installer.ScopeProject}, scopes)
 }
@@ -518,23 +549,23 @@ func TestResolveScopeForUpdateBothFlagsLegacyGlobal(t *testing.T) {
 // --- uninstall cross-scope hint verb tests ---
 
 func TestResolveScopeForUninstallProjectFlagHintsUninstall(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	ctx := nonInteractiveCtx(t)
 
 	// Project flag with no project state should hint about global using "uninstall" verb.
-	_, err := resolveScopeForUninstall(ctx, true, false)
+	_, err := resolveScopeForUninstall(ctx, true, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "without --project to uninstall those")
 }
 
 func TestResolveScopeForUpdateProjectFlagHintsUpdate(t *testing.T) {
-	homeDir, _ := setupScopeTest(t)
-	installGlobalState(t, homeDir)
+	globalDir, projectDir := setupScopeTest(t)
+	installGlobalState(t, globalDir)
 	ctx := nonInteractiveCtx(t)
 
 	// Project flag with no project state should hint about global using "update" verb.
-	_, err := resolveScopeForUpdate(ctx, true, false)
+	_, err := resolveScopeForUpdate(ctx, true, false, globalDir, projectDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "without --project to update those")
 }

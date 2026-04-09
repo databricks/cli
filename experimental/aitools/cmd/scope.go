@@ -83,20 +83,12 @@ func defaultPromptScopeSelection(ctx context.Context) (string, error) {
 const scopeBoth = "both"
 
 // detectInstalledScopes checks which scopes have a .state.json file present.
-func detectInstalledScopes(ctx context.Context) (global, project bool, err error) {
-	globalDir, err := installer.GlobalSkillsDir(ctx)
-	if err != nil {
-		return false, false, err
-	}
+func detectInstalledScopes(globalDir, projectDir string) (global, project bool, err error) {
 	globalState, err := installer.LoadState(globalDir)
 	if err != nil {
 		return false, false, err
 	}
 
-	projectDir, err := installer.ProjectSkillsDir(ctx)
-	if err != nil {
-		return false, false, err
-	}
 	projectState, err := installer.LoadState(projectDir)
 	if err != nil {
 		return false, false, err
@@ -108,19 +100,24 @@ func detectInstalledScopes(ctx context.Context) (global, project bool, err error
 // resolveScopeForUpdate resolves scopes for the update command.
 // Returns one or more scopes to update. When both flags are set, global always passes through
 // (for legacy install detection) and project is checked via state.
-func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool) ([]string, error) {
+func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool, globalDir, projectDir string) ([]string, error) {
+	hasGlobal, hasProject, err := detectInstalledScopes(globalDir, projectDir)
+	if err != nil {
+		return nil, err
+	}
+
 	if projectFlag && globalFlag {
 		// Global always passes through to the installer layer for legacy detection.
 		scopes := []string{installer.ScopeGlobal}
 		// Project scope requires state check (CWD-dependent guidance is useful).
-		projectScopes, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "update")
+		projectScopes, err := withExplicitScopeCheck(projectDir, installer.ScopeProject, "update", projectDir, hasGlobal, hasProject)
 		if err == nil {
 			scopes = append(scopes, projectScopes...)
 		}
 		return scopes, nil
 	}
 	if projectFlag {
-		return withExplicitScopeCheck(ctx, installer.ScopeProject, "update")
+		return withExplicitScopeCheck(projectDir, installer.ScopeProject, "update", projectDir, hasGlobal, hasProject)
 	}
 	if globalFlag {
 		// Always pass through to the installer layer, which handles legacy installs.
@@ -128,11 +125,6 @@ func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool) ([
 	}
 
 	// No flags: auto-detect.
-	hasGlobal, hasProject, err := detectInstalledScopes(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	switch {
 	case hasGlobal && hasProject:
 		if !cmdio.IsPromptSupported(ctx) {
@@ -160,12 +152,18 @@ func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool) ([
 
 // resolveScopeForUninstall resolves the scope for the uninstall command.
 // Unlike update, uninstall never allows "both" scopes at once.
-func resolveScopeForUninstall(ctx context.Context, projectFlag, globalFlag bool) (string, error) {
+func resolveScopeForUninstall(ctx context.Context, projectFlag, globalFlag bool, globalDir, projectDir string) (string, error) {
 	if projectFlag && globalFlag {
 		return "", errors.New("cannot uninstall both scopes at once; run uninstall separately for --global and --project")
 	}
+
+	hasGlobal, hasProject, err := detectInstalledScopes(globalDir, projectDir)
+	if err != nil {
+		return "", err
+	}
+
 	if projectFlag {
-		scopes, err := withExplicitScopeCheck(ctx, installer.ScopeProject, "uninstall")
+		scopes, err := withExplicitScopeCheck(projectDir, installer.ScopeProject, "uninstall", projectDir, hasGlobal, hasProject)
 		if err != nil {
 			return "", err
 		}
@@ -177,11 +175,6 @@ func resolveScopeForUninstall(ctx context.Context, projectFlag, globalFlag bool)
 	}
 
 	// No flags: auto-detect.
-	hasGlobal, hasProject, err := detectInstalledScopes(ctx)
-	if err != nil {
-		return "", err
-	}
-
 	switch {
 	case hasGlobal && hasProject:
 		if !cmdio.IsPromptSupported(ctx) {
@@ -210,25 +203,13 @@ func resolveScopeForUninstall(ctx context.Context, projectFlag, globalFlag bool)
 // withExplicitScopeCheck validates that the explicitly requested scope has an installation.
 // Returns a helpful error with CWD guidance for project scope and cross-scope hints.
 // The verb parameter (e.g. "update", "uninstall") is used in cross-scope hint messages.
-func withExplicitScopeCheck(ctx context.Context, scope, verb string) ([]string, error) {
-	var dir string
-	var err error
-
-	if scope == installer.ScopeProject {
-		dir, err = installer.ProjectSkillsDir(ctx)
-	} else {
-		dir, err = installer.GlobalSkillsDir(ctx)
-	}
-	if err != nil {
-		return nil, err
-	}
-
+func withExplicitScopeCheck(dir, scope, verb, projectDir string, hasGlobal, hasProject bool) ([]string, error) {
 	state, err := installer.LoadState(dir)
 	if err != nil {
 		return nil, err
 	}
 	if state == nil {
-		return nil, scopeNotInstalledError(ctx, scope, verb)
+		return nil, scopeNotInstalledError(scope, verb, projectDir, hasGlobal, hasProject)
 	}
 
 	return []string{scope}, nil
@@ -237,14 +218,10 @@ func withExplicitScopeCheck(ctx context.Context, scope, verb string) ([]string, 
 // scopeNotInstalledError builds a detailed error for when the requested scope has no installation.
 // Includes cross-scope hints when the other scope is installed.
 // The verb parameter (e.g. "update", "uninstall") is used in cross-scope hint messages.
-func scopeNotInstalledError(ctx context.Context, scope, verb string) error {
+func scopeNotInstalledError(scope, verb, projectDir string, hasGlobal, hasProject bool) error {
 	var msg string
 	if scope == installer.ScopeProject {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("no project-scoped skills found: %w", err)
-		}
-		expectedPath := filepath.ToSlash(filepath.Join(cwd, ".databricks", "aitools", "skills"))
+		expectedPath := filepath.ToSlash(filepath.Join(projectDir, ".databricks", "aitools", "skills"))
 		msg = fmt.Sprintf(
 			"no project-scoped skills found in the current directory.\n\n"+
 				"Project-scoped skills are detected based on your working directory.\n"+
@@ -255,8 +232,7 @@ func scopeNotInstalledError(ctx context.Context, scope, verb string) error {
 		msg = "no globally-scoped skills installed. Run 'databricks experimental aitools install --global' to install"
 	}
 
-	// Check if the other scope is installed and add a hint.
-	hint := crossScopeHint(ctx, scope, verb)
+	hint := crossScopeHint(scope, verb, hasGlobal, hasProject)
 	if hint != "" {
 		msg += "\n\n" + hint
 	}
@@ -266,11 +242,7 @@ func scopeNotInstalledError(ctx context.Context, scope, verb string) error {
 
 // crossScopeHint returns a hint string if the opposite scope has an installation.
 // The verb parameter (e.g. "update", "uninstall") controls the action in the hint message.
-func crossScopeHint(ctx context.Context, requestedScope, verb string) string {
-	hasGlobal, hasProject, err := detectInstalledScopes(ctx)
-	if err != nil {
-		return ""
-	}
+func crossScopeHint(requestedScope, verb string, hasGlobal, hasProject bool) string {
 	if requestedScope == installer.ScopeProject && hasGlobal {
 		return fmt.Sprintf("Global skills are installed. Run without --project to %s those.", verb)
 	}

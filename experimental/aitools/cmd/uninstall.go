@@ -19,7 +19,16 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			scope, err := resolveScopeForUninstall(ctx, projectFlag, globalFlag)
+			globalDir, err := installer.GlobalSkillsDir(ctx)
+			if err != nil {
+				return err
+			}
+			projectDir, err := installer.ProjectSkillsDir(ctx)
+			if err != nil {
+				return err
+			}
+
+			scope, err := resolveScopeForUninstall(ctx, projectFlag, globalFlag, globalDir, projectDir)
 			if err != nil {
 				return err
 			}
