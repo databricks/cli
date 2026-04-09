@@ -1,5 +1,5 @@
 bundle:
-  name: $UNIQUE_NAME
+  name: test-bundle-$UNIQUE_NAME
 
 permissions:
   - level: CAN_MANAGE
@@ -21,7 +21,7 @@ resources:
 
   apps:
     my_app:
-      name: my-app
+      name: test$UNIQUE_NAME
       source_code_path: ./app
       resources:
         - name: my-job

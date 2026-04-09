@@ -18,14 +18,8 @@ import (
 	"github.com/databricks/cli/libs/utils"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
+func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) {
 	log.Info(ctx, "Phase: bind")
-
-	engine, err := engine.FromEnv(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
 
 	bundle.ApplyContext(ctx, b, lock.Acquire())
 	if logdiag.HasError(ctx) {
@@ -39,7 +33,10 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	if engine.IsDirect() {
 		// Direct engine: import into temp state, run plan, check for changes
 		// This follows the same pattern as terraform import
-		groupName := terraform.TerraformToGroupName[opts.ResourceType]
+		groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
+		if !ok {
+			groupName = opts.ResourceType
+		}
 		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
 
@@ -117,14 +114,8 @@ func jsonDump(ctx context.Context, v any, field string) string {
 	return string(b)
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string) {
+func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) {
 	log.Info(ctx, "Phase: unbind")
-
-	engine, err := engine.FromEnv(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
 
 	bundle.ApplyContext(ctx, b, lock.Acquire())
 	if logdiag.HasError(ctx) {
@@ -136,7 +127,10 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 	}()
 
 	if engine.IsDirect() {
-		groupName := terraform.TerraformToGroupName[tfResourceType]
+		groupName, ok := terraform.TerraformToGroupName[tfResourceType]
+		if !ok {
+			groupName = tfResourceType
+		}
 		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
 		err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)

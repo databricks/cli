@@ -3,23 +3,25 @@ package profile
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
 type ProfileMatchFunction func(Profile) bool
 
 func MatchWorkspaceProfiles(p Profile) bool {
-	// Match workspace profiles: regular workspace profiles (no account ID)
-	// or unified hosts with workspace ID
-	return (p.AccountID == "" && !p.IsUnifiedHost) ||
-		(p.IsUnifiedHost && p.WorkspaceID != "")
+	// Workspace profile: has workspace_id (covers both classic and SPOG profiles),
+	// or is a regular workspace host (no account_id and not a legacy unified-host profile).
+	// workspace_id = "none" is a sentinel for "skip workspace", so it does NOT count.
+	return (p.WorkspaceID != "" && p.WorkspaceID != auth.WorkspaceIDNone) || (p.AccountID == "" && !p.IsUnifiedHost)
 }
 
 func MatchAccountProfiles(p Profile) bool {
-	// Match account profiles: regular account profiles (with account ID)
-	// or unified hosts with account ID but no workspace ID
-	return (p.Host != "" && p.AccountID != "" && !p.IsUnifiedHost) ||
-		(p.IsUnifiedHost && p.AccountID != "" && p.WorkspaceID == "")
+	// Account profile: has host and account_id but no workspace_id.
+	// workspace_id = "none" is a sentinel for account-level access, treated as empty.
+	// This covers classic accounts.* profiles, legacy unified-host account profiles,
+	// and new SPOG account profiles.
+	return p.Host != "" && p.AccountID != "" && (p.WorkspaceID == "" || p.WorkspaceID == auth.WorkspaceIDNone)
 }
 
 func MatchAllProfiles(p Profile) bool {
@@ -59,6 +61,17 @@ func WithHostAndAccountID(host, accountID string) ProfileMatchFunction {
 	target := canonicalizeHost(host)
 	return func(p Profile) bool {
 		return p.Host != "" && canonicalizeHost(p.Host) == target && p.AccountID == accountID
+	}
+}
+
+// WithHostAccountIDAndWorkspaceID returns a ProfileMatchFunction that matches
+// profiles by canonical host, account ID, and workspace ID. This is used for
+// SPOG workspace profiles where multiple workspaces share the same host and
+// account ID.
+func WithHostAccountIDAndWorkspaceID(host, accountID, workspaceID string) ProfileMatchFunction {
+	target := canonicalizeHost(host)
+	return func(p Profile) bool {
+		return p.Host != "" && canonicalizeHost(p.Host) == target && p.AccountID == accountID && p.WorkspaceID == workspaceID
 	}
 }
 

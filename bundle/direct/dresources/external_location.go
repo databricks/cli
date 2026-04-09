@@ -52,7 +52,7 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog
 }
 
 // DoUpdate updates the external location in place and returns remote state.
-func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ Changes) (*catalog.ExternalLocationInfo, error) {
+func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ *PlanEntry) (*catalog.ExternalLocationInfo, error) {
 	updateRequest := catalog.UpdateExternalLocation{
 		Comment:        config.Comment,
 		CredentialName: config.CredentialName,

@@ -12,7 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
-
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -133,8 +133,6 @@ lineage and incremented serial number.
 
 Note, the migration is performed locally only. To finalize it, run 'bundle deploy'. This will synchronize the state file
 to the workspace so that subsequent deploys of this bundle use direct deployment engine as well.
-
-WARNING: Both direct deployment engine and this command are experimental and not recommended for production targets yet.
 `,
 		Args: root.NoArgs,
 	}
@@ -243,6 +241,14 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 				_ = os.Remove(tempStatePath)
 			}
 		}()
+
+		// Apply SecretScopeFixups so the config matches what the direct engine expects.
+		// This adds MANAGE ACL for the current user to all secret scopes, ensuring
+		// the migrated state and config agree on .permissions entries.
+		bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
 
 		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, tempStatePath)
 		if err != nil {

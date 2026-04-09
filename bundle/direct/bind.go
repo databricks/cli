@@ -63,10 +63,10 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	// Check if the resource is already managed (bound to a different ID)
 	var checkStateDB dstate.DeploymentState
 	if err := checkStateDB.Open(statePath); err == nil {
-		if existing, ok := checkStateDB.GetResourceEntry(resourceKey); ok {
+		if existingID := checkStateDB.GetResourceID(resourceKey); existingID != "" {
 			return nil, ErrResourceAlreadyBound{
 				ResourceKey: resourceKey,
-				ExistingID:  existing.ID,
+				ExistingID:  existingID,
 				NewID:       resourceID,
 			}
 		}

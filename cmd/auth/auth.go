@@ -3,9 +3,12 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -60,15 +63,49 @@ func promptForAccountID(ctx context.Context) (string, error) {
 	return prompt.Run()
 }
 
-func promptForWorkspaceID(ctx context.Context) (string, error) {
-	if !cmdio.IsPromptSupported(ctx) {
-		// Workspace ID is optional for unified hosts, so return empty string in non-interactive mode
-		return "", nil
+// validateProfileHostConflict checks that --profile and --host don't conflict.
+// If the profile's host matches the provided host (after canonicalization),
+// the flags are considered compatible. If the profile is not found or has no
+// host, the check is skipped (let the downstream command handle it).
+func validateProfileHostConflict(ctx context.Context, profileName, host string, profiler profile.Profiler) error {
+	p, err := loadProfileByName(ctx, profileName, profiler)
+	if err != nil {
+		return err
+	}
+	if p == nil || p.Host == "" {
+		return nil
 	}
 
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks workspace ID (optional - provide only if using this profile for workspace operations, leave empty for account operations)"
-	prompt.Default = ""
-	prompt.AllowEdit = true
-	return prompt.Run()
+	profileHost := (&config.Config{Host: p.Host}).CanonicalHostName()
+	flagHost := (&config.Config{Host: host}).CanonicalHostName()
+
+	if profileHost != flagHost {
+		return fmt.Errorf(
+			"--profile %q has host %q, which conflicts with --host %q. Use --profile only to select a profile",
+			profileName, p.Host, host,
+		)
+	}
+	return nil
+}
+
+// profileHostConflictCheck is a PreRunE function that validates
+// --profile and --host don't conflict.
+func profileHostConflictCheck(cmd *cobra.Command, args []string) error {
+	profileFlag := cmd.Flag("profile")
+	hostFlag := cmd.Flag("host")
+
+	// Only validate when both flags are explicitly set by the user.
+	if profileFlag == nil || hostFlag == nil {
+		return nil
+	}
+	if !profileFlag.Changed || !hostFlag.Changed {
+		return nil
+	}
+
+	return validateProfileHostConflict(
+		cmd.Context(),
+		profileFlag.Value.String(),
+		hostFlag.Value.String(),
+		profile.DefaultProfiler,
+	)
 }

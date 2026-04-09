@@ -95,3 +95,7 @@ Order = 9
 Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\dZ?'
 New = "[TIMESTAMP]"
 Order = 9
+
+[[Repls]]
+Old = "deco-uc-prod-isolated-aws-us-east-1|metastore_azure_eastus2"
+New = "[METASTORE_NAME]"
