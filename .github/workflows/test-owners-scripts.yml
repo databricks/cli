@@ -6,7 +6,6 @@ on:
       - '.github/scripts/**'
       - '.github/workflows/maintainer-approval.js'
       - '.github/workflows/maintainer-approval.test.js'
-      - '.github/workflows/suggest-reviewers.js'
       - '.github/OWNERS'
 
 jobs:

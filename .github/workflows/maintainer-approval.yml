@@ -1,9 +1,14 @@
-name: Maintainer approval
+name: PR approval
 
 on:
   pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
   pull_request_review:
     types: [submitted, dismissed]
+
+concurrency:
+  group: pr-approval-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 defaults:
   run:
@@ -14,22 +19,19 @@ jobs:
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
+    if: ${{ !github.event.pull_request.draft }}
     timeout-minutes: 5
-    # Note: team membership resolution in per-path approval requires a token
-    # with org:read scope. The default GITHUB_TOKEN may lack this, causing
-    # team-based ownership checks to fall back to maintainer approval.
     permissions:
-      pull-requests: read
+      pull-requests: write
       statuses: write
+      contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
-          sparse-checkout: |
-            .github/workflows
-            .github/scripts
-            .github/OWNERS
-      - name: Require core team approval
+          fetch-depth: 0
+      - name: Check approval and suggest reviewers
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           retries: 3
