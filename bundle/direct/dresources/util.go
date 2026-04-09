@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/retries"
 )
 
@@ -60,4 +61,17 @@ func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 		}
 	}
 	return paths
+}
+
+// truncateAtIndex truncates a field path at the first bracket index (e.g. "[0]", "[*]",
+// "[key=value]"). Most update_mask APIs only support referencing entire collection
+// fields, not individual elements within them.
+// Examples: "resources[0].name" -> "resources", "description" -> "description",
+// "config.env[0].name" -> "config.env".
+func truncateAtIndex(path string) string {
+	p, err := structpath.ParsePath(path)
+	if err != nil {
+		return path
+	}
+	return p.Prefix(1).String()
 }

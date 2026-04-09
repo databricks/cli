@@ -1,0 +1,49 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "First deploy: creates app"
+trace $CLI bundle deploy
+
+title "Second deploy: pushes code with config"
+trace $CLI bundle deploy
+
+title "Verify no drift after deploy"
+trace $CLI bundle plan
+
+title "Simulate out-of-band deployment with changed command and env"
+$CLI apps deploy $UNIQUE_NAME --no-wait --json '{
+    "source_code_path": "./app",
+    "mode": "SNAPSHOT",
+    "command": ["streamlit", "run", "dashboard.py"],
+    "env_vars": [
+      {"name": "MY_VAR", "value": "changed_value"},
+      {"name": "NEW_VAR", "value": "new_value"}
+    ]
+  }' > /dev/null
+
+title "Plan should detect config drift"
+trace $CLI bundle plan
+$CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' > out.plan.direct.json
+
+title "Redeploy to fix drift"
+trace $CLI bundle deploy
+
+title "Verify no drift after fix"
+trace $CLI bundle plan
+
+title "Simulate out-of-band deployment with git_source added"
+$CLI apps deploy $UNIQUE_NAME --no-wait --json '{
+    "source_code_path": "./app",
+    "mode": "SNAPSHOT",
+    "git_source": {"branch": "feature-branch"},
+    "command": ["python", "app.py"],
+    "env_vars": [{"name": "MY_VAR", "value": "original_value"}]
+  }' > /dev/null
+
+title "Plan should detect git_source drift"
+trace $CLI bundle plan

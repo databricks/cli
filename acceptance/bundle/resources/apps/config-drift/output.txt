@@ -1,0 +1,54 @@
+
+=== First deploy: creates app
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Second deploy: pushes code with config
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files...
+Deploying resources...
+✓ Deployment succeeded
+Updating deployment state...
+Deployment complete!
+
+=== Verify no drift after deploy
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Simulate out-of-band deployment with changed command and env
+=== Plan should detect config drift
+>>> [CLI] bundle plan
+update apps.myapp
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== Redeploy to fix drift
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files...
+Deploying resources...
+✓ Deployment succeeded
+Updating deployment state...
+Deployment complete!
+
+=== Verify no drift after fix
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Simulate out-of-band deployment with git_source added
+=== Plan should detect git_source drift
+>>> [CLI] bundle plan
+update apps.myapp
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
