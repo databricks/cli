@@ -208,7 +208,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	logDeployTelemetry(ctx, b)
+	logDeployTelemetry(ctx, b, plan)
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 

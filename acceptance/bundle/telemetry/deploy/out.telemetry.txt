@@ -85,7 +85,28 @@
           ],
           "bundle_mode": "TYPE_UNSPECIFIED",
           "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
-          "local_cache_measurements_ms": [...redacted...]
+          "local_cache_measurements_ms": [...redacted...],
+          "resource_state_size_bytes": [
+            250,
+            250,
+            282,
+            284,
+            409
+          ],
+          "resource_action_counts": [
+            {
+              "key": "jobs.create",
+              "value": 3
+            },
+            {
+              "key": "jobs.permissions.create",
+              "value": 1
+            },
+            {
+              "key": "pipelines.create",
+              "value": 2
+            }
+          ]
         }
       }
     }
