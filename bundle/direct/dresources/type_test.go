@@ -92,9 +92,7 @@ var knownMissingInStateType = map[string][]string{
 		"file_path",
 	},
 	"apps": {
-		"config",
-		"source_code_path",
-		"git_source",
+		"lifecycle.prevent_destroy",
 	},
 	"dashboards": {
 		"file_path",
