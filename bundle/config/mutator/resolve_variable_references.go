@@ -150,11 +150,18 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	// We rewrite it here to make the resolution logic simpler.
 	varPath := dyn.NewPath(dyn.Key("var"))
 
+	// Detect nested variable references like ${var.foo_${var.bar}} and log
+	// a telemetry event if found. These patterns are not supported by the
+	// interpolation regex and silently fail to resolve.
+	m.detectNestedVariableReferences(b)
+
 	var diags diag.Diagnostics
 	maxRounds := 1 + m.extraRounds
+	roundsUsed := 0
 
 	for round := range maxRounds {
 		hasUpdates, newDiags := m.resolveOnce(b, prefixes, varPath)
+		roundsUsed = round + 1
 
 		diags = diags.Extend(newDiags)
 
@@ -178,6 +185,13 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 
 	if m.artifactsReferenceUsed {
 		b.Metrics.SetBoolValue("artifacts_reference_used", true)
+	}
+
+	if roundsUsed > 1 {
+		b.Metrics.SetBoolValue("variable_resolution_rounds_gt_1", true)
+	}
+	if roundsUsed > 3 {
+		b.Metrics.SetBoolValue("variable_resolution_rounds_gt_3", true)
 	}
 
 	return diags
@@ -292,6 +306,30 @@ func (m *resolveVariableReferences) selectivelyMutate(b *bundle.Bundle, fn func(
 		// merge is recursive, but it doesn't matter because keys are mutually exclusive
 		return merge.Merge(updatedRoot, excludedRoot)
 	})
+}
+
+// errNestedVarRefFound is a sentinel error used to short-circuit WalkReadOnly
+// once a nested variable reference is detected.
+var errNestedVarRefFound = errors.New("nested variable reference found")
+
+// detectNestedVariableReferences walks the bundle configuration and checks for
+// nested variable references like ${var.foo_${var.bar}}. These patterns are not
+// supported and are tracked via telemetry to understand how common they are.
+func (m *resolveVariableReferences) detectNestedVariableReferences(b *bundle.Bundle) {
+	err := dyn.WalkReadOnly(b.Config.Value(), func(_ dyn.Path, v dyn.Value) error {
+		s, ok := v.AsString()
+		if !ok {
+			return nil
+		}
+
+		if dynvar.ContainsNestedVariableReference(s) {
+			return errNestedVarRefFound
+		}
+		return nil
+	})
+	if err == errNestedVarRefFound {
+		b.Metrics.SetBoolValue("nested_var_reference_used", true)
+	}
 }
 
 func getAllKeys(root dyn.Value) ([]string, error) {

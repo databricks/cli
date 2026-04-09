@@ -67,6 +67,10 @@
               "value": false
             },
             {
+              "key": "validation_passed",
+              "value": true
+            },
+            {
               "key": "skip_artifact_cleanup",
               "value": false
             },

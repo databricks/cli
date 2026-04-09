@@ -54,6 +54,26 @@ func TestIsPureVariableReference(t *testing.T) {
 	assert.True(t, IsPureVariableReference("${foo.bar}"))
 }
 
+func TestContainsNestedVariableReference(t *testing.T) {
+	tests := []struct {
+		in       string
+		expected bool
+	}{
+		{"${var.foo_${var.bar}}", true},
+		{"${var.${var.bar}}", true},
+		{"${bundle.name_${var.env}}", true},
+		{"prefix ${resources.jobs.${var.name}.id}", true},
+		{"${var.foo}", false},
+		{"${var.foo} ${var.bar}", false},
+		{"${bundle.name}", false},
+		{"plain string", false},
+		{"", false},
+	}
+	for _, tc := range tests {
+		assert.Equal(t, tc.expected, ContainsNestedVariableReference(tc.in), "input: %s", tc.in)
+	}
+}
+
 func TestPureReferenceToPath(t *testing.T) {
 	for _, tc := range []struct {
 		in  string

@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
@@ -112,6 +113,7 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 	variableCount := len(b.Config.Variables)
 	complexVariableCount := int64(0)
 	lookupVariableCount := int64(0)
+	variableWithDefaultCount := int64(0)
 	for _, v := range b.Config.Variables {
 		// If the resolved value of the variable is a complex type, we count it as a complex variable.
 		// We can't rely on the "type: complex" annotation because the annotation is optional in some contexts
@@ -122,6 +124,11 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 
 		if v.Lookup != nil {
 			lookupVariableCount++
+			trackLookupType(b, v.Lookup)
+		}
+
+		if v.HasDefault() {
+			variableWithDefaultCount++
 		}
 	}
 
@@ -183,8 +190,50 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 				VariableCount:                int64(variableCount),
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,
+				VariableWithDefaultCount:     variableWithDefaultCount,
 				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
+				DeployPlanMetrics:            b.Metrics.DeployPlanMetrics,
 			},
 		},
 	})
+}
+
+// trackLookupType sets a bool metric for the lookup type used by a variable.
+func trackLookupType(b *bundle.Bundle, l *variable.Lookup) {
+	if l.Alert != "" {
+		b.Metrics.SetBoolValue("lookup_type_alert_used", true)
+	}
+	if l.ClusterPolicy != "" {
+		b.Metrics.SetBoolValue("lookup_type_cluster_policy_used", true)
+	}
+	if l.Cluster != "" {
+		b.Metrics.SetBoolValue("lookup_type_cluster_used", true)
+	}
+	if l.Dashboard != "" {
+		b.Metrics.SetBoolValue("lookup_type_dashboard_used", true)
+	}
+	if l.InstancePool != "" {
+		b.Metrics.SetBoolValue("lookup_type_instance_pool_used", true)
+	}
+	if l.Job != "" {
+		b.Metrics.SetBoolValue("lookup_type_job_used", true)
+	}
+	if l.Metastore != "" {
+		b.Metrics.SetBoolValue("lookup_type_metastore_used", true)
+	}
+	if l.NotificationDestination != "" {
+		b.Metrics.SetBoolValue("lookup_type_notification_destination_used", true)
+	}
+	if l.Pipeline != "" {
+		b.Metrics.SetBoolValue("lookup_type_pipeline_used", true)
+	}
+	if l.Query != "" {
+		b.Metrics.SetBoolValue("lookup_type_query_used", true)
+	}
+	if l.ServicePrincipal != "" {
+		b.Metrics.SetBoolValue("lookup_type_service_principal_used", true)
+	}
+	if l.Warehouse != "" {
+		b.Metrics.SetBoolValue("lookup_type_warehouse_used", true)
+	}
 }

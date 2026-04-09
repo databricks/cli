@@ -13,6 +13,10 @@ var (
 	// !!! See python/databricks/bundles/core/_transform.py
 	baseVarDef = `[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`
 	re         = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, baseVarDef, baseVarDef))
+
+	// Matches a nested variable reference pattern like ${var.foo_${var.bar}}.
+	// This is when a ${var. reference appears inside an outer ${...} block.
+	reNestedVarRef = regexp.MustCompile(`\$\{[^}]*\$\{var\.`)
 )
 
 // Ref represents a variable reference.
@@ -82,6 +86,12 @@ func IsPureVariableReference(s string) bool {
 
 func ContainsVariableReference(s string) bool {
 	return re.MatchString(s)
+}
+
+// ContainsNestedVariableReference returns true if the string contains a
+// nested variable reference pattern like ${var.foo_${var.bar}}.
+func ContainsNestedVariableReference(s string) bool {
+	return reNestedVarRef.MatchString(s)
 }
 
 // If s is a pure variable reference, this function returns the corresponding

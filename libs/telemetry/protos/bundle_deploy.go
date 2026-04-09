@@ -39,22 +39,14 @@ type BundleDeployExperimental struct {
 	// Number of configuration files in the bundle.
 	ConfigurationFileCount int64 `json:"configuration_file_count"`
 
-	// Size in bytes of the Terraform state file
-	TerraformStateSizeBytes int64 `json:"terraform_state_size_bytes,omitempty"`
-
 	// Number of variables in the bundle
-	VariableCount        int64 `json:"variable_count"`
-	ComplexVariableCount int64 `json:"complex_variable_count"`
-	LookupVariableCount  int64 `json:"lookup_variable_count"`
+	VariableCount            int64 `json:"variable_count"`
+	ComplexVariableCount     int64 `json:"complex_variable_count"`
+	LookupVariableCount      int64 `json:"lookup_variable_count"`
+	VariableWithDefaultCount int64 `json:"variable_with_default_count"`
 
 	// Number of targets in the bundle
 	TargetCount int64 `json:"target_count"`
-
-	// Whether a field is set or not. If a configuration field is not present in this
-	// map then it is not tracked by this field.
-	// Keys are the full path of the field in the configuration tree.
-	// Examples: "bundle.terraform.exec_path", "bundle.git.branch" etc.
-	SetFields []BoolMapEntry `json:"set_fields,omitempty"`
 
 	// Values for boolean configuration fields like `experimental.python_wheel_wrapper` or just any
 	// boolean values that we want to track.
@@ -83,6 +75,9 @@ type BundleDeployExperimental struct {
 
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
+
+	// Metrics about the deployment plan and its dependency graph (direct engine only).
+	DeployPlanMetrics []IntMapEntry `json:"deploy_plan_metrics,omitempty"`
 }
 
 type BoolMapEntry struct {
