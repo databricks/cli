@@ -199,7 +199,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 
 	deploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(true))
 	if err := deploymentBundle.StateDB.Finalize(); err != nil {
-		return diags.Extend(diag.FromErr(err))
+		return false, err
 	}
 
 	return true, nil
