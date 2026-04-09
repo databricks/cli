@@ -95,7 +95,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		return nil, err
 	}
 
-	// Finalize to write temp state to disk so CalculatePlan can read it
+	// Finalize to persist temp state to disk
 	err = b.StateDB.Finalize()
 	if err != nil {
 		os.Remove(tmpStatePath)
