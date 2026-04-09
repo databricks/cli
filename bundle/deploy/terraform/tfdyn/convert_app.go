@@ -38,7 +38,7 @@ func (appConverter) Convert(ctx context.Context, key string, vin dyn.Value, out 
 		return err
 	}
 
-	// We always set no_compute to true as it allows DABs not to wait for app compute to be started when app is created.
+	// Always skip compute during creation; lifecycle.started is only supported in direct mode.
 	vout, err = dyn.Set(vout, "no_compute", dyn.V(true))
 	if err != nil {
 		return err

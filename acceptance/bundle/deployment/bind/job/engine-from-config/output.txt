@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/engine-from-config/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+=== State files after deploy ===
+.databricks/bundle/default/resources.json
+
+>>> [CLI] bundle deployment unbind job_1
+Updating deployment state...
+
+>>> [CLI] jobs create --json {"name": "My Job"}
+
+>>> [CLI] bundle deployment bind job_1 [NUMID] --auto-approve
+Updating deployment state...
+Successfully bound job with an id '[NUMID]'
+Run 'bundle deploy' to deploy changes to your workspace
+=== State files after bind ===
+.databricks/bundle/default/resources.json

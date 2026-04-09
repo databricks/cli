@@ -1,5 +1,19 @@
 
 >>> [CLI] bundle deploy
+Warning: app "my_app" references jobs "my_job" which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the jobs permissions
+  at resources.apps.my_app
+  in databricks.yml:24:7
+
+Add the following section to the jobs permissions:
+
+  resources:
+    jobs:
+      my_job:
+        permissions:
+          - level: CAN_MANAGE_RUN
+            service_principal_name: ${resources.apps.my_app.service_principal_client_id}
+
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
@@ -10,6 +24,20 @@ Deployment complete!
 
 === After second deploy
 >>> [CLI] bundle deploy
+Warning: app "my_app" references jobs "my_job" which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the jobs permissions
+  at resources.apps.my_app
+  in databricks.yml:24:7
+
+Add the following section to the jobs permissions:
+
+  resources:
+    jobs:
+      my_job:
+        permissions:
+          - level: CAN_MANAGE_RUN
+            service_principal_name: ${resources.apps.my_app.service_principal_client_id}
+
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...

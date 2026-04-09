@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/bundle/statemgmt"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apps/prompt"
@@ -295,10 +296,11 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		bindCmd.Flags().StringSlice("var", []string{}, "set values for variables defined in bundle config")
 
 		// Initialize the bundle
+		var stateDesc *statemgmt.StateDesc
 		var err error
-		b, err = bundleutils.ProcessBundle(bindCmd, bundleutils.ProcessOptions{
+		b, stateDesc, err = bundleutils.ProcessBundleRet(bindCmd, bundleutils.ProcessOptions{
 			SkipInitContext: true,
-			ReadState:       true,
+			AlwaysPull:      true,
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Deployment.Lock.Force = false
 			},
@@ -332,7 +334,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			ResourceType: tfName,
 			ResourceKey:  appKey,
 			ResourceId:   app.Name,
-		})
+		}, stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return errors.New("failed to bind resource")
 		}

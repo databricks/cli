@@ -8,9 +8,7 @@ export BROWSER="browser.py"
 export DATABRICKS_CONFIG_FILE="./home/custom.databrickscfg"
 
 # Create an existing custom config file with a DIFFERENT host.
-# The login command should use the host from --host argument, NOT from this file.
-# If the wrong host (from the config file) were used, the OAuth flow would fail
-# because the mock server only responds for $DATABRICKS_HOST.
+# Since --profile and --host conflict, the CLI should error.
 cat > "./home/custom.databrickscfg" <<EOF
 [custom-test]
 host = https://old-host.cloud.databricks.com
@@ -21,19 +19,5 @@ EOF
 title "Initial custom config file (with old host)\n"
 cat "./home/custom.databrickscfg"
 
-title "Login with new host (should override old host)"
+title "Login with conflicting host (should error)"
 trace $CLI auth login --host $DATABRICKS_HOST --profile custom-test
-
-title "Default config file should NOT exist\n"
-if [ -f "./home/.databrickscfg" ]; then
-    echo "ERROR: Default .databrickscfg exists but should not"
-    cat "./home/.databrickscfg"
-else
-    echo "OK: Default .databrickscfg does not exist"
-fi
-
-title "Custom config file after login (old host should be replaced)\n"
-cat "./home/custom.databrickscfg"
-
-# Track the custom config file to surface changes
-mv "./home/custom.databrickscfg" "./out.databrickscfg"

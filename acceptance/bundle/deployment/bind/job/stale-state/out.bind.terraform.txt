@@ -1,0 +1,14 @@
+
+>>> errcode [CLI] bundle deployment bind job_2 [EXTERNAL_JOB_ID] --auto-approve
+Error: terraform import: exit status 1
+
+Error: Resource already managed by Terraform
+
+Terraform is already managing a remote object for databricks_job.job_2. To
+import to this address you must first remove the existing object from the
+state.
+
+
+
+
+Exit code: 1

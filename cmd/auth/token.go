@@ -5,14 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -51,7 +54,7 @@ func applyUnifiedHostFlags(p *profile.Profile, args *auth.AuthArguments) {
 
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "token [HOST_OR_PROFILE]",
+		Use:   "token [PROFILE]",
 		Short: "Get authentication token",
 		Long: `Get authentication token from the local cache in ~/.databricks/token-cache.json.
 Refresh the access token if it is expired or close to expiry. Use --force-refresh
@@ -68,13 +71,11 @@ and secret is not supported.`,
 	cmd.Flags().BoolVar(&forceRefresh, "force-refresh", false,
 		"Force a token refresh even if the cached token is still valid.")
 
+	cmd.PreRunE = profileHostConflictCheck
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		profileName := ""
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil {
-			profileName = profileFlag.Value.String()
-		}
+		profileName := cmd.Flag("profile").Value.String()
 
 		t, err := loadToken(ctx, loadTokenArgs{
 			authArguments:      authArguments,
@@ -88,15 +89,28 @@ and secret is not supported.`,
 		if err != nil {
 			return err
 		}
-		raw, err := json.MarshalIndent(t, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, _ = cmd.OutOrStdout().Write(raw)
-		return nil
+		// Only honor the explicit --output text flag, not implicit text mode
+		// (e.g. from DATABRICKS_OUTPUT_FORMAT). auth token defaults to JSON,
+		// and changing that implicitly would break scripts that parse JSON output.
+		textMode := cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText
+		return writeTokenOutput(cmd.OutOrStdout(), t, textMode)
 	}
 
 	return cmd
+}
+
+func writeTokenOutput(w io.Writer, t *oauth2.Token, textMode bool) error {
+	if textMode {
+		_, err := fmt.Fprintln(w, t.AccessToken)
+		return err
+	}
+
+	raw, err := json.MarshalIndent(t, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(raw)
+	return err
 }
 
 type loadTokenArgs struct {
@@ -126,29 +140,36 @@ type loadTokenArgs struct {
 // the provided profiler if not explicitly provided. If the token cannot be refreshed, a helpful error message
 // is printed to the user with steps to reauthenticate.
 func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
-	// If a profile is provided we read the host from the .databrickscfg file
-	if args.profileName != "" && len(args.args) > 0 {
-		return nil, errors.New("providing both a profile and host is not supported")
+	// The positional argument is a shorthand that resolves to either a
+	// profile or a host. It cannot be combined with explicit flags.
+	if len(args.args) > 0 && (args.authArguments.Host != "" || args.profileName != "") {
+		return nil, fmt.Errorf("argument %q cannot be combined with --host or --profile. Use the --host and --profile flags instead", args.args[0])
 	}
 
-	// When no explicit --profile flag is provided, check the env var. This
-	// handles the case where downstream tools (like the Terraform provider)
-	// pass --host but not --profile, while DATABRICKS_CONFIG_PROFILE is set.
-	if args.profileName == "" {
-		args.profileName = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
-	}
-
-	// If no --profile flag, try resolving the positional arg as a profile name.
-	// If it matches, use it. If not, fall through to host treatment.
-	if args.profileName == "" && len(args.args) == 1 {
-		candidateProfile, err := loadProfileByName(ctx, args.args[0], args.profiler)
+	// Resolve the positional arg as a profile name first, then as a host.
+	// Error if it matches neither. This runs before the DATABRICKS_CONFIG_PROFILE
+	// env var check so that an explicit positional argument always goes through
+	// profile-first resolution.
+	if len(args.args) == 1 {
+		resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args.args[0], args.profiler)
 		if err != nil {
 			return nil, err
 		}
-		if candidateProfile != nil {
-			args.profileName = args.args[0]
+		if resolvedProfile != "" {
+			args.profileName = resolvedProfile
+			args.args = nil
+		} else {
+			args.authArguments.Host = resolvedHost
 			args.args = nil
 		}
+	}
+
+	// When no explicit --profile flag or positional arg is provided, check the
+	// env var. This handles the case where downstream tools (like the Terraform
+	// provider) pass --host but not --profile, while DATABRICKS_CONFIG_PROFILE
+	// is set.
+	if args.profileName == "" {
+		args.profileName = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
 	}
 
 	existingProfile, err := loadProfileByName(ctx, args.profileName, args.profiler)
