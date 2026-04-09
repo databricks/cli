@@ -222,7 +222,7 @@ func TestCrossScopeHint(t *testing.T) {
 // --- scopeNotInstalledError tests ---
 
 func TestScopeNotInstalledErrorProjectIncludesPath(t *testing.T) {
-	projectDir := "/some/project"
+	projectDir := "/some/project/.databricks/aitools/skills"
 	err := scopeNotInstalledError(installer.ScopeProject, "update", projectDir, false, false)
 	assert.Contains(t, err.Error(), "no project-scoped skills found")
 	assert.Contains(t, err.Error(), "install --project")
@@ -264,17 +264,17 @@ func TestResolveScopeForUpdateBothFlagsOnlyProjectInstalled(t *testing.T) {
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	// Global always passes through, project state found.
+	// Only project is installed, so only project is returned.
 	scopes, err := resolveScopeForUpdate(ctx, true, true, globalDir, projectDir)
 	require.NoError(t, err)
-	assert.Equal(t, []string{installer.ScopeGlobal, installer.ScopeProject}, scopes)
+	assert.Equal(t, []string{installer.ScopeProject}, scopes)
 }
 
 func TestResolveScopeForUpdateBothFlagsNeitherInstalled(t *testing.T) {
 	globalDir, projectDir := setupScopeTest(t)
 	ctx := nonInteractiveCtx(t)
 
-	// Global always passes through, project check fails silently.
+	// Neither installed: falls through to global for legacy detection.
 	scopes, err := resolveScopeForUpdate(ctx, true, true, globalDir, projectDir)
 	require.NoError(t, err)
 	assert.Equal(t, []string{installer.ScopeGlobal}, scopes)
@@ -540,10 +540,10 @@ func TestResolveScopeForUpdateBothFlagsLegacyGlobal(t *testing.T) {
 	installProjectState(t, projectDir)
 	ctx := nonInteractiveCtx(t)
 
-	// Global passes through (for legacy detection), project has state so it's included.
+	// Legacy global has no state, so only project (which has state) is included.
 	scopes, err := resolveScopeForUpdate(ctx, true, true, globalDir, projectDir)
 	require.NoError(t, err)
-	assert.Equal(t, []string{installer.ScopeGlobal, installer.ScopeProject}, scopes)
+	assert.Equal(t, []string{installer.ScopeProject}, scopes)
 }
 
 // --- uninstall cross-scope hint verb tests ---

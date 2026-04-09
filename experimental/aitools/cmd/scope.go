@@ -107,12 +107,16 @@ func resolveScopeForUpdate(ctx context.Context, projectFlag, globalFlag bool, gl
 	}
 
 	if projectFlag && globalFlag {
-		// Global always passes through to the installer layer for legacy detection.
-		scopes := []string{installer.ScopeGlobal}
-		// Project scope requires state check (CWD-dependent guidance is useful).
-		projectScopes, err := withExplicitScopeCheck(projectDir, installer.ScopeProject, "update", projectDir, hasGlobal, hasProject)
-		if err == nil {
-			scopes = append(scopes, projectScopes...)
+		var scopes []string
+		if hasGlobal {
+			scopes = append(scopes, installer.ScopeGlobal)
+		}
+		if hasProject {
+			scopes = append(scopes, installer.ScopeProject)
+		}
+		if len(scopes) == 0 {
+			// Neither installed. Fall through to global for legacy detection.
+			return []string{installer.ScopeGlobal}, nil
 		}
 		return scopes, nil
 	}
@@ -221,7 +225,7 @@ func withExplicitScopeCheck(dir, scope, verb, projectDir string, hasGlobal, hasP
 func scopeNotInstalledError(scope, verb, projectDir string, hasGlobal, hasProject bool) error {
 	var msg string
 	if scope == installer.ScopeProject {
-		expectedPath := filepath.ToSlash(filepath.Join(projectDir, ".databricks", "aitools", "skills"))
+		expectedPath := filepath.ToSlash(projectDir)
 		msg = fmt.Sprintf(
 			"no project-scoped skills found in the current directory.\n\n"+
 				"Project-scoped skills are detected based on your working directory.\n"+
