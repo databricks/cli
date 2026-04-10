@@ -238,6 +238,22 @@ func TestSuggestVarPrefixTypo(t *testing.T) {
 	assert.Equal(t, "", m.suggest("vr.nonexistent", normalized))
 }
 
+func TestSuggestBareVarDoesNotPanic(t *testing.T) {
+	normalized := dyn.V(map[string]dyn.Value{
+		"variables": dyn.V(map[string]dyn.Value{
+			"my_cluster_id": dyn.V(map[string]dyn.Value{
+				"value": dyn.V("abc-123"),
+			}),
+		}),
+	})
+
+	m := &resolveVariableReferences{
+		prefixes: defaultPrefixes,
+	}
+
+	assert.Equal(t, "", m.suggest("var", normalized))
+}
+
 func TestSuggestNoSuggestionForCorrectPath(t *testing.T) {
 	normalized := dyn.V(map[string]dyn.Value{
 		"variables": dyn.V(map[string]dyn.Value{

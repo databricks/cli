@@ -30,6 +30,9 @@ func closestMatch(key string, candidates []string) (string, int) {
 		if d < bestDist {
 			bestDist = d
 			best = c
+			if d == 0 {
+				break
+			}
 		}
 	}
 	if bestDist > threshold {
@@ -144,7 +147,8 @@ func (m *resolveVariableReferences) suggest(
 
 	// Handle var.X → variables.X.value rewriting for internal lookup.
 	// Also detect typos in the "var" prefix itself (e.g., "vr", "va").
-	isVar := path.HasPrefix(varPath)
+	// Require at least 2 segments (e.g., "var.X") to avoid a panic on bare "var".
+	isVar := len(path) >= 2 && path.HasPrefix(varPath)
 	varPrefixCorrected := false
 	if !isVar && len(path) >= 2 {
 		if c, _ := closestMatch(path[0].Key(), []string{"var"}); c != "" {
