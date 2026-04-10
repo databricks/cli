@@ -67,26 +67,35 @@ the profile is an error.
 	}
 
 	var force bool
-	var profileName string
 	var deleteProfile bool
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
-	cmd.Flags().StringVar(&profileName, "profile", "", "The profile to log out of")
 	cmd.Flags().BoolVar(&deleteProfile, "delete", false, "Delete the profile from the config file")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profiler := profile.DefaultProfiler
 
-		// Resolve the positional argument to a profile name.
-		if profileName != "" && len(args) == 1 {
-			return errors.New("providing both --profile and a positional argument is not supported")
+		profileFlag := cmd.Flag("profile")
+		profileName := profileFlag.Value.String()
+
+		// The positional argument is a shorthand that resolves to either a
+		// profile or a host. It cannot be combined with explicit flags.
+		if profileFlag.Changed && len(args) == 1 {
+			return fmt.Errorf("argument %q cannot be combined with --profile. Use the --profile flag instead", args[0])
 		}
-		if profileName == "" && len(args) == 1 {
-			resolved, err := resolveLogoutArg(ctx, args[0], profiler)
+		if len(args) == 1 {
+			resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args[0], profiler)
 			if err != nil {
 				return err
 			}
-			profileName = resolved
+			if resolvedProfile != "" {
+				profileName = resolvedProfile
+			} else {
+				profileName, err = resolveHostToProfile(ctx, resolvedHost, profiler)
+				if err != nil {
+					return err
+				}
+			}
 		}
 
 		if profileName == "" {
@@ -303,56 +312,4 @@ func hostCacheKeyAndMatchFn(p profile.Profile) (string, profile.ProfileMatchFunc
 		return hostCacheKey, profile.WithHostAndAccountID(host, p.AccountID)
 	}
 	return hostCacheKey, profile.WithHost(host)
-}
-
-// resolveLogoutArg resolves a positional argument to a profile name. It first
-// tries to match the argument as a profile name, then as a host URL. If the
-// host matches multiple profiles in a non-interactive context, it returns an
-// error listing the matching profile names.
-func resolveLogoutArg(ctx context.Context, arg string, profiler profile.Profiler) (string, error) {
-	// Try as profile name first.
-	candidateProfile, err := loadProfileByName(ctx, arg, profiler)
-	if err != nil {
-		return "", err
-	}
-	if candidateProfile != nil {
-		return arg, nil
-	}
-
-	// Try as host URL.
-	canonicalHost := (&config.Config{Host: arg}).CanonicalHostName()
-	hostProfiles, err := profiler.LoadProfiles(ctx, profile.WithHost(canonicalHost))
-	if err != nil {
-		return "", err
-	}
-
-	switch len(hostProfiles) {
-	case 1:
-		return hostProfiles[0].Name, nil
-	case 0:
-		allProfiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
-		if err != nil {
-			return "", fmt.Errorf("no profile found matching %q", arg)
-		}
-		names := strings.Join(allProfiles.Names(), ", ")
-		return "", fmt.Errorf("no profile found matching %q. Available profiles: %s", arg, names)
-	default:
-		// Multiple profiles match the host.
-		if cmdio.IsPromptSupported(ctx) {
-			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
-				Label:             fmt.Sprintf("Multiple profiles found for %q. Select one to log out of", arg),
-				Profiles:          hostProfiles,
-				StartInSearchMode: len(hostProfiles) > 5,
-				ActiveTemplate:    `▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}`,
-				InactiveTemplate:  `  {{.PaddedName}}{{if .AccountID}} (account: {{.AccountID | faint}}){{else}} ({{.Host | faint}}){{end}}`,
-				SelectedTemplate:  `{{ "Selected profile" | faint }}: {{ .Name | bold }}`,
-			})
-			if err != nil {
-				return "", err
-			}
-			return selected, nil
-		}
-		names := strings.Join(hostProfiles.Names(), ", ")
-		return "", fmt.Errorf("multiple profiles found matching host %q: %s. Please specify the profile name directly", arg, names)
-	}
 }

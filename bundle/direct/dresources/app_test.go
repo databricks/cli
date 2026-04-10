@@ -57,7 +57,7 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &apps.App{Name: "test-app"})
+	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -113,7 +113,7 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &apps.App{Name: "test-app"})
+	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)

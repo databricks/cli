@@ -14,17 +14,13 @@ import (
 )
 
 func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState) error {
-	entry, hasEntry := db.GetResourceEntry(d.ResourceKey)
-	if !hasEntry {
+	id := db.GetResourceID(d.ResourceKey)
+	if id == "" {
 		log.Infof(ctx, "Cannot delete %s: missing from state", d.ResourceKey)
 		return nil
 	}
 
-	if entry.ID == "" {
-		return errors.New("invalid state: empty id")
-	}
-
-	return d.Delete(ctx, db, entry.ID)
+	return d.Delete(ctx, db, id)
 }
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {
@@ -32,14 +28,9 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 		return d.Create(ctx, db, newState)
 	}
 
-	entry, hasEntry := db.GetResourceEntry(d.ResourceKey)
-	if !hasEntry {
-		return errors.New("state entry not found")
-	}
-
-	oldID := entry.ID
+	oldID := db.GetResourceID(d.ResourceKey)
 	if oldID == "" {
-		return errors.New("invalid state: empty id")
+		return errors.New("state entry not found")
 	}
 
 	switch actionType {

@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -279,95 +280,14 @@ func TestLogoutNoTokensWithDelete(t *testing.T) {
 	assert.Empty(t, profiles)
 }
 
-func TestLogoutResolveArgMatchesProfileName(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	profiler := profile.InMemoryProfiler{
-		Profiles: profile.Profiles{
-			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
-			{Name: "staging", Host: "https://staging.cloud.databricks.com", AuthType: "databricks-cli"},
-		},
-	}
-
-	resolved, err := resolveLogoutArg(ctx, "dev", profiler)
-	require.NoError(t, err)
-	assert.Equal(t, "dev", resolved)
-}
-
-func TestLogoutResolveArgMatchesHostWithOneProfile(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	profiler := profile.InMemoryProfiler{
-		Profiles: profile.Profiles{
-			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
-			{Name: "staging", Host: "https://staging.cloud.databricks.com", AuthType: "databricks-cli"},
-		},
-	}
-
-	resolved, err := resolveLogoutArg(ctx, "https://dev.cloud.databricks.com", profiler)
-	require.NoError(t, err)
-	assert.Equal(t, "dev", resolved)
-}
-
-func TestLogoutResolveArgMatchesHostWithMultipleProfiles(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	profiler := profile.InMemoryProfiler{
-		Profiles: profile.Profiles{
-			{Name: "dev1", Host: "https://shared.cloud.databricks.com", AuthType: "databricks-cli"},
-			{Name: "dev2", Host: "https://shared.cloud.databricks.com", AuthType: "databricks-cli"},
-		},
-	}
-
-	_, err := resolveLogoutArg(ctx, "https://shared.cloud.databricks.com", profiler)
-	assert.ErrorContains(t, err, "multiple profiles found matching host")
-	assert.ErrorContains(t, err, "dev1")
-	assert.ErrorContains(t, err, "dev2")
-}
-
-func TestLogoutResolveArgMatchesNothing(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	profiler := profile.InMemoryProfiler{
-		Profiles: profile.Profiles{
-			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
-			{Name: "staging", Host: "https://staging.cloud.databricks.com", AuthType: "databricks-cli"},
-		},
-	}
-
-	_, err := resolveLogoutArg(ctx, "https://unknown.cloud.databricks.com", profiler)
-	assert.ErrorContains(t, err, `no profile found matching "https://unknown.cloud.databricks.com"`)
-	assert.ErrorContains(t, err, "dev")
-	assert.ErrorContains(t, err, "staging")
-}
-
-func TestLogoutResolveArgCanonicalizesHost(t *testing.T) {
-	profiler := profile.InMemoryProfiler{
-		Profiles: profile.Profiles{
-			{Name: "dev", Host: "https://dev.cloud.databricks.com", AuthType: "databricks-cli"},
-		},
-	}
-
-	cases := []struct {
-		name string
-		arg  string
-	}{
-		{name: "canonical URL", arg: "https://dev.cloud.databricks.com"},
-		{name: "trailing slash", arg: "https://dev.cloud.databricks.com/"},
-		{name: "no scheme", arg: "dev.cloud.databricks.com"},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx := cmdio.MockDiscard(t.Context())
-			resolved, err := resolveLogoutArg(ctx, tc.arg, profiler)
-			require.NoError(t, err)
-			assert.Equal(t, "dev", resolved)
-		})
-	}
-}
-
 func TestLogoutProfileFlagAndPositionalArgConflict(t *testing.T) {
+	parent := &cobra.Command{Use: "root"}
+	parent.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd := newLogoutCommand()
-	cmd.SetArgs([]string{"myprofile", "--profile", "other"})
-	err := cmd.Execute()
-	assert.ErrorContains(t, err, "providing both --profile and a positional argument is not supported")
+	parent.AddCommand(cmd)
+	parent.SetArgs([]string{"logout", "myprofile", "--profile", "other"})
+	err := parent.Execute()
+	assert.ErrorContains(t, err, `argument "myprofile" cannot be combined with --profile`)
 }
 
 func TestLogoutDeleteClearsDefaultProfile(t *testing.T) {

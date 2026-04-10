@@ -416,14 +416,20 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
 			}
 
-			for ind, envset := range expanded {
-				envname := strings.Join(envset, "/")
-				t.Run(envname, func(t *testing.T) {
-					if runParallel {
-						t.Parallel()
-					}
-					runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
-				})
+			// If the matrix expands to a single empty envset, run the test directly
+			// without creating a subtest (avoids the "#00" dummy subtest name).
+			if len(expanded) == 1 && len(expanded[0]) == 0 {
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters)
+			} else {
+				for ind, envset := range expanded {
+					envname := strings.Join(envset, "/")
+					t.Run(envname, func(t *testing.T) {
+						if runParallel {
+							t.Parallel()
+						}
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
+					})
+				}
 			}
 		})
 	}

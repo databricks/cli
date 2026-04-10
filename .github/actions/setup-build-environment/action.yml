@@ -12,6 +12,9 @@ runs:
     - name: Checkout repository and submodules
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+    - name: Setup JFrog
+      uses: ./.github/actions/setup-jfrog
+
     - name: Create cache identifier
       run: echo "${{ inputs.cache-key }}" > cache.txt
       shell: bash
