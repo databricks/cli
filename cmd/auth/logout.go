@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -282,19 +283,33 @@ func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Pr
 	return nil
 }
 
-// hostCacheKeyAndMatchFn returns the token cache key and a profile match
-// function for the host-based token entry. Account and unified profiles use
-// host/oidc/accounts/<account_id> as the cache key and match on both host and
-// account ID; workspace profiles use just the host.
+// hostCacheKeyAndMatchFn returns the host-based token cache key and a profile
+// match function for the given profile. The match function is used to check
+// whether other profiles share the same host-based cache entry.
 func hostCacheKeyAndMatchFn(p profile.Profile) (string, profile.ProfileMatchFunction) {
-	host := (&config.Config{Host: p.Host}).CanonicalHostName()
-	if host == "" {
+	// Use ToOAuthArgument to derive the host-based cache key via the same
+	// routing logic the SDK used when the token was written during login.
+	// This includes a .well-known/databricks-config call that distinguishes
+	// classic workspace hosts from SPOG hosts — a distinction that cannot
+	// be made from the profile fields alone.
+	arg, err := (auth.AuthArguments{
+		Host:          p.Host,
+		AccountID:     p.AccountID,
+		WorkspaceID:   p.WorkspaceID,
+		IsUnifiedHost: p.IsUnifiedHost,
+		// Profile is deliberately empty so GetCacheKey returns the host-based
+		// key rather than the profile name.
+		// DiscoveryURL is left empty to force a fresh .well-known resolution
+		// so that the routing decision reflects the host's current state.
+	}).ToOAuthArgument()
+	if err != nil {
 		return "", nil
 	}
+	hostCacheKey := arg.GetCacheKey()
 
-	if p.AccountID != "" {
-		return host + "/oidc/accounts/" + p.AccountID, profile.WithHostAndAccountID(host, p.AccountID)
+	host := (&config.Config{Host: p.Host}).CanonicalHostName()
+	if p.AccountID != "" && strings.Contains(hostCacheKey, "/oidc/accounts/") {
+		return hostCacheKey, profile.WithHostAndAccountID(host, p.AccountID)
 	}
-
-	return host, profile.WithHost(host)
+	return hostCacheKey, profile.WithHost(host)
 }
