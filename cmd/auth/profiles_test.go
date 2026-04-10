@@ -86,8 +86,8 @@ func newProfileTestServer(t *testing.T, accountScoped bool, accountID string) *h
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.URL.Path == "/.well-known/databricks-config":
+		switch r.URL.Path {
+		case "/.well-known/databricks-config":
 			oidcEndpoint := r.Host + "/oidc"
 			if accountScoped {
 				oidcEndpoint = r.Host + "/oidc/accounts/" + accountID
@@ -96,11 +96,11 @@ func newProfileTestServer(t *testing.T, accountScoped bool, accountID string) *h
 				"account_id":    accountID,
 				"oidc_endpoint": oidcEndpoint,
 			})
-		case r.URL.Path == "/api/2.0/preview/scim/v2/Me":
+		case "/api/2.0/preview/scim/v2/Me":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"userName": "test-user",
 			})
-		case r.URL.Path == "/api/2.0/accounts/"+accountID+"/workspaces":
+		case "/api/2.0/accounts/" + accountID + "/workspaces":
 			_ = json.NewEncoder(w).Encode([]map[string]any{})
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -188,11 +188,10 @@ func TestProfileLoadUnifiedHostFallback(t *testing.T) {
 	// AccountConfig so the profile is still validated.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.URL.Path == "/.well-known/databricks-config":
-			// Simulate unreachable/missing .well-known endpoint
+		switch r.URL.Path {
+		case "/.well-known/databricks-config":
 			w.WriteHeader(http.StatusNotFound)
-		case r.URL.Path == "/api/2.0/accounts/unified-acct/workspaces":
+		case "/api/2.0/accounts/unified-acct/workspaces":
 			_ = json.NewEncoder(w).Encode([]map[string]any{})
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -227,13 +226,13 @@ func TestProfileLoadClassicAccountHost(t *testing.T) {
 	// by ConfigType(). Verify that behavior is preserved.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		switch {
-		case r.URL.Path == "/.well-known/databricks-config":
+		switch r.URL.Path {
+		case "/.well-known/databricks-config":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"account_id":    "classic-acct",
 				"oidc_endpoint": r.Host + "/oidc/accounts/classic-acct",
 			})
-		case r.URL.Path == "/api/2.0/accounts/classic-acct/workspaces":
+		case "/api/2.0/accounts/classic-acct/workspaces":
 			_ = json.NewEncoder(w).Encode([]map[string]any{})
 		default:
 			w.WriteHeader(http.StatusNotFound)
