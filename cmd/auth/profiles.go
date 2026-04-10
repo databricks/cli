@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -56,7 +58,30 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	switch cfg.ConfigType() {
+	// ConfigType() classifies based on the host URL prefix (accounts.* →
+	// AccountConfig, everything else → WorkspaceConfig). SPOG hosts don't
+	// match the accounts.* prefix so they're misclassified as WorkspaceConfig.
+	// Use the resolved DiscoveryURL (from .well-known/databricks-config) to
+	// detect SPOG hosts with account-scoped OIDC, matching the routing logic
+	// in auth.AuthArguments.ToOAuthArgument().
+	configType := cfg.ConfigType()
+	isAccountScopedOIDC := cfg.DiscoveryURL != "" && strings.Contains(cfg.DiscoveryURL, "/oidc/accounts/")
+	if configType != config.AccountConfig && cfg.AccountID != "" && isAccountScopedOIDC {
+		if cfg.WorkspaceID != "" && cfg.WorkspaceID != auth.WorkspaceIDNone {
+			configType = config.WorkspaceConfig
+		} else {
+			configType = config.AccountConfig
+		}
+	}
+
+	// Legacy backward compat: profiles with Experimental_IsUnifiedHost where
+	// .well-known is unreachable (so DiscoveryURL is empty). Matches the
+	// fallback in auth.AuthArguments.ToOAuthArgument().
+	if configType == config.InvalidConfig && cfg.Experimental_IsUnifiedHost && cfg.AccountID != "" {
+		configType = config.AccountConfig
+	}
+
+	switch configType {
 	case config.AccountConfig:
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err != nil {
