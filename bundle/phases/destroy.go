@@ -97,8 +97,11 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(false))
-		if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
-			logdiag.LogError(ctx, err)
+		// Skip Finalize for empty plans to avoid creating a state file when nothing was destroyed.
+		if len(plan.Plan) > 0 {
+			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
+				logdiag.LogError(ctx, err)
+			}
 		}
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
