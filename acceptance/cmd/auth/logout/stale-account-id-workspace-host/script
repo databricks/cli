@@ -30,7 +30,7 @@ cat > "./home/.databricks/token-cache.json" <<EOF
 }
 EOF
 
-title "Profiles before logout — logfood should be valid\n"
+title "Profiles before logout — logfood should be valid"
 trace $CLI auth profiles
 
 title "Token cache keys before logout\n"
@@ -45,8 +45,8 @@ cat "./home/.databrickscfg"
 title "Token cache keys after logout — both entries should be removed\n"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
-title "Profiles after logout — logfood should be invalid\n"
+title "Profiles after logout — logfood should be invalid"
 trace $CLI auth profiles
 
-title "Logged out profile should no longer return a token\n"
+title "Logged out profile should no longer return a token"
 trace musterr $CLI auth token --profile logfood
