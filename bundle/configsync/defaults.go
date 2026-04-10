@@ -97,11 +97,19 @@ var serverSideDefaults = map[string]any{
 	"resources.pipelines.*.continuous": false,
 }
 
-func shouldSkipField(path string, value any) bool {
+// shouldSkipField checks if a field should be skipped in change detection.
+// When hasConfigValue is true (field is set in config or saved state), only
+// "always skip" fields are skipped. Backend defaults are only skipped when the
+// field is not in config/state, matching the behavior of shouldSkipBackendDefault
+// in the direct deployment engine.
+func shouldSkipField(path string, value any, hasConfigValue bool) bool {
 	for pattern, expected := range serverSideDefaults {
 		if matchPattern(pattern, path) {
 			if _, ok := expected.(skipAlways); ok {
 				return true
+			}
+			if hasConfigValue {
+				return false
 			}
 			if _, ok := expected.(skipIfZeroOrNil); ok {
 				return value == nil || value == int64(0)
