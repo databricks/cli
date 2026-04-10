@@ -48,8 +48,10 @@ func TestConsistentDatabricksSdkVersion(t *testing.T) {
 
 	// Using the go CLI query for the git hash corresponding to the databricks-sdk-go version
 	cmd := exec.Command("go", "list", "-m", "-json", "-mod=readonly", fullPath)
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
 	out, err := cmd.Output()
-	require.NoError(t, err)
+	require.NoError(t, err, "go list failed: %s", stderr.String())
 	parsedOutput := new(goListResponse)
 	err = json.Unmarshal(out, parsedOutput)
 	require.NoError(t, err)
