@@ -481,6 +481,24 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"vector_search_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
+			Name:         "vs-endpoint-permissions",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/vector-search-endpoints/" + waiter.Response.Id,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
 	"alerts.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		resp, err := client.AlertsV2.CreateAlert(ctx, sql.CreateAlertV2Request{
 			Alert: sql.AlertV2{

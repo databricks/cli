@@ -1924,6 +1924,9 @@
                       },
                       "name": {
                         "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
                       }
                     },
                     "additionalProperties": false,
@@ -1937,6 +1940,38 @@
                     "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                   }
                 ]
+              },
+              "resources.VectorSearchEndpointPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.VectorSearchEndpointPermissionLevel": {
+                "type": "string"
               },
               "resources.Volume": {
                 "oneOf": [
@@ -11297,6 +11332,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.VectorSearchEndpointPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
                       }
                     },
                     {

@@ -1899,7 +1899,9 @@
                 "type": "object",
                 "properties": {
                   "budget_policy_id": {
-                    "$ref": "#/$defs/string"
+                    "$ref": "#/$defs/string",
+                    "x-databricks-preview": "PRIVATE",
+                    "doNotSuggest": true
                   },
                   "endpoint_type": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType"
@@ -1912,6 +1914,9 @@
                   },
                   "name": {
                     "$ref": "#/$defs/string"
+                  },
+                  "permissions": {
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
                   }
                 },
                 "additionalProperties": false,
@@ -1919,6 +1924,30 @@
                   "endpoint_type",
                   "name"
                 ]
+              },
+              "resources.VectorSearchEndpointPermission": {
+                "type": "object",
+                "properties": {
+                  "group_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "level": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermissionLevel"
+                  },
+                  "service_principal_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "user_name": {
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "level"
+                ]
+              },
+              "resources.VectorSearchEndpointPermissionLevel": {
+                "type": "string"
               },
               "resources.Volume": {
                 "type": "object",
@@ -2620,6 +2649,11 @@
             "config.Workspace": {
               "type": "object",
               "properties": {
+                "account_id": {
+                  "description": "The Databricks account ID.",
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.296.0"
+                },
                 "artifact_path": {
                   "description": "The artifact path to use within the workspace for both deployments and workflow runs",
                   "$ref": "#/$defs/string",
@@ -4781,19 +4815,23 @@
               "properties": {
                 "alert_id": {
                   "description": "The alert_id is the canonical identifier of the alert.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.296.0"
                 },
                 "subscribers": {
                   "description": "The subscribers receive alert evaluation result notifications after the alert task is completed.\nThe number of subscriptions is limited to 100.",
-                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.AlertTaskSubscriber"
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.AlertTaskSubscriber",
+                  "x-since-version": "v0.296.0"
                 },
                 "warehouse_id": {
                   "description": "The warehouse_id identifies the warehouse settings used by the alert task.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.296.0"
                 },
                 "workspace_path": {
                   "description": "The workspace_path is the path to the alert file in the workspace. The path:\n* must start with \"/Workspace\"\n* must be a normalized path.\nUser has to select only one of alert_id or workspace_path to identify the alert.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.296.0"
                 }
               },
               "additionalProperties": false
@@ -4803,11 +4841,13 @@
               "description": "Represents a subscriber that will receive alert notifications.\nA subscriber can be either a user (via email) or a notification destination (via destination_id).",
               "properties": {
                 "destination_id": {
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.296.0"
                 },
                 "user_name": {
                   "description": "A valid workspace email address.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.296.0"
                 }
               },
               "additionalProperties": false
@@ -6187,7 +6227,8 @@
               "properties": {
                 "alert_task": {
                   "description": "New alert v2 task",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AlertTask"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AlertTask",
+                  "x-since-version": "v0.296.0"
                 },
                 "clean_rooms_notebook_task": {
                   "description": "The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook\nwhen the `clean_rooms_notebook_task` field is present.",
@@ -6665,15 +6706,18 @@
               "properties": {
                 "catalog_name": {
                   "description": "(Required, Immutable) The name of the catalog for the connector's staging storage location.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.296.0"
                 },
                 "schema_name": {
                   "description": "(Required, Immutable) The name of the schema for the connector's staging storage location.",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.296.0"
                 },
                 "volume_name": {
                   "description": "(Optional) The Unity Catalog-compatible name for the storage location.\nThis is the volume to use for the data that is extracted by the connector.\nSpark Declarative Pipelines system will automatically create the volume under the catalog and schema.\nFor Combined Cdc Managed Ingestion pipelines default name for the volume would be :\n__databricks_ingestion_gateway_staging_data-$pipelineId",
-                  "$ref": "#/$defs/string"
+                  "$ref": "#/$defs/string",
+                  "x-since-version": "v0.296.0"
                 }
               },
               "additionalProperties": false,
@@ -6829,13 +6873,15 @@
                   "description": "(Optional) Connector Type for sources. Ex: CDC, Query Based.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorType",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v0.296.0"
                 },
                 "data_staging_options": {
                   "description": "(Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline\nwith Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.\nIf not specified, the volume for staged data will be created in catalog and schema/target specified in the\ntop level pipeline definition.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DataStagingOptions",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true
+                  "doNotSuggest": true,
+                  "x-since-version": "v0.296.0"
                 },
                 "full_refresh_window": {
                   "description": "(Optional) A window that specifies a set of time ranges for snapshot queries in CDC.",
@@ -8879,7 +8925,11 @@
               ]
             },
             "vectorsearch.EndpointType": {
-              "type": "string"
+              "type": "string",
+              "description": "Type of endpoint.",
+              "enum": [
+                "STANDARD"
+              ]
             },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "type": "object",
@@ -9189,6 +9239,12 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
+                  }
+                },
+                "resources.VectorSearchEndpointPermission": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
                   }
                 }
               },

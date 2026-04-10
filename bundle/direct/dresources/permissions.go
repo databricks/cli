@@ -26,6 +26,7 @@ var permissionResourceToObjectType = map[string]string{
 	"model_serving_endpoints": "/serving-endpoints/",
 	"pipelines":               "/pipelines/",
 	"sql_warehouses":          "/sql/warehouses/",
+	"vector_search_endpoints": "/vector-search-endpoints/",
 }
 
 type ResourcePermissions struct {

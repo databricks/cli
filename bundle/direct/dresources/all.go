@@ -46,6 +46,7 @@ var SupportedResources = map[string]any{
 	"secret_scopes.permissions":           (*ResourceSecretScopeAcls)(nil),
 	"model_serving_endpoints.permissions": (*ResourcePermissions)(nil),
 	"dashboards.permissions":              (*ResourcePermissions)(nil),
+	"vector_search_endpoints.permissions": (*ResourcePermissions)(nil),
 
 	// Grants
 	"catalogs.grants":           (*ResourceGrants)(nil),

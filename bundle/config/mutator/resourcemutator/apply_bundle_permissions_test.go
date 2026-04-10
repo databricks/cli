@@ -28,7 +28,6 @@ var unsupportedResources = []string{
 	"synced_database_tables",
 	"postgres_branches",
 	"postgres_endpoints",
-	"vector_search_endpoints",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {
@@ -78,6 +77,10 @@ func TestApplyBundlePermissions(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app_1": {},
 					"app_2": {},
+				},
+				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+					"vs_1": {},
+					"vs_2": {},
 				},
 			},
 		},
@@ -139,6 +142,16 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Len(t, b.Config.Resources.Apps["app_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_USE", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, 3)
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_USE", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_CREATE", ServicePrincipalName: "TestServicePrincipal"})
+
+	require.Len(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, 3)
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_USE", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_2"].Permissions, resources.VectorSearchEndpointPermission{Level: "CAN_CREATE", ServicePrincipalName: "TestServicePrincipal"})
 }
 
 func TestWarningOnOverlapPermission(t *testing.T) {
