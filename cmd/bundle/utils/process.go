@@ -71,6 +71,10 @@ type ProcessOptions struct {
 	// When set, skips Build and PreDeployChecks phases, loads plan from file instead of calculating.
 	ReadPlanPath string
 
+	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
+	// (after state is opened and IDs loaded, before deferred Finalize).
+	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
+
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
 }
@@ -179,16 +183,30 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 		cmd.SetContext(ctx)
 
+		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
+		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
+		if needDirectState {
+			_, localPath := b.StateFilenameDirect(ctx)
+			if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+		}
+
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.
 		if opts.InitIDs || opts.ErrorOnEmptyState {
 			var modes []statemgmt.LoadMode
 			if opts.ErrorOnEmptyState {
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
-			bundle.ApplySeqContext(ctx, b,
+			mutators := []bundle.Mutator{
 				statemgmt.Load(stateDesc.Engine, modes...),
-				mutator.InitializeURLs(),
-			)
+			}
+			// InitializeURLs makes an extra API call; only run it when URLs are needed.
+			if opts.InitIDs {
+				mutators = append(mutators, mutator.InitializeURLs())
+			}
+			bundle.ApplySeqContext(ctx, b, mutators...)
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -218,8 +236,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		// Validate that the plan's lineage and serial match the current state
 		// This must happen before any file operations
-		_, localPath := b.StateFilenameDirect(ctx)
-		err = direct.ValidatePlanAgainstState(localPath, plan)
+		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return b, stateDesc, root.ErrAlreadyPrinted
@@ -306,6 +323,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
+		}
+	}
+
+	if opts.PostStateFunc != nil {
+		if err := opts.PostStateFunc(ctx, b, stateDesc); err != nil {
+			return b, stateDesc, err
 		}
 	}
 
