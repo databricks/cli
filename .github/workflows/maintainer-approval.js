@@ -258,32 +258,6 @@ async function selectRoundRobin(github, owner, repo, eligibleOwners, prAuthor) {
 
 // --- Comment builders ---
 
-function buildApprovedComment(description) {
-  const lines = [
-    MARKER,
-    `## ${description}`,
-    "",
-    `<sub>See ${OWNERS_LINK} for ownership rules.</sub>`,
-  ];
-  return lines.join("\n") + "\n";
-}
-
-function buildAllGroupsApprovedComment(groups, approvedBy) {
-  const lines = [MARKER, "## All ownership groups approved", ""];
-  for (const [pattern, { files }] of groups) {
-    if (pattern === "*") continue;
-    lines.push(`### \`${pattern}\` - approved`);
-    lines.push(`Files: ${files.map(f => `\`${f}\``).join(", ")}`);
-    const approver = approvedBy.get(pattern);
-    if (approver) {
-      lines.push(`Approved by: @${approver}`);
-    }
-    lines.push("");
-  }
-  lines.push(`<sub>See ${OWNERS_LINK} for ownership rules.</sub>`);
-  return lines.join("\n") + "\n";
-}
-
 function buildPendingPerGroupComment(groups, scores, dirScores, approvedBy, maintainers, prAuthor) {
   const authorLower = (prAuthor || "").toLowerCase();
   const lines = [MARKER, "## Approval status: pending", ""];
@@ -392,20 +366,39 @@ function buildSingleDomainPendingComment(sortedScores, dirScores, scoredCount, e
 
 const LEGACY_MARKER = "<!-- REVIEWER_SUGGESTION -->";
 
-async function postComment(github, owner, repo, prNumber, comment) {
+/**
+ * Create or edit the marker comment. Skips the edit if the body is unchanged.
+ * Cleans up duplicate or legacy marker comments, keeping only the first one.
+ */
+async function upsertComment(github, owner, repo, prNumber, newBody) {
   const comments = await github.paginate(github.rest.issues.listComments, {
     owner, repo, issue_number: prNumber,
   });
-  const toDelete = comments.filter(c =>
+  const markerComments = comments.filter(c =>
     c.body && (c.body.includes(MARKER) || c.body.includes(LEGACY_MARKER))
   );
-  for (const c of toDelete) {
-    await github.rest.issues.deleteComment({
-      owner, repo, comment_id: c.id,
+
+  if (markerComments.length > 0) {
+    const existing = markerComments[0];
+
+    // Clean up duplicates (legacy or accidental), keep the first.
+    for (const c of markerComments.slice(1)) {
+      await github.rest.issues.deleteComment({
+        owner, repo, comment_id: c.id,
+      });
+    }
+
+    // Skip if body is unchanged.
+    if (existing.body === newBody) return;
+
+    await github.rest.issues.updateComment({
+      owner, repo, comment_id: existing.id, body: newBody,
     });
+    return;
   }
+
   await github.rest.issues.createComment({
-    owner, repo, issue_number: prNumber, body: comment,
+    owner, repo, issue_number: prNumber, body: newBody,
   });
 }
 
@@ -459,8 +452,6 @@ module.exports = async ({ github, context, core }) => {
       state: "success",
       description: `Approved by @${approver}`,
     });
-    await postComment(github, owner, repo, prNumber,
-      buildApprovedComment(`Approved by @${approver}`));
     return;
   }
 
@@ -477,8 +468,6 @@ module.exports = async ({ github, context, core }) => {
         state: "success",
         description: "Approved (maintainer-authored PR)",
       });
-      await postComment(github, owner, repo, prNumber,
-        buildApprovedComment("Approved (maintainer-authored PR)"));
       return;
     }
   }
@@ -506,7 +495,7 @@ module.exports = async ({ github, context, core }) => {
     core
   );
 
-  // Set commit status
+  // Set commit status. Approved PRs return early (commit status is sufficient).
   if (result.allCovered && approverLogins.length > 0) {
     core.info("All ownership groups have per-path approval.");
     await github.rest.repos.createCommitStatus({
@@ -514,7 +503,10 @@ module.exports = async ({ github, context, core }) => {
       state: "success",
       description: "All ownership groups approved",
     });
-  } else if (result.hasWildcardFiles) {
+    return;
+  }
+
+  if (result.hasWildcardFiles) {
     const fileList = result.wildcardFiles.join(", ");
     const msg =
       `Files need maintainer review: ${fileList}. ` +
@@ -561,13 +553,11 @@ module.exports = async ({ github, context, core }) => {
   );
   const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
 
-  // Build comment based on approval state and ownership groups
+  // Build pending comment with reviewer suggestions.
   let comment;
   const groups = result.groups;
 
-  if (result.allCovered && approverLogins.length > 0) {
-    comment = buildAllGroupsApprovedComment(groups, result.approvedBy);
-  } else if (groups.size >= 2) {
+  if (groups.size >= 2) {
     comment = buildPendingPerGroupComment(
       groups, scores, dirScores, result.approvedBy, maintainers, authorLogin
     );
@@ -583,5 +573,5 @@ module.exports = async ({ github, context, core }) => {
   }
 
   core.info(comment);
-  await postComment(github, owner, repo, prNumber, comment);
+  await upsertComment(github, owner, repo, prNumber, comment);
 };
