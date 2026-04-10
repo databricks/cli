@@ -70,7 +70,7 @@ func filterEntityDefaults(basePath string, value any) any {
 	for key, val := range m {
 		fieldPath := basePath + "." + key
 
-		if shouldSkipField(fieldPath, val) {
+		if shouldSkipField(fieldPath, val, false) {
 			continue
 		}
 
@@ -91,7 +91,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
 	}
 
-	if shouldSkipField(path, normalizedValue) {
+	if shouldSkipField(path, normalizedValue, hasConfigValue) {
 		return &ConfigChangeDesc{
 			Operation: OperationSkip,
 		}, nil
