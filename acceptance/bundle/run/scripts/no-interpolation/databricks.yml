@@ -2,7 +2,7 @@ bundle:
   name: "no-interpolation"
 
 scripts:
-  one:
+  invalid_env_var:
     content: "echo ${FOO}"
-  two:
-    content: "echo ${var.BAR}"
+  invalid_unknown_prefix:
+    content: "echo ${unknown.path}"
