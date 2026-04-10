@@ -22,7 +22,7 @@ account_id = account-id
 auth_type  = databricks-cli
 
 === Delete first non-default profile (alpha)
->>> [CLI] auth logout --profile alpha --force --delete
+>>> [CLI] auth logout --profile alpha --auto-approve --delete
 Logged out of and deleted profile "alpha".
 
 === Backup file should exist
@@ -46,7 +46,7 @@ account_id = account-id
 auth_type  = databricks-cli
 
 === Delete last profile (gamma)
->>> [CLI] auth logout --profile gamma --force --delete
+>>> [CLI] auth logout --profile gamma --auto-approve --delete
 Logged out of and deleted profile "gamma".
 
 === Config after deleting gamma
