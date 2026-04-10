@@ -73,7 +73,6 @@ type ProcessOptions struct {
 
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
 	// (after state is opened and IDs loaded, before deferred Finalize).
-	// Opens the state DB for direct engine.
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
 	// Indicate whether the bundle operation originates from the pipelines CLI
