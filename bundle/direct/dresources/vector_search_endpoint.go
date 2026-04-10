@@ -52,7 +52,8 @@ func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vec
 	if err != nil {
 		return "", nil, err
 	}
-	return config.Name, waiter.Response, nil
+	id := config.Name
+	return id, waiter.Response, nil
 }
 
 func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (*vectorsearch.EndpointInfo, error) {

@@ -18,7 +18,8 @@ import (
 
 var (
 	allowedLevels = []string{permissions.CAN_MANAGE, permissions.CAN_VIEW, permissions.CAN_RUN}
-	levelsMap     = map[string](map[string]string){
+	// Map of allowed permission levels to the corresponding permission level of specific resources
+	levelsMap = map[string](map[string]string){
 		"jobs": {
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_VIEW",
