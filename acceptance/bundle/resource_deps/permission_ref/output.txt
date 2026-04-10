@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle plan
+create jobs.job_a
+create jobs.job_a.permissions
+create jobs.job_b
+create jobs.job_b.permissions
+
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

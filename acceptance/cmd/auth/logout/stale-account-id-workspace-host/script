@@ -1,0 +1,52 @@
+sethome "./home"
+
+cat > "./home/.databrickscfg" <<EOF
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[logfood]
+host = ${DATABRICKS_HOST}
+account_id = stale-account
+auth_type  = databricks-cli
+
+[__settings__]
+default_profile = logfood
+EOF
+
+mkdir -p "./home/.databricks"
+cat > "./home/.databricks/token-cache.json" <<EOF
+{
+  "version": 1,
+  "tokens": {
+    "logfood": {
+      "access_token": "logfood-cached-token",
+      "token_type": "Bearer"
+    },
+    "${DATABRICKS_HOST}": {
+      "access_token": "logfood-host-token",
+      "token_type": "Bearer"
+    }
+  }
+}
+EOF
+
+title "Profiles before logout — logfood should be valid"
+trace $CLI auth profiles
+
+title "Token cache keys before logout\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
+
+title "Logout without --delete"
+trace $CLI auth logout --profile logfood --force
+
+title "Config after logout — profile should still exist\n"
+cat "./home/.databrickscfg"
+
+title "Token cache keys after logout — both entries should be removed\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
+
+title "Profiles after logout — logfood should be invalid"
+trace $CLI auth profiles
+
+title "Logged out profile should no longer return a token"
+trace musterr $CLI auth token --profile logfood

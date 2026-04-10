@@ -2,11 +2,13 @@ package vscode
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
@@ -199,7 +201,7 @@ func TestValidateSettings_Complete(t *testing.T) {
 		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
 		"remote.SSH.remotePlatform": {"test-conn": "linux"},
 		"remote.SSH.remoteServerListenOnSocket": true,
-		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"]
 	}`)
 
 	missing := validateSettings(v, "test-conn")
@@ -213,7 +215,7 @@ func TestValidateSettings_Missing(t *testing.T) {
 	assert.False(t, missing.isEmpty())
 	assert.True(t, missing.portRange)
 	assert.True(t, missing.platform)
-	assert.Equal(t, []string{"ms-python.python", "ms-toolsai.jupyter"}, missing.extensions)
+	assert.Equal(t, []string{"ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"}, missing.extensions)
 }
 
 func TestValidateSettings_IncorrectValues(t *testing.T) {
@@ -227,7 +229,7 @@ func TestValidateSettings_IncorrectValues(t *testing.T) {
 	assert.False(t, missing.isEmpty())
 	assert.True(t, missing.portRange)
 	assert.True(t, missing.platform)
-	assert.Equal(t, []string{"ms-toolsai.jupyter"}, missing.extensions)
+	assert.Equal(t, []string{"ms-toolsai.jupyter", "databricks.databricks"}, missing.extensions)
 }
 
 func TestValidateSettings_DuplicateExtensionsNotReported(t *testing.T) {
@@ -235,7 +237,7 @@ func TestValidateSettings_DuplicateExtensionsNotReported(t *testing.T) {
 		"remote.SSH.serverPickPortsFromRange": {"test-conn": "29500-29505"},
 		"remote.SSH.remotePlatform": {"test-conn": "linux"},
 		"remote.SSH.remoteServerListenOnSocket": true,
-		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-python.python", "ms-toolsai.jupyter"]
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"]
 	}`)
 
 	missing := validateSettings(v, "test-conn")
@@ -246,7 +248,7 @@ func TestValidateSettings_MissingConnection(t *testing.T) {
 	v := parseTestValue(t, `{
 		"remote.SSH.serverPickPortsFromRange": {"other-conn": "29500-29505"},
 		"remote.SSH.remotePlatform": {"other-conn": "linux"},
-		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter"]
+		"remote.SSH.defaultExtensions": ["ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"]
 	}`)
 
 	// Validating for a different connection should show port and platform as missing
@@ -273,7 +275,7 @@ func TestUpdateSettings_PreserveExistingConnections(t *testing.T) {
 	missing := &missingSettings{
 		portRange:  true,
 		platform:   true,
-		extensions: []string{"ms-python.python", "ms-toolsai.jupyter"},
+		extensions: []string{"ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"},
 	}
 
 	err := updateSettings(&v, "conn-c", missing)
@@ -307,10 +309,11 @@ func TestUpdateSettings_PreserveExistingConnections(t *testing.T) {
 
 	// Check that extensions were merged
 	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
-	assert.Len(t, exts, 3)
+	assert.Len(t, exts, 4)
 	assert.Contains(t, exts, "other.extension")
 	assert.Contains(t, exts, "ms-python.python")
 	assert.Contains(t, exts, "ms-toolsai.jupyter")
+	assert.Contains(t, exts, "databricks.databricks")
 }
 
 func TestUpdateSettings_NewConnection(t *testing.T) {
@@ -319,7 +322,7 @@ func TestUpdateSettings_NewConnection(t *testing.T) {
 	missing := &missingSettings{
 		portRange:  true,
 		platform:   true,
-		extensions: []string{"ms-python.python", "ms-toolsai.jupyter"},
+		extensions: []string{"ms-python.python", "ms-toolsai.jupyter", "databricks.databricks"},
 	}
 
 	err := updateSettings(&v, "new-conn", missing)
@@ -334,9 +337,10 @@ func TestUpdateSettings_NewConnection(t *testing.T) {
 	assert.Equal(t, "linux", val)
 
 	exts := findStringSlice(t, v, jsonPtr(defaultExtensionsKey))
-	assert.Len(t, exts, 2)
+	assert.Len(t, exts, 3)
 	assert.Contains(t, exts, "ms-python.python")
 	assert.Contains(t, exts, "ms-toolsai.jupyter")
+	assert.Contains(t, exts, "databricks.databricks")
 }
 
 func TestUpdateSettings_GlobalExtensions(t *testing.T) {
@@ -426,45 +430,59 @@ func TestUpdateSettings_PartialUpdate(t *testing.T) {
 	assert.Len(t, exts, 2)
 }
 
-func TestBackupSettings(t *testing.T) {
+func TestCheckAndUpdateSettings_CreatesBackup(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("path setup differs on windows")
+	}
+
 	tmpDir := t.TempDir()
-	settingsPath := filepath.Join(tmpDir, "settings.json")
-	originalBak := settingsPath + ".original.bak"
-	latestBak := settingsPath + ".latest.bak"
+	t.Setenv("HOME", tmpDir)
 
-	originalContent := []byte(`{"key": "value"}`)
-	err := os.WriteFile(settingsPath, originalContent, 0o600)
+	ctx, tst := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer tst.Done()
+
+	settingsPath, err := getDefaultSettingsPath(ctx, "cursor")
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Dir(settingsPath), 0o755))
+
+	// Settings file with no Databricks-required keys → triggers an update prompt.
+	originalContent := []byte(`{}`)
+	require.NoError(t, os.WriteFile(settingsPath, originalContent, 0o600))
+
+	// Drain stderr (where the prompt is written) and feed "y" to stdin.
+	go func() { _, _ = io.Copy(io.Discard, tst.Stderr) }()
+	go func() {
+		_, _ = tst.Stdin.WriteString("y\n")
+		_ = tst.Stdin.Flush()
+	}()
+
+	err = CheckAndUpdateSettings(ctx, "cursor", "my-host")
 	require.NoError(t, err)
 
-	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
+	originalBakContent, err := os.ReadFile(settingsPath + fileutil.SuffixOriginalBak)
+	require.NoError(t, err)
+	assert.Equal(t, originalContent, originalBakContent)
 
-	// First backup: should create .original.bak
-	err = backupSettings(ctx, settingsPath)
+	// Second update for a new connection triggers another backup into .latest.bak.
+	postFirstContent, err := os.ReadFile(settingsPath)
 	require.NoError(t, err)
 
-	content, err := os.ReadFile(originalBak)
-	require.NoError(t, err)
-	assert.Equal(t, originalContent, content)
-	_, err = os.Stat(latestBak)
-	assert.True(t, os.IsNotExist(err))
+	go func() {
+		_, _ = tst.Stdin.WriteString("y\n")
+		_ = tst.Stdin.Flush()
+	}()
 
-	// Second backup: .original.bak exists, should create .latest.bak
-	updatedContent := []byte(`{"key": "updated"}`)
-	err = os.WriteFile(settingsPath, updatedContent, 0o600)
+	err = CheckAndUpdateSettings(ctx, "cursor", "my-host-2")
 	require.NoError(t, err)
 
-	err = backupSettings(ctx, settingsPath)
+	latestBakContent, err := os.ReadFile(settingsPath + fileutil.SuffixLatestBak)
 	require.NoError(t, err)
+	assert.Equal(t, postFirstContent, latestBakContent)
 
-	// .original.bak must remain unchanged
-	content, err = os.ReadFile(originalBak)
+	// .original.bak must still hold the very first snapshot.
+	originalBakContent2, err := os.ReadFile(settingsPath + fileutil.SuffixOriginalBak)
 	require.NoError(t, err)
-	assert.Equal(t, originalContent, content)
-
-	// .latest.bak should have the updated content
-	content, err = os.ReadFile(latestBak)
-	require.NoError(t, err)
-	assert.Equal(t, updatedContent, content)
+	assert.Equal(t, originalContent, originalBakContent2)
 }
 
 func TestSaveSettings_Formatting(t *testing.T) {
@@ -544,6 +562,7 @@ func TestGetManualInstructions_VSCode(t *testing.T) {
 	assert.Contains(t, instructions, "linux")
 	assert.Contains(t, instructions, "ms-python.python")
 	assert.Contains(t, instructions, "ms-toolsai.jupyter")
+	assert.Contains(t, instructions, "databricks.databricks")
 	assert.Contains(t, instructions, "remote.SSH.serverPickPortsFromRange")
 	assert.Contains(t, instructions, "remote.SSH.remotePlatform")
 	assert.Contains(t, instructions, "remote.SSH.defaultExtensions")

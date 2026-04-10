@@ -1,20 +1,20 @@
 sethome "./home"
 
-cat > "./home/.databrickscfg" <<'EOF'
+cat > "./home/.databrickscfg" <<EOF
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
 
 [dev]
-host = https://shared.cloud.databricks.com
+host = ${DATABRICKS_HOST}
 auth_type  = databricks-cli
 
 [staging]
-host = https://shared.cloud.databricks.com
+host = ${DATABRICKS_HOST}
 auth_type  = databricks-cli
 EOF
 
 mkdir -p "./home/.databricks"
-cat > "./home/.databricks/token-cache.json" <<'EOF'
+cat > "./home/.databricks/token-cache.json" <<EOF
 {
   "version": 1,
   "tokens": {
@@ -26,7 +26,7 @@ cat > "./home/.databricks/token-cache.json" <<'EOF'
       "access_token": "staging-cached-token",
       "token_type": "Bearer"
     },
-    "https://shared.cloud.databricks.com": {
+    "${DATABRICKS_HOST}": {
       "access_token": "shared-host-token",
       "token_type": "Bearer"
     }

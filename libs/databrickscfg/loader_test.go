@@ -164,3 +164,82 @@ func TestAsMultipleProfilesReturnsFalseForNil(t *testing.T) {
 	assert.False(t, ok)
 	assert.Nil(t, names)
 }
+
+func TestLoaderDisambiguatesByWorkspaceID(t *testing.T) {
+	cfg := config.Config{
+		Loaders: []config.Loader{
+			ResolveProfileFromHost,
+		},
+		ConfigFile:  "profile/testdata/databrickscfg",
+		Host:        "https://spog.databricks.com",
+		WorkspaceID: "111",
+	}
+
+	err := cfg.EnsureResolved()
+	require.NoError(t, err)
+	assert.Equal(t, "spog-ws1", cfg.Profile)
+	assert.Equal(t, "spog-ws1", cfg.Token)
+}
+
+func TestLoaderDisambiguatesByWorkspaceIDSecondProfile(t *testing.T) {
+	cfg := config.Config{
+		Loaders: []config.Loader{
+			ResolveProfileFromHost,
+		},
+		ConfigFile:  "profile/testdata/databrickscfg",
+		Host:        "https://spog.databricks.com",
+		WorkspaceID: "222",
+	}
+
+	err := cfg.EnsureResolved()
+	require.NoError(t, err)
+	assert.Equal(t, "spog-ws2", cfg.Profile)
+	assert.Equal(t, "spog-ws2", cfg.Token)
+}
+
+func TestLoaderErrorsOnMultipleMatchesWithSameWorkspaceID(t *testing.T) {
+	cfg := config.Config{
+		Loaders: []config.Loader{
+			ResolveProfileFromHost,
+		},
+		ConfigFile:  "profile/testdata/databrickscfg",
+		Host:        "https://spog-dup.databricks.com",
+		WorkspaceID: "333",
+	}
+
+	err := cfg.EnsureResolved()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "multiple profiles matched: spog-dup1, spog-dup2")
+}
+
+func TestLoaderErrorsOnMultipleMatchesWithoutWorkspaceID(t *testing.T) {
+	// Without workspace_id, multiple host matches still error as before.
+	cfg := config.Config{
+		Loaders: []config.Loader{
+			ResolveProfileFromHost,
+		},
+		ConfigFile: "profile/testdata/databrickscfg",
+		Host:       "https://spog.databricks.com",
+	}
+
+	err := cfg.EnsureResolved()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "multiple profiles matched: spog-ws1, spog-ws2")
+}
+
+func TestLoaderNoWorkspaceIDMatchFallsThrough(t *testing.T) {
+	// workspace_id doesn't match any of the host-matching profiles.
+	// Falls back to the original host ambiguity error.
+	cfg := config.Config{
+		Loaders: []config.Loader{
+			ResolveProfileFromHost,
+		},
+		ConfigFile:  "profile/testdata/databrickscfg",
+		Host:        "https://spog.databricks.com",
+		WorkspaceID: "999",
+	}
+
+	err := cfg.EnsureResolved()
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "multiple profiles matched: spog-ws1, spog-ws2")
+}

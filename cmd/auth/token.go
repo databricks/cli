@@ -5,14 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -37,7 +40,9 @@ const (
 )
 
 // applyUnifiedHostFlags copies unified host fields from the profile to the
-// auth arguments when they are not already set.
+// auth arguments when they are not already set. WorkspaceID is NOT copied
+// here; it is deferred to setHostAndAccountId() so that URL query params
+// (?o=...) can override stale profile values.
 func applyUnifiedHostFlags(p *profile.Profile, args *auth.AuthArguments) {
 	if p == nil {
 		return
@@ -45,53 +50,67 @@ func applyUnifiedHostFlags(p *profile.Profile, args *auth.AuthArguments) {
 	if !args.IsUnifiedHost && p.IsUnifiedHost {
 		args.IsUnifiedHost = p.IsUnifiedHost
 	}
-	if args.WorkspaceID == "" && p.WorkspaceID != "" {
-		args.WorkspaceID = p.WorkspaceID
-	}
 }
 
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "token [HOST_OR_PROFILE]",
+		Use:   "token [PROFILE]",
 		Short: "Get authentication token",
 		Long: `Get authentication token from the local cache in ~/.databricks/token-cache.json.
-Refresh the access token if it is expired. Note: This command only works with
-U2M authentication (using the 'databricks auth login' command). M2M authentication
-using a client ID and secret is not supported.`,
+Refresh the access token if it is expired or close to expiry. Use --force-refresh
+to bypass expiry checks. Note: This command only works with U2M authentication
+(using the 'databricks auth login' command). M2M authentication using a client ID
+and secret is not supported.`,
 	}
 
 	var tokenTimeout time.Duration
 	cmd.Flags().DurationVar(&tokenTimeout, "timeout", defaultTimeout,
 		"Timeout for acquiring a token.")
 
+	var forceRefresh bool
+	cmd.Flags().BoolVar(&forceRefresh, "force-refresh", false,
+		"Force a token refresh even if the cached token is still valid.")
+
+	cmd.PreRunE = profileHostConflictCheck
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		profileName := ""
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil {
-			profileName = profileFlag.Value.String()
-		}
+		profileName := cmd.Flag("profile").Value.String()
 
 		t, err := loadToken(ctx, loadTokenArgs{
 			authArguments:      authArguments,
 			profileName:        profileName,
 			args:               args,
 			tokenTimeout:       tokenTimeout,
+			forceRefresh:       forceRefresh,
 			profiler:           profile.DefaultProfiler,
 			persistentAuthOpts: nil,
 		})
 		if err != nil {
 			return err
 		}
-		raw, err := json.MarshalIndent(t, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, _ = cmd.OutOrStdout().Write(raw)
-		return nil
+		// Only honor the explicit --output text flag, not implicit text mode
+		// (e.g. from DATABRICKS_OUTPUT_FORMAT). auth token defaults to JSON,
+		// and changing that implicitly would break scripts that parse JSON output.
+		textMode := cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText
+		return writeTokenOutput(cmd.OutOrStdout(), t, textMode)
 	}
 
 	return cmd
+}
+
+func writeTokenOutput(w io.Writer, t *oauth2.Token, textMode bool) error {
+	if textMode {
+		_, err := fmt.Fprintln(w, t.AccessToken)
+		return err
+	}
+
+	raw, err := json.MarshalIndent(t, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(raw)
+	return err
 }
 
 type loadTokenArgs struct {
@@ -107,6 +126,9 @@ type loadTokenArgs struct {
 	// tokenTimeout is the timeout for retrieving (and potentially refreshing) an OAuth token.
 	tokenTimeout time.Duration
 
+	// forceRefresh forces a token refresh even if the cached token is still valid.
+	forceRefresh bool
+
 	// profiler is the profiler to use for reading the host and account ID from the .databrickscfg file.
 	profiler profile.Profiler
 
@@ -118,29 +140,36 @@ type loadTokenArgs struct {
 // the provided profiler if not explicitly provided. If the token cannot be refreshed, a helpful error message
 // is printed to the user with steps to reauthenticate.
 func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
-	// If a profile is provided we read the host from the .databrickscfg file
-	if args.profileName != "" && len(args.args) > 0 {
-		return nil, errors.New("providing both a profile and host is not supported")
+	// The positional argument is a shorthand that resolves to either a
+	// profile or a host. It cannot be combined with explicit flags.
+	if len(args.args) > 0 && (args.authArguments.Host != "" || args.profileName != "") {
+		return nil, fmt.Errorf("argument %q cannot be combined with --host or --profile. Use the --host and --profile flags instead", args.args[0])
 	}
 
-	// When no explicit --profile flag is provided, check the env var. This
-	// handles the case where downstream tools (like the Terraform provider)
-	// pass --host but not --profile, while DATABRICKS_CONFIG_PROFILE is set.
-	if args.profileName == "" {
-		args.profileName = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
-	}
-
-	// If no --profile flag, try resolving the positional arg as a profile name.
-	// If it matches, use it. If not, fall through to host treatment.
-	if args.profileName == "" && len(args.args) == 1 {
-		candidateProfile, err := loadProfileByName(ctx, args.args[0], args.profiler)
+	// Resolve the positional arg as a profile name first, then as a host.
+	// Error if it matches neither. This runs before the DATABRICKS_CONFIG_PROFILE
+	// env var check so that an explicit positional argument always goes through
+	// profile-first resolution.
+	if len(args.args) == 1 {
+		resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args.args[0], args.profiler)
 		if err != nil {
 			return nil, err
 		}
-		if candidateProfile != nil {
-			args.profileName = args.args[0]
+		if resolvedProfile != "" {
+			args.profileName = resolvedProfile
+			args.args = nil
+		} else {
+			args.authArguments.Host = resolvedHost
 			args.args = nil
 		}
+	}
+
+	// When no explicit --profile flag or positional arg is provided, check the
+	// env var. This handles the case where downstream tools (like the Terraform
+	// provider) pass --host but not --profile, while DATABRICKS_CONFIG_PROFILE
+	// is set.
+	if args.profileName == "" {
+		args.profileName = env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
 	}
 
 	existingProfile, err := loadProfileByName(ctx, args.profileName, args.profiler)
@@ -176,19 +205,15 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	// primary key. Once older SDKs have migrated to profile-based keys,
 	// dualWrite and the host key can be removed entirely.
 	if args.profileName == "" && args.authArguments.Host != "" {
-		cfg := &config.Config{
-			Host:                       args.authArguments.Host,
-			AccountID:                  args.authArguments.AccountID,
-			Experimental_IsUnifiedHost: args.authArguments.IsUnifiedHost,
-		}
-		// Canonicalize first so HostType() can correctly identify account hosts
-		// even when the host string lacks a scheme (e.g. "accounts.cloud.databricks.com").
-		cfg.CanonicalHostName()
+		// Match profiles by host and available identifiers. For SPOG workspace
+		// profiles (host + account_id + workspace_id), use all three to
+		// disambiguate between workspaces sharing the same host and account.
 		var matchFn profile.ProfileMatchFunction
-		switch cfg.HostType() {
-		case config.AccountHost, config.UnifiedHost:
+		if args.authArguments.AccountID != "" && args.authArguments.WorkspaceID != "" {
+			matchFn = profile.WithHostAccountIDAndWorkspaceID(args.authArguments.Host, args.authArguments.AccountID, args.authArguments.WorkspaceID)
+		} else if args.authArguments.AccountID != "" {
 			matchFn = profile.WithHostAndAccountID(args.authArguments.Host, args.authArguments.AccountID)
-		default:
+		} else {
 			matchFn = profile.WithHost(args.authArguments.Host)
 		}
 
@@ -253,7 +278,12 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
 		return nil, fmt.Errorf("%w. %s", err, helpMsg)
 	}
-	t, err := persistentAuth.Token()
+	var t *oauth2.Token
+	if args.forceRefresh {
+		t, err = persistentAuth.ForceRefreshToken()
+	} else {
+		t, err = persistentAuth.Token()
+	}
 	if err != nil {
 		if errors.Is(err, cache.ErrNotFound) {
 			// The error returned by the SDK when the token cache doesn't exist or doesn't contain a token
@@ -421,9 +451,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 	// uses the same scopes the user previously configured.
 	var scopesList []string
 	if existingProfile != nil && existingProfile.Scopes != "" {
-		for _, s := range strings.Split(existingProfile.Scopes, ",") {
-			scopesList = append(scopesList, strings.TrimSpace(s))
-		}
+		scopesList = splitScopes(existingProfile.Scopes)
 	}
 
 	oauthArgument, err := loginArgs.ToOAuthArgument()

@@ -134,3 +134,25 @@ func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
 
 	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
 }
+
+func TestHasDatabricksSkillsInstalledLegacyPath(t *testing.T) {
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	// Skills only in the legacy location should still be detected.
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, legacySkillsDir, "databricks"), 0o755))
+
+	agentDir := filepath.Join(tmpHome, ".claude")
+	require.NoError(t, os.MkdirAll(agentDir, 0o755))
+
+	origRegistry := Registry
+	Registry = []Agent{
+		{
+			Name:        "test-agent",
+			DisplayName: "Test Agent",
+			ConfigDir:   func(_ context.Context) (string, error) { return agentDir, nil },
+		},
+	}
+	defer func() { Registry = origRegistry }()
+
+	assert.True(t, HasDatabricksSkillsInstalled(t.Context()))
+}

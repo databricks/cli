@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class Environment:
     """
     The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
-    In this minimal environment spec, only pip dependencies are supported.
+    In this minimal environment spec, only pip and java dependencies are supported.
     """
 
     base_environment: VariableOrOptional[str] = None
@@ -34,7 +34,7 @@ class Environment:
 
     environment_version: VariableOrOptional[str] = None
     """
-    Required. Environment version used by the environment.
+    Either `environment_version` or `base_environment` needs to be provided. Environment version used by the environment.
     Each version comes with a specific Python version and a set of Python packages.
     The version is a string, consisting of an integer.
     """
@@ -70,7 +70,7 @@ class EnvironmentDict(TypedDict, total=False):
 
     environment_version: VariableOrOptional[str]
     """
-    Required. Environment version used by the environment.
+    Either `environment_version` or `base_environment` needs to be provided. Environment version used by the environment.
     Each version comes with a specific Python version and a set of Python packages.
     The version is a string, consisting of an integer.
     """

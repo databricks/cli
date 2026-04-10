@@ -1,5 +1,8 @@
-// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+// These SCIM commands were previously auto-generated from OpenAPI specs
+// but are now manually maintained because the v2 API versions have taken
+// over as the generated commands. See https://github.com/databricks/cli/pull/4722.
 
+//nolint:staticcheck,perfsprint
 package users
 
 import (
@@ -171,10 +174,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Users drop-down.")
 			names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -247,10 +250,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Users drop-down.")
 			names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -475,10 +478,10 @@ func newPatch() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Users drop-down.")
 			names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -641,10 +644,10 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No ID argument specified. Loading names for Users drop-down.")
 			names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

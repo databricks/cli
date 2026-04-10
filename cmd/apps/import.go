@@ -18,8 +18,10 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/bundle/statemgmt"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -202,9 +204,10 @@ Examples:
 			}
 
 			if !quiet {
-				cmdio.LogString(ctx, fmt.Sprintf("\n✓ App '%s' has been successfully imported to %s", name, outputDir))
+				cmdio.LogString(ctx, "")
+				prompt.PrintDone(ctx, fmt.Sprintf("App '%s' imported to %s", name, outputDir))
 				if cleanup && oldSourceCodePath != "" {
-					cmdio.LogString(ctx, "✓ Previous app folder has been cleaned up")
+					prompt.PrintDone(ctx, "Previous app folder cleaned up")
 				}
 				cmdio.LogString(ctx, "\nYou can now deploy changes with: databricks bundle deploy")
 			}
@@ -293,10 +296,11 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		bindCmd.Flags().StringSlice("var", []string{}, "set values for variables defined in bundle config")
 
 		// Initialize the bundle
+		var stateDesc *statemgmt.StateDesc
 		var err error
-		b, err = bundleutils.ProcessBundle(bindCmd, bundleutils.ProcessOptions{
+		b, stateDesc, err = bundleutils.ProcessBundleRet(bindCmd, bundleutils.ProcessOptions{
 			SkipInitContext: true,
-			ReadState:       true,
+			AlwaysPull:      true,
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Deployment.Lock.Force = false
 			},
@@ -321,13 +325,16 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		}
 
 		// Bind the resource
-		tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+		tfName, ok := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+		if !ok {
+			tfName = resource.ResourceDescription().PluralName
+		}
 		phases.Bind(ctx, b, &terraform.BindOptions{
 			AutoApprove:  true,
 			ResourceType: tfName,
 			ResourceKey:  appKey,
 			ResourceId:   app.Name,
-		})
+		}, stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return errors.New("failed to bind resource")
 		}

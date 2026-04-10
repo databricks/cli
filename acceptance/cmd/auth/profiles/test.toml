@@ -1,3 +1,9 @@
 Ignore = [
     "home"
 ]
+
+# Normalize platform-specific DNS error messages in host metadata warnings.
+# Linux includes resolver address (e.g. "on 127.0.0.53:53"), macOS does not.
+[[Repls]]
+Old = 'dial tcp: lookup (\S+)( on \S+)?: no such host'
+New = 'dial tcp: lookup $1: no such host'

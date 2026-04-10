@@ -42,6 +42,9 @@ github.com/databricks/cli/bundle/config.Bundle:
       The definition of the bundle deployment
     "markdown_description": |-
       The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
+  "engine":
+    "description": |-
+      The deployment engine to use. Valid values are `terraform` and `direct`. Takes priority over `DATABRICKS_BUNDLE_ENGINE` environment variable. Default is "terraform".
   "git":
     "description": |-
       The Git version control details that are associated with your bundle.
@@ -314,7 +317,7 @@ github.com/databricks/cli/bundle/config.Root:
     "description": |-
       A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
     "markdown_description": |-
-      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Databricks Asset Bundles supported resources, and resource definition reference, see [\_](/dev-tools/bundles/resources.md).
+      A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Declarative Automation Bundles supported resources, and resource definition reference, see [\_](/dev-tools/bundles/resources.md).
 
       ```yaml
       resources:
@@ -324,9 +327,9 @@ github.com/databricks/cli/bundle/config.Root:
       ```
   "run_as":
     "description": |-
-      The identity to use when running Databricks Asset Bundles workflows.
+      The identity to use when running Declarative Automation Bundles workflows.
     "markdown_description": |-
-      The identity to use when running Databricks Asset Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
+      The identity to use when running Declarative Automation Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
   "scripts":
     "description": |-
       PLACEHOLDER
@@ -412,6 +415,9 @@ github.com/databricks/cli/bundle/config.Target:
     "description": |-
       The Databricks workspace for the target.
 github.com/databricks/cli/bundle/config.Workspace:
+  "account_id":
+    "description": |-
+      The Databricks account ID.
   "artifact_path":
     "description": |-
       The artifact path to use within the workspace for both deployments and workflow runs
@@ -466,6 +472,13 @@ github.com/databricks/cli/bundle/config.Workspace:
   "workspace_id":
     "description": |-
       The Databricks workspace ID
+github.com/databricks/cli/bundle/config/engine.EngineType:
+  "_":
+    "enum":
+      - |-
+        terraform
+      - |-
+        direct
 github.com/databricks/cli/bundle/config/resources.Alert:
   "create_time":
     "description": |-
@@ -648,6 +661,13 @@ github.com/databricks/cli/bundle/config/resources.Lifecycle:
   "prevent_destroy":
     "description": |-
       Lifecycle setting to prevent the resource from being destroyed.
+github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted:
+  "prevent_destroy":
+    "description": |-
+      Lifecycle setting to prevent the resource from being destroyed.
+  "started":
+    "description": |-
+      Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.
 github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
   "group_name":
     "description": |-

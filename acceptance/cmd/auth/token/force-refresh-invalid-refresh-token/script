@@ -1,0 +1,4 @@
+setup_test_profile
+setup_test_token_cache
+
+errcode $CLI auth token --profile test-profile --force-refresh

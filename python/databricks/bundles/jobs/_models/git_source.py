@@ -50,9 +50,6 @@ class GitSource:
     """
 
     sparse_checkout: VariableOrOptional[SparseCheckout] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    """
 
     @classmethod
     def from_dict(cls, value: "GitSourceDict") -> "Self":
@@ -91,9 +88,6 @@ class GitSourceDict(TypedDict, total=False):
     """
 
     sparse_checkout: VariableOrOptional[SparseCheckoutParam]
-    """
-    :meta private: [EXPERIMENTAL]
-    """
 
 
 GitSourceParam = GitSourceDict | GitSource

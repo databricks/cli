@@ -1,0 +1,41 @@
+# Invariant to test: current CLI can deploy on top of state produced by v0.293.0
+
+cp -r "$TESTDIR/../data/." . &> LOG.cp
+
+INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
+if [ -f "$INIT_SCRIPT" ]; then
+    source "$INIT_SCRIPT" &> LOG.init
+fi
+
+envsubst < "$TESTDIR/../configs/$INPUT_CONFIG" > databricks.yml
+
+cleanup() {
+    $CLI bundle destroy --auto-approve &> LOG.destroy
+    cat LOG.destroy | contains.py '!panic' '!internal error' > /dev/null
+
+    CLEANUP_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-cleanup.sh"
+    if [ -f "$CLEANUP_SCRIPT" ]; then
+        source "$CLEANUP_SCRIPT" &> LOG.cleanup
+    fi
+}
+
+trap cleanup EXIT
+
+# Deploy with old CLI to produce v0.293.0 state
+trace $CLI_293 --version
+$CLI_293 bundle deploy &> LOG.deploy.293
+cat LOG.deploy.293 | contains.py '!panic' '!internal error' > /dev/null
+
+echo INPUT_CONFIG_OK
+
+# Deploy with current CLI on top of old state
+$CLI bundle deploy &> LOG.deploy
+cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
+
+# Verify no drift after current CLI deploy
+$CLI bundle plan -o json > LOG.planjson 2>LOG.planjson.err
+cat LOG.planjson.err | contains.py '!panic' '!internal error' > /dev/null
+verify_no_drift.py LOG.planjson
+
+$CLI bundle plan 2>LOG.plan.err | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
+cat LOG.plan.err | contains.py '!panic' '!internal error' > /dev/null

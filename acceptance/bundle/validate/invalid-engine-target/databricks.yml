@@ -1,0 +1,7 @@
+bundle:
+  name: test-engine-config
+
+targets:
+  default:
+    bundle:
+      engine: invalid_engine

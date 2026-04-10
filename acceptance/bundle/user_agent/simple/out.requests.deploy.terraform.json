@@ -239,15 +239,15 @@
             "attributes": {
               "catalog_name": "mycatalog",
               "comment": null,
-              "enable_predictive_optimization": null,
+              "enable_predictive_optimization": "INHERIT",
               "force_destroy": true,
               "id": "mycatalog.myschema",
-              "metastore_id": null,
+              "metastore_id": "[UUID]",
               "name": "myschema",
               "owner": "[USERNAME]",
               "properties": null,
               "provider_config": [],
-              "schema_id": "",
+              "schema_id": "[UUID]",
               "storage_root": null
             },
             "sensitive_attributes": [],
@@ -295,6 +295,15 @@
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
   }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }
 {
   "headers": {

@@ -141,10 +141,10 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoReq
 func repoArgumentToRepoID(ctx context.Context, w *databricks.WorkspaceClient, args []string) (int64, error) {
 	// ---- Begin copy from cmd/workspace/repos/repos.go ----
 	if len(args) == 0 {
-		promptSpinner := cmdio.Spinner(ctx)
-		promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+		sp := cmdio.NewSpinner(ctx)
+		sp.Update("No REPO_ID argument specified. Loading names for Repos drop-down.")
 		names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-		close(promptSpinner)
+		sp.Close()
 		if err != nil {
 			return 0, fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 		}

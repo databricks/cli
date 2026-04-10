@@ -392,7 +392,7 @@ func TestGenerateResourceYAMLAllTypes(t *testing.T) {
 			expectContains: []string{
 				"- name: endpoint",
 				"serving_endpoint:",
-				"name: ${var.endpoint_id}",
+				"name: ${var.endpoint_name}",
 				"permission: CAN_QUERY",
 			},
 		},
@@ -1039,4 +1039,46 @@ func TestBundleIgnoreFieldSkippedInVariablesAndTargets(t *testing.T) {
 	example := generator.GenerateDotEnvExample(plugins)
 	assert.Contains(t, example, "DB_INSTANCE=your_database_instance_name")
 	assert.Contains(t, example, "DB_NAME=your_database_database_name")
+}
+
+func TestVolumeManifestPathFieldMapsToSpecId(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "files",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type:        "volume",
+						Alias:       "Files",
+						ResourceKey: "files",
+						Description: "Permission to write to volumes",
+						Permission:  "WRITE_VOLUME",
+						Fields: map[string]manifest.ResourceField{
+							"path": {Env: "DATABRICKS_VOLUME_FILES", Description: "Volume path"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cfg := generator.Config{
+		ResourceValues: map[string]string{
+			"files.path": "/Volumes/catalog/schema/vol",
+			"files.id":   "catalog.schema.vol",
+		},
+	}
+
+	vars := generator.GenerateBundleVariables(plugins, cfg)
+	assert.Contains(t, vars, "files_path:")
+	assert.Contains(t, vars, "files_id:")
+
+	target := generator.GenerateTargetVariables(plugins, cfg)
+	assert.Contains(t, target, "files_path: /Volumes/catalog/schema/vol")
+	assert.Contains(t, target, "files_id: catalog.schema.vol")
+
+	res := generator.GenerateBundleResources(plugins, cfg)
+	assert.Contains(t, res, "securable_full_name: ${var.files_id}")
+	assert.Contains(t, res, "securable_type: VOLUME")
+	assert.Contains(t, res, "permission: WRITE_VOLUME")
 }
