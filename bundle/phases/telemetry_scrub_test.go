@@ -50,17 +50,17 @@ func TestScrubForTelemetry_AbsolutePaths(t *testing.T) {
 		{
 			name:     "Windows path with backslashes",
 			msg:      `error at C:\Users\shreyas\project\file.yml`,
-			expected: "error at [REDACTED_PATH](yml)",
+			expected: "error at [REDACTED_WIN_PATH](yml)",
 		},
 		{
 			name:     "Windows path with forward slashes",
 			msg:      "error at C:/Users/shreyas/project/file.yml",
-			expected: "error at [REDACTED_PATH](yml)",
+			expected: "error at [REDACTED_WIN_FPATH](yml)",
 		},
 		{
 			name:     "Windows path with lowercase drive letter",
 			msg:      `error at c:\Users\shreyas\project\file.yml`,
-			expected: "error at [REDACTED_PATH](yml)",
+			expected: "error at [REDACTED_WIN_PATH](yml)",
 		},
 		{
 			name:     "volume path with known extension",

@@ -20,9 +20,13 @@ import (
 // - VS Code: https://github.com/microsoft/vscode/blob/main/src/vs/platform/telemetry/common/telemetryUtils.ts
 // - Sentry: https://github.com/getsentry/relay (PII rule: @userpath)
 var (
-	// Matches Windows absolute paths with at least two components
-	// (e.g., C:\foo\bar, D:/projects/myapp).
-	windowsAbsPathRegexp = regexp.MustCompile(`[A-Za-z]:[/\\][^\s:,"'/\\]+[/\\][^\s:,"']+`)
+	// Matches Windows absolute paths with backslashes and at least two components
+	// (e.g., C:\foo\bar, D:\Users\project).
+	windowsBackslashPathRegexp = regexp.MustCompile(`[A-Za-z]:\\[^\s:,"'/\\]+\\[^\s:,"']+`)
+
+	// Matches Windows absolute paths with forward slashes and at least two components
+	// (e.g., C:/foo/bar, D:/Users/project).
+	windowsFwdslashPathRegexp = regexp.MustCompile(`[A-Za-z]:/[^\s:,"'/\\]+/[^\s:,"']+`)
 
 	// Matches Databricks workspace paths (/Workspace/...).
 	workspacePathRegexp = regexp.MustCompile(`(^|[\s:,"'])(/Workspace/[^\s:,"']+)`)
@@ -115,7 +119,8 @@ var knownExtensions = map[string]bool{
 // scrub to avoid collecting more information than necessary.
 func scrubForTelemetry(msg string) string {
 	// Redact absolute paths.
-	msg = replacePathRegexp(msg, windowsAbsPathRegexp, "[REDACTED_PATH]", false)
+	msg = replacePathRegexp(msg, windowsBackslashPathRegexp, "[REDACTED_WIN_PATH]", false)
+	msg = replacePathRegexp(msg, windowsFwdslashPathRegexp, "[REDACTED_WIN_FPATH]", false)
 	msg = replacePathRegexp(msg, workspacePathRegexp, "[REDACTED_WORKSPACE_PATH]", true)
 	msg = replacePathRegexp(msg, absPathRegexp, "[REDACTED_PATH]", true)
 
