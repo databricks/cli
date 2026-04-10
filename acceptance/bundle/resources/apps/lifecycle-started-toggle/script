@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+print_app_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps"))) | del(.body.url)' < out.requests.txt
+    rm out.requests.txt
+}
+
+title "Deploy with started=false: app created without compute (no_compute=true)"
+trace $CLI bundle deploy
+trace print_app_requests
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true
+
+title "Toggle started=false -> started=true: only Start should be called, no Update"
+trace update_file.py databricks.yml "started: false" "started: true"
+trace $CLI bundle deploy
+trace print_app_requests
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true
+
+title "Toggle started=true -> started=false: only Stop should be called, no Update"
+trace update_file.py databricks.yml "started: true" "started: false"
+trace $CLI bundle deploy
+trace print_app_requests
+{ trace errcode $CLI apps get $UNIQUE_NAME | jq '.compute_status.state'; } || true
