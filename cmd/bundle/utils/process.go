@@ -73,7 +73,7 @@ type ProcessOptions struct {
 
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
 	// (after state is opened and IDs loaded, before deferred Finalize).
-	// Setting this implies ReadState and opens the state DB for direct engine.
+	// Opens the state DB for direct engine.
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
 	// Indicate whether the bundle operation originates from the pipelines CLI
@@ -154,7 +154,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	var stateDesc *statemgmt.StateDesc
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != "" || opts.PostStateFunc != nil
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
 		requiredEngine, err := ResolveEngineSetting(ctx, b)
