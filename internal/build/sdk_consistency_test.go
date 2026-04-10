@@ -1,12 +1,10 @@
 package build
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 
@@ -37,30 +35,9 @@ func TestConsistentDatabricksSdkVersion(t *testing.T) {
 	}
 	require.NotEmpty(t, version)
 
-	// Full path of the package. For example: github.com/databricks/databricks-sdk-go@v0.47.1-0.20241002195128-6cecc224cbf7
-	fullPath := fmt.Sprintf("%s@%s", modulePath, version)
-
-	type goListResponse struct {
-		Origin struct {
-			Hash string
-		}
-	}
-
-	// Using the go CLI query for the git hash corresponding to the databricks-sdk-go version
-	cmd := exec.Command("go", "list", "-m", "-json", "-mod=readonly", fullPath)
-	var stderr strings.Builder
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
-	require.NoError(t, err, "go list failed: %s", stderr.String())
-	parsedOutput := new(goListResponse)
-	err = json.Unmarshal(out, parsedOutput)
-	require.NoError(t, err)
-	hash := parsedOutput.Origin.Hash
-	require.NotEmpty(t, hash)
-
-	// Read the OpenAPI SHA from the Go SDK.
-	url := fmt.Sprintf("https://raw.githubusercontent.com/databricks/databricks-sdk-go/%s/.codegen/_openapi_sha", hash)
-	resp, err := http.Get(url)
+	// Read the OpenAPI SHA from the Go SDK at the version tag.
+	url := fmt.Sprintf("https://raw.githubusercontent.com/databricks/databricks-sdk-go/%s/.codegen/_openapi_sha", version)
+	resp, err := http.Get(url) //nolint:gosec
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
