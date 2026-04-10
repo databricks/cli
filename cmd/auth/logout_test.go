@@ -89,7 +89,7 @@ func TestLogout(t *testing.T) {
 		hostBasedKey  string
 		isSharedKey   bool
 		isNonU2M      bool // true for profiles that are not created by login (PAT, M2M, etc.)
-		force         bool
+		autoApprove   bool
 		deleteProfile bool
 		wantErr       string
 	}{
@@ -98,46 +98,46 @@ func TestLogout(t *testing.T) {
 			profileName:  "my-workspace",
 			hostBasedKey: "https://my-workspace.cloud.databricks.com",
 			isSharedKey:  true,
-			force:        true,
+			autoApprove:  true,
 		},
 		{
 			name:         "existing workspace profile with unique host",
 			profileName:  "my-unique-workspace",
 			hostBasedKey: "https://my-unique-workspace.cloud.databricks.com",
 			isSharedKey:  false,
-			force:        true,
+			autoApprove:  true,
 		},
 		{
 			name:         "existing workspace profile with stale account id",
 			profileName:  "my-workspace-stale-account",
 			hostBasedKey: "https://stale-account.cloud.databricks.com",
 			isSharedKey:  false,
-			force:        true,
+			autoApprove:  true,
 		},
 		{
 			name:         "existing account profile",
 			profileName:  "my-account",
 			hostBasedKey: "https://accounts.cloud.databricks.com/oidc/accounts/abc123",
 			isSharedKey:  false,
-			force:        true,
+			autoApprove:  true,
 		},
 		{
 			name:         "existing unified profile",
 			profileName:  "my-unified",
 			hostBasedKey: "https://unified.cloud.databricks.com/oidc/accounts/def456",
 			isSharedKey:  false,
-			force:        true,
+			autoApprove:  true,
 		},
 		{
-			name:        "existing workspace profile without force in non-interactive mode",
+			name:        "existing workspace profile without auto-approve in non-interactive mode",
 			profileName: "my-workspace",
-			force:       false,
-			wantErr:     "please specify --force to skip confirmation in non-interactive mode",
+			autoApprove: false,
+			wantErr:     "please specify --auto-approve to skip confirmation in non-interactive mode",
 		},
 		{
 			name:        "non-existing workspace profile",
 			profileName: "nonexistent",
-			force:       false,
+			autoApprove: false,
 			wantErr:     `profile "nonexistent" not found`,
 		},
 		{
@@ -145,7 +145,7 @@ func TestLogout(t *testing.T) {
 			profileName:   "my-workspace",
 			hostBasedKey:  "https://my-workspace.cloud.databricks.com",
 			isSharedKey:   true,
-			force:         true,
+			autoApprove:   true,
 			deleteProfile: true,
 		},
 		{
@@ -153,7 +153,7 @@ func TestLogout(t *testing.T) {
 			profileName:   "my-unique-workspace",
 			hostBasedKey:  "https://my-unique-workspace.cloud.databricks.com",
 			isSharedKey:   false,
-			force:         true,
+			autoApprove:   true,
 			deleteProfile: true,
 		},
 		{
@@ -161,7 +161,7 @@ func TestLogout(t *testing.T) {
 			profileName:   "my-account",
 			hostBasedKey:  "https://accounts.cloud.databricks.com/oidc/accounts/abc123",
 			isSharedKey:   false,
-			force:         true,
+			autoApprove:   true,
 			deleteProfile: true,
 		},
 		{
@@ -169,7 +169,7 @@ func TestLogout(t *testing.T) {
 			profileName:   "my-unified",
 			hostBasedKey:  "https://unified.cloud.databricks.com/oidc/accounts/def456",
 			isSharedKey:   false,
-			force:         true,
+			autoApprove:   true,
 			deleteProfile: true,
 		},
 		{
@@ -177,7 +177,7 @@ func TestLogout(t *testing.T) {
 			profileName:   "my-m2m",
 			hostBasedKey:  "https://my-m2m.cloud.databricks.com",
 			isNonU2M:      true,
-			force:         true,
+			autoApprove:   true,
 			deleteProfile: false,
 		},
 	}
@@ -194,7 +194,7 @@ func TestLogout(t *testing.T) {
 
 			err := runLogout(ctx, logoutArgs{
 				profileName:    tc.profileName,
-				force:          tc.force,
+				autoApprove:    tc.autoApprove,
 				deleteProfile:  tc.deleteProfile,
 				profiler:       profile.DefaultProfiler,
 				tokenCache:     tokenCache,
@@ -243,7 +243,7 @@ func TestLogoutNoTokens(t *testing.T) {
 
 	err := runLogout(ctx, logoutArgs{
 		profileName:    "my-workspace",
-		force:          true,
+		autoApprove:    true,
 		profiler:       profile.DefaultProfiler,
 		tokenCache:     tokenCache,
 		configFilePath: configPath,
@@ -267,7 +267,7 @@ func TestLogoutNoTokensWithDelete(t *testing.T) {
 
 	err := runLogout(ctx, logoutArgs{
 		profileName:    "my-workspace",
-		force:          true,
+		autoApprove:    true,
 		deleteProfile:  true,
 		profiler:       profile.DefaultProfiler,
 		tokenCache:     tokenCache,
@@ -332,7 +332,7 @@ default_profile = my-workspace
 
 			err := runLogout(ctx, logoutArgs{
 				profileName:    tc.profileName,
-				force:          true,
+				autoApprove:    true,
 				deleteProfile:  true,
 				profiler:       profile.DefaultProfiler,
 				tokenCache:     tokenCache,
@@ -393,7 +393,7 @@ auth_type = databricks-cli
 
 	err := runLogout(ctx, logoutArgs{
 		profileName:    "spog-profile",
-		force:          true,
+		autoApprove:    true,
 		profiler:       profile.DefaultProfiler,
 		tokenCache:     tokenCache,
 		configFilePath: configPath,
