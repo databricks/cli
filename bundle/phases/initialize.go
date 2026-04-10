@@ -103,6 +103,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Resolves and sets values for bundle variables in the following order: from environment variables, from variable files and then defaults
 		mutator.SetVariables(),
 
+		// Walks the configuration tree once to emit warnings for strings containing
+		// malformed variable references (e.g. "${foo.bar-}").
+		mutator.WarnMalformedReferences(),
+
 		// Reads (dynamic): variables.*.lookup (checks for variable references in lookup fields)
 		// Updates (dynamic): variables.*.lookup (resolves variable references in lookup fields)
 		// Prevents circular references between lookup variables

@@ -393,3 +393,42 @@ func TestResolveSequenceVariable(t *testing.T) {
 	assert.Equal(t, "value1", seq[0].MustString())
 	assert.Equal(t, "value2", seq[1].MustString())
 }
+
+func TestResolveWithSuggestFn(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"name": dyn.V("hello"),
+		"ref":  dyn.V("${nme}"),
+	})
+
+	_, err := dynvar.Resolve(in, dynvar.DefaultLookup(in), dynvar.WithSuggestFn(func(p dyn.Path) string {
+		return dynvar.SuggestPath(in, p)
+	}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "reference does not exist: ${nme}")
+	assert.Contains(t, err.Error(), "did you mean ${name}?")
+}
+
+func TestResolveWithSuggestFnNoSuggestion(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"name": dyn.V("hello"),
+		"ref":  dyn.V("${completely_different_key}"),
+	})
+
+	_, err := dynvar.Resolve(in, dynvar.DefaultLookup(in), dynvar.WithSuggestFn(func(p dyn.Path) string {
+		return dynvar.SuggestPath(in, p)
+	}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "reference does not exist: ${completely_different_key}")
+	assert.NotContains(t, err.Error(), "did you mean")
+}
+
+func TestResolveWithEscapeSequence(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"a":   dyn.V("hello"),
+		"ref": dyn.V("$${a} ${a}"),
+	})
+
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+	assert.Equal(t, "${a} hello", getByPath(t, out, "ref").MustString())
+}

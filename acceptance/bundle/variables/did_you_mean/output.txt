@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle validate
+Error: reference does not exist: ${var.my_clster_id}. did you mean ${var.my_cluster_id}?
+
+Name: did-you-mean
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/did-you-mean/default
+
+Found 1 error
+
+Exit code: 1
