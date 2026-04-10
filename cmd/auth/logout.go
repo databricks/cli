@@ -56,8 +56,7 @@ entry in ~/.databrickscfg is left intact unless --delete is also specified.
 This only affects profiles created with "databricks auth login". Profiles
 using other authentication methods (personal access tokens, M2M credentials)
 do not store cached OAuth tokens. If multiple profiles share the same cached
-token, the command removes only the selected profile's entry and preserves
-the shared host-based token as long as other profiles still reference it.
+token, logging out of one does not affect the others.
 
 You can provide a profile name as a positional argument, or use --profile
 to specify it explicitly.
