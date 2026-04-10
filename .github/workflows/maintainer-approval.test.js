@@ -153,6 +153,27 @@ describe("maintainer-approval", () => {
     assert.equal(github._updatedComments.length, 0);
   });
 
+  it("approval cleans up stale pending comment", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "maintainer1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+      existingComments: [
+        { id: 500, body: "<!-- MAINTAINER_APPROVAL -->\n## Waiting for approval\n..." },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._statuses[0].state, "success");
+    assert.deepEqual(github._deletedCommentIds, [500]);
+    assert.equal(github._comments.length, 0);
+    assert.equal(github._updatedComments.length, 0);
+  });
+
   it("maintainer-authored PR with any approval -> success, no comment", async () => {
     const github = makeGithub({
       reviews: [

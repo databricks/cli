@@ -367,6 +367,23 @@ function buildSingleDomainPendingComment(sortedScores, dirScores, scoredCount, e
 const LEGACY_MARKER = "<!-- REVIEWER_SUGGESTION -->";
 
 /**
+ * Delete all marker and legacy marker comments from the PR.
+ * Used on success paths to clean up stale pending comments.
+ */
+async function deleteMarkerComments(github, owner, repo, prNumber) {
+  const comments = await github.paginate(github.rest.issues.listComments, {
+    owner, repo, issue_number: prNumber,
+  });
+  for (const c of comments) {
+    if (c.body && (c.body.includes(MARKER) || c.body.includes(LEGACY_MARKER))) {
+      await github.rest.issues.deleteComment({
+        owner, repo, comment_id: c.id,
+      });
+    }
+  }
+}
+
+/**
  * Create or edit the marker comment. Skips the edit if the body is unchanged.
  * Cleans up duplicate or legacy marker comments, keeping only the first one.
  */
@@ -452,6 +469,7 @@ module.exports = async ({ github, context, core }) => {
       state: "success",
       description: `Approved by @${approver}`,
     });
+    await deleteMarkerComments(github, owner, repo, prNumber);
     return;
   }
 
@@ -468,6 +486,7 @@ module.exports = async ({ github, context, core }) => {
         state: "success",
         description: "Approved (maintainer-authored PR)",
       });
+      await deleteMarkerComments(github, owner, repo, prNumber);
       return;
     }
   }
@@ -503,6 +522,7 @@ module.exports = async ({ github, context, core }) => {
       state: "success",
       description: "All ownership groups approved",
     });
+    await deleteMarkerComments(github, owner, repo, prNumber);
     return;
   }
 
