@@ -80,7 +80,7 @@ func ProcessBundle(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, err
 	return b, err
 }
 
-func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, *statemgmt.StateDesc, error) {
+func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle, stateDesc *statemgmt.StateDesc, retErr error) {
 	var err error
 	ctx := cmd.Context()
 	if opts.SkipInitContext {
@@ -93,7 +93,24 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 	}
 
 	// Load bundle config and apply target
-	b := root.MustConfigureBundle(cmd)
+	b = root.MustConfigureBundle(cmd)
+
+	// Log deploy telemetry on all exit paths. This is a defer to ensure
+	// telemetry is logged even when the deploy command fails, for both
+	// diagnostic errors and regular Go errors.
+	if opts.Deploy {
+		defer func() {
+			if b == nil {
+				return
+			}
+			errMsg := logdiag.GetFirstErrorSummary(ctx)
+			if errMsg == "" && retErr != nil && !errors.Is(retErr, root.ErrAlreadyPrinted) {
+				errMsg = retErr.Error()
+			}
+			phases.LogDeployTelemetry(ctx, b, errMsg)
+		}()
+	}
+
 	if logdiag.HasError(ctx) {
 		return b, nil, root.ErrAlreadyPrinted
 	}
@@ -146,8 +163,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 			return b, nil, err
 		}
 	}
-
-	var stateDesc *statemgmt.StateDesc
 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
