@@ -46,10 +46,9 @@ Examples:
 		}
 
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
-			ReadState:       true,
-			Build:           true,
-			AlwaysPull:      true,
-			NeedDirectState: true,
+			ReadState:  true,
+			Build:      true,
+			AlwaysPull: true,
 			InitFunc: func(b *bundle.Bundle) {
 				b.SkipLocalFileValidation = true
 			},

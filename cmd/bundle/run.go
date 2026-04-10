@@ -151,7 +151,6 @@ Example usage:
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			AlwaysPull:        true,
 			ErrorOnEmptyState: true,
-			NeedDirectState:   true,
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
 				var err error
 				key, runArgs, err = resolveRunArgument(ctx, b, args)

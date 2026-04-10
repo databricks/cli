@@ -71,13 +71,9 @@ type ProcessOptions struct {
 	// When set, skips Build and PreDeployChecks phases, loads plan from file instead of calculating.
 	ReadPlanPath string
 
-	// NeedDirectState opens direct engine state even when none of the standard flags (InitIDs, Deploy, etc.) are set.
-	// Use for flows that need an already-opened StateDB (e.g. destroy, config-remote-sync).
-	NeedDirectState bool
-
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
 	// (after state is opened and IDs loaded, before deferred Finalize).
-	// Use this for work that depends on an open StateDB.
+	// Setting this implies ReadState and opens the state DB for direct engine.
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
 	// Indicate whether the bundle operation originates from the pipelines CLI
@@ -158,7 +154,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	var stateDesc *statemgmt.StateDesc
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != "" || opts.NeedDirectState
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != "" || opts.PostStateFunc != nil
 
 	if shouldReadState {
 		requiredEngine, err := ResolveEngineSetting(ctx, b)
@@ -174,7 +170,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		cmd.SetContext(ctx)
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
-		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.NeedDirectState)
+		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
 			if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
