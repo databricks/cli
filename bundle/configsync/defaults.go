@@ -184,3 +184,33 @@ func resetValueIfNeeded(path string, value any) any {
 	}
 	return value
 }
+
+// prefixedNameFields lists resource name field patterns where the name prefix
+// (e.g. "[dev user] ") is applied during deployment and should be stripped
+// when syncing remote changes back to config.
+var prefixedNameFields = []string{
+	"resources.jobs.*.name",
+	"resources.pipelines.*.name",
+	"resources.dashboards.*.display_name",
+}
+
+// stripNamePrefix strips the configured name prefix from name field values
+// so that the raw (unprefixed) name is written back to the config YAML.
+func stripNamePrefix(path string, value any, prefix string) any {
+	if prefix == "" {
+		return value
+	}
+
+	s, ok := value.(string)
+	if !ok {
+		return value
+	}
+
+	for _, pattern := range prefixedNameFields {
+		if matchPattern(pattern, path) {
+			return strings.TrimPrefix(s, prefix)
+		}
+	}
+
+	return value
+}

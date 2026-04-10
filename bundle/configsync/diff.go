@@ -153,13 +153,15 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 					continue
 				}
 
-				change, err := convertChangeDesc(resourceKey+"."+path, changeDesc)
+				fullPath := resourceKey + "." + path
+				change, err := convertChangeDesc(fullPath, changeDesc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
 				if change.Operation == OperationSkip {
 					continue
 				}
+				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
 				resourceChanges[path] = change
 			}
 		}
