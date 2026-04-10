@@ -37,7 +37,7 @@ title "Token cache keys before logout\n"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
 title "Logout without --delete"
-trace $CLI auth logout --profile logfood --force
+trace $CLI auth logout --profile logfood --auto-approve
 
 title "Config after logout — profile should still exist\n"
 cat "./home/.databrickscfg"

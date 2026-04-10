@@ -49,26 +49,26 @@ the profile is an error.
 
 1. If you specify a profile (via argument or --profile), the command logs
    out of that profile. In an interactive terminal you'll be asked to
-   confirm unless --force is set.
+   confirm unless --auto-approve is set.
 
 2. If you omit the profile in an interactive terminal, you'll be shown
    an interactive picker listing all profiles from your configuration file.
    You can search by profile name, host, or account ID. After selecting a
-   profile, you'll be asked to confirm unless --force is specified.
+   profile, you'll be asked to confirm unless --auto-approve is specified.
 
 3. If you omit the profile in a non-interactive environment (e.g. CI/CD
    pipeline), the command will fail with an error asking you to specify
    a profile.
 
-4. Use --force to skip the confirmation prompt. This is required when
+4. Use --auto-approve to skip the confirmation prompt. This is required when
    running in non-interactive environments.
 
 5. Use --delete to also remove the selected profile from ~/.databrickscfg.`,
 	}
 
-	var force bool
+	var autoApprove bool
 	var deleteProfile bool
-	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompt")
 	cmd.Flags().BoolVar(&deleteProfile, "delete", false, "Delete the profile from the config file")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -127,7 +127,7 @@ the profile is an error.
 
 		return runLogout(ctx, logoutArgs{
 			profileName:    profileName,
-			force:          force,
+			autoApprove:    autoApprove,
 			deleteProfile:  deleteProfile,
 			profiler:       profiler,
 			tokenCache:     tokenCache,
@@ -140,7 +140,7 @@ the profile is an error.
 
 type logoutArgs struct {
 	profileName    string
-	force          bool
+	autoApprove    bool
 	deleteProfile  bool
 	profiler       profile.Profiler
 	tokenCache     cache.TokenCache
@@ -153,9 +153,9 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		return err
 	}
 
-	if !args.force {
+	if !args.autoApprove {
 		if !cmdio.IsPromptSupported(ctx) {
-			return errors.New("please specify --force to skip confirmation in non-interactive mode")
+			return errors.New("please specify --auto-approve to skip confirmation in non-interactive mode")
 		}
 
 		configPath, err := args.profiler.GetPath(ctx)
