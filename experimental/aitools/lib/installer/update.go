@@ -231,7 +231,6 @@ func hasLegacyInstall(ctx context.Context, globalDir string) bool {
 	return hasSkillsOnDisk(filepath.Join(homeDir, ".databricks", "agent-skills"))
 }
 
-
 // FormatUpdateResult returns a human-readable summary of the update result.
 // When check is true, output uses "Would update/add" instead of "Updated/Added".
 func FormatUpdateResult(result *UpdateResult, check bool) string {
