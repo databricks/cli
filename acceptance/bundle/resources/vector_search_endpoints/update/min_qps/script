@@ -8,7 +8,7 @@ trap cleanup EXIT
 
 print_requests() {
     local name=$1
-    trace print_requests.py --keep '//vector-search/endpoints' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
+    trace print_requests.py --keep '//vector-search/endpoints' '//permissions' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
     rm -f out.requests.txt
 }
 

@@ -5,3 +5,19 @@
     "min_qps": 2
   }
 }
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/vector-search-endpoints/[UUID]",
+  "body": {
+    "access_control_list": [
+      {
+        "group_name": "admins",
+        "permission_level": "CAN_USE"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
