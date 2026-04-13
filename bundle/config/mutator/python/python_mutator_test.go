@@ -3,19 +3,18 @@ package python
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn/convert"
 
 	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/require"
-
-	"maps"
-	"slices"
 
 	"github.com/databricks/cli/libs/dyn"
 

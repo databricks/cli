@@ -1,11 +1,11 @@
 package sync
 
 import (
+	"maps"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"maps"
-	"slices"
 )
 
 func TestMakeDirSet(t *testing.T) {

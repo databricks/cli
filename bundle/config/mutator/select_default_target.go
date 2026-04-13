@@ -2,12 +2,12 @@ package mutator
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"maps"
-	"slices"
 )
 
 type selectDefaultTarget struct{}

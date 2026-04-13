@@ -3,12 +3,12 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"maps"
-	"slices"
 )
 
 type selectTarget struct {

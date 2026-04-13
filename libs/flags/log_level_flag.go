@@ -3,12 +3,12 @@ package flags
 import (
 	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
-	"maps"
-	"slices"
 )
 
 var levels = map[string]slog.Level{

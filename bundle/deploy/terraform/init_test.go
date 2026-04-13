@@ -3,9 +3,11 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -18,8 +20,6 @@ import (
 	"github.com/hashicorp/hc-install/product"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"maps"
-	"slices"
 )
 
 func unsetEnv(t *testing.T, name string) {

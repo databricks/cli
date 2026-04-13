@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -20,8 +22,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	"maps"
-	"slices"
 )
 
 func findExecPath(ctx context.Context, b *bundle.Bundle, tf *config.Terraform, installer Installer) (string, error) {

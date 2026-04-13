@@ -1,10 +1,11 @@
 package run
 
 import (
-	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/spf13/cobra"
 	"maps"
 	"slices"
+
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/spf13/cobra"
 )
 
 type jobParameterArgs struct {

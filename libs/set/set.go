@@ -2,7 +2,6 @@ package set
 
 import (
 	"fmt"
-
 	"maps"
 	"slices"
 )

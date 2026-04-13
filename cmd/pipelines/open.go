@@ -5,6 +5,8 @@ package pipelines
 import (
 	"context"
 	"errors"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 
@@ -15,8 +17,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"maps"
-	"slices"
 
 	"github.com/pkg/browser"
 )

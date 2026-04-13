@@ -1,9 +1,8 @@
 package sync
 
 import (
-	"path"
-
 	"maps"
+	"path"
 	"slices"
 )
 
