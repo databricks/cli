@@ -49,35 +49,22 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		Loaders: []config.Loader{config.ConfigAttributes},
 	}
 
-	discoveryURL := a.DiscoveryURL
-	if discoveryURL == "" {
-		// No cached discovery, resolve fresh.
-		if err := cfg.EnsureResolved(); err == nil {
-			discoveryURL = cfg.DiscoveryURL
-		}
+	if a.DiscoveryURL != "" {
+		cfg.DiscoveryURL = a.DiscoveryURL
+	} else if err := cfg.EnsureResolved(); err == nil {
+		// EnsureResolved populates cfg.DiscoveryURL from .well-known.
 	}
 
 	host := cfg.CanonicalHostName()
 
-	// Classic accounts.* hosts always use account OAuth, even if discovery
-	// returned data. SPOG/unified hosts are handled below via discovery or
-	// the IsUnifiedHost flag.
+	// Classic accounts.* hosts always use account OAuth.
 	if strings.HasPrefix(host, "https://accounts.") || strings.HasPrefix(host, "https://accounts-dod.") {
 		return u2m.NewProfileAccountOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 
-	// Route based on discovery data: a non-accounts host with an account-scoped
-	// OIDC endpoint is a SPOG/unified host. We check a.AccountID (the caller-
-	// provided value) rather than cfg.AccountID to avoid env var contamination
-	// (e.g. DATABRICKS_ACCOUNT_ID set in the environment). We also require the
-	// DiscoveryURL to contain "/oidc/accounts/" to distinguish SPOG hosts from
-	// classic workspace hosts that may also return discovery metadata.
-	if a.AccountID != "" && discoveryURL != "" && strings.Contains(discoveryURL, "/oidc/accounts/") {
-		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
-	}
-
-	// Legacy backward compat: existing profiles with IsUnifiedHost flag.
-	if a.IsUnifiedHost && a.AccountID != "" {
+	// Pass a.AccountID (not cfg.AccountID) to avoid env var / discovery
+	// back-fill from triggering SPOG routing for plain workspace hosts.
+	if IsSPOG(cfg, a.AccountID) {
 		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 

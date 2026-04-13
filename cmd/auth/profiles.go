@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"strings"
 	"sync"
 	"time"
 
@@ -58,38 +57,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	// ConfigType() classifies based on the host URL prefix (accounts.* →
-	// AccountConfig, everything else → WorkspaceConfig). SPOG hosts don't
-	// match the accounts.* prefix so they're misclassified as WorkspaceConfig.
-	// Use the resolved DiscoveryURL (from .well-known/databricks-config) to
-	// detect SPOG hosts with account-scoped OIDC, matching the routing logic
-	// in auth.AuthArguments.ToOAuthArgument().
-	configType := cfg.ConfigType()
-	hasWorkspace := cfg.WorkspaceID != "" && cfg.WorkspaceID != auth.WorkspaceIDNone
-
-	isAccountScopedOIDC := cfg.DiscoveryURL != "" && strings.Contains(cfg.DiscoveryURL, "/oidc/accounts/")
-	if configType != config.AccountConfig && cfg.AccountID != "" && isAccountScopedOIDC {
-		if hasWorkspace {
-			configType = config.WorkspaceConfig
-		} else {
-			configType = config.AccountConfig
-		}
-	}
-
-	// Legacy backward compat: SDK v0.126.0 removed the UnifiedHost case from
-	// ConfigType(), so profiles with Experimental_IsUnifiedHost now get
-	// InvalidConfig instead of being routed to account/workspace validation.
-	// When .well-known is also unreachable (DiscoveryURL empty), the override
-	// above can't help. Fall back to workspace_id to choose the validation
-	// strategy, matching the IsUnifiedHost fallback in ToOAuthArgument().
-	if configType == config.InvalidConfig && cfg.Experimental_IsUnifiedHost && cfg.AccountID != "" {
-		if hasWorkspace {
-			configType = config.WorkspaceConfig
-		} else {
-			configType = config.AccountConfig
-		}
-	}
-
+	configType := auth.ResolveConfigType(cfg)
 	if configType != cfg.ConfigType() {
 		log.Debugf(ctx, "Profile %q: overrode config type from %s to %s (SPOG host)", c.Name, cfg.ConfigType(), configType)
 	}
