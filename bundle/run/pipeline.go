@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -63,10 +64,9 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId
 		return err
 	}
 	updateEvents := filterEventsByUpdateId(events, updateId)
-	// The events API returns most recent events first. We iterate in a reverse order
-	// to print the events chronologically
-	for i := len(updateEvents) - 1; i >= 0; i-- {
-		r.logEvent(ctx, updateEvents[i])
+	// The events API returns most recent events first.
+	for _, event := range slices.Backward(updateEvents) {
+		r.logEvent(ctx, event)
 	}
 	return nil
 }

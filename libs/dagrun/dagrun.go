@@ -2,6 +2,7 @@ package dagrun
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -129,12 +130,8 @@ func (g *Graph) DetectCycle() error {
 							break
 						}
 					}
-					for i, j := 0, len(nodes)-1; i < j; i, j = i+1, j-1 {
-						nodes[i], nodes[j] = nodes[j], nodes[i]
-					}
-					for i, j := 0, len(edges)-1; i < j; i, j = i+1, j-1 {
-						edges[i], edges[j] = edges[j], edges[i]
-					}
+					slices.Reverse(nodes)
+					slices.Reverse(edges)
 					edges = append(edges, closeLbl)
 					return &CycleError{Nodes: nodes, Edges: edges}
 				}
