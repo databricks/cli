@@ -1,5 +1,7 @@
 package build
 
+import "sync"
+
 var (
 	buildProjectName string = "cli"
 	buildVersion     string = ""
@@ -23,8 +25,8 @@ var (
 	buildTimestamp  string = "0"
 )
 
-// This function is used to set the build version for testing purposes.
+// SetBuildVersion sets the build version for testing purposes.
 func SetBuildVersion(version string) {
 	buildVersion = version
-	info.Version = version
+	getInfo = sync.OnceValue(initialize)
 }

@@ -46,6 +46,8 @@ linters:
           msg: Use env.UserHomeDir(ctx) from libs/env instead.
         - pattern: 'os\.Getenv'
           msg: Use env.Get(ctx) from the libs/env package instead of os.Getenv.
+        - pattern: 'sync\.Once\b($|[^FV])'
+          msg: Use sync.OnceFunc, sync.OnceValue, or sync.OnceValues instead.
       analyze-types: true
     copyloopvar:
       check-alias: true
