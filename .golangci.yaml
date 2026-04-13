@@ -34,6 +34,15 @@ linters:
           deny:
             - pkg: "github.com/databricks/cli/experimental"
               desc: "must not import experimental/ packages; use an interface or move the dependency"
+        no-stdlib-log:
+          files:
+            - "**"
+            - "!**/bundle/docsgen/**"
+            - "!**/bundle/internal/schema/**"
+            - "!**/bundle/internal/validation/**"
+          deny:
+            - pkg: "log$"
+              desc: "use libs/log instead of the standard library log package"
     forbidigo:
       forbid:
         - pattern: 'term\.IsTerminal'
