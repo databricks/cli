@@ -62,21 +62,33 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 	return response.RegisteredModel.Name, nil, nil
 }
 
-func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, _ *PlanEntry) (*MlflowModelRefreshOutput, error) {
+func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, entry *PlanEntry) (*MlflowModelRefreshOutput, error) {
 	updateRequest := ml.UpdateModelRequest{
 		Name:            id,
 		Description:     config.Description,
 		ForceSendFields: utils.FilterFields[ml.UpdateModelRequest](config.ForceSendFields),
 	}
 
-	_, err := r.client.ModelRegistry.UpdateModel(ctx, updateRequest)
+	response, err := r.client.ModelRegistry.UpdateModel(ctx, updateRequest)
 	if err != nil {
 		return nil, err
 	}
 
-	// ml.UpdateModelResponse doesn't include the numeric model ID (only ml.ModelDatabricks does),
-	// so return nil to trigger DoRead which populates it.
-	return nil, nil
+	// Carry forward model_id from existing state since UpdateModelResponse doesn't include it.
+	var modelId string
+	if old, ok := entry.RemoteState.(*MlflowModelRefreshOutput); ok {
+		modelId = old.ModelId
+	}
+
+	return &MlflowModelRefreshOutput{
+		ModelDatabricks: ml.ModelDatabricks{
+			Name:            response.RegisteredModel.Name,
+			Description:     response.RegisteredModel.Description,
+			Tags:            response.RegisteredModel.Tags,
+			ForceSendFields: utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
+		},
+		ModelId: modelId,
+	}, nil
 }
 
 func (r *ResourceMlflowModel) DoDelete(ctx context.Context, id string) error {
