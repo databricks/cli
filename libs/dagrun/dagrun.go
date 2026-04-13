@@ -179,9 +179,8 @@ func (g *Graph) Run(pool int, runUnit func(node string, failedDependency *string
 	done := make(chan doneResult, len(in))
 
 	var wg sync.WaitGroup
-	wg.Add(pool)
 	for range pool {
-		go runWorkerLoop(&wg, ready, done, runUnit)
+		wg.Go(func() { runWorkerLoop(ready, done, runUnit) })
 	}
 
 	for _, n := range initial {
@@ -229,8 +228,7 @@ type task struct {
 	failedFrom *string
 }
 
-func runWorkerLoop(wg *sync.WaitGroup, ready <-chan task, done chan<- doneResult, runUnit func(string, *string) bool) {
-	defer wg.Done()
+func runWorkerLoop(ready <-chan task, done chan<- doneResult, runUnit func(string, *string) bool) {
 	for t := range ready {
 		success := runUnit(t.n, t.failedFrom)
 		if t.failedFrom != nil {
