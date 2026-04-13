@@ -45,8 +45,6 @@ require (
 	gopkg.in/ini.v1 v1.67.1 // Apache 2.0
 )
 
-require gopkg.in/yaml.v3 v3.0.1 // indirect
-
 require (
 	cloud.google.com/go/auth v0.18.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -105,4 +103,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
