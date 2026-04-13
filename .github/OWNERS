@@ -21,5 +21,43 @@
 /libs/apps/                 @databricks/eng-apps-devex
 /acceptance/apps/           @databricks/eng-apps-devex
 
+# Auth
+/cmd/auth/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/auth/                 @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/acceptance/auth/           @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+
+# Filesystem & sync
+/cmd/fs/                    @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/sync/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/filer/                @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/sync/                 @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+
+# Core CLI infrastructure
+/cmd/root/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/version/               @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/completion/            @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/configure/             @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/cache/                 @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/api/                   @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/selftest/              @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/psql/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/psql/                 @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+
+# Libs (general)
+/libs/databrickscfg/        @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/env/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/flags/                @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/cmdio/                @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/log/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/telemetry/            @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/process/              @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/git/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+
+# Integration tests
+/integration/               @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+
+# Internal
+/internal/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+
 # Experimental
 /experimental/aitools/      @databricks/eng-apps-devex @lennartkats-db
