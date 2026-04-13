@@ -10,7 +10,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0 // MIT
 	github.com/charmbracelet/bubbles v1.0.0 // MIT
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
-	github.com/charmbracelet/huh v1.0.0
+	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/databricks/databricks-sdk-go v0.126.0 // Apache 2.0
 	github.com/fatih/color v1.19.0 // MIT
@@ -35,12 +35,12 @@ require (
 	github.com/stretchr/testify v1.11.1 // MIT
 	go.yaml.in/yaml/v3 v3.0.4 // MIT, Apache 2.0
 	golang.org/x/crypto v0.49.0 // BSD-3-Clause
-	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
-	golang.org/x/mod v0.34.0
-	golang.org/x/oauth2 v0.36.0
-	golang.org/x/sync v0.20.0
-	golang.org/x/sys v0.43.0
-	golang.org/x/text v0.35.0
+	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // BSD-3-Clause
+	golang.org/x/mod v0.34.0 // BSD-3-Clause
+	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
+	golang.org/x/sync v0.20.0 // BSD-3-Clause
+	golang.org/x/sys v0.43.0 // BSD-3-Clause
+	golang.org/x/text v0.35.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.1 // Apache 2.0
 )
 
