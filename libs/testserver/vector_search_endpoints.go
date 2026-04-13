@@ -37,6 +37,9 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		EndpointStatus: &vectorsearch.EndpointStatus{
 			State: vectorsearch.EndpointStatusStateOnline, // initial create is no-op, returns ONLINE immediately
 		},
+		ScalingInfo: &vectorsearch.EndpointScalingInfo{
+			RequestedMinQps: createReq.MinQps,
+		},
 	}
 	endpoint.LastUpdatedTimestamp = endpoint.CreationTimestamp
 
