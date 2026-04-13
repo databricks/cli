@@ -19,7 +19,7 @@ func SortedKeys[T any](m map[string]T) []string {
 // We must use that when copying structs because JSON marshaller in SDK crashes if it sees unknown field.
 func FilterFields[T any](fields []string, excludeFields ...string) []string {
 	var result []string
-	typeOfT := reflect.TypeOf((*T)(nil)).Elem()
+	typeOfT := reflect.TypeFor[T]()
 
 	excludeMap := make(map[string]bool)
 	for _, exclude := range excludeFields {
