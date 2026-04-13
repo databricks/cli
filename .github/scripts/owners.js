@@ -2,6 +2,31 @@ const fs = require("fs");
 const path = require("path");
 
 /**
+ * Read a file and return non-empty, non-comment lines split by whitespace.
+ * Returns [] if the file does not exist.
+ *
+ * @param {string} filePath
+ * @returns {string[][]} array of whitespace-split tokens per line
+ */
+function readDataLines(filePath) {
+  let content;
+  try {
+    content = fs.readFileSync(filePath, "utf-8");
+  } catch (e) {
+    if (e.code === "ENOENT") return [];
+    throw e;
+  }
+  const result = [];
+  for (const raw of content.split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const parts = line.split(/\s+/);
+    if (parts.length >= 2) result.push(parts);
+  }
+  return result;
+}
+
+/**
  * Parse an OWNERTEAMS file into a map of team aliases.
  * Format: "team:<name>  @member1 @member2 ..."
  * Returns Map<string, string[]> where key is "team:<name>" and value is member logins.
@@ -11,16 +36,10 @@ const path = require("path");
  */
 function parseOwnerTeams(filePath) {
   const teams = new Map();
-  if (!fs.existsSync(filePath)) return teams;
-  const lines = fs.readFileSync(filePath, "utf-8").split("\n");
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const parts = line.split(/\s+/);
-    if (parts.length < 2 || !parts[0].startsWith("team:")) continue;
-    const alias = parts[0];
+  for (const parts of readDataLines(filePath)) {
+    if (!parts[0].startsWith("team:")) continue;
     const members = parts.slice(1).filter((p) => p.startsWith("@")).map((p) => p.slice(1));
-    teams.set(alias, members);
+    teams.set(parts[0], members);
   }
   return teams;
 }
@@ -43,13 +62,8 @@ function parseOwnersFile(filePath, opts) {
   const includeTeams = opts && opts.includeTeams;
   const teamsPath = path.join(path.dirname(filePath), "OWNERTEAMS");
   const teams = parseOwnerTeams(teamsPath);
-  const lines = fs.readFileSync(filePath, "utf-8").split("\n");
   const rules = [];
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const parts = line.split(/\s+/);
-    if (parts.length < 2) continue;
+  for (const parts of readDataLines(filePath)) {
     const pattern = parts[0];
     const owners = [];
     for (const p of parts.slice(1)) {

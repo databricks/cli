@@ -5,7 +5,7 @@
 /bundle/                    team:bundle @lennartkats-db
 /cmd/bundle/                team:bundle @lennartkats-db
 /acceptance/bundle/         team:bundle @lennartkats-db
-/libs/template/             team:bundle @simonfaltum @lennartkats-db
+/libs/template/             team:bundle @lennartkats-db
 
 # Pipelines
 /cmd/pipelines/             @jefferycheng1 @kanterov @lennartkats-db
