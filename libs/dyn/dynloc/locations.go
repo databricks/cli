@@ -92,8 +92,7 @@ func (l *Locations) registerFileNames(locs []dyn.Location) error {
 		cache[loc.File] = out
 	}
 
-	l.Files = slices.Collect(maps.Values(cache))
-	slices.Sort(l.Files)
+	l.Files = slices.Sorted(maps.Values(cache))
 
 	// Build the file-to-index map.
 	for i, file := range l.Files {

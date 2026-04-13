@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"maps"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -171,11 +172,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 	var result []FieldChange
 	targetName := b.Config.Bundle.Target
 
-	resourceKeys := make([]string, 0, len(configChanges))
-	for resourceKey := range configChanges {
-		resourceKeys = append(resourceKeys, resourceKey)
-	}
-	slices.Sort(resourceKeys)
+	resourceKeys := slices.Sorted(maps.Keys(configChanges))
 
 	for _, resourceKey := range resourceKeys {
 		resourceChanges := configChanges[resourceKey]

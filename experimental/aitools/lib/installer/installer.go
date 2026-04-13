@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -160,11 +161,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	}
 
 	// Install each skill in sorted order for determinism.
-	skillNames := make([]string, 0, len(targetSkills))
-	for name := range targetSkills {
-		skillNames = append(skillNames, name)
-	}
-	slices.Sort(skillNames)
+	skillNames := slices.Sorted(maps.Keys(targetSkills))
 
 	for _, name := range skillNames {
 		meta := targetSkills[name]

@@ -23,7 +23,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -968,7 +967,7 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 
 	adapter, ok := b.Adapters[group]
 	if !ok {
-		return nil, fmt.Errorf("resource type %q not supported, available: %s", group, strings.Join(utils.SortedKeys(b.Adapters), ", "))
+		return nil, fmt.Errorf("resource type %q not supported, available: %s", group, strings.Join(slices.Sorted(maps.Keys(b.Adapters)), ", "))
 	}
 
 	return adapter, nil

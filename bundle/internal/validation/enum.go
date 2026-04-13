@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"go/format"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -182,11 +183,7 @@ func filterTargetsAndEnvironmentsEnum(patterns map[string][]EnumPatternInfo) map
 // sortGroupedPatterns sorts patterns within each group and returns them as a sorted slice
 func sortGroupedPatternsEnum(groupedPatterns map[string][]EnumPatternInfo) [][]EnumPatternInfo {
 	// Get sorted group keys
-	groupKeys := make([]string, 0, len(groupedPatterns))
-	for key := range groupedPatterns {
-		groupKeys = append(groupKeys, key)
-	}
-	slices.Sort(groupKeys)
+	groupKeys := slices.Sorted(maps.Keys(groupedPatterns))
 
 	// Build sorted result
 	result := make([][]EnumPatternInfo, 0, len(groupKeys))

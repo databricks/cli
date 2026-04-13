@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -31,7 +32,6 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -817,7 +817,7 @@ func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
 	env := make([]string, 0, len(configEnv)+len(customEnv))
 
 	// Add config.Env first (but skip keys that exist in customEnv)
-	for _, key := range utils.SortedKeys(configEnv) {
+	for _, key := range slices.Sorted(maps.Keys(configEnv)) {
 		if hasKey(customEnv, key) {
 			continue
 		}
