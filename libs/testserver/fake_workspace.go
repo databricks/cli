@@ -128,28 +128,28 @@ type FakeWorkspace struct {
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
-	Jobs                map[int64]jobs.Job
-	JobRuns             map[int64]jobs.Run
-	JobRunOutputs       map[int64]jobs.RunOutput
-	Pipelines           map[string]pipelines.GetPipelineResponse
-	PipelineUpdates     map[string]bool
-	Monitors            map[string]catalog.MonitorInfo
-	Apps                map[string]apps.App
-	Schemas             map[string]catalog.SchemaInfo
-	Grants              map[string][]catalog.PrivilegeAssignment
-	Volumes             map[string]catalog.VolumeInfo
-	Dashboards          map[string]fakeDashboard
-	PublishedDashboards map[string]dashboards.PublishedDashboard
-	SqlWarehouses       map[string]sql.GetWarehouseResponse
-	Alerts              map[string]sql.AlertV2
-	Experiments         map[string]ml.GetExperimentResponse
+	Jobs                  map[int64]jobs.Job
+	JobRuns               map[int64]jobs.Run
+	JobRunOutputs         map[int64]jobs.RunOutput
+	Pipelines             map[string]pipelines.GetPipelineResponse
+	PipelineUpdates       map[string]bool
+	Monitors              map[string]catalog.MonitorInfo
+	Apps                  map[string]apps.App
+	Schemas               map[string]catalog.SchemaInfo
+	Grants                map[string][]catalog.PrivilegeAssignment
+	Volumes               map[string]catalog.VolumeInfo
+	Dashboards            map[string]fakeDashboard
+	PublishedDashboards   map[string]dashboards.PublishedDashboard
+	SqlWarehouses         map[string]sql.GetWarehouseResponse
+	Alerts                map[string]sql.AlertV2
+	Experiments           map[string]ml.GetExperimentResponse
 	ModelRegistryModels   map[string]ml.Model
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
-	Clusters            map[string]compute.ClusterDetails
-	Catalogs            map[string]catalog.CatalogInfo
-	ExternalLocations   map[string]catalog.ExternalLocationInfo
-	RegisteredModels    map[string]catalog.RegisteredModelInfo
-	ServingEndpoints    map[string]serving.ServingEndpointDetailed
+	Clusters              map[string]compute.ClusterDetails
+	Catalogs              map[string]catalog.CatalogInfo
+	ExternalLocations     map[string]catalog.ExternalLocationInfo
+	RegisteredModels      map[string]catalog.RegisteredModelInfo
+	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
@@ -283,23 +283,23 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				State: sql.StateRunning,
 			},
 		},
-		ServingEndpoints:     map[string]serving.ServingEndpointDetailed{},
-		Repos:                map[string]workspace.RepoInfo{},
-		SecretScopes:         map[string]workspace.SecretScope{},
-		Secrets:              map[string]map[string]string{},
-		Acls:                 map[string][]workspace.AclItem{},
-		Permissions:          map[string]iam.ObjectPermissions{},
-		Groups:               map[string]iam.Group{},
-		DatabaseInstances:    map[string]database.DatabaseInstance{},
-		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
-		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
-		PostgresProjects:     map[string]postgres.Project{},
-		PostgresBranches:     map[string]postgres.Branch{},
-		PostgresEndpoints:    map[string]postgres.Endpoint{},
-		PostgresOperations:   map[string]postgres.Operation{},
-		clusterVenvs:         map[string]*clusterEnv{},
-		Alerts:               map[string]sql.AlertV2{},
-		Experiments:          map[string]ml.GetExperimentResponse{},
+		ServingEndpoints:      map[string]serving.ServingEndpointDetailed{},
+		Repos:                 map[string]workspace.RepoInfo{},
+		SecretScopes:          map[string]workspace.SecretScope{},
+		Secrets:               map[string]map[string]string{},
+		Acls:                  map[string][]workspace.AclItem{},
+		Permissions:           map[string]iam.ObjectPermissions{},
+		Groups:                map[string]iam.Group{},
+		DatabaseInstances:     map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:      map[string]database.DatabaseCatalog{},
+		SyncedDatabaseTables:  map[string]database.SyncedDatabaseTable{},
+		PostgresProjects:      map[string]postgres.Project{},
+		PostgresBranches:      map[string]postgres.Branch{},
+		PostgresEndpoints:     map[string]postgres.Endpoint{},
+		PostgresOperations:    map[string]postgres.Operation{},
+		clusterVenvs:          map[string]*clusterEnv{},
+		Alerts:                map[string]sql.AlertV2{},
+		Experiments:           map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:   map[string]ml.Model{},
 		ModelRegistryModelIDs: map[string]string{},
 		Clusters: map[string]compute.ClusterDetails{
