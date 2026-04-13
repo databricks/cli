@@ -1,5 +1,4 @@
 Cloud = false
-Slow = true
 
 # $resources references to permissions and grants are not supported on v0.293.0
 EnvMatrixExclude.no_permission_ref = ["INPUT_CONFIG=job_permission_ref.yml.tmpl"]
