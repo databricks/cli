@@ -1,6 +1,6 @@
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/registered-models/test-model",
+  "path": "/api/2.0/permissions/registered-models/[NUMID]",
   "body": {
     "access_control_list": [
       {
