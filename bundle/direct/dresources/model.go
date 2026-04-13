@@ -13,11 +13,11 @@ type ResourceMlflowModel struct {
 	client *databricks.WorkspaceClient
 }
 
-// MlflowModelRefreshOutput wraps the API response with the numeric model ID.
+// MlflowModelRemote wraps the API response with the numeric model ID.
 // The state ID for models is the model name (used for CRUD operations), but
 // the permissions API requires the numeric ID. This wrapper exposes the numeric
 // ID as model_id, analogous to RefreshOutput.EndpointId for serving endpoints.
-type MlflowModelRefreshOutput struct {
+type MlflowModelRemote struct {
 	ml.ModelDatabricks
 	ModelId string `json:"model_id"`
 }
@@ -30,7 +30,7 @@ func (*ResourceMlflowModel) PrepareState(input *resources.MlflowModel) *ml.Creat
 	return &input.CreateModelRequest
 }
 
-func (*ResourceMlflowModel) RemapState(output *MlflowModelRefreshOutput) *ml.CreateModelRequest {
+func (*ResourceMlflowModel) RemapState(output *MlflowModelRemote) *ml.CreateModelRequest {
 	return &ml.CreateModelRequest{
 		Name:            output.Name,
 		Tags:            output.Tags,
@@ -39,20 +39,20 @@ func (*ResourceMlflowModel) RemapState(output *MlflowModelRefreshOutput) *ml.Cre
 	}
 }
 
-func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string) (*MlflowModelRefreshOutput, error) {
+func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string) (*MlflowModelRemote, error) {
 	response, err := r.client.ModelRegistry.GetModel(ctx, ml.GetModelRequest{
 		Name: id,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &MlflowModelRefreshOutput{
+	return &MlflowModelRemote{
 		ModelDatabricks: *response.RegisteredModelDatabricks,
 		ModelId:         response.RegisteredModelDatabricks.Id,
 	}, nil
 }
 
-func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateModelRequest) (string, *MlflowModelRefreshOutput, error) {
+func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateModelRequest) (string, *MlflowModelRemote, error) {
 	response, err := r.client.ModelRegistry.CreateModel(ctx, *config)
 	if err != nil {
 		return "", nil, err
@@ -62,7 +62,7 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 	return response.RegisteredModel.Name, nil, nil
 }
 
-func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, entry *PlanEntry) (*MlflowModelRefreshOutput, error) {
+func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, entry *PlanEntry) (*MlflowModelRemote, error) {
 	updateRequest := ml.UpdateModelRequest{
 		Name:            id,
 		Description:     config.Description,
@@ -76,11 +76,11 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 
 	// Carry forward model_id from existing state since UpdateModelResponse doesn't include it.
 	var modelId string
-	if old, ok := entry.RemoteState.(*MlflowModelRefreshOutput); ok {
+	if old, ok := entry.RemoteState.(*MlflowModelRemote); ok {
 		modelId = old.ModelId
 	}
 
-	return &MlflowModelRefreshOutput{
+	return &MlflowModelRemote{
 		ModelDatabricks: ml.ModelDatabricks{
 			Name:            response.RegisteredModel.Name,
 			Description:     response.RegisteredModel.Description,
