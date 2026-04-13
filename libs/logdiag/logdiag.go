@@ -30,6 +30,9 @@ type LogDiagData struct {
 	// If Collect is true, diagnostics are appended to Collected. Use SetCollected() to set.
 	Collect   bool
 	Collected []diag.Diagnostic
+
+	// Summary of the first error diagnostic logged, if any.
+	FirstErrorSummary string
 }
 
 // IsSetup returns whether InitContext() was already called.
@@ -117,6 +120,16 @@ func FlushCollected(ctx context.Context) diag.Diagnostics {
 	return result
 }
 
+// GetFirstErrorSummary returns the summary of the first error diagnostic
+// logged, or an empty string if no errors have been logged.
+func GetFirstErrorSummary(ctx context.Context) string {
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
+
+	return val.FirstErrorSummary
+}
+
 func LogDiag(ctx context.Context, d diag.Diagnostic) {
 	val := read(ctx)
 	val.mu.Lock()
@@ -125,6 +138,9 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 	switch d.Severity {
 	case diag.Error:
 		val.Errors += 1
+		if val.FirstErrorSummary == "" {
+			val.FirstErrorSummary = d.Summary
+		}
 	case diag.Warning:
 		val.Warnings += 1
 	case diag.Recommendation:

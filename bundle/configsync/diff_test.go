@@ -6,6 +6,80 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestStripNamePrefix(t *testing.T) {
+	tests := []struct {
+		name   string
+		path   string
+		value  any
+		prefix string
+		want   any
+	}{
+		{
+			name:   "job name with normal prefix",
+			path:   "resources.jobs.my_job.name",
+			value:  "[dev user] my_job",
+			prefix: "[dev user] ",
+			want:   "my_job",
+		},
+		{
+			name:   "pipeline name with normal prefix",
+			path:   "resources.pipelines.my_pipeline.name",
+			value:  "[dev user] my_pipeline",
+			prefix: "[dev user] ",
+			want:   "my_pipeline",
+		},
+		{
+			name:   "dashboard display_name with prefix",
+			path:   "resources.dashboards.my_dash.display_name",
+			value:  "[dev user] my_dash",
+			prefix: "[dev user] ",
+			want:   "my_dash",
+		},
+		{
+			name:   "name does not start with prefix",
+			path:   "resources.jobs.my_job.name",
+			value:  "my_job",
+			prefix: "[dev user] ",
+			want:   "my_job",
+		},
+		{
+			name:   "empty prefix is noop",
+			path:   "resources.jobs.my_job.name",
+			value:  "[dev user] my_job",
+			prefix: "",
+			want:   "[dev user] my_job",
+		},
+		{
+			name:   "non-name field is not stripped",
+			path:   "resources.jobs.my_job.description",
+			value:  "[dev user] some description",
+			prefix: "[dev user] ",
+			want:   "[dev user] some description",
+		},
+		{
+			name:   "non-string value is unchanged",
+			path:   "resources.jobs.my_job.name",
+			value:  42,
+			prefix: "[dev user] ",
+			want:   42,
+		},
+		{
+			name:   "nil value is unchanged",
+			path:   "resources.jobs.my_job.name",
+			value:  nil,
+			prefix: "[dev user] ",
+			want:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := stripNamePrefix(tt.path, tt.value, tt.prefix)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestMatchPattern(t *testing.T) {
 	tests := []struct {
 		name    string
