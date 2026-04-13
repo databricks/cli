@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -350,7 +349,7 @@ func ExpandEnvMatrix(matrix, exclude map[string][]string, extraVars []string) []
 	for key := range filteredMatrix {
 		keys = append(keys, key)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	// Build an expansion of all combinations.
 	// At each step we look at a given key and append each possible value to each

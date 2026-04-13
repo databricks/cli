@@ -2,12 +2,13 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"go/format"
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -141,7 +142,7 @@ func sortGroupedPatterns(groupedPatterns map[string][]RequiredPatternInfo) [][]R
 	for key := range groupedPatterns {
 		groupKeys = append(groupKeys, key)
 	}
-	sort.Strings(groupKeys)
+	slices.Sort(groupKeys)
 
 	// Build sorted result
 	result := make([][]RequiredPatternInfo, 0, len(groupKeys))
@@ -149,8 +150,8 @@ func sortGroupedPatterns(groupedPatterns map[string][]RequiredPatternInfo) [][]R
 		patterns := groupedPatterns[key]
 
 		// Sort patterns within each group by parent path
-		sort.Slice(patterns, func(i, j int) bool {
-			return patterns[i].Parent < patterns[j].Parent
+		slices.SortFunc(patterns, func(a, b RequiredPatternInfo) int {
+			return cmp.Compare(a.Parent, b.Parent)
 		})
 
 		result = append(result, patterns)

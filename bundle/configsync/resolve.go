@@ -1,11 +1,12 @@
 package configsync
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"io/fs"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -174,7 +175,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 	for resourceKey := range configChanges {
 		resourceKeys = append(resourceKeys, resourceKey)
 	}
-	sort.Strings(resourceKeys)
+	slices.Sort(resourceKeys)
 
 	for _, resourceKey := range resourceKeys {
 		resourceChanges := configChanges[resourceKey]
@@ -187,25 +188,25 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 		}
 
 		// Sort field paths by depth (deeper first), then operation type (removals before adds), then alphabetically
-		sort.SliceStable(fieldPaths, func(i, j int) bool {
-			depthI := fieldPathsDepths[fieldPaths[i]]
-			depthJ := fieldPathsDepths[fieldPaths[j]]
+		slices.SortStableFunc(fieldPaths, func(a, b string) int {
+			depthA := fieldPathsDepths[a]
+			depthB := fieldPathsDepths[b]
 
-			if depthI != depthJ {
-				return depthI > depthJ
+			if depthA != depthB {
+				return cmp.Compare(depthB, depthA)
 			}
 
-			opI := resourceChanges[fieldPaths[i]].Operation
-			opJ := resourceChanges[fieldPaths[j]].Operation
+			opA := resourceChanges[a].Operation
+			opB := resourceChanges[b].Operation
 
-			if opI == OperationRemove && opJ != OperationRemove {
-				return true
+			if opA == OperationRemove && opB != OperationRemove {
+				return -1
 			}
-			if opI != OperationRemove && opJ == OperationRemove {
-				return false
+			if opA != OperationRemove && opB == OperationRemove {
+				return 1
 			}
 
-			return fieldPaths[i] < fieldPaths[j]
+			return cmp.Compare(a, b)
 		})
 
 		// Create indices map for this resource, path -> indices, that we could use to replace with added elements

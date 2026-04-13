@@ -2,7 +2,7 @@ package sync
 
 import (
 	"path"
-	"sort"
+	"slices"
 )
 
 // DirSet is a set of directories.
@@ -37,7 +37,7 @@ func (dirset DirSet) Slice() []string {
 	for dir := range dirset {
 		out = append(out, dir)
 	}
-	sort.Strings(out)
+	slices.Sort(out)
 	return out
 }
 

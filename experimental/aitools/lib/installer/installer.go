@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -164,7 +164,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	for name := range targetSkills {
 		skillNames = append(skillNames, name)
 	}
-	sort.Strings(skillNames)
+	slices.Sort(skillNames)
 
 	for _, name := range skillNames {
 		meta := targetSkills[name]

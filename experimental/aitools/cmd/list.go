@@ -3,7 +3,7 @@ package aitools
 import (
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"text/tabwriter"
 
@@ -84,7 +84,7 @@ func defaultListSkills(cmd *cobra.Command, scope string) error {
 	for name := range manifest.Skills {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 
 	version := strings.TrimPrefix(ref, "v")
 	cmdio.LogString(ctx, "Available skills (v"+version+"):")

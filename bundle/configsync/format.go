@@ -2,7 +2,7 @@ package configsync
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -21,7 +21,7 @@ func FormatTextOutput(changes Changes) string {
 	for key := range changes {
 		resourceKeys = append(resourceKeys, key)
 	}
-	sort.Strings(resourceKeys)
+	slices.Sort(resourceKeys)
 
 	for _, resourceKey := range resourceKeys {
 		resourceChanges := changes[resourceKey]
@@ -31,7 +31,7 @@ func FormatTextOutput(changes Changes) string {
 		for path := range resourceChanges {
 			paths = append(paths, path)
 		}
-		sort.Strings(paths)
+		slices.Sort(paths)
 
 		for _, path := range paths {
 			configChange := resourceChanges[path]

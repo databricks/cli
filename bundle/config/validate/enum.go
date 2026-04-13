@@ -1,10 +1,10 @@
 package validate
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
-	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/internal/validation/generated"
@@ -86,16 +86,14 @@ func (f *enum) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Sort diagnostics to make them deterministic
-	sort.Slice(diags, func(i, j int) bool {
+	slices.SortFunc(diags, func(a, b diag.Diagnostic) int {
 		// First sort by summary
-		if diags[i].Summary != diags[j].Summary {
-			return diags[i].Summary < diags[j].Summary
+		if n := cmp.Compare(a.Summary, b.Summary); n != 0 {
+			return n
 		}
 
 		// Then sort by locations as a tie breaker if summaries are the same.
-		iLocs := fmt.Sprintf("%v", diags[i].Locations)
-		jLocs := fmt.Sprintf("%v", diags[j].Locations)
-		return iLocs < jLocs
+		return cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations))
 	})
 
 	return diags

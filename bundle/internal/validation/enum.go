@@ -2,13 +2,14 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"errors"
 	"fmt"
 	"go/format"
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"slices"
 	"text/template"
 
 	"github.com/databricks/cli/bundle/config"
@@ -185,7 +186,7 @@ func sortGroupedPatternsEnum(groupedPatterns map[string][]EnumPatternInfo) [][]E
 	for key := range groupedPatterns {
 		groupKeys = append(groupKeys, key)
 	}
-	sort.Strings(groupKeys)
+	slices.Sort(groupKeys)
 
 	// Build sorted result
 	result := make([][]EnumPatternInfo, 0, len(groupKeys))
@@ -193,8 +194,8 @@ func sortGroupedPatternsEnum(groupedPatterns map[string][]EnumPatternInfo) [][]E
 		patterns := groupedPatterns[key]
 
 		// Sort patterns within each group by pattern
-		sort.Slice(patterns, func(i, j int) bool {
-			return patterns[i].Pattern < patterns[j].Pattern
+		slices.SortFunc(patterns, func(a, b EnumPatternInfo) int {
+			return cmp.Compare(a.Pattern, b.Pattern)
 		})
 
 		result = append(result, patterns)
