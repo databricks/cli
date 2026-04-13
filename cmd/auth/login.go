@@ -94,7 +94,7 @@ func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
 	}
 	cmd := &cobra.Command{
-		Use:   "login [HOST]",
+		Use:   "login [PROFILE]",
 		Short: "Log into a Databricks workspace or account",
 		Long: fmt.Sprintf(`Log into a Databricks workspace or account.
 
@@ -109,9 +109,12 @@ information, see:
 If no host is provided, the CLI opens login.databricks.com where you can
 authenticate and select a workspace.
 
-The host can be provided as a positional argument, via --host, or from an
-existing profile. The host URL may include query parameters to set the
-workspace and account ID:
+The positional argument is resolved as a profile name first. If no profile
+with that name exists and the argument looks like a URL, it is used as a
+host. The positional argument cannot be combined with --host or --profile;
+use the flags directly to specify both.
+
+The host URL may include query parameters to set the workspace and account ID:
 
   databricks auth login --host "https://<host>?o=<workspace_id>&account_id=<id>"
 
@@ -147,6 +150,26 @@ a new profile is created.
 		// Cluster and Serverless are mutually exclusive.
 		if configureCluster && configureServerless {
 			return errors.New("please either configure serverless or cluster, not both")
+		}
+
+		// The positional argument is a shorthand that resolves to either a
+		// profile or a host. It cannot be combined with explicit flags.
+		// Use "databricks auth login --host X --profile Y" instead.
+		if len(args) > 0 && (authArguments.Host != "" || profileName != "") {
+			return fmt.Errorf("argument %q cannot be combined with --host or --profile. Use the --host and --profile flags instead", args[0])
+		}
+		if len(args) == 1 {
+			resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args[0], profile.DefaultProfiler)
+			if err != nil {
+				return err
+			}
+			if resolvedProfile != "" {
+				profileName = resolvedProfile
+				args = nil
+			} else {
+				authArguments.Host = resolvedHost
+				args = nil
+			}
 		}
 
 		// If the user has not specified a profile name, prompt for one.

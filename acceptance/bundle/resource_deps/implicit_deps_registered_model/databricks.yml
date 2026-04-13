@@ -1,0 +1,23 @@
+bundle:
+  name: test-bundle
+
+# Tests implicit dependency detection for registered models:
+# - registered model should implicitly depend on schema (schema_name resolved)
+# - registered model should implicitly depend on catalog (catalog_name resolved)
+resources:
+  catalogs:
+    my_catalog:
+      name: mycatalog
+  schemas:
+    my_schema:
+      catalog_name: mycatalog
+      name: myschema
+  registered_models:
+    my_model:
+      catalog_name: mycatalog
+      schema_name: myschema
+      name: mymodel
+
+targets:
+  dev:
+    mode: development

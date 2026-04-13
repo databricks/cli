@@ -60,8 +60,9 @@ function makeGithub({ reviews = [], files = [], teamMembers = {}, existingCommen
   const listReviews = Symbol("listReviews");
   const listFiles = Symbol("listFiles");
   const listComments = Symbol("listComments");
-  const statuses = [];
+  const checkRuns = [];
   const createdComments = [];
+  const updatedComments = [];
   const deletedCommentIds = [];
 
   const github = {
@@ -76,9 +77,9 @@ function makeGithub({ reviews = [], files = [], teamMembers = {}, existingCommen
         listReviews,
         listFiles,
       },
-      repos: {
-        createCommitStatus: async (params) => {
-          statuses.push(params);
+      checks: {
+        create: async (params) => {
+          checkRuns.push(params);
         },
       },
       issues: {
@@ -88,6 +89,9 @@ function makeGithub({ reviews = [], files = [], teamMembers = {}, existingCommen
         },
         createComment: async (params) => {
           createdComments.push(params);
+        },
+        updateComment: async (params) => {
+          updatedComments.push(params);
         },
       },
       teams: {
@@ -101,8 +105,9 @@ function makeGithub({ reviews = [], files = [], teamMembers = {}, existingCommen
         },
       },
     },
-    _statuses: statuses,
+    _checkRuns: checkRuns,
     _comments: createdComments,
+    _updatedComments: updatedComments,
     _deletedCommentIds: deletedCommentIds,
   };
   return github;
@@ -129,7 +134,7 @@ describe("maintainer-approval", () => {
     fs.rmSync(tmpDir, { recursive: true });
   });
 
-  it("maintainer approved -> success", async () => {
+  it("maintainer approved -> success, no comment", async () => {
     const github = makeGithub({
       reviews: [
         { state: "APPROVED", user: { login: "maintainer1" } },
@@ -141,12 +146,35 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "success");
-    assert.ok(github._statuses[0].description.includes("maintainer1"));
+    assert.equal(github._checkRuns.length, 1);
+    assert.equal(github._checkRuns[0].conclusion, "success");
+    assert.ok(github._checkRuns[0].output.summary.includes("maintainer1"));
+    assert.equal(github._comments.length, 0);
+    assert.equal(github._updatedComments.length, 0);
   });
 
-  it("maintainer-authored PR with any approval -> success", async () => {
+  it("approval cleans up stale pending comment", async () => {
+    const github = makeGithub({
+      reviews: [
+        { state: "APPROVED", user: { login: "maintainer1" } },
+      ],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+      existingComments: [
+        { id: 500, body: "<!-- MAINTAINER_APPROVAL -->\n## Waiting for approval\n..." },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    assert.equal(github._checkRuns[0].conclusion, "success");
+    assert.deepEqual(github._deletedCommentIds, [500]);
+    assert.equal(github._comments.length, 0);
+    assert.equal(github._updatedComments.length, 0);
+  });
+
+  it("maintainer-authored PR with any approval -> success, no comment", async () => {
     const github = makeGithub({
       reviews: [
         { state: "APPROVED", user: { login: "randomreviewer" } },
@@ -158,12 +186,14 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "success");
-    assert.ok(github._statuses[0].description.includes("maintainer-authored"));
+    assert.equal(github._checkRuns.length, 1);
+    assert.equal(github._checkRuns[0].conclusion, "success");
+    assert.ok(github._checkRuns[0].output.summary.includes("maintainer-authored"));
+    assert.equal(github._comments.length, 0);
+    assert.equal(github._updatedComments.length, 0);
   });
 
-  it("single domain, owner approved -> success", async () => {
+  it("single domain, owner approved -> success, no comment", async () => {
     const github = makeGithub({
       reviews: [
         { state: "APPROVED", user: { login: "jefferycheng1" } },
@@ -178,11 +208,13 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "success");
+    assert.equal(github._checkRuns.length, 1);
+    assert.equal(github._checkRuns[0].conclusion, "success");
+    assert.equal(github._comments.length, 0);
+    assert.equal(github._updatedComments.length, 0);
   });
 
-  it("cross-domain, both approved -> success", async () => {
+  it("cross-domain, both approved -> success, no comment", async () => {
     const github = makeGithub({
       reviews: [
         { state: "APPROVED", user: { login: "jefferycheng1" } },
@@ -198,8 +230,10 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "success");
+    assert.equal(github._checkRuns.length, 1);
+    assert.equal(github._checkRuns[0].conclusion, "success");
+    assert.equal(github._comments.length, 0);
+    assert.equal(github._updatedComments.length, 0);
   });
 
   it("cross-domain, one missing -> pending", async () => {
@@ -217,12 +251,11 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "pending");
-    assert.ok(github._statuses[0].description.includes("/bundle/"));
+    // No check run created; the required check stays as "Expected" (yellow dot).
+    assert.equal(github._checkRuns.length, 0);
   });
 
-  it("wildcard files present -> pending, mentions maintainer", async () => {
+  it("wildcard files present -> pending, no check run", async () => {
     const github = makeGithub({
       reviews: [
         { state: "APPROVED", user: { login: "randomreviewer" } },
@@ -234,12 +267,10 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "pending");
-    assert.ok(github._statuses[0].description.includes("maintainer"));
+    assert.equal(github._checkRuns.length, 0);
   });
 
-  it("no approvals at all -> pending", async () => {
+  it("no approvals at all -> pending, no check run", async () => {
     const github = makeGithub({
       reviews: [],
       files: [{ filename: "cmd/pipelines/foo.go" }],
@@ -249,8 +280,7 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "pending");
+    assert.equal(github._checkRuns.length, 0);
   });
 
   it("team member approved -> success for team-owned path", async () => {
@@ -266,8 +296,8 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "success");
+    assert.equal(github._checkRuns.length, 1);
+    assert.equal(github._checkRuns[0].conclusion, "success");
   });
 
   it("non-team-member approval for team-owned path -> pending", async () => {
@@ -283,8 +313,7 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "pending");
+    assert.equal(github._checkRuns.length, 0);
   });
 
   it("CHANGES_REQUESTED does not count as approval", async () => {
@@ -299,8 +328,7 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "pending");
+    assert.equal(github._checkRuns.length, 0);
   });
 
   it("self-approval by PR author is excluded", async () => {
@@ -315,8 +343,7 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._statuses.length, 1);
-    assert.equal(github._statuses[0].state, "pending");
+    assert.equal(github._checkRuns.length, 0);
   });
 
   it("no * rule in OWNERS -> setFailed", async () => {
@@ -337,9 +364,9 @@ describe("maintainer-approval", () => {
     fs.rmSync(noWildcardDir, { recursive: true });
   });
 
-  // --- Comment posting tests ---
+  // --- Comment upsert tests ---
 
-  it("posts a comment with MARKER on every run", async () => {
+  it("creates comment with MARKER when none exists", async () => {
     const github = makeGithub({
       reviews: [],
       files: [{ filename: "cmd/pipelines/foo.go" }],
@@ -351,26 +378,11 @@ describe("maintainer-approval", () => {
 
     assert.equal(github._comments.length, 1);
     assert.ok(github._comments[0].body.includes("<!-- MAINTAINER_APPROVAL -->"));
+    assert.equal(github._updatedComments.length, 0);
+    assert.equal(github._deletedCommentIds.length, 0);
   });
 
-  it("maintainer approval posts simple approved comment", async () => {
-    const github = makeGithub({
-      reviews: [
-        { state: "APPROVED", user: { login: "maintainer1" } },
-      ],
-      files: [{ filename: "cmd/pipelines/foo.go" }],
-    });
-    const core = makeCore();
-    const context = makeContext();
-
-    await runModule({ github, context, core });
-
-    assert.equal(github._comments.length, 1);
-    assert.ok(github._comments[0].body.includes("Approved by @maintainer1"));
-    assert.ok(github._comments[0].body.includes("<!-- MAINTAINER_APPROVAL -->"));
-  });
-
-  it("deletes existing comment before posting new one", async () => {
+  it("edits existing comment in place when body changes", async () => {
     const github = makeGithub({
       reviews: [],
       files: [{ filename: "cmd/pipelines/foo.go" }],
@@ -383,13 +395,69 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._deletedCommentIds.length, 1);
-    assert.equal(github._deletedCommentIds[0], 999);
-    assert.equal(github._comments.length, 1);
-    assert.ok(github._comments[0].body.includes("<!-- MAINTAINER_APPROVAL -->"));
+    assert.equal(github._updatedComments.length, 1);
+    assert.equal(github._updatedComments[0].comment_id, 999);
+    assert.ok(github._updatedComments[0].body.includes("<!-- MAINTAINER_APPROVAL -->"));
+    assert.equal(github._comments.length, 0);
+    assert.equal(github._deletedCommentIds.length, 0);
   });
 
-  it("does not delete comments without the marker", async () => {
+  it("skips edit when comment body is unchanged", async () => {
+    // Stub Math.random so selectRoundRobin is deterministic across runs.
+    const origRandom = Math.random;
+    Math.random = () => 0.5;
+    try {
+      // First, run once to capture the comment body.
+      const github1 = makeGithub({
+        reviews: [],
+        files: [{ filename: "cmd/pipelines/foo.go" }],
+      });
+      const core1 = makeCore();
+      await runModule({ github: github1, context: makeContext(), core: core1 });
+      const expectedBody = github1._comments[0].body;
+
+      // Second run with that body as the existing comment.
+      const github2 = makeGithub({
+        reviews: [],
+        files: [{ filename: "cmd/pipelines/foo.go" }],
+        existingComments: [
+          { id: 100, body: expectedBody },
+        ],
+      });
+      const core2 = makeCore();
+      await runModule({ github: github2, context: makeContext(), core: core2 });
+
+      assert.equal(github2._comments.length, 0);
+      assert.equal(github2._updatedComments.length, 0);
+      assert.equal(github2._deletedCommentIds.length, 0);
+    } finally {
+      Math.random = origRandom;
+    }
+  });
+
+  it("cleans up duplicate marker comments, keeps the first", async () => {
+    const github = makeGithub({
+      reviews: [],
+      files: [{ filename: "cmd/pipelines/foo.go" }],
+      existingComments: [
+        { id: 100, body: "<!-- MAINTAINER_APPROVAL -->\nFirst" },
+        { id: 200, body: "<!-- MAINTAINER_APPROVAL -->\nDuplicate" },
+        { id: 300, body: "<!-- REVIEWER_SUGGESTION -->\nLegacy" },
+      ],
+    });
+    const core = makeCore();
+    const context = makeContext();
+
+    await runModule({ github, context, core });
+
+    // Duplicates deleted, first one edited.
+    assert.deepEqual(github._deletedCommentIds.sort(), [200, 300]);
+    assert.equal(github._updatedComments.length, 1);
+    assert.equal(github._updatedComments[0].comment_id, 100);
+    assert.equal(github._comments.length, 0);
+  });
+
+  it("does not touch comments without the marker", async () => {
     const github = makeGithub({
       reviews: [],
       files: [{ filename: "cmd/pipelines/foo.go" }],
@@ -403,6 +471,7 @@ describe("maintainer-approval", () => {
     await runModule({ github, context, core });
 
     assert.equal(github._deletedCommentIds.length, 0);
+    assert.equal(github._updatedComments.length, 0);
     assert.equal(github._comments.length, 1);
   });
 
@@ -442,28 +511,5 @@ describe("maintainer-approval", () => {
     assert.ok(body.includes("`/bundle/`"));
     assert.ok(body.includes("approved by @jefferycheng1"));
     assert.ok(body.includes("needs approval"));
-  });
-
-  it("all groups approved comment shows per-group detail", async () => {
-    const github = makeGithub({
-      reviews: [
-        { state: "APPROVED", user: { login: "jefferycheng1" } },
-        { state: "APPROVED", user: { login: "bundleowner" } },
-      ],
-      files: [
-        { filename: "cmd/pipelines/foo.go" },
-        { filename: "bundle/config.go" },
-      ],
-    });
-    const core = makeCore();
-    const context = makeContext();
-
-    await runModule({ github, context, core });
-
-    assert.equal(github._comments.length, 1);
-    const body = github._comments[0].body;
-    assert.ok(body.includes("## All ownership groups approved"));
-    assert.ok(body.includes("Approved by: @jefferycheng1"));
-    assert.ok(body.includes("Approved by: @bundleowner"));
   });
 });
