@@ -95,11 +95,10 @@ jobs:
               group: databricks-protected-runner-group-large
               labels: linux-ubuntu-latest-large
 
-          # Windows runners are offline; commented out temporarily.
-          # - name: windows
-          #   runner:
-          #     group: databricks-protected-runner-group-large
-          #     labels: windows-server-latest-large
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
 
           - name: macos
             runner:
@@ -227,11 +226,10 @@ jobs:
               group: databricks-protected-runner-group-large
               labels: linux-ubuntu-latest-large
 
-          # Windows runners are offline; commented out temporarily.
-          # - name: windows
-          #   runner:
-          #     group: databricks-protected-runner-group-large
-          #     labels: windows-server-latest-large
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
 
           - name: macos
             runner:
@@ -273,11 +271,10 @@ jobs:
               group: databricks-protected-runner-group-large
               labels: linux-ubuntu-latest-large
 
-          # Windows runners are offline; commented out temporarily.
-          # - name: windows
-          #   runner:
-          #     group: databricks-protected-runner-group-large
-          #     labels: windows-server-latest-large
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
 
           - name: macos
             runner:

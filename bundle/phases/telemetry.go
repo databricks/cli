@@ -33,7 +33,17 @@ func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 	return executionTimes
 }
 
-func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
+// Maximum length of the error message included in telemetry.
+const maxErrorMessageLength = 500
+
+// LogDeployTelemetry logs a telemetry event for a bundle deploy command.
+func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
+	errMsg = scrubForTelemetry(errMsg)
+
+	if len(errMsg) > maxErrorMessageLength {
+		errMsg = errMsg[:maxErrorMessageLength]
+	}
+
 	resourcesCount := int64(0)
 	_, err := dyn.MapByPattern(b.Config.Value(), dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		resourcesCount++
@@ -149,6 +159,7 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid:   bundleUuid,
 			DeploymentId: b.Metrics.DeploymentId.String(),
+			ErrorMessage: errMsg,
 
 			ResourceCount:                     resourcesCount,
 			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),

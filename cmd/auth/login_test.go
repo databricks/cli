@@ -992,3 +992,25 @@ auth_type = databricks-cli
 	assert.Equal(t, "fresh-account", savedProfile.AccountID, "account_id should be saved from introspection")
 	assert.Equal(t, "222222", savedProfile.WorkspaceID, "workspace_id should be updated to fresh introspection value")
 }
+
+func TestLoginRejectsPositionalArgWithHostFlag(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	authArgs := &auth.AuthArguments{Host: "https://example.com"}
+	cmd := newLoginCommand(authArgs)
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"myprofile"})
+	err := cmd.Execute()
+	assert.ErrorContains(t, err, `argument "myprofile" cannot be combined with --host or --profile`)
+}
+
+func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	authArgs := &auth.AuthArguments{}
+	cmd := newLoginCommand(authArgs)
+	cmd.Flags().String("profile", "", "")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--profile", "myprofile", "https://example.com"})
+	err := cmd.Execute()
+	assert.ErrorContains(t, err, `argument "https://example.com" cannot be combined with --host or --profile`)
+}

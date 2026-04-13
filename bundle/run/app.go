@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -124,7 +124,7 @@ func (a *appRunner) start(ctx context.Context) error {
 	// active and pending deployments fields (if any). If there are active or pending deployments,
 	// we need to wait for them to complete before we can do the new deployment.
 	// Otherwise, the new deployment will fail.
-	err = waitForDeploymentToComplete(ctx, w, startedApp)
+	err = appdeploy.WaitForDeploymentToComplete(ctx, w, startedApp)
 	if err != nil {
 		return err
 	}
@@ -133,108 +133,10 @@ func (a *appRunner) start(ctx context.Context) error {
 	return nil
 }
 
-func waitForDeploymentToComplete(ctx context.Context, w *databricks.WorkspaceClient, app *apps.App) error {
-	// We first wait for the active deployment to complete.
-	if app.ActiveDeployment != nil &&
-		app.ActiveDeployment.Status.State == apps.AppDeploymentStateInProgress {
-		logProgress(ctx, "Waiting for the active deployment to complete...")
-		_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, app.ActiveDeployment.DeploymentId, 20*time.Minute, nil)
-		if err != nil {
-			return err
-		}
-		logProgress(ctx, "Active deployment is completed!")
-	}
-
-	// Then, we wait for the pending deployment to complete.
-	if app.PendingDeployment != nil &&
-		app.PendingDeployment.Status.State == apps.AppDeploymentStateInProgress {
-		logProgress(ctx, "Waiting for the pending deployment to complete...")
-		_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, app.PendingDeployment.DeploymentId, 20*time.Minute, nil)
-		if err != nil {
-			return err
-		}
-		logProgress(ctx, "Pending deployment is completed!")
-	}
-
-	return nil
-}
-
-// buildAppDeployment creates an AppDeployment struct with inline config if provided
-func (a *appRunner) buildAppDeployment() apps.AppDeployment {
-	deployment := apps.AppDeployment{
-		Mode:           apps.AppDeploymentModeSnapshot,
-		SourceCodePath: a.app.SourceCodePath,
-	}
-
-	// Add git source if provided
-	if a.app.GitSource != nil {
-		deployment.GitSource = a.app.GitSource
-	}
-
-	// Add inline config if provided
-	if a.app.Config != nil {
-		if len(a.app.Config.Command) > 0 {
-			deployment.Command = a.app.Config.Command
-		}
-
-		if len(a.app.Config.Env) > 0 {
-			deployment.EnvVars = make([]apps.EnvVar, len(a.app.Config.Env))
-			for i, env := range a.app.Config.Env {
-				deployment.EnvVars[i] = apps.EnvVar{
-					Name:      env.Name,
-					Value:     env.Value,
-					ValueFrom: env.ValueFrom,
-				}
-			}
-		}
-	}
-
-	return deployment
-}
-
 func (a *appRunner) deploy(ctx context.Context) error {
-	app := a.app
-	b := a.bundle
-	w := b.WorkspaceClient()
-
-	wait, err := w.Apps.Deploy(ctx, apps.CreateAppDeploymentRequest{
-		AppName:       app.Name,
-		AppDeployment: a.buildAppDeployment(),
-	})
-	// If deploy returns an error, then there's an active deployment in progress, wait for it to complete.
-	// For this we first need to get an app and its acrive and pending deployments and then wait for them.
-	if err != nil {
-		app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: app.Name})
-		if err != nil {
-			return fmt.Errorf("failed to get app %s: %w", app.Name, err)
-		}
-
-		err = waitForDeploymentToComplete(ctx, w, app)
-		if err != nil {
-			return err
-		}
-
-		// Now we can try to deploy the app again
-		wait, err = w.Apps.Deploy(ctx, apps.CreateAppDeploymentRequest{
-			AppName:       app.Name,
-			AppDeployment: a.buildAppDeployment(),
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = wait.OnProgress(func(ad *apps.AppDeployment) {
-		if ad.Status == nil {
-			return
-		}
-		logProgress(ctx, ad.Status.Message)
-	}).Get()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	w := a.bundle.WorkspaceClient()
+	deployment := appdeploy.BuildDeployment(a.app.SourceCodePath, a.app.Config, a.app.GitSource)
+	return appdeploy.Deploy(ctx, w, a.app.Name, deployment)
 }
 
 func (a *appRunner) Cancel(ctx context.Context) error {
