@@ -1,21 +1,14 @@
 package lsp
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 // InterpolationRe matches ${...} interpolation expressions in strings.
-// Copied from libs/dyn/dynvar/ref.go to avoid coupling LSP to dynvar internals.
-var InterpolationRe = regexp.MustCompile(
-	fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`,
-		`[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`,
-		`[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`,
-	),
-)
+var InterpolationRe = dynvar.InterpolationRegexp
 
 // InterpolationRef represents a ${...} reference found at a cursor position.
 type InterpolationRef struct {

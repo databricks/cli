@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -110,7 +111,7 @@ func (s *Server) handleShutdown(_ context.Context) error {
 }
 
 func (s *Server) handleExit(_ context.Context) error {
-	os.Exit(0)
+	s.jrpcServer.Stop()
 	return nil
 }
 
@@ -266,6 +267,8 @@ func (s *Server) findRootConfig() string {
 }
 
 // loadBundleInfo reads bundle config and deployment state.
+// All file I/O is performed before acquiring the lock, and the lock is held
+// only to swap the new state into the server.
 func (s *Server) loadBundleInfo() {
 	if s.bundleRoot == "" {
 		return
@@ -281,27 +284,32 @@ func (s *Server) loadBundleInfo() {
 		return
 	}
 
-	v, err := yamlloader.LoadYAML(configPath, strings.NewReader(string(data)))
+	v, err := yamlloader.LoadYAML(configPath, bytes.NewReader(data))
 	if err != nil {
 		return
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.workspaceHost = LoadWorkspaceHost(v)
+	host := LoadWorkspaceHost(v)
 
 	target := s.target
 	if target == "" {
 		target = LoadTarget(v)
-		s.target = target
 	}
 
-	s.resourceState = LoadResourceState(s.bundleRoot, target)
-	populateResourceURLs(s.workspaceHost, s.resourceState)
+	resourceState := LoadResourceState(s.bundleRoot, target)
+	populateResourceURLs(host, resourceState)
 
-	s.loadMergedTree(configPath, v)
-	s.loadAllTargetState(v)
+	mergedTree := buildMergedTree(s.bundleRoot, configPath, v)
+	allTargetState := buildAllTargetState(s.bundleRoot, v)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.workspaceHost = host
+	s.target = target
+	s.resourceState = resourceState
+	s.mergedTree = mergedTree
+	s.allTargetState = allTargetState
 }
 
 // populateResourceURLs fills in missing URLs for resources that have IDs.
@@ -320,18 +328,15 @@ func populateResourceURLs(host string, state map[string]ResourceInfo) {
 	}
 }
 
-// loadMergedTree builds a merged dyn.Value from the root config and all included files.
-func (s *Server) loadMergedTree(configPath string, rootValue dyn.Value) {
-	s.mergedTree = rootValue
-
-	// Extract include patterns.
+// buildMergedTree builds a merged dyn.Value from the root config and all included files.
+func buildMergedTree(bundleRoot, configPath string, rootValue dyn.Value) dyn.Value {
 	includes := rootValue.Get("include")
 	if includes.Kind() != dyn.KindSequence {
-		return
+		return rootValue
 	}
 	seq, ok := includes.AsSequence()
 	if !ok {
-		return
+		return rootValue
 	}
 
 	// Collect and expand glob patterns.
@@ -342,7 +347,7 @@ func (s *Server) loadMergedTree(configPath string, rootValue dyn.Value) {
 		if !ok {
 			continue
 		}
-		matches, err := filepath.Glob(filepath.Join(s.bundleRoot, pattern))
+		matches, err := filepath.Glob(filepath.Join(bundleRoot, pattern))
 		if err != nil {
 			continue
 		}
@@ -362,36 +367,36 @@ func (s *Server) loadMergedTree(configPath string, rootValue dyn.Value) {
 		if err != nil {
 			continue
 		}
-		v, err := yamlloader.LoadYAML(p, strings.NewReader(string(data)))
+		v, err := yamlloader.LoadYAML(p, bytes.NewReader(data))
 		if err != nil {
 			continue
 		}
 		merged, _ = merge.Merge(merged, v)
 	}
-	s.mergedTree = merged
+	return merged
 }
 
 const maxTargets = 10
 
-// loadAllTargetState loads resource state for all targets (up to maxTargets).
-func (s *Server) loadAllTargetState(v dyn.Value) {
-	s.allTargetState = make(map[string]TargetState)
-
+// buildAllTargetState loads resource state for all targets (up to maxTargets).
+func buildAllTargetState(bundleRoot string, v dyn.Value) map[string]TargetState {
 	targets := LoadAllTargets(v)
 	if len(targets) > maxTargets {
 		targets = targets[:maxTargets]
 	}
 
+	result := make(map[string]TargetState, len(targets))
 	for _, t := range targets {
 		host := LoadTargetWorkspaceHost(v, t)
-		rs := LoadResourceState(s.bundleRoot, t)
+		rs := LoadResourceState(bundleRoot, t)
 		populateResourceURLs(host, rs)
 
-		s.allTargetState[t] = TargetState{
+		result[t] = TargetState{
 			Host:          host,
 			ResourceState: rs,
 		}
 	}
+	return result
 }
 
 func (s *Server) resolveResourceURL(entry ResourceEntry) string {

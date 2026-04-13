@@ -13,6 +13,10 @@ var (
 	// !!! See python/databricks/bundles/core/_transform.py
 	baseVarDef = `[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*`
 	re         = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, baseVarDef, baseVarDef))
+
+	// InterpolationRegexp is the exported version of the interpolation regex
+	// for use by the LSP server and other packages.
+	InterpolationRegexp = re
 )
 
 // Ref represents a variable reference.
