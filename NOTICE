@@ -17,11 +17,11 @@ Copyright (c) 2011-2019 Canonical Ltd
 Copyright (c) 2006-2011 Kirill Simonov
 License - https://github.com/yaml/go-yaml/blob/v3/LICENSE
 
-—--
+---
 
-This software contains code from the following open source projects, licensed under the MPL 2.0 license:
+This Software contains code from the following open source projects, licensed under the MPL 2.0 license:
 
-hashicopr/go-version - https://github.com/hashicorp/go-version
+hashicorp/go-version - https://github.com/hashicorp/go-version
 Copyright 2014 HashiCorp, Inc.
 License - https://github.com/hashicorp/go-version/blob/main/LICENSE
 
@@ -29,9 +29,9 @@ hashicorp/hc-install - https://github.com/hashicorp/hc-install
 Copyright 2020 HashiCorp, Inc.
 License - https://github.com/hashicorp/hc-install/blob/main/LICENSE
 
-hashicopr/terraform-exec - https://github.com/hashicorp/terraform-exec
+hashicorp/terraform-exec - https://github.com/hashicorp/terraform-exec
 Copyright 2020 HashiCorp, Inc.
-LIcense - https://github.com/hashicorp/terraform-exec/blob/main/LICENSE
+License - https://github.com/hashicorp/terraform-exec/blob/main/LICENSE
 
 hashicorp/terraform-json - https://github.com/hashicorp/terraform-json
 Copyright 2019 HashiCorp, Inc.
@@ -43,24 +43,24 @@ License - https://github.com/hashicorp/terraform/blob/v1.5.5/LICENSE
 
 ---
 
-This software contains code from the following open source projects, licensed under the BSD (2-clause) license:
+This Software contains code from the following open source projects, licensed under the BSD (2-clause) license:
 
 pkg/browser - https://github.com/pkg/browser
 Copyright (c) 2014, Dave Cheney <dave@cheney.net>
 License - https://github.com/pkg/browser/blob/master/LICENSE
 
-gorilla/websocket - github.com/gorilla/websocket
+gorilla/websocket - https://github.com/gorilla/websocket
 Copyright (c) 2013 The Gorilla WebSocket Authors. All rights reserved.
 License - https://github.com/gorilla/websocket/blob/main/LICENSE
 
 ---
 
-This software contains code from the following open source projects, licensed under the BSD (3-clause) license:
+This Software contains code from the following open source projects, licensed under the BSD (3-clause) license:
 
 spf13/pflag - https://github.com/spf13/pflag
 Copyright (c) 2012 Alex Ogier. All rights reserved.
 Copyright (c) 2012 The Go Authors. All rights reserved.
-License - https://raw.githubusercontent.com/spf13/pflag/master/LICENSE
+License - https://github.com/spf13/pflag/blob/master/LICENSE
 
 google/uuid - https://github.com/google/uuid
 Copyright (c) 2009,2014 Google Inc. All rights reserved.
@@ -70,7 +70,60 @@ manifoldco/promptui - https://github.com/manifoldco/promptui
 Copyright (c) 2017, Arigato Machine Inc. All rights reserved.
 License - https://github.com/manifoldco/promptui/blob/master/LICENSE.md
 
-—--
+hexops/gotextdiff - https://github.com/hexops/gotextdiff
+Copyright (c) 2009 The Go Authors. All rights reserved.
+License - https://github.com/hexops/gotextdiff/blob/main/LICENSE
+
+dario.cat/mergo - https://github.com/darccio/mergo
+Copyright (c) 2013 Dario Castañé. All rights reserved.
+Copyright (c) 2012 The Go Authors. All rights reserved.
+License - https://github.com/darccio/mergo/blob/master/LICENSE
+
+gorilla/mux - https://github.com/gorilla/mux
+Copyright (c) 2023 The Gorilla Authors. All rights reserved.
+License - https://github.com/gorilla/mux/blob/main/LICENSE
+
+palantir/pkg - https://github.com/palantir/pkg
+Copyright (c) 2016, Palantir Technologies, Inc.
+License - https://github.com/palantir/pkg/blob/master/LICENSE
+
+quasilyte/go-ruleguard - https://github.com/quasilyte/go-ruleguard
+Copyright (c) 2022, Iskander (Alex) Sharipov / quasilyte
+License - https://github.com/quasilyte/go-ruleguard/blob/master/LICENSE
+
+tailscale/hujson - https://github.com/tailscale/hujson
+Copyright (c) 2019 Tailscale Inc. All rights reserved.
+License - https://github.com/tailscale/hujson/blob/master/LICENSE
+
+golang.org/x/crypto - https://github.com/golang/crypto
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/crypto/blob/master/LICENSE
+
+golang.org/x/exp - https://github.com/golang/exp
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/exp/blob/master/LICENSE
+
+golang.org/x/mod - https://github.com/golang/mod
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/mod/blob/master/LICENSE
+
+golang.org/x/oauth2 - https://github.com/golang/oauth2
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/oauth2/blob/master/LICENSE
+
+golang.org/x/sync - https://github.com/golang/sync
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/sync/blob/master/LICENSE
+
+golang.org/x/sys - https://github.com/golang/sys
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/sys/blob/master/LICENSE
+
+golang.org/x/text - https://github.com/golang/text
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/text/blob/master/LICENSE
+
+---
 
 This Software contains code from the following open source projects, licensed under the MIT license:
 
@@ -84,7 +137,7 @@ License - https://github.com/charmbracelet/bubbles/blob/master/LICENSE
 
 charmbracelet/bubbletea - https://github.com/charmbracelet/bubbletea
 Copyright (c) 2020-2025 Charmbracelet, Inc
-License - https://github.com/charmbracelet/bubbletea/blob/master/LICENSE
+License - https://github.com/charmbracelet/bubbletea/blob/main/LICENSE
 
 charmbracelet/huh - https://github.com/charmbracelet/huh
 Copyright (c) 2023 Charmbracelet, Inc.
@@ -104,7 +157,7 @@ License - https://github.com/Masterminds/semver/blob/master/LICENSE.txt
 
 mattn/go-isatty - https://github.com/mattn/go-isatty
 Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
-https://github.com/mattn/go-isatty/blob/master/LICENSE
+License - https://github.com/mattn/go-isatty/blob/master/LICENSE
 
 nwidger/jsoncolor - https://github.com/nwidger/jsoncolor
 Copyright (c) 2016 Niels Widger
@@ -114,35 +167,13 @@ sabhiram/go-gitignore - https://github.com/sabhiram/go-gitignore
 Copyright (c) 2015 Shaba Abhiram
 License - https://github.com/sabhiram/go-gitignore/blob/master/LICENSE
 
-
 stretchr/testify - https://github.com/stretchr/testify
 Copyright (c) 2012-2020 Mat Ryer, Tyler Bunnell and contributors.
 License - https://github.com/stretchr/testify/blob/master/LICENSE
 
-whilp/git-urls - https://github.com/whilp/git-urls
-Copyright (c) 2020 Will Maier
-License - https://github.com/whilp/git-urls/blob/master/LICENSE
-
-github.com/wI2L/jsondiff v0.6.1
-Copyright (c) 2020-2024 William Poussier <william.poussier@gmail.com>
-License - https://github.com/wI2L/jsondiff/blob/master/LICENSE
-
-https://github.com/hexops/gotextdiff
-Copyright (c) 2009 The Go Authors. All rights reserved.
-License - https://github.com/hexops/gotextdiff/blob/main/LICENSE
-
-https://github.com/BurntSushi/toml
+BurntSushi/toml - https://github.com/BurntSushi/toml
 Copyright (c) 2013 TOML authors
-https://github.com/BurntSushi/toml/blob/master/COPYING
-
-dario.cat/mergo
-Copyright (c) 2013 Dario Castañé. All rights reserved.
-Copyright (c) 2012 The Go Authors. All rights reserved.
-https://github.com/darccio/mergo/blob/master/LICENSE
-
-https://github.com/gorilla/mux
-Copyright (c) 2023 The Gorilla Authors. All rights reserved.
-https://github.com/gorilla/mux/blob/main/LICENSE
+License - https://github.com/BurntSushi/toml/blob/master/COPYING
 
 go-yaml/yaml - https://github.com/yaml/go-yaml
 Copyright (c) 2011-2019 Canonical Ltd
