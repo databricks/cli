@@ -82,10 +82,16 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 
 	return &MlflowModelRemote{
 		ModelDatabricks: ml.ModelDatabricks{
-			Name:            response.RegisteredModel.Name,
-			Description:     response.RegisteredModel.Description,
-			Tags:            response.RegisteredModel.Tags,
-			ForceSendFields: utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
+			CreationTimestamp:    0,
+			Description:          response.RegisteredModel.Description,
+			Id:                   "",
+			LastUpdatedTimestamp: 0,
+			LatestVersions:       nil,
+			Name:                 response.RegisteredModel.Name,
+			PermissionLevel:      "",
+			Tags:                 response.RegisteredModel.Tags,
+			UserId:               "",
+			ForceSendFields:      utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
 		},
 		ModelId: modelId,
 	}, nil
