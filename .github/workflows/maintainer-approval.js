@@ -443,11 +443,11 @@ module.exports = async ({ github, context, core }) => {
   const prNumber = context.issue.number;
   const authorLogin = pr?.user?.login;
   const sha = pr.head.sha;
-  const statusParams = {
+  const checkParams = {
     owner: context.repo.owner,
     repo: context.repo.repo,
-    sha,
-    context: STATUS_CONTEXT,
+    head_sha: sha,
+    name: STATUS_CONTEXT,
   };
 
   const reviews = await github.paginate(github.rest.pulls.listReviews, {
@@ -464,10 +464,11 @@ module.exports = async ({ github, context, core }) => {
   if (maintainerApproval) {
     const approver = maintainerApproval.user.login;
     core.info(`Maintainer approval from @${approver}`);
-    await github.rest.repos.createCommitStatus({
-      ...statusParams,
-      state: "success",
-      description: `Approved by @${approver}`,
+    await github.rest.checks.create({
+      ...checkParams,
+      status: "completed",
+      conclusion: "success",
+      output: { title: STATUS_CONTEXT, summary: `Approved by @${approver}` },
     });
     await deleteMarkerComments(github, owner, repo, prNumber);
     return;
@@ -481,10 +482,11 @@ module.exports = async ({ github, context, core }) => {
     );
     if (hasAnyApproval) {
       core.info(`Maintainer-authored PR approved by a reviewer.`);
-      await github.rest.repos.createCommitStatus({
-        ...statusParams,
-        state: "success",
-        description: "Approved (maintainer-authored PR)",
+      await github.rest.checks.create({
+        ...checkParams,
+        status: "completed",
+        conclusion: "success",
+        output: { title: STATUS_CONTEXT, summary: "Approved (maintainer-authored PR)" },
       });
       await deleteMarkerComments(github, owner, repo, prNumber);
       return;
@@ -514,13 +516,17 @@ module.exports = async ({ github, context, core }) => {
     core
   );
 
-  // Set commit status. Approved PRs return early (commit status is sufficient).
+  // Approved PRs get a success check run and return early.
+  // Pending PRs intentionally create NO check run or status. The required
+  // status check "maintainer-approval" stays as "Expected" (yellow dot) in
+  // the GitHub UI, which blocks the merge until approval is granted.
   if (result.allCovered && approverLogins.length > 0) {
     core.info("All ownership groups have per-path approval.");
-    await github.rest.repos.createCommitStatus({
-      ...statusParams,
-      state: "success",
-      description: "All ownership groups approved",
+    await github.rest.checks.create({
+      ...checkParams,
+      status: "completed",
+      conclusion: "success",
+      output: { title: STATUS_CONTEXT, summary: "All ownership groups approved" },
     });
     await deleteMarkerComments(github, owner, repo, prNumber);
     return;
@@ -528,36 +534,20 @@ module.exports = async ({ github, context, core }) => {
 
   if (result.hasWildcardFiles) {
     const fileList = result.wildcardFiles.join(", ");
-    const msg =
+    core.info(
       `Files need maintainer review: ${fileList}. ` +
-      `Maintainers: ${maintainers.join(", ")}`;
-    core.info(msg);
-    await github.rest.repos.createCommitStatus({
-      ...statusParams,
-      state: "pending",
-      description: msg.length > 140 ? msg.slice(0, 137) + "..." : msg,
-    });
+      `Maintainers: ${maintainers.join(", ")}`
+    );
   } else if (result.uncovered && result.uncovered.length > 0) {
     const groupList = result.uncovered
       .map(({ pattern, owners }) => `${pattern} (needs: ${owners.join(", ")})`)
       .join("; ");
-    const msg = `Needs approval: ${groupList}`;
     core.info(
-      `${msg}. Alternatively, any maintainer can approve: ${maintainers.join(", ")}.`
+      `Needs approval: ${groupList}. ` +
+      `Alternatively, any maintainer can approve: ${maintainers.join(", ")}.`
     );
-    await github.rest.repos.createCommitStatus({
-      ...statusParams,
-      state: "pending",
-      description: msg.length > 140 ? msg.slice(0, 137) + "..." : msg,
-    });
   } else {
-    const msg = `Waiting for maintainer approval: ${maintainers.join(", ")}`;
-    core.info(msg);
-    await github.rest.repos.createCommitStatus({
-      ...statusParams,
-      state: "pending",
-      description: msg.length > 140 ? msg.slice(0, 137) + "..." : msg,
-    });
+    core.info(`Waiting for maintainer approval: ${maintainers.join(", ")}`);
   }
 
   // Score contributors via git history

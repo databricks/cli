@@ -1,11 +1,11 @@
 # Maintainers (can approve any PR)
-*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum
+*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db
 
 # Bundles
-/bundle/                    @andrewnester @anton-107 @denik @pietern @shreyas-goenka @lennartkats-db
-/cmd/bundle/                @andrewnester @anton-107 @denik @pietern @shreyas-goenka @lennartkats-db
-/acceptance/bundle/         @andrewnester @anton-107 @denik @pietern @shreyas-goenka @lennartkats-db
-/libs/template/             @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @lennartkats-db
+/bundle/                    team:bundle @lennartkats-db
+/cmd/bundle/                team:bundle @lennartkats-db
+/acceptance/bundle/         team:bundle @lennartkats-db
+/libs/template/             team:bundle @lennartkats-db
 
 # Pipelines
 /cmd/pipelines/             @jefferycheng1 @kanterov @lennartkats-db
@@ -20,6 +20,44 @@
 /cmd/workspace/apps/        @databricks/eng-apps-devex
 /libs/apps/                 @databricks/eng-apps-devex
 /acceptance/apps/           @databricks/eng-apps-devex
+
+# Auth
+/cmd/auth/                  team:platform
+/libs/auth/                 team:platform
+/acceptance/auth/           team:platform
+
+# Filesystem & sync
+/cmd/fs/                    team:platform
+/cmd/sync/                  team:platform
+/libs/filer/                team:platform
+/libs/sync/                 team:platform
+
+# Core CLI infrastructure
+/cmd/root/                  team:platform
+/cmd/version/               team:platform
+/cmd/completion/            team:platform
+/cmd/configure/             team:platform
+/cmd/cache/                 team:platform
+/cmd/api/                   team:platform
+/cmd/selftest/              team:platform
+/cmd/psql/                  team:platform
+/libs/psql/                 team:platform
+
+# Libs (general)
+/libs/databrickscfg/        team:platform
+/libs/env/                  team:platform
+/libs/flags/                team:platform
+/libs/cmdio/                team:platform
+/libs/log/                  team:platform
+/libs/telemetry/            team:platform
+/libs/process/              team:platform
+/libs/git/                  team:platform
+
+# Integration tests
+/integration/               team:platform
+
+# Internal
+/internal/                  team:platform
 
 # Experimental
 /experimental/aitools/      @databricks/eng-apps-devex @lennartkats-db

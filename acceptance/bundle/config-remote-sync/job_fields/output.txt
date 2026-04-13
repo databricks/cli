@@ -14,6 +14,7 @@ Resource: resources.jobs.my_job
   email_notifications.on_failure: add
   job_clusters[job_cluster_key='test_cluster']: remove
   job_clusters[job_cluster_key='test_cluster_renamed']: add
+  name: replace
   parameters[name='region']: add
   tags['team']: add
   tasks[task_key='inline_cluster_task'].new_cluster.num_workers: replace
@@ -29,7 +30,12 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -8,4 +8,7 @@
+@@ -5,8 +5,11 @@
+   jobs:
+     my_job:
+-      name: test-job-[UNIQUE_NAME]
++      name: renamed-job-[UNIQUE_NAME]
+       email_notifications:
          on_success:
            - success@example.com
 +        no_alert_for_skipped_runs: true
@@ -37,7 +43,7 @@ Resource: resources.jobs.my_job
 +          - failure@example.com
        parameters:
          - name: catalog
-@@ -13,8 +16,11 @@
+@@ -14,8 +17,11 @@
          - name: env
            default: dev
 +        - default: us-east-1
@@ -52,7 +58,7 @@ Resource: resources.jobs.my_job
 +            - samples.nyctaxi.trips
        environments:
          - environment_key: default
-@@ -24,14 +30,14 @@
+@@ -25,14 +31,14 @@
                - ./*.whl
        job_clusters:
 -        - job_cluster_key: test_cluster
@@ -70,7 +76,7 @@ Resource: resources.jobs.my_job
 +          job_cluster_key: test_cluster_renamed
          - task_key: inline_cluster_task
            notebook_task:
-@@ -40,5 +46,7 @@
+@@ -41,5 +47,7 @@
              spark_version: [[DEFAULT_SPARK_VERSION]]
              node_type_id: [NODE_TYPE_ID]
 -            num_workers: 1

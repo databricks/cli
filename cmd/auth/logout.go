@@ -1,3 +1,18 @@
+// The auth logout command was implemented across three stacked PRs that were
+// inadvertently squashed into a single commit cb3c326 (titled after #4647 only):
+//
+//   - #4613: core logout command with --profile, --auto-approve (originally --force),
+//     --delete flags, token cache cleanup, and DeleteProfile in libs/databrickscfg/ops.go.
+//     https://github.com/databricks/cli/pull/4613
+//
+//   - #4616: interactive profile picker when --profile is
+//     omitted in an interactive terminal.
+//     https://github.com/databricks/cli/pull/4616
+//
+//   - #4647: extract shared SelectProfile helper, deduplicate
+//     profile pickers across auth logout, auth token, cmd/root/auth.go, cmd/root/bundle.go.
+//     https://github.com/databricks/cli/pull/4647
+
 package auth
 
 import (
@@ -29,23 +44,22 @@ You will need to run {{ "databricks auth login" | bold }} to re-authenticate.
 
 func newLogoutCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "logout [PROFILE]",
-		Short:  "Log out of a Databricks profile",
-		Args:   cobra.MaximumNArgs(1),
-		Hidden: true,
+		Use:   "logout [PROFILE]",
+		Short: "Log out of a Databricks profile",
+		Args:  cobra.MaximumNArgs(1),
 		Long: `Log out of a Databricks profile.
 
 This command clears any cached OAuth tokens for the specified profile so
 that the next CLI invocation requires re-authentication. The profile
 entry in ~/.databrickscfg is left intact unless --delete is also specified.
 
+This only affects profiles created with "databricks auth login". Profiles
+using other authentication methods (personal access tokens, M2M credentials)
+do not store cached OAuth tokens. If multiple profiles share the same cached
+token, logging out of one does not affect the others.
+
 You can provide a profile name as a positional argument, or use --profile
 to specify it explicitly.
-
-This command requires a profile to be specified or an interactive terminal.
-If you omit the profile and run in an interactive terminal, you'll be shown
-a profile picker. In a non-interactive environment (e.g. CI/CD), omitting
-the profile is an error.
 
 1. If you specify a profile (via argument or --profile), the command logs
    out of that profile. In an interactive terminal you'll be asked to
@@ -60,10 +74,8 @@ the profile is an error.
    pipeline), the command will fail with an error asking you to specify
    a profile.
 
-4. Use --auto-approve to skip the confirmation prompt. This is required when
-   running in non-interactive environments.
-
-5. Use --delete to also remove the selected profile from ~/.databrickscfg.`,
+4. Use --delete to also remove the selected profile from the configuration
+   file.`,
 	}
 
 	var autoApprove bool
