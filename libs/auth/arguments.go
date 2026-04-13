@@ -62,8 +62,12 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		return u2m.NewProfileAccountOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 
-	// Pass a.AccountID (not cfg.AccountID) to avoid env var / discovery
-	// back-fill from triggering SPOG routing for plain workspace hosts.
+	// Pass a.AccountID (not cfg.AccountID) because EnsureResolved can
+	// back-fill cfg.AccountID from two sources: the DATABRICKS_ACCOUNT_ID
+	// env var (via ConfigAttributes) and .well-known/databricks-config
+	// discovery (which returns account_id for every host since PR #4809).
+	// Using cfg.AccountID would cause IsSPOG to misroute plain workspace
+	// hosts as SPOG simply because their metadata includes an account_id.
 	if IsSPOG(cfg, a.AccountID) {
 		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
