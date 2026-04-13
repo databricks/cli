@@ -65,20 +65,29 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 	// detect SPOG hosts with account-scoped OIDC, matching the routing logic
 	// in auth.AuthArguments.ToOAuthArgument().
 	configType := cfg.ConfigType()
+	hasWorkspace := cfg.WorkspaceID != "" && cfg.WorkspaceID != auth.WorkspaceIDNone
+
 	isAccountScopedOIDC := cfg.DiscoveryURL != "" && strings.Contains(cfg.DiscoveryURL, "/oidc/accounts/")
 	if configType != config.AccountConfig && cfg.AccountID != "" && isAccountScopedOIDC {
-		if cfg.WorkspaceID != "" && cfg.WorkspaceID != auth.WorkspaceIDNone {
+		if hasWorkspace {
 			configType = config.WorkspaceConfig
 		} else {
 			configType = config.AccountConfig
 		}
 	}
 
-	// Legacy backward compat: profiles with Experimental_IsUnifiedHost where
-	// .well-known is unreachable (so DiscoveryURL is empty). Matches the
-	// fallback in auth.AuthArguments.ToOAuthArgument().
+	// Legacy backward compat: SDK v0.126.0 removed the UnifiedHost case from
+	// ConfigType(), so profiles with Experimental_IsUnifiedHost now get
+	// InvalidConfig instead of being routed to account/workspace validation.
+	// When .well-known is also unreachable (DiscoveryURL empty), the override
+	// above can't help. Fall back to workspace_id to choose the validation
+	// strategy, matching the IsUnifiedHost fallback in ToOAuthArgument().
 	if configType == config.InvalidConfig && cfg.Experimental_IsUnifiedHost && cfg.AccountID != "" {
-		configType = config.AccountConfig
+		if hasWorkspace {
+			configType = config.WorkspaceConfig
+		} else {
+			configType = config.AccountConfig
+		}
 	}
 
 	switch configType {

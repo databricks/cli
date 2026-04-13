@@ -79,29 +79,49 @@ func TestProfilesDefaultMarker(t *testing.T) {
 	assert.Equal(t, "profile-a", defaultProfile)
 }
 
-// newProfileTestServer creates a mock server for profile validation tests.
-// It serves /.well-known/databricks-config with the given OIDC shape and
-// responds to the workspace/account validation API endpoints.
-func newProfileTestServer(t *testing.T, accountScoped bool, accountID string) *httptest.Server {
+// newSPOGServer creates a mock SPOG server that returns account-scoped OIDC.
+// It serves both validation endpoints since SPOG workspace profiles (with a
+// real workspace_id) need CurrentUser.Me, while account profiles need
+// Workspaces.List. The workspace-only newWorkspaceServer omits the account
+// endpoint to prove routing correctness for non-SPOG hosts.
+func newSPOGServer(t *testing.T, accountID string) *httptest.Server {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/.well-known/databricks-config":
-			oidcEndpoint := r.Host + "/oidc"
-			if accountScoped {
-				oidcEndpoint = r.Host + "/oidc/accounts/" + accountID
-			}
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"account_id":    accountID,
-				"oidc_endpoint": oidcEndpoint,
-			})
-		case "/api/2.0/preview/scim/v2/Me":
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"userName": "test-user",
+				"oidc_endpoint": r.Host + "/oidc/accounts/" + accountID,
 			})
 		case "/api/2.0/accounts/" + accountID + "/workspaces":
 			_ = json.NewEncoder(w).Encode([]map[string]any{})
+		case "/api/2.0/preview/scim/v2/Me":
+			// SPOG workspace profiles also need CurrentUser.Me to succeed.
+			_ = json.NewEncoder(w).Encode(map[string]any{"userName": "test-user"})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+// newWorkspaceServer creates a mock workspace server that returns workspace-scoped
+// OIDC and only serves the workspace validation endpoint. The account validation
+// endpoint returns 404 to prove the workspace path was taken.
+func newWorkspaceServer(t *testing.T, accountID string) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/.well-known/databricks-config":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"account_id":    accountID,
+				"oidc_endpoint": r.Host + "/oidc",
+			})
+		case "/api/2.0/preview/scim/v2/Me":
+			_ = json.NewEncoder(w).Encode(map[string]any{"userName": "test-user"})
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -111,8 +131,8 @@ func newProfileTestServer(t *testing.T, accountScoped bool, accountID string) *h
 }
 
 func TestProfileLoadSPOGConfigType(t *testing.T) {
-	spogServer := newProfileTestServer(t, true, "spog-acct")
-	wsServer := newProfileTestServer(t, false, "ws-acct")
+	spogServer := newSPOGServer(t, "spog-acct")
+	wsServer := newWorkspaceServer(t, "ws-acct")
 
 	cases := []struct {
 		name        string
@@ -220,9 +240,9 @@ func TestProfileLoadUnifiedHostFallback(t *testing.T) {
 	assert.NotEmpty(t, p.AuthType)
 }
 
-func TestProfileLoadClassicAccountHost(t *testing.T) {
-	// Verify that a host with account-scoped OIDC from discovery is validated
-	// as an account config (via Workspaces.List, not CurrentUser.Me).
+func TestProfileLoadSPOGAccountWithDiscovery(t *testing.T) {
+	// Supplementary SPOG case: a host with account-scoped OIDC from discovery
+	// is validated as account config (via Workspaces.List, not CurrentUser.Me).
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
@@ -259,4 +279,43 @@ func TestProfileLoadClassicAccountHost(t *testing.T) {
 	assert.True(t, p.Valid, "classic account profile should be valid")
 	assert.NotEmpty(t, p.Host)
 	assert.NotEmpty(t, p.AuthType)
+}
+
+func TestProfileLoadNoDiscoveryStaysWorkspace(t *testing.T) {
+	// When .well-known returns 404 and Experimental_IsUnifiedHost is false,
+	// the SPOG override should NOT trigger even if account_id is set. The
+	// profile should stay WorkspaceConfig and validate via CurrentUser.Me.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/.well-known/databricks-config":
+			w.WriteHeader(http.StatusNotFound)
+		case "/api/2.0/preview/scim/v2/Me":
+			_ = json.NewEncoder(w).Encode(map[string]any{"userName": "test-user"})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	t.Setenv("HOME", dir)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", dir)
+	}
+
+	content := "[ws-profile]\nhost = " + server.URL + "\ntoken = test-token\naccount_id = some-acct\n"
+	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
+
+	p := &profileMetadata{
+		Name:      "ws-profile",
+		Host:      server.URL,
+		AccountID: "some-acct",
+	}
+	p.Load(t.Context(), configFile, false)
+
+	assert.True(t, p.Valid, "should validate as workspace when discovery is unavailable")
+	assert.NotEmpty(t, p.Host)
+	assert.Equal(t, "pat", p.AuthType)
 }
