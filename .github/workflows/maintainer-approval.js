@@ -537,7 +537,8 @@ module.exports = async ({ github, context, core }) => {
     core.info(msg);
     await github.rest.checks.create({
       ...checkParams,
-      status: "in_progress",
+      status: "completed",
+      conclusion: "action_required",
       output: { title: STATUS_CONTEXT, summary: msg },
     });
   } else if (result.uncovered && result.uncovered.length > 0) {
@@ -550,7 +551,8 @@ module.exports = async ({ github, context, core }) => {
     );
     await github.rest.checks.create({
       ...checkParams,
-      status: "in_progress",
+      status: "completed",
+      conclusion: "action_required",
       output: { title: STATUS_CONTEXT, summary: msg },
     });
   } else {
@@ -558,7 +560,8 @@ module.exports = async ({ github, context, core }) => {
     core.info(msg);
     await github.rest.checks.create({
       ...checkParams,
-      status: "in_progress",
+      status: "completed",
+      conclusion: "action_required",
       output: { title: STATUS_CONTEXT, summary: msg },
     });
   }

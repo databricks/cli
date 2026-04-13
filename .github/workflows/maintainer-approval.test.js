@@ -252,7 +252,7 @@ describe("maintainer-approval", () => {
     await runModule({ github, context, core });
 
     assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
+    assert.equal(github._checkRuns[0].conclusion, "action_required");
     assert.ok(github._checkRuns[0].output.summary.includes("/bundle/"));
   });
 
@@ -269,7 +269,7 @@ describe("maintainer-approval", () => {
     await runModule({ github, context, core });
 
     assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
+    assert.equal(github._checkRuns[0].conclusion, "action_required");
     assert.ok(github._checkRuns[0].output.summary.includes("maintainer"));
   });
 
@@ -284,7 +284,7 @@ describe("maintainer-approval", () => {
     await runModule({ github, context, core });
 
     assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
+    assert.equal(github._checkRuns[0].conclusion, "action_required");
   });
 
   it("team member approved -> success for team-owned path", async () => {
@@ -318,7 +318,7 @@ describe("maintainer-approval", () => {
     await runModule({ github, context, core });
 
     assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
+    assert.equal(github._checkRuns[0].conclusion, "action_required");
   });
 
   it("CHANGES_REQUESTED does not count as approval", async () => {
@@ -334,7 +334,7 @@ describe("maintainer-approval", () => {
     await runModule({ github, context, core });
 
     assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
+    assert.equal(github._checkRuns[0].conclusion, "action_required");
   });
 
   it("self-approval by PR author is excluded", async () => {
@@ -350,7 +350,7 @@ describe("maintainer-approval", () => {
     await runModule({ github, context, core });
 
     assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
+    assert.equal(github._checkRuns[0].conclusion, "action_required");
   });
 
   it("no * rule in OWNERS -> setFailed", async () => {
