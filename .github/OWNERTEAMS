@@ -2,5 +2,5 @@
 # Use "team:<name>" in OWNERS to reference a team defined here.
 # Format: team:<name>  @member1 @member2 ...
 
-team:bundle     @andrewnester @anton-107 @denik @pietern @shreyas-goenka
+team:bundle     @andrewnester @anton-107 @denik @janniklasrose @pietern @shreyas-goenka
 team:platform   @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
