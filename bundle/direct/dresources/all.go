@@ -40,7 +40,7 @@ var SupportedResources = map[string]any{
 	"database_instances.permissions":      (*ResourcePermissions)(nil),
 	"postgres_projects.permissions":       (*ResourcePermissions)(nil),
 	"experiments.permissions":             (*ResourcePermissions)(nil),
-	"models.permissions":                  (*ResourcePermissions)(nil),
+	"models.permissions":                  (*ResourceModelPermissions)(nil),
 	"sql_warehouses.permissions":          (*ResourcePermissions)(nil),
 	"secret_scopes.permissions":           (*ResourceSecretScopeAcls)(nil),
 	"model_serving_endpoints.permissions": (*ResourcePermissions)(nil),

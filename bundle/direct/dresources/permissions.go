@@ -228,6 +228,26 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 	return newState.ObjectID, nil, nil
 }
 
+// ResourceModelPermissions extends ResourcePermissions with DoUpdateWithID.
+// Model permissions object_id changed from /registered-models/MODEL_NAME to
+// /registered-models/NUMERIC_ID. DoUpdateWithID ensures the state entry ID
+// is updated when the object_id changes (e.g. migrating from v0.293 state).
+type ResourceModelPermissions struct {
+	ResourcePermissions
+}
+
+func (*ResourceModelPermissions) New(client *databricks.WorkspaceClient) *ResourceModelPermissions {
+	return &ResourceModelPermissions{ResourcePermissions: ResourcePermissions{client: client}}
+}
+
+func (r *ResourceModelPermissions) DoUpdateWithID(ctx context.Context, _ string, newState *PermissionsState) (string, *PermissionsState, error) {
+	_, err := r.DoUpdate(ctx, "", newState, nil)
+	if err != nil {
+		return "", nil, err
+	}
+	return newState.ObjectID, nil, nil
+}
+
 // DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
 func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState, _ *PlanEntry) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(newState.ObjectID)

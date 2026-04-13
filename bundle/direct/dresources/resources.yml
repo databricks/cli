@@ -399,6 +399,13 @@ resources:
       - field: initial_manage_principal
         reason: immutable
 
+  # Model permissions object_id changed from /registered-models/MODEL_NAME to
+  # /registered-models/NUMERIC_ID. UpdateWithID ensures the state entry ID is updated.
+  models.permissions:
+    update_id_on_changes:
+      - field: object_id
+        reason: id_changes
+
   # Permissions for secret scopes use ResourceSecretScopeAcls.
   secret_scopes.permissions:
     update_id_on_changes:
