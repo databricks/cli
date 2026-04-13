@@ -388,6 +388,14 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
+	if stateDesc.Engine.IsDirect() {
+		_, localPath := b.StateFilenameDirect(ctx)
+		if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
 	bundle.ApplySeqContext(ctx, b,
 		statemgmt.Load(stateDesc.Engine),
 	)

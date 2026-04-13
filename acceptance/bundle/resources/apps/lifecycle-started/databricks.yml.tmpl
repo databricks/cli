@@ -1,0 +1,11 @@
+bundle:
+  name: lifecycle-started-$UNIQUE_NAME
+
+resources:
+  apps:
+    myapp:
+      name: $UNIQUE_NAME
+      description: my_app_description
+      source_code_path: ./app
+      lifecycle:
+        started: true

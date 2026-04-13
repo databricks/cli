@@ -17,7 +17,18 @@ func newUninstallCmd() *cobra.Command {
 By default, removes all skills. Use --skills to remove specific skills only.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			scope, err := resolveScope(projectFlag, globalFlag)
+			ctx := cmd.Context()
+
+			globalDir, err := installer.GlobalSkillsDir(ctx)
+			if err != nil {
+				return err
+			}
+			projectDir, err := installer.ProjectSkillsDir(ctx)
+			if err != nil {
+				return err
+			}
+
+			scope, err := resolveScopeForUninstall(ctx, projectFlag, globalFlag, globalDir, projectDir)
 			if err != nil {
 				return err
 			}
@@ -26,12 +37,12 @@ By default, removes all skills. Use --skills to remove specific skills only.`,
 				Scope: scope,
 			}
 			opts.Skills = splitAndTrim(skillsFlag)
-			return installer.UninstallSkillsOpts(cmd.Context(), opts)
+			return installer.UninstallSkillsOpts(ctx, opts)
 		},
 	}
 
 	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to uninstall (comma-separated)")
 	cmd.Flags().BoolVar(&projectFlag, "project", false, "Uninstall project-scoped skills")
-	cmd.Flags().BoolVar(&globalFlag, "global", false, "Uninstall globally-scoped skills (default)")
+	cmd.Flags().BoolVar(&globalFlag, "global", false, "Uninstall globally-scoped skills")
 	return cmd
 }

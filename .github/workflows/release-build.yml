@@ -6,7 +6,8 @@ on:
       - "v*"
     branches:
       - "main"
-      - "split-release-workflows"
+      - "demo-*"
+      - "bugbash-*"
 
   workflow_dispatch:
 

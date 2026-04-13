@@ -133,8 +133,6 @@ lineage and incremented serial number.
 
 Note, the migration is performed locally only. To finalize it, run 'bundle deploy'. This will synchronize the state file
 to the workspace so that subsequent deploys of this bundle use direct deployment engine as well.
-
-WARNING: Both direct deployment engine and this command are experimental and not recommended for production targets yet.
 `,
 		Args: root.NoArgs,
 	}
@@ -252,7 +250,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return root.ErrAlreadyPrinted
 		}
 
-		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, tempStatePath)
+		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
 		if err != nil {
 			return err
 		}
@@ -284,6 +282,9 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		}
 
 		deploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(true))
+		if err := deploymentBundle.StateDB.Finalize(); err != nil {
+			logdiag.LogError(ctx, err)
+		}
 		if logdiag.HasError(ctx) {
 			logdiag.LogError(ctx, errors.New("migration failed; ensure you have done full deploy before the migration"))
 			return root.ErrAlreadyPrinted

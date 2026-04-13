@@ -15,7 +15,7 @@
       "description": "MY_APP_DESCRIPTION",
       "name": "myappname"
     },
-    "update_mask": "description"
+    "update_mask": "*"
   },
   "method": "POST",
   "path": "/api/2.0/apps/myappname/update"

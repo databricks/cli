@@ -1,0 +1,26 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Add new parameter remotely"
+edit_resource.py jobs $job_id <<EOF
+r["parameters"].append({"name": "region", "default": "us-east-1"})
+EOF
+
+title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
