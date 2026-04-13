@@ -115,12 +115,11 @@ func TestProfileLoadSPOGConfigType(t *testing.T) {
 	wsServer := newProfileTestServer(t, false, "ws-acct")
 
 	cases := []struct {
-		name            string
-		host            string
-		accountID       string
-		workspaceID     string
-		wantValid       bool
-		wantConfigCloud string
+		name        string
+		host        string
+		accountID   string
+		workspaceID string
+		wantValid   bool
 	}{
 		{
 			name:      "SPOG account profile validated as account",
@@ -222,8 +221,8 @@ func TestProfileLoadUnifiedHostFallback(t *testing.T) {
 }
 
 func TestProfileLoadClassicAccountHost(t *testing.T) {
-	// Classic accounts.* hosts are already correctly classified as AccountConfig
-	// by ConfigType(). Verify that behavior is preserved.
+	// Verify that a host with account-scoped OIDC from discovery is validated
+	// as an account config (via Workspaces.List, not CurrentUser.Me).
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
@@ -247,9 +246,6 @@ func TestProfileLoadClassicAccountHost(t *testing.T) {
 		t.Setenv("USERPROFILE", dir)
 	}
 
-	// Use the test server URL but override the host to look like an accounts host.
-	// Since we can't actually use accounts.cloud.databricks.com in tests, we verify
-	// indirectly: a SPOG profile without workspace_id should be validated as account.
 	content := "[acct-profile]\nhost = " + server.URL + "\ntoken = test-token\naccount_id = classic-acct\n"
 	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
 
