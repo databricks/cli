@@ -8,12 +8,12 @@
         "user_name": "viewer@example.com"
       },
       {
-        "group_name": "data-team",
-        "permission_level": "CAN_MANAGE"
-      },
-      {
         "permission_level": "CAN_MANAGE",
         "service_principal_name": "[UUID]"
+      },
+      {
+        "group_name": "data-team",
+        "permission_level": "CAN_MANAGE"
       },
       {
         "permission_level": "CAN_MANAGE",

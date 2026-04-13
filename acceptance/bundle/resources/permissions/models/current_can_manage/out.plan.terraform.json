@@ -1,0 +1,11 @@
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.models.foo": {
+      "action": "create"
+    },
+    "resources.models.foo.permissions": {
+      "action": "create"
+    }
+  }
+}
