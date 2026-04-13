@@ -33,6 +33,7 @@ require (
 	github.com/spf13/cobra v1.10.2 // Apache 2.0
 	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
 	github.com/stretchr/testify v1.11.1 // MIT
+	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	go.yaml.in/yaml/v3 v3.0.4 // MIT, Apache 2.0
 	golang.org/x/crypto v0.49.0 // BSD-3-Clause
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
@@ -43,9 +44,6 @@ require (
 	golang.org/x/text v0.35.0
 	gopkg.in/ini.v1 v1.67.1 // Apache 2.0
 )
-
-// Dependencies for experimental SSH commands
-require github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 
 require (
 	cloud.google.com/go/auth v0.18.1 // indirect

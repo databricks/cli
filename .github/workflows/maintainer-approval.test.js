@@ -251,12 +251,11 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
-    assert.ok(github._checkRuns[0].output.summary.includes("/bundle/"));
+    // No check run created; the required check stays as "Expected" (yellow dot).
+    assert.equal(github._checkRuns.length, 0);
   });
 
-  it("wildcard files present -> pending, mentions maintainer", async () => {
+  it("wildcard files present -> pending, no check run", async () => {
     const github = makeGithub({
       reviews: [
         { state: "APPROVED", user: { login: "randomreviewer" } },
@@ -268,12 +267,10 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
-    assert.ok(github._checkRuns[0].output.summary.includes("maintainer"));
+    assert.equal(github._checkRuns.length, 0);
   });
 
-  it("no approvals at all -> pending", async () => {
+  it("no approvals at all -> pending, no check run", async () => {
     const github = makeGithub({
       reviews: [],
       files: [{ filename: "cmd/pipelines/foo.go" }],
@@ -283,8 +280,7 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
+    assert.equal(github._checkRuns.length, 0);
   });
 
   it("team member approved -> success for team-owned path", async () => {
@@ -317,8 +313,7 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
+    assert.equal(github._checkRuns.length, 0);
   });
 
   it("CHANGES_REQUESTED does not count as approval", async () => {
@@ -333,8 +328,7 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
+    assert.equal(github._checkRuns.length, 0);
   });
 
   it("self-approval by PR author is excluded", async () => {
@@ -349,8 +343,7 @@ describe("maintainer-approval", () => {
 
     await runModule({ github, context, core });
 
-    assert.equal(github._checkRuns.length, 1);
-    assert.equal(github._checkRuns[0].status, "in_progress");
+    assert.equal(github._checkRuns.length, 0);
   });
 
   it("no * rule in OWNERS -> setFailed", async () => {
