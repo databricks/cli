@@ -44,8 +44,6 @@ require (
 	gopkg.in/ini.v1 v1.67.1 // Apache 2.0
 )
 
-require gopkg.in/yaml.v3 v3.0.1 // indirect
-
 // Dependencies for experimental SSH commands
 require github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 
@@ -107,4 +105,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
