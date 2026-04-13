@@ -335,7 +335,7 @@ DIFF  models/current_can_manage/out.requests.destroy.direct.json
 +      ]
 +    },
 +    "method": "PUT",
-+    "path": "/api/2.0/permissions/registered-models/[NUMID]"
++    "path": "/api/2.0/permissions/registered-models/[FOO_MODEL_ID]"
 +  }
 +]
 MATCH pipelines/current_can_manage/out.requests.deploy.direct.json
