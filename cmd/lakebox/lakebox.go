@@ -15,26 +15,27 @@ microVM isolation. Each lakebox is a personal sandbox with pre-installed
 tooling (Python, Node.js, Rust, Databricks CLI) and persistent storage.
 
 Common workflows:
-  databricks lakebox login                        # authenticate to Databricks
-  databricks lakebox ssh                          # SSH to your default lakebox
-  databricks lakebox ssh my-project               # SSH to a named lakebox
-  databricks lakebox list                         # list your lakeboxes
-  databricks lakebox create --name my-project     # create a new lakebox
-  databricks lakebox delete my-project            # delete a lakebox
-  databricks lakebox status                       # show current lakebox status
+  lakebox auth login                              # authenticate to Databricks
+  lakebox ssh                                     # SSH to your default lakebox
+  lakebox ssh my-project                          # SSH to a named lakebox
+  lakebox list                                    # list your lakeboxes
+  lakebox create                                  # create a new lakebox
+  lakebox delete my-project                       # delete a lakebox
+  lakebox status my-project                       # show lakebox status
+  lakebox register-key --public-key-file ~/.ssh/id_rsa.pub  # register SSH key
 
 The CLI manages your ~/.ssh/config so you can also connect directly:
-  ssh my-project                                  # after 'lakebox ssh --setup'
+  ssh my-project                                  # after 'lakebox ssh'
 `,
 	}
 
-	cmd.AddCommand(newLoginCommand())
 	cmd.AddCommand(newSSHCommand())
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newCreateCommand())
 	cmd.AddCommand(newDeleteCommand())
 	cmd.AddCommand(newStatusCommand())
 	cmd.AddCommand(newSetDefaultCommand())
+	cmd.AddCommand(newRegisterKeyCommand())
 
 	return cmd
 }

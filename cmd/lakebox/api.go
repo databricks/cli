@@ -32,10 +32,9 @@ type createResponse struct {
 
 // lakeboxEntry is a single item in the list response.
 type lakeboxEntry struct {
-	Name             string `json:"name"`
-	Status           string `json:"status"`
-	FQDN             string `json:"fqdn"`
-	PubkeyHashPrefix string `json:"pubkey_hash_prefix,omitempty"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
+	FQDN   string `json:"fqdn"`
 }
 
 // listResponse is the JSON body returned by GET /api/2.0/lakebox.
@@ -162,6 +161,31 @@ func parseAPIError(resp *http.Response) error {
 		return &apiErr
 	}
 	return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+}
+
+// registerKeyRequest is the JSON body for POST /api/2.0/lakebox/register-key.
+type registerKeyRequest struct {
+	PublicKey string `json:"public_key"`
+}
+
+// registerKey calls POST /api/2.0/lakebox/register-key.
+func (a *lakeboxAPI) registerKey(ctx context.Context, publicKey string) error {
+	body := registerKeyRequest{PublicKey: publicKey}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	resp, err := a.doRequest(ctx, "POST", lakeboxAPIPath+"/register-key", bytes.NewReader(jsonBody))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return parseAPIError(resp)
+	}
+	return nil
 }
 
 // extractLakeboxID extracts the short ID from a full resource name.

@@ -45,9 +45,6 @@ Example:
 			if entry.FQDN != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "FQDN:   %s\n", entry.FQDN)
 			}
-			if entry.PubkeyHashPrefix != "" {
-				fmt.Fprintf(cmd.OutOrStdout(), "Key:    %s\n", entry.PubkeyHashPrefix)
-			}
 			return nil
 		},
 	}

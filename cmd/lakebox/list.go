@@ -51,14 +51,14 @@ Example:
 			}
 			defaultID := getDefault(profile)
 
-			fmt.Fprintf(cmd.OutOrStdout(), "  %-30s %-12s %-10s %s\n", "ID", "STATUS", "KEY", "DEFAULT")
+			fmt.Fprintf(cmd.OutOrStdout(), "  %-30s %-12s %s\n", "ID", "STATUS", "DEFAULT")
 			for _, e := range entries {
 				id := extractLakeboxID(e.Name)
 				def := ""
 				if id == defaultID {
 					def = "*"
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "  %-30s %-12s %-10s %s\n", id, e.Status, e.PubkeyHashPrefix, def)
+				fmt.Fprintf(cmd.OutOrStdout(), "  %-30s %-12s %s\n", id, e.Status, def)
 			}
 			return nil
 		},
