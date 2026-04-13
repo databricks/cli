@@ -1,0 +1,14 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "result": {
+    "default": "[UUID]",
+    "value": "[UUID]"
+  },
+  "sp": {
+    "lookup": {
+      "service_principal": "deco-test-spn"
+    },
+    "value": "[UUID]"
+  }
+}

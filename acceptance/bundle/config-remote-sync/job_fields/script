@@ -17,6 +17,8 @@ job_id="$(read_id.py my_job)"
 title "Modify job fields remotely"
 echo
 edit_resource.py jobs $job_id <<EOF
+# Rename the job remotely; config-remote-sync should strip the dev prefix
+r["name"] = r["name"].replace("test-job-$UNIQUE_NAME", "renamed-job-$UNIQUE_NAME")
 r["email_notifications"]["on_failure"] = ["failure@example.com"]
 r["email_notifications"]["no_alert_for_skipped_runs"] = True
 r["parameters"].append({"name": "region", "default": "us-east-1"})
