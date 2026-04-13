@@ -14,7 +14,8 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 )
 
 // resolveStopArgument resolves the pipeline key to stop
@@ -98,7 +99,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 
 		if len(args) == 0 {
 			completions := resources.Completions(b, run.IsRunnable)
-			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
+			return slices.Collect(maps.Keys(completions)), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to stop, we can complete additional positional arguments.
 			runner, err := keyToRunner(b, args[0])

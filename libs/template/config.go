@@ -11,7 +11,8 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 )
 
 // The latest template schema version supported by the CLI
@@ -306,7 +307,7 @@ func (c *config) promptOrAssignDefaultValues(r *renderer) error {
 // to initialize the template.
 func (c *config) validate() error {
 	// For final validation, all properties in the JSON schema should have a value defined.
-	c.schema.Required = maps.Keys(c.schema.Properties)
+	c.schema.Required = slices.Collect(maps.Keys(c.schema.Properties))
 	if err := c.schema.ValidateInstance(c.values); err != nil {
 		return fmt.Errorf("validation for template input parameters failed. %w", err)
 	}

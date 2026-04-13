@@ -33,7 +33,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 )
 
 type dashboard struct {
@@ -459,7 +460,7 @@ func dashboardResourceCompletion(cmd *cobra.Command, args []string, toComplete s
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	return maps.Keys(resources.Completions(b, filterDashboards)), cobra.ShellCompDirectiveNoFileComp
+	return slices.Collect(maps.Keys(resources.Completions(b, filterDashboards))), cobra.ShellCompDirectiveNoFileComp
 }
 
 func NewGenerateDashboardCommand() *cobra.Command {

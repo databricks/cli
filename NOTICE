@@ -99,10 +99,6 @@ golang.org/x/crypto - https://github.com/golang/crypto
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/crypto/blob/master/LICENSE
 
-golang.org/x/exp - https://github.com/golang/exp
-Copyright 2009 The Go Authors.
-License - https://github.com/golang/exp/blob/master/LICENSE
-
 golang.org/x/mod - https://github.com/golang/mod
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/mod/blob/master/LICENSE

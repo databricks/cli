@@ -7,7 +7,8 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 )
 
 var levels = map[string]slog.Level{
@@ -46,7 +47,7 @@ func (f *LogLevelFlag) String() string {
 func (f *LogLevelFlag) Set(s string) error {
 	l, ok := levels[strings.ToLower(s)]
 	if !ok {
-		return fmt.Errorf("accepted arguments are %s", strings.Join(maps.Keys(levels), ", "))
+		return fmt.Errorf("accepted arguments are %s", strings.Join(slices.Collect(maps.Keys(levels)), ", "))
 	}
 
 	f.l = l
@@ -59,5 +60,5 @@ func (f *LogLevelFlag) Type() string {
 
 // Complete is the Cobra compatible completion function for this flag.
 func (f *LogLevelFlag) Complete(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return maps.Keys(levels), cobra.ShellCompDirectiveNoFileComp
+	return slices.Collect(maps.Keys(levels)), cobra.ShellCompDirectiveNoFileComp
 }

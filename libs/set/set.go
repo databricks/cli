@@ -3,7 +3,8 @@ package set
 import (
 	"fmt"
 
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 )
 
 type hashFunc[T any] func(a T) string
@@ -16,7 +17,7 @@ type Set[T any] struct {
 
 // Values returns a slice of the set's values
 func (s *Set[T]) Values() []T {
-	return maps.Values(s.data)
+	return slices.Collect(maps.Values(s.data))
 }
 
 // NewSetFromF initialise a new set with initial values and a hash function
@@ -81,5 +82,5 @@ func (s *Set[T]) Size() int {
 
 // Returns an iterable slice of values from set
 func (s *Set[T]) Iter() []T {
-	return maps.Values(s.data)
+	return slices.Collect(maps.Values(s.data))
 }

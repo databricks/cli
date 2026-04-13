@@ -3,7 +3,8 @@ package run
 import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 )
 
 type jobParameterArgs struct {
@@ -63,7 +64,7 @@ func (a jobTaskNotebookParamArgs) CompleteArgs(args []string, toComplete string)
 			maps.Copy(parameters, nt.BaseParameters)
 		}
 	}
-	return genericCompleteKeyValueArgs(args, toComplete, maps.Keys(parameters))
+	return genericCompleteKeyValueArgs(args, toComplete, slices.Collect(maps.Keys(parameters)))
 }
 
 type jobTaskJarParamArgs struct {
@@ -163,7 +164,7 @@ func (r *jobRunner) posArgsHandler() argsHandler {
 	}
 
 	// Cannot handle positional arguments if we have more than one task type.
-	keys := maps.Keys(seen)
+	keys := slices.Collect(maps.Keys(seen))
 	if len(keys) != 1 {
 		return nopArgsHandler{}
 	}

@@ -15,7 +15,8 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 
 	"github.com/pkg/browser"
 )
@@ -98,7 +99,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 
 		if len(args) == 0 {
 			completions := resources.Completions(b)
-			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
+			return slices.Collect(maps.Keys(completions)), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}

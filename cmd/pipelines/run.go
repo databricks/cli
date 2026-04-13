@@ -24,7 +24,8 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 )
 
 type PipelineUpdateData struct {
@@ -357,7 +358,7 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 
 		if len(args) == 0 {
 			completions := bundleresources.Completions(b, isPipeline)
-			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
+			return slices.Collect(maps.Keys(completions)), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.
 			runner, err := keyToRunner(b, args[0])

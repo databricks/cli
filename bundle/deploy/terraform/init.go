@@ -20,7 +20,8 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	"golang.org/x/exp/maps"
+	"maps"
+	"slices"
 )
 
 func findExecPath(ctx context.Context, b *bundle.Bundle, tf *config.Terraform, installer Installer) (string, error) {
@@ -363,7 +364,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Configure environment variables for auth for Terraform to use.
-	log.Debugf(ctx, "Environment variables for Terraform: %s", strings.Join(maps.Keys(environ), ", "))
+	log.Debugf(ctx, "Environment variables for Terraform: %s", strings.Join(slices.Collect(maps.Keys(environ)), ", "))
 	err = tfe.SetEnv(environ)
 	if err != nil {
 		return diag.FromErr(err)
