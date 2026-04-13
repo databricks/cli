@@ -1916,7 +1916,7 @@
                     "$ref": "#/$defs/string"
                   },
                   "permissions": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
                   }
                 },
                 "additionalProperties": false,
@@ -1924,30 +1924,6 @@
                   "endpoint_type",
                   "name"
                 ]
-              },
-              "resources.VectorSearchEndpointPermission": {
-                "type": "object",
-                "properties": {
-                  "group_name": {
-                    "$ref": "#/$defs/string"
-                  },
-                  "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermissionLevel"
-                  },
-                  "service_principal_name": {
-                    "$ref": "#/$defs/string"
-                  },
-                  "user_name": {
-                    "$ref": "#/$defs/string"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "level"
-                ]
-              },
-              "resources.VectorSearchEndpointPermissionLevel": {
-                "type": "string"
               },
               "resources.Volume": {
                 "type": "object",
@@ -9239,12 +9215,6 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission"
-                  }
-                },
-                "resources.VectorSearchEndpointPermission": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpointPermission"
                   }
                 }
               },
