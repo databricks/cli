@@ -1,8 +1,36 @@
 const fs = require("fs");
+const path = require("path");
+
+/**
+ * Parse an OWNERTEAMS file into a map of team aliases.
+ * Format: "team:<name>  @member1 @member2 ..."
+ * Returns Map<string, string[]> where key is "team:<name>" and value is member logins.
+ *
+ * @param {string} filePath - absolute path to the OWNERTEAMS file
+ * @returns {Map<string, string[]>}
+ */
+function parseOwnerTeams(filePath) {
+  const teams = new Map();
+  if (!fs.existsSync(filePath)) return teams;
+  const lines = fs.readFileSync(filePath, "utf-8").split("\n");
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const parts = line.split(/\s+/);
+    if (parts.length < 2 || !parts[0].startsWith("team:")) continue;
+    const alias = parts[0];
+    const members = parts.slice(1).filter((p) => p.startsWith("@")).map((p) => p.slice(1));
+    teams.set(alias, members);
+  }
+  return teams;
+}
 
 /**
  * Parse an OWNERS file (same format as CODEOWNERS).
  * Returns array of { pattern, owners } rules.
+ *
+ * If an OWNERTEAMS file exists alongside the OWNERS file, "team:<name>"
+ * tokens are expanded to their member lists.
  *
  * By default, team refs (org/team) are filtered out and @ is stripped.
  * Pass { includeTeams: true } to keep team refs (with @ stripped).
@@ -13,6 +41,8 @@ const fs = require("fs");
  */
 function parseOwnersFile(filePath, opts) {
   const includeTeams = opts && opts.includeTeams;
+  const teamsPath = path.join(path.dirname(filePath), "OWNERTEAMS");
+  const teams = parseOwnerTeams(teamsPath);
   const lines = fs.readFileSync(filePath, "utf-8").split("\n");
   const rules = [];
   for (const raw of lines) {
@@ -21,10 +51,14 @@ function parseOwnersFile(filePath, opts) {
     const parts = line.split(/\s+/);
     if (parts.length < 2) continue;
     const pattern = parts[0];
-    const owners = parts
-      .slice(1)
-      .filter((p) => p.startsWith("@") && (includeTeams || !p.includes("/")))
-      .map((p) => p.slice(1));
+    const owners = [];
+    for (const p of parts.slice(1)) {
+      if (p.startsWith("team:") && teams.has(p)) {
+        owners.push(...teams.get(p));
+      } else if (p.startsWith("@") && (includeTeams || !p.includes("/"))) {
+        owners.push(p.slice(1));
+      }
+    }
     rules.push({ pattern, owners });
   }
   return rules;
@@ -89,4 +123,4 @@ function getOwnershipGroups(filenames, rules) {
   return groups;
 }
 
-module.exports = { parseOwnersFile, ownersMatch, findOwners, getMaintainers, getOwnershipGroups };
+module.exports = { parseOwnerTeams, parseOwnersFile, ownersMatch, findOwners, getMaintainers, getOwnershipGroups };

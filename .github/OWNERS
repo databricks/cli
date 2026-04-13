@@ -2,10 +2,10 @@
 *                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db
 
 # Bundles
-/bundle/                    @andrewnester @anton-107 @denik @pietern @shreyas-goenka @lennartkats-db
-/cmd/bundle/                @andrewnester @anton-107 @denik @pietern @shreyas-goenka @lennartkats-db
-/acceptance/bundle/         @andrewnester @anton-107 @denik @pietern @shreyas-goenka @lennartkats-db
-/libs/template/             @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @lennartkats-db
+/bundle/                    team:bundle @lennartkats-db
+/cmd/bundle/                team:bundle @lennartkats-db
+/acceptance/bundle/         team:bundle @lennartkats-db
+/libs/template/             team:bundle @simonfaltum @lennartkats-db
 
 # Pipelines
 /cmd/pipelines/             @jefferycheng1 @kanterov @lennartkats-db
@@ -22,42 +22,42 @@
 /acceptance/apps/           @databricks/eng-apps-devex
 
 # Auth
-/cmd/auth/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/auth/                 @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/acceptance/auth/           @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/auth/                  team:platform
+/libs/auth/                 team:platform
+/acceptance/auth/           team:platform
 
 # Filesystem & sync
-/cmd/fs/                    @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/cmd/sync/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/filer/                @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/sync/                 @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/fs/                    team:platform
+/cmd/sync/                  team:platform
+/libs/filer/                team:platform
+/libs/sync/                 team:platform
 
 # Core CLI infrastructure
-/cmd/root/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/cmd/version/               @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/cmd/completion/            @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/cmd/configure/             @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/cmd/cache/                 @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/cmd/api/                   @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/cmd/selftest/              @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/cmd/psql/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/psql/                 @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/cmd/root/                  team:platform
+/cmd/version/               team:platform
+/cmd/completion/            team:platform
+/cmd/configure/             team:platform
+/cmd/cache/                 team:platform
+/cmd/api/                   team:platform
+/cmd/selftest/              team:platform
+/cmd/psql/                  team:platform
+/libs/psql/                 team:platform
 
 # Libs (general)
-/libs/databrickscfg/        @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/env/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/flags/                @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/cmdio/                @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/log/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/telemetry/            @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/process/              @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
-/libs/git/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/libs/databrickscfg/        team:platform
+/libs/env/                  team:platform
+/libs/flags/                team:platform
+/libs/cmdio/                team:platform
+/libs/log/                  team:platform
+/libs/telemetry/            team:platform
+/libs/process/              team:platform
+/libs/git/                  team:platform
 
 # Integration tests
-/integration/               @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/integration/               team:platform
 
 # Internal
-/internal/                  @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
+/internal/                  team:platform
 
 # Experimental
 /experimental/aitools/      @databricks/eng-apps-devex @lennartkats-db
