@@ -120,8 +120,7 @@ type Bundle struct {
 	// in the WSFS location containing the bundle state.
 	Metadata metadata.Metadata
 
-	// Store a pointer to the workspace client.
-	// It can be initialized on demand after loading the configuration.
+	// Returns the workspace client, initializing it on first call.
 	getClient func() (*databricks.WorkspaceClient, error)
 
 	// Files that are synced to the workspace.file_path
