@@ -89,9 +89,9 @@ def get_pr_run_id_integration():
 
 
 def get_commit_run_id_integration(commit):
-    data = run_json(["gh", "api", f"repos/databricks/cli/commits/{commit}/status"])
-    items = data.get("statuses")
-    return get_run_id_from_items(items, "target_url", DECO_TESTS_PREFIX, data)
+    data = run_json(["gh", "api", f"repos/{CLI_REPO}/commits/{commit}/check-runs"])
+    items = data.get("check_runs")
+    return get_run_id_from_items(items, "details_url", DECO_TESTS_PREFIX, data)
 
 
 def get_pr_run_id_unit():

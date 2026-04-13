@@ -145,6 +145,7 @@ type FakeWorkspace struct {
 	Alerts                map[string]sql.AlertV2
 	Experiments           map[string]ml.GetExperimentResponse
 	ModelRegistryModels   map[string]ml.Model
+	ModelRegistryModelIDs map[string]string // model name -> numeric ID
 	Clusters              map[string]compute.ClusterDetails
 	Catalogs              map[string]catalog.CatalogInfo
 	ExternalLocations     map[string]catalog.ExternalLocationInfo
@@ -303,6 +304,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Alerts:                map[string]sql.AlertV2{},
 		Experiments:           map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:   map[string]ml.Model{},
+		ModelRegistryModelIDs: map[string]string{},
 		Clusters: map[string]compute.ClusterDetails{
 			TestDefaultClusterId: {
 				ClusterId:   TestDefaultClusterId,

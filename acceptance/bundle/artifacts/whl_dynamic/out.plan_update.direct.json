@@ -159,7 +159,7 @@
           "reason": "empty",
           "remote": {}
         },
-        "environments[0].spec.dependencies[0]": {
+        "environments[environment_key='test_env'].spec.dependencies[0]": {
           "action": "update",
           "old": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl",
           "new": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",

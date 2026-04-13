@@ -6,8 +6,8 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] grants get schema main.schema_remove_principal_[UNIQUE_NAME]
-json.privilege_assignments[].principal = "deco-test-user@databricks.com";
 json.privilege_assignments[].principal = "[USERNAME]";
+json.privilege_assignments[].principal = "deco-test-user@databricks.com";
 json.privilege_assignments[].privileges[] = "CREATE_TABLE";
 json.privilege_assignments[].privileges[] = "USE_SCHEMA";
 

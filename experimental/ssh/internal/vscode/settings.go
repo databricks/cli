@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -96,8 +97,10 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 		return nil
 	}
 
-	if err := backupSettings(ctx, settingsPath); err != nil {
-		log.Warnf(ctx, "Failed to backup settings: %v. Continuing with update.", err)
+	if data, err := os.ReadFile(settingsPath); err == nil {
+		if err := fileutil.BackupFile(ctx, settingsPath, data); err != nil {
+			return fmt.Errorf("failed to backup settings: %w", err)
+		}
 	}
 
 	if err := updateSettings(&settings, connectionName, missing); err != nil {
@@ -215,29 +218,33 @@ func validateSettings(v hujson.Value, connectionName string) *missingSettings {
 func settingsMessage(connectionName string, missing *missingSettings) string {
 	var lines []string
 	if missing.portRange {
-		lines = append(lines, fmt.Sprintf("  \"%s\": {\"%s\": \"%s\"}", serverPickPortsKey, connectionName, portRange))
+		lines = append(lines, fmt.Sprintf("    \"%s\": {\"%s\": \"%s\"}", serverPickPortsKey, connectionName, portRange))
 	}
 	if missing.platform {
-		lines = append(lines, fmt.Sprintf("  \"%s\": {\"%s\": \"%s\"}", remotePlatformKey, connectionName, remotePlatform))
+		lines = append(lines, fmt.Sprintf("    \"%s\": {\"%s\": \"%s\"}", remotePlatformKey, connectionName, remotePlatform))
 	}
 	if missing.listenOnSocket {
-		lines = append(lines, fmt.Sprintf("  \"%s\": true // Global setting that affects all remote ssh connections", listenOnSocketKey))
+		lines = append(lines, fmt.Sprintf("    \"%s\": true // Global setting", listenOnSocketKey))
 	}
 	if len(missing.extensions) > 0 {
 		quoted := make([]string, len(missing.extensions))
 		for i, ext := range missing.extensions {
 			quoted[i] = fmt.Sprintf("\"%s\"", ext)
 		}
-		lines = append(lines, fmt.Sprintf("  \"%s\": [%s] // Global setting that affects all remote ssh connections", defaultExtensionsKey, strings.Join(quoted, ", ")))
+		lines = append(lines, fmt.Sprintf("    \"%s\": [%s] // Global setting", defaultExtensionsKey, strings.Join(quoted, ", ")))
 	}
-	return strings.Join(lines, "\n")
+	return "  {\n" + strings.Join(lines, ",\n") + "\n  }"
 }
 
 func promptUserForUpdate(ctx context.Context, ide, connectionName string, missing *missingSettings) (bool, error) {
 	question := fmt.Sprintf(
-		"The following settings will be applied to %s for '%s':\n%s\nApply these settings?",
+		"The following settings will be applied to %s for '%s':\n\n%s\n\nApply these settings?",
 		getIDE(ide).Name, connectionName, settingsMessage(connectionName, missing))
-	return cmdio.AskYesOrNo(ctx, question)
+	ans, err := cmdio.Ask(ctx, question+" [Y/n]", "y")
+	if err != nil {
+		return false, err
+	}
+	return strings.ToLower(ans) == "y", nil
 }
 
 func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath string) error {
@@ -275,27 +282,6 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 
 	cmdio.LogString(ctx, fmt.Sprintf("Created %s settings at %s", getIDE(ide).Name, filepath.ToSlash(settingsPath)))
 	return nil
-}
-
-func backupSettings(ctx context.Context, path string) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	if len(data) == 0 {
-		return nil
-	}
-
-	originalBak := path + ".original.bak"
-	latestBak := path + ".latest.bak"
-
-	if _, err := os.Stat(originalBak); os.IsNotExist(err) {
-		log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(originalBak))
-		return os.WriteFile(originalBak, data, 0o600)
-	}
-
-	log.Infof(ctx, "Backing up settings to %s", filepath.ToSlash(latestBak))
-	return os.WriteFile(latestBak, data, 0o600)
 }
 
 // subKeyOp returns a patch op that sets key/subKey=value, creating the parent object if absent.

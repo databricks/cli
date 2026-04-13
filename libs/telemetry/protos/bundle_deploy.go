@@ -7,6 +7,9 @@ type BundleDeployEvent struct {
 	// UUID associated with the deployment.
 	DeploymentId string `json:"deployment_id,omitempty"`
 
+	// Error message encountered during the bundle deploy command, if any.
+	ErrorMessage string `json:"error_message,omitempty"`
+
 	ResourceCount                     int64 `json:"resource_count"`
 	ResourceJobCount                  int64 `json:"resource_job_count"`
 	ResourcePipelineCount             int64 `json:"resource_pipeline_count"`

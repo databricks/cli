@@ -85,10 +85,16 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		objectIdRef = prefix + "${" + baseNode + ".endpoint_id}"
 	}
 
+	// MLflow models use the model name as the state ID (for CRUD operations),
+	// but the permissions API requires the numeric model ID.
+	if strings.HasPrefix(baseNode, "resources.models.") {
+		objectIdRef = prefix + "${" + baseNode + ".model_id}"
+	}
+
 	// Vector search endpoints use the endpoint name as deployment id; the permissions API uses endpoint UUID.
 	if strings.HasPrefix(baseNode, "resources.vector_search_endpoints.") {
 		objectIdRef = prefix + "${" + baseNode + ".endpoint_uuid}"
-	}
+  }
 
 	// Postgres projects store their hierarchical name ("projects/{project_id}") as the state ID,
 	// but the permissions API expects just the project_id.

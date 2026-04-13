@@ -54,6 +54,9 @@ type ConfigResource interface {
 
 	// InitializeURL initializes the URL field of the resource.
 	InitializeURL(baseURL url.URL)
+
+	// GetLifecycle returns the lifecycle settings for the resource.
+	GetLifecycle() resources.LifecycleConfig
 }
 
 // ResourceGroup represents a group of resources of the same type.

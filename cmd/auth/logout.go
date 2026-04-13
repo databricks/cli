@@ -1,3 +1,18 @@
+// The auth logout command was implemented across three stacked PRs that were
+// inadvertently squashed into a single commit cb3c326 (titled after #4647 only):
+//
+//   - #4613: core logout command with --profile, --auto-approve (originally --force),
+//     --delete flags, token cache cleanup, and DeleteProfile in libs/databrickscfg/ops.go.
+//     https://github.com/databricks/cli/pull/4613
+//
+//   - #4616: interactive profile picker when --profile is
+//     omitted in an interactive terminal.
+//     https://github.com/databricks/cli/pull/4616
+//
+//   - #4647: extract shared SelectProfile helper, deduplicate
+//     profile pickers across auth logout, auth token, cmd/root/auth.go, cmd/root/bundle.go.
+//     https://github.com/databricks/cli/pull/4647
+
 package auth
 
 import (
@@ -6,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -28,64 +44,70 @@ You will need to run {{ "databricks auth login" | bold }} to re-authenticate.
 
 func newLogoutCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "logout [PROFILE]",
-		Short:  "Log out of a Databricks profile",
-		Args:   cobra.MaximumNArgs(1),
-		Hidden: true,
+		Use:   "logout [PROFILE]",
+		Short: "Log out of a Databricks profile",
+		Args:  cobra.MaximumNArgs(1),
 		Long: `Log out of a Databricks profile.
 
 This command clears any cached OAuth tokens for the specified profile so
 that the next CLI invocation requires re-authentication. The profile
 entry in ~/.databrickscfg is left intact unless --delete is also specified.
 
+This only affects profiles created with "databricks auth login". Profiles
+using other authentication methods (personal access tokens, M2M credentials)
+do not store cached OAuth tokens. If multiple profiles share the same cached
+token, logging out of one does not affect the others.
+
 You can provide a profile name as a positional argument, or use --profile
 to specify it explicitly.
 
-This command requires a profile to be specified or an interactive terminal.
-If you omit the profile and run in an interactive terminal, you'll be shown
-a profile picker. In a non-interactive environment (e.g. CI/CD), omitting
-the profile is an error.
-
 1. If you specify a profile (via argument or --profile), the command logs
    out of that profile. In an interactive terminal you'll be asked to
-   confirm unless --force is set.
+   confirm unless --auto-approve is set.
 
 2. If you omit the profile in an interactive terminal, you'll be shown
    an interactive picker listing all profiles from your configuration file.
    You can search by profile name, host, or account ID. After selecting a
-   profile, you'll be asked to confirm unless --force is specified.
+   profile, you'll be asked to confirm unless --auto-approve is specified.
 
 3. If you omit the profile in a non-interactive environment (e.g. CI/CD
    pipeline), the command will fail with an error asking you to specify
    a profile.
 
-4. Use --force to skip the confirmation prompt. This is required when
-   running in non-interactive environments.
-
-5. Use --delete to also remove the selected profile from ~/.databrickscfg.`,
+4. Use --delete to also remove the selected profile from the configuration
+   file.`,
 	}
 
-	var force bool
-	var profileName string
+	var autoApprove bool
 	var deleteProfile bool
-	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
-	cmd.Flags().StringVar(&profileName, "profile", "", "The profile to log out of")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompt")
 	cmd.Flags().BoolVar(&deleteProfile, "delete", false, "Delete the profile from the config file")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profiler := profile.DefaultProfiler
 
-		// Resolve the positional argument to a profile name.
-		if profileName != "" && len(args) == 1 {
-			return errors.New("providing both --profile and a positional argument is not supported")
+		profileFlag := cmd.Flag("profile")
+		profileName := profileFlag.Value.String()
+
+		// The positional argument is a shorthand that resolves to either a
+		// profile or a host. It cannot be combined with explicit flags.
+		if profileFlag.Changed && len(args) == 1 {
+			return fmt.Errorf("argument %q cannot be combined with --profile. Use the --profile flag instead", args[0])
 		}
-		if profileName == "" && len(args) == 1 {
-			resolved, err := resolveLogoutArg(ctx, args[0], profiler)
+		if len(args) == 1 {
+			resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args[0], profiler)
 			if err != nil {
 				return err
 			}
-			profileName = resolved
+			if resolvedProfile != "" {
+				profileName = resolvedProfile
+			} else {
+				profileName, err = resolveHostToProfile(ctx, resolvedHost, profiler)
+				if err != nil {
+					return err
+				}
+			}
 		}
 
 		if profileName == "" {
@@ -117,7 +139,7 @@ the profile is an error.
 
 		return runLogout(ctx, logoutArgs{
 			profileName:    profileName,
-			force:          force,
+			autoApprove:    autoApprove,
 			deleteProfile:  deleteProfile,
 			profiler:       profiler,
 			tokenCache:     tokenCache,
@@ -130,7 +152,7 @@ the profile is an error.
 
 type logoutArgs struct {
 	profileName    string
-	force          bool
+	autoApprove    bool
 	deleteProfile  bool
 	profiler       profile.Profiler
 	tokenCache     cache.TokenCache
@@ -143,9 +165,9 @@ func runLogout(ctx context.Context, args logoutArgs) error {
 		return err
 	}
 
-	if !args.force {
+	if !args.autoApprove {
 		if !cmdio.IsPromptSupported(ctx) {
-			return errors.New("please specify --force to skip confirmation in non-interactive mode")
+			return errors.New("please specify --auto-approve to skip confirmation in non-interactive mode")
 		}
 
 		configPath, err := args.profiler.GetPath(ctx)
@@ -273,71 +295,33 @@ func clearTokenCache(ctx context.Context, p profile.Profile, profiler profile.Pr
 	return nil
 }
 
-// hostCacheKeyAndMatchFn returns the token cache key and a profile match
-// function for the host-based token entry. Account and unified profiles use
-// host/oidc/accounts/<account_id> as the cache key and match on both host and
-// account ID; workspace profiles use just the host.
+// hostCacheKeyAndMatchFn returns the host-based token cache key and a profile
+// match function for the given profile. The match function is used to check
+// whether other profiles share the same host-based cache entry.
 func hostCacheKeyAndMatchFn(p profile.Profile) (string, profile.ProfileMatchFunction) {
-	host := (&config.Config{Host: p.Host}).CanonicalHostName()
-	if host == "" {
+	// Use ToOAuthArgument to derive the host-based cache key via the same
+	// routing logic the SDK used when the token was written during login.
+	// This includes a .well-known/databricks-config call that distinguishes
+	// classic workspace hosts from SPOG hosts — a distinction that cannot
+	// be made from the profile fields alone.
+	arg, err := (auth.AuthArguments{
+		Host:          p.Host,
+		AccountID:     p.AccountID,
+		WorkspaceID:   p.WorkspaceID,
+		IsUnifiedHost: p.IsUnifiedHost,
+		// Profile is deliberately empty so GetCacheKey returns the host-based
+		// key rather than the profile name.
+		// DiscoveryURL is left empty to force a fresh .well-known resolution
+		// so that the routing decision reflects the host's current state.
+	}).ToOAuthArgument()
+	if err != nil {
 		return "", nil
 	}
+	hostCacheKey := arg.GetCacheKey()
 
-	if p.AccountID != "" {
-		return host + "/oidc/accounts/" + p.AccountID, profile.WithHostAndAccountID(host, p.AccountID)
+	host := (&config.Config{Host: p.Host}).CanonicalHostName()
+	if p.AccountID != "" && strings.Contains(hostCacheKey, "/oidc/accounts/") {
+		return hostCacheKey, profile.WithHostAndAccountID(host, p.AccountID)
 	}
-
-	return host, profile.WithHost(host)
-}
-
-// resolveLogoutArg resolves a positional argument to a profile name. It first
-// tries to match the argument as a profile name, then as a host URL. If the
-// host matches multiple profiles in a non-interactive context, it returns an
-// error listing the matching profile names.
-func resolveLogoutArg(ctx context.Context, arg string, profiler profile.Profiler) (string, error) {
-	// Try as profile name first.
-	candidateProfile, err := loadProfileByName(ctx, arg, profiler)
-	if err != nil {
-		return "", err
-	}
-	if candidateProfile != nil {
-		return arg, nil
-	}
-
-	// Try as host URL.
-	canonicalHost := (&config.Config{Host: arg}).CanonicalHostName()
-	hostProfiles, err := profiler.LoadProfiles(ctx, profile.WithHost(canonicalHost))
-	if err != nil {
-		return "", err
-	}
-
-	switch len(hostProfiles) {
-	case 1:
-		return hostProfiles[0].Name, nil
-	case 0:
-		allProfiles, err := profiler.LoadProfiles(ctx, profile.MatchAllProfiles)
-		if err != nil {
-			return "", fmt.Errorf("no profile found matching %q", arg)
-		}
-		names := strings.Join(allProfiles.Names(), ", ")
-		return "", fmt.Errorf("no profile found matching %q. Available profiles: %s", arg, names)
-	default:
-		// Multiple profiles match the host.
-		if cmdio.IsPromptSupported(ctx) {
-			selected, err := profile.SelectProfile(ctx, profile.SelectConfig{
-				Label:             fmt.Sprintf("Multiple profiles found for %q. Select one to log out of", arg),
-				Profiles:          hostProfiles,
-				StartInSearchMode: len(hostProfiles) > 5,
-				ActiveTemplate:    `▸ {{.PaddedName | bold}}{{if .AccountID}} (account: {{.AccountID}}){{else}} ({{.Host}}){{end}}`,
-				InactiveTemplate:  `  {{.PaddedName}}{{if .AccountID}} (account: {{.AccountID | faint}}){{else}} ({{.Host | faint}}){{end}}`,
-				SelectedTemplate:  `{{ "Selected profile" | faint }}: {{ .Name | bold }}`,
-			})
-			if err != nil {
-				return "", err
-			}
-			return selected, nil
-		}
-		names := strings.Join(hostProfiles.Names(), ", ")
-		return "", fmt.Errorf("multiple profiles found matching host %q: %s. Please specify the profile name directly", arg, names)
-	}
+	return hostCacheKey, profile.WithHost(host)
 }

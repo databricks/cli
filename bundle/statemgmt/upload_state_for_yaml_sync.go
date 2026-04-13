@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -22,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
@@ -54,18 +56,23 @@ func (m *uploadStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) di
 
 	_, snapshotPath := b.StateFilenameConfigSnapshot(ctx)
 
-	diags := m.convertState(ctx, b, snapshotPath)
-	if diags.HasError() {
-		return diags
+	created, err := m.convertState(ctx, b, snapshotPath)
+	if err != nil {
+		log.Warnf(ctx, "Failed to create config snapshot: %v", err)
+		return nil
+	}
+	if !created {
+		return nil
 	}
 
-	err := uploadState(ctx, b)
+	err = uploadState(ctx, b)
 	if err != nil {
-		return diags.Extend(diag.Warningf("Failed to upload config snapshot to workspace: %v", err))
+		log.Warnf(ctx, "Failed to upload config snapshot: %v", err)
+		return nil
 	}
 
 	log.Infof(ctx, "Config snapshot created at %s", snapshotPath)
-	return diags
+	return nil
 }
 
 func uploadState(ctx context.Context, b *bundle.Bundle) error {
@@ -92,10 +99,22 @@ func uploadState(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bundle, snapshotPath string) (diags diag.Diagnostics) {
+func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bundle, snapshotPath string) (bool, error) {
 	terraformResources, err := terraform.ParseResourcesState(ctx, b)
 	if err != nil {
-		return diag.FromErr(err)
+		return false, fmt.Errorf("failed to parse terraform state: %w", err)
+	}
+
+	// ParseResourcesState returns nil when the terraform state file doesn't exist
+	// (e.g. first deploy with no resources).
+	if terraformResources == nil {
+		return false, nil
+	}
+
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	data, err := os.ReadFile(localTerraformPath)
+	if err != nil {
+		return false, fmt.Errorf("failed to read terraform state: %w", err)
 	}
 
 	state := make(map[string]dstate.ResourceEntry)
@@ -111,18 +130,12 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		}
 	}
 
-	_, localTerraformPath := b.StateFilenameTerraform(ctx)
-	data, err := os.ReadFile(localTerraformPath)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	var tfState struct {
 		Lineage string `json:"lineage"`
 		Serial  int    `json:"serial"`
 	}
 	if err := json.Unmarshal(data, &tfState); err != nil {
-		return diag.FromErr(err)
+		return false, err
 	}
 
 	migratedDB := dstate.NewDatabase(tfState.Lineage, tfState.Serial+1)
@@ -135,13 +148,21 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		},
 	}
 
-	// Get the dynamic value from b.Config and reverse the interpolation
+	// Apply SecretScopeFixups so the config matches what the direct engine expects.
+	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
+	// the migrated state and config agree on .permissions entries.
+	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
+	if logdiag.HasError(ctx) {
+		return false, errors.New("failed to apply secret scope fixups")
+	}
+
+	// Get the dynamic value from b.Config and reverse the interpolation.
 	// b.Config has been modified by terraform.Interpolate which converts bundle-style
-	// references (${resources.pipelines.x.id}) to terraform-style (${databricks_pipeline.x.id})
+	// references (${resources.pipelines.x.id}) to terraform-style (${databricks_pipeline.x.id}).
 	interpolatedRoot := b.Config.Value()
 	uninterpolatedRoot, err := reverseInterpolate(interpolatedRoot)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to reverse interpolation: %w", err))
+		return false, fmt.Errorf("failed to reverse interpolation: %w", err)
 	}
 
 	var uninterpolatedConfig config.Root
@@ -149,12 +170,12 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return uninterpolatedRoot, nil
 	})
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to create uninterpolated config: %w", err))
+		return false, fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
-	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &uninterpolatedConfig, snapshotPath)
+	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &uninterpolatedConfig)
 	if err != nil {
-		return diag.FromErr(err)
+		return false, err
 	}
 
 	for _, entry := range plan.Plan {
@@ -172,13 +193,16 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		}
 		err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag)
 		if err != nil {
-			diags = diags.Extend(diag.Warningf("Failed to set etag on %q: %v", key, err))
+			log.Warnf(ctx, "Failed to set etag on %q: %v", key, err)
 		}
 	}
 
 	deploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(true))
+	if err := deploymentBundle.StateDB.Finalize(); err != nil {
+		return false, err
+	}
 
-	return diags
+	return true, nil
 }
 
 // reverseInterpolate reverses the terraform.Interpolate transformation.

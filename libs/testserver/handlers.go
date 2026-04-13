@@ -379,6 +379,22 @@ func AddDefaultHandlers(server *Server) {
 
 	// Apps:
 
+	server.Handle("POST", "/api/2.0/apps/{name}/deployments", func(req Request) any {
+		return req.Workspace.AppsCreateDeployment(req, req.Vars["name"])
+	})
+
+	server.Handle("GET", "/api/2.0/apps/{name}/deployments/{deployment_id}", func(req Request) any {
+		return req.Workspace.AppsGetDeployment(req, req.Vars["name"], req.Vars["deployment_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/apps/{name}/start", func(req Request) any {
+		return req.Workspace.AppsStart(req, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/apps/{name}/stop", func(req Request) any {
+		return req.Workspace.AppsStop(req, req.Vars["name"])
+	})
+
 	server.Handle("POST", "/api/2.0/apps/{name}/update", func(req Request) any {
 		return req.Workspace.AppsCreateUpdate(req, req.Vars["name"])
 	})
