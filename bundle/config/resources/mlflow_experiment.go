@@ -50,7 +50,7 @@ func (s *MlflowExperiment) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.ExperimentPattern, s.ID)
+	s.URL = workspaceurls.ResourceURL(baseURL, "experiments", s.ID)
 }
 
 func (s *MlflowExperiment) GetName() string {

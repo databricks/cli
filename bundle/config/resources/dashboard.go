@@ -114,7 +114,7 @@ func (r *Dashboard) InitializeURL(baseURL url.URL) {
 		return
 	}
 
-	r.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.DashboardPattern, r.ID)
+	r.URL = workspaceurls.ResourceURL(baseURL, "dashboards", r.ID)
 }
 
 func (r *Dashboard) GetName() string {

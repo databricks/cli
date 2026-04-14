@@ -53,7 +53,7 @@ func (a *Alert) InitializeURL(baseURL url.URL) {
 	if a.ID == "" {
 		return
 	}
-	a.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.AlertPattern, a.ID)
+	a.URL = workspaceurls.ResourceURL(baseURL, "alerts", a.ID)
 }
 
 func (a *Alert) GetName() string {

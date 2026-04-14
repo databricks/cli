@@ -48,7 +48,7 @@ func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {
 	if sw.ID == "" {
 		return
 	}
-	sw.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.WarehousePattern, sw.ID)
+	sw.URL = workspaceurls.ResourceURL(baseURL, "warehouses", sw.ID)
 }
 
 func (sw *SqlWarehouse) GetName() string {

@@ -55,7 +55,7 @@ func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.ModelServingEndpointPattern, s.ID)
+	s.URL = workspaceurls.ResourceURL(baseURL, "model_serving_endpoints", s.ID)
 }
 
 func (s *ModelServingEndpoint) GetName() string {

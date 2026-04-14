@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/workspaceurls"
@@ -55,11 +54,7 @@ func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(
-		baseURL,
-		workspaceurls.RegisteredModelPattern,
-		strings.ReplaceAll(s.ID, ".", "/"),
-	)
+	s.URL = workspaceurls.ResourceURL(baseURL, "registered_models", s.ID)
 }
 
 func (s *RegisteredModel) GetName() string {

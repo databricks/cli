@@ -8,82 +8,63 @@ import (
 	"strings"
 )
 
-const (
-	ResourceAlerts                = "alerts"
-	ResourceApps                  = "apps"
-	ResourceClusters              = "clusters"
-	ResourceDashboards            = "dashboards"
-	ResourceExperiments           = "experiments"
-	ResourceJobs                  = "jobs"
-	ResourceModels                = "models"
-	ResourceModelServingEndpoints = "model_serving_endpoints"
-	ResourceNotebooks             = "notebooks"
-	ResourcePipelines             = "pipelines"
-	ResourceQueries               = "queries"
-	ResourceRegisteredModels      = "registered_models"
-	ResourceWarehouses            = "warehouses"
-)
-
-const (
-	AlertPattern                = "sql/alerts-v2/%s"
-	AppPattern                  = "apps/%s"
-	ClusterPattern              = "compute/clusters/%s"
-	DashboardPattern            = "dashboardsv3/%s/published"
-	ExperimentPattern           = "ml/experiments/%s"
-	JobPattern                  = "jobs/%s"
-	ModelPattern                = "ml/models/%s"
-	ModelServingEndpointPattern = "ml/endpoints/%s"
-	NotebookPattern             = "#notebook/%s"
-	PipelinePattern             = "pipelines/%s"
-	QueryPattern                = "sql/editor/%s"
-	RegisteredModelPattern      = "explore/data/models/%s"
-	WarehousePattern            = "sql/warehouses/%s"
-)
-
 var resourceURLPatterns = map[string]string{
-	ResourceAlerts:                AlertPattern,
-	ResourceApps:                  AppPattern,
-	ResourceClusters:              ClusterPattern,
-	ResourceDashboards:            DashboardPattern,
-	ResourceExperiments:           ExperimentPattern,
-	ResourceJobs:                  JobPattern,
-	ResourceModels:                ModelPattern,
-	ResourceModelServingEndpoints: ModelServingEndpointPattern,
-	ResourceNotebooks:             NotebookPattern,
-	ResourcePipelines:             PipelinePattern,
-	ResourceQueries:               QueryPattern,
-	ResourceRegisteredModels:      RegisteredModelPattern,
-	ResourceWarehouses:            WarehousePattern,
+	"alerts":                  "sql/alerts-v2/%s",
+	"apps":                    "apps/%s",
+	"clusters":                "compute/clusters/%s",
+	"dashboards":              "dashboardsv3/%s/published",
+	"experiments":             "ml/experiments/%s",
+	"jobs":                    "jobs/%s",
+	"models":                  "ml/models/%s",
+	"model_serving_endpoints": "ml/endpoints/%s",
+	"notebooks":               "#notebook/%s",
+	"pipelines":               "pipelines/%s",
+	"queries":                 "sql/editor/%s",
+	"registered_models":       "explore/data/models/%s",
+	"warehouses":              "sql/warehouses/%s",
 }
 
 // dotSeparatedResources lists resource types where the identifier is commonly
 // provided as a dot-separated name (e.g. "catalog.schema.model") but the URL
 // requires slash-separated segments.
 var dotSeparatedResources = map[string]bool{
-	ResourceRegisteredModels: true,
+	"registered_models": true,
 }
 
-// NormalizeDotSeparatedID converts dots to slashes for resource types that use
-// multi-part names (e.g. registered_models: "catalog.schema.model" becomes
-// "catalog/schema/model").
-func NormalizeDotSeparatedID(resourceType, id string) string {
-	if dotSeparatedResources[resourceType] {
-		return strings.ReplaceAll(id, ".", "/")
+// ResourceTypes returns a sorted list of all supported resource type names.
+func ResourceTypes() []string {
+	names := make([]string, 0, len(resourceURLPatterns))
+	for k := range resourceURLPatterns {
+		names = append(names, k)
 	}
-	return id
-}
-
-// LookupPattern returns the workspace URL pattern for a resource type.
-func LookupPattern(resourceType string) (string, bool) {
-	pattern, ok := resourceURLPatterns[resourceType]
-	return pattern, ok
-}
-
-// SortResourceTypes returns a sorted copy of resource types.
-func SortResourceTypes(resourceTypes []string) []string {
-	names := append([]string(nil), resourceTypes...)
 	slices.Sort(names)
 	return names
+}
+
+// ResourceURL constructs a workspace URL for a named resource type and ID.
+func ResourceURL(baseURL url.URL, resourceType, id string) string {
+	pattern, ok := resourceURLPatterns[resourceType]
+	if !ok {
+		return ""
+	}
+	id = normalizeDotSeparatedID(resourceType, id)
+	return formatResourceURL(baseURL, pattern, id)
+}
+
+// BuildResourceURL constructs a full workspace URL from a host string, resource
+// type name, ID, and workspace ID. It parses the host, appends ?o=<workspace-id>
+// when needed, and formats the resource path.
+func BuildResourceURL(host, resourceType, id string, workspaceID int64) (string, error) {
+	baseURL, err := WorkspaceBaseURL(host, workspaceID)
+	if err != nil {
+		return "", err
+	}
+
+	result := ResourceURL(*baseURL, resourceType, id)
+	if result == "" {
+		return "", fmt.Errorf("unknown resource type %q, must be one of: %s", resourceType, strings.Join(ResourceTypes(), ", "))
+	}
+	return result, nil
 }
 
 // WorkspaceBaseURL parses a workspace host and appends ?o=<workspace-id> when needed.
@@ -109,18 +90,14 @@ func WorkspaceBaseURL(host string, workspaceID int64) (*url.URL, error) {
 	return baseURL, nil
 }
 
-// BuildResourceURL constructs a full workspace URL for a resource path pattern.
-func BuildResourceURL(host, pattern, id string, workspaceID int64) (string, error) {
-	baseURL, err := WorkspaceBaseURL(host, workspaceID)
-	if err != nil {
-		return "", err
+func normalizeDotSeparatedID(resourceType, id string) string {
+	if dotSeparatedResources[resourceType] {
+		return strings.ReplaceAll(id, ".", "/")
 	}
-
-	return ResourceURL(*baseURL, pattern, id), nil
+	return id
 }
 
-// ResourceURL formats a workspace URL for a resource path pattern.
-func ResourceURL(baseURL url.URL, pattern, id string) string {
+func formatResourceURL(baseURL url.URL, pattern, id string) string {
 	resourcePath := fmt.Sprintf(pattern, id)
 	if strings.HasPrefix(resourcePath, "#") {
 		baseURL.Path = "/"

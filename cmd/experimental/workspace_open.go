@@ -18,22 +18,6 @@ import (
 	browserpkg "github.com/pkg/browser"
 )
 
-var supportedOpenResourceTypes = []string{
-	workspaceurls.ResourceAlerts,
-	workspaceurls.ResourceApps,
-	workspaceurls.ResourceClusters,
-	workspaceurls.ResourceDashboards,
-	workspaceurls.ResourceExperiments,
-	workspaceurls.ResourceJobs,
-	workspaceurls.ResourceModels,
-	workspaceurls.ResourceModelServingEndpoints,
-	workspaceurls.ResourceNotebooks,
-	workspaceurls.ResourcePipelines,
-	workspaceurls.ResourceQueries,
-	workspaceurls.ResourceRegisteredModels,
-	workspaceurls.ResourceWarehouses,
-}
-
 var currentWorkspaceID = func(ctx context.Context) (int64, error) {
 	return cmdctx.WorkspaceClient(ctx).CurrentWorkspaceID(ctx)
 }
@@ -65,23 +49,8 @@ var openWorkspaceURL = func(ctx context.Context, targetURL string) error {
 	}
 }
 
-func resourceTypeNames() []string {
-	return workspaceurls.SortResourceTypes(supportedOpenResourceTypes)
-}
-
 func supportedResourceTypes() string {
-	return strings.Join(resourceTypeNames(), ", ")
-}
-
-// buildWorkspaceURL constructs a full workspace URL for a given resource type and ID.
-func buildWorkspaceURL(host, resourceType, id string, workspaceID int64) (string, error) {
-	pattern, ok := workspaceurls.LookupPattern(resourceType)
-	if !ok {
-		return "", fmt.Errorf("unknown resource type %q, must be one of: %s", resourceType, supportedResourceTypes())
-	}
-
-	id = workspaceurls.NormalizeDotSeparatedID(resourceType, id)
-	return workspaceurls.BuildResourceURL(host, pattern, id, workspaceID)
+	return strings.Join(workspaceurls.ResourceTypes(), ", ")
 }
 
 func newWorkspaceOpenCommand() *cobra.Command {
@@ -117,7 +86,7 @@ Examples:
 				log.Warnf(ctx, "Could not determine workspace ID: %v", err)
 			}
 
-			resourceURL, err := buildWorkspaceURL(w.Config.Host, resourceType, id, workspaceID)
+			resourceURL, err := workspaceurls.BuildResourceURL(w.Config.Host, resourceType, id, workspaceID)
 			if err != nil {
 				return err
 			}
@@ -135,7 +104,7 @@ Examples:
 		},
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			if len(args) == 0 {
-				return resourceTypeNames(), cobra.ShellCompDirectiveNoFileComp
+				return workspaceurls.ResourceTypes(), cobra.ShellCompDirectiveNoFileComp
 			}
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		},

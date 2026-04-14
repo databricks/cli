@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/log/handler"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -37,7 +38,7 @@ func TestBuildWorkspaceURLPathBasedResources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.resourceType+"/"+tt.id, func(t *testing.T) {
-			got, err := buildWorkspaceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, 0)
+			got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, 0)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -56,7 +57,7 @@ func TestBuildWorkspaceURLFragmentBasedResources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			got, err := buildWorkspaceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, 0)
+			got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", tt.resourceType, tt.id, 0)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -64,38 +65,38 @@ func TestBuildWorkspaceURLFragmentBasedResources(t *testing.T) {
 }
 
 func TestBuildWorkspaceURLUnknownResourceType(t *testing.T) {
-	_, err := buildWorkspaceURL("https://myworkspace.databricks.com", "unknown", "123", 0)
+	_, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "unknown", "123", 0)
 	assert.ErrorContains(t, err, "unknown resource type \"unknown\"")
 	assert.ErrorContains(t, err, "alerts, apps, clusters, dashboards, experiments, jobs, model_serving_endpoints, models, notebooks, pipelines, queries, registered_models, warehouses")
 }
 
 func TestBuildWorkspaceURLHostWithTrailingSlash(t *testing.T) {
-	got, err := buildWorkspaceURL("https://myworkspace.databricks.com/", "jobs", "123", 0)
+	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com/", "jobs", "123", 0)
 	require.NoError(t, err)
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceID(t *testing.T) {
-	got, err := buildWorkspaceURL("https://myworkspace.databricks.com", "jobs", "123", 123456)
+	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "jobs", "123", 123456)
 	require.NoError(t, err)
 	assert.Equal(t, "https://myworkspace.databricks.com/jobs/123?o=123456", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceIDInHostname(t *testing.T) {
-	got, err := buildWorkspaceURL("https://adb-123456.azuredatabricks.net", "jobs", "123", 123456)
+	got, err := workspaceurls.BuildResourceURL("https://adb-123456.azuredatabricks.net", "jobs", "123", 123456)
 	require.NoError(t, err)
 	// Workspace ID is already in the hostname, so ?o= should not be appended.
 	assert.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/123", got)
 }
 
 func TestBuildWorkspaceURLWithWorkspaceIDInVanityHostname(t *testing.T) {
-	got, err := buildWorkspaceURL("https://workspace-123456.example.com", "jobs", "123", 123456)
+	got, err := workspaceurls.BuildResourceURL("https://workspace-123456.example.com", "jobs", "123", 123456)
 	require.NoError(t, err)
 	assert.Equal(t, "https://workspace-123456.example.com/jobs/123?o=123456", got)
 }
 
 func TestBuildWorkspaceURLFragmentWithWorkspaceID(t *testing.T) {
-	got, err := buildWorkspaceURL("https://myworkspace.databricks.com", "notebooks", "12345", 789)
+	got, err := workspaceurls.BuildResourceURL("https://myworkspace.databricks.com", "notebooks", "12345", 789)
 	require.NoError(t, err)
 	assert.Equal(t, "https://myworkspace.databricks.com/?o=789#notebook/12345", got)
 }

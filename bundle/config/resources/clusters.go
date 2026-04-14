@@ -48,7 +48,7 @@ func (s *Cluster) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.ClusterPattern, s.ID)
+	s.URL = workspaceurls.ResourceURL(baseURL, "clusters", s.ID)
 }
 
 func (s *Cluster) GetName() string {

@@ -50,7 +50,7 @@ func (p *Pipeline) InitializeURL(baseURL url.URL) {
 	if p.ID == "" {
 		return
 	}
-	p.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.PipelinePattern, p.ID)
+	p.URL = workspaceurls.ResourceURL(baseURL, "pipelines", p.ID)
 }
 
 func (p *Pipeline) GetName() string {

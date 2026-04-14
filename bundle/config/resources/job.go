@@ -55,7 +55,7 @@ func (j *Job) InitializeURL(baseURL url.URL) {
 	if j.ID == "" {
 		return
 	}
-	j.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.JobPattern, j.ID)
+	j.URL = workspaceurls.ResourceURL(baseURL, "jobs", j.ID)
 }
 
 func (j *Job) GetName() string {

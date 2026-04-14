@@ -15,66 +15,30 @@ func TestNormalizeDotSeparatedID(t *testing.T) {
 		id           string
 		expected     string
 	}{
-		{"registered_models converts dots to slashes", ResourceRegisteredModels, "catalog.schema.model", "catalog/schema/model"},
-		{"registered_models preserves slashes", ResourceRegisteredModels, "catalog/schema/model", "catalog/schema/model"},
-		{"registered_models single part", ResourceRegisteredModels, "model", "model"},
-		{"jobs ID unchanged", ResourceJobs, "123", "123"},
-		{"pipelines ID unchanged", ResourcePipelines, "abc-def", "abc-def"},
-		{"notebooks path unchanged", ResourceNotebooks, "/Users/user@example.com/nb", "/Users/user@example.com/nb"},
+		{"registered_models converts dots to slashes", "registered_models", "catalog.schema.model", "catalog/schema/model"},
+		{"registered_models preserves slashes", "registered_models", "catalog/schema/model", "catalog/schema/model"},
+		{"registered_models single part", "registered_models", "model", "model"},
+		{"jobs ID unchanged", "jobs", "123", "123"},
+		{"pipelines ID unchanged", "pipelines", "abc-def", "abc-def"},
+		{"notebooks path unchanged", "notebooks", "/Users/user@example.com/nb", "/Users/user@example.com/nb"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NormalizeDotSeparatedID(tt.resourceType, tt.id)
+			got := normalizeDotSeparatedID(tt.resourceType, tt.id)
 			assert.Equal(t, tt.expected, got)
 		})
 	}
 }
 
-func TestLookupPattern(t *testing.T) {
-	tests := []struct {
-		resourceType string
-		expected     string
-		ok           bool
-	}{
-		{ResourceAlerts, AlertPattern, true},
-		{ResourceApps, AppPattern, true},
-		{ResourceClusters, ClusterPattern, true},
-		{ResourceDashboards, DashboardPattern, true},
-		{ResourceExperiments, ExperimentPattern, true},
-		{ResourceJobs, JobPattern, true},
-		{ResourceModels, ModelPattern, true},
-		{ResourceModelServingEndpoints, ModelServingEndpointPattern, true},
-		{ResourceNotebooks, NotebookPattern, true},
-		{ResourcePipelines, PipelinePattern, true},
-		{ResourceQueries, QueryPattern, true},
-		{ResourceRegisteredModels, RegisteredModelPattern, true},
-		{ResourceWarehouses, WarehousePattern, true},
-		{"unknown", "", false},
-		{"", "", false},
+func TestResourceTypes(t *testing.T) {
+	types := ResourceTypes()
+	assert.NotEmpty(t, types)
+
+	// Verify the list is sorted.
+	for i := range len(types) - 1 {
+		assert.Less(t, types[i], types[i+1])
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.resourceType, func(t *testing.T) {
-			pattern, ok := LookupPattern(tt.resourceType)
-			assert.Equal(t, tt.ok, ok)
-			assert.Equal(t, tt.expected, pattern)
-		})
-	}
-}
-
-func TestSortResourceTypes(t *testing.T) {
-	input := []string{"jobs", "alerts", "clusters"}
-	got := SortResourceTypes(input)
-	assert.Equal(t, []string{"alerts", "clusters", "jobs"}, got)
-
-	// Original slice is not modified.
-	assert.Equal(t, []string{"jobs", "alerts", "clusters"}, input)
-}
-
-func TestSortResourceTypesEmpty(t *testing.T) {
-	got := SortResourceTypes(nil)
-	assert.Empty(t, got)
 }
 
 func TestWorkspaceBaseURL(t *testing.T) {
@@ -108,46 +72,54 @@ func TestWorkspaceBaseURLInvalidHost(t *testing.T) {
 
 func TestBuildResourceURL(t *testing.T) {
 	tests := []struct {
-		name        string
-		host        string
-		pattern     string
-		id          string
-		workspaceID int64
-		expected    string
+		name         string
+		host         string
+		resourceType string
+		id           string
+		workspaceID  int64
+		expected     string
 	}{
-		{"simple path", "https://host.com", "jobs/%s", "123", 0, "https://host.com/jobs/123"},
-		{"path with workspace ID", "https://host.com", "jobs/%s", "123", 456, "https://host.com/jobs/123?o=456"},
-		{"fragment pattern", "https://host.com", "#notebook/%s", "12345", 0, "https://host.com/#notebook/12345"},
-		{"fragment with workspace ID", "https://host.com", "#notebook/%s", "12345", 789, "https://host.com/?o=789#notebook/12345"},
+		{"simple path", "https://host.com", "jobs", "123", 0, "https://host.com/jobs/123"},
+		{"path with workspace ID", "https://host.com", "jobs", "123", 456, "https://host.com/jobs/123?o=456"},
+		{"fragment pattern", "https://host.com", "notebooks", "12345", 0, "https://host.com/#notebook/12345"},
+		{"fragment with workspace ID", "https://host.com", "notebooks", "12345", 789, "https://host.com/?o=789#notebook/12345"},
+		{"registered model normalizes dots", "https://host.com", "registered_models", "catalog.schema.model", 0, "https://host.com/explore/data/models/catalog/schema/model"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := BuildResourceURL(tt.host, tt.pattern, tt.id, tt.workspaceID)
+			got, err := BuildResourceURL(tt.host, tt.resourceType, tt.id, tt.workspaceID)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
 	}
 }
 
+func TestBuildResourceURLUnknownType(t *testing.T) {
+	_, err := BuildResourceURL("https://host.com", "unknown", "123", 0)
+	assert.ErrorContains(t, err, "unknown resource type")
+}
+
 func TestResourceURL(t *testing.T) {
 	tests := []struct {
-		name     string
-		pattern  string
-		id       string
-		expected string
+		name         string
+		resourceType string
+		id           string
+		expected     string
 	}{
-		{"simple path", "jobs/%s", "123", "https://host.com/jobs/123"},
-		{"nested path", "ml/experiments/%s", "exp-1", "https://host.com/ml/experiments/exp-1"},
-		{"published dashboard", "dashboardsv3/%s/published", "d-1", "https://host.com/dashboardsv3/d-1/published"},
-		{"fragment", "#notebook/%s", "12345", "https://host.com/#notebook/12345"},
-		{"fragment with path ID", "#notebook/%s", "/Users/u/nb", "https://host.com/#notebook//Users/u/nb"},
+		{"jobs", "jobs", "123", "https://host.com/jobs/123"},
+		{"experiments", "experiments", "exp-1", "https://host.com/ml/experiments/exp-1"},
+		{"dashboards", "dashboards", "d-1", "https://host.com/dashboardsv3/d-1/published"},
+		{"notebooks", "notebooks", "12345", "https://host.com/#notebook/12345"},
+		{"notebooks with path", "notebooks", "/Users/u/nb", "https://host.com/#notebook//Users/u/nb"},
+		{"registered_models normalizes dots", "registered_models", "cat.sch.model", "https://host.com/explore/data/models/cat/sch/model"},
+		{"unknown returns empty", "nonexistent", "123", ""},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			base := url.URL{Scheme: "https", Host: "host.com"}
-			got := ResourceURL(base, tt.pattern, tt.id)
+			got := ResourceURL(base, tt.resourceType, tt.id)
 			assert.Equal(t, tt.expected, got)
 		})
 	}

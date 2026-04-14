@@ -95,7 +95,7 @@ func (a *App) InitializeURL(baseURL url.URL) {
 	if a.ModifiedStatus == "" || a.ModifiedStatus == ModifiedStatusCreated {
 		return
 	}
-	a.URL = workspaceurls.ResourceURL(baseURL, workspaceurls.AppPattern, a.GetName())
+	a.URL = workspaceurls.ResourceURL(baseURL, "apps", a.GetName())
 }
 
 func (a *App) GetName() string {
