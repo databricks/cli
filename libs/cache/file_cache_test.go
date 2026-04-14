@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -224,13 +225,13 @@ func TestFileCacheCleanupExpiredFiles(t *testing.T) {
 
 	// Check results
 	_, err = os.Stat(expiredFile)
-	assert.True(t, os.IsNotExist(err), "Expired file should be deleted")
+	assert.ErrorIs(t, err, fs.ErrNotExist, "Expired file should be deleted")
 
 	_, err = os.Stat(validFile)
-	assert.False(t, os.IsNotExist(err), "Valid file should still exist")
+	assert.NotErrorIs(t, err, fs.ErrNotExist, "Valid file should still exist")
 
 	_, err = os.Stat(nonCacheFile)
-	assert.False(t, os.IsNotExist(err), "Non-cache file should be ignored")
+	assert.NotErrorIs(t, err, fs.ErrNotExist, "Non-cache file should be ignored")
 }
 
 func TestFileCacheInvalidJSON(t *testing.T) {

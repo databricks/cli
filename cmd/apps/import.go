@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -171,7 +172,7 @@ Examples:
 			// Check if output directory already exists
 			if _, err := os.Stat(outputDir); err == nil {
 				return fmt.Errorf("directory '%s' already exists. Please remove it or choose a different output directory", outputDir)
-			} else if !os.IsNotExist(err) {
+			} else if !errors.Is(err, fs.ErrNotExist) {
 				return fmt.Errorf("failed to check if directory exists: %w", err)
 			}
 

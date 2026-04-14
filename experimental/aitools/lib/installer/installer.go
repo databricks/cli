@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"maps"
 	"net/http"
 	"os"
@@ -452,7 +453,7 @@ func agentSkillsDirForScope(ctx context.Context, agent *agents.Agent, scope, cwd
 // a symlink pointing to canonicalDir. This preserves skills installed by other tools.
 func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName, agentName string) error {
 	fi, err := os.Lstat(destDir)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	if err != nil {
