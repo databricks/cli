@@ -1,13 +1,14 @@
 package config_tests
 
 import (
+	"maps"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +27,7 @@ func TestIncludeInvalid(t *testing.T) {
 func TestIncludeWithGlob(t *testing.T) {
 	b := load(t, "./include_with_glob")
 
-	keys := utils.SortedKeys(b.Config.Resources.Jobs)
+	keys := slices.Sorted(maps.Keys(b.Config.Resources.Jobs))
 	assert.Equal(t, []string{"my_job"}, keys)
 
 	job := b.Config.Resources.Jobs["my_job"]
@@ -46,7 +47,7 @@ func TestIncludeForMultipleMatches(t *testing.T) {
 	b := load(t, "./include_multiple")
 
 	// Test that both jobs were loaded.
-	keys := utils.SortedKeys(b.Config.Resources.Jobs)
+	keys := slices.Sorted(maps.Keys(b.Config.Resources.Jobs))
 	assert.Equal(t, []string{"my_first_job", "my_second_job"}, keys)
 
 	first := b.Config.Resources.Jobs["my_first_job"]
