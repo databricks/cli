@@ -66,6 +66,8 @@ linters:
           msg: Use errors.Is(err, fs.ErrExist) instead.
         - pattern: 'os\.IsPermission'
           msg: Use errors.Is(err, fs.ErrPermission) instead.
+        - pattern: 'sync\.Once\b($|[^FV])'
+          msg: Use sync.OnceFunc, sync.OnceValue, or sync.OnceValues instead.
       analyze-types: true
     copyloopvar:
       check-alias: true
