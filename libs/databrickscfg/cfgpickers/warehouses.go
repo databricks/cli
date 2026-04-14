@@ -1,10 +1,11 @@
 package cfgpickers
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -86,12 +87,11 @@ func sortWarehousesByState(all []sql.EndpointInfo) []sql.EndpointInfo {
 		sql.StateStopped:  3,
 		sql.StateStopping: 4,
 	}
-	sort.Slice(warehouses, func(i, j int) bool {
-		pi, pj := priorities[warehouses[i].State], priorities[warehouses[j].State]
-		if pi != pj {
-			return pi < pj
+	slices.SortFunc(warehouses, func(a, b sql.EndpointInfo) int {
+		if n := cmp.Compare(priorities[a.State], priorities[b.State]); n != 0 {
+			return n
 		}
-		return strings.ToLower(warehouses[i].Name) < strings.ToLower(warehouses[j].Name)
+		return cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 	})
 
 	return warehouses
@@ -187,13 +187,16 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 	defaultId := warehouses[0].Id
 
 	// Sort by running state first, then alphabetically for display
-	sort.Slice(warehouses, func(i, j int) bool {
-		iRunning := warehouses[i].State == sql.StateRunning
-		jRunning := warehouses[j].State == sql.StateRunning
-		if iRunning != jRunning {
-			return iRunning
+	slices.SortFunc(warehouses, func(a, b sql.EndpointInfo) int {
+		aRunning := a.State == sql.StateRunning
+		bRunning := b.State == sql.StateRunning
+		if aRunning != bRunning {
+			if aRunning {
+				return -1
+			}
+			return 1
 		}
-		return strings.ToLower(warehouses[i].Name) < strings.ToLower(warehouses[j].Name)
+		return cmp.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
 	})
 
 	// Build options for the picker (● = running, ○ = not running)

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"reflect"
 	"slices"
-	"sort"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -90,7 +89,7 @@ func walkValue(path *structpath.PathNode, val reflect.Value, field *reflect.Stru
 		for _, k := range val.MapKeys() {
 			keys = append(keys, k.String())
 		}
-		sort.Strings(keys)
+		slices.Sort(keys)
 		for _, ks := range keys {
 			v := val.MapIndex(reflect.ValueOf(ks))
 			node := structpath.NewBracketString(path, ks)

@@ -1,8 +1,9 @@
 package validate
 
 import (
+	"cmp"
 	"context"
-	"sort"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -99,20 +100,17 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 
 		// Sort the locations and paths for consistent error messages. This helps
 		// with unit testing.
-		sort.Slice(v.locations, func(i, j int) bool {
-			l1 := v.locations[i]
-			l2 := v.locations[j]
-
-			if l1.File != l2.File {
-				return l1.File < l2.File
+		slices.SortFunc(v.locations, func(a, b dyn.Location) int {
+			if n := cmp.Compare(a.File, b.File); n != 0 {
+				return n
 			}
-			if l1.Line != l2.Line {
-				return l1.Line < l2.Line
+			if n := cmp.Compare(a.Line, b.Line); n != 0 {
+				return n
 			}
-			return l1.Column < l2.Column
+			return cmp.Compare(a.Column, b.Column)
 		})
-		sort.Slice(v.paths, func(i, j int) bool {
-			return v.paths[i].String() < v.paths[j].String()
+		slices.SortFunc(v.paths, func(a, b dyn.Path) int {
+			return cmp.Compare(a.String(), b.String())
 		})
 
 		// If there are multiple resources with the same key, report an error.

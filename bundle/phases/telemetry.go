@@ -1,9 +1,9 @@
 package phases
 
 import (
+	"cmp"
 	"context"
 	"slices"
-	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -18,8 +18,8 @@ func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 	executionTimes := b.Metrics.ExecutionTimes
 
 	// Sort the execution times in descending order.
-	sort.Slice(executionTimes, func(i, j int) bool {
-		return executionTimes[i].Value > executionTimes[j].Value
+	slices.SortFunc(executionTimes, func(a, b protos.IntMapEntry) int {
+		return cmp.Compare(b.Value, a.Value)
 	})
 
 	// Keep only the top 250 execution times. This keeps the telemetry event
