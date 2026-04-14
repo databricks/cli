@@ -1,10 +1,9 @@
 package process
 
 import (
-	"context"
 	"os/exec"
 	"runtime"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -18,7 +17,7 @@ func TestWithEnvs(t *testing.T) {
 		// /bin/sh -c echo $FOO $BAR:  exec: "/bin/sh": file does not exist
 		t.SkipNow()
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx2 := env.Set(ctx, "FOO", "foo")
 	res, err := Background(ctx2, []string{"/bin/sh", "-c", "echo $FOO $BAR"}, WithEnvs(map[string]string{
 		"BAR": "delirium",
@@ -29,7 +28,7 @@ func TestWithEnvs(t *testing.T) {
 
 func TestWorksWithLibsEnv(t *testing.T) {
 	testutil.CleanupEnvironment(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cmd := &exec.Cmd{}
 	err := WithEnvs(map[string]string{
@@ -39,7 +38,7 @@ func TestWorksWithLibsEnv(t *testing.T) {
 	assert.NoError(t, err)
 
 	vars := cmd.Environ()
-	sort.Strings(vars)
+	slices.Sort(vars)
 
 	assert.GreaterOrEqual(t, len(vars), 2)
 	assert.Equal(t, "CCC=DDD", vars[0])

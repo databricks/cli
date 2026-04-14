@@ -1,114 +1,148 @@
-package mcp
+package aitools
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
-	"time"
+	"strings"
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
-	"github.com/databricks/cli/libs/agent"
+	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
 func newInstallCmd() *cobra.Command {
+	var skillsFlag, agentsFlag string
+	var includeExperimental bool
+	var projectFlag, globalFlag bool
+
 	cmd := &cobra.Command{
 		Use:   "install",
-		Short: "Install the Databricks AI Tools MCP server in coding agents",
-		Long:  `Install the Databricks AI Tools MCP server in coding agents like Claude Code and Cursor.`,
+		Short: "Install AI skills for coding agents",
+		Long: `Install Databricks AI skills for detected coding agents.
+
+By default, skills are installed globally to each agent's skills directory.
+Use --project to install to the current project directory instead.
+When multiple agents are detected, skills are stored in a canonical location
+and symlinked to each agent to avoid duplication.
+
+Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runInstall(cmd.Context())
+			ctx := cmd.Context()
+
+			// Resolve scope.
+			scope, err := resolveScopeWithPrompt(ctx, projectFlag, globalFlag)
+			if err != nil {
+				return err
+			}
+
+			// Resolve target agents.
+			var targetAgents []*agents.Agent
+			if agentsFlag != "" {
+				targetAgents, err = resolveAgentNames(ctx, agentsFlag)
+				if err != nil {
+					return err
+				}
+			} else {
+				detected := agents.DetectInstalled(ctx)
+				if len(detected) == 0 {
+					printNoAgentsMessage(ctx)
+					return nil
+				}
+
+				// For project scope, pre-filter to compatible agents before prompting.
+				if scope == installer.ScopeProject {
+					detected = filterProjectScopeAgents(detected)
+					if len(detected) == 0 {
+						return errors.New("no detected agents support project-scoped skills")
+					}
+				}
+
+				switch {
+				case len(detected) == 1:
+					targetAgents = detected
+				case cmdio.IsPromptSupported(ctx):
+					targetAgents, err = promptAgentSelection(ctx, detected)
+					if err != nil {
+						return err
+					}
+				default:
+					targetAgents = detected
+				}
+			}
+
+			// Build install options.
+			opts := installer.InstallOptions{
+				IncludeExperimental: includeExperimental,
+				Scope:               scope,
+			}
+			opts.SpecificSkills = splitAndTrim(skillsFlag)
+
+			installer.PrintInstallingFor(ctx, targetAgents)
+
+			src := &installer.GitHubManifestSource{}
+			return installSkillsForAgentsFn(ctx, src, targetAgents, opts)
 		},
 	}
 
+	cmd.Flags().StringVar(&skillsFlag, "skills", "", "Specific skills to install (comma-separated)")
+	cmd.Flags().StringVar(&agentsFlag, "agents", "", "Agents to install for (comma-separated, e.g. claude-code,cursor)")
+	cmd.Flags().BoolVar(&includeExperimental, "experimental", false, "Include experimental skills")
+	cmd.Flags().BoolVar(&projectFlag, "project", false, "Install to project directory (cwd)")
+	cmd.Flags().BoolVar(&globalFlag, "global", false, "Install globally (default)")
 	return cmd
 }
 
-func runInstall(ctx context.Context) error {
-	// Check for non-interactive mode with agent detection
-	// If running in an AI agent, install automatically without prompts
-	if !cmdio.IsPromptSupported(ctx) {
-		var targetAgent *agents.Agent
-		switch agent.Product(ctx) {
-		case agent.ClaudeCode:
-			targetAgent = agents.GetByName("claude-code")
-		case agent.Cursor:
-			targetAgent = agents.GetByName("cursor")
-		}
-
-		if targetAgent != nil && targetAgent.InstallMCP != nil {
-			if err := targetAgent.InstallMCP(); err != nil {
-				return err
-			}
-			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for %s", targetAgent.DisplayName))
-			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart %s for changes to take effect", targetAgent.DisplayName))
-			return nil
-		}
-		// Unknown agent in non-interactive mode - show manual instructions
-		return agents.ShowCustomInstructions(ctx)
-	}
-
-	cmdio.LogString(ctx, "")
-	green := color.New(color.FgGreen).SprintFunc()
-	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  Experimental Databricks AI Tools MCP server")
-	cmdio.LogString(ctx, " "+green("[")+"██▌  ▐██"+green("]"))
-	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  AI-powered Databricks development and exploration")
-	cmdio.LogString(ctx, "")
-
-	yellow := color.New(color.FgYellow).SprintFunc()
-	cmdio.LogString(ctx, yellow("════════════════════════════════════════════════════════════════"))
-	cmdio.LogString(ctx, yellow("  ⚠️  EXPERIMENTAL: This command may change in future versions  "))
-	cmdio.LogString(ctx, yellow("════════════════════════════════════════════════════════════════"))
-	cmdio.LogString(ctx, "")
-
-	cmdio.LogString(ctx, "Which coding agents would you like to install the MCP server for?")
-	cmdio.LogString(ctx, "")
-
-	anySuccess := false
-
-	// Install for agents that have MCP support
+// resolveAgentNames parses a comma-separated list of agent names and validates
+// them against the registry. Returns an error for unrecognized names.
+func resolveAgentNames(ctx context.Context, names string) ([]*agents.Agent, error) {
+	available := make(map[string]*agents.Agent, len(agents.Registry))
+	var availableNames []string
 	for i := range agents.Registry {
 		a := &agents.Registry[i]
-		if a.InstallMCP == nil {
+		available[a.Name] = a
+		availableNames = append(availableNames, a.Name)
+	}
+
+	var result []*agents.Agent
+	seen := make(map[string]bool)
+	for _, name := range strings.Split(names, ",") {
+		name = strings.TrimSpace(name)
+		if name == "" || seen[name] {
 			continue
 		}
-
-		ans, err := cmdio.AskSelect(ctx, fmt.Sprintf("Install for %s?", a.DisplayName), []string{"yes", "no"})
-		if err != nil {
-			return err
+		seen[name] = true
+		agent, ok := available[name]
+		if !ok {
+			return nil, fmt.Errorf("unknown agent %q. Available agents: %s", name, strings.Join(availableNames, ", "))
 		}
-		if ans == "yes" {
-			fmt.Fprintf(os.Stderr, "Installing MCP server for %s...", a.DisplayName)
-			if err := a.InstallMCP(); err != nil {
-				fmt.Fprint(os.Stderr, "\r"+color.YellowString("⊘ Skipped %s: %s", a.DisplayName, err.Error())+"\n")
-			} else {
-				// Brief delay so users see the "Installing..." message before it's replaced
-				time.Sleep(500 * time.Millisecond)
-				fmt.Fprint(os.Stderr, "\r"+color.GreenString("✓ Installed for %s", a.DisplayName)+"                 \n")
-				anySuccess = true
-			}
-			cmdio.LogString(ctx, "")
-		}
+		result = append(result, agent)
 	}
 
-	ans, err := cmdio.AskSelect(ctx, "Show manual installation instructions for other agents?", []string{"yes", "no"})
-	if err != nil {
-		return err
+	if len(result) == 0 {
+		return nil, errors.New("no agents specified")
 	}
-	if ans == "yes" {
-		if err := agents.ShowCustomInstructions(ctx); err != nil {
-			return err
+	return result, nil
+}
+
+// filterProjectScopeAgents returns only agents that support project-scoped skills.
+func filterProjectScopeAgents(detected []*agents.Agent) []*agents.Agent {
+	var compatible []*agents.Agent
+	for _, a := range detected {
+		if a.SupportsProjectScope {
+			compatible = append(compatible, a)
 		}
 	}
+	return compatible
+}
 
-	if anySuccess {
-		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "You can now use your coding agent to interact with Databricks.")
-		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Try asking: "+color.YellowString("Create a Databricks app that calculates taxi trip metrics: average fare by distance bracket and time of day."))
-	}
-
-	return nil
+// printNoAgentsMessage prints the "no agents detected" message.
+func printNoAgentsMessage(ctx context.Context) {
+	cmdio.LogString(ctx, color.YellowString("No supported coding agents detected."))
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity")
+	cmdio.LogString(ctx, "Please install at least one coding agent first.")
 }

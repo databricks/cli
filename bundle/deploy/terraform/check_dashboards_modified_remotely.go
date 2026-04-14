@@ -21,13 +21,12 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDep
 	var state ExportedResourcesMap
 	var err error
 	if directDeployment {
-		_, localPath := b.StateFilenameDirect(ctx)
-		state, err = b.DeploymentBundle.ExportState(ctx, localPath)
+		state = b.DeploymentBundle.ExportState(ctx)
 	} else {
 		state, err = ParseResourcesState(ctx, b)
-	}
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var dashboards []dashboardState

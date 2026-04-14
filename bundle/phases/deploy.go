@@ -103,7 +103,14 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if targetEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(false))
+		// Finalize state: write to disk even if deploy failed, so partial progress is saved.
+		// Skip for empty plans to avoid creating a state file when nothing was deployed.
+		if len(plan.Plan) > 0 {
+			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
+				logdiag.LogError(ctx, err)
+			}
+		}
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
@@ -178,8 +185,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	if plan != nil {
 		// Initialize DeploymentBundle for applying the loaded plan
-		_, localPath := b.StateFilenameDirect(ctx)
-		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(), localPath, plan)
+		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(), plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -208,14 +214,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	logDeployTelemetry(ctx, b)
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
 	if engine.IsDirect() {
-		_, localPath := b.StateFilenameDirect(ctx)
-		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, localPath)
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

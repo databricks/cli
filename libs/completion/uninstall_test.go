@@ -1,6 +1,7 @@
 package completion
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -110,7 +111,7 @@ func TestUninstallFish(t *testing.T) {
 	assert.Equal(t, fishPath, filePath)
 
 	_, err = os.Stat(fishPath)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestUninstallFishForeignFile(t *testing.T) {
@@ -143,7 +144,7 @@ func TestInstallThenUninstallRoundTrip(t *testing.T) {
 	original := "# my zsh config\nexport FOO=bar\n"
 	require.NoError(t, os.WriteFile(rcPath, []byte(original), 0o644))
 
-	_, _, err := Install(Zsh, home)
+	_, _, err := Install(t.Context(), Zsh, home)
 	require.NoError(t, err)
 
 	content, err := os.ReadFile(rcPath)

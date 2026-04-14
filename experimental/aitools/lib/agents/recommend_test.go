@@ -28,12 +28,12 @@ func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return agentDir, nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return agentDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	err := RecommendSkillsInstall(ctx, noopInstall)
 	assert.NoError(t, err)
 }
@@ -45,7 +45,7 @@ func TestRecommendSkillsInstallSkipsWhenNoAgents(t *testing.T) {
 	Registry = []Agent{}
 	defer func() { Registry = origRegistry }()
 
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 	err := RecommendSkillsInstall(ctx, noopInstall)
 	assert.NoError(t, err)
 }
@@ -59,12 +59,12 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return tmpDir, nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return tmpDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	ctx, stderr := cmdio.NewTestContextWithStderr(context.Background())
+	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
 	err := RecommendSkillsInstall(ctx, noopInstall)
 	require.NoError(t, err)
 	assert.Contains(t, stderr.String(), "databricks experimental aitools skills install")
@@ -79,12 +79,12 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return tmpDir, nil },
+			ConfigDir:   func(_ context.Context) (string, error) { return tmpDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	ctx, testIO := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
+	ctx, testIO := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	defer testIO.Done()
 
 	// Drain stderr so the prompt write doesn't block.

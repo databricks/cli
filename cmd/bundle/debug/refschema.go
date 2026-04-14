@@ -3,15 +3,15 @@ package debug
 import (
 	"fmt"
 	"io"
+	"maps"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ func dumpRemoteSchemas(out io.Writer) error {
 		return fmt.Errorf("failed to initialize adapters: %w", err)
 	}
 
-	for _, resourceName := range utils.SortedKeys(adapters) {
+	for _, resourceName := range slices.Sorted(maps.Keys(adapters)) {
 		adapter := adapters[resourceName]
 
 		var resourcePrefix string
@@ -67,8 +67,12 @@ func dumpRemoteSchemas(out io.Writer) error {
 				if path == nil {
 					return true
 				}
-				p := path.String()
-				p = strings.TrimPrefix(p, ".")
+				p := strings.TrimPrefix(path.String(), ".")
+				// permissions and grants are separate sub-resource adapters; skip them here.
+				if p == "permissions" || strings.HasPrefix(p, "permissions.") || strings.HasPrefix(p, "permissions[") ||
+					p == "grants" || strings.HasPrefix(p, "grants.") || strings.HasPrefix(p, "grants[") {
+					return false
+				}
 				t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
 				byType, ok := pathTypes[p]
 				if !ok {
@@ -96,15 +100,19 @@ func dumpRemoteSchemas(out io.Writer) error {
 		}
 
 		var lines []string
-		for _, p := range utils.SortedKeys(pathTypes) {
+		for _, p := range slices.Sorted(maps.Keys(pathTypes)) {
 			byType := pathTypes[p]
-			for _, t := range utils.SortedKeys(byType) {
+			for _, t := range slices.Sorted(maps.Keys(byType)) {
 				info := formatTags(byType[t])
-				lines = append(lines, fmt.Sprintf("%s.%s\t%s\t%s\n", resourcePrefix, p, t, info))
+				sep := "."
+				if strings.HasPrefix(p, "[") {
+					sep = ""
+				}
+				lines = append(lines, fmt.Sprintf("%s%s%s\t%s\t%s\n", resourcePrefix, sep, p, t, info))
 			}
 		}
 
-		sort.Strings(lines)
+		slices.Sort(lines)
 		for _, l := range lines {
 			fmt.Fprint(out, l)
 		}
@@ -117,5 +125,5 @@ func formatTags(sources map[string]struct{}) string {
 	if len(sources) == 3 {
 		return "ALL"
 	}
-	return strings.Join(utils.SortedKeys(sources), "\t")
+	return strings.Join(slices.Sorted(maps.Keys(sources)), "\t")
 }

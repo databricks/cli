@@ -1,7 +1,6 @@
 package cmdctx
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
@@ -12,7 +11,7 @@ func TestCommandConfigUsed(t *testing.T) {
 	cfg := &config.Config{
 		Host: "https://test.com",
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Panic if ConfigUsed is called before SetConfigUsed.
 	assert.Panics(t, func() {

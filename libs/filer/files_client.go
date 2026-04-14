@@ -1,6 +1,7 @@
 package filer
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -10,7 +11,6 @@ import (
 	"net/url"
 	"path"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -326,8 +326,8 @@ func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {
 	// Delete the directories in reverse order to ensure that the parent
 	// directories are deleted after the children. This is possible because
 	// fs.WalkDir walks the directories in lexicographical order.
-	for i := len(dirsToDelete) - 1; i >= 0; i-- {
-		err := w.deleteDirectory(ctx, dirsToDelete[i])
+	for _, dir := range slices.Backward(dirsToDelete) {
+		err := w.deleteDirectory(ctx, dir)
 		if err != nil {
 			return err
 		}
@@ -381,7 +381,7 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 		}
 
 		// Sort by name for parity with os.ReadDir.
-		sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+		slices.SortFunc(entries, func(a, b fs.DirEntry) int { return cmp.Compare(a.Name(), b.Name()) })
 		return entries, nil
 	}
 

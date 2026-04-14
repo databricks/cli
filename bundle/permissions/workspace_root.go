@@ -37,7 +37,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 	var permissions []workspace.WorkspaceObjectAccessControlRequest
 
 	for _, p := range b.Config.Permissions {
-		level, err := GetWorkspaceObjectPermissionLevel(p.Level)
+		level, err := GetWorkspaceObjectPermissionLevel(string(p.Level))
 		if err != nil {
 			return err
 		}

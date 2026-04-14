@@ -206,7 +206,7 @@ func generateSchema(workdir, outputFile string, docsMode bool) {
 	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
 	// Input file, the databricks openapi spec.
-	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC")
+	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC") //nolint:forbidigo // main() entry point, no ctx
 	if inputFile != "" {
 		p, err := newParser(inputFile)
 		if err != nil {

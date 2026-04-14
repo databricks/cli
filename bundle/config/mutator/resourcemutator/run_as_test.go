@@ -1,7 +1,6 @@
 package resourcemutator
 
 import (
-	"context"
 	"slices"
 	"testing"
 
@@ -119,7 +118,7 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 		Config: config,
 	}
 
-	diags := bundle.Apply(context.Background(), b, SetRunAs())
+	diags := bundle.Apply(t.Context(), b, SetRunAs())
 	assert.NoError(t, diags.Error())
 
 	for _, job := range b.Config.Resources.Jobs {
@@ -165,6 +164,7 @@ var allowList = []string{
 	"alerts",
 	"catalogs",
 	"clusters",
+	"dashboards",
 	"database_catalogs",
 	"database_instances",
 	"external_locations",
@@ -229,7 +229,7 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		b := &bundle.Bundle{
 			Config: *r,
 		}
-		diags := bundle.Apply(context.Background(), b, SetRunAs())
+		diags := bundle.Apply(t.Context(), b, SetRunAs())
 		require.Error(t, diags.Error())
 		assert.Contains(t, diags.Error().Error(), "do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: alice. Run as identity: bob.\n"+
@@ -283,7 +283,7 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 		b := &bundle.Bundle{
 			Config: *r,
 		}
-		diags := bundle.Apply(context.Background(), b, SetRunAs())
+		diags := bundle.Apply(t.Context(), b, SetRunAs())
 		require.NoError(t, diags.Error())
 	}
 }

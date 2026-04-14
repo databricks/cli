@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 var (
@@ -64,6 +65,10 @@ var (
 			permissions.CAN_RUN:    "CAN_MONITOR",
 		},
 		"database_instances": {
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_USE",
+		},
+		"postgres_projects": {
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_USE",
 		},
@@ -147,7 +152,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 func validatePermissions(b *bundle.Bundle) error {
 	for _, p := range b.Config.Permissions {
-		if !slices.Contains(allowedLevels, p.Level) {
+		if !slices.Contains(allowedLevels, string(p.Level)) {
 			return fmt.Errorf("invalid permission level: %s, allowed values: [%s]", p.Level, strings.Join(allowedLevels, ", "))
 		}
 	}
@@ -168,7 +173,7 @@ func convertPermissions(
 ) []resources.Permission {
 	var permissions []resources.Permission
 	for _, p := range bundlePermissions {
-		level, ok := lm[p.Level]
+		level, ok := lm[string(p.Level)]
 		// If there is no bundle permission level defined in the map, it means
 		// it's not applicable for the resource, therefore skipping
 		if !ok {
@@ -180,7 +185,7 @@ func convertPermissions(
 		}
 
 		permissions = append(permissions, resources.Permission{
-			Level:                level,
+			Level:                iam.PermissionLevel(level),
 			UserName:             p.UserName,
 			GroupName:            p.GroupName,
 			ServicePrincipalName: p.ServicePrincipalName,

@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	ignore "github.com/sabhiram/go-gitignore"
@@ -36,7 +37,7 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
-	appkitDefaultVersion = "template-v0.11.0"
+	appkitDefaultVersion = "template-v0.20.3"
 	defaultProfile       = "DEFAULT"
 )
 
@@ -227,7 +228,8 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 		rv[resourceKey+"."+fieldName] = value
 	}
 
-	// Validate multi-field resources: if any field is set, all fields must be set.
+	// Validate multi-field resources: if any user-provided field is set, all user-provided fields must be set.
+	// Fields with BundleIgnore or LocalOnly are auto-populated and exempt from this check.
 	for _, p := range m.GetPlugins() {
 		for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
 			if len(r.Fields) <= 1 {
@@ -235,14 +237,22 @@ func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string
 			}
 			names := r.FieldNames()
 			setCount := 0
+			totalCheckable := 0
 			for _, fn := range names {
+				if r.Fields[fn].BundleIgnore || r.Fields[fn].LocalOnly {
+					continue
+				}
+				totalCheckable++
 				if rv[r.Key()+"."+fn] != "" {
 					setCount++
 				}
 			}
-			if setCount > 0 && setCount < len(names) {
+			if setCount > 0 && setCount < totalCheckable {
 				var missing []string
 				for _, fn := range names {
+					if r.Fields[fn].BundleIgnore || r.Fields[fn].LocalOnly {
+						continue
+					}
 					if rv[r.Key()+"."+fn] == "" {
 						missing = append(missing, r.Key()+"."+fn)
 					}
@@ -329,6 +339,14 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 	}
 	theme := prompt.AppkitTheme()
 
+	// Eagerly start fetching resources for ALL plugins in the background.
+	// This runs while the user is selecting plugins, so by the time resource
+	// pickers appear the data is likely already cached.
+	allPluginNames := m.GetPluginNames()
+	allPossibleResources := m.CollectResources(allPluginNames)
+	allPossibleResources = append(allPossibleResources, m.CollectOptionalResources(allPluginNames)...)
+	ctx = prompt.PrefetchResources(ctx, allPossibleResources)
+
 	// Step 1: Plugin selection (skip if plugins already provided via flag)
 	selectablePlugins := m.GetSelectablePlugins()
 	if len(config.Features) == 0 && len(selectablePlugins) > 0 {
@@ -361,8 +379,11 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 	// Always include mandatory plugins.
 	config.Features = appendUnique(config.Features, m.GetMandatoryPluginNames()...)
 
-	// Step 2: Prompt for required plugin resource dependencies
+	// Collect resources for the user's actual selection.
 	resources := m.CollectResources(config.Features)
+	optionalResources := m.CollectOptionalResources(config.Features)
+
+	// Step 2: Prompt for required plugin resource dependencies
 	for _, r := range resources {
 		values, err := promptForResource(ctx, r, theme, true)
 		if err != nil {
@@ -374,7 +395,6 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 	}
 
 	// Step 3: Prompt for optional plugin resource dependencies
-	optionalResources := m.CollectOptionalResources(config.Features)
 	for _, r := range optionalResources {
 		values, err := promptForResource(ctx, r, theme, false)
 		if err != nil {
@@ -490,43 +510,193 @@ func cloneRepo(ctx context.Context, repoURL, branch string) (string, error) {
 	return tempDir, nil
 }
 
-// resolveTemplate resolves a template path, handling both local paths and GitHub URLs.
-// branch is used for cloning (can contain "/" for feature branches).
-// subdir is an optional subdirectory within the repo to use (for default appkit template).
-// Returns the local path to use, a cleanup function (for temp dirs), and any error.
-func resolveTemplate(ctx context.Context, templatePath, branch, subdir string) (localPath string, cleanup func(), err error) {
-	// Case 1: Local path - return as-is
+// resolveTemplate resolves a template synchronously with a spinner.
+// Used by commands that don't benefit from background cloning (e.g., manifest).
+func resolveTemplate(ctx context.Context, templatePath, branch, subdir string) (string, func(), error) {
+	ch := resolveTemplateAsync(ctx, templatePath, branch, subdir)
+	return awaitTemplate(ctx, ch)
+}
+
+// templateResult holds the outcome of a background template resolution.
+type templateResult struct {
+	path    string
+	cleanup func()
+	err     error
+}
+
+// resolveTemplateAsync starts resolving the template in a background goroutine.
+// For local paths this completes immediately; for GitHub URLs it clones the repo.
+// The caller reads the result from the returned channel, optionally showing a
+// spinner if the clone hasn't finished by the time it's needed.
+func resolveTemplateAsync(ctx context.Context, templatePath, branch, subdir string) <-chan templateResult {
+	ch := make(chan templateResult, 1)
+
+	// Local path — instant.
 	if !strings.HasPrefix(templatePath, "https://") {
-		return templatePath, nil, nil
+		ch <- templateResult{path: templatePath}
+		return ch
 	}
 
-	// Case 2: GitHub URL - parse and clone
 	repoURL, urlSubdir, urlBranch := git.ParseGitHubURL(templatePath)
 	if branch == "" {
-		branch = urlBranch // Use branch from URL if not overridden by flag
+		branch = urlBranch
 	}
 	if subdir == "" {
-		subdir = urlSubdir // Use subdir from URL if not overridden
+		subdir = urlSubdir
 	}
 
-	// Clone to temp dir with spinner
-	var tempDir string
-	err = prompt.RunWithSpinnerCtx(ctx, "Cloning template...", func() error {
-		var cloneErr error
-		tempDir, cloneErr = cloneRepo(ctx, repoURL, branch)
-		return cloneErr
-	})
+	go func() {
+		tempDir, err := cloneRepo(ctx, repoURL, branch)
+		if err != nil {
+			ch <- templateResult{err: err}
+			return
+		}
+		cleanup := func() { os.RemoveAll(tempDir) }
+		localPath := tempDir
+		if subdir != "" {
+			localPath = filepath.Join(tempDir, subdir)
+		}
+		ch <- templateResult{path: localPath, cleanup: cleanup}
+	}()
+
+	return ch
+}
+
+// awaitTemplate waits for the background clone to finish.
+// If the result is already available it returns immediately with a
+// checkmark; otherwise it shows a spinner while waiting.
+func awaitTemplate(ctx context.Context, ch <-chan templateResult) (string, func(), error) {
+	select {
+	case res := <-ch:
+		// Clone finished while the user was typing — print completion.
+		if res.err == nil && res.cleanup != nil {
+			prompt.PrintDone(ctx, "Template cloned")
+		}
+		return res.path, res.cleanup, res.err
+	default:
+		// Still cloning — show a spinner for the remaining wait.
+		var res templateResult
+		err := prompt.RunWithSpinnerCtx(ctx, "Cloning template...", func() error {
+			res = <-ch
+			return res.err
+		})
+		return res.path, res.cleanup, err
+	}
+}
+
+// findProjectSrcDir locates the actual source directory inside a template.
+// Templates may nest their content inside a {{.project_name}} directory.
+func findProjectSrcDir(templateDir string) string {
+	entries, err := os.ReadDir(templateDir)
 	if err != nil {
-		return "", nil, err
+		return templateDir
+	}
+	for _, e := range entries {
+		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
+			return filepath.Join(templateDir, e.Name())
+		}
+	}
+	return templateDir
+}
+
+// startBackgroundNpmInstall copies the package files from the template into
+// destDir and launches `npm ci` in the background. The caller should await
+// the returned channel BEFORE writing other files to destDir to prevent
+// concurrent writes. Returns nil if the template is not a Node.js project
+// or npm is not available.
+//
+// IMPORTANT: All reads from srcProjectDir happen synchronously before the
+// goroutine launches. The template directory may be cleaned up after this
+// function returns, so file reads must not be deferred to the goroutine.
+func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, projectName string) <-chan error {
+	lockFile := filepath.Join(srcProjectDir, "package-lock.json")
+	if _, err := os.Stat(lockFile); err != nil {
+		return nil
 	}
 
-	cleanup = func() { os.RemoveAll(tempDir) }
-
-	// Return path to subdirectory if specified
-	if subdir != "" {
-		return filepath.Join(tempDir, subdir), cleanup, nil
+	if _, err := exec.LookPath("npm"); err != nil {
+		return nil
 	}
-	return tempDir, cleanup, nil
+
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		log.Warnf(ctx, "Failed to create %s: %v, skipping background npm install", destDir, err)
+		return nil
+	}
+
+	// Copy package.json (apply template substitution so the file is valid JSON)
+	// and package-lock.json (no template vars — copy raw).
+	var pkgWritten bool
+	for _, name := range []string{"package.json", "package.json.tmpl"} {
+		src := filepath.Join(srcProjectDir, name)
+		content, err := os.ReadFile(src)
+		if err != nil {
+			continue
+		}
+		minVars := templateData(templateVars{
+			ProjectName:    projectName,
+			AppDescription: prompt.DefaultAppDescription,
+			Plugins:        make(map[string]*pluginVar),
+		})
+		tmpl, err := template.New(name).Option("missingkey=zero").Parse(string(content))
+		if err != nil {
+			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644) == nil
+			break
+		}
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, minVars); err != nil {
+			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644) == nil
+			break
+		}
+		pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), buf.Bytes(), 0o644) == nil
+		break
+	}
+
+	if !pkgWritten {
+		log.Warnf(ctx, "Failed to write package.json to %s, skipping background npm install", destDir)
+		return nil
+	}
+
+	// Copy package-lock.json raw (never has template vars).
+	lockData, err := os.ReadFile(lockFile)
+	if err != nil {
+		log.Warnf(ctx, "Failed to read package-lock.json: %v, skipping background npm install", err)
+		return nil
+	}
+	if err := os.WriteFile(filepath.Join(destDir, "package-lock.json"), lockData, 0o644); err != nil {
+		log.Warnf(ctx, "Failed to write package-lock.json: %v, skipping background npm install", err)
+		return nil
+	}
+
+	ch := make(chan error, 1)
+	go func() {
+		cmd := exec.CommandContext(ctx, "npm", "ci", "--no-audit", "--no-fund", "--prefer-offline")
+		cmd.Dir = destDir
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+		ch <- cmd.Run()
+	}()
+
+	log.Debugf(ctx, "Started background npm install in %s", destDir)
+	return ch
+}
+
+// awaitBackgroundNpmInstall waits for the background npm install to complete.
+// Shows an instant checkmark if already done, or a spinner for the remainder.
+func awaitBackgroundNpmInstall(ctx context.Context, ch <-chan error) error {
+	select {
+	case err := <-ch:
+		if err == nil {
+			prompt.PrintDone(ctx, "Dependencies installed")
+		}
+		return err
+	default:
+		var installErr error
+		err := prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
+			installErr = <-ch
+			return installErr
+		})
+		return err
+	}
 }
 
 func runCreate(ctx context.Context, opts createOptions) error {
@@ -544,7 +714,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Resolve template path (supports local paths and GitHub URLs)
 	templateSrc := opts.templatePath
 	if templateSrc == "" {
-		templateSrc = os.Getenv(templatePathEnvVar)
+		templateSrc = env.Get(ctx, templatePathEnvVar)
 	}
 
 	// Resolve the git reference (branch/tag) to use for default appkit template
@@ -564,8 +734,25 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		templateSrc = appkitRepoURL
 	}
 
-	// Step 1: Get project name first (needed before we can check destination)
-	// Determine output directory for validation
+	// Start cloning in the background so it runs while the user types the name.
+	branchForClone := opts.branch
+	subdirForClone := ""
+	if usingDefaultTemplate {
+		branchForClone = gitRef
+		subdirForClone = appkitTemplateDir
+	}
+	templateCh := resolveTemplateAsync(ctx, templateSrc, branchForClone, subdirForClone)
+	defer func() {
+		select {
+		case res := <-templateCh:
+			if res.cleanup != nil {
+				res.cleanup()
+			}
+		default:
+		}
+	}()
+
+	// Step 1: Get project name (clone runs in parallel for remote templates)
 	destDir := opts.name
 	if opts.outputDir != "" {
 		destDir = filepath.Join(opts.outputDir, opts.name)
@@ -575,19 +762,16 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if !isInteractive {
 			return errors.New("--name is required in non-interactive mode")
 		}
-		// Prompt includes validation for name format AND directory existence
 		name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
 		if err != nil {
 			return err
 		}
 		opts.name = name
-		// Update destDir with the actual name
 		destDir = opts.name
 		if opts.outputDir != "" {
 			destDir = filepath.Join(opts.outputDir, opts.name)
 		}
 	} else {
-		// Non-interactive mode: validate name and directory existence
 		if err := prompt.ValidateProjectName(opts.name); err != nil {
 			return err
 		}
@@ -596,16 +780,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
-	// Step 2: Resolve template (handles GitHub URLs by cloning)
-	// For custom templates, --branch can override the URL's branch
-	// For default appkit template, pass gitRef directly (supports branches with "/" in name)
-	branchForClone := opts.branch
-	subdirForClone := ""
-	if usingDefaultTemplate {
-		branchForClone = gitRef
-		subdirForClone = appkitTemplateDir
-	}
-	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, branchForClone, subdirForClone)
+	// Step 2: Wait for template (may already be done if the user took time typing the name)
+	resolvedPath, cleanup, err := awaitTemplate(ctx, templateCh)
 	if err != nil {
 		return err
 	}
@@ -615,13 +791,18 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Check for generic subdirectory first (default for multi-template repos)
 	templateDir := filepath.Join(resolvedPath, "generic")
-	if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+	if _, err := os.Stat(templateDir); errors.Is(err, fs.ErrNotExist) {
 		// Fall back to the provided path directly
 		templateDir = resolvedPath
-		if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+		if _, err := os.Stat(templateDir); errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("template not found at %s (also checked %s/generic)", resolvedPath, resolvedPath)
 		}
 	}
+
+	// Start npm install in the background so it runs while the user answers prompts.
+	// This is a Node.js-only optimisation — non-Node templates skip this.
+	srcProjectDir := findProjectSrcDir(templateDir)
+	npmInstallCh := startBackgroundNpmInstall(ctx, srcProjectDir, destDir, opts.name)
 
 	// Step 3: Load manifest from template (optional — templates without it skip plugin/resource logic)
 	var m *manifest.Manifest
@@ -707,9 +888,32 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
-	// In flags/non-interactive mode, validate that all required resources are provided.
+	// In flags/non-interactive mode, resolve derived values and validate resources.
 	if flagsMode || !isInteractive {
 		resources := m.CollectResources(selectedPlugins)
+
+		// Resolve derived values for resources that support it.
+		if resourceValues == nil {
+			resourceValues = make(map[string]string)
+		}
+		for _, r := range resources {
+			resolveFn, ok := prompt.GetResolveFunc(r.Type)
+			if !ok {
+				continue
+			}
+			resolved, err := resolveFn(ctx, r, resourceValues)
+			if err != nil {
+				log.Warnf(ctx, "Could not resolve derived values for %s: %v", r.Alias, err)
+				continue
+			}
+			for k, v := range resolved {
+				if resourceValues[k] == "" {
+					resourceValues[k] = v
+				}
+			}
+		}
+
+		// Validate that all required resources are provided.
 		for _, r := range resources {
 			found := false
 			for k := range resourceValues {
@@ -737,12 +941,12 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
-	// Track whether we started creating the project for cleanup on failure
+	// Track whether we started creating the project for cleanup on failure.
+	// The background npm install may have created destDir early.
 	var projectCreated bool
 	var runErr error
 	defer func() {
-		if runErr != nil && projectCreated {
-			// Clean up partially created project on failure
+		if runErr != nil && (projectCreated || npmInstallCh != nil) {
 			os.RemoveAll(destDir)
 		}
 	}()
@@ -808,6 +1012,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		Plugins: plugins,
 	}
 
+	// Await background npm install BEFORE copying the template so there are
+	// no concurrent writes to destDir. npm ci ran with the raw lock file; the
+	// dependency tree is determined entirely by package-lock.json which has no
+	// template variables, so the installed node_modules is valid.
+	if npmInstallCh != nil {
+		if err := awaitBackgroundNpmInstall(ctx, npmInstallCh); err != nil {
+			log.Warnf(ctx, "Background npm install failed: %v, will retry during project initialization", err)
+			os.RemoveAll(filepath.Join(destDir, "node_modules"))
+		}
+	}
+
 	// Copy template with variable substitution
 	var fileCount int
 	runErr = prompt.RunWithSpinnerCtx(ctx, "Creating project...", func() error {
@@ -826,7 +1041,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		absOutputDir = destDir
 	}
 
-	// Initialize project based on type (Node.js, Python, etc.)
+	// Initialize project based on type (Node.js, Python, etc.).
+	// For Node.js, if the background install succeeded node_modules exists
+	// and the initializer skips the redundant install step.
 	var nextStepsCmd string
 	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
 	if projectInitializer != nil {
@@ -871,7 +1088,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Recommend skills installation if coding agents are detected without skills.
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
-		if !agents.HasDatabricksSkillsInstalled() {
+		if !agents.HasDatabricksSkillsInstalled(ctx) {
 			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
 		}
 	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
@@ -892,10 +1109,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	if shouldDeploy {
 		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Deploying app...")
 		if err := runPostCreateDeploy(ctx, profile); err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("⚠ Deploy failed: %v", err))
 			cmdio.LogString(ctx, "  You can deploy manually with: databricks apps deploy")
+		} else {
+			prompt.PrintDone(ctx, "Deploy complete")
 		}
 	}
 
@@ -1186,8 +1404,8 @@ func removeEmptyDirs(root string) error {
 	if err != nil {
 		return err
 	}
-	for i := len(dirs) - 1; i >= 0; i-- {
-		_ = os.Remove(dirs[i])
+	for _, dir := range slices.Backward(dirs) {
+		_ = os.Remove(dir)
 	}
 	return nil
 }

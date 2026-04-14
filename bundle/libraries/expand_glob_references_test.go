@@ -1,7 +1,6 @@
 package libraries
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -66,7 +65,7 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
-	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
+	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
 
 	job := b.Config.Resources.Jobs["job"]
@@ -151,7 +150,7 @@ func TestGlobReferencesExpandedForForeachTaskLibraries(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
-	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
+	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
 
 	job := b.Config.Resources.Jobs["job"]
@@ -226,7 +225,7 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
-	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
+	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
 
 	job := b.Config.Resources.Jobs["job"]
@@ -280,7 +279,7 @@ func TestExpandGlobReferencesPreservesLocations(t *testing.T) {
 	loc := dyn.Location{File: filepath.Join(dir, "resource.yml"), Line: 10, Column: 5}
 	bundletest.SetLocation(b, ".", []dyn.Location{loc})
 
-	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
+	diags := bundle.Apply(t.Context(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
 
 	libs, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("resources.jobs.job.tasks[0].libraries"))

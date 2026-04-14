@@ -1,7 +1,6 @@
 package fs_test
 
 import (
-	"context"
 	"io/fs"
 	"path"
 	"strings"
@@ -21,10 +20,10 @@ func TestFsCat(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			f, tmpDir := testCase.setupFiler(t)
 
-			err := f.Write(context.Background(), "hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
+			err := f.Write(t.Context(), "hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
 			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "cat", path.Join(tmpDir, "hello.txt"))
@@ -41,10 +40,10 @@ func TestFsCatOnADir(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			f, tmpDir := testCase.setupFiler(t)
 
-			err := f.Mkdir(context.Background(), "dir1")
+			err := f.Mkdir(t.Context(), "dir1")
 			require.NoError(t, err)
 
 			_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "cat", path.Join(tmpDir, "dir1"))
@@ -60,7 +59,7 @@ func TestFsCatOnNonExistentFile(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			_, tmpDir := testCase.setupFiler(t)
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cat", path.Join(tmpDir, "non-existent-file"))
@@ -70,7 +69,7 @@ func TestFsCatOnNonExistentFile(t *testing.T) {
 }
 
 func TestFsCatForDbfsInvalidScheme(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cat", "dab:/non-existent-file")
 	assert.ErrorContains(t, err, "invalid scheme: dab")
 }

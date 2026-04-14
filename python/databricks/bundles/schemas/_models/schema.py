@@ -11,9 +11,9 @@ from databricks.bundles.core._variable import (
     VariableOrOptional,
 )
 from databricks.bundles.schemas._models.lifecycle import Lifecycle, LifecycleParam
-from databricks.bundles.schemas._models.schema_grant import (
-    SchemaGrant,
-    SchemaGrantParam,
+from databricks.bundles.schemas._models.privilege_assignment import (
+    PrivilegeAssignment,
+    PrivilegeAssignmentParam,
 )
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ class Schema(Resource):
     User-provided free-form text description.
     """
 
-    grants: VariableOrList[SchemaGrant] = field(default_factory=list)
+    grants: VariableOrList[PrivilegeAssignment] = field(default_factory=list)
 
     lifecycle: VariableOrOptional[Lifecycle] = None
     """
@@ -79,7 +79,7 @@ class SchemaDict(TypedDict, total=False):
     User-provided free-form text description.
     """
 
-    grants: VariableOrList[SchemaGrantParam]
+    grants: VariableOrList[PrivilegeAssignmentParam]
 
     lifecycle: VariableOrOptional[LifecycleParam]
     """

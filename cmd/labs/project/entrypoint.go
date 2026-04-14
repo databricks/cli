@@ -185,7 +185,7 @@ func (e *Entrypoint) getLoginConfig(cmd *cobra.Command) (*loginConfig, *config.C
 	if err != nil {
 		return nil, nil, err
 	}
-	if isNoLoginConfig && !e.IsBundleAware && e.isAuthConfigured(defaultConfig) {
+	if isNoLoginConfig && !e.IsBundleAware && e.isAuthConfigured(ctx, defaultConfig) {
 		log.Debugf(ctx, "Login is configured via environment variables")
 		return &loginConfig{}, defaultConfig, nil
 	}
@@ -291,8 +291,8 @@ func (e *Entrypoint) environmentFromConfig(cfg *config.Config) map[string]string
 	return env
 }
 
-func (e *Entrypoint) isAuthConfigured(cfg *config.Config) bool {
+func (e *Entrypoint) isAuthConfigured(ctx context.Context, cfg *config.Config) bool {
 	r := &http.Request{Header: http.Header{}}
-	err := cfg.Authenticate(r.WithContext(context.Background()))
+	err := cfg.Authenticate(r.WithContext(ctx))
 	return err == nil
 }

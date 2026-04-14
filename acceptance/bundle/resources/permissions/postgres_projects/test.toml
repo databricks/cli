@@ -1,0 +1,1 @@
+Env.RESOURCE = "postgres_projects"  # for ../_script

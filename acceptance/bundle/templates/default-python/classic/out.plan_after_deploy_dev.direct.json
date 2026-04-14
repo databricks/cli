@@ -314,6 +314,7 @@
         },
         "development": true,
         "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
         "environment": {
           "dependencies": [
             "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files"

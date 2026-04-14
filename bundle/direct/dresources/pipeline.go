@@ -20,6 +20,7 @@ type PipelineRemote struct {
 	ClusterId               string                              `json:"cluster_id,omitempty"`
 	CreatorUserName         string                              `json:"creator_user_name,omitempty"`
 	EffectiveBudgetPolicyId string                              `json:"effective_budget_policy_id,omitempty"`
+	EffectivePublishingMode pipelines.PublishingMode            `json:"effective_publishing_mode,omitempty"`
 	Health                  pipelines.GetPipelineResponseHealth `json:"health,omitempty"`
 	LastModified            int64                               `json:"last_modified,omitempty"`
 	LatestUpdates           []pipelines.UpdateStateInfo         `json:"latest_updates,omitempty"`
@@ -111,6 +112,7 @@ func makePipelineRemote(p *pipelines.GetPipelineResponse) *PipelineRemote {
 		ClusterId:               p.ClusterId,
 		CreatorUserName:         p.CreatorUserName,
 		EffectiveBudgetPolicyId: p.EffectiveBudgetPolicyId,
+		EffectivePublishingMode: p.EffectivePublishingMode,
 		Health:                  p.Health,
 		LastModified:            p.LastModified,
 		LatestUpdates:           p.LatestUpdates,
@@ -128,7 +130,7 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.Creat
 	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ Changes) (*PipelineRemote, error) {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ *PlanEntry) (*PipelineRemote, error) {
 	request := pipelines.EditPipeline{
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,

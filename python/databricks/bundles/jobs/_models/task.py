@@ -8,6 +8,7 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
+from databricks.bundles.jobs._models.alert_task import AlertTask, AlertTaskParam
 from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
     CleanRoomsNotebookTask,
     CleanRoomsNotebookTaskParam,
@@ -101,6 +102,11 @@ class Task:
     A unique name for the task. This field is used to refer to this task from other tasks.
     This field is required and must be unique within its parent job.
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
+    """
+
+    alert_task: VariableOrOptional[AlertTask] = None
+    """
+    New alert v2 task
     """
 
     clean_rooms_notebook_task: VariableOrOptional[CleanRoomsNotebookTask] = None
@@ -308,6 +314,11 @@ class TaskDict(TypedDict, total=False):
     A unique name for the task. This field is used to refer to this task from other tasks.
     This field is required and must be unique within its parent job.
     On Update or Reset, this field is used to reference the tasks to be updated or reset.
+    """
+
+    alert_task: VariableOrOptional[AlertTaskParam]
+    """
+    New alert v2 task
     """
 
     clean_rooms_notebook_task: VariableOrOptional[CleanRoomsNotebookTaskParam]

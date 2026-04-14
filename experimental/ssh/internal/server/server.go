@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -93,7 +94,11 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 
 	go handleTimeout(ctx, connections.TimedOut, opts.ShutdownDelay)
 
-	return http.ListenAndServe(listenAddr, nil)
+	return http.ListenAndServe(listenAddr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Normalize double slashes from the driver proxy (e.g. //metadata -> /metadata)
+		r.URL.Path = path.Clean(r.URL.Path)
+		http.DefaultServeMux.ServeHTTP(w, r)
+	}))
 }
 
 func serveMetadata(w http.ResponseWriter, r *http.Request) {

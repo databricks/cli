@@ -3,18 +3,18 @@ package python
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn/convert"
 
 	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/require"
-
-	"golang.org/x/exp/maps"
 
 	"github.com/databricks/cli/libs/dyn"
 
@@ -103,7 +103,7 @@ workspace: { current_user: { userName: test }}`)
 
 	assert.NoError(t, diags.Error())
 
-	assert.ElementsMatch(t, []string{"job0", "job1"}, maps.Keys(b.Config.Resources.Jobs))
+	assert.ElementsMatch(t, []string{"job0", "job1"}, slices.Collect(maps.Keys(b.Config.Resources.Jobs)))
 
 	if job0, ok := b.Config.Resources.Jobs["job0"]; ok {
 		assert.Equal(t, "job_0", job0.Name)
@@ -212,7 +212,7 @@ resources:
 
 	assert.NoError(t, diag.Error())
 
-	assert.ElementsMatch(t, []string{"job0"}, maps.Keys(b.Config.Resources.Jobs))
+	assert.ElementsMatch(t, []string{"job0"}, slices.Collect(maps.Keys(b.Config.Resources.Jobs)))
 	assert.Equal(t, "job_0", b.Config.Resources.Jobs["job0"].Name)
 	assert.Equal(t, "my job", b.Config.Resources.Jobs["job0"].Description)
 
@@ -280,7 +280,7 @@ resources:
 func TestPythonMutator_disabled(t *testing.T) {
 	b := loadYaml("databricks.yml", ``)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
 	diag := bundle.Apply(ctx, b, mutator)
 
@@ -298,7 +298,7 @@ experimental:
       - "resources:load_resources"`)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
-	diag := bundle.Apply(context.Background(), b, mutator)
+	diag := bundle.Apply(t.Context(), b, mutator)
 
 	assert.EqualError(t, diag.Error(), expectedError)
 }
@@ -494,7 +494,7 @@ or activate the environment before running CLI commands:
 }
 
 func withProcessStub(t *testing.T, args []string, output, diagnostics, locations string) context.Context {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, stub := process.WithStub(ctx)
 
 	t.Setenv(env.TempDirVariable, t.TempDir())
@@ -563,18 +563,11 @@ func loadYaml(name, content string) *bundle.Bundle {
 }
 
 func withFakeVEnv(t *testing.T, venvPath string) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	if err := os.Chdir(t.TempDir()); err != nil {
-		panic(err)
-	}
+	t.Chdir(t.TempDir())
 
 	interpreterPath := interpreterPath(venvPath)
 
-	err = os.MkdirAll(filepath.Dir(interpreterPath), 0o755)
+	err := os.MkdirAll(filepath.Dir(interpreterPath), 0o755)
 	if err != nil {
 		panic(err)
 	}
@@ -588,12 +581,6 @@ func withFakeVEnv(t *testing.T, venvPath string) {
 	if err != nil {
 		panic(err)
 	}
-
-	t.Cleanup(func() {
-		if err := os.Chdir(cwd); err != nil {
-			panic(err)
-		}
-	})
 }
 
 func interpreterPath(venvPath string) string {

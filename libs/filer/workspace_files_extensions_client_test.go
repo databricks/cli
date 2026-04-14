@@ -186,7 +186,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 				wsfs:            &workspaceFilesClient,
 			}
 
-			_, err := workspaceFilesExtensionsClient.ReadDir(context.Background(), "/")
+			_, err := workspaceFilesExtensionsClient.ReadDir(t.Context(), "/")
 
 			if tc.expectedError == "" {
 				assert.NoError(t, err)

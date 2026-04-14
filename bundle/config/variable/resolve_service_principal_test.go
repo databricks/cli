@@ -1,11 +1,10 @@
 package variable
 
 import (
-	"context"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -15,14 +14,19 @@ import (
 func TestResolveServicePrincipal_ResolveSuccess(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
-	api := m.GetMockServicePrincipalsAPI()
-	api.EXPECT().
-		GetByDisplayName(mock.Anything, "service-principal").
-		Return(&iam.ServicePrincipal{
+	api := m.GetMockServicePrincipalsV2API()
+	iterator := listing.SliceIterator[iam.ServicePrincipal]([]iam.ServicePrincipal{
+		{
 			ApplicationId: "5678",
-		}, nil)
+		},
+	})
+	api.EXPECT().
+		List(mock.Anything, iam.ListServicePrincipalsRequest{
+			Filter: "displayName eq 'service-principal'",
+		}).
+		Return(&iterator)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveServicePrincipal{name: "service-principal"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
@@ -32,15 +36,18 @@ func TestResolveServicePrincipal_ResolveSuccess(t *testing.T) {
 func TestResolveServicePrincipal_ResolveNotFound(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
-	api := m.GetMockServicePrincipalsAPI()
+	api := m.GetMockServicePrincipalsV2API()
+	iterator := listing.SliceIterator[iam.ServicePrincipal]([]iam.ServicePrincipal{})
 	api.EXPECT().
-		GetByDisplayName(mock.Anything, "service-principal").
-		Return(nil, &apierr.APIError{StatusCode: 404})
+		List(mock.Anything, iam.ListServicePrincipalsRequest{
+			Filter: "displayName eq 'service-principal'",
+		}).
+		Return(&iterator)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveServicePrincipal{name: "service-principal"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
-	require.ErrorIs(t, err, apierr.ErrNotFound)
+	require.ErrorContains(t, err, "service principal named \"service-principal\" does not exist")
 }
 
 func TestResolveServicePrincipal_String(t *testing.T) {

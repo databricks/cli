@@ -3,12 +3,15 @@ package vscode
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -22,22 +25,12 @@ const (
 	remotePlatform       = "linux"
 	pythonExtension      = "ms-python.python"
 	jupyterExtension     = "ms-toolsai.jupyter"
+	databricksExtension  = "databricks.databricks"
 	serverPickPortsKey   = "remote.SSH.serverPickPortsFromRange"
 	remotePlatformKey    = "remote.SSH.remotePlatform"
 	defaultExtensionsKey = "remote.SSH.defaultExtensions"
 	listenOnSocketKey    = "remote.SSH.remoteServerListenOnSocket"
-	vscodeIDE            = "vscode"
-	cursorIDE            = "cursor"
-	vscodeName           = "VS Code"
-	cursorName           = "Cursor"
 )
-
-func getIDEName(ide string) string {
-	if ide == cursorIDE {
-		return cursorName
-	}
-	return vscodeName
-}
 
 type missingSettings struct {
 	portRange      bool
@@ -85,7 +78,7 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 
 	settings, err := loadSettings(settingsPath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return handleMissingFile(ctx, ide, connectionName, settingsPath)
 		}
 		return fmt.Errorf("failed to load settings: %w", err)
@@ -106,8 +99,10 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 		return nil
 	}
 
-	if err := backupSettings(ctx, settingsPath); err != nil {
-		log.Warnf(ctx, "Failed to backup settings: %v. Continuing with update.", err)
+	if data, err := os.ReadFile(settingsPath); err == nil {
+		if err := fileutil.BackupFile(ctx, settingsPath, data); err != nil {
+			return fmt.Errorf("failed to backup settings: %w", err)
+		}
 	}
 
 	if err := updateSettings(&settings, connectionName, missing); err != nil {
@@ -118,7 +113,7 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 		return fmt.Errorf("failed to save settings: %w", err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Updated %s settings for '%s'", getIDEName(ide), connectionName))
+	cmdio.LogString(ctx, fmt.Sprintf("Updated %s settings for '%s'", getIDE(ide).Name, connectionName))
 	return nil
 }
 
@@ -128,10 +123,7 @@ func getDefaultSettingsPath(ctx context.Context, ide string) (string, error) {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	appName := "Code"
-	if ide == cursorIDE {
-		appName = "Cursor"
-	}
+	appName := getIDE(ide).AppName
 
 	var settingsDir string
 	switch runtime.GOOS {
@@ -192,7 +184,7 @@ func hasCorrectListenOnSocket(v hujson.Value) bool {
 }
 
 func getMissingExtensions(v hujson.Value) []string {
-	required := []string{pythonExtension, jupyterExtension}
+	required := []string{pythonExtension, jupyterExtension, databricksExtension}
 	found := v.Find(jsonPtr(defaultExtensionsKey))
 	if found == nil {
 		return required
@@ -228,29 +220,33 @@ func validateSettings(v hujson.Value, connectionName string) *missingSettings {
 func settingsMessage(connectionName string, missing *missingSettings) string {
 	var lines []string
 	if missing.portRange {
-		lines = append(lines, fmt.Sprintf("  \"%s\": {\"%s\": \"%s\"}", serverPickPortsKey, connectionName, portRange))
+		lines = append(lines, fmt.Sprintf("    \"%s\": {\"%s\": \"%s\"}", serverPickPortsKey, connectionName, portRange))
 	}
 	if missing.platform {
-		lines = append(lines, fmt.Sprintf("  \"%s\": {\"%s\": \"%s\"}", remotePlatformKey, connectionName, remotePlatform))
+		lines = append(lines, fmt.Sprintf("    \"%s\": {\"%s\": \"%s\"}", remotePlatformKey, connectionName, remotePlatform))
 	}
 	if missing.listenOnSocket {
-		lines = append(lines, fmt.Sprintf("  \"%s\": true // Global setting that affects all remote ssh connections", listenOnSocketKey))
+		lines = append(lines, fmt.Sprintf("    \"%s\": true // Global setting", listenOnSocketKey))
 	}
 	if len(missing.extensions) > 0 {
 		quoted := make([]string, len(missing.extensions))
 		for i, ext := range missing.extensions {
 			quoted[i] = fmt.Sprintf("\"%s\"", ext)
 		}
-		lines = append(lines, fmt.Sprintf("  \"%s\": [%s] // Global setting that affects all remote ssh connections", defaultExtensionsKey, strings.Join(quoted, ", ")))
+		lines = append(lines, fmt.Sprintf("    \"%s\": [%s] // Global setting", defaultExtensionsKey, strings.Join(quoted, ", ")))
 	}
-	return strings.Join(lines, "\n")
+	return "  {\n" + strings.Join(lines, ",\n") + "\n  }"
 }
 
 func promptUserForUpdate(ctx context.Context, ide, connectionName string, missing *missingSettings) (bool, error) {
 	question := fmt.Sprintf(
-		"The following settings will be applied to %s for '%s':\n%s\nApply these settings?",
-		getIDEName(ide), connectionName, settingsMessage(connectionName, missing))
-	return cmdio.AskYesOrNo(ctx, question)
+		"The following settings will be applied to %s for '%s':\n\n%s\n\nApply these settings?",
+		getIDE(ide).Name, connectionName, settingsMessage(connectionName, missing))
+	ans, err := cmdio.Ask(ctx, question+" [Y/n]", "y")
+	if err != nil {
+		return false, err
+	}
+	return strings.ToLower(ans) == "y", nil
 }
 
 func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath string) error {
@@ -258,7 +254,7 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension},
+		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
 	}
 	shouldCreate, err := promptUserForUpdate(ctx, ide, connectionName, missing)
 	if err != nil {
@@ -286,29 +282,8 @@ func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath st
 		return fmt.Errorf("failed to save settings: %w", err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Created %s settings at %s", getIDEName(ide), filepath.ToSlash(settingsPath)))
+	cmdio.LogString(ctx, fmt.Sprintf("Created %s settings at %s", getIDE(ide).Name, filepath.ToSlash(settingsPath)))
 	return nil
-}
-
-func backupSettings(ctx context.Context, path string) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	if len(data) == 0 {
-		return nil
-	}
-
-	originalBak := path + ".original.bak"
-	latestBak := path + ".latest.bak"
-
-	if _, err := os.Stat(originalBak); os.IsNotExist(err) {
-		cmdio.LogString(ctx, "Backing up settings to "+filepath.ToSlash(originalBak))
-		return os.WriteFile(originalBak, data, 0o600)
-	}
-
-	cmdio.LogString(ctx, "Backing up settings to "+filepath.ToSlash(latestBak))
-	return os.WriteFile(latestBak, data, 0o600)
 }
 
 // subKeyOp returns a patch op that sets key/subKey=value, creating the parent object if absent.
@@ -362,9 +337,9 @@ func GetManualInstructions(ide, connectionName string) string {
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
-		extensions:     []string{pythonExtension, jupyterExtension},
+		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
 	}
 	return fmt.Sprintf(
 		"To ensure the remote connection works as expected, manually add these settings to your %s settings.json:\n%s",
-		getIDEName(ide), settingsMessage(connectionName, missing))
+		getIDE(ide).Name, settingsMessage(connectionName, missing))
 }

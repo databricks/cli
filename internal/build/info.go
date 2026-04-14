@@ -42,10 +42,6 @@ func (i Info) GetSanitizedVersion() string {
 	return version
 }
 
-var info Info
-
-var once sync.Once
-
 const DefaultSemver = "0.0.0-dev"
 
 // getDefaultBuildVersion uses build information stored by Go itself
@@ -73,7 +69,7 @@ func getDefaultBuildVersion() string {
 	return out
 }
 
-func initialize() {
+func initialize() Info {
 	// If buildVersion is empty it means the binary was NOT built through goreleaser.
 	// We try to pull version information from debug.BuildInfo().
 	if buildVersion == "" {
@@ -86,7 +82,7 @@ func initialize() {
 		panic(fmt.Sprintf(`version is not a valid semver string: "%s"`, buildVersion))
 	}
 
-	info = Info{
+	return Info{
 		ProjectName: buildProjectName,
 		Version:     buildVersion,
 
@@ -106,9 +102,10 @@ func initialize() {
 	}
 }
 
+var getInfo = sync.OnceValue(initialize)
+
 func GetInfo() Info {
-	once.Do(initialize)
-	return info
+	return getInfo()
 }
 
 func parseInt(s string) int64 {

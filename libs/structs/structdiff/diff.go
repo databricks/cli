@@ -2,11 +2,12 @@ package structdiff
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
-	"sort"
 	"strings"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -107,11 +108,18 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 		if !v2.IsValid() {
 			return nil
 		}
-
+		// Dereference non-nil pointers for consistency with the both-non-nil case,
+		// where pointers are recursively dereferenced via "case reflect.Pointer".
+		for v2.Kind() == reflect.Pointer && !v2.IsNil() {
+			v2 = v2.Elem()
+		}
 		*changes = append(*changes, Change{Path: path, Old: nil, New: v2.Interface()})
 		return nil
 	} else if !v2.IsValid() {
 		// v1 is valid
+		for v1.Kind() == reflect.Pointer && !v1.IsNil() {
+			v1 = v1.Elem()
+		}
 		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: nil})
 		return nil
 	}
@@ -206,10 +214,11 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			continue
 		}
 
-		if fieldName == "" {
+		isEmbed := sf.Name == structaccess.EmbeddedSliceFieldName
+
+		if fieldName == "" || isEmbed {
 			fieldName = sf.Name
 		}
-		node := structpath.NewDotString(path, fieldName)
 
 		v1Field := s1.Field(i)
 		v2Field := s2.Field(i)
@@ -232,6 +241,14 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			}
 		}
 
+		// EmbeddedSlice: diff at parent path level without adding field name.
+		var node *structpath.PathNode
+		if isEmbed {
+			node = path
+		} else {
+			node = structpath.NewDotString(path, fieldName)
+		}
+
 		if err := diffValues(ctx, node, v1Field, v2Field, changes); err != nil {
 			return err
 		}
@@ -251,11 +268,7 @@ func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflec
 		keySet[ks] = k
 	}
 
-	var keys []string
-	for s := range keySet {
-		keys = append(keys, s)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(keySet))
 
 	for _, ks := range keys {
 		k := keySet[ks]

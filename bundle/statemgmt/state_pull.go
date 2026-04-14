@@ -59,7 +59,7 @@ func (s *StateDesc) HasRemoteTerraformState() bool {
 func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			logdiag.LogError(ctx, fmt.Errorf("reading %s: %w", filepath.ToSlash(fullPath), err))
 		}
 		return nil
@@ -118,8 +118,8 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 }
 
 // PullResourcesState determines correct state to use by reading all 4 states (terraform/direct, local/remote).
-// It will also ensure that if there is state present and env var set then they do not disagree.
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineType) (context.Context, *StateDesc) {
+// If state is present and the requested engine disagrees, a warning is issued and the state's engine is used.
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineSetting) (context.Context, *StateDesc) {
 	var err error
 
 	// We read all 4 possible states: terraform/direct X local/remote and then use env var to validate that correct one is used.
@@ -138,7 +138,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	if len(states) == 0 {
 		winner = &StateDesc{
 			// No state, go with user-provided or default
-			Engine:  requiredEngine.ThisOrDefault(),
+			Engine:  requiredEngine.Type.ThisOrDefault(),
 			IsLocal: true,
 			// Lineage and Serial are empty
 		}
@@ -155,8 +155,15 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		return ctx, winner
 	}
 
-	if requiredEngine != engine.EngineNotSet && requiredEngine != winner.Engine {
-		logStatesError(ctx, fmt.Sprintf("Required engine %q does not match present state files. Clear %q env var to use engine appropriate for the state.", requiredEngine, engine.EnvVar), states)
+	if requiredEngine.Type != engine.EngineNotSet && requiredEngine.Type != winner.Engine {
+		msg := fmt.Sprintf("Deployment engine %q configured in %s does not match the existing state (engine %q). Using %q engine from the existing state.", requiredEngine.Type, requiredEngine.Source, winner.Engine, winner.Engine)
+		// Warn only when the config also disagrees with the state. If the env var overrides
+		// a config that matches the state, log at info level to avoid noise.
+		if requiredEngine.ConfigType != engine.EngineNotSet && requiredEngine.ConfigType != winner.Engine {
+			logStatesWarning(ctx, msg, states)
+		} else {
+			log.Infof(ctx, "%s", msg)
+		}
 	}
 
 	// Set the engine in the user agent
@@ -280,13 +287,21 @@ func validateStates(states []*StateDesc) error {
 }
 
 func logStatesError(ctx context.Context, msg string, states []*StateDesc) {
+	logStatesDiag(ctx, diag.Error, msg, states)
+}
+
+func logStatesWarning(ctx context.Context, msg string, states []*StateDesc) {
+	logStatesDiag(ctx, diag.Warning, msg, states)
+}
+
+func logStatesDiag(ctx context.Context, severity diag.Severity, msg string, states []*StateDesc) {
 	var stateStrs []string
 	for _, state := range states {
 		stateStrs = append(stateStrs, state.String())
 	}
 	logdiag.LogDiag(ctx, diag.Diagnostic{
 		Summary:  msg,
-		Severity: diag.Error,
+		Severity: severity,
 		Detail:   "Available state files:\n- " + strings.Join(stateStrs, "\n- "),
 	})
 }

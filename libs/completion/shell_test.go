@@ -28,7 +28,7 @@ func TestDetectShellFromEnv(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("SHELL", tt.envShell)
-			got, err := DetectShell("")
+			got, err := DetectShell(t.Context(), "")
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -37,7 +37,7 @@ func TestDetectShellFromEnv(t *testing.T) {
 
 func TestDetectShellUnsupported(t *testing.T) {
 	t.Setenv("SHELL", "/bin/csh")
-	_, err := DetectShell("")
+	_, err := DetectShell(t.Context(), "")
 	assert.ErrorContains(t, err, "unsupported shell")
 	assert.ErrorContains(t, err, "supported shells are")
 }
@@ -48,7 +48,7 @@ func TestDetectShellPowershellExeNonWindows(t *testing.T) {
 	}
 	// On non-Windows, powershell.exe in $SHELL is unrecognized and should error.
 	t.Setenv("SHELL", "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe")
-	_, err := DetectShell("")
+	_, err := DetectShell(t.Context(), "")
 	assert.ErrorContains(t, err, "unsupported shell")
 }
 
@@ -57,7 +57,7 @@ func TestDetectShellPowershellExeWindows(t *testing.T) {
 		t.Skip("windows-only test")
 	}
 	t.Setenv("SHELL", `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`)
-	got, err := DetectShell("")
+	got, err := DetectShell(t.Context(), "")
 	require.NoError(t, err)
 	assert.Equal(t, PowerShell5, got)
 }
@@ -67,20 +67,20 @@ func TestDetectShellEmptyOnUnix(t *testing.T) {
 		t.Skip("unix-only test")
 	}
 	t.Setenv("SHELL", "")
-	_, err := DetectShell("")
+	_, err := DetectShell(t.Context(), "")
 	assert.ErrorContains(t, err, "$SHELL is not set")
 }
 
 func TestDetectShellFlagOverride(t *testing.T) {
 	t.Setenv("SHELL", "/bin/zsh")
 
-	got, err := DetectShell("bash")
+	got, err := DetectShell(t.Context(), "bash")
 	require.NoError(t, err)
 	assert.Equal(t, Bash, got)
 }
 
 func TestDetectShellFlagInvalid(t *testing.T) {
-	_, err := DetectShell("tcsh")
+	_, err := DetectShell(t.Context(), "tcsh")
 	assert.ErrorContains(t, err, "unsupported shell")
 }
 
@@ -88,7 +88,7 @@ func TestDetectShellFlagPowerShell5NonWindows(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("non-windows test")
 	}
-	_, err := DetectShell("powershell5")
+	_, err := DetectShell(t.Context(), "powershell5")
 	assert.ErrorContains(t, err, "only supported on Windows")
 }
 

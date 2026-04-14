@@ -59,9 +59,24 @@ func getTaskKey(x jobs.Task) (string, string) {
 	return "task_key", x.TaskKey
 }
 
+func getParameterName(x jobs.JobParameterDefinition) (string, string) {
+	return "name", x.Name
+}
+
+func getJobClusterKey(x jobs.JobCluster) (string, string) {
+	return "job_cluster_key", x.JobClusterKey
+}
+
+func getEnvironmentKey(x jobs.JobEnvironment) (string, string) {
+	return "environment_key", x.EnvironmentKey
+}
+
 func (*ResourceJob) KeyedSlices() map[string]any {
 	return map[string]any{
-		"tasks": getTaskKey,
+		"tasks":        getTaskKey,
+		"parameters":   getParameterName,
+		"job_clusters": getJobClusterKey,
+		"environments": getEnvironmentKey,
 	}
 }
 
@@ -70,7 +85,13 @@ func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error)
 	if err != nil {
 		return nil, err
 	}
-	job, err := r.client.Jobs.GetByJobId(ctx, idInt)
+	// GetByJobId only fetches the first page (100 tasks). Jobs.Get handles
+	// pagination and returns the complete job with all tasks merged.
+	job, err := r.client.Jobs.Get(ctx, jobs.GetJobRequest{
+		JobId:           idInt,
+		PageToken:       "",
+		ForceSendFields: nil,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +127,7 @@ func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (s
 	return strconv.FormatInt(response.JobId, 10), nil, nil
 }
 
-func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings, _ Changes) (*JobRemote, error) {
+func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings, _ *PlanEntry) (*JobRemote, error) {
 	request, err := makeResetJob(*config, id)
 	if err != nil {
 		return nil, err

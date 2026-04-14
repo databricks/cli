@@ -1,22 +1,21 @@
 echo "*" > .gitignore
 trace $CLI bundle deploy
 
-print_requests() {
-    jq 'select(.method != "GET" and (.path | contains("/unity")))' < out.requests.txt
-    rm out.requests.txt
-}
-
-trace print_requests
+trace print_requests.py //unity
 read_state.py schemas schema1 id name catalog_name comment
 
 title "Update comment and re-deploy"
 trace update_file.py databricks.yml COMMENT1 COMMENT2
 trace $CLI bundle deploy
-trace print_requests
+# Why the first time request match for direct & terraform, the requests from second deploy no longer match:
+# Terraform also sends "enable_predictive_optimization": "INHERIT" which is remote value that it stored in the state.
+trace print_requests.py //unity | gron.py | grep -v enable_predictive_optimization
 read_state.py schemas schema1 id name catalog_name comment
 
 title "Restore comment to original value and re-deploy"
 trace update_file.py databricks.yml COMMENT2 COMMENT1
 trace $CLI bundle deploy
-trace print_requests
+trace print_requests.py //unity | gron.py | grep -v enable_predictive_optimization
 read_state.py schemas schema1 id name catalog_name comment
+
+rm -f out.requests.txt

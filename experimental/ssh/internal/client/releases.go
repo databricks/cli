@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -48,7 +48,7 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 
 		_, err := workspaceFiler.Stat(ctx, remoteBinaryPath)
 		if err == nil {
-			cmdio.LogString(ctx, fmt.Sprintf("File %s already exists in the workspace, skipping upload", remoteBinaryPath))
+			log.Infof(ctx, "File %s already exists in the workspace, skipping upload", remoteBinaryPath)
 			continue
 		} else if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("failed to check if file %s exists in workspace: %w", remoteBinaryPath, err)
@@ -60,14 +60,14 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 		}
 		defer releaseReader.Close()
 
-		cmdio.LogString(ctx, fmt.Sprintf("Uploading %s to the workspace", fileName))
+		log.Infof(ctx, "Uploading %s to the workspace", fileName)
 		// workspace-files/import-file API will automatically unzip the payload,
 		// producing the filerRoot/remoteSubFolder/*archive-contents* structure, with 'databricks' binary inside.
 		err = workspaceFiler.Write(ctx, remoteArchivePath, releaseReader, filer.OverwriteIfExists, filer.CreateParentDirectories)
 		if err != nil {
 			return fmt.Errorf("failed to upload file %s to workspace: %w", remoteArchivePath, err)
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("Successfully uploaded %s to workspace", remoteBinaryPath))
+		log.Infof(ctx, "Successfully uploaded %s to workspace", remoteBinaryPath)
 	}
 
 	return nil
@@ -81,7 +81,7 @@ func getReleaseName(architecture, version string) string {
 }
 
 func getLocalRelease(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
-	cmdio.LogString(ctx, "Looking for CLI releases in directory: "+releasesDir)
+	log.Infof(ctx, "Looking for CLI releases in directory: %s", releasesDir)
 	releaseName := getReleaseName(architecture, version)
 	releasePath := filepath.Join(releasesDir, releaseName)
 	file, err := os.Open(releasePath)
@@ -95,7 +95,7 @@ func getGithubRelease(ctx context.Context, architecture, version, releasesDir st
 	// TODO: download and check databricks_cli_<version>_SHA256SUMS
 	fileName := getReleaseName(architecture, version)
 	downloadURL := fmt.Sprintf("https://github.com/databricks/cli/releases/download/v%s/%s", version, fileName)
-	cmdio.LogString(ctx, fmt.Sprintf("Downloading %s from %s", fileName, downloadURL))
+	log.Infof(ctx, "Downloading %s from %s", fileName, downloadURL)
 
 	resp, err := http.Get(downloadURL)
 	if err != nil {

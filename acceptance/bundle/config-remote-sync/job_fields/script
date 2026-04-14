@@ -1,6 +1,8 @@
 #!/bin/bash
 
 envsubst < databricks.yml.tmpl > databricks.yml
+add_repl.py "$DEFAULT_SPARK_VERSION" "[DEFAULT_SPARK_VERSION]"
+add_repl.py "$NODE_TYPE_ID" "[NODE_TYPE_ID]"
 
 cleanup() {
   trace $CLI bundle destroy --auto-approve
@@ -15,10 +17,22 @@ job_id="$(read_id.py my_job)"
 title "Modify job fields remotely"
 echo
 edit_resource.py jobs $job_id <<EOF
+# Rename the job remotely; config-remote-sync should strip the dev prefix
+r["name"] = r["name"].replace("test-job-$UNIQUE_NAME", "renamed-job-$UNIQUE_NAME")
 r["email_notifications"]["on_failure"] = ["failure@example.com"]
 r["email_notifications"]["no_alert_for_skipped_runs"] = True
 r["parameters"].append({"name": "region", "default": "us-east-1"})
 r["trigger"] = {"pause_status": "UNPAUSED", "table_update": {"table_names": ["samples.nyctaxi.trips"]}}
+
+for cluster in r.get("job_clusters", []):
+    if cluster.get("job_cluster_key") == "test_cluster":
+        cluster["job_cluster_key"] = "test_cluster_renamed"
+for task in r.get("tasks", []):
+    if task.get("task_key") == "inline_cluster_task" and "new_cluster" in task:
+        task["new_cluster"]["num_workers"] = 2
+for task in r.get("tasks", []):
+    if task.get("job_cluster_key") == "test_cluster":
+        task["job_cluster_key"] = "test_cluster_renamed"
 
 if "tags" not in r:
     r["tags"] = {}

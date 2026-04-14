@@ -1,0 +1,18 @@
+
+# Test that old v1 state files (from main) are migrated to v2.
+# Old format used "permissions" key with "permission_level" field.
+# New format uses "_" key with "level" field.
+
+mkdir -p .databricks/bundle/default
+
+# Copy state file in old v1 format (as produced by main branch)
+cp resources.v1.json .databricks/bundle/default/resources.json
+
+title "Plan with old v1 state"
+trace $CLI bundle plan -o json > out.plan.direct.json
+
+title "Deploy (migrates state)"
+trace $CLI bundle deploy
+
+title "Print state after deploy"
+trace print_state.py

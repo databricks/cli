@@ -1,0 +1,36 @@
+sethome "./home"
+
+cat > "./home/.databrickscfg" <<'EOF'
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[workspace-a]
+host      = https://workspace-a.cloud.databricks.com
+token     = token-a
+auth_type = pat
+
+[workspace-b]
+host      = https://workspace-b.cloud.databricks.com
+token     = token-b
+auth_type = pat
+
+[__settings__]
+default_profile = workspace-a
+EOF
+
+title "Initial settings section\n"
+cat "./home/.databrickscfg" | grep -A1 __settings__
+
+title "Delete the default profile"
+trace $CLI auth logout --profile workspace-a --auto-approve --delete
+
+title "Settings after deleting default — default_profile should be cleared\n"
+cat "./home/.databrickscfg" | grep -A1 __settings__
+
+title "Delete a non-default profile"
+trace $CLI auth logout --profile workspace-b --auto-approve --delete
+
+title "Settings after deleting non-default — section should still be present but empty\n"
+cat "./home/.databrickscfg" | grep -A1 __settings__
+
+cp "./home/.databrickscfg" "./out.databrickscfg"

@@ -104,7 +104,7 @@ func copyTestdata(t *testing.T, name string) string {
 }
 
 func installerContext(t *testing.T, server *httptest.Server) context.Context {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = github.WithApiOverride(ctx, server.URL)
 	ctx = github.WithUserContentOverride(ctx, server.URL)
 	ctx = env.WithUserHomeDir(ctx, t.TempDir())
@@ -168,6 +168,10 @@ func TestInstallerWorksForReleases(t *testing.T) {
 		})
 	}()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		if r.URL.Path == "/databrickslabs/blueprint/v0.3.15/labs.yml" {
 			raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
 			assert.NoError(t, err)
@@ -248,6 +252,10 @@ func TestOfflineInstallerWorksForReleases(t *testing.T) {
 	// run databricks labs install --offline=true
 	// it will look for the code in the same install directory and if present, install from there.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
 			respondWithJSON(t, w, &compute.ClusterDetails{
 				State: compute.StateRunning,
@@ -291,6 +299,10 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	}()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		if r.URL.Path == "/api/2.1/clusters/list" {
 			respondWithJSON(t, w, compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
@@ -355,15 +367,8 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	}))
 	defer server.Close()
 
-	wd, _ := os.Getwd()
-	defer func() {
-		err := os.Chdir(wd)
-		require.NoError(t, err)
-	}()
-
 	devDir := copyTestdata(t, "testdata/installed-in-home/.databricks/labs/blueprint/lib")
-	err := os.Chdir(devDir)
-	require.NoError(t, err)
+	t.Chdir(devDir)
 
 	ctx := installerContext(t, server)
 	py, _ := python.DetectExecutable(ctx)
@@ -379,7 +384,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_WAREHOUSE_ID", "efg-id")
 
 	home, _ := env.UserHomeDir(ctx)
-	err = os.WriteFile(filepath.Join(home, ".databrickscfg"), []byte(fmt.Sprintf(`
+	err := os.WriteFile(filepath.Join(home, ".databrickscfg"), []byte(fmt.Sprintf(`
 [profile-one]
 host = %s
 token = ...
@@ -423,6 +428,10 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 		})
 	}()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		if r.URL.Path == "/databrickslabs/blueprint/v0.4.0/labs.yml" {
 			raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
 			assert.NoError(t, err)

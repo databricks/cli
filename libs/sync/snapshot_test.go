@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,11 +25,11 @@ func assertKeysOfMap[T any](t *testing.T, m map[string]T, expectedKeys []string)
 }
 
 func TestDiff(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(ctx, vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -90,11 +89,11 @@ func TestDiff(t *testing.T) {
 }
 
 func TestSymlinkDiff(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(ctx, vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -121,11 +120,11 @@ func TestSymlinkDiff(t *testing.T) {
 }
 
 func TestFolderDiff(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(ctx, vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -166,11 +165,11 @@ func TestFolderDiff(t *testing.T) {
 }
 
 func TestPythonNotebookDiff(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(ctx, vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -241,11 +240,11 @@ func TestPythonNotebookDiff(t *testing.T) {
 }
 
 func TestErrorWhenIdenticalRemoteName(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(ctx, vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -278,11 +277,11 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 }
 
 func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(ctx, vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -328,7 +327,7 @@ func defaultOptions(t *testing.T) *SyncOptions {
 
 func TestNewSnapshotDefaults(t *testing.T) {
 	opts := defaultOptions(t)
-	snapshot, err := newSnapshot(context.Background(), opts)
+	snapshot, err := newSnapshot(t.Context(), opts)
 	require.NoError(t, err)
 
 	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)
@@ -357,7 +356,7 @@ func TestOldSnapshotInvalidation(t *testing.T) {
 	snapshotFile.Close(t)
 
 	// assert snapshot did not get loaded
-	snapshot, err := loadOrNewSnapshot(context.Background(), opts)
+	snapshot, err := loadOrNewSnapshot(t.Context(), opts)
 	require.NoError(t, err)
 	assert.True(t, snapshot.New)
 }
@@ -379,7 +378,7 @@ func TestNoVersionSnapshotInvalidation(t *testing.T) {
 	snapshotFile.Close(t)
 
 	// assert snapshot did not get loaded
-	snapshot, err := loadOrNewSnapshot(context.Background(), opts)
+	snapshot, err := loadOrNewSnapshot(t.Context(), opts)
 	require.NoError(t, err)
 	assert.True(t, snapshot.New)
 }
@@ -402,7 +401,7 @@ func TestLatestVersionSnapshotGetsLoaded(t *testing.T) {
 	snapshotFile.Close(t)
 
 	// assert snapshot gets loaded
-	snapshot, err := loadOrNewSnapshot(context.Background(), opts)
+	snapshot, err := loadOrNewSnapshot(t.Context(), opts)
 	require.NoError(t, err)
 	assert.False(t, snapshot.New)
 	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 	"net/url"
 	"os"
@@ -144,7 +145,7 @@ Examples:
 			ctx := cmd.Context()
 
 			// Validate client path early (before any network calls)
-			if _, err := os.Stat(clientPath); os.IsNotExist(err) {
+			if _, err := os.Stat(clientPath); errors.Is(err, fs.ErrNotExist) {
 				return fmt.Errorf("client directory not found: %s", clientPath)
 			}
 

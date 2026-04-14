@@ -3,7 +3,6 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -41,10 +40,11 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	pipelineId := nextUUID()
 	r.PipelineId = pipelineId
 	r.CreatorUserName = "tester@databricks.com"
-	r.LastModified = time.Now().UnixMilli()
+	r.LastModified = nowMilli()
 	r.Name = r.Spec.Name
 	r.RunAsUserName = "tester@databricks.com"
 	r.State = "IDLE"
+	r.EffectivePublishingMode = pipelines.PublishingModeDefaultPublishingMode
 
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r

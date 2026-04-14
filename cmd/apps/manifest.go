@@ -2,13 +2,14 @@ package apps
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/apps/manifest"
+	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +17,7 @@ import (
 func runManifestOnly(ctx context.Context, templatePath, branch, version string) error {
 	templateSrc := templatePath
 	if templateSrc == "" {
-		templateSrc = os.Getenv(templatePathEnvVar)
+		templateSrc = env.Get(ctx, templatePathEnvVar)
 	}
 	gitRef := branch
 	usingDefaultTemplate := templateSrc == ""
@@ -46,23 +47,23 @@ func runManifestOnly(ctx context.Context, templatePath, branch, version string) 
 	}
 
 	templateDir := filepath.Join(resolvedPath, "generic")
-	if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+	if _, err := os.Stat(templateDir); errors.Is(err, fs.ErrNotExist) {
 		templateDir = resolvedPath
-		if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+		if _, err := os.Stat(templateDir); errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("template not found at %s (also checked %s/generic)", resolvedPath, resolvedPath)
 		}
 	}
 
 	if manifest.HasManifest(templateDir) {
-		m, err := manifest.Load(templateDir)
+		path := filepath.Join(templateDir, manifest.ManifestFileName)
+		data, err := os.ReadFile(path)
 		if err != nil {
-			return fmt.Errorf("load manifest: %w", err)
+			return fmt.Errorf("read manifest: %w", err)
 		}
-		enc, err := json.MarshalIndent(m, "", "  ")
+		_, err = os.Stdout.Write(data)
 		if err != nil {
-			return fmt.Errorf("encode manifest: %w", err)
+			return fmt.Errorf("write manifest: %w", err)
 		}
-		fmt.Fprintln(os.Stdout, string(enc))
 		return nil
 	}
 
@@ -82,7 +83,7 @@ func newManifestCmd() *cobra.Command {
 		Short:  "Print template manifest with available plugins and required resources",
 		Hidden: true,
 		Long: `Resolves a template (default AppKit repo or --template URL), locates appkit.plugins.json,
-and prints its contents to stdout. No workspace authentication is required.
+and prints its raw contents to stdout. No workspace authentication is required.
 
 Use the same --template, --branch, and --version flags as "databricks apps init" to target
 a specific template. Without --template, uses the default AppKit template (main branch).

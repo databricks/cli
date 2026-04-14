@@ -1,0 +1,97 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.schemas.schema_a": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "name": "schema A"
+        }
+      }
+    },
+    "resources.schemas.schema_a.grants": {
+      "depends_on": [
+        {
+          "node": "resources.schemas.schema_a",
+          "label": "${resources.schemas.schema_a.id}"
+        },
+        {
+          "node": "resources.schemas.schema_b.grants",
+          "label": "${resources.schemas.schema_b.grants[0].principal}"
+        },
+        {
+          "node": "resources.schemas.schema_b.grants",
+          "label": "${resources.schemas.schema_b.grants[1].principal}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "securable_type": "schema",
+          "full_name": "",
+          "__embed__": [
+            {
+              "principal": "viewers",
+              "privileges": [
+                "USE_SCHEMA"
+              ]
+            },
+            {
+              "principal": "editors",
+              "privileges": [
+                "CREATE_TABLE"
+              ]
+            }
+          ]
+        },
+        "vars": {
+          "full_name": "${resources.schemas.schema_a.id}"
+        }
+      }
+    },
+    "resources.schemas.schema_b": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "name": "schema B"
+        }
+      }
+    },
+    "resources.schemas.schema_b.grants": {
+      "depends_on": [
+        {
+          "node": "resources.schemas.schema_b",
+          "label": "${resources.schemas.schema_b.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "securable_type": "schema",
+          "full_name": "",
+          "__embed__": [
+            {
+              "principal": "viewers",
+              "privileges": [
+                "USE_SCHEMA"
+              ]
+            },
+            {
+              "principal": "editors",
+              "privileges": [
+                "CREATE_TABLE",
+                "USE_SCHEMA"
+              ]
+            }
+          ]
+        },
+        "vars": {
+          "full_name": "${resources.schemas.schema_b.id}"
+        }
+      }
+    }
+  }
+}

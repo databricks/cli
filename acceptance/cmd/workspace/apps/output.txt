@@ -6,6 +6,7 @@
     "message":"Application is running.",
     "state":"RUNNING"
   },
+  "compute_size":"MEDIUM",
   "compute_status": {
     "message":"App compute is active.",
     "state":"ACTIVE"
@@ -24,6 +25,9 @@
       }
     }
   ],
+  "service_principal_client_id":"[UUID]",
+  "service_principal_id":[NUMID],
+  "service_principal_name":"app-test-name",
   "url":"test-name-123.cloud.databricksapps.com"
 }
 
@@ -34,6 +38,7 @@
     "message":"Application is running.",
     "state":"RUNNING"
   },
+  "compute_size":"MEDIUM",
   "compute_status": {
     "message":"App compute is active.",
     "state":"ACTIVE"
@@ -52,6 +57,9 @@
       }
     }
   ],
+  "service_principal_client_id":"[UUID]",
+  "service_principal_id":[NUMID],
+  "service_principal_name":"app-test-name",
   "url":"test-name-123.cloud.databricksapps.com"
 }
 

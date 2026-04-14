@@ -14,34 +14,34 @@
       "depends_on": [
         {
           "node": "resources.models.foo",
-          "label": "${resources.models.foo.id}"
+          "label": "${resources.models.foo.model_id}"
         }
       ],
       "action": "create",
       "new_state": {
         "value": {
           "object_id": "",
-          "permissions": [
+          "__embed__": [
             {
-              "permission_level": "CAN_READ",
+              "level": "CAN_READ",
               "user_name": "viewer@example.com"
             },
             {
-              "group_name": "data-team",
-              "permission_level": "CAN_MANAGE"
+              "level": "CAN_MANAGE",
+              "group_name": "data-team"
             },
             {
-              "permission_level": "CAN_MANAGE",
+              "level": "CAN_MANAGE",
               "service_principal_name": "[UUID]"
             },
             {
-              "permission_level": "CAN_MANAGE",
+              "level": "CAN_MANAGE",
               "user_name": "[USERNAME]"
             }
           ]
         },
         "vars": {
-          "object_id": "/registered-models/${resources.models.foo.id}"
+          "object_id": "/registered-models/${resources.models.foo.model_id}"
         }
       }
     }

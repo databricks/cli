@@ -19,7 +19,25 @@ linters:
     - exhaustive
     - copyloopvar
     - forbidigo
+    - depguard
   settings:
+    depguard:
+      rules:
+        no-experimental-imports:
+          # depguard matches against absolute file paths, so patterns must
+          # start with **/ to match regardless of the repository location.
+          files:
+            - "**"
+            - "!**/cmd/cmd.go"
+            - "!**/cmd/experimental/**"
+            - "!**/experimental/**"
+          deny:
+            - pkg: "github.com/databricks/cli/experimental"
+              desc: "must not import experimental/ packages; use an interface or move the dependency"
+        no-legacy-rand:
+          deny:
+            - pkg: "math/rand$"
+              desc: "use math/rand/v2 instead of math/rand"
     forbidigo:
       forbid:
         - pattern: 'term\.IsTerminal'
@@ -28,6 +46,28 @@ linters:
           msg: Use cmdio.IsPromptSupported(ctx) to check for a TTY.
         - pattern: 'isatty\.IsCygwinTerminal'
           msg: Use cmdio.IsPromptSupported(ctx) to check for a TTY.
+        - pattern: 'os\.UserHomeDir'
+          msg: Use env.UserHomeDir(ctx) from libs/env instead.
+        - pattern: 'os\.Getenv'
+          msg: Use env.Get(ctx) from the libs/env package instead of os.Getenv.
+        - pattern: 'sort\.Slice'
+          msg: Use slices.SortFunc from the standard library instead.
+        - pattern: 'sort\.SliceStable'
+          msg: Use slices.SortStableFunc from the standard library instead.
+        - pattern: 'sort\.Strings'
+          msg: Use slices.Sort from the standard library instead.
+        - pattern: 'sort\.Ints'
+          msg: Use slices.Sort from the standard library instead.
+        - pattern: 'sort\.Float64s'
+          msg: Use slices.Sort from the standard library instead.
+        - pattern: 'os\.IsNotExist'
+          msg: Use errors.Is(err, fs.ErrNotExist) instead.
+        - pattern: 'os\.IsExist'
+          msg: Use errors.Is(err, fs.ErrExist) instead.
+        - pattern: 'os\.IsPermission'
+          msg: Use errors.Is(err, fs.ErrPermission) instead.
+        - pattern: 'sync\.Once\b($|[^FV])'
+          msg: Use sync.OnceFunc, sync.OnceValue, or sync.OnceValues instead.
       analyze-types: true
     copyloopvar:
       check-alias: true
@@ -105,6 +145,14 @@ linters:
       - path: bundle/direct/dresources/.*_test.go
         linters:
           - exhaustruct
+      - text: "Use env\\.Get"
+        path: "_test\\.go$"
+        linters:
+          - forbidigo
+      # TODO: remove these exceptions by moving the dependency out of experimental/.
+      - path: cmd/apps/init.go
+        linters:
+          - depguard
 issues:
   max-issues-per-linter: 1000
   max-same-issues: 1000

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -15,7 +14,7 @@ import (
 )
 
 func TestGetWorkspaceAuthStatus(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
@@ -73,7 +72,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 }
 
 func TestGetWorkspaceAuthStatusError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
@@ -122,7 +121,7 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 }
 
 func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
 
@@ -167,7 +166,7 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 }
 
 func TestGetAccountAuthStatus(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	m := mocks.NewMockAccountClient(t)
 	ctx = cmdctx.SetAccountClient(ctx, m.AccountClient)
 

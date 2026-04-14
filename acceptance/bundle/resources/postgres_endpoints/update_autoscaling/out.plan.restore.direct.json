@@ -26,8 +26,14 @@
       "current_state": "ACTIVE",
       "disabled": false,
       "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+      "group": {
+        "enable_readable_secondaries": true,
+        "max": 1,
+        "min": 1
+      },
       "hosts": {
-        "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
+        "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com",
+        "read_only_host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
       },
       "settings": {},
       "suspend_timeout_duration": "300s"

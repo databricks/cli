@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -15,6 +18,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 )
+
+type failOnCallTransport struct{}
+
+func (failOnCallTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, errors.New("unexpected HTTP call")
+}
 
 var refreshFailureTokenResponse = fixtures.HTTPFixture{
 	MatchAny: true,
@@ -76,6 +85,11 @@ func (m *MockApiClient) GetUnifiedOAuthEndpoints(ctx context.Context, host, acco
 	}, nil
 }
 
+// GetEndpointsFromURL implements u2m.OAuthEndpointSupplier.
+func (m *MockApiClient) GetEndpointsFromURL(_ context.Context, _ string) (*u2m.OAuthAuthorizationServer, error) {
+	return nil, u2m.ErrOAuthNotSupported
+}
+
 var _ u2m.OAuthEndpointSupplier = (*MockApiClient)(nil)
 
 func TestToken_loadToken(t *testing.T) {
@@ -130,6 +144,10 @@ func TestToken_loadToken(t *testing.T) {
 				Host:                 "https://m2m.cloud.databricks.com",
 				HasClientCredentials: true,
 			},
+			{
+				Name: "valid-token",
+				Host: "https://valid-token.cloud.databricks.com",
+			},
 		},
 	}
 	tokenCache := &inMemoryTokenCache{
@@ -176,11 +194,16 @@ func TestToken_loadToken(t *testing.T) {
 				RefreshToken: "dup1",
 				Expiry:       time.Now().Add(1 * time.Hour),
 			},
+			"valid-token": {
+				AccessToken:  "cached-access-token",
+				RefreshToken: "valid-token",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
 		},
 	}
-	validateToken := func(resp *oauth2.Token) {
-		assert.Equal(t, "new-access-token", resp.AccessToken)
-		assert.Equal(t, "Bearer", resp.TokenType)
+	validateToken := func(got *oauth2.Token) {
+		assert.Equal(t, "new-access-token", got.AccessToken)
+		assert.Equal(t, "Bearer", got.TokenType)
 	}
 
 	cases := []struct {
@@ -294,6 +317,22 @@ func TestToken_loadToken(t *testing.T) {
 			validateToken: validateToken,
 		},
 		{
+			name: "host with trailing slash is stripped",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{Host: "https://accounts.cloud.databricks.com/", AccountID: "active"},
+				profileName:   "",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
 			name: "positional arg resolved as profile name",
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{},
@@ -346,7 +385,7 @@ func TestToken_loadToken(t *testing.T) {
 			args: loadTokenArgs{
 				authArguments: &auth.AuthArguments{},
 				profileName:   "",
-				args:          []string{"nonexistent"},
+				args:          []string{"nonexistent.cloud.databricks.com"},
 				tokenTimeout:  1 * time.Hour,
 				profiler:      profiler,
 				persistentAuthOpts: []u2m.PersistentAuthOption{
@@ -355,8 +394,19 @@ func TestToken_loadToken(t *testing.T) {
 				},
 			},
 			wantErr: "cache: databricks OAuth is not configured for this host. " +
-				"Try logging in again with `databricks auth login --host https://nonexistent` before retrying. " +
+				"Try logging in again with `databricks auth login --host https://nonexistent.cloud.databricks.com` before retrying. " +
 				"If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
+		},
+		{
+			name: "errors with clear message for non-host non-profile positional arg",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"e2-logfood"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+			},
+			wantErr: `no matching profile found: "e2-logfood"`,
 		},
 		{
 			name: "scheme-less account host ambiguity detected correctly",
@@ -497,7 +547,7 @@ func TestToken_loadToken(t *testing.T) {
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 				},
 			},
-			wantErr: "providing both a profile and host is not supported",
+			wantErr: `argument "workspace-a" cannot be combined with --host or --profile. Use the --host and --profile flags instead`,
 		},
 		{
 			name: "no args, profiles exist, non-interactive — error with profile hint",
@@ -597,6 +647,26 @@ func TestToken_loadToken(t *testing.T) {
 			validateToken: validateToken,
 		},
 		{
+			name: "no args, DATABRICKS_HOST env with trailing slash resolves",
+			setupCtx: func(ctx context.Context) context.Context {
+				ctx = env.Set(ctx, "DATABRICKS_HOST", "https://workspace-a.cloud.databricks.com/")
+				return ctx
+			},
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
 			name: "no args, DATABRICKS_CONFIG_PROFILE env resolves",
 			setupCtx: func(ctx context.Context) context.Context {
 				ctx = env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "active")
@@ -638,6 +708,20 @@ func TestToken_loadToken(t *testing.T) {
 			validateToken: validateToken,
 		},
 		{
+			name: "DATABRICKS_CONFIG_PROFILE with positional typo runs resolver first",
+			setupCtx: func(ctx context.Context) context.Context {
+				return env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "active")
+			},
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "",
+				args:          []string{"e2-logfood"},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+			},
+			wantErr: `no matching profile found: "e2-logfood"`,
+		},
+		{
 			name: "host flag with profile env var disambiguates multi-profile",
 			setupCtx: func(ctx context.Context) context.Context {
 				return env.Set(ctx, "DATABRICKS_CONFIG_PROFILE", "dup1")
@@ -658,10 +742,63 @@ func TestToken_loadToken(t *testing.T) {
 			},
 			validateToken: validateToken,
 		},
+		{
+			name: "default path reuses valid cached token without refresh",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "valid-token",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: failOnCallTransport{}}),
+				},
+			},
+			validateToken: func(got *oauth2.Token) {
+				assert.Equal(t, "cached-access-token", got.AccessToken)
+			},
+		},
+		{
+			name: "force refresh refreshes valid cached token",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "valid-token",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				forceRefresh:  true,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "force refresh preserves error handling on refresh failure",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "valid-token",
+				args:          []string{},
+				tokenTimeout:  1 * time.Hour,
+				forceRefresh:  true,
+				profiler:      profiler,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(tokenCache),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureTokenResponse}}),
+				},
+			},
+			wantErr: `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ databricks auth login --profile valid-token`,
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := cmdio.MockDiscard(context.Background())
+			ctx := cmdio.MockDiscard(t.Context())
 			if c.setupCtx != nil {
 				ctx = c.setupCtx(ctx)
 			}
@@ -687,4 +824,28 @@ func (e errProfiler) LoadProfiles(context.Context, profile.ProfileMatchFunction)
 
 func (e errProfiler) GetPath(context.Context) (string, error) {
 	return "<error>", nil
+}
+
+func TestWriteTokenOutput(t *testing.T) {
+	token := &oauth2.Token{
+		AccessToken: "my-access-token",
+		TokenType:   "Bearer",
+	}
+
+	t.Run("json mode", func(t *testing.T) {
+		var buf bytes.Buffer
+		err := writeTokenOutput(&buf, token, false)
+		assert.NoError(t, err)
+
+		raw, err := json.MarshalIndent(token, "", "  ")
+		assert.NoError(t, err)
+		assert.Equal(t, string(raw), buf.String())
+	})
+
+	t.Run("text mode", func(t *testing.T) {
+		var buf bytes.Buffer
+		err := writeTokenOutput(&buf, token, true)
+		assert.NoError(t, err)
+		assert.Equal(t, "my-access-token\n", buf.String())
+	})
 }

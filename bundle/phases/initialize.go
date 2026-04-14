@@ -31,6 +31,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.AllResourcesHaveValues(),
 		validate.NoInterpolationInAuthConfig(),
 		validate.NoInterpolationInBundleName(),
+		validate.ValidateEngine(),
 		validate.Scripts(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
@@ -93,6 +94,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// This mutator needs to be run before variable interpolation because it
 		// searches for strings with variable references in them.
 		mutator.RewriteWorkspacePrefix(),
+
+		// Collect telemetry on $${} and \${} escape patterns before variable resolution.
+		mutator.CollectEscapeTelemetry(),
 
 		// Reads (dynamic): variables.* (checks if there's a value assigned to variable already or if it has lookup reference)
 		// Updates (dynamic): variables.*.value (sets values from environment variables, variable files, or defaults)

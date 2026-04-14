@@ -30,10 +30,12 @@ import (
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
+	data_classification "github.com/databricks/cli/cmd/workspace/data-classification"
 	data_quality "github.com/databricks/cli/cmd/workspace/data-quality"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
 	entity_tag_assignments "github.com/databricks/cli/cmd/workspace/entity-tag-assignments"
+	environments "github.com/databricks/cli/cmd/workspace/environments"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_lineage "github.com/databricks/cli/cmd/workspace/external-lineage"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
@@ -51,6 +53,7 @@ import (
 	instance_profiles "github.com/databricks/cli/cmd/workspace/instance-profiles"
 	ip_access_lists "github.com/databricks/cli/cmd/workspace/ip-access-lists"
 	jobs "github.com/databricks/cli/cmd/workspace/jobs"
+	knowledge_assistants "github.com/databricks/cli/cmd/workspace/knowledge-assistants"
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	lakeview_embedded "github.com/databricks/cli/cmd/workspace/lakeview-embedded"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
@@ -155,10 +158,12 @@ func All() []*cobra.Command {
 	out = append(out, current_user.New())
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
+	out = append(out, data_classification.New())
 	out = append(out, data_quality.New())
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
 	out = append(out, entity_tag_assignments.New())
+	out = append(out, environments.New())
 	out = append(out, experiments.New())
 	out = append(out, external_lineage.New())
 	out = append(out, external_locations.New())
@@ -176,6 +181,7 @@ func All() []*cobra.Command {
 	out = append(out, instance_profiles.New())
 	out = append(out, ip_access_lists.New())
 	out = append(out, jobs.New())
+	out = append(out, knowledge_assistants.New())
 	out = append(out, lakeview.New())
 	out = append(out, lakeview_embedded.New())
 	out = append(out, libraries.New())

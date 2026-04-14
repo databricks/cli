@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -69,7 +70,7 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 	b.SetWorkpaceClient(mwc.WorkspaceClient)
 	bundletest.SetLocation(b, "resources.apps.my_app", []dyn.Location{{File: filepath.Join(root, "./databricks.yml")}})
 
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 
 	diags := bundle.ApplySeq(ctx, b,
 		mutator.DefineDefaultWorkspacePaths(),
@@ -294,11 +295,7 @@ func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 		},
 	}
 
-	runner := &appRunner{
-		app: app,
-	}
-
-	deployment := runner.buildAppDeployment()
+	deployment := appdeploy.BuildDeployment(app.SourceCodePath, app.Config, app.GitSource)
 
 	require.Equal(t, apps.AppDeploymentModeSnapshot, deployment.Mode)
 	require.Equal(t, "/path/to/app", deployment.SourceCodePath)

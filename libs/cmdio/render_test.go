@@ -171,7 +171,7 @@ func TestRender(t *testing.T) {
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
-			ctx := context.Background()
+			ctx := t.Context()
 			cmdIO := NewIO(ctx, c.outputFormat, nil, output, output, c.headerTemplate, c.template)
 			ctx = InContext(ctx, cmdIO)
 			var err error

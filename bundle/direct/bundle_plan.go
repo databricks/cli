@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"os"
 	"reflect"
 	"slices"
 	"strings"
@@ -24,7 +23,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -42,22 +40,14 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 // ValidatePlanAgainstState validates that a plan's lineage and serial match the current state.
 // This should be called early in the deployment process, before any file operations.
 // If the plan has no lineage (first deployment), validation is skipped.
-func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
+func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
 	// If plan has no lineage, this is a first deployment before any state exists
 	// No validation needed
 	if plan.Lineage == "" {
 		return nil
 	}
 
-	var stateDB dstate.DeploymentState
-	err := stateDB.Open(statePath)
-	if err != nil {
-		// If state file doesn't exist but plan has lineage, something is wrong
-		if os.IsNotExist(err) {
-			return fmt.Errorf("plan has lineage %q but state file does not exist at %s; the state may have been deleted", plan.Lineage, statePath)
-		}
-		return fmt.Errorf("reading state from %s: %w", statePath, err)
-	}
+	stateDB.AssertOpened()
 
 	// Validate that the plan's lineage matches the current state's lineage
 	if plan.Lineage != stateDB.Data.Lineage {
@@ -74,13 +64,10 @@ func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
 // This is used when --plan is specified to skip the planning phase.
-func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, statePath string, plan *deployplan.Plan) error {
-	err := b.StateDB.Open(statePath)
-	if err != nil {
-		return fmt.Errorf("reading state from %s: %w", statePath, err)
-	}
+func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
+	b.StateDB.AssertOpened()
 
-	err = b.init(client)
+	err := b.init(client)
 	if err != nil {
 		return err
 	}
@@ -110,13 +97,10 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
-	err := b.StateDB.Open(statePath)
-	if err != nil {
-		return nil, fmt.Errorf("reading state from %s: %w", statePath, err)
-	}
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+	b.StateDB.AssertOpened()
 
-	err = b.init(client)
+	err := b.init(client)
 	if err != nil {
 		return nil, err
 	}
@@ -168,19 +152,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		if entry.Action == deployplan.Delete {
-			dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
-			if !hasEntry {
+			id := b.StateDB.GetResourceID(resourceKey)
+			if id == "" {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
 				return false
 			}
 
-			remoteState, err := adapter.DoRead(ctx, dbentry.ID)
+			remoteState, err := adapter.DoRead(ctx, id)
 			if err != nil {
 				if isResourceGone(err) {
 					// no such resource
 					plan.RemoveEntry(resourceKey)
 				} else {
-					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, dbentry.ID, err)
+					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, id, err)
 					// This is not an error during deletion, so don't return false here
 				}
 			}
@@ -569,11 +553,22 @@ func isEmptyStruct(rv reflect.Value) bool {
 	return true
 }
 
-func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
-	targetResourceKey := path.Prefix(3).String()
+// splitResourcePath splits a reference path into resource key and field path.
+// For regular resources like "resources.jobs.foo.name", returns ("resources.jobs.foo", "name").
+// For sub-resources like "resources.jobs.foo.permissions[0].level", returns ("resources.jobs.foo.permissions", "[0].level").
+func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode) {
+	// Check if the 4th component is "permissions" or "grants" (sub-resource)
+	if path.Len() > 4 {
+		first := path.SkipPrefix(3).Prefix(1)
+		if key, ok := first.StringKey(); ok && (key == "permissions" || key == "grants") {
+			return path.Prefix(4).String(), path.SkipPrefix(4)
+		}
+	}
+	return path.Prefix(3).String(), path.SkipPrefix(3)
+}
 
-	fieldPath := path.SkipPrefix(3)
+func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	targetResourceKey, fieldPath := splitResourcePath(path)
 	fieldPathS := fieldPath.String()
 
 	targetEntry, err := b.Plan.ReadLockEntry(targetResourceKey)
@@ -594,12 +589,11 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	if fieldPathS == "id" {
 		if targetAction.KeepsID() {
-			dbentry, hasEntry := b.StateDB.GetResourceEntry(targetResourceKey)
-			idValue := dbentry.ID
-			if !hasEntry || idValue == "" {
+			id := b.StateDB.GetResourceID(targetResourceKey)
+			if id == "" {
 				return nil, errors.New("internal error: no db entry")
 			}
-			return idValue, nil
+			return id, nil
 		}
 		// id may change after deployment, this needs to be done later
 		return nil, errDelayed
@@ -973,7 +967,7 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 
 	adapter, ok := b.Adapters[group]
 	if !ok {
-		return nil, fmt.Errorf("resource type %q not supported, available: %s", group, strings.Join(utils.SortedKeys(b.Adapters), ", "))
+		return nil, fmt.Errorf("resource type %q not supported, available: %s", group, strings.Join(slices.Sorted(maps.Keys(b.Adapters)), ", "))
 	}
 
 	return adapter, nil

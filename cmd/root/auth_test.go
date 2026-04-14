@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,13 +11,26 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+// noNetworkTransport prevents real HTTP calls in auth tests.
+// Returns 404 for all requests so host metadata resolution falls back gracefully.
+var noNetworkTransport = roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+	return &http.Response{StatusCode: http.StatusNotFound, Body: http.NoBody}, nil
+})
+
 func TestEmptyHttpRequest(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	req := emptyHttpRequest(ctx)
 	assert.Equal(t, req.Context(), ctx)
@@ -32,8 +46,11 @@ var workspacePromptFn = func(ctx context.Context, cfg *config.Config, retry bool
 	return workspaceClientOrPrompt(ctx, cfg, retry)
 }
 
-func expectPrompts(t *testing.T, fn promptFn, config *config.Config) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+func expectPrompts(t *testing.T, fn promptFn, cfg *config.Config) {
+	// Prevent real HTTP calls during auth resolution.
+	cfg.HTTPTransport = noNetworkTransport
+
+	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 	defer cancel()
 
 	// Channel to pass errors from the prompting function back to the test.
@@ -43,7 +60,7 @@ func expectPrompts(t *testing.T, fn promptFn, config *config.Config) {
 	go func() {
 		defer close(errch)
 		defer cancel()
-		_, err := fn(ctx, config, true)
+		_, err := fn(ctx, cfg, true)
 		errch <- err
 	}()
 
@@ -57,12 +74,15 @@ func expectPrompts(t *testing.T, fn promptFn, config *config.Config) {
 	}
 }
 
-func expectReturns(t *testing.T, fn promptFn, config *config.Config) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+func expectReturns(t *testing.T, fn promptFn, cfg *config.Config) {
+	// Prevent real HTTP calls during auth resolution.
+	cfg.HTTPTransport = noNetworkTransport
+
+	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 	defer cancel()
 
 	ctx, _ = cmdio.SetupTest(ctx, cmdio.TestOptions{PromptSupported: true})
-	client, err := fn(ctx, config, true)
+	client, err := fn(ctx, cfg, true)
 	require.NoError(t, err)
 	require.NotNil(t, client)
 }
@@ -88,14 +108,18 @@ func TestAccountClientOrPrompt(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	t.Setenv("PATH", "/nothing")
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	t.Run("Prompt if nothing is specified", func(t *testing.T) {
 		expectPrompts(t, accountPromptFn, &config.Config{})
 	})
 
-	t.Run("Prompt if a workspace host is specified", func(t *testing.T) {
-		expectPrompts(t, accountPromptFn, &config.Config{
+	t.Run("Returns if a workspace host is specified with valid auth and account ID", func(t *testing.T) {
+		// If auth succeeds and an account ID is present, trust the SDK's resolution.
+		// This supports unified hosts where HostType() returns WorkspaceHost but
+		// account APIs are available.
+		expectReturns(t, accountPromptFn, &config.Config{
 			Host:      "https://adb-1234567.89.azuredatabricks.net/",
 			AccountID: "1234",
 			Token:     "foobar",
@@ -157,14 +181,18 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	t.Setenv("PATH", "/nothing")
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	t.Run("Prompt if nothing is specified", func(t *testing.T) {
 		expectPrompts(t, workspacePromptFn, &config.Config{})
 	})
 
-	t.Run("Prompt if an account host is specified", func(t *testing.T) {
-		expectPrompts(t, workspacePromptFn, &config.Config{
+	t.Run("Returns if an account host is specified with valid auth", func(t *testing.T) {
+		// If auth succeeds, trust the SDK's resolution. This supports unified
+		// hosts where HostType() returns AccountHost but workspace APIs are
+		// available.
+		expectReturns(t, workspacePromptFn, &config.Config{
 			Host:      "https://accounts.azuredatabricks.net/",
 			AccountID: "1234",
 			Token:     "foobar",
@@ -214,7 +242,7 @@ func TestMustAccountClientWorksWithDatabricksCfg(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 
-	cmd := New(context.Background())
+	cmd := New(t.Context())
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	err = MustAccountClient(cmd, []string{})
@@ -224,7 +252,7 @@ func TestMustAccountClientWorksWithDatabricksCfg(t *testing.T) {
 func TestMustAccountClientWorksWithNoDatabricksCfgButEnvironmentVariables(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
-	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
+	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 	t.Setenv("DATABRICKS_HOST", "https://accounts.azuredatabricks.net/")
@@ -238,7 +266,7 @@ func TestMustAccountClientWorksWithNoDatabricksCfgButEnvironmentVariables(t *tes
 func TestMustAccountClientErrorsWithNoDatabricksCfg(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
-	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
+	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 
@@ -248,6 +276,8 @@ func TestMustAccountClientErrorsWithNoDatabricksCfg(t *testing.T) {
 
 func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
@@ -261,7 +291,7 @@ func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 
-	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
+	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 
@@ -276,6 +306,8 @@ func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 
 func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
@@ -290,7 +322,7 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 
-	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
+	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 
@@ -305,6 +337,8 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 
 func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Clear PATH to prevent the SDK from invoking external tools (e.g. az) during auth resolution.
+	t.Setenv("PATH", "")
 
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
@@ -314,7 +348,7 @@ func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 
-	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
+	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 
@@ -322,4 +356,164 @@ func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 
 	_, err = MustAnyClient(cmd, []string{})
 	require.ErrorContains(t, err, "does not contain account profiles")
+}
+
+func TestMustWorkspaceClientDefaultProfilePrecedence(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[__settings__]
+default_profile = settings-profile
+
+[DEFAULT]
+host = https://default.cloud.databricks.com
+token = default-token
+
+[settings-profile]
+host = https://settings.cloud.databricks.com
+token = settings-token
+
+[env-profile]
+host = https://env.cloud.databricks.com
+token = env-token
+
+[flag-profile]
+host = https://flag.cloud.databricks.com
+token = flag-token
+`), 0o600)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name        string
+		profileFlag string
+		envProfile  string
+		wantProfile string
+		wantHost    string
+	}{
+		{
+			name:        "settings default is used when flag and env are unset",
+			wantProfile: "settings-profile",
+			wantHost:    "https://settings.cloud.databricks.com",
+		},
+		{
+			name:        "env var takes precedence over settings default",
+			envProfile:  "env-profile",
+			wantProfile: "env-profile",
+			wantHost:    "https://env.cloud.databricks.com",
+		},
+		{
+			name:        "profile flag takes precedence over env var",
+			profileFlag: "flag-profile",
+			envProfile:  "env-profile",
+			wantProfile: "flag-profile",
+			wantHost:    "https://flag.cloud.databricks.com",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			testutil.CleanupEnvironment(t)
+			t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+			if tc.envProfile != "" {
+				t.Setenv("DATABRICKS_CONFIG_PROFILE", tc.envProfile)
+			}
+
+			ctx := cmdio.MockDiscard(t.Context())
+			ctx = SkipLoadBundle(ctx)
+			cmd := New(ctx)
+
+			if tc.profileFlag != "" {
+				err := cmd.Flag("profile").Value.Set(tc.profileFlag)
+				require.NoError(t, err)
+			}
+
+			err := MustWorkspaceClient(cmd, []string{})
+			require.NoError(t, err)
+
+			w := cmdctx.WorkspaceClient(cmd.Context())
+			require.NotNil(t, w)
+			assert.Equal(t, tc.wantProfile, w.Config.Profile)
+			assert.Equal(t, tc.wantHost, w.Config.Host)
+		})
+	}
+}
+
+func TestAccountClientOrPromptReturnsErrorForWrongHostType(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	cfg := &config.Config{
+		Host:          "https://adb-1234567.89.azuredatabricks.net/",
+		Token:         "foobar",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	a, err := accountClientOrPrompt(t.Context(), cfg, false)
+	assert.NotNil(t, a)
+	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
+}
+
+func TestWorkspaceClientOrPromptReturnsSuccessWhenAuthSucceeds(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	// If auth succeeds, trust the SDK's resolution regardless of HostType().
+	// This supports unified hosts where HostType() returns AccountHost but
+	// workspace APIs are available.
+	cfg := &config.Config{
+		Host:          "https://accounts.azuredatabricks.net/",
+		AccountID:     "1234",
+		Token:         "foobar",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	w, err := workspaceClientOrPrompt(t.Context(), cfg, false)
+	assert.NotNil(t, w)
+	assert.NoError(t, err)
+}
+
+func TestAccountClientOrPromptReturnsErrorForMissingAccountID(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	t.Setenv("PATH", "")
+
+	cfg := &config.Config{
+		Host:          "https://accounts.azuredatabricks.net/",
+		Token:         "foobar",
+		HTTPTransport: noNetworkTransport,
+	}
+
+	a, err := accountClientOrPrompt(t.Context(), cfg, false)
+	assert.NotNil(t, a)
+	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
+}
+
+func TestMustWorkspaceClientWithoutConfiguredDefaultFallsBackToDefaultSection(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	configFile := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configFile, []byte(`
+[DEFAULT]
+host = https://default.cloud.databricks.com
+token = default-token
+
+[named-profile]
+host = https://named.cloud.databricks.com
+token = named-token
+`), 0o600)
+	require.NoError(t, err)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	ctx = SkipLoadBundle(ctx)
+	cmd := New(ctx)
+
+	err = MustWorkspaceClient(cmd, []string{})
+	require.NoError(t, err)
+
+	w := cmdctx.WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+	assert.Equal(t, "", w.Config.Profile)
+	assert.Equal(t, "https://default.cloud.databricks.com", w.Config.Host)
 }

@@ -2,11 +2,11 @@ package completion
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/cmdio"
 	libcompletion "github.com/databricks/cli/libs/completion"
+	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 )
 
@@ -21,17 +21,17 @@ func newStatusCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			shell, err := libcompletion.DetectShell(shellFlag)
+			shell, err := libcompletion.DetectShell(ctx, shellFlag)
 			if err != nil {
 				return err
 			}
 
-			home, err := os.UserHomeDir()
+			home, err := env.UserHomeDir(ctx)
 			if err != nil {
 				return err
 			}
 
-			result, err := libcompletion.Status(shell, home)
+			result, err := libcompletion.Status(ctx, shell, home)
 			if err != nil {
 				return err
 			}

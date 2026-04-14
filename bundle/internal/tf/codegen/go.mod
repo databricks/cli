@@ -11,13 +11,12 @@ require (
 	github.com/hashicorp/terraform-json v0.27.2
 	github.com/iancoleman/strcase v0.3.0
 	github.com/zclconf/go-cty v1.16.4
-	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6
 )
 
 require (
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
-	github.com/cloudflare/circl v1.6.1 // indirect
+	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	golang.org/x/crypto v0.45.0 // indirect

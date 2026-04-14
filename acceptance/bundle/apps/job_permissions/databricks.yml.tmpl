@@ -1,0 +1,30 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+permissions:
+  - level: CAN_MANAGE
+    user_name: ${workspace.current_user.userName}
+
+resources:
+  jobs:
+    my_job:
+      name: my-job
+      tasks:
+        - task_key: hello
+          environment_key: default
+          spark_python_task:
+            python_file: ./hello.py
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
+  apps:
+    my_app:
+      name: test$UNIQUE_NAME
+      source_code_path: ./app
+      resources:
+        - name: my-job
+          job:
+            id: ${resources.jobs.my_job.id}
+            permission: CAN_MANAGE_RUN

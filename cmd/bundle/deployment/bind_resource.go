@@ -16,9 +16,9 @@ import (
 // BindResource binds a bundle resource to an existing workspace resource.
 // This function is shared between the bind command and generate commands with --bind flag.
 func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprove, forceLock, skipInitContext bool) error {
-	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+	b, stateDesc, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 		SkipInitContext: skipInitContext,
-		ReadState:       true,
+		AlwaysPull:      true,
 		InitFunc: func(b *bundle.Bundle) {
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
 		},
@@ -43,13 +43,16 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 		return fmt.Errorf("%s with an id '%s' is not found", resource.ResourceDescription().SingularName, resourceId)
 	}
 
-	tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+	tfName, ok := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+	if !ok {
+		tfName = resource.ResourceDescription().PluralName
+	}
 	phases.Bind(ctx, b, &terraform.BindOptions{
 		AutoApprove:  autoApprove,
 		ResourceType: tfName,
 		ResourceKey:  resourceKey,
 		ResourceId:   resourceId,
-	})
+	}, stateDesc.Engine)
 	if logdiag.HasError(ctx) {
 		return root.ErrAlreadyPrinted
 	}

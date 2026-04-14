@@ -36,9 +36,8 @@ func TestValidate(t *testing.T) {
 			wantErr: "--accelerator flag can only be used with serverless compute (--name flag)",
 		},
 		{
-			name:    "connection name without accelerator",
-			opts:    client.ClientOptions{ConnectionName: "my-conn"},
-			wantErr: "--name flag requires --accelerator to be set (for now we only support serverless GPU compute)",
+			name: "connection name without accelerator",
+			opts: client.ClientOptions{ConnectionName: "my-conn"},
 		},
 		{
 			name:    "invalid connection name characters",
@@ -53,6 +52,15 @@ func TestValidate(t *testing.T) {
 		{
 			name: "valid connection name with accelerator",
 			opts: client.ClientOptions{ConnectionName: "my-conn_1", Accelerator: "GPU_1xA10"},
+		},
+		{
+			name: "valid connection name with GPU_8xH100 accelerator",
+			opts: client.ClientOptions{ConnectionName: "my-conn_1", Accelerator: "GPU_8xH100"},
+		},
+		{
+			name:    "invalid accelerator value",
+			opts:    client.ClientOptions{ConnectionName: "my-conn", Accelerator: "CPU_1x"},
+			wantErr: `invalid accelerator value: "CPU_1x", expected "GPU_1xA10" or "GPU_8xH100"`,
 		},
 		{
 			name: "both cluster ID and connection name",
@@ -75,6 +83,15 @@ func TestValidate(t *testing.T) {
 		{
 			name: "valid IDE cursor",
 			opts: client.ClientOptions{ClusterID: "abc-123", IDE: "cursor"},
+		},
+		{
+			name:    "environment version too low",
+			opts:    client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 3},
+			wantErr: "environment version must be >= 4, got 3",
+		},
+		{
+			name: "valid environment version",
+			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
 		},
 	}
 
@@ -139,6 +156,11 @@ func TestToProxyCommand(t *testing.T) {
 			name: "with liteswap",
 			opts: client.ClientOptions{ClusterID: "abc-123", Liteswap: "test-env"},
 			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --liteswap=test-env",
+		},
+		{
+			name: "with environment version",
+			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
+			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --environment-version=4",
 		},
 	}
 

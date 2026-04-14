@@ -259,6 +259,18 @@ Response.Body = '<response body here>'
 	router.NotFoundHandler = notFoundFunc
 	router.MethodNotAllowedHandler = notFoundFunc
 
+	// Register a default handler for the SDK's host metadata discovery endpoint.
+	// The SDK resolves this during config initialization (as of v0.126.0) to
+	// determine workspace/account IDs, cloud, and OIDC endpoints. Without this
+	// handler, any test that creates an SDK client against this server would fail
+	// with "No handler for URL: /.well-known/databricks-config".
+	s.Handle("GET", "/.well-known/databricks-config", func(_ Request) any {
+		return map[string]any{
+			"oidc_endpoint": server.URL + "/oidc",
+			"workspace_id":  "470123456789500",
+		}
+	})
+
 	return s
 }
 

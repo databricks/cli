@@ -1,7 +1,6 @@
 package env
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -9,7 +8,7 @@ import (
 )
 
 func TestTarget(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testutil.CleanupEnvironment(t)
 

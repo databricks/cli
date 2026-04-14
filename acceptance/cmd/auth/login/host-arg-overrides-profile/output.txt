@@ -3,14 +3,8 @@
 [override-test]
 host = https://old-host.cloud.databricks.com
 
-=== Login with positional host argument (should override profile)
->>> [CLI] auth login [DATABRICKS_URL] --profile override-test
-Profile override-test was successfully saved
+=== Login with --host flag (should error on conflict)
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile override-test
+Error: --profile "override-test" has host "https://old-host.cloud.databricks.com", which conflicts with --host "[DATABRICKS_URL]". Use --profile only to select a profile
 
-=== Profile after login (host should be updated)
-; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
-[DEFAULT]
-
-[override-test]
-host      = [DATABRICKS_URL]
-auth_type = databricks-cli
+Exit code: 1

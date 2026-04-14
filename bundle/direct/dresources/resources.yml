@@ -1,4 +1,4 @@
-# Resource lifecycle configuration for Databricks Asset Bundles.
+# Resource lifecycle configuration for Declarative Automation Bundles.
 # This file defines how field changes affect resource operations.
 #
 # Available options:
@@ -227,6 +227,16 @@ resources:
       # Routes have custom SuppressDiff (lines 387-388)
       - field: config.traffic_config
         reason: managed
+      - field: budget_policy_id
+        reason: no_update_api
+        # There is PublicPreview endpoints but we're not using it https://docs.databricks.com/api/workspace/servingendpoints/put
+      - field: rate_limits
+        reason: not_implemented
+    ignore_local_changes:
+      - field: budget_policy_id
+        reason: no_update_api
+      - field: rate_limits
+        reason: not_implemented
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
       # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
@@ -366,11 +376,21 @@ resources:
       - field: name
         reason: immutable
     backend_defaults:
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/internal/providers/pluginfw/products/app/resource_app.go#L41
-      # s["compute_size"] = s["compute_size"].SetComputed()
+      # Backend sets it "MEDIUM" when not specified in the config
       - field: compute_size
+      # lifecycle.started is derived from remote compute status in RemapState, so the
+      # remote side always has a value. When the user omits lifecycle from config,
+      # both old and new are nil and backend_defaults correctly skips the remote value.
+      # When the user explicitly sets lifecycle.started, old/new are non-nil and normal
+      # drift detection applies (e.g. detecting out-of-band stop).
+      - field: lifecycle
+      - field: lifecycle.started
 
   secret_scopes:
+    backend_defaults:
+      # The Secrets API defaults scope_backend_type to DATABRICKS when not specified.
+      - field: scope_backend_type
+        values: ["DATABRICKS"]
     recreate_on_changes:
       - field: scope
         reason: immutable

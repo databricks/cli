@@ -1,5 +1,76 @@
 # Version changelog
 
+## Release v0.296.0 (2026-04-08)
+
+### Notable Changes
+* Direct deployment engine for DABs is now in Public Preview. Documentation at [docs/direct.md](docs/direct.md).
+
+### CLI
+* Auth commands now error when --profile and --host conflict ([#4841](https://github.com/databricks/cli/pull/4841))
+* Add `--force-refresh` flag to `databricks auth token` to force a token refresh even when the cached token is still valid ([#4767](https://github.com/databricks/cli/pull/4767))
+
+### Bundles
+* Deduplicate grant entries with duplicate principals or privileges during initialization ([#4801](https://github.com/databricks/cli/pull/4801))
+* Fix `bundle deployment bind` to always pull remote state before modifying ([#4892](https://github.com/databricks/cli/pull/4892))
+* engine/direct: Fix drift in grants resource due to privilege reordering ([#4794](https://github.com/databricks/cli/pull/4794))
+* engine/direct: Fix 400 error when deploying grants with ALL_PRIVILEGES ([#4801](https://github.com/databricks/cli/pull/4801))
+* engine/direct: Fix unwanted recreation of secret scopes when scope_backend_type is not set ([#4834](https://github.com/databricks/cli/pull/4834))
+* engine/direct: Fix bind and unbind for non-Terraform resources ([#4850](https://github.com/databricks/cli/pull/4850))
+* engine/direct: Fix deploying removed principals ([#4824](https://github.com/databricks/cli/pull/4824))
+* engine/direct: Fix secret scope permissions migration from Terraform to Direct engine ([#4866](https://github.com/databricks/cli/pull/4866))
+
+
+## Release v0.295.0 (2026-03-18)
+
+### Notable Changes
+
+* Databricks Asset Bundles have been renamed to Declarative Automation Bundles (DABs). This is a non-breaking change; no code or configuration modifications are required. See the [FAQ](https://docs.databricks.com/aws/en/dev-tools/bundles/faqs#why-was-databricks-asset-bundles-renamed-to-declarative-automation-bundles).
+* Add `bundle.engine` config setting to select the deployment engine (`terraform` or [`direct`](https://docs.databricks.com/aws/en/dev-tools/bundles/direct)). The `bundle.engine` setting takes precedence over the `DATABRICKS_BUNDLE_ENGINE` environment variable. When the configured engine doesn't match existing deployment state, a warning is issued and the existing engine is used ([#4749](https://github.com/databricks/cli/pull/4749), [#4782](https://github.com/databricks/cli/pull/4782))
+
+### CLI
+* Add `databricks auth switch` command for setting the default profile ([#4651](https://github.com/databricks/cli/pull/4651))
+* Add positional argument support to `auth logout` ([#4744](https://github.com/databricks/cli/pull/4744))
+* Strip trailing slash from host in `auth login`, `auth token`, and `configure` commands ([#4633](https://github.com/databricks/cli/pull/4633))
+
+### Bundles
+* Standardize `personal_schemas` enum across bundle templates ([#4401](https://github.com/databricks/cli/pull/4401))
+* engine/direct: Fix permanent drift on experiment name field ([#4627](https://github.com/databricks/cli/pull/4627))
+* engine/direct: Fix permissions state path to match input config schema ([#4703](https://github.com/databricks/cli/pull/4703))
+* Add default project name and success message to default-scala template ([#4661](https://github.com/databricks/cli/pull/4661))
+* Skip enum validation for unresolved variable references ([#4752](https://github.com/databricks/cli/pull/4752))
+* engine/direct: Support references to/from grants ([#4774](https://github.com/databricks/cli/pull/4774))
+
+
+## Release v0.294.0 (2026-03-12)
+
+### Bundles
+* Modify grants to use SDK types ([#4666](https://github.com/databricks/cli/pull/4666))
+* Modify permissions to use SDK types where available. This makes DABs validate permission levels, producing a warning on the unknown ones ([#4686](https://github.com/databricks/cli/pull/4686))
+
+### Dependency updates
+* Bump databricks-sdk-go from v0.112.0 to v0.119.0 ([#4631](https://github.com/databricks/cli/pull/4631), [#4695](https://github.com/databricks/cli/pull/4695))
+
+
+## Release v0.293.0 (2026-03-12)
+
+⚠️ v0.293.0 (2026-03-12) is the same as v0.292.0 (2026-03-05) ⚠️
+
+An issue in our release pipeline caused v0.293.0 to be released off the same Git commit as v0.292.0.
+
+
+## Release v0.292.0 (2026-03-05)
+
+### Bundles
+* Added permissions support for Lakebase Database projects ([#4626](https://github.com/databricks/cli/pull/4626))
+
+
+## Release v0.291.0 (2026-03-04)
+
+### Bundles
+* Validate that either source_code_path or git_source is set for apps ([#4632](https://github.com/databricks/cli/pull/4632))
+* direct: model_serving_endpoints: ignore budget_policy_id, rate_limits changes in the plan. Previously they were ignored as well but action as "update". ([#4638](https://github.com/databricks/cli/pull/4638))
+
+
 ## Release v0.290.1 (2026-02-26)
 
 ### CLI

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -37,13 +36,13 @@ func (s *FakeWorkspace) ExternalLocationsCreate(req Request) Response {
 		Fallback:          createRequest.Fallback,
 		EncryptionDetails: createRequest.EncryptionDetails,
 		FileEventQueue:    createRequest.FileEventQueue,
-		CreatedAt:         time.Now().UnixMilli(),
+		CreatedAt:         nowMilli(),
 		CreatedBy:         s.CurrentUser().UserName,
-		UpdatedAt:         time.Now().UnixMilli(),
 		UpdatedBy:         s.CurrentUser().UserName,
 		MetastoreId:       nextUUID(),
 		Owner:             s.CurrentUser().UserName,
 	}
+	locationInfo.UpdatedAt = locationInfo.CreatedAt
 
 	s.ExternalLocations[createRequest.Name] = locationInfo
 	return Response{
@@ -95,7 +94,7 @@ func (s *FakeWorkspace) ExternalLocationsUpdate(req Request, name string) Respon
 		name = updateRequest.NewName
 	}
 
-	existing.UpdatedAt = time.Now().UnixMilli()
+	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName
 
 	s.ExternalLocations[name] = existing

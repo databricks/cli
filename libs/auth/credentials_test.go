@@ -163,7 +163,7 @@ func TestCLICredentialsConfigure(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 			c := CLICredentials{persistentAuthFn: tt.persistentAuthFn}
 
 			got, err := c.Configure(ctx, tt.cfg)

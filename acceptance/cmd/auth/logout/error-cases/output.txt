@@ -1,0 +1,10 @@
+
+=== Logout of non-existent profile
+Error: profile "nonexistent" not found. Available profiles: dev
+
+Exit code: 1
+
+=== Logout without --profile in non-interactive mode
+Error: the command is being run in a non-interactive environment, please specify a profile using the PROFILE argument or --profile flag
+
+Exit code: 1

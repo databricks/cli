@@ -3,6 +3,7 @@ package testarchive
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/databricks/cli/libs/env"
 )
 
 // Verbose controls whether detailed progress is printed.
@@ -26,7 +29,7 @@ func logf(format string, args ...any) {
 // getCacheDir returns the cache directory for downloads.
 // It uses ~/.cache/testarchive by default.
 func getCacheDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := env.UserHomeDir(context.Background()) //nolint:gocritic // Test utility without caller context.
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
