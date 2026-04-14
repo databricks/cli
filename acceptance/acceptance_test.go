@@ -17,7 +17,6 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -486,7 +485,7 @@ func getTests(t *testing.T) []string {
 	})
 	require.NoError(t, err)
 
-	sort.Strings(testDirs)
+	slices.Sort(testDirs)
 	return testDirs
 }
 

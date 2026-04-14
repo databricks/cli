@@ -5,7 +5,6 @@ import (
 	"maps"
 	"path/filepath"
 	"slices"
-	"sort"
 
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -94,7 +93,7 @@ func (l *Locations) registerFileNames(locs []dyn.Location) error {
 	}
 
 	l.Files = slices.Collect(maps.Values(cache))
-	sort.Strings(l.Files)
+	slices.Sort(l.Files)
 
 	// Build the file-to-index map.
 	for i, file := range l.Files {

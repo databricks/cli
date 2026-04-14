@@ -2,7 +2,7 @@ package utils
 
 import (
 	"reflect"
-	"sort"
+	"slices"
 )
 
 func SortedKeys[T any](m map[string]T) []string {
@@ -10,7 +10,7 @@ func SortedKeys[T any](m map[string]T) []string {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	slices.Sort(keys)
 	return keys
 }
 

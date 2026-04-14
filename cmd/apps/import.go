@@ -2,12 +2,13 @@ package apps
 
 import (
 	"bufio"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -117,13 +118,16 @@ Examples:
 				}
 
 				// Sort apps: owned by current user first
-				sort.Slice(appList, func(i, j int) bool {
-					iOwned := strings.ToLower(appList[i].Creator) == currentUserEmail
-					jOwned := strings.ToLower(appList[j].Creator) == currentUserEmail
-					if iOwned != jOwned {
-						return iOwned
+				slices.SortFunc(appList, func(a, b apps.App) int {
+					aOwned := strings.ToLower(a.Creator) == currentUserEmail
+					bOwned := strings.ToLower(b.Creator) == currentUserEmail
+					if aOwned != bOwned {
+						if aOwned {
+							return -1
+						}
+						return 1
 					}
-					return appList[i].Name < appList[j].Name
+					return cmp.Compare(a.Name, b.Name)
 				})
 
 				// Build selection map

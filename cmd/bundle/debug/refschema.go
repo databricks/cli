@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/direct/dresources"
@@ -112,7 +112,7 @@ func dumpRemoteSchemas(out io.Writer) error {
 			}
 		}
 
-		sort.Strings(lines)
+		slices.Sort(lines)
 		for _, l := range lines {
 			fmt.Fprint(out, l)
 		}

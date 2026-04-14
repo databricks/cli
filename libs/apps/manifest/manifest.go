@@ -1,11 +1,12 @@
 package manifest
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -58,7 +59,7 @@ func (r Resource) FieldNames() []string {
 	for k := range r.Fields {
 		names = append(names, k)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	return names
 }
 
@@ -122,8 +123,8 @@ func (m *Manifest) GetPlugins() []Plugin {
 		}
 		plugins = append(plugins, p)
 	}
-	sort.Slice(plugins, func(i, j int) bool {
-		return plugins[i].Name < plugins[j].Name
+	slices.SortFunc(plugins, func(a, b Plugin) int {
+		return cmp.Compare(a.Name, b.Name)
 	})
 	return plugins
 }
@@ -174,7 +175,7 @@ func (m *Manifest) GetPluginNames() []string {
 	for name := range m.Plugins {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	return names
 }
 
