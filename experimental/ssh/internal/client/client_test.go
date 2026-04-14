@@ -36,9 +36,8 @@ func TestValidate(t *testing.T) {
 			wantErr: "--accelerator flag can only be used with serverless compute (--name flag)",
 		},
 		{
-			name:    "connection name without accelerator",
-			opts:    client.ClientOptions{ConnectionName: "my-conn"},
-			wantErr: "--name flag requires --accelerator to be set (for now we only support serverless GPU compute)",
+			name: "connection name without accelerator",
+			opts: client.ClientOptions{ConnectionName: "my-conn"},
 		},
 		{
 			name:    "invalid connection name characters",

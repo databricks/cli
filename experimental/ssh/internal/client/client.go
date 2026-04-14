@@ -31,6 +31,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 )
 
@@ -105,15 +106,8 @@ func (o *ClientOptions) Validate() error {
 	if o.Accelerator != "" && o.ConnectionName == "" {
 		return errors.New("--accelerator flag can only be used with serverless compute (--name flag)")
 	}
-	// Consider removing this check when we enable serverless CPU connections. Ideally Jobs API should do the validation
-	// for us, but they don't plan on doing it in the nearest future. For now we should not forget to check if there are
-	// any other possible values that can be here.
 	if o.Accelerator != "" && o.Accelerator != "GPU_1xA10" && o.Accelerator != "GPU_8xH100" {
 		return fmt.Errorf("invalid accelerator value: %q, expected %q or %q", o.Accelerator, "GPU_1xA10", "GPU_8xH100")
-	}
-	// TODO: Remove when we add support for serverless CPU
-	if o.ConnectionName != "" && o.Accelerator == "" {
-		return errors.New("--name flag requires --accelerator to be set (for now we only support serverless GPU compute)")
 	}
 	if o.ConnectionName != "" && !connectionNameRegex.MatchString(o.ConnectionName) {
 		return fmt.Errorf("connection name %q must consist of letters, numbers, dashes, and underscores", o.ConnectionName)
@@ -215,6 +209,9 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	if !opts.ProxyMode {
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
+		if opts.IsServerlessMode() && opts.Accelerator == "" {
+			cmdio.LogString(ctx, color.YellowString("WARNING: serverless compute without an accelerator is in private preview. If you are not enrolled, this command will likely time out with an error. Contact your Databricks account team to enroll."))
+		}
 	}
 
 	if opts.IDE != "" && !opts.ProxyMode {
@@ -294,6 +291,10 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		}
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
+			if opts.IsServerlessMode() && opts.Accelerator == "" && errors.Is(err, errServerMetadata) {
+				return fmt.Errorf("failed to ensure that ssh server is running: %w\n\n"+
+					color.YellowString("This may be because serverless compute without an accelerator is in private preview.\nContact your Databricks account team to enroll."), err)
+			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
 	} else {
