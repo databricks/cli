@@ -6,6 +6,5 @@ EnvMatrixExclude.no_grant_ref = ["INPUT_CONFIG=schema_grant_ref.yml.tmpl"]
 # Model permissions did not work until 0.297.0 https://github.com/databricks/cli/pull/4941
 EnvMatrixExclude.no_model_with_permissions = ["INPUT_CONFIG=model_with_permissions.yml.tmpl"]
 
-# apps updates were broken on direct until 0.297.0 https://github.com/databricks/cli/pull/4963
 # LOG.deploy: Error: cannot update resources.apps.foo: updating id=app-dnppf7fm4zalnocu4yav774xpy: Invalid update mask. Only description, budget_policy_id, usage_policy_id, resources, user_api_scopes, compute_size, compute_min_instances, compute_max_instances, git_repository, telemetry_export_destinations are allowed. Supplied update mask: * (400 INVALID_PARAMETER_VALUE)
 EnvMatrixExclude.no_app = ["INPUT_CONFIG=app.yml"]
