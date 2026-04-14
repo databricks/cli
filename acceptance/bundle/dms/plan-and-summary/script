@@ -13,3 +13,4 @@ trace print_requests.py --get //bundle ^//workspace-files ^//import-file
 
 # Clean up.
 $CLI bundle destroy --auto-approve > /dev/null 2>&1
+print_requests.py --get > /dev/null 2>&1 || true

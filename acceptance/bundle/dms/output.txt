@@ -8,10 +8,10 @@ Deployment complete!
 Traceback (most recent call last):
   File "[TESTROOT]/bin/print_requests.py", line 197, in <module>
     main()
-  File "[TESTROOT]/bin/print_requests.py", line 172, in main
-    data = fobj.read()
-  File "/usr/lib/python3.6/encodings/ascii.py", line 26, in decode
-    return codecs.ascii_decode(input, self.errors)[0]
-UnicodeDecodeError: 'ascii' codec can't decode byte 0xe2 in position 22608: ordinal not in range(128)
+  File "[TESTROOT]/bin/print_requests.py", line 178, in main
+    filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort)
+  File "[TESTROOT]/bin/print_requests.py", line 114, in filter_requests
+    positive_filters.append(f.removeprefix(ADD_PREFIX))
+AttributeError: 'str' object has no attribute 'removeprefix'
 
 Exit code: 1

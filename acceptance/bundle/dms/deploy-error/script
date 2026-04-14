@@ -3,3 +3,4 @@ trace musterr $CLI bundle deploy
 
 # Print the metadata service requests to verify the failed operation is reported.
 trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+print_requests.py --get > /dev/null 2>&1 || true

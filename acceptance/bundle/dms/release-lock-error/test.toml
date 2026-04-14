@@ -1,2 +1,4 @@
+Ignore = [".databricks"]
+
 # Override target to "fail-complete" which makes the test server's
 # CompleteVersion endpoint return an error, simulating a release failure.

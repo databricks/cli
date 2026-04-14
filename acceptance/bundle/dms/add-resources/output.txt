@@ -20,6 +20,6 @@ Traceback (most recent call last):
     data = fobj.read()
   File "/usr/lib/python3.6/encodings/ascii.py", line 26, in decode
     return codecs.ascii_decode(input, self.errors)[0]
-UnicodeDecodeError: 'ascii' codec can't decode byte 0xe2 in position 7053: ordinal not in range(128)
+UnicodeDecodeError: 'ascii' codec can't decode byte 0xe2 in position 6985: ordinal not in range(128)
 
 Exit code: 1
