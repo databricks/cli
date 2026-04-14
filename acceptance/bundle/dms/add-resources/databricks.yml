@@ -1,0 +1,7 @@
+bundle:
+  name: add-resources-test
+
+resources:
+  jobs:
+    job_a:
+      name: job-a

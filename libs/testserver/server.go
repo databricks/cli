@@ -305,7 +305,7 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 
 		var resp EncodedResponse
 
-		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) || strings.Contains(r.URL.Path, "INJECT_ERROR") {
 			resp = EncodedResponse{
 				StatusCode: 500,
 				Body:       []byte("INJECTED"),

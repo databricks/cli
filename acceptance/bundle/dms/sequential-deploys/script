@@ -1,0 +1,7 @@
+# Deploy three times in sequence to verify version numbers increment.
+trace $CLI bundle deploy
+trace $CLI bundle deploy
+trace $CLI bundle deploy
+
+# Print metadata service requests. Version IDs should be 1, 2, 3.
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file

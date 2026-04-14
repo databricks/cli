@@ -1,0 +1,11 @@
+# Deploy with the metadata service enabled.
+trace $CLI bundle deploy
+
+# Print all metadata service requests made during deploy.
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+
+# Destroy with the metadata service enabled.
+trace $CLI bundle destroy --auto-approve
+
+# Print all metadata service requests made during destroy.
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file

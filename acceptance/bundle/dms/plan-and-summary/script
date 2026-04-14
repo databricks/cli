@@ -1,0 +1,15 @@
+# Deploy first to populate DMS state.
+trace $CLI bundle deploy
+
+# Plan should read state from DMS via ListResources.
+trace $CLI bundle plan
+
+# Summary should show the deployment ID and read state from DMS.
+trace $CLI bundle summary
+
+# Print metadata service requests from plan and summary.
+# Both should include ListResources calls.
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+
+# Clean up.
+$CLI bundle destroy --auto-approve > /dev/null 2>&1

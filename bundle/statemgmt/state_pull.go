@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -219,6 +220,18 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 	directLocalState := localRead(ctx, localPathDirect, engine.EngineDirect)
 	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
 
+	// When DMS is enabled, read the deployment ID from workspace and return
+	// early. State is loaded from the server later via LoadStateFromDMS.
+	if useDMS, _ := env.ManagedState(ctx); useDMS == "true" {
+		f, err := deploy.StateFiler(b)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
+		b.DeploymentID = readDeploymentID(ctx, f)
+		return nil
+	}
+
 	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
 		f, err := deploy.StateFiler(b)
 		if err != nil {
@@ -304,4 +317,31 @@ func logStatesDiag(ctx context.Context, severity diag.Severity, msg string, stat
 		Severity: severity,
 		Detail:   "Available state files:\n- " + strings.Join(stateStrs, "\n- "),
 	})
+}
+
+// readDeploymentID reads the DMS deployment ID from the workspace resources.json.
+// Returns "" if the file doesn't exist or doesn't contain a deployment_id.
+func readDeploymentID(ctx context.Context, f filer.Filer) string {
+	reader, err := f.Read(ctx, "resources.json")
+	if errors.Is(err, fs.ErrNotExist) {
+		return ""
+	}
+	if err != nil {
+		log.Debugf(ctx, "Failed to read resources.json for deployment ID: %v", err)
+		return ""
+	}
+	defer reader.Close()
+
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		log.Debugf(ctx, "Failed to read resources.json content: %v", err)
+		return ""
+	}
+
+	var rj ResourcesJSON
+	if err := json.Unmarshal(data, &rj); err != nil {
+		log.Debugf(ctx, "Failed to parse resources.json: %v", err)
+		return ""
+	}
+	return rj.DeploymentID
 }

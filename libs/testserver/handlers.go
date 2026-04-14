@@ -921,4 +921,42 @@ func AddDefaultHandlers(server *Server) {
 			},
 		}
 	})
+
+	// Deployment Metadata Service:
+
+	server.Handle("POST", "/api/2.0/bundle/deployments", func(req Request) any {
+		return req.Workspace.DeploymentMetadataCreateDeployment(req)
+	})
+
+	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}", func(req Request) any {
+		return req.Workspace.DeploymentMetadataGetDeployment(req.Vars["deployment_id"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/bundle/deployments/{deployment_id}", func(req Request) any {
+		return req.Workspace.DeploymentMetadataDeleteDeployment(req.Vars["deployment_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions", func(req Request) any {
+		return req.Workspace.DeploymentMetadataCreateVersion(req, req.Vars["deployment_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}", func(req Request) any {
+		return req.Workspace.DeploymentMetadataGetVersion(req.Vars["deployment_id"], req.Vars["version_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/heartbeat", func(req Request) any {
+		return req.Workspace.DeploymentMetadataHeartbeat(req, req.Vars["deployment_id"], req.Vars["version_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/complete", func(req Request) any {
+		return req.Workspace.DeploymentMetadataCompleteVersion(req, req.Vars["deployment_id"], req.Vars["version_id"])
+	})
+
+	server.Handle("POST", "/api/2.0/bundle/deployments/{deployment_id}/versions/{version_id}/operations", func(req Request) any {
+		return req.Workspace.DeploymentMetadataCreateOperation(req, req.Vars["deployment_id"], req.Vars["version_id"])
+	})
+
+	server.Handle("GET", "/api/2.0/bundle/deployments/{deployment_id}/resources", func(req Request) any {
+		return req.Workspace.DeploymentMetadataListResources(req.Vars["deployment_id"])
+	})
 }
