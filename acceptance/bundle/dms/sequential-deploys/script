@@ -1,7 +1,36 @@
-# Deploy three times in sequence to verify version numbers increment.
-trace $CLI bundle deploy
-trace $CLI bundle deploy
+# Deploy with one job.
 trace $CLI bundle deploy
 
-# Print metadata service requests. Version IDs should be 1, 2, 3.
+# Add a second job and redeploy.
+cat > databricks.yml << 'EOF'
+bundle:
+  name: sequential-deploys-test
+
+resources:
+  jobs:
+    test_job:
+      name: test-job
+    new_job:
+      name: new-job
+EOF
+trace $CLI bundle deploy
+
+# Remove the first job and redeploy (should delete test_job).
+cat > databricks.yml << 'EOF'
+bundle:
+  name: sequential-deploys-test
+
+resources:
+  jobs:
+    new_job:
+      name: new-job
+EOF
+trace $CLI bundle deploy
+
+# Print metadata service requests across all three deploys.
+# Version 1: CREATE test_job
+# Version 2: CREATE new_job (test_job unchanged)
+# Version 3: DELETE test_job (new_job unchanged)
 trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+# Clear remaining requests so out.requests.txt is not generated.
+print_requests.py --get > /dev/null 2>&1 || true

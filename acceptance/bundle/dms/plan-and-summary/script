@@ -13,3 +13,5 @@ trace print_requests.py --get //bundle ^//workspace-files ^//import-file
 
 # Clean up.
 $CLI bundle destroy --auto-approve > /dev/null 2>&1
+# Clear remaining requests so out.requests.txt is not generated.
+print_requests.py --get > /dev/null 2>&1 || true
