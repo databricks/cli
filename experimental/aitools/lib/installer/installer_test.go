@@ -209,7 +209,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 	assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.4).")
 }
 
 func TestInstallSkillForSingleWritesState(t *testing.T) {
@@ -232,7 +232,7 @@ func TestInstallSkillForSingleWritesState(t *testing.T) {
 	assert.Len(t, state.Skills, 1)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 
-	assert.Contains(t, stderr.String(), "Installed 1 skill (v0.1.3).")
+	assert.Contains(t, stderr.String(), "Installed 1 skill (v0.1.4).")
 }
 
 func TestInstallSkillsSpecificNotFound(t *testing.T) {
@@ -275,7 +275,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-experimental")
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.4).")
 }
 
 func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
@@ -305,7 +305,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 	assert.Contains(t, state.Skills, "databricks-experimental")
 	assert.True(t, state.IncludeExperimental)
 
-	assert.Contains(t, stderr.String(), "Installed 3 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), "Installed 3 skills (v0.1.4).")
 }
 
 func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
@@ -339,7 +339,7 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-future")
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.4).")
 	assert.Contains(t, logBuf.String(), "requires CLI version 0.300.0")
 }
 
