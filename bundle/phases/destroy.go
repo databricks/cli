@@ -104,6 +104,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 			}
 		}
 	} else {
+		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
 
@@ -127,6 +128,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		logdiag.LogError(ctx, err)
 		return
 	}
+
 	if !ok {
 		cmdio.LogString(ctx, "No active deployment found to destroy!")
 		return
@@ -149,6 +151,9 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	if !engine.IsDirect() {
 		bundle.ApplySeqContext(ctx, b,
+			// We need to resolve artifact variable (how we do it in build phase)
+			// because some of the to-be-destroyed resource might use this variable.
+			// Not resolving might lead to terraform "Reference to undeclared resource" error
 			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
 			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
 

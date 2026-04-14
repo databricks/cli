@@ -98,6 +98,8 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 }
 
 func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) {
+	// Core mutators that CRUD resources and modify deployment state. These
+	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if targetEngine.IsDirect() {
@@ -113,6 +115,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
 
+	// Even if deployment failed, there might be updates in states that we need to upload
 	statemgmt.PushResourcesState(ctx, b, targetEngine)
 	if logdiag.HasError(ctx) {
 		return
@@ -178,11 +181,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		metrics.TrackUsedCompute(),
 		deploy.ResourcePathMkdir(),
 	)
+
 	if logdiag.HasError(ctx) {
 		return
 	}
 
 	if plan != nil {
+		// Initialize DeploymentBundle for applying the loaded plan
 		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(), plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
@@ -191,6 +196,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	} else {
 		plan = RunPlan(ctx, b, engine)
 	}
+
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -200,12 +206,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		logdiag.LogError(ctx, err)
 		return
 	}
-	if !haveApproval {
+	if haveApproval {
+		deployCore(ctx, b, plan, engine)
+	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 		return
 	}
 
-	deployCore(ctx, b, plan, engine)
 	if logdiag.HasError(ctx) {
 		return
 	}
