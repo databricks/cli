@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -168,7 +168,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 	// git_source, lifecycle) are not part of apps.App and thus excluded from the request body.
 	if hasAppChanges(entry) {
 		fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "")
-		sort.Strings(fieldPaths)
+		slices.Sort(fieldPaths)
 		for i, fieldPath := range fieldPaths {
 			fieldPaths[i] = truncateAtIndex(fieldPath)
 		}
