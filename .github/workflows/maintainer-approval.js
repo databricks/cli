@@ -96,7 +96,7 @@ async function checkPerPathApproval(files, rulesWithTeams, approverLogins, githu
 
 // --- Git history & scoring helpers ---
 
-const MENTION_REVIEWERS = true;
+const MENTION_REVIEWERS = false;
 const OWNERS_LINK = "[OWNERS](.github/OWNERS)";
 const MARKER = "<!-- MAINTAINER_APPROVAL -->";
 const STATUS_CONTEXT = "maintainer-approval";
@@ -225,6 +225,10 @@ function fmtEligible(owners) {
   return owners.join(", ");
 }
 
+function fmtLogin(login) {
+  return MENTION_REVIEWERS ? `@${login}` : login;
+}
+
 async function countRecentReviews(github, owner, repo, logins, days = 30) {
   const since = new Date(Date.now() - days * 86400000)
     .toISOString()
@@ -267,7 +271,7 @@ function buildPendingPerGroupComment(groups, scores, dirScores, approvedBy, main
 
     const approver = approvedBy.get(pattern);
     if (approver) {
-      lines.push(`### \`${pattern}\` - approved by @${approver}`);
+      lines.push(`### \`${pattern}\` - approved by ${fmtLogin(approver)}`);
     } else {
       lines.push(`### \`${pattern}\` - needs approval`);
     }
@@ -277,13 +281,13 @@ function buildPendingPerGroupComment(groups, scores, dirScores, approvedBy, main
     const individuals = owners.filter(o => !o.includes("/") && o.toLowerCase() !== authorLower);
 
     if (teams.length > 0) {
-      lines.push(`Teams: ${teams.map(t => `@${t}`).join(", ")}`);
+      lines.push(`Teams: ${teams.map(t => fmtLogin(t)).join(", ")}`);
     }
 
     if (!approver && individuals.length > 0) {
       const scored = individuals.map(o => [o, scores[o] || 0]).sort((a, b) => b[1] - a[1]);
       if (scored[0][1] > 0) {
-        lines.push(`Suggested: @${scored[0][0]}`);
+        lines.push(`Suggested: ${fmtLogin(scored[0][0])}`);
         const rest = scored.slice(1).map(([o]) => o);
         if (rest.length > 0) {
           lines.push(`Also eligible: ${fmtEligible(rest)}`);
@@ -320,7 +324,7 @@ function buildPendingPerGroupComment(groups, scores, dirScores, approvedBy, main
 
   const maintainerList = maintainers
     .filter(m => m.toLowerCase() !== authorLower)
-    .map(m => `@${m}`)
+    .map(m => fmtLogin(m))
     .join(", ");
 
   lines.push(
@@ -349,7 +353,7 @@ function buildSingleDomainPendingComment(sortedScores, dirScores, scoredCount, e
   } else if (roundRobinReviewer) {
     lines.push(
       "Could not determine reviewers from git history.",
-      `Round-robin suggestion: @${roundRobinReviewer}`,
+      `Round-robin suggestion: ${fmtLogin(roundRobinReviewer)}`,
       ""
     );
   }
