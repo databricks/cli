@@ -10,7 +10,6 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
@@ -172,14 +171,6 @@ Example usage:
 				return nil
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
-				// Resolve ${resources.*} references now that state is loaded with deployed IDs.
-				// Some resources (e.g. apps) use cross-resource references in their runtime
-				// configuration (e.g. env vars referencing other resource properties).
-				bundle.ApplyContext(ctx, b, mutator.ResolveVariableReferencesOnlyResources("bundle", "workspace", "variables", "resources"))
-				if logdiag.HasError(ctx) {
-					return root.ErrAlreadyPrinted
-				}
-
 				runner, err := keyToRunner(b, key)
 				if err != nil {
 					return err
