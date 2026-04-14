@@ -327,9 +327,9 @@ github.com/databricks/cli/bundle/config.Root:
       ```
   "run_as":
     "description": |-
-      The identity to use when running Declarative Automation Bundles workflows.
+      The identity to use when running Declarative Automation Bundles resources.
     "markdown_description": |-
-      The identity to use when running Declarative Automation Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
+      The identity to use when running Declarative Automation Bundles resources. See [\_](/dev-tools/bundles/run-as.md).
   "scripts":
     "description": |-
       PLACEHOLDER
@@ -420,7 +420,7 @@ github.com/databricks/cli/bundle/config.Workspace:
       The Databricks account ID.
   "artifact_path":
     "description": |-
-      The artifact path to use within the workspace for both deployments and workflow runs
+      The artifact path to use within the workspace for both deployments and job runs
   "auth_type":
     "description": |-
       The authentication type.
@@ -450,7 +450,7 @@ github.com/databricks/cli/bundle/config.Workspace:
       Experimental feature flag to indicate if the host is a unified host
   "file_path":
     "description": |-
-      The file path to use within the workspace for both deployments and workflow runs
+      The file path to use within the workspace for both deployments and job runs
   "google_service_account":
     "description": |-
       The Google service account name

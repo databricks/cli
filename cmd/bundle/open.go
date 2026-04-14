@@ -57,7 +57,7 @@ func newOpenCommand() *cobra.Command {
 
 Examples:
   databricks bundle open                    # Prompts to select a resource to open
-  databricks bundle open my_job             # Open specific job in Workflows UI
+  databricks bundle open my_job             # Open specific job in Jobs UI
   databricks bundle open my_dashboard       # Open dashboard in browser
 
 Use after deployment to quickly navigate to your resources in the workspace.`,

@@ -30,7 +30,7 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pipeline",
 		Short: "Generate bundle configuration for a pipeline",
-		Long: `Generate bundle configuration for an existing Delta Live Tables pipeline.
+		Long: `Generate bundle configuration for an existing Spark Declarative Pipeline.
 
 This command downloads an existing Lakeflow Spark Declarative Pipeline's configuration and any associated
 notebooks, creating bundle files that you can use to deploy the pipeline to other
