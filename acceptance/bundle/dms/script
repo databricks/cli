@@ -9,5 +9,3 @@ trace $CLI bundle destroy --auto-approve
 
 # Print all metadata service requests made during destroy.
 trace print_requests.py --get //bundle ^//workspace-files ^//import-file
-# Clear remaining requests so out.requests.txt is not generated.
-print_requests.py --get > /dev/null 2>&1 || true

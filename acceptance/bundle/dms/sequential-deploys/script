@@ -32,5 +32,3 @@ trace $CLI bundle deploy
 # Version 2: CREATE new_job (test_job unchanged)
 # Version 3: DELETE test_job (new_job unchanged)
 trace print_requests.py --get //bundle ^//workspace-files ^//import-file
-# Clear remaining requests so out.requests.txt is not generated.
-print_requests.py --get > /dev/null 2>&1 || true
