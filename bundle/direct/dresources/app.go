@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/appdeploy"
@@ -162,13 +164,19 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 }
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
-	// Use "*" to update all App API fields. Deploy-only fields (source_code_path, config,
+	// Deploy-only fields (source_code_path, config,
 	// git_source, lifecycle) are not part of apps.App and thus excluded from the request body.
 	if hasAppChanges(entry) {
+		fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "")
+		sort.Strings(fieldPaths)
+		for i, fieldPath := range fieldPaths {
+			fieldPaths[i] = truncateAtIndex(fieldPath)
+		}
+		updateMask := strings.Join(fieldPaths, ",")
 		request := apps.AsyncUpdateAppRequest{
 			App:        &config.App,
 			AppName:    id,
-			UpdateMask: "*",
+			UpdateMask: updateMask,
 		}
 		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
 		if err != nil {
