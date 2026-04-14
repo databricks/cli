@@ -60,6 +60,12 @@ linters:
           msg: Use slices.Sort from the standard library instead.
         - pattern: 'sort\.Float64s'
           msg: Use slices.Sort from the standard library instead.
+        - pattern: 'os\.IsNotExist'
+          msg: Use errors.Is(err, fs.ErrNotExist) instead.
+        - pattern: 'os\.IsExist'
+          msg: Use errors.Is(err, fs.ErrExist) instead.
+        - pattern: 'os\.IsPermission'
+          msg: Use errors.Is(err, fs.ErrPermission) instead.
       analyze-types: true
     copyloopvar:
       check-alias: true

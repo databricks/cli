@@ -3,7 +3,9 @@ package manifest
 import (
 	"cmp"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -88,7 +90,7 @@ func Load(templateDir string) (*Manifest, error) {
 	path := filepath.Join(templateDir, ManifestFileName)
 	data, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("manifest file not found: %s", path)
 		}
 		return nil, fmt.Errorf("read manifest: %w", err)

@@ -791,10 +791,10 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Check for generic subdirectory first (default for multi-template repos)
 	templateDir := filepath.Join(resolvedPath, "generic")
-	if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+	if _, err := os.Stat(templateDir); errors.Is(err, fs.ErrNotExist) {
 		// Fall back to the provided path directly
 		templateDir = resolvedPath
-		if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+		if _, err := os.Stat(templateDir); errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("template not found at %s (also checked %s/generic)", resolvedPath, resolvedPath)
 		}
 	}

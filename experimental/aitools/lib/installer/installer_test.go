@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -127,7 +128,7 @@ func TestBackupThirdPartySkillRegularDir(t *testing.T) {
 
 	// destDir should no longer exist.
 	_, err = os.Stat(destDir)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Backup should contain the original file.
 	matches, err := filepath.Glob(filepath.Join(os.TempDir(), "databricks-skill-backup-databricks-*", "databricks", "custom.md"))
@@ -161,7 +162,7 @@ func TestBackupThirdPartySkillSymlinkToOtherTarget(t *testing.T) {
 
 	// destDir (the symlink) should no longer exist.
 	_, err = os.Lstat(destDir)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Original target should be untouched.
 	content, err := os.ReadFile(filepath.Join(otherDir, "other.md"))
@@ -182,7 +183,7 @@ func TestBackupThirdPartySkillRegularFile(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = os.Stat(destDir)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 // --- InstallSkillsForAgents tests ---
