@@ -84,16 +84,19 @@ func doBuild(ctx context.Context, artifactName string, a *config.Artifact) error
 	cmdio.LogString(ctx, fmt.Sprintf("Building %s...", artifactName))
 
 	var executor *exec.Executor
-	var err error
 	if a.Executable != "" {
+		var err error
 		executor, err = exec.NewCommandExecutorWithExecutable(a.Path, a.Executable)
+		if err != nil {
+			return err
+		}
 	} else {
+		var err error
 		executor, err = exec.NewCommandExecutor(a.Path)
+		if err != nil {
+			return err
+		}
 		a.Executable = executor.ShellType()
-	}
-
-	if err != nil {
-		return err
 	}
 
 	out, err := executor.Exec(ctx, a.BuildCommand)
