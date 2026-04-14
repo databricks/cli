@@ -203,9 +203,8 @@ function topDirs(ds, n = 3) {
 }
 
 function fmtReviewer(login, dirs) {
-  const mention = MENTION_REVIEWERS ? `@${login}` : login;
   const dirList = dirs.map((d) => `\`${d}/\``).join(", ");
-  return `- ${mention} -- recent work in ${dirList}`;
+  return `- ${fmtLogin(login)} -- recent work in ${dirList}`;
 }
 
 function selectReviewers(ss) {
@@ -221,12 +220,12 @@ function selectReviewers(ss) {
 }
 
 function fmtEligible(owners) {
-  if (MENTION_REVIEWERS) return owners.map((o) => `@${o}`).join(", ");
-  return owners.join(", ");
+  return owners.map((o) => fmtLogin(o)).join(", ");
 }
 
 function fmtLogin(login) {
-  return MENTION_REVIEWERS ? `@${login}` : login;
+  if (MENTION_REVIEWERS) return `@${login}`;
+  return `\`@${login}\``;
 }
 
 async function countRecentReviews(github, owner, repo, logins, days = 30) {
