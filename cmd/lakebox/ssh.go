@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -16,10 +14,6 @@ import (
 const (
 	defaultGatewayHost = "uw2.dbrx.dev"
 	defaultGatewayPort = "2222"
-
-	// SSH config block markers for idempotent updates.
-	sshConfigMarkerStart = "# --- Lakebox managed start ---"
-	sshConfigMarkerEnd   = "# --- Lakebox managed end ---"
 )
 
 func newSSHCommand() *cobra.Command {
@@ -57,10 +51,13 @@ Example:
 				profile = w.Config.Host
 			}
 
-			// Ensure SSH key exists.
-			keyPath, err := ensureSSHKey()
+			// Use the dedicated lakebox SSH key.
+			keyPath, err := lakeboxKeyPath()
 			if err != nil {
-				return fmt.Errorf("failed to ensure SSH key: %w", err)
+				return fmt.Errorf("failed to determine lakebox key path: %w", err)
+			}
+			if _, err := os.Stat(keyPath); os.IsNotExist(err) {
+				return fmt.Errorf("lakebox SSH key not found at %s — run 'lakebox register' first", keyPath)
 			}
 			fmt.Fprintf(cmd.ErrOrStderr(), "Using SSH key: %s\n", keyPath)
 
@@ -94,19 +91,9 @@ Example:
 				}
 			}
 
-			// Write SSH config entry for this lakebox.
-			sshConfigPath, err := sshConfigFilePath()
-			if err != nil {
-				return err
-			}
-			entry := buildSSHConfigEntry(lakeboxID, gatewayHost, gatewayPort, keyPath)
-			if err := writeSSHConfigEntry(sshConfigPath, lakeboxID, entry); err != nil {
-				return fmt.Errorf("failed to update SSH config: %w", err)
-			}
-
 			fmt.Fprintf(cmd.ErrOrStderr(), "Connecting to %s@%s:%s...\n",
 				lakeboxID, gatewayHost, gatewayPort)
-			return execSSH(lakeboxID)
+			return execSSHDirect(lakeboxID, gatewayHost, gatewayPort, keyPath)
 		},
 	}
 
@@ -116,112 +103,24 @@ Example:
 	return cmd
 }
 
-// ensureSSHKey checks for an existing SSH key and generates one if missing.
-func ensureSSHKey() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-
-	candidates := []string{
-		filepath.Join(homeDir, ".ssh", "id_ed25519"),
-		filepath.Join(homeDir, ".ssh", "id_rsa"),
-	}
-	for _, p := range candidates {
-		if _, err := os.Stat(p); err == nil {
-			return p, nil
-		}
-	}
-
-	// Generate ed25519 key.
-	keyPath := candidates[0]
-	sshDir := filepath.Dir(keyPath)
-	if err := os.MkdirAll(sshDir, 0700); err != nil {
-		return "", fmt.Errorf("failed to create %s: %w", sshDir, err)
-	}
-
-	cmd := exec.Command("ssh-keygen", "-t", "ed25519", "-f", keyPath, "-N", "", "-q")
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("ssh-keygen failed: %w", err)
-	}
-
-	return keyPath, nil
-}
-
-func sshConfigFilePath() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(homeDir, ".ssh", "config"), nil
-}
-
-// buildSSHConfigEntry creates the SSH config block for a lakebox.
-// The lakebox ID is used as both the Host alias and the SSH User.
-func buildSSHConfigEntry(lakeboxID, host, port, keyPath string) string {
-	return fmt.Sprintf(`Host %s
-    HostName %s
-    Port %s
-    User %s
-    IdentityFile %s
-    IdentitiesOnly yes
-    PreferredAuthentications publickey
-    PasswordAuthentication no
-    KbdInteractiveAuthentication no
-    StrictHostKeyChecking no
-    UserKnownHostsFile /dev/null
-    LogLevel INFO
-`, lakeboxID, host, port, lakeboxID, keyPath)
-}
-
-// writeSSHConfigEntry idempotently writes a single lakebox entry to ~/.ssh/config.
-// Replaces any existing lakebox block in-place.
-func writeSSHConfigEntry(configPath, lakeboxID, entry string) error {
-	sshDir := filepath.Dir(configPath)
-	if err := os.MkdirAll(sshDir, 0700); err != nil {
-		return err
-	}
-
-	existing, err := os.ReadFile(configPath)
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-
-	wrappedEntry := fmt.Sprintf("%s\n%s%s\n", sshConfigMarkerStart, entry, sshConfigMarkerEnd)
-	content := string(existing)
-
-	// Remove existing lakebox block if present.
-	startIdx := strings.Index(content, sshConfigMarkerStart)
-	if startIdx >= 0 {
-		endIdx := strings.Index(content[startIdx:], sshConfigMarkerEnd)
-		if endIdx >= 0 {
-			endIdx += startIdx + len(sshConfigMarkerEnd)
-			if endIdx < len(content) && content[endIdx] == '\n' {
-				endIdx++
-			}
-			content = content[:startIdx] + content[endIdx:]
-		}
-	}
-
-	if !strings.HasSuffix(content, "\n") && len(content) > 0 {
-		content += "\n"
-	}
-	content += wrappedEntry
-
-	return os.WriteFile(configPath, []byte(content), 0600)
-}
-
-// execSSH execs into ssh using the lakebox ID as the Host alias.
-func execSSH(lakeboxID string) error {
+// execSSHDirect execs into ssh with all options passed as args (no ~/.ssh/config needed).
+func execSSHDirect(lakeboxID, host, port, keyPath string) error {
 	sshPath, err := exec.LookPath("ssh")
 	if err != nil {
 		return fmt.Errorf("ssh not found in PATH: %w", err)
 	}
 
-	args := []string{"ssh", lakeboxID}
+	args := []string{
+		"ssh",
+		"-i", keyPath,
+		"-p", port,
+		"-o", "IdentitiesOnly=yes",
+		"-o", "PreferredAuthentications=publickey",
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "LogLevel=ERROR",
+		fmt.Sprintf("%s@%s", lakeboxID, host),
+	}
 
 	if runtime.GOOS == "windows" {
 		cmd := exec.Command(sshPath, args[1:]...)

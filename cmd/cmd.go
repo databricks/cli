@@ -19,8 +19,12 @@ Lakebox provides SSH-accessible development environments backed by
 microVM isolation. Each lakebox is a personal sandbox with pre-installed
 tooling (Python, Node.js, Rust, Databricks CLI) and persistent storage.
 
+Getting started:
+  lakebox auth login --host https://...   # authenticate to Databricks
+  lakebox register                        # generate SSH key and register
+  lakebox ssh                             # SSH to your default lakebox
+
 Common workflows:
-  lakebox auth login                      # authenticate to Databricks
   lakebox ssh                             # SSH to your default lakebox
   lakebox ssh my-project                  # SSH to a named lakebox
   lakebox list                            # list your lakeboxes
