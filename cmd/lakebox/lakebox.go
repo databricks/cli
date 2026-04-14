@@ -15,8 +15,7 @@ microVM isolation. Each lakebox is a personal sandbox with pre-installed
 tooling (Python, Node.js, Rust, Databricks CLI) and persistent storage.
 
 Getting started:
-  lakebox auth login --host https://...   # authenticate to Databricks
-  lakebox register                        # generate SSH key and register
+  lakebox auth login --host https://...   # authenticate to Databricks workspace and lakebox service
   lakebox ssh                             # SSH to your default lakebox
 
 Common workflows:

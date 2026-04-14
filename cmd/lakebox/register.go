@@ -1,6 +1,7 @@
 package lakebox
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
 
@@ -107,4 +109,25 @@ func ensureLakeboxKey() (string, bool, error) {
 	}
 
 	return keyPath, true, nil
+}
+
+// EnsureAndReadKey generates the lakebox SSH key if needed and returns
+// (keyPath, publicKeyContent, error). Exported for use by the auth login hook.
+func EnsureAndReadKey() (string, string, error) {
+	keyPath, _, err := ensureLakeboxKey()
+	if err != nil {
+		return "", "", err
+	}
+	pubKeyData, err := os.ReadFile(keyPath + ".pub")
+	if err != nil {
+		return "", "", fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
+	}
+	return keyPath, string(pubKeyData), nil
+}
+
+// RegisterKey registers a public key with the lakebox API. Exported for use
+// by the auth login hook.
+func RegisterKey(ctx context.Context, w *databricks.WorkspaceClient, pubKey string) error {
+	api := newLakeboxAPI(w)
+	return api.registerKey(ctx, pubKey)
 }
