@@ -101,14 +101,21 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		))
 	}
 
-	// Dashboards do not support run_as in the API.
-	if len(b.Config.Resources.Dashboards) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"dashboards",
-			b.Config.GetLocation("resources.dashboards"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
+	// Dashboards with embed_credentials set to true do not support run_as in the API.
+	// When embed_credentials is false (the default), the dashboard does not embed
+	// the owner's credentials, so run_as is irrelevant and we allow it.
+	for key, dashboard := range b.Config.Resources.Dashboards {
+		if dashboard.EmbedCredentials {
+			diags = diags.Extend(diag.Diagnostics{{
+				Summary: fmt.Sprintf("dashboards with embed_credentials set to true do not support a run_as identity "+
+					"that is different from the owner.\n"+
+					"Current identity: %s. Run as identity: %s.\n"+
+					"See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.",
+					b.Config.Workspace.CurrentUser.UserName, identity),
+				Locations: []dyn.Location{b.Config.GetLocation(fmt.Sprintf("resources.dashboards.%s", key))},
+				Severity:  diag.Error,
+			}})
+		}
 	}
 
 	// Apps do not support run_as in the API.
