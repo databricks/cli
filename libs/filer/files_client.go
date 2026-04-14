@@ -326,8 +326,8 @@ func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {
 	// Delete the directories in reverse order to ensure that the parent
 	// directories are deleted after the children. This is possible because
 	// fs.WalkDir walks the directories in lexicographical order.
-	for i := len(dirsToDelete) - 1; i >= 0; i-- {
-		err := w.deleteDirectory(ctx, dirsToDelete[i])
+	for _, dir := range slices.Backward(dirsToDelete) {
+		err := w.deleteDirectory(ctx, dir)
 		if err != nil {
 			return err
 		}
