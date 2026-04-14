@@ -134,7 +134,7 @@ func GenerateDefaultConnectionName(host, accelerator string) string {
 		acc := strings.ToLower(strings.ReplaceAll(accelerator, "_", "-"))
 		return fmt.Sprintf("databricks-%s-%s", acc, hashStr)
 	}
-	return fmt.Sprintf("databricks-cpu-%s", hashStr)
+	return "databricks-cpu-" + hashStr
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {
