@@ -9,7 +9,7 @@ Workspace:
 Validation OK!
 
 >>> errcode [CLI] bundle validate --var embed=true
-Error: dashboard with embed_credentials set to true does not support a setting a run_as user that is different from the owner.
+Error: dashboards with embed_credentials set to true do not support a setting a run_as user that is different from the owner.
 Current identity: [USERNAME]. Run as identity: sp-name.
 See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.
   in databricks.yml:14:7
