@@ -6,24 +6,27 @@ import (
 	"strings"
 )
 
-// normalizeHost normalizes host input to prevent double https:// prefixes.
-// If the input already starts with https://, it returns it as-is.
-// If the input doesn't start with https://, it prepends https://.
+// normalizeHost ensures a https:// scheme is present and returns only scheme
+// and host, consistent with the normalizeHost in libs/databrickscfg/host.go.
 func normalizeHost(input string) string {
 	input = strings.TrimSpace(input)
 	u, err := url.Parse(input)
-	// If the input is not a valid URL, return it as-is
 	if err != nil {
 		return input
 	}
 
-	// If it already starts with https:// or http://, return as-is
-	if u.Scheme == "https" || u.Scheme == "http" {
+	if u.Scheme != "https" && u.Scheme != "http" {
+		u, err = url.Parse("https://" + input)
+		if err != nil {
+			return input
+		}
+	}
+
+	if u.Host == "" {
 		return input
 	}
 
-	// Otherwise, prepend https://
-	return "https://" + input
+	return (&url.URL{Scheme: u.Scheme, Host: u.Host}).String()
 }
 
 func validateHost(s string) error {
@@ -34,7 +37,7 @@ func validateHost(s string) error {
 	if u.Host == "" || u.Scheme != "https" {
 		return errors.New("must start with https://")
 	}
-	if u.Path != "" && u.Path != "/" {
+	if u.Path != "" {
 		return errors.New("must use empty path")
 	}
 	return nil

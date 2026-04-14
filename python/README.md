@@ -1,6 +1,6 @@
 # databricks-bundles
 
-Python for Databricks Asset Bundles extends [Databricks Asset Bundles](https://docs.databricks.com/aws/en/dev-tools/bundles/) so that you can:
+Python for Declarative Automation Bundles extends [Declarative Automation Bundles](https://docs.databricks.com/aws/en/dev-tools/bundles/) so that you can:
 - Define jobs and pipelines as Python code. These jobs can coexist with jobs defined in YAML.
 - Dynamically create jobs and pipelines using metadata.
 - Modify jobs and pipelines defined in YAML or Python during bundle deployment.
@@ -13,7 +13,7 @@ Reference documentation is available at https://databricks.github.io/cli/python/
 
 To use `databricks-bundles`, you must first:
 
-1. Install the [Databricks CLI](https://github.com/databricks/cli), version 0.290.1 or above
+1. Install the [Databricks CLI](https://github.com/databricks/cli), version 0.296.0 or above
 2. Authenticate to your Databricks workspace if you have not done so already:
 
    ```bash
@@ -22,7 +22,7 @@ To use `databricks-bundles`, you must first:
 3. To create a new project, initialize a bundle using the `experimental-jobs-as-code` template:
 
   ```bash
-  databricks bundle init experimental-jobs-as-code
+  databricks bundle init pydabs
   ```
 
 ## Privacy Notice

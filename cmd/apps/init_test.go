@@ -2,7 +2,6 @@ package apps
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"os"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -91,7 +91,7 @@ func testVars() templateVars {
 }
 
 func TestExecuteTemplateBackwardCompat(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	vars := testVars()
 
 	tests := []struct {
@@ -166,7 +166,7 @@ func TestExecuteTemplateBackwardCompat(t *testing.T) {
 }
 
 func TestExecuteTemplateNewKeys(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	vars := testVars()
 
 	tests := []struct {
@@ -241,7 +241,7 @@ func TestExecuteTemplateNewKeys(t *testing.T) {
 }
 
 func TestExecuteTemplateInvalidSyntaxReturnsOriginal(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	vars := templateVars{ProjectName: "my-app"}
 	input := "some content with bad {{ syntax"
 	result, err := executeTemplate(ctx, "test.js", []byte(input), vars)
@@ -501,6 +501,102 @@ func TestParseSetValues(t *testing.T) {
 	}
 }
 
+func TestParseSetValuesBundleIgnoreSkipped(t *testing.T) {
+	m := &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"lakebase": {
+				Name: "lakebase",
+				Resources: manifest.Resources{
+					Required: []manifest.Resource{
+						{
+							Type:        "postgres",
+							Alias:       "Postgres",
+							ResourceKey: "postgres",
+							Fields: map[string]manifest.ResourceField{
+								"branch":       {Description: "branch path"},
+								"database":     {Description: "database name"},
+								"endpointPath": {Env: "LAKEBASE_ENDPOINT", BundleIgnore: true},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	rv, err := parseSetValues([]string{
+		"lakebase.postgres.branch=projects/p1/branches/main",
+		"lakebase.postgres.database=mydb",
+	}, m)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"postgres.branch":   "projects/p1/branches/main",
+		"postgres.database": "mydb",
+	}, rv)
+
+	// Setting only one non-bundleIgnore field should still fail.
+	_, err = parseSetValues([]string{"lakebase.postgres.branch=br"}, m)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `incomplete resource "postgres"`)
+
+	// bundleIgnore field can still be set explicitly via --set.
+	rv, err = parseSetValues([]string{
+		"lakebase.postgres.branch=br",
+		"lakebase.postgres.database=db",
+		"lakebase.postgres.endpointPath=ep",
+	}, m)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"postgres.branch":       "br",
+		"postgres.database":     "db",
+		"postgres.endpointPath": "ep",
+	}, rv)
+}
+
+func TestParseSetValuesLocalOnlySkipped(t *testing.T) {
+	m := &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"lakebase": {
+				Name: "lakebase",
+				Resources: manifest.Resources{
+					Required: []manifest.Resource{
+						{
+							Type:        "postgres",
+							Alias:       "Postgres",
+							ResourceKey: "postgres",
+							Fields: map[string]manifest.ResourceField{
+								"branch":       {Description: "branch path"},
+								"database":     {Description: "database name"},
+								"host":         {Env: "PGHOST", LocalOnly: true, Resolve: "postgres:host"},
+								"databaseName": {Env: "PGDATABASE", LocalOnly: true, Resolve: "postgres:databaseName"},
+								"endpointPath": {Env: "LAKEBASE_ENDPOINT", BundleIgnore: true, Resolve: "postgres:endpointPath"},
+								"port":         {Env: "PGPORT", LocalOnly: true, Value: "5432"},
+								"sslmode":      {Env: "PGSSLMODE", LocalOnly: true, Value: "require"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Setting only branch+database should succeed — localOnly and bundleIgnore fields are exempt.
+	rv, err := parseSetValues([]string{
+		"lakebase.postgres.branch=projects/p1/branches/main",
+		"lakebase.postgres.database=mydb",
+	}, m)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"postgres.branch":   "projects/p1/branches/main",
+		"postgres.database": "mydb",
+	}, rv)
+
+	// Setting only branch should still fail (database is also required).
+	_, err = parseSetValues([]string{"lakebase.postgres.branch=br"}, m)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `incomplete resource "postgres"`)
+}
+
 func TestPluginHasResourceField(t *testing.T) {
 	m := testManifest()
 	p := m.GetPluginByName("analytics")
@@ -539,7 +635,7 @@ func TestRunManifestOnlyFound(t *testing.T) {
 	require.NoError(t, err)
 	os.Stdout = w
 
-	err = runManifestOnly(context.Background(), dir, "", "")
+	err = runManifestOnly(t.Context(), dir, "", "")
 	w.Close()
 	os.Stdout = old
 	require.NoError(t, err)
@@ -547,8 +643,7 @@ func TestRunManifestOnlyFound(t *testing.T) {
 	var buf bytes.Buffer
 	_, _ = io.Copy(&buf, r)
 	out := buf.String()
-	assert.Contains(t, out, `"version": "1.0"`)
-	assert.Contains(t, out, `"analytics"`)
+	assert.Equal(t, content, out)
 }
 
 func TestRunManifestOnlyNotFound(t *testing.T) {
@@ -559,7 +654,7 @@ func TestRunManifestOnlyNotFound(t *testing.T) {
 	require.NoError(t, err)
 	os.Stdout = w
 
-	err = runManifestOnly(context.Background(), dir, "", "")
+	err = runManifestOnly(t.Context(), dir, "", "")
 	w.Close()
 	os.Stdout = old
 	require.NoError(t, err)
@@ -568,4 +663,27 @@ func TestRunManifestOnlyNotFound(t *testing.T) {
 	_, _ = io.Copy(&buf, r)
 	out := buf.String()
 	assert.Equal(t, "No appkit.plugins.json manifest found in this template.\n", out)
+}
+
+func TestRunManifestOnlyUsesTemplatePathEnvVar(t *testing.T) {
+	dir := t.TempDir()
+	manifestPath := filepath.Join(dir, manifest.ManifestFileName)
+	content := `{"version":"1.0","scaffolding":{"command":"databricks apps init"}}`
+	require.NoError(t, os.WriteFile(manifestPath, []byte(content), 0o644))
+
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	os.Stdout = w
+
+	ctx := env.Set(t.Context(), templatePathEnvVar, dir)
+	err = runManifestOnly(ctx, "", "", "")
+	w.Close()
+	os.Stdout = old
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	out := buf.String()
+	assert.Equal(t, content, out)
 }

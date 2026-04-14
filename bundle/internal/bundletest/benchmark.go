@@ -231,7 +231,7 @@ func BundleV(b *testing.B, numJobs int) dyn.Value {
 	}
 
 	// Apply noop mutator to initialize the bundle value.
-	bundle.ApplyFuncContext(context.Background(), &myBundle, func(ctx context.Context, b *bundle.Bundle) {})
+	bundle.ApplyFuncContext(b.Context(), &myBundle, func(ctx context.Context, b *bundle.Bundle) {})
 
 	return myBundle.Config.Value()
 }
@@ -262,7 +262,7 @@ func Bundle(b *testing.B, numJobs int) *bundle.Bundle {
 	}
 
 	// Apply noop mutator to initialize the bundle value.
-	bundle.ApplyFuncContext(context.Background(), &myBundle, func(ctx context.Context, b *bundle.Bundle) {})
+	bundle.ApplyFuncContext(b.Context(), &myBundle, func(ctx context.Context, b *bundle.Bundle) {})
 
 	return &myBundle
 }

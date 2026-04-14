@@ -1,15 +1,16 @@
 package completion
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 )
 
 // Install configures shell completion for the given shell. homeDir is used
-// as the base for RC file resolution (typically os.UserHomeDir()).
+// as the base for RC file resolution (typically env.UserHomeDir()).
 // Returns the file path modified and whether it was already installed.
-func Install(shell Shell, homeDir string) (filePath string, alreadyInstalled bool, err error) {
-	status, err := Status(shell, homeDir)
+func Install(ctx context.Context, shell Shell, homeDir string) (filePath string, alreadyInstalled bool, err error) {
+	status, err := Status(ctx, shell, homeDir)
 	if err != nil {
 		return TargetFilePath(shell, homeDir), false, err
 	}

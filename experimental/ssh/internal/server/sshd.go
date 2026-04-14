@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path"
@@ -10,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -20,14 +23,14 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", fmt.Errorf("failed to get client public key: %w", err)
 	}
 
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 	sshDir := path.Join(homeDir, opts.ConfigDir)
 
 	err = os.RemoveAll(sshDir)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("failed to remove existing SSH directory: %w", err)
 	}
 

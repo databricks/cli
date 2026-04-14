@@ -75,11 +75,14 @@ func newCreateFeature() *cobra.Command {
 	cmd.Flags().Var(&createFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createFeatureReq.Feature.Description, "description", createFeatureReq.Feature.Description, `The description of the feature.`)
-	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, `The filter condition applied to the source data before aggregation.`)
+	// TODO: array: entities
+	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, `Deprecated: Use DeltaTableSource.filter_condition or KafkaSource.filter_condition instead.`)
+	// TODO: array: inputs
 	// TODO: complex arg: lineage_context
 	// TODO: complex arg: time_window
+	// TODO: complex arg: timeseries_column
 
-	cmd.Use = "create-feature FULL_NAME SOURCE INPUTS FUNCTION"
+	cmd.Use = "create-feature FULL_NAME SOURCE FUNCTION"
 	cmd.Short = `Create a feature.`
 	cmd.Long = `Create a feature.
 
@@ -88,7 +91,6 @@ func newCreateFeature() *cobra.Command {
   Arguments:
     FULL_NAME: The full three-part name (catalog, schema, name) of the feature.
     SOURCE: The data source of the feature.
-    INPUTS: The input columns from which the feature is computed.
     FUNCTION: The function by which the feature is computed.`
 
 	cmd.Annotations = make(map[string]string)
@@ -97,11 +99,11 @@ func newCreateFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'full_name', 'source', 'inputs', 'function' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'full_name', 'source', 'function' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(4)
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -133,16 +135,9 @@ func newCreateFeature() *cobra.Command {
 
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createFeatureReq.Feature.Inputs)
+			_, err = fmt.Sscan(args[2], &createFeatureReq.Feature.Function)
 			if err != nil {
-				return fmt.Errorf("invalid INPUTS: %s", args[2])
-			}
-
-		}
-		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &createFeatureReq.Feature.Function)
-			if err != nil {
-				return fmt.Errorf("invalid FUNCTION: %s", args[3])
+				return fmt.Errorf("invalid FUNCTION: %s", args[2])
 			}
 
 		}
@@ -295,6 +290,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 	cmd.Flags().Var(&createMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", createMaterializedFeatureReq.MaterializedFeature.CronSchedule, `The quartz cron expression that defines the schedule of the materialization pipeline.`)
+	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Unique identifier for the materialized feature.`)
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
 	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
@@ -869,11 +865,14 @@ func newUpdateFeature() *cobra.Command {
 	cmd.Flags().Var(&updateFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature.`)
-	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, `The filter condition applied to the source data before aggregation.`)
+	// TODO: array: entities
+	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, `Deprecated: Use DeltaTableSource.filter_condition or KafkaSource.filter_condition instead.`)
+	// TODO: array: inputs
 	// TODO: complex arg: lineage_context
 	// TODO: complex arg: time_window
+	// TODO: complex arg: timeseries_column
 
-	cmd.Use = "update-feature FULL_NAME UPDATE_MASK SOURCE INPUTS FUNCTION"
+	cmd.Use = "update-feature FULL_NAME UPDATE_MASK SOURCE FUNCTION"
 	cmd.Short = `Update a feature's description (all other fields are immutable).`
 	cmd.Long = `Update a feature's description (all other fields are immutable).
 
@@ -883,7 +882,6 @@ func newUpdateFeature() *cobra.Command {
     FULL_NAME: The full three-part name (catalog, schema, name) of the feature.
     UPDATE_MASK: The list of fields to update.
     SOURCE: The data source of the feature.
-    INPUTS: The input columns from which the feature is computed.
     FUNCTION: The function by which the feature is computed.`
 
 	cmd.Annotations = make(map[string]string)
@@ -892,11 +890,11 @@ func newUpdateFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, UPDATE_MASK as positional arguments. Provide 'full_name', 'source', 'inputs', 'function' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, UPDATE_MASK as positional arguments. Provide 'full_name', 'source', 'function' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(5)
+		check := root.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -927,16 +925,9 @@ func newUpdateFeature() *cobra.Command {
 
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[3], &updateFeatureReq.Feature.Inputs)
+			_, err = fmt.Sscan(args[3], &updateFeatureReq.Feature.Function)
 			if err != nil {
-				return fmt.Errorf("invalid INPUTS: %s", args[3])
-			}
-
-		}
-		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[4], &updateFeatureReq.Feature.Function)
-			if err != nil {
-				return fmt.Errorf("invalid FUNCTION: %s", args[4])
+				return fmt.Errorf("invalid FUNCTION: %s", args[3])
 			}
 
 		}
@@ -1092,6 +1083,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	cmd.Flags().Var(&updateMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, `The quartz cron expression that defines the schedule of the materialization pipeline.`)
+	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Unique identifier for the materialized feature.`)
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
 	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)

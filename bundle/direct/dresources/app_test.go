@@ -1,7 +1,6 @@
 package dresources
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/testserver"
@@ -57,8 +56,8 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 	require.NoError(t, err)
 
 	r := (&ResourceApp{}).New(client)
-	ctx := context.Background()
-	name, _, err := r.DoCreate(ctx, &apps.App{Name: "test-app"})
+	ctx := t.Context()
+	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -113,8 +112,8 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 	require.NoError(t, err)
 
 	r := (&ResourceApp{}).New(client)
-	ctx := context.Background()
-	name, _, err := r.DoCreate(ctx, &apps.App{Name: "test-app"})
+	ctx := t.Context()
+	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)

@@ -1,7 +1,6 @@
 package mutator
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -61,7 +60,7 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, RewriteWorkspacePrefix())
+	diags := bundle.Apply(t.Context(), b, RewriteWorkspacePrefix())
 	require.Len(t, diags, 3)
 
 	expectedErrors := map[string]bool{

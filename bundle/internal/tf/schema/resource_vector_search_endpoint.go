@@ -6,6 +6,11 @@ type ResourceVectorSearchEndpointProviderConfig struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type ResourceVectorSearchEndpointScalingInfo struct {
+	RequestedMinQps int    `json:"requested_min_qps,omitempty"`
+	State           string `json:"state,omitempty"`
+}
+
 type ResourceVectorSearchEndpoint struct {
 	BudgetPolicyId          string                                      `json:"budget_policy_id,omitempty"`
 	CreationTimestamp       int                                         `json:"creation_timestamp,omitempty"`
@@ -20,4 +25,5 @@ type ResourceVectorSearchEndpoint struct {
 	Name                    string                                      `json:"name"`
 	NumIndexes              int                                         `json:"num_indexes,omitempty"`
 	ProviderConfig          *ResourceVectorSearchEndpointProviderConfig `json:"provider_config,omitempty"`
+	ScalingInfo             *ResourceVectorSearchEndpointScalingInfo    `json:"scaling_info,omitempty"`
 }

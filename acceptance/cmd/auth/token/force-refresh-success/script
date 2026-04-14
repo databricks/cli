@@ -1,0 +1,6 @@
+setup_test_profile
+setup_test_token_cache
+
+# The cached token is "cached-access-token". The mock OIDC server returns
+# "oauth-token", so this confirms --force-refresh fetched a fresh token.
+trace $CLI auth token --profile test-profile --force-refresh | jq .access_token

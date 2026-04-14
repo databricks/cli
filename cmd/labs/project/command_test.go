@@ -20,7 +20,7 @@ type echoOut struct {
 }
 
 func devEnvContext(t *testing.T) context.Context {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = env.WithUserHomeDir(ctx, "testdata/installed-in-home")
 	py, _ := python.DetectExecutable(ctx)
 	py, _ = filepath.Abs(py)

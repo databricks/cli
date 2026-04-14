@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -26,6 +29,7 @@ type profileMetadata struct {
 	Cloud       string `json:"cloud"`
 	AuthType    string `json:"auth_type"`
 	Valid       bool   `json:"valid"`
+	Default     bool   `json:"default,omitempty"`
 }
 
 func (c *profileMetadata) IsEmpty() bool {
@@ -37,7 +41,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		Loaders:           []config.Loader{config.ConfigFile},
 		ConfigFile:        configFilePath,
 		Profile:           c.Name,
-		DatabricksCliPath: os.Getenv("DATABRICKS_CLI_PATH"),
+		DatabricksCliPath: env.Get(ctx, "DATABRICKS_CLI_PATH"),
 	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
@@ -54,7 +58,43 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	switch cfg.ConfigType() {
+	// ConfigType() classifies based on the host URL prefix (accounts.* →
+	// AccountConfig, everything else → WorkspaceConfig). SPOG hosts don't
+	// match the accounts.* prefix so they're misclassified as WorkspaceConfig.
+	// Use the resolved DiscoveryURL (from .well-known/databricks-config) to
+	// detect SPOG hosts with account-scoped OIDC, matching the routing logic
+	// in auth.AuthArguments.ToOAuthArgument().
+	configType := cfg.ConfigType()
+	hasWorkspace := cfg.WorkspaceID != "" && cfg.WorkspaceID != auth.WorkspaceIDNone
+
+	isAccountScopedOIDC := cfg.DiscoveryURL != "" && strings.Contains(cfg.DiscoveryURL, "/oidc/accounts/")
+	if configType != config.AccountConfig && cfg.AccountID != "" && isAccountScopedOIDC {
+		if hasWorkspace {
+			configType = config.WorkspaceConfig
+		} else {
+			configType = config.AccountConfig
+		}
+	}
+
+	// Legacy backward compat: SDK v0.126.0 removed the UnifiedHost case from
+	// ConfigType(), so profiles with Experimental_IsUnifiedHost now get
+	// InvalidConfig instead of being routed to account/workspace validation.
+	// When .well-known is also unreachable (DiscoveryURL empty), the override
+	// above can't help. Fall back to workspace_id to choose the validation
+	// strategy, matching the IsUnifiedHost fallback in ToOAuthArgument().
+	if configType == config.InvalidConfig && cfg.Experimental_IsUnifiedHost && cfg.AccountID != "" {
+		if hasWorkspace {
+			configType = config.WorkspaceConfig
+		} else {
+			configType = config.AccountConfig
+		}
+	}
+
+	if configType != cfg.ConfigType() {
+		log.Debugf(ctx, "Profile %q: overrode config type from %s to %s (SPOG host)", c.Name, cfg.ConfigType(), configType)
+	}
+
+	switch configType {
 	case config.AccountConfig:
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err != nil {
@@ -92,7 +132,7 @@ func newProfilesCommand() *cobra.Command {
 		Annotations: map[string]string{
 			"template": cmdio.Heredoc(`
 			{{header "Name"}}	{{header "Host"}}	{{header "Valid"}}
-			{{range .Profiles}}{{.Name | green}}	{{.Host|cyan}}	{{bool .Valid}}
+			{{range .Profiles}}{{.Name | green}}{{if .Default}} (Default){{end}}	{{.Host|cyan}}	{{bool .Valid}}
 			{{end}}`),
 		},
 	}
@@ -111,6 +151,9 @@ func newProfilesCommand() *cobra.Command {
 		} else if err != nil {
 			return fmt.Errorf("cannot parse config file: %w", err)
 		}
+
+		defaultProfile := databrickscfg.GetConfiguredDefaultProfileFrom(iniFile)
+
 		var wg sync.WaitGroup
 		for _, v := range iniFile.Sections() {
 			hash := v.KeysHash()
@@ -119,6 +162,7 @@ func newProfilesCommand() *cobra.Command {
 				Host:        hash["host"],
 				AccountID:   hash["account_id"],
 				WorkspaceID: hash["workspace_id"],
+				Default:     v.Name() == defaultProfile,
 			}
 			if profile.IsEmpty() {
 				continue

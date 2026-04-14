@@ -31,7 +31,7 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 		}
 	}
 	volume.VolumeId = nextUUID()
-	volume.StorageLocation = fmt.Sprintf("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/%s/volumes/%s", TestMetastore.MetastoreId, volume.VolumeId)
+	volume.StorageLocation = fmt.Sprintf("s3://%s/metastore/%s/volumes/%s", testMetastoreName, TestMetastore.MetastoreId, volume.VolumeId)
 
 	volume.CreatedAt = nowMilli()
 	volume.UpdatedAt = volume.CreatedAt

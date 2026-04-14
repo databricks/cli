@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -33,11 +32,11 @@ func setupFiles(t *testing.T) string {
 }
 
 func TestGetFileSet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
-	fileSet, err := git.NewFileSetAtRoot(root)
+	fileSet, err := git.NewFileSetAtRoot(ctx, root)
 	require.NoError(t, err)
 
 	inc, err := fileset.NewGlobSet(root, []string{})
@@ -96,11 +95,11 @@ func TestGetFileSet(t *testing.T) {
 }
 
 func TestRecursiveExclude(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
-	fileSet, err := git.NewFileSetAtRoot(root)
+	fileSet, err := git.NewFileSetAtRoot(ctx, root)
 	require.NoError(t, err)
 
 	inc, err := fileset.NewGlobSet(root, []string{})
@@ -123,11 +122,11 @@ func TestRecursiveExclude(t *testing.T) {
 }
 
 func TestNegateExclude(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
-	fileSet, err := git.NewFileSetAtRoot(root)
+	fileSet, err := git.NewFileSetAtRoot(ctx, root)
 	require.NoError(t, err)
 
 	inc, err := fileset.NewGlobSet(root, []string{})

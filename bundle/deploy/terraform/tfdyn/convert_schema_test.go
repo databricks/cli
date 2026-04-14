@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -25,18 +24,14 @@ func TestConvertSchema(t *testing.T) {
 			},
 			StorageRoot: "root",
 		},
-		Grants: []resources.SchemaGrant{
+		Grants: []catalog.PrivilegeAssignment{
 			{
-				Privileges: []resources.SchemaGrantPrivilege{
-					resources.SchemaGrantPrivilegeExecute,
-				},
-				Principal: "jack@gmail.com",
+				Privileges: []catalog.Privilege{catalog.PrivilegeExecute},
+				Principal:  "jack@gmail.com",
 			},
 			{
-				Privileges: []resources.SchemaGrantPrivilege{
-					resources.SchemaGrantPrivilegeSelect,
-				},
-				Principal: "jane@gmail.com",
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+				Principal:  "jane@gmail.com",
 			},
 		},
 	}
@@ -44,7 +39,7 @@ func TestConvertSchema(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = schemaConverter{}.Convert(ctx, "my_schema", vin, out)
 	require.NoError(t, err)

@@ -2,9 +2,9 @@ package acc
 
 import (
 	"context"
-	"os"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/require"
@@ -34,7 +34,7 @@ func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 		W: w,
 
-		ctx: context.Background(),
+		ctx: t.Context(),
 	}
 
 	return wt.ctx, wt
@@ -47,10 +47,10 @@ func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 	t.Logf("CLOUD_ENV=%s", testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	if os.Getenv("TEST_METASTORE_ID") == "" {
+	if env.Get(t.Context(), "TEST_METASTORE_ID") == "" {
 		t.Skipf("Skipping on non-UC workspaces")
 	}
-	if os.Getenv("DATABRICKS_ACCOUNT_ID") != "" {
+	if env.Get(t.Context(), "DATABRICKS_ACCOUNT_ID") != "" {
 		t.Skipf("Skipping on accounts")
 	}
 
@@ -62,7 +62,7 @@ func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 		W: w,
 
-		ctx: context.Background(),
+		ctx: t.Context(),
 	}
 
 	return wt.ctx, wt
@@ -86,7 +86,7 @@ func (t *WorkspaceT) RunPython(code string) (string, error) {
 		require.NoError(t, err, "Unexpected error from CommandExecution.Start(clusterID=%v)", t.TestClusterID())
 
 		t.Cleanup(func() {
-			err := t.exec.Destroy(t.ctx)
+			err := t.exec.Destroy(context.WithoutCancel(t.ctx))
 			require.NoError(t, err)
 		})
 	}

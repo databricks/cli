@@ -96,7 +96,13 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(false))
+		// Skip Finalize for empty plans to avoid creating a state file when nothing was destroyed.
+		if len(plan.Plan) > 0 {
+			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
+				logdiag.LogError(ctx, err)
+			}
+		}
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -157,8 +163,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	var plan *deployplan.Plan
 	if engine.IsDirect() {
-		_, localPath := b.StateFilenameDirect(ctx)
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil, localPath)
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

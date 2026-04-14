@@ -1,7 +1,6 @@
 package fs_test
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -13,12 +12,12 @@ import (
 )
 
 func setupCompletionFile(t *testing.T, f filer.Filer) {
-	err := f.Write(context.Background(), "dir1/file1.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
+	err := f.Write(t.Context(), "dir1/file1.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
 	require.NoError(t, err)
 }
 
 func TestFsCompletion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	f, tmpDir := setupDbfsFiler(t)
 	setupCompletionFile(t, f)
 

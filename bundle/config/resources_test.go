@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
 	"reflect"
 	"strings"
@@ -245,7 +244,7 @@ func TestResourcesBindSupport(t *testing.T) {
 		"model": true,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	m := mocks.NewMockWorkspaceClient(t)
 	m.GetMockJobsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)

@@ -23,7 +23,7 @@ func TestBuiltInReader(t *testing.T) {
 	for _, name := range exists {
 		t.Run(name, func(t *testing.T) {
 			r := &builtinReader{name: name}
-			schema, fsys, err := r.LoadSchemaAndTemplateFS(context.Background())
+			schema, fsys, err := r.LoadSchemaAndTemplateFS(t.Context())
 			assert.NoError(t, err)
 			assert.NotNil(t, fsys)
 			assert.NotNil(t, schema)
@@ -35,7 +35,7 @@ func TestBuiltInReader(t *testing.T) {
 
 	t.Run("doesnotexist", func(t *testing.T) {
 		r := &builtinReader{name: "doesnotexist"}
-		_, _, err := r.LoadSchemaAndTemplateFS(context.Background())
+		_, _, err := r.LoadSchemaAndTemplateFS(t.Context())
 		assert.EqualError(t, err, "builtin template doesnotexist not found")
 	})
 }
@@ -44,7 +44,7 @@ func TestBuiltInReaderTemplateDir(t *testing.T) {
 	// Test that template_dir property works correctly
 	// default-python template should use schema from default-python/ but template files from default/
 	r := &builtinReader{name: "default-python"}
-	schema, fsys, err := r.LoadSchemaAndTemplateFS(context.Background())
+	schema, fsys, err := r.LoadSchemaAndTemplateFS(t.Context())
 	require.NoError(t, err)
 	assert.NotNil(t, schema)
 	assert.NotNil(t, fsys)
@@ -63,7 +63,7 @@ func TestBuiltInReaderTemplateDir(t *testing.T) {
 
 	// Test that a template without template_dir works normally
 	r2 := &builtinReader{name: "default-sql"}
-	schema2, fsys2, err := r2.LoadSchemaAndTemplateFS(context.Background())
+	schema2, fsys2, err := r2.LoadSchemaAndTemplateFS(t.Context())
 	require.NoError(t, err)
 	assert.NotNil(t, schema2)
 	assert.NotNil(t, fsys2)
@@ -73,7 +73,7 @@ func TestBuiltInReaderTemplateDir(t *testing.T) {
 
 	// Verify that lakeflow-pipelines also uses template_dir correctly
 	r3 := &builtinReader{name: "lakeflow-pipelines"}
-	schema3, fsys3, err := r3.LoadSchemaAndTemplateFS(context.Background())
+	schema3, fsys3, err := r3.LoadSchemaAndTemplateFS(t.Context())
 	require.NoError(t, err)
 	assert.NotNil(t, schema3)
 	assert.NotNil(t, fsys3)
@@ -84,7 +84,7 @@ func TestBuiltInReaderTemplateDir(t *testing.T) {
 }
 
 func TestGitUrlReader(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 
 	var args []string
 	numCalls := 0
@@ -132,7 +132,7 @@ func TestLocalReader(t *testing.T) {
 	tmpDir := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(tmpDir, "somefile"), "somecontent")
 	testutil.WriteFile(t, filepath.Join(tmpDir, "databricks_template_schema.json"), `{"welcome_message": "test"}`)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	r := &localReader{path: tmpDir}
 	schema, fsys, err := r.LoadSchemaAndTemplateFS(ctx)
@@ -160,7 +160,7 @@ func TestLocalReaderWithTemplateDir(t *testing.T) {
 	testutil.WriteFile(t, filepath.Join(templateDir, "template", "somefile"), "content from template_dir")
 	testutil.WriteFile(t, filepath.Join(templateDir, "template", "{{.project_name}}", "test.yml.tmpl"), "test template content")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	r := &localReader{path: schemaDir}
 	schema, fsys, err := r.LoadSchemaAndTemplateFS(ctx)
 	require.NoError(t, err)
@@ -179,7 +179,7 @@ func TestLocalReaderWithTemplateDir(t *testing.T) {
 }
 
 func TestGitReaderWithTemplateDir(t *testing.T) {
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(t.Context())
 
 	cloneFunc := func(ctx context.Context, url, reference, targetPath string) error {
 		// Create a template with template_dir reference

@@ -170,10 +170,10 @@ func newDelete() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down.")
 			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx, workspace.ListCredentialsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
@@ -243,10 +243,10 @@ func newGet() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down.")
 			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx, workspace.ListCredentialsRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 			}

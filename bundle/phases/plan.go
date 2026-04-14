@@ -25,6 +25,7 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine 
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
 		mutator.ValidateDirectOnlyResources(engine),
+		mutator.ValidateLifecycleStarted(engine),
 		statemgmt.CheckRunningResource(engine),
 	)
 }
@@ -46,7 +47,6 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error
 
 		path = append(path, dyn.Key("lifecycle"), dyn.Key("prevent_destroy"))
 
-		// If there is no prevent_destroy, skip
 		preventDestroyV, err := dyn.GetByPath(root, path)
 		if err != nil {
 			continue

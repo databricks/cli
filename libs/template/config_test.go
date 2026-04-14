@@ -1,7 +1,6 @@
 package template
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path"
@@ -17,7 +16,7 @@ import (
 func TestTemplateConfigAssignValuesFromFile(t *testing.T) {
 	testDir := "./testdata/config-assign-from-file"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
@@ -33,7 +32,7 @@ func TestTemplateConfigAssignValuesFromFile(t *testing.T) {
 func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *testing.T) {
 	testDir := "./testdata/config-assign-from-file"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
@@ -53,7 +52,7 @@ func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *te
 func TestTemplateConfigAssignValuesFromFileForInvalidIntegerValue(t *testing.T) {
 	testDir := "./testdata/config-assign-from-file-invalid-int"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
@@ -64,7 +63,7 @@ func TestTemplateConfigAssignValuesFromFileForInvalidIntegerValue(t *testing.T) 
 func TestTemplateConfigAssignValuesFromFileFiltersPropertiesNotInTheSchema(t *testing.T) {
 	testDir := "./testdata/config-assign-from-file-unknown-property"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
@@ -79,7 +78,7 @@ func TestTemplateConfigAssignValuesFromFileFiltersPropertiesNotInTheSchema(t *te
 func TestTemplateConfigAssignValuesFromDefaultValues(t *testing.T) {
 	testDir := "./testdata/config-assign-from-default-value"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
@@ -98,7 +97,7 @@ func TestTemplateConfigAssignValuesFromDefaultValues(t *testing.T) {
 func TestTemplateConfigAssignValuesFromTemplatedDefaultValues(t *testing.T) {
 	testDir := "./testdata/config-assign-from-templated-default-value"
 
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
@@ -117,7 +116,7 @@ func TestTemplateConfigAssignValuesFromTemplatedDefaultValues(t *testing.T) {
 }
 
 func TestTemplateConfigValidateValuesDefined(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := newConfig(ctx, os.DirFS("testdata/config-test-schema"), "test-schema.json")
 	require.NoError(t, err)
 
@@ -132,7 +131,7 @@ func TestTemplateConfigValidateValuesDefined(t *testing.T) {
 }
 
 func TestTemplateConfigValidateTypeForValidConfig(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := newConfig(ctx, os.DirFS("testdata/config-test-schema"), "test-schema.json")
 	require.NoError(t, err)
 
@@ -148,7 +147,7 @@ func TestTemplateConfigValidateTypeForValidConfig(t *testing.T) {
 }
 
 func TestTemplateConfigValidateTypeForUnknownField(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := newConfig(ctx, os.DirFS("testdata/config-test-schema"), "test-schema.json")
 	require.NoError(t, err)
 
@@ -165,7 +164,7 @@ func TestTemplateConfigValidateTypeForUnknownField(t *testing.T) {
 }
 
 func TestTemplateConfigValidateTypeForInvalidType(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	c, err := newConfig(ctx, os.DirFS("testdata/config-test-schema"), "test-schema.json")
 	require.NoError(t, err)
 
@@ -273,7 +272,7 @@ func TestTemplateEnumValidation(t *testing.T) {
 }
 
 func TestTemplateSchemaErrorsWithEmptyDescription(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := newConfig(ctx, os.DirFS("./testdata/config-test-schema"), "invalid-test-schema.json")
 	assert.EqualError(t, err, "template property property-without-description is missing a description")
 }
@@ -289,7 +288,7 @@ func testRenderer() *renderer {
 
 func TestPromptIsSkippedWhenEmpty(t *testing.T) {
 	c := config{
-		ctx:    context.Background(),
+		ctx:    t.Context(),
 		values: make(map[string]any),
 		schema: &jsonschema.Schema{
 			Properties: map[string]*jsonschema.Schema{
@@ -317,7 +316,7 @@ func TestPromptIsSkippedWhenEmpty(t *testing.T) {
 
 func TestPromptSkipErrorsWithEmptyDefault(t *testing.T) {
 	c := config{
-		ctx:    context.Background(),
+		ctx:    t.Context(),
 		values: make(map[string]any),
 		schema: &jsonschema.Schema{
 			Properties: map[string]*jsonschema.Schema{
@@ -340,7 +339,7 @@ func TestPromptSkipErrorsWithEmptyDefault(t *testing.T) {
 
 func TestPromptIsSkippedIfValueIsAssigned(t *testing.T) {
 	c := config{
-		ctx:    context.Background(),
+		ctx:    t.Context(),
 		values: make(map[string]any),
 		schema: &jsonschema.Schema{
 			Properties: map[string]*jsonschema.Schema{
@@ -364,7 +363,7 @@ func TestPromptIsSkippedIfValueIsAssigned(t *testing.T) {
 
 func TestPromptIsSkipped(t *testing.T) {
 	c := config{
-		ctx:    context.Background(),
+		ctx:    t.Context(),
 		values: make(map[string]any),
 		schema: &jsonschema.Schema{
 			Properties: map[string]*jsonschema.Schema{
@@ -449,7 +448,7 @@ func TestPromptIsSkipped(t *testing.T) {
 
 func TestPromptIsSkippedAnyOf(t *testing.T) {
 	c := config{
-		ctx:    context.Background(),
+		ctx:    t.Context(),
 		values: make(map[string]any),
 		schema: &jsonschema.Schema{
 			Properties: map[string]*jsonschema.Schema{

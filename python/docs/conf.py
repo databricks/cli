@@ -44,7 +44,7 @@ html_theme_options = {
     "logo": "databricks-logo.svg",
     "github_user": "databricks",
     "github_repo": "databricks-bundles",
-    "description": "databricks-bundles: Python support for Databricks Asset Bundles",
+    "description": "databricks-bundles: Python support for Declarative Automation Bundles",
     "fixed_sidebar": "true",
     "logo_text_align": "center",
     "github_button": "true",

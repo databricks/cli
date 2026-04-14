@@ -17,7 +17,7 @@ import (
 )
 
 func TestCacheEnabledEnvVar(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 
 	tests := []struct {
@@ -153,7 +153,7 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 }
 
 func TestCacheDirEnvVar(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 
 	t.Run("uses DATABRICKS_CACHE_DIR when set", func(t *testing.T) {
@@ -203,7 +203,7 @@ func TestCacheDirEnvVar(t *testing.T) {
 }
 
 func TestCacheIsolationByVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	t.Setenv("DATABRICKS_CACHE_DIR", tempDir)
 

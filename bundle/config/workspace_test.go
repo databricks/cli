@@ -1,7 +1,6 @@
 package config
 
 import (
-	"context"
 	"io/fs"
 	"path/filepath"
 	"runtime"
@@ -43,7 +42,7 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 		setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
 			Profile: "default",
 			Host:    "https://abc.cloud.databricks.com",
 			Token:   "123",
@@ -59,7 +58,7 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 		home := setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
 			ConfigFile: filepath.Join(home, "customcfg"),
 			Profile:    "custom",
 			Host:       "https://abc.cloud.databricks.com",
@@ -72,6 +71,87 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "custom", client.Config.Profile)
 	})
+}
+
+func TestWorkspaceNormalizeHostURL(t *testing.T) {
+	t.Run("extracts workspace_id from query param", func(t *testing.T) {
+		w := Workspace{
+			Host: "https://spog.databricks.com/?o=12345",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
+		assert.Equal(t, "12345", w.WorkspaceID)
+	})
+
+	t.Run("extracts both workspace_id and account_id", func(t *testing.T) {
+		w := Workspace{
+			Host: "https://spog.databricks.com/?o=605&a=abc123",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
+		assert.Equal(t, "605", w.WorkspaceID)
+		assert.Equal(t, "abc123", w.AccountID)
+	})
+
+	t.Run("explicit workspace_id takes precedence", func(t *testing.T) {
+		w := Workspace{
+			Host:        "https://spog.databricks.com/?o=999",
+			WorkspaceID: "explicit",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
+		assert.Equal(t, "explicit", w.WorkspaceID)
+	})
+
+	t.Run("explicit account_id takes precedence", func(t *testing.T) {
+		w := Workspace{
+			Host:      "https://spog.databricks.com/?a=from-url",
+			AccountID: "explicit-account",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://spog.databricks.com", w.Host)
+		assert.Equal(t, "explicit-account", w.AccountID)
+	})
+
+	t.Run("no-op for host without query params", func(t *testing.T) {
+		w := Workspace{
+			Host: "https://normal.databricks.com",
+		}
+		w.NormalizeHostURL()
+		assert.Equal(t, "https://normal.databricks.com", w.Host)
+		assert.Empty(t, w.WorkspaceID)
+	})
+}
+
+func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
+	// Regression test: Client() must normalize the host URL (strip ?o= and
+	// populate WorkspaceID) before building the SDK config and resolving
+	// profiles. This ensures workspace_id is available for disambiguation.
+	setupWorkspaceTest(t)
+
+	err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile:     "ws1",
+		Host:        "https://spog.databricks.com",
+		Token:       "token1",
+		WorkspaceID: "111",
+	})
+	require.NoError(t, err)
+
+	err = databrickscfg.SaveToProfile(t.Context(), &config.Config{
+		Profile:     "ws2",
+		Host:        "https://spog.databricks.com",
+		Token:       "token2",
+		WorkspaceID: "222",
+	})
+	require.NoError(t, err)
+
+	// Host with ?o= should be normalized and workspace_id used to disambiguate.
+	w := Workspace{
+		Host: "https://spog.databricks.com/?o=222",
+	}
+	client, err := w.Client()
+	require.NoError(t, err)
+	assert.Equal(t, "ws2", client.Config.Profile)
 }
 
 func TestWorkspaceVerifyProfileForHost(t *testing.T) {
@@ -93,7 +173,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
 			Profile: "abc",
 			Host:    "https://abc.cloud.databricks.com",
 		})
@@ -107,7 +187,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
 			Profile: "abc",
 			Host:    "https://def.cloud.databricks.com",
 		})
@@ -121,7 +201,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		home := setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
 			ConfigFile: filepath.Join(home, "customcfg"),
 			Profile:    "abc",
 			Host:       "https://abc.cloud.databricks.com",
@@ -137,7 +217,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		home := setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(t.Context(), &config.Config{
 			ConfigFile: filepath.Join(home, "customcfg"),
 			Profile:    "abc",
 			Host:       "https://def.cloud.databricks.com",

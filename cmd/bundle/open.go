@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/resources"
@@ -14,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 
 	"github.com/pkg/browser"
 )
@@ -113,7 +114,7 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 
 		if len(args) == 0 {
 			completions := resources.Completions(b)
-			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
+			return slices.Collect(maps.Keys(completions)), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}

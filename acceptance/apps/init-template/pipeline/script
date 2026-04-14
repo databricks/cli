@@ -1,3 +1,0 @@
-#!/bin/bash
-$CLI experimental aitools tools init-template pipeline --name test_pipeline --language python --catalog main --output-dir output 2>&1 | grep -A 9999 "^--$"
-rm -rf output

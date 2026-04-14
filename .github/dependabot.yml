@@ -4,11 +4,27 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 14
+    ignore:
+      # Ignore Databricks Go SDK because its upgrade requires code generation
+      - dependency-name: github.com/databricks/databricks-sdk-go
   - package-ecosystem: "gomod"
     directory: "/tools"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 14
+  # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#directories
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/.github/workflows"
+      - "/.github/actions/setup-build-environment"
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 7
+    # tagging.yml is generated and maintained externally. Ignore
+    # actions/create-github-app-token since it is only used in tagging.yml.
+    exclude-paths:
+      - .github/workflows/tagging.yml

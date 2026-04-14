@@ -2,12 +2,16 @@ package sshconfig
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 )
 
 const (
@@ -15,32 +19,32 @@ const (
 	configDirName = ".databricks/ssh-tunnel-configs"
 )
 
-func GetConfigDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
+func GetConfigDir(ctx context.Context) (string, error) {
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 	return filepath.Join(homeDir, configDirName), nil
 }
 
-func GetMainConfigPath() (string, error) {
-	homeDir, err := os.UserHomeDir()
+func GetMainConfigPath(ctx context.Context) (string, error) {
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 	return filepath.Join(homeDir, ".ssh", "config"), nil
 }
 
-func GetMainConfigPathOrDefault(configPath string) (string, error) {
+func GetMainConfigPathOrDefault(ctx context.Context, configPath string) (string, error) {
 	if configPath != "" {
 		return configPath, nil
 	}
-	return GetMainConfigPath()
+	return GetMainConfigPath(ctx)
 }
 
 func EnsureMainConfigExists(configPath string) error {
 	_, err := os.Stat(configPath)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		sshDir := filepath.Dir(configPath)
 		err = os.MkdirAll(sshDir, 0o700)
 		if err != nil {
@@ -55,8 +59,8 @@ func EnsureMainConfigExists(configPath string) error {
 	return err
 }
 
-func EnsureIncludeDirective(configPath string) error {
-	configDir, err := GetConfigDir()
+func EnsureIncludeDirective(ctx context.Context, configPath string) error {
+	configDir, err := GetConfigDir(ctx)
 	if err != nil {
 		return err
 	}
@@ -79,11 +83,24 @@ func EnsureIncludeDirective(configPath string) error {
 	// Convert path to forward slashes for SSH config compatibility across platforms
 	configDirUnix := filepath.ToSlash(configDir)
 
-	includeLine := fmt.Sprintf("Include %s/*", configDirUnix)
-	if strings.Contains(string(content), includeLine) {
+	// Quoted to handle paths with spaces; OpenSSH still expands globs inside quotes.
+	includeLine := fmt.Sprintf(`Include "%s/*"`, configDirUnix)
+	if containsLine(content, includeLine) {
 		return nil
 	}
 
+	// Migrate unquoted Include written by older versions of the CLI.
+	oldIncludeLine := fmt.Sprintf("Include %s/*", configDirUnix)
+	if containsLine(content, oldIncludeLine) {
+		if err := fileutil.BackupFile(ctx, configPath, content); err != nil {
+			return fmt.Errorf("failed to backup SSH config before migration: %w", err)
+		}
+		return os.WriteFile(configPath, replaceLine(content, oldIncludeLine, includeLine), 0o600)
+	}
+
+	if err := fileutil.BackupFile(ctx, configPath, content); err != nil {
+		return fmt.Errorf("failed to backup SSH config: %w", err)
+	}
 	newContent := includeLine + "\n"
 	if len(content) > 0 && !strings.HasPrefix(string(content), "\n") {
 		newContent += "\n"
@@ -98,21 +115,46 @@ func EnsureIncludeDirective(configPath string) error {
 	return nil
 }
 
-func GetHostConfigPath(hostName string) (string, error) {
-	configDir, err := GetConfigDir()
+// containsLine reports whether data contains line as a line match,
+// trimming leading whitespace and \r (Windows line endings) before comparing.
+func containsLine(data []byte, line string) bool {
+	for l := range strings.SplitSeq(string(data), "\n") {
+		if strings.TrimLeft(strings.TrimRight(l, "\r"), " \t") == line {
+			return true
+		}
+	}
+	return false
+}
+
+// replaceLine replaces the first line in data whose trimmed content matches old
+// with new. Uses the same trim logic as containsLine. Returns data unchanged if
+// no match.
+func replaceLine(data []byte, old, new string) []byte {
+	lines := strings.Split(string(data), "\n")
+	for i, l := range lines {
+		if strings.TrimLeft(strings.TrimRight(l, "\r"), " \t") == old {
+			lines[i] = new
+			break
+		}
+	}
+	return []byte(strings.Join(lines, "\n"))
+}
+
+func GetHostConfigPath(ctx context.Context, hostName string) (string, error) {
+	configDir, err := GetConfigDir(ctx)
 	if err != nil {
 		return "", err
 	}
 	return filepath.Join(configDir, hostName), nil
 }
 
-func HostConfigExists(hostName string) (bool, error) {
-	configPath, err := GetHostConfigPath(hostName)
+func HostConfigExists(ctx context.Context, hostName string) (bool, error) {
+	configPath, err := GetHostConfigPath(ctx, hostName)
 	if err != nil {
 		return false, err
 	}
 	_, err = os.Stat(configPath)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return false, nil
 	}
 	if err != nil {
@@ -123,12 +165,12 @@ func HostConfigExists(hostName string) (bool, error) {
 
 // Returns true if the config was created/updated, false if it was skipped.
 func CreateOrUpdateHostConfig(ctx context.Context, hostName, hostConfig string, recreate bool) (bool, error) {
-	configPath, err := GetHostConfigPath(hostName)
+	configPath, err := GetHostConfigPath(ctx, hostName)
 	if err != nil {
 		return false, err
 	}
 
-	exists, err := HostConfigExists(hostName)
+	exists, err := HostConfigExists(ctx, hostName)
 	if err != nil {
 		return false, err
 	}

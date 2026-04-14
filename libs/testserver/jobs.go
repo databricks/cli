@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -146,6 +147,10 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 	}
 }
 
+// jobsGetTasksPageSize matches the real Databricks API limit of 100 tasks per jobs.get response.
+// https://docs.databricks.com/api/workspace/jobs/get
+const jobsGetTasksPageSize = 100
+
 func (s *FakeWorkspace) JobsGet(req Request) Response {
 	id := req.URL.Query().Get("job_id")
 	jobIdInt, err := strconv.ParseInt(id, 10, 64)
@@ -164,6 +169,42 @@ func (s *FakeWorkspace) JobsGet(req Request) Response {
 	}
 
 	job = setSourceIfNotSet(job)
+
+	// Paginate tasks to match real API behavior: max 100 tasks per response.
+	// Use page_token (the offset as a string) to fetch subsequent pages.
+	if job.Settings != nil && len(job.Settings.Tasks) > jobsGetTasksPageSize {
+		offset := 0
+		if pageToken := req.URL.Query().Get("page_token"); pageToken != "" {
+			offset, err = strconv.Atoi(pageToken)
+			if err != nil {
+				return Response{
+					StatusCode: 400,
+					Body:       fmt.Sprintf("Failed to parse page_token: %s", err),
+				}
+			}
+		}
+
+		settingsCopy := *job.Settings
+		job.Settings = &settingsCopy
+
+		tasks := settingsCopy.Tasks
+		end := min(offset+jobsGetTasksPageSize, len(tasks))
+		job.Settings.Tasks = tasks[offset:end]
+
+		if end < len(tasks) {
+			job.HasMore = true
+			job.NextPageToken = strconv.Itoa(end)
+		}
+
+		// On subsequent pages the real API returns empty arrays for properties
+		// that were fully included on the first page.
+		if offset > 0 {
+			job.Settings.JobClusters = nil
+			job.Settings.Environments = nil
+			job.Settings.Parameters = nil
+		}
+	}
+
 	return Response{Body: job}
 }
 
@@ -183,7 +224,7 @@ func (s *FakeWorkspace) JobsList() Response {
 		list = append(list, baseJob)
 	}
 
-	sort.Slice(list, func(i, j int) bool { return list[i].JobId < list[j].JobId })
+	slices.SortFunc(list, func(a, b jobs.BaseJob) int { return cmp.Compare(a.JobId, b.JobId) })
 	return Response{Body: jobs.ListJobsResponse{Jobs: list}}
 }
 

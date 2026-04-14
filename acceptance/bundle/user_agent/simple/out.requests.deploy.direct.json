@@ -222,7 +222,7 @@
     "overwrite": "true"
   },
   "body": {
-    "state_version": 1,
+    "state_version": 2,
     "cli_version": "[DEV_VERSION]",
     "lineage": "[UUID]",
     "serial": 1,
@@ -286,4 +286,13 @@
     "catalog_name": "mycatalog",
     "name": "myschema"
   }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
 }

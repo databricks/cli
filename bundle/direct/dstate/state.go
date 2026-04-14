@@ -3,7 +3,9 @@ package dstate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const currentStateVersion = 1
+const currentStateVersion = 2
 
 type DeploymentState struct {
 	Path string
@@ -84,7 +86,7 @@ func (db *DeploymentState) DeleteState(key string) error {
 	return nil
 }
 
-func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
+func (db *DeploymentState) getResourceEntry(key string) (ResourceEntry, bool) {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -97,20 +99,28 @@ func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
 	return result, ok
 }
 
+// GetResourceEntry returns the full resource entry for the given key.
+func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
+	return db.getResourceEntry(key)
+}
+
+// GetResourceID returns the ID of the resource for the given key, or an empty string if not found.
+func (db *DeploymentState) GetResourceID(key string) string {
+	entry, _ := db.getResourceEntry(key)
+	return entry.ID
+}
+
 func (db *DeploymentState) Open(path string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	if db.Path != "" {
-		if db.Path == path {
-			return nil
-		}
-		return fmt.Errorf("already read state %v, cannot open %v", db.Path, path)
+		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			// Create new database with serial=0, will be incremented to 1 in Finalize()
 			db.Data = NewDatabase("", 0)
 			db.Path = path
@@ -122,6 +132,10 @@ func (db *DeploymentState) Open(path string) error {
 	err = json.Unmarshal(data, &db.Data)
 	if err != nil {
 		return err
+	}
+
+	if err := migrateState(&db.Data); err != nil {
+		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
 	db.Path = path

@@ -47,6 +47,14 @@ func (err ErrIsNotNotebook) Error() string {
 	return fmt.Sprintf("file at %s is not a notebook", err.path)
 }
 
+// seenKey is the cache key for the seen map in translateContext.
+// It includes both the local path and the translation mode to prevent
+// cross-mode cache collisions (e.g. artifact vs. workspace path translations).
+type seenKey struct {
+	path string
+	mode paths.TranslateMode
+}
+
 type translatePaths struct{}
 
 type translatePathsDashboards struct{}
@@ -76,14 +84,22 @@ func (m *translatePathsDashboards) Name() string {
 type translateContext struct {
 	b *bundle.Bundle
 
-	// seen is a map of local paths to their corresponding remote paths.
-	// If a local path has already been successfully resolved, we do not need to resolve it again.
-	seen map[string]string
+	// seen is a map of (local path, translation mode) pairs to their corresponding remote paths.
+	// If a local path has already been successfully resolved for a given mode, we do not need to resolve it again.
+	seen map[seenKey]string
 
 	// remoteRoot is the root path of the remote workspace.
 	// It is equal to ${workspace.file_path} for regular deployments.
 	// It points to the source root path for source-linked deployments.
 	remoteRoot string
+
+	// skipLocalFileValidation makes path translation tolerant of missing local files.
+	// When set, paths are translated without verifying files exist on the local filesystem.
+	// This is used by config-remote-sync: a user may rename a resource's root folder
+	// in the workspace UI, and the updated path may not exist locally. Path translation
+	// is still needed to produce fully resolved paths for comparison with remote state,
+	// but local file validation would incorrectly fail.
+	skipLocalFileValidation bool
 }
 
 // rewritePath converts a given relative path from the loaded config to a new path based on the passed rewriting function
@@ -127,7 +143,8 @@ func (t *translateContext) rewritePath(
 
 	// Local path is relative to the directory the resource was defined in.
 	localPath := filepath.Join(dir, input)
-	if interp, ok := t.seen[localPath]; ok {
+	key := seenKey{path: localPath, mode: opts.Mode}
+	if interp, ok := t.seen[key]; ok {
 		return interp, nil
 	}
 
@@ -173,11 +190,16 @@ func (t *translateContext) rewritePath(
 		return "", err
 	}
 
-	t.seen[localPath] = interp
+	t.seen[key] = interp
 	return interp, nil
 }
 
 func (t *translateContext) translateNotebookPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		localRelPathNoExt := strings.TrimSuffix(localRelPath, path.Ext(localRelPath))
+		return path.Join(t.remoteRoot, localRelPathNoExt), nil
+	}
+
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		if path.Ext(localFullPath) != notebook.ExtensionNone {
@@ -213,6 +235,10 @@ to contain one of the following file extensions: [%s]`, literal, strings.Join(no
 }
 
 func (t *translateContext) translateFilePath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		return path.Join(t.remoteRoot, localRelPath), nil
+	}
+
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, localRelPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
@@ -227,6 +253,10 @@ func (t *translateContext) translateFilePath(ctx context.Context, literal, local
 }
 
 func (t *translateContext) translateDirectoryPath(ctx context.Context, literal, localFullPath, localRelPath string) (string, error) {
+	if t.skipLocalFileValidation {
+		return path.Join(t.remoteRoot, localRelPath), nil
+	}
+
 	info, err := t.b.SyncRoot.Stat(localRelPath)
 	if err != nil {
 		return "", err
@@ -242,6 +272,10 @@ func (t *translateContext) translateGlobPath(ctx context.Context, literal, local
 }
 
 func (t *translateContext) translateLocalAbsoluteDirectoryPath(ctx context.Context, literal, localFullPath, _ string) (string, error) {
+	if t.skipLocalFileValidation {
+		return localFullPath, nil
+	}
+
 	info, err := os.Stat(filepath.FromSlash(localFullPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("directory %s not found", literal)
@@ -311,8 +345,9 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 
 func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
-		b:    b,
-		seen: make(map[string]string),
+		b:                       b,
+		seen:                    make(map[seenKey]string),
+		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){
@@ -327,8 +362,9 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
-		b:    b,
-		seen: make(map[string]string),
+		b:                       b,
+		seen:                    make(map[seenKey]string),
+		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
 	return applyTranslations(ctx, b, t, []func(context.Context, dyn.Value) (dyn.Value, error){

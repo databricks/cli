@@ -1,7 +1,6 @@
 package exec
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -18,7 +17,7 @@ import (
 func TestExecutorWithSimpleInput(t *testing.T) {
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	out, err := executor.Exec(context.Background(), "echo 'Hello'")
+	out, err := executor.Exec(t.Context(), "echo 'Hello'")
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
 	assert.Equal(t, "Hello\n", string(out))
@@ -27,7 +26,7 @@ func TestExecutorWithSimpleInput(t *testing.T) {
 func TestExecutorWithComplexInput(t *testing.T) {
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	out, err := executor.Exec(context.Background(), "echo 'Hello' && echo 'World'")
+	out, err := executor.Exec(t.Context(), "echo 'Hello' && echo 'World'")
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
 	assert.Equal(t, "Hello\nWorld\n", string(out))
@@ -36,7 +35,7 @@ func TestExecutorWithComplexInput(t *testing.T) {
 func TestExecutorWithStderr(t *testing.T) {
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	out, err := executor.Exec(context.Background(), "echo 'Hello' && >&2 echo 'Error'")
+	out, err := executor.Exec(t.Context(), "echo 'Hello' && >&2 echo 'Error'")
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
 	assert.Equal(t, "Hello\nError\n", string(out))
@@ -45,7 +44,7 @@ func TestExecutorWithStderr(t *testing.T) {
 func TestExecutorWithInvalidCommand(t *testing.T) {
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	out, err := executor.Exec(context.Background(), "invalid-command")
+	out, err := executor.Exec(t.Context(), "invalid-command")
 	assert.Error(t, err)
 	assert.Contains(t, string(out), "invalid-command: command not found")
 }
@@ -57,7 +56,7 @@ func TestExecutorWithInvalidCommandWithWindowsLikePath(t *testing.T) {
 
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	out, err := executor.Exec(context.Background(), `"C:\Program Files\invalid-command.exe"`)
+	out, err := executor.Exec(t.Context(), `"C:\Program Files\invalid-command.exe"`)
 	assert.Error(t, err)
 	assert.Contains(t, string(out), "C:\\Program Files\\invalid-command.exe: No such file or directory")
 }
@@ -96,7 +95,7 @@ func testExecutorWithShell(t *testing.T, shell string) {
 
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	out, err := executor.Exec(context.Background(), "echo 'Hello from shell'")
+	out, err := executor.Exec(t.Context(), "echo 'Hello from shell'")
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
 	assert.Contains(t, string(out), "Hello from shell")
@@ -124,7 +123,7 @@ func TestExecutorCleanupsTempFiles(t *testing.T) {
 	executor, err := NewCommandExecutorWithExecutable(".", CmdExecutable)
 	assert.NoError(t, err)
 
-	cmd, ec, err := executor.prepareCommand(context.Background(), "echo 'Hello'")
+	cmd, ec, err := executor.prepareCommand(t.Context(), "echo 'Hello'")
 	assert.NoError(t, err)
 
 	command, err := executor.start(cmd, ec)
@@ -147,7 +146,7 @@ func TestMultipleCommandsRunInParrallel(t *testing.T) {
 	var wg sync.WaitGroup
 
 	for i := range count {
-		cmd, err := executor.StartCommand(context.Background(), fmt.Sprintf("echo 'Hello %d'", i))
+		cmd, err := executor.StartCommand(t.Context(), fmt.Sprintf("echo 'Hello %d'", i))
 		if !assert.NoError(t, err) {
 			continue
 		}

@@ -1,7 +1,6 @@
 package tfdyn
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -22,7 +21,7 @@ func TestConvertAlert(t *testing.T) {
 			CustomSummary:     "Test alert summary",
 			CustomDescription: "Test alert description",
 		},
-		Permissions: []resources.AlertPermission{
+		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_VIEW",
 				UserName: "jane@doe.com",
@@ -37,7 +36,7 @@ func TestConvertAlert(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = alertConverter{}.Convert(ctx, "test_alert", vin, out)
 	require.NoError(t, err)
@@ -92,7 +91,7 @@ func TestConvertAlertWithThresholdDoubleValue(t *testing.T) {
 	vin, err := convert.FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	out := schema.NewResources()
 	err = alertConverter{}.Convert(ctx, "test_alert", vin, out)
 	require.NoError(t, err)

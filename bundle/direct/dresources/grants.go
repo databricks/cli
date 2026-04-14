@@ -4,8 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -21,15 +20,10 @@ var grantResourceToSecurableType = map[string]string{
 	"registered_models":  "function",
 }
 
-type GrantAssignment struct {
-	Principal  string              `json:"principal"`
-	Privileges []catalog.Privilege `json:"privileges,omitempty"`
-}
-
 type GrantsState struct {
-	SecurableType string            `json:"securable_type"`
-	FullName      string            `json:"full_name"`
-	Grants        []GrantAssignment `json:"grants,omitempty"`
+	SecurableType string                        `json:"securable_type"`
+	FullName      string                        `json:"full_name"`
+	EmbeddedSlice []catalog.PrivilegeAssignment `json:"__embed__,omitempty"`
 }
 
 func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -48,59 +42,21 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 		return nil, fmt.Errorf("unsupported grants resource type: %s", resourceType)
 	}
 
-	rv := reflect.ValueOf(inputConfig)
-	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-		return nil, fmt.Errorf("inputConfig must be a pointer to a slice, got: %T", inputConfig)
+	grantsPtr, ok := inputConfig.(*[]catalog.PrivilegeAssignment)
+	if !ok {
+		return nil, fmt.Errorf("expected *[]catalog.PrivilegeAssignment, got %T", inputConfig)
 	}
 
-	sliceValue := rv.Elem()
-	grants := make([]GrantAssignment, 0, sliceValue.Len())
-	for i := range sliceValue.Len() {
-		elem := sliceValue.Index(i)
-		if elem.Kind() == reflect.Ptr {
-			elem = elem.Elem()
-		}
-		if elem.Kind() != reflect.Struct {
-			return nil, fmt.Errorf("grant element must be a struct, got %s", elem.Kind())
-		}
-
-		principalField := elem.FieldByName("Principal")
-		if !principalField.IsValid() {
-			return nil, errors.New("grant element missing Principal field")
-		}
-		principal := principalField.String()
-
-		privilegesField := elem.FieldByName("Privileges")
-		if !privilegesField.IsValid() {
-			return nil, errors.New("grant element missing Privileges field")
-		}
-		if privilegesField.Kind() != reflect.Slice {
-			return nil, errors.New("grant Privileges field must be a slice")
-		}
-
-		privileges := make([]catalog.Privilege, 0, privilegesField.Len())
-		for j := range privilegesField.Len() {
-			item := privilegesField.Index(j)
-			if item.Kind() != reflect.String {
-				return nil, fmt.Errorf("privilege must be a string, got %s", item.Kind())
-			}
-			privileges = append(privileges, catalog.Privilege(item.String()))
-		}
-
-		// Backend sorts privileges, so we sort here as well.
-		sortPriviliges(privileges)
-
-		grants = append(grants, GrantAssignment{
-			Principal:  principal,
-			Privileges: privileges,
-		})
+	// Backend sorts privileges, so we sort here as well.
+	for i := range *grantsPtr {
+		slices.Sort((*grantsPtr)[i].Privileges)
 	}
 
 	return &structvar.StructVar{
 		Value: &GrantsState{
 			SecurableType: securableType,
 			FullName:      "",
-			Grants:        grants,
+			EmbeddedSlice: *grantsPtr,
 		},
 		Refs: map[string]string{
 			"full_name": "${" + baseNode + ".id}",
@@ -120,6 +76,18 @@ func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
 	return state
 }
 
+func grantKey(x catalog.PrivilegeAssignment) (string, string) {
+	return "principal", x.Principal
+}
+
+func (*ResourceGrants) KeyedSlices() map[string]any {
+	// Empty key because EmbeddedSlice appears at the root path of
+	// GrantsState (no "grants" prefix in struct walker paths).
+	return map[string]any{
+		"": grantKey,
+	}
+}
+
 func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, error) {
 	securableType, fullName, err := parseGrantsID(id)
 	if err != nil {
@@ -134,21 +102,30 @@ func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, e
 	return &GrantsState{
 		SecurableType: securableType,
 		FullName:      fullName,
-		Grants:        assignments,
+		EmbeddedSlice: assignments,
 	}, nil
 }
 
 func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (string, *GrantsState, error) {
-	err := r.applyGrants(ctx, state)
+	_, err := r.DoUpdate(ctx, "", state, nil)
 	if err != nil {
 		return "", nil, err
 	}
 
-	return makeGrantsID(state.SecurableType, state.FullName), nil, nil
+	return state.SecurableType + "/" + state.FullName, nil, nil
 }
 
-func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, _ Changes) (*GrantsState, error) {
-	return nil, r.applyGrants(ctx, state)
+func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, entry *PlanEntry) (*GrantsState, error) {
+	if state.FullName == "" {
+		return nil, errors.New("internal error: grants full_name must be resolved before deployment")
+	}
+	removedPrincipals := removedGrantPrincipals(state.EmbeddedSlice, entry)
+	_, err := r.client.Grants.Update(ctx, catalog.UpdatePermissions{
+		SecurableType: state.SecurableType,
+		FullName:      state.FullName,
+		Changes:       buildGrantChanges(state.EmbeddedSlice, removedPrincipals),
+	})
+	return nil, err
 }
 
 func (r *ResourceGrants) DoDelete(ctx context.Context, id string) error {
@@ -157,33 +134,62 @@ func (r *ResourceGrants) DoDelete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *ResourceGrants) applyGrants(ctx context.Context, state *GrantsState) error {
-	if state.FullName == "" {
-		return errors.New("internal error: grants full_name must be resolved before deployment")
+func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removedPrincipals []string) []catalog.PermissionsChange {
+	changes := make([]catalog.PermissionsChange, 0, len(desiredAssignments)+len(removedPrincipals))
+	for _, ga := range desiredAssignments {
+		change := catalog.PermissionsChange{
+			Principal:       ga.Principal,
+			Add:             ga.Privileges,
+			Remove:          nil,
+			ForceSendFields: nil,
+		}
+		// Remove all other privileges unless ALL_PRIVILEGES is being granted
+		// (it would conflict with appearing in both Add and Remove).
+		if !slices.Contains(ga.Privileges, catalog.PrivilegeAllPrivileges) {
+			change.Remove = []catalog.Privilege{catalog.PrivilegeAllPrivileges}
+		}
+		changes = append(changes, change)
 	}
-
-	var changes []catalog.PermissionsChange
-
-	// For each principal in the config, add their grants and remove everything else
-	for _, grantAssignment := range state.Grants {
+	for _, principal := range removedPrincipals {
 		changes = append(changes, catalog.PermissionsChange{
-			Principal:       grantAssignment.Principal,
-			Add:             grantAssignment.Privileges,
+			Principal:       principal,
+			Add:             nil,
 			Remove:          []catalog.Privilege{catalog.PrivilegeAllPrivileges},
 			ForceSendFields: nil,
 		})
 	}
-
-	_, err := r.client.Grants.Update(ctx, catalog.UpdatePermissions{
-		SecurableType: state.SecurableType,
-		FullName:      state.FullName,
-		Changes:       changes,
-	})
-	return err
+	return changes
 }
 
-func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName string) ([]GrantAssignment, error) {
-	var assignments []GrantAssignment
+// removedGrantPrincipals returns principals present in the remote state but absent from the desired assignments.
+func removedGrantPrincipals(desiredAssignments []catalog.PrivilegeAssignment, entry *PlanEntry) []string {
+	if entry == nil {
+		return nil
+	}
+	remote, ok := entry.RemoteState.(*GrantsState)
+	if !ok || remote == nil {
+		return nil
+	}
+
+	desired := make(map[string]struct{}, len(desiredAssignments))
+	for _, a := range desiredAssignments {
+		if a.Principal != "" {
+			desired[a.Principal] = struct{}{}
+		}
+	}
+
+	var result []string
+	for _, a := range remote.EmbeddedSlice {
+		if _, ok := desired[a.Principal]; !ok {
+			result = append(result, a.Principal)
+		}
+	}
+	slices.Sort(result)
+	return result
+}
+
+func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName string) ([]catalog.PrivilegeAssignment, error) {
+	var assignments []catalog.PrivilegeAssignment
 	pageToken := ""
 	for {
 		resp, err := r.client.Grants.Get(ctx, catalog.GetGrantRequest{
@@ -201,11 +207,10 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 			if assignment.Principal == "" {
 				continue
 			}
-			privs := make([]catalog.Privilege, len(assignment.Privileges))
-			copy(privs, assignment.Privileges)
-			assignments = append(assignments, GrantAssignment{
-				Principal:  assignment.Principal,
-				Privileges: privs,
+			assignments = append(assignments, catalog.PrivilegeAssignment{
+				Principal:       assignment.Principal,
+				Privileges:      assignment.Privileges,
+				ForceSendFields: nil,
 			})
 		}
 		if resp.NextPageToken == "" {
@@ -214,12 +219,6 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 		pageToken = resp.NextPageToken
 	}
 	return assignments, nil
-}
-
-func sortPriviliges(privileges []catalog.Privilege) {
-	sort.Slice(privileges, func(i, j int) bool {
-		return privileges[i] < privileges[j]
-	})
 }
 
 func extractGrantResourceType(node string) (string, error) {
@@ -243,8 +242,4 @@ func parseGrantsID(id string) (string, string, error) {
 		return "", "", fmt.Errorf("invalid grants id: %q", id)
 	}
 	return parts[0], parts[1], nil
-}
-
-func makeGrantsID(securableType, fullName string) string {
-	return securableType + "/" + fullName
 }

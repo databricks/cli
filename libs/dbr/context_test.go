@@ -1,14 +1,13 @@
 package dbr
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestContext_DetectRuntimePanics(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Run detection.
 	ctx = DetectRuntime(ctx)
@@ -20,7 +19,7 @@ func TestContext_DetectRuntimePanics(t *testing.T) {
 }
 
 func TestContext_MockRuntimePanics(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Run detection.
 	ctx = MockRuntime(ctx, Environment{IsDbr: true, Version: "15.4"})
@@ -32,7 +31,7 @@ func TestContext_MockRuntimePanics(t *testing.T) {
 }
 
 func TestContext_RunsOnRuntimePanics(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Expect a panic if the detection is not run.
 	assert.Panics(t, func() {
@@ -41,7 +40,7 @@ func TestContext_RunsOnRuntimePanics(t *testing.T) {
 }
 
 func TestContext_RuntimeVersionPanics(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Expect a panic if the detection is not run.
 	assert.Panics(t, func() {
@@ -50,7 +49,7 @@ func TestContext_RuntimeVersionPanics(t *testing.T) {
 }
 
 func TestContext_RunsOnRuntime(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Run detection.
 	ctx = DetectRuntime(ctx)
@@ -62,7 +61,7 @@ func TestContext_RunsOnRuntime(t *testing.T) {
 }
 
 func TestContext_RuntimeVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Run detection.
 	ctx = DetectRuntime(ctx)
@@ -74,13 +73,13 @@ func TestContext_RuntimeVersion(t *testing.T) {
 }
 
 func TestContext_RunsOnRuntimeWithMock(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.True(t, RunsOnRuntime(MockRuntime(ctx, Environment{IsDbr: true, Version: "15.4"})))
 	assert.False(t, RunsOnRuntime(MockRuntime(ctx, Environment{})))
 }
 
 func TestContext_RuntimeVersionWithMock(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	assert.Equal(t, "15.4", RuntimeVersion(MockRuntime(ctx, Environment{IsDbr: true, Version: "15.4"})).String())
 	assert.Empty(t, RuntimeVersion(MockRuntime(ctx, Environment{})).String())
 }
@@ -165,7 +164,7 @@ func TestVersion_String(t *testing.T) {
 }
 
 func TestContext_RuntimeVersionParsed(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test serverless version
 	serverlessCtx := MockRuntime(ctx, Environment{IsDbr: true, Version: "client.4.9"})

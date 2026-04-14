@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -16,7 +17,7 @@ import (
 )
 
 func TestNewFileCache(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "cache")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
@@ -47,7 +48,7 @@ func TestNewFileCache(t *testing.T) {
 }
 
 func TestNewFileCacheWithExistingDirectory(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "existing")
 
@@ -70,7 +71,7 @@ func TestNewFileCacheInvalidPath(t *testing.T) {
 		t.Skip("Skipping invalid path test on Windows")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	// Try to create cache in a location that should fail
 	invalidPath := "/root/invalid/path/that/should/not/exist"
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
@@ -82,7 +83,7 @@ func TestNewFileCacheInvalidPath(t *testing.T) {
 }
 
 func TestFileCacheGetOrCompute(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "cache")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
@@ -122,7 +123,7 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 }
 
 func TestFileCacheGetOrComputeError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "cache")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
@@ -147,7 +148,7 @@ func TestFileCacheGetOrComputeError(t *testing.T) {
 }
 
 func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "cache")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
@@ -196,7 +197,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 }
 
 func TestFileCacheCleanupExpiredFiles(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	expiry := 60 * time.Minute
 
@@ -224,17 +225,17 @@ func TestFileCacheCleanupExpiredFiles(t *testing.T) {
 
 	// Check results
 	_, err = os.Stat(expiredFile)
-	assert.True(t, os.IsNotExist(err), "Expired file should be deleted")
+	assert.ErrorIs(t, err, fs.ErrNotExist, "Expired file should be deleted")
 
 	_, err = os.Stat(validFile)
-	assert.False(t, os.IsNotExist(err), "Valid file should still exist")
+	assert.NotErrorIs(t, err, fs.ErrNotExist, "Valid file should still exist")
 
 	_, err = os.Stat(nonCacheFile)
-	assert.False(t, os.IsNotExist(err), "Non-cache file should be ignored")
+	assert.NotErrorIs(t, err, fs.ErrNotExist, "Non-cache file should be ignored")
 }
 
 func TestFileCacheInvalidJSON(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 60*time.Minute)
 	require.NoError(t, err)
@@ -270,7 +271,7 @@ func TestFileCacheInvalidJSON(t *testing.T) {
 }
 
 func TestFileCacheCorruptedData(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 60*time.Minute)
 	require.NoError(t, err)
@@ -306,7 +307,7 @@ func TestFileCacheCorruptedData(t *testing.T) {
 }
 
 func TestFileCacheEmptyFingerprint(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 60*time.Minute)
 	require.NoError(t, err)
@@ -338,7 +339,7 @@ func TestFileCacheEmptyFingerprint(t *testing.T) {
 }
 
 func TestFileCacheMeasurementMode(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 60*time.Minute)
 	require.NoError(t, err)
@@ -387,7 +388,7 @@ func TestFileCacheReadPermissionError(t *testing.T) {
 		t.Skip("Skipping permission test on Windows")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	tempDir := t.TempDir()
 	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 60*time.Minute)
 	require.NoError(t, err)

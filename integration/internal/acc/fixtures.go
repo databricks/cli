@@ -1,6 +1,7 @@
 package acc
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -27,7 +28,7 @@ func TemporaryWorkspaceDir(t *WorkspaceT, name ...string) string {
 	// Remove test directory on test completion.
 	t.Cleanup(func() {
 		t.Logf("Removing workspace directory %s", basePath)
-		err := t.W.Workspace.Delete(ctx, workspace.Delete{
+		err := t.W.Workspace.Delete(context.WithoutCancel(ctx), workspace.Delete{
 			Path:      basePath,
 			Recursive: true,
 		})
@@ -53,7 +54,7 @@ func TemporaryDbfsDir(t *WorkspaceT, name ...string) string {
 
 	t.Cleanup(func() {
 		t.Logf("Removing DBFS directory %s", path)
-		err := t.W.Dbfs.Delete(ctx, files.Delete{
+		err := t.W.Dbfs.Delete(context.WithoutCancel(ctx), files.Delete{
 			Path:      path,
 			Recursive: true,
 		})
@@ -84,7 +85,7 @@ func TemporaryRepo(t *WorkspaceT, url string) string {
 
 	t.Cleanup(func() {
 		t.Logf("Removing repo: %s", path)
-		err := t.W.Repos.Delete(ctx, workspace.DeleteRepoRequest{
+		err := t.W.Repos.Delete(context.WithoutCancel(ctx), workspace.DeleteRepoRequest{
 			RepoId: resp.Id,
 		})
 		if err == nil || apierr.IsMissing(err) {
@@ -108,7 +109,7 @@ func TemporaryVolume(t *WorkspaceT) string {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err := w.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
+		err := w.Schemas.Delete(context.WithoutCancel(ctx), catalog.DeleteSchemaRequest{
 			FullName: schema.FullName,
 		})
 		require.NoError(t, err)
@@ -123,7 +124,7 @@ func TemporaryVolume(t *WorkspaceT) string {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err := w.Volumes.Delete(ctx, catalog.DeleteVolumeRequest{
+		err := w.Volumes.Delete(context.WithoutCancel(ctx), catalog.DeleteVolumeRequest{
 			Name: volume.FullName,
 		})
 		require.NoError(t, err)

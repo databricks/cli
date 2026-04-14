@@ -18,12 +18,18 @@ type MaterializedConfig struct {
 	RequiresCluster      *bool               `toml:"RequiresCluster,omitempty"`
 	RequiresWarehouse    *bool               `toml:"RequiresWarehouse,omitempty"`
 	RunsOnDbr            *bool               `toml:"RunsOnDbr,omitempty"`
+	Phase                *int                `toml:"Phase,omitempty"`
 	EnvMatrix            map[string][]string `toml:"EnvMatrix,omitempty"`
 }
 
 // GenerateMaterializedConfig creates a TOML representation of the configuration fields
 // that determine where and how a test is executed
 func GenerateMaterializedConfig(config TestConfig) (string, error) {
+	var phase *int
+	if config.Phase != 0 {
+		phase = &config.Phase
+	}
+
 	materialized := MaterializedConfig{
 		GOOS:                 config.GOOS,
 		CloudEnvs:            config.CloudEnvs,
@@ -34,6 +40,7 @@ func GenerateMaterializedConfig(config TestConfig) (string, error) {
 		RequiresCluster:      config.RequiresCluster,
 		RequiresWarehouse:    config.RequiresWarehouse,
 		RunsOnDbr:            config.RunsOnDbr,
+		Phase:                phase,
 		EnvMatrix:            config.EnvMatrix,
 	}
 

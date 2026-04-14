@@ -1,7 +1,6 @@
 package variable
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -22,7 +21,7 @@ func TestResolveNotificationDestination_ResolveSuccess(t *testing.T) {
 			{Id: "1234", DisplayName: "destination"},
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveNotificationDestination{name: "destination"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
@@ -37,7 +36,7 @@ func TestResolveNotificationDestination_ResolveError(t *testing.T) {
 		ListAll(mock.Anything, mock.Anything).
 		Return(nil, errors.New("bad"))
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveNotificationDestination{name: "destination"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	assert.ErrorContains(t, err, "bad")
@@ -51,7 +50,7 @@ func TestResolveNotificationDestination_ResolveNotFound(t *testing.T) {
 		ListAll(mock.Anything, mock.Anything).
 		Return([]settings.ListNotificationDestinationsResult{}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveNotificationDestination{name: "destination"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.Error(t, err)
@@ -69,7 +68,7 @@ func TestResolveNotificationDestination_ResolveMultiple(t *testing.T) {
 			{Id: "5678", DisplayName: "destination"},
 		}, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	l := resolveNotificationDestination{name: "destination"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.Error(t, err)

@@ -92,6 +92,7 @@ def run_ssh_server():
     os.environ["DATABRICKS_TOKEN"] = ctx.apiToken
     os.environ["DATABRICKS_CLUSTER_ID"] = ctx.clusterId
     os.environ["DATABRICKS_VIRTUAL_ENV"] = sys.executable
+    os.environ["DATABRICKS_REMOTE_ENV"] = "1"
     python_path = os.path.dirname(sys.executable)
     os.environ["PATH"] = f"{python_path}:{os.environ['PATH']}"
     if os.environ.get("VIRTUAL_ENV") is None:

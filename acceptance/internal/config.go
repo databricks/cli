@@ -1,11 +1,14 @@
 package internal
 
 import (
+	"errors"
+	"hash/fnv"
+	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +26,12 @@ const configFilename = "test.toml"
 type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
 	Badness *string
+
+	// Execution phase for this test. Phase 1 tests run after all phase 0 tests complete,
+	// which is useful when a test depends on the output of another tests.
+	// Some tests run diff against sister test output to highlight the differences.
+	// Some tests summarize output of many child tests.
+	Phase int `inherit:"false"`
 
 	// Which OSes the test is enabled on. Each string is compared against runtime.GOOS.
 	// If absent, default to true.
@@ -174,7 +183,7 @@ func FindConfigs(t *testing.T, dir string) []string {
 
 		dir = filepath.Dir(dir)
 
-		if err == nil || os.IsNotExist(err) {
+		if err == nil || errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
 
@@ -194,9 +203,19 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 	}
 
 	result := DoLoadConfig(t, configs[0])
+	leafConfigPath := filepath.Join(dir, configFilename)
+	leafConfig := TestConfig{}
+	hasLeafConfig := configs[0] == leafConfigPath
+	if hasLeafConfig {
+		leafConfig = result
+	}
 
 	for _, cfgName := range configs[1:] {
 		cfg := DoLoadConfig(t, cfgName)
+		if cfgName == leafConfigPath {
+			leafConfig = cfg
+			hasLeafConfig = true
+		}
 		err := mergo.Merge(
 			&result,
 			cfg,
@@ -210,14 +229,17 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 		}
 	}
 
+	restoreNonInheritable(&result, leafConfig, hasLeafConfig)
+
 	// Always ignore .cache directory (used by local cache)
 	result.Ignore = append(result.Ignore, ".cache")
 	result.CompiledIgnoreObject = ignore.CompileIgnoreLines(result.Ignore...)
 
 	// Validate incompatible configuration combinations
-	validateConfig(t, result, strings.Join(configs, ", "))
+	configDesc := filepath.ToSlash(strings.Join(configs, ", "))
+	validateConfig(t, result, configDesc)
 
-	return result, strings.Join(configs, ", ")
+	return result, configDesc
 }
 
 // validateConfig checks for incompatible configuration combinations.
@@ -227,6 +249,16 @@ func validateConfig(t *testing.T, config TestConfig, configPath string) {
 	if isTruePtr(config.RunsOnDbr) && isTruePtr(config.RecordRequests) {
 		t.Fatalf("Invalid config %s: RunsOnDbr and RecordRequests cannot both be true. "+
 			"Serverless does not allow access to localhost ports, which the test proxy server requires.", configPath)
+	}
+
+	// Reject Ignore patterns that target out* files, since those are generated
+	// output files and must never be ignored.
+	for _, pattern := range config.Ignore {
+		name := strings.TrimLeft(pattern, "!/")
+		if strings.HasPrefix(name, "out") {
+			t.Fatalf("Invalid config %s: Ignore pattern %q targets output files (out*). "+
+				"Output files must not be ignored.", configPath, pattern)
+		}
 	}
 }
 
@@ -244,6 +276,24 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 	}
 
 	return config
+}
+
+// restoreNonInheritable resets fields tagged with `inherit:"false"` to their leaf config values.
+// If there is no leaf config, those fields are reset to their zero value.
+func restoreNonInheritable(result *TestConfig, leafConfig TestConfig, hasLeafConfig bool) {
+	typ := reflect.TypeFor[TestConfig]()
+	val := reflect.ValueOf(result).Elem()
+	leafVal := reflect.ValueOf(leafConfig)
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		if field.Tag.Get("inherit") == "false" {
+			if hasLeafConfig {
+				val.Field(i).Set(leafVal.Field(i))
+			} else {
+				val.Field(i).SetZero()
+			}
+		}
+	}
 }
 
 // mapTransformer is a mergo transformer that merges two maps
@@ -298,11 +348,7 @@ func ExpandEnvMatrix(matrix, exclude map[string][]string, extraVars []string) []
 		return result
 	}
 
-	keys := make([]string, 0, len(filteredMatrix))
-	for key := range filteredMatrix {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(filteredMatrix))
 
 	// Build an expansion of all combinations.
 	// At each step we look at a given key and append each possible value to each
@@ -380,17 +426,66 @@ func filterExcludedEnvSets(envSets [][]string, exclude map[string][]string) [][]
 	return filtered
 }
 
+// SubsetExpanded selects one variant per DATABRICKS_BUNDLE_ENGINE value (if scriptUsesEngine)
+// or one variant total from an already-expanded and exclusion-filtered list.
+// DATABRICKS_BUNDLE_ENGINE=direct has weight 10; all other variants have weight 1.
+func SubsetExpanded(expanded [][]string, testDir string, scriptUsesEngine bool) [][]string {
+	if len(expanded) <= 1 {
+		return expanded
+	}
+	if scriptUsesEngine {
+		// Collect candidates per engine key, preserving first-seen order.
+		// keyToIdx maps engine value -> index in result/groups slices.
+		var result [][]string
+		var groups [][][]string
+		keyToIdx := make(map[string]int)
+		for _, envset := range expanded {
+			engine := ""
+			for _, kv := range envset {
+				if v, ok := strings.CutPrefix(kv, "DATABRICKS_BUNDLE_ENGINE="); ok {
+					engine = v
+					break
+				}
+			}
+			idx, ok := keyToIdx[engine]
+			if !ok {
+				idx = len(result)
+				keyToIdx[engine] = idx
+				result = append(result, nil)
+				groups = append(groups, nil)
+			}
+			groups[idx] = append(groups[idx], envset)
+		}
+		for i, group := range groups {
+			result[i] = weightedSelect(group, testDir)
+		}
+		return result
+	}
+	return [][]string{weightedSelect(expanded, testDir)}
+}
+
+// weightedSelect picks one envset using weighted consistent hashing.
+// DATABRICKS_BUNDLE_ENGINE=direct has weight 10; all other envsets have weight 1.
+func weightedSelect(envsets [][]string, testDir string) []string {
+	var weighted [][]string
+	for _, envset := range envsets {
+		weight := 1
+		if slices.Contains(envset, "DATABRICKS_BUNDLE_ENGINE=direct") {
+			weight = 10
+		}
+		for range weight {
+			weighted = append(weighted, envset)
+		}
+	}
+	h := fnv.New64a()
+	h.Write([]byte(testDir))
+	return weighted[h.Sum64()%uint64(len(weighted))]
+}
+
 // matchesExclusionRule returns true if envSet contains all KEY=value pairs from excludeRule.
 func matchesExclusionRule(envSet, excludeRule []string) bool {
 	for _, excludePair := range excludeRule {
-		found := false
-		for _, envPair := range envSet {
-			if envPair == excludePair {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(envSet, excludePair) {
 			return false
 		}
 	}

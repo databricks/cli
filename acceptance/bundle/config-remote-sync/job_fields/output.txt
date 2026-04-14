@@ -12,8 +12,13 @@ Detected changes in 1 resource(s):
 Resource: resources.jobs.my_job
   email_notifications.no_alert_for_skipped_runs: add
   email_notifications.on_failure: add
-  parameters: replace
+  job_clusters[job_cluster_key='test_cluster']: remove
+  job_clusters[job_cluster_key='test_cluster_renamed']: add
+  name: replace
+  parameters[name='region']: add
   tags['team']: add
+  tasks[task_key='inline_cluster_task'].new_cluster.num_workers: replace
+  tasks[task_key='main'].job_cluster_key: replace
   trigger.pause_status: add
   trigger.periodic: remove
   trigger.table_update: add
@@ -25,21 +30,22 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -8,13 +8,19 @@
+@@ -5,8 +5,11 @@
+   jobs:
+     my_job:
+-      name: test-job-[UNIQUE_NAME]
++      name: renamed-job-[UNIQUE_NAME]
+       email_notifications:
          on_success:
            - success@example.com
 +        no_alert_for_skipped_runs: true
 +        on_failure:
 +          - failure@example.com
        parameters:
--        - name: catalog
--          default: main
--        - name: env
--          default: dev
-+        - default: main
-+          name: catalog
-+        - default: dev
-+          name: env
+         - name: catalog
+@@ -14,8 +17,11 @@
+         - name: env
+           default: dev
 +        - default: us-east-1
 +          name: region
        trigger:
@@ -52,9 +58,29 @@ Resource: resources.jobs.my_job
 +            - samples.nyctaxi.trips
        environments:
          - environment_key: default
-@@ -31,4 +37,6 @@
+@@ -25,14 +31,14 @@
+               - ./*.whl
+       job_clusters:
+-        - job_cluster_key: test_cluster
++        - job_cluster_key: test_cluster_renamed
+           new_cluster:
+-            spark_version: [[DEFAULT_SPARK_VERSION]]
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
++            spark_version: [[DEFAULT_SPARK_VERSION]]
+       tasks:
+         - task_key: main
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/notebook
+-          job_cluster_key: test_cluster
++          job_cluster_key: test_cluster_renamed
+         - task_key: inline_cluster_task
+           notebook_task:
+@@ -41,5 +47,7 @@
+             spark_version: [[DEFAULT_SPARK_VERSION]]
+             node_type_id: [NODE_TYPE_ID]
+-            num_workers: 1
++            num_workers: 2
 +      tags:
 +        team: data
 

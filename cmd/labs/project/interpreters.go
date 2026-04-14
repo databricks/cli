@@ -1,6 +1,7 @@
 package project
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -8,9 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 	"golang.org/x/mod/semver"
@@ -99,20 +101,18 @@ func DetectInterpreters(ctx context.Context) (allInterpreters, error) {
 	if len(found) == 0 {
 		return nil, ErrNoPythonInterpreters
 	}
-	sort.Slice(found, func(i, j int) bool {
-		a := found[i].Version
-		b := found[j].Version
-		cmp := semver.Compare(a, b)
-		if cmp != 0 {
-			return cmp < 0
+	slices.SortFunc(found, func(a, b Interpreter) int {
+		c := semver.Compare(a.Version, b.Version)
+		if c != 0 {
+			return c
 		}
-		return a < b
+		return cmp.Compare(a.Version, b.Version)
 	})
 	return found, nil
 }
 
 func pythonicExecutablesFromPathEnvironment(ctx context.Context) (out []string, err error) {
-	paths := strings.Split(os.Getenv("PATH"), string(os.PathListSeparator))
+	paths := strings.Split(env.Get(ctx, "PATH"), string(os.PathListSeparator))
 	for _, prefix := range paths {
 		info, err := os.Stat(prefix)
 		if errors.Is(err, fs.ErrNotExist) {

@@ -69,6 +69,7 @@ var knownMissingInRemoteType = map[string][]string{
 		"custom_tags",
 		"default_endpoint_settings",
 		"display_name",
+		"enable_pg_native_login",
 		"history_retention_duration",
 		"pg_version",
 		"project_id",
@@ -91,9 +92,7 @@ var knownMissingInStateType = map[string][]string{
 		"file_path",
 	},
 	"apps": {
-		"config",
-		"source_code_path",
-		"git_source",
+		"lifecycle.prevent_destroy",
 	},
 	"dashboards": {
 		"file_path",

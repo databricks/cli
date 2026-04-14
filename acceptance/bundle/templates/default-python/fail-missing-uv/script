@@ -1,6 +1,6 @@
-trace $CLI bundle init default-python --config-file ./input.json --output-dir output
+trace $CLI bundle init default-python --config-file ./input.json --output-dir tmp
 
-cd output/fail_missing_uv
+cd tmp/fail_missing_uv
 trace $CLI bundle validate
 
 # Dynamically find ALL directories containing 'uv' and remove them from PATH
@@ -11,3 +11,5 @@ done
 
 # Try to deploy, expect failure due to missing uv
 errcode trace $CLI bundle deploy
+
+cd ../.. && rm -fr tmp

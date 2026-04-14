@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
@@ -88,6 +89,83 @@ func (s *FakeWorkspace) AppsGetUpdate(_ Request, name string) Response {
 	}
 }
 
+func (s *FakeWorkspace) AppsCreateDeployment(req Request, name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	var deployment apps.AppDeployment
+	if err := json.Unmarshal(req.Body, &deployment); err != nil {
+		return Response{StatusCode: 500, Body: fmt.Sprintf("internal error: %s", err)}
+	}
+
+	deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
+	deployment.Status = &apps.AppDeploymentStatus{
+		State:   apps.AppDeploymentStateSucceeded,
+		Message: "Deployment succeeded",
+	}
+
+	app.ActiveDeployment = &deployment
+	app.DefaultSourceCodePath = deployment.SourceCodePath
+	s.Apps[name] = app
+
+	return Response{Body: deployment}
+}
+
+func (s *FakeWorkspace) AppsGetDeployment(_ Request, name, deploymentID string) Response {
+	defer s.LockUnlock()()
+
+	_, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	return Response{Body: apps.AppDeployment{
+		DeploymentId: deploymentID,
+		Status: &apps.AppDeploymentStatus{
+			State:   apps.AppDeploymentStateSucceeded,
+			Message: "Deployment succeeded",
+		},
+	}}
+}
+
+func (s *FakeWorkspace) AppsStart(_ Request, name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	app.ComputeStatus = &apps.ComputeStatus{
+		State:   apps.ComputeStateActive,
+		Message: "App compute is active.",
+	}
+	s.Apps[name] = app
+
+	return Response{Body: app}
+}
+
+func (s *FakeWorkspace) AppsStop(_ Request, name string) Response {
+	defer s.LockUnlock()()
+
+	app, ok := s.Apps[name]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	app.ComputeStatus = &apps.ComputeStatus{
+		State:   apps.ComputeStateStopped,
+		Message: "App compute is stopped.",
+	}
+	s.Apps[name] = app
+
+	return Response{Body: app}
+}
+
 func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 	var app apps.App
 
@@ -132,13 +210,48 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 		Message: "Application is running.",
 	}
 
-	app.ComputeStatus = &apps.ComputeStatus{
-		State:   "ACTIVE",
-		Message: "App compute is active.",
+	// Respect no_compute query param: if true, start the app in STOPPED state.
+	if req.URL.Query().Get("no_compute") == "true" {
+		app.ComputeStatus = &apps.ComputeStatus{
+			State:   apps.ComputeStateStopped,
+			Message: "App compute is stopped.",
+		}
+	} else {
+		app.ComputeStatus = &apps.ComputeStatus{
+			State:   "ACTIVE",
+			Message: "App compute is active.",
+		}
 	}
 
 	app.Url = name + "-123.cloud.databricksapps.com"
 	app.Id = strconv.Itoa(len(s.Apps) + 1000)
+
+	if app.ComputeSize == "" {
+		app.ComputeSize = "MEDIUM"
+	}
+
+	// Assign a service principal to the app, mimicking the real platform.
+	if app.ServicePrincipalClientId == "" {
+		app.ServicePrincipalClientId = nextUUID()
+		app.ServicePrincipalId = nextID()
+		app.ServicePrincipalName = "app-" + name
+	}
+
+	// Simulate the apps platform side effect: when an app references a job
+	// with a permission, the platform grants that permission to the app's
+	// service principal on the referenced resource.
+	for _, res := range app.Resources {
+		if res.Job == nil {
+			continue
+		}
+		s.upsertPermission("/jobs/"+res.Job.Id, iam.AccessControlResponse{
+			ServicePrincipalName: app.ServicePrincipalName,
+			AllPermissions: []iam.Permission{{
+				PermissionLevel: iam.PermissionLevel(res.Job.Permission),
+				ForceSendFields: []string{"Inherited"},
+			}},
+		})
+	}
 
 	s.Apps[name] = app
 	return Response{

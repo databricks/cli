@@ -81,6 +81,10 @@ func Groups() []cobra.Group {
 			Title: "Quality Monitor",
 		},
 		{
+			ID:    "dataclassification",
+			Title: "Data Classification",
+		},
+		{
 			ID:    "dataquality",
 			Title: "Data Quality Monitoring",
 		},
@@ -99,6 +103,10 @@ func Groups() []cobra.Group {
 		{
 			ID:    "postgres",
 			Title: "Postgres",
+		},
+		{
+			ID:    "environments",
+			Title: "Environments",
 		},
 	}
 }

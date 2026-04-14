@@ -40,7 +40,7 @@
         "value": {
           "securable_type": "volume",
           "full_name": "",
-          "grants": [
+          "__embed__": [
             {
               "principal": "deco-test-user@databricks.com",
               "privileges": [

@@ -43,7 +43,7 @@ func init() {
 }
 
 func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
-	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{})
+	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{})
 
 	templateFS, err := fs.Sub(builtinTemplates, path.Join("templates", template))
 	require.NoError(t, err)
@@ -152,7 +152,7 @@ func TestBuiltinDbtTemplateValid(t *testing.T) {
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/email/template", "./testdata/email/library")
@@ -281,7 +281,7 @@ func TestRendererIsSkipped(t *testing.T) {
 
 func TestRendererPersistToDisk(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	r := &renderer{
 		ctx:          ctx,
@@ -325,7 +325,7 @@ func TestRendererPersistToDisk(t *testing.T) {
 }
 
 func TestRendererWalk(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -356,7 +356,7 @@ func TestRendererWalk(t *testing.T) {
 }
 
 func TestRendererFailFunction(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -368,7 +368,7 @@ func TestRendererFailFunction(t *testing.T) {
 }
 
 func TestRendererSkipsDirsEagerly(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -384,7 +384,7 @@ func TestRendererSkipsDirsEagerly(t *testing.T) {
 }
 
 func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
@@ -409,7 +409,7 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 }
 
 func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -426,7 +426,7 @@ func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 }
 
 func TestRendererSkip(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
@@ -461,7 +461,7 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.SkipNow()
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -496,7 +496,7 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 
 func TestRendererErrorOnConflictingFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	f, err := os.Create(filepath.Join(tmpDir, "a"))
 	require.NoError(t, err)
@@ -521,7 +521,7 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 
 func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	f, err := os.Create(filepath.Join(tmpDir, "a"))
 	require.NoError(t, err)
@@ -549,7 +549,7 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 }
 
 func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
@@ -565,7 +565,7 @@ func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 }
 
 func TestRendererFileTreeRendering(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
@@ -594,7 +594,7 @@ func TestRendererFileTreeRendering(t *testing.T) {
 }
 
 func TestRendererSubTemplateInPath(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
 	// Copy the template directory to a temporary directory where we can safely include a templated file path.

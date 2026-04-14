@@ -104,6 +104,9 @@ type DataSourceAppsAppPendingDeployment struct {
 	UpdateTime          string                                                 `json:"update_time,omitempty"`
 }
 
+type DataSourceAppsAppResourcesApp struct {
+}
+
 type DataSourceAppsAppResourcesDatabase struct {
 	DatabaseName string `json:"database_name"`
 	InstanceName string `json:"instance_name"`
@@ -126,6 +129,12 @@ type DataSourceAppsAppResourcesJob struct {
 	Permission string `json:"permission"`
 }
 
+type DataSourceAppsAppResourcesPostgres struct {
+	Branch     string `json:"branch,omitempty"`
+	Database   string `json:"database,omitempty"`
+	Permission string `json:"permission,omitempty"`
+}
+
 type DataSourceAppsAppResourcesSecret struct {
 	Key        string `json:"key"`
 	Permission string `json:"permission"`
@@ -145,51 +154,65 @@ type DataSourceAppsAppResourcesSqlWarehouse struct {
 type DataSourceAppsAppResourcesUcSecurable struct {
 	Permission        string `json:"permission"`
 	SecurableFullName string `json:"securable_full_name"`
+	SecurableKind     string `json:"securable_kind,omitempty"`
 	SecurableType     string `json:"securable_type"`
 }
 
 type DataSourceAppsAppResources struct {
+	App             *DataSourceAppsAppResourcesApp             `json:"app,omitempty"`
 	Database        *DataSourceAppsAppResourcesDatabase        `json:"database,omitempty"`
 	Description     string                                     `json:"description,omitempty"`
 	Experiment      *DataSourceAppsAppResourcesExperiment      `json:"experiment,omitempty"`
 	GenieSpace      *DataSourceAppsAppResourcesGenieSpace      `json:"genie_space,omitempty"`
 	Job             *DataSourceAppsAppResourcesJob             `json:"job,omitempty"`
 	Name            string                                     `json:"name"`
+	Postgres        *DataSourceAppsAppResourcesPostgres        `json:"postgres,omitempty"`
 	Secret          *DataSourceAppsAppResourcesSecret          `json:"secret,omitempty"`
 	ServingEndpoint *DataSourceAppsAppResourcesServingEndpoint `json:"serving_endpoint,omitempty"`
 	SqlWarehouse    *DataSourceAppsAppResourcesSqlWarehouse    `json:"sql_warehouse,omitempty"`
 	UcSecurable     *DataSourceAppsAppResourcesUcSecurable     `json:"uc_securable,omitempty"`
 }
 
+type DataSourceAppsAppTelemetryExportDestinationsUnityCatalog struct {
+	LogsTable    string `json:"logs_table"`
+	MetricsTable string `json:"metrics_table"`
+	TracesTable  string `json:"traces_table"`
+}
+
+type DataSourceAppsAppTelemetryExportDestinations struct {
+	UnityCatalog *DataSourceAppsAppTelemetryExportDestinationsUnityCatalog `json:"unity_catalog,omitempty"`
+}
+
 type DataSourceAppsApp struct {
-	ActiveDeployment         *DataSourceAppsAppActiveDeployment  `json:"active_deployment,omitempty"`
-	AppStatus                *DataSourceAppsAppAppStatus         `json:"app_status,omitempty"`
-	BudgetPolicyId           string                              `json:"budget_policy_id,omitempty"`
-	ComputeSize              string                              `json:"compute_size,omitempty"`
-	ComputeStatus            *DataSourceAppsAppComputeStatus     `json:"compute_status,omitempty"`
-	CreateTime               string                              `json:"create_time,omitempty"`
-	Creator                  string                              `json:"creator,omitempty"`
-	DefaultSourceCodePath    string                              `json:"default_source_code_path,omitempty"`
-	Description              string                              `json:"description,omitempty"`
-	EffectiveBudgetPolicyId  string                              `json:"effective_budget_policy_id,omitempty"`
-	EffectiveUsagePolicyId   string                              `json:"effective_usage_policy_id,omitempty"`
-	EffectiveUserApiScopes   []string                            `json:"effective_user_api_scopes,omitempty"`
-	GitRepository            *DataSourceAppsAppGitRepository     `json:"git_repository,omitempty"`
-	Id                       string                              `json:"id,omitempty"`
-	Name                     string                              `json:"name"`
-	Oauth2AppClientId        string                              `json:"oauth2_app_client_id,omitempty"`
-	Oauth2AppIntegrationId   string                              `json:"oauth2_app_integration_id,omitempty"`
-	PendingDeployment        *DataSourceAppsAppPendingDeployment `json:"pending_deployment,omitempty"`
-	Resources                []DataSourceAppsAppResources        `json:"resources,omitempty"`
-	ServicePrincipalClientId string                              `json:"service_principal_client_id,omitempty"`
-	ServicePrincipalId       int                                 `json:"service_principal_id,omitempty"`
-	ServicePrincipalName     string                              `json:"service_principal_name,omitempty"`
-	Space                    string                              `json:"space,omitempty"`
-	UpdateTime               string                              `json:"update_time,omitempty"`
-	Updater                  string                              `json:"updater,omitempty"`
-	Url                      string                              `json:"url,omitempty"`
-	UsagePolicyId            string                              `json:"usage_policy_id,omitempty"`
-	UserApiScopes            []string                            `json:"user_api_scopes,omitempty"`
+	ActiveDeployment            *DataSourceAppsAppActiveDeployment             `json:"active_deployment,omitempty"`
+	AppStatus                   *DataSourceAppsAppAppStatus                    `json:"app_status,omitempty"`
+	BudgetPolicyId              string                                         `json:"budget_policy_id,omitempty"`
+	ComputeSize                 string                                         `json:"compute_size,omitempty"`
+	ComputeStatus               *DataSourceAppsAppComputeStatus                `json:"compute_status,omitempty"`
+	CreateTime                  string                                         `json:"create_time,omitempty"`
+	Creator                     string                                         `json:"creator,omitempty"`
+	DefaultSourceCodePath       string                                         `json:"default_source_code_path,omitempty"`
+	Description                 string                                         `json:"description,omitempty"`
+	EffectiveBudgetPolicyId     string                                         `json:"effective_budget_policy_id,omitempty"`
+	EffectiveUsagePolicyId      string                                         `json:"effective_usage_policy_id,omitempty"`
+	EffectiveUserApiScopes      []string                                       `json:"effective_user_api_scopes,omitempty"`
+	GitRepository               *DataSourceAppsAppGitRepository                `json:"git_repository,omitempty"`
+	Id                          string                                         `json:"id,omitempty"`
+	Name                        string                                         `json:"name"`
+	Oauth2AppClientId           string                                         `json:"oauth2_app_client_id,omitempty"`
+	Oauth2AppIntegrationId      string                                         `json:"oauth2_app_integration_id,omitempty"`
+	PendingDeployment           *DataSourceAppsAppPendingDeployment            `json:"pending_deployment,omitempty"`
+	Resources                   []DataSourceAppsAppResources                   `json:"resources,omitempty"`
+	ServicePrincipalClientId    string                                         `json:"service_principal_client_id,omitempty"`
+	ServicePrincipalId          int                                            `json:"service_principal_id,omitempty"`
+	ServicePrincipalName        string                                         `json:"service_principal_name,omitempty"`
+	Space                       string                                         `json:"space,omitempty"`
+	TelemetryExportDestinations []DataSourceAppsAppTelemetryExportDestinations `json:"telemetry_export_destinations,omitempty"`
+	UpdateTime                  string                                         `json:"update_time,omitempty"`
+	Updater                     string                                         `json:"updater,omitempty"`
+	Url                         string                                         `json:"url,omitempty"`
+	UsagePolicyId               string                                         `json:"usage_policy_id,omitempty"`
+	UserApiScopes               []string                                       `json:"user_api_scopes,omitempty"`
 }
 
 type DataSourceAppsProviderConfig struct {

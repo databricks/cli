@@ -6,19 +6,51 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+// GetAPIRequestObjectType is used by direct to construct a request to permissions API:
+// https://github.com/databricks/terraform-provider-databricks/blob/430902d/permissions/permission_definitions.go#L775C24-L775C32
+var permissionResourceToObjectType = map[string]string{
+	"alerts":                  "/alertsv2/",
+	"apps":                    "/apps/",
+	"clusters":                "/clusters/",
+	"dashboards":              "/dashboards/",
+	"database_instances":      "/database-instances/",
+	"postgres_projects":       "/database-projects/",
+	"jobs":                    "/jobs/",
+	"experiments":             "/experiments/",
+	"models":                  "/registered-models/",
+	"model_serving_endpoints": "/serving-endpoints/",
+	"pipelines":               "/pipelines/",
+	"sql_warehouses":          "/sql/warehouses/",
+}
+
 type ResourcePermissions struct {
 	client *databricks.WorkspaceClient
 }
 
+// StatePermission represents a permission entry in deployment state.
+type StatePermission struct {
+	Level                iam.PermissionLevel `json:"level,omitempty"`
+	UserName             string              `json:"user_name,omitempty"`
+	ServicePrincipalName string              `json:"service_principal_name,omitempty"`
+	GroupName            string              `json:"group_name,omitempty"`
+}
+
+// Note __embed__ name is not enforced by libs/structs, it's a convention we follow here.
+// Technically we could keep on using "permissions" or "grants" for this, but this would make it
+// harder for 3rd-party tools that only see JSON and not Golang type to associate state object with the pass from "changes".
+// Alternative to __embed_ would be have a convention that we name this inner field same as outer field.
+// e.g. permissions.permissions or grants.grants. However, there is no guarantee that this convention is not also triggered
+// by unrelated types and it's harder to evaluate that fixed string because it's non-local.
+
 type PermissionsState struct {
-	ObjectID    string                     `json:"object_id"`
-	Permissions []iam.AccessControlRequest `json:"permissions,omitempty"`
+	ObjectID string `json:"object_id"`
+	// By convention, EmbedSlice fields should have __embed__ json tag, see permissions.go for details
+	EmbeddedSlice []StatePermission `json:"__embed__,omitempty"`
 }
 
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -27,38 +59,24 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		return nil, fmt.Errorf("internal error: node %q does not end with .permissions", node)
 	}
 
-	// Use reflection to get the slice from the pointer
-	rv := reflect.ValueOf(inputConfig)
-	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-		return nil, fmt.Errorf("inputConfig must be a pointer to a slice, got: %T", inputConfig)
+	parts := strings.Split(baseNode, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("internal error: unexpected node format %q", baseNode)
 	}
+	resourceType := parts[1]
 
-	sliceValue := rv.Elem()
-
-	// Get the element type from the slice type and create zero value to get the object type
-	elemType := sliceValue.Type().Elem()
-	zeroValue := reflect.Zero(elemType)
-	zeroValueInterface, ok := zeroValue.Interface().(resources.IPermission)
+	prefix, ok := permissionResourceToObjectType[resourceType]
 	if !ok {
-		return nil, fmt.Errorf("slice elements do not implement IPermission interface: %v", elemType)
+		return nil, fmt.Errorf("unsupported permissions resource type: %s", resourceType)
 	}
-	prefix := zeroValueInterface.GetAPIRequestObjectType()
 
-	// Convert slice to []resources.IPermission
-	permissions := make([]iam.AccessControlRequest, 0, sliceValue.Len())
-	for i := range sliceValue.Len() {
-		elem := sliceValue.Index(i).Interface().(resources.IPermission)
-		permissions = append(permissions, iam.AccessControlRequest{
-			PermissionLevel:      iam.PermissionLevel(elem.GetLevel()),
-			GroupName:            elem.GetGroupName(),
-			ServicePrincipalName: elem.GetServicePrincipalName(),
-			UserName:             elem.GetUserName(),
-			ForceSendFields:      nil,
-		})
+	permissions, err := toStatePermissions(inputConfig)
+	if err != nil {
+		return nil, err
 	}
 
 	objectIdRef := prefix + "${" + baseNode + ".id}"
-	// For permissions, model serving endpoint uses it's internal ID, which is different
+	// For permissions, model serving endpoint uses its internal ID, which is different
 	// from its CRUD APIs which use the name.
 	// We have a wrapper struct [RefreshOutput] from which we read the internal ID
 	// in order to set the appropriate permissions.
@@ -66,10 +84,22 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		objectIdRef = prefix + "${" + baseNode + ".endpoint_id}"
 	}
 
+	// MLflow models use the model name as the state ID (for CRUD operations),
+	// but the permissions API requires the numeric model ID.
+	if strings.HasPrefix(baseNode, "resources.models.") {
+		objectIdRef = prefix + "${" + baseNode + ".model_id}"
+	}
+
+	// Postgres projects store their hierarchical name ("projects/{project_id}") as the state ID,
+	// but the permissions API expects just the project_id.
+	if strings.HasPrefix(baseNode, "resources.postgres_projects.") {
+		objectIdRef = prefix + "${" + baseNode + ".project_id}"
+	}
+
 	return &structvar.StructVar{
 		Value: &PermissionsState{
-			ObjectID:    "", // Always a reference, defined in Refs below
-			Permissions: permissions,
+			ObjectID:      "", // Always a reference, defined in Refs below
+			EmbeddedSlice: permissions,
 		},
 		Refs: map[string]string{
 			"object_id": objectIdRef,
@@ -85,7 +115,30 @@ func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState 
 	return s
 }
 
-func accessControlRequestKey(x iam.AccessControlRequest) (string, string) {
+// toStatePermissions converts any slice of typed permission structs (e.g. []JobPermission)
+// to []StatePermission. All permission types share the same underlying struct layout.
+func toStatePermissions(ps any) ([]StatePermission, error) {
+	v := reflect.ValueOf(ps)
+	if v.Kind() == reflect.Pointer {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("expected permissions slice, got %T", ps)
+	}
+	result := make([]StatePermission, v.Len())
+	for i := range v.Len() {
+		elem := v.Index(i)
+		result[i] = StatePermission{
+			Level:                iam.PermissionLevel(elem.FieldByName("Level").String()),
+			UserName:             elem.FieldByName("UserName").String(),
+			ServicePrincipalName: elem.FieldByName("ServicePrincipalName").String(),
+			GroupName:            elem.FieldByName("GroupName").String(),
+		}
+	}
+	return result, nil
+}
+
+func permissionKey(x StatePermission) (string, string) {
 	if x.UserName != "" {
 		return "user_name", x.UserName
 	}
@@ -99,8 +152,10 @@ func accessControlRequestKey(x iam.AccessControlRequest) (string, string) {
 }
 
 func (*ResourcePermissions) KeyedSlices() map[string]any {
+	// Empty key because EmbeddedSlice appears at the root path of
+	// PermissionsState (no "permissions" prefix in struct walker paths).
 	return map[string]any{
-		"permissions": accessControlRequestKey,
+		"": permissionKey,
 	}
 }
 
@@ -140,8 +195,8 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 	}
 
 	result := PermissionsState{
-		ObjectID:    id,
-		Permissions: nil,
+		ObjectID:      id,
+		EmbeddedSlice: nil,
 	}
 
 	for _, accessControl := range acl.AccessControlList {
@@ -150,12 +205,11 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 			if permission.Inherited {
 				continue
 			}
-			result.Permissions = append(result.Permissions, iam.AccessControlRequest{
+			result.EmbeddedSlice = append(result.EmbeddedSlice, StatePermission{
+				Level:                permission.PermissionLevel,
 				GroupName:            accessControl.GroupName,
 				UserName:             accessControl.UserName,
 				ServicePrincipalName: accessControl.ServicePrincipalName,
-				PermissionLevel:      permission.PermissionLevel,
-				ForceSendFields:      nil,
 			})
 		}
 	}
@@ -175,16 +229,27 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 }
 
 // DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState, _ Changes) (*PermissionsState, error) {
+func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState, _ *PlanEntry) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(newState.ObjectID)
 	if err != nil {
 		return nil, err
 	}
 
+	acl := make([]iam.AccessControlRequest, len(newState.EmbeddedSlice))
+	for i, p := range newState.EmbeddedSlice {
+		acl[i] = iam.AccessControlRequest{
+			PermissionLevel:      p.Level,
+			UserName:             p.UserName,
+			ServicePrincipalName: p.ServicePrincipalName,
+			GroupName:            p.GroupName,
+			ForceSendFields:      nil,
+		}
+	}
+
 	_, err = r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
 		RequestObjectId:   extractedID,
 		RequestObjectType: extractedType,
-		AccessControlList: newState.Permissions,
+		AccessControlList: acl,
 	})
 
 	return nil, err

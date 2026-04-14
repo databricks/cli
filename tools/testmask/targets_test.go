@@ -62,6 +62,13 @@ func TestGetTargets(t *testing.T) {
 			targets: []string{"test", "test-exp-aitools", "test-exp-ssh", "test-pipelines"},
 		},
 		{
+			name: "setup_build_environment_triggers_all",
+			files: []string{
+				".github/actions/setup-build-environment/action.yml",
+			},
+			targets: []string{"test", "test-exp-aitools", "test-exp-ssh", "test-pipelines"},
+		},
+		{
 			name:    "empty_files",
 			files:   []string{},
 			targets: []string{"test"},

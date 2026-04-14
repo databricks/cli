@@ -42,6 +42,7 @@ func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresPr
 			CustomTags:               nil,
 			DefaultEndpointSettings:  nil,
 			DisplayName:              "",
+			EnablePgNativeLogin:      false,
 			HistoryRetentionDuration: nil,
 			PgVersion:                0,
 			ForceSendFields:          nil,
@@ -82,12 +83,12 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	return result.Name, result, nil
 }
 
-func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, changes Changes) (*postgres.Project, error) {
+func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, entry *PlanEntry) (*postgres.Project, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Project object,
 	// not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(changes, "spec.")
+	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
 
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
 		Project: postgres.Project{

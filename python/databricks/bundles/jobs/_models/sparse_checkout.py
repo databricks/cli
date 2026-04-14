@@ -11,9 +11,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class SparseCheckout:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     patterns: VariableOrList[str] = field(default_factory=list)
     """

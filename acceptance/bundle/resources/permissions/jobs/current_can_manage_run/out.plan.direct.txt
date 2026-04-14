@@ -54,9 +54,9 @@
       "action": "skip",
       "remote_state": {
         "object_id": "/jobs/[NUMID]",
-        "permissions": [
+        "__embed__": [
           {
-            "permission_level": "IS_OWNER",
+            "level": "IS_OWNER",
             "service_principal_name": "[USERNAME]"
           }
         ]

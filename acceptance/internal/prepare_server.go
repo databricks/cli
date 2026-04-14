@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -65,7 +64,7 @@ func isTruePtr(value *bool) bool {
 }
 
 func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, outputDir string) (*sdkconfig.Config, iam.User) {
-	cloudEnv := os.Getenv("CLOUD_ENV")
+	cloudEnv := env.Get(t.Context(), "CLOUD_ENV")
 	recordRequests := isTruePtr(config.RecordRequests)
 
 	// Use a unique token for each test. This allows us to maintain
@@ -86,7 +85,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
 
-		user, err := w.CurrentUser.Me(context.Background())
+		user, err := w.CurrentUser.Me(t.Context())
 		require.NoError(t, err, "Failed to get current user")
 
 		cfg := w.Config
@@ -108,7 +107,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	// use the default shared server.
 	if len(config.Server) == 0 && !recordRequests {
 		cfg := &sdkconfig.Config{
-			Host:  os.Getenv("DATABRICKS_DEFAULT_HOST"),
+			Host:  env.Get(t.Context(), "DATABRICKS_DEFAULT_HOST"),
 			Token: token,
 		}
 

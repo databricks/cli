@@ -35,7 +35,7 @@ func setupDatabricksCfg(t *testing.T) {
 }
 
 func emptyCommand(t *testing.T) *cobra.Command {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = cmdio.MockDiscard(ctx)
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
@@ -47,7 +47,7 @@ func setupWithHost(t *testing.T, cmd *cobra.Command, host string) []diag.Diagnos
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
-	testutil.Chdir(t, rootPath)
+	t.Chdir(rootPath)
 
 	contents := fmt.Sprintf(`
 workspace:
@@ -67,7 +67,7 @@ func setupWithProfile(t *testing.T, cmd *cobra.Command, profile string) []diag.D
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
-	testutil.Chdir(t, rootPath)
+	t.Chdir(rootPath)
 
 	contents := fmt.Sprintf(`
 workspace:
@@ -85,6 +85,14 @@ workspace:
 
 func TestBundleConfigureDefault(t *testing.T) {
 	testutil.CleanupEnvironment(t)
+	// Restrict PATH to system directories to prevent the SDK from invoking
+	// external tools (e.g. az) during auth resolution.
+	// Bundle loading requires a shell so PATH cannot be fully cleared.
+	if runtime.GOOS == "windows" {
+		t.Setenv("PATH", `C:\Windows\System32`)
+	} else {
+		t.Setenv("PATH", "/usr/bin:/bin")
+	}
 
 	cmd := emptyCommand(t)
 	diags := setupWithHost(t, cmd, "https://x.com")
@@ -228,7 +236,7 @@ func TestBundleConfigureMultiMatchInteractivePromptFires(t *testing.T) {
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
-	testutil.Chdir(t, rootPath)
+	t.Chdir(rootPath)
 
 	contents := `
 workspace:
@@ -237,7 +245,7 @@ workspace:
 	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0o644)
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 
 	ctx, io := cmdio.SetupTest(ctx, cmdio.TestOptions{PromptSupported: true})
@@ -273,7 +281,7 @@ func TestTargetFlagFull(t *testing.T) {
 	initTargetFlag(cmd)
 	cmd.SetArgs([]string{"version", "--target", "development"})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 
@@ -285,7 +293,7 @@ func TestTargetFlagShort(t *testing.T) {
 	initTargetFlag(cmd)
 	cmd.SetArgs([]string{"version", "-t", "production"})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 
@@ -299,7 +307,7 @@ func TestTargetEnvironmentFlag(t *testing.T) {
 	initEnvironmentFlag(cmd)
 	cmd.SetArgs([]string{"version", "--environment", "development"})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := Execute(ctx, cmd)
 	assert.NoError(t, err)
 

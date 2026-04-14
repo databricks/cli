@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"context"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -37,7 +36,7 @@ func TestAnnotateJobsMutator(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: false, Version: ""})
 
 	diags := AnnotateJobs().Apply(ctx, b)
@@ -73,7 +72,7 @@ func TestAnnotateJobsMutatorJobWithoutSettings(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: false, Version: ""})
 
 	diags := AnnotateJobs().Apply(ctx, b)
@@ -102,7 +101,7 @@ func TestAnnotateJobsWorkspaceWithFlag(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "14.0"})
 	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC", "1")
 
@@ -135,7 +134,7 @@ func TestAnnotateJobsWorkspaceNonDevelopment(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "14.0"})
 	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC", "1")
 
@@ -165,7 +164,7 @@ func TestAnnotateJobsWorkspaceWithoutFlag(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "14.0"})
 
 	diags := AnnotateJobs().Apply(ctx, b)
@@ -194,7 +193,7 @@ func TestAnnotateJobsNonWorkspaceWithFlag(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: false, Version: ""})
 	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC", "1")
 

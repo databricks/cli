@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -16,7 +18,6 @@ import (
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 )
 
 // getTarget returns the name of the target to operate in.
@@ -129,7 +130,14 @@ func resolveProfileAmbiguity(cmd *cobra.Command, b *bundle.Bundle, originalErr e
 		)
 	}
 
-	return promptForProfileByHost(ctx, profiles, b.Config.Workspace.Host)
+	return profile.SelectProfile(ctx, profile.SelectConfig{
+		Label:             "Multiple profiles match host " + b.Config.Workspace.Host,
+		Profiles:          profiles,
+		StartInSearchMode: true,
+		ActiveTemplate:    `{{.Name | bold}}{{if .AccountID}} (account: {{.AccountID|faint}}){{end}}{{if .WorkspaceID}} (workspace: {{.WorkspaceID|faint}}){{end}}`,
+		InactiveTemplate:  `{{.Name}}{{if .AccountID}} (account: {{.AccountID}}){{end}}{{if .WorkspaceID}} (workspace: {{.WorkspaceID}}){{end}}`,
+		SelectedTemplate:  `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
+	})
 }
 
 // configureBundle loads the bundle configuration and configures flag values, if any.
@@ -232,7 +240,7 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 		return nil, cobra.ShellCompDirectiveError
 	}
 
-	return maps.Keys(b.Config.Targets), cobra.ShellCompDirectiveDefault
+	return slices.Collect(maps.Keys(b.Config.Targets)), cobra.ShellCompDirectiveDefault
 }
 
 func initTargetFlag(cmd *cobra.Command) {

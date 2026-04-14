@@ -160,8 +160,11 @@ func dotEnvActualLines(r manifest.Resource, cfg Config) []string {
 		if field.Env == "" || !validEnvVar.MatchString(field.Env) {
 			continue
 		}
-		value := sanitizeEnvValue(cfg.ResourceValues[r.Key()+"."+fieldName])
-		lines = append(lines, fmt.Sprintf("%s=%s", field.Env, value))
+		value := cfg.ResourceValues[r.Key()+"."+fieldName]
+		if value == "" && field.Value != "" {
+			value = field.Value
+		}
+		lines = append(lines, fmt.Sprintf("%s=%s", field.Env, sanitizeEnvValue(value)))
 	}
 	return lines
 }
@@ -176,6 +179,9 @@ func dotEnvExampleLines(r manifest.Resource, commented bool) []string {
 			continue
 		}
 		placeholder := "your_" + r.VarPrefix() + "_" + fieldName
+		if field.Value != "" {
+			placeholder = field.Value
+		}
 		if commented {
 			lines = append(lines, fmt.Sprintf("# %s=%s", field.Env, placeholder))
 		} else {
@@ -251,6 +257,9 @@ func appEnvLines(r manifest.Resource) []string {
 		if field.Env == "" || !validEnvVar.MatchString(field.Env) {
 			continue
 		}
+		if field.LocalOnly {
+			continue
+		}
 		lines = append(lines,
 			"  - name: "+field.Env,
 			"    valueFrom: "+r.Key(),
@@ -281,7 +290,7 @@ var appResourceSpecs = map[string]appResourceSpec{
 	},
 	"serving_endpoint": {
 		yamlKey:    "serving_endpoint",
-		varFields:  [][2]string{{"id", "name"}},
+		varFields:  [][2]string{{"name", "name"}},
 		permission: "CAN_QUERY",
 	},
 	"experiment": {
@@ -357,6 +366,10 @@ func variableNamesForResource(r manifest.Resource) []varInfo {
 
 	for _, fieldName := range r.FieldNames() {
 		field := r.Fields[fieldName]
+		if field.BundleIgnore || field.LocalOnly {
+			covered[fieldName] = true
+			continue
+		}
 		desc := field.Description
 		if desc == "" {
 			desc = r.Description

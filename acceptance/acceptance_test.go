@@ -10,6 +10,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
+	"maps"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,9 +19,9 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -31,7 +33,6 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,6 +47,7 @@ var (
 	UseVersion      string
 	WorkspaceTmpDir bool
 	OnlyOutTestToml bool
+	Subset          bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -77,6 +79,7 @@ func init() {
 	// to simulate an identical environment.
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
+	flag.BoolVar(&Subset, "subset", false, "Select a subset of EnvMatrix variants that cover all output files. Auto-enabled on -update (unless -run specifies a variant with '=').")
 }
 
 const (
@@ -155,7 +158,39 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 	}
 }
 
+// helperScriptUsesEngineCache caches whether a _script helper in a given directory
+// (or any of its ancestors) references $DATABRICKS_BUNDLE_ENGINE.
+// Since _script helpers are shared across many tests, caching avoids redundant reads.
+var helperScriptUsesEngineCache sync.Map
+
+// anyHelperScriptUsesEngine returns true if any _script helper in dir or its ancestors
+// contains $DATABRICKS_BUNDLE_ENGINE.
+func anyHelperScriptUsesEngine(dir string) bool {
+	if dir == "" || dir == "." {
+		return false
+	}
+	if v, ok := helperScriptUsesEngineCache.Load(dir); ok {
+		return v.(bool)
+	}
+	content, err := os.ReadFile(filepath.Join(dir, "_script"))
+	result := (err == nil && strings.Contains(string(content), "$DATABRICKS_BUNDLE_ENGINE")) ||
+		anyHelperScriptUsesEngine(filepath.Dir(dir))
+	helperScriptUsesEngineCache.Store(dir, result)
+	return result
+}
+
+// hasRunFilter returns true if the -run flag contains '=', indicating a specific
+// EnvMatrix variant was requested (e.g. DATABRICKS_BUNDLE_ENGINE=direct).
+func hasRunFilter() bool {
+	f := flag.Lookup("test.run")
+	return f != nil && strings.Contains(f.Value.String(), "=")
+}
+
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
+	if testdiff.OverwriteMode && !hasRunFilter() {
+		Subset = true
+	}
+
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
@@ -169,6 +204,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if !WorkspaceTmpDir {
 		setupTerraform(t, cwd, buildDir, &repls)
 	}
+
+	vendoredPyPackages, err := filepath.Abs("../libs/vendored_py_packages")
+	require.NoError(t, err)
+	t.Setenv("VENDORED_PY_PACKAGES", vendoredPyPackages)
+	repls.SetPath(vendoredPyPackages, "[VENDORED_PY_PACKAGES]")
+
+	// Make all uv invocations use vendored packages instead of PyPI
+	t.Setenv("UV_FIND_LINKS", vendoredPyPackages)
+	t.Setenv("UV_OFFLINE", "true")
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
@@ -208,6 +252,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
+
+	if !inprocessMode {
+		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
+		t.Setenv("CLI_293", cli293Path)
+		repls.SetPath(cli293Path, "[CLI_293]")
+	}
 
 	paths := []string{
 		// Make helper scripts available
@@ -287,6 +337,16 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	envFilters := getEnvFilters(t)
 
+	// Phases are only needed in update mode, where phase 0 tests regenerate
+	// output files that phase 1 tests read via $TESTDIR. In normal runs,
+	// those files are already committed and stable.
+	usePhases := testdiff.OverwriteMode
+	var phase0wg sync.WaitGroup
+	phase1Gate := make(chan struct{})
+	if !usePhases {
+		close(phase1Gate)
+	}
+
 	for _, dir := range testDirs {
 		totalDirs += 1
 
@@ -294,34 +354,52 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			selectedDirs += 1
 
 			config, configPath := internal.LoadConfig(t, dir)
-			skipReason := getSkipReason(&config, configPath)
-
-			if testdiff.OverwriteMode || OnlyOutTestToml {
-				// Generate materialized config for this test
-				// We do this before skipping the test, so the configs are generated for all tests.
-				materializedConfig, err := internal.GenerateMaterializedConfig(config)
-				require.NoError(t, err)
-				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			err := validateTestPhase(config.Phase)
+			if err != nil {
+				t.Fatalf("Invalid config %s: %s", configPath, err)
 			}
+
+			// Apply default: CloudSlow implies Cloud. Do this before generating
+			// the materialized config so the implication is visible in out.test.toml.
+			if isTruePtr(config.CloudSlow) {
+				config.Cloud = config.CloudSlow
+			}
+
+			// Generate materialized config for this test.
+			// We do this before skipping the test, so the configs are generated for all tests.
+			materializedConfig, err := internal.GenerateMaterializedConfig(config)
+			require.NoError(t, err)
+			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
 
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
+			skipReason := getSkipReason(&config, configPath)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
 			}
 
 			runParallel := !inprocessMode
-
 			if benchmarkMode && strings.Contains(dir, "benchmark") {
 				runParallel = false
 			}
 
+			// t.Run blocks until t.Parallel() is called, so Add must happen before t.Parallel().
+			// This ensures all phase0 adds are visible before the wait goroutine starts.
+			if usePhases && config.Phase == 0 {
+				phase0wg.Add(1)
+				t.Cleanup(phase0wg.Done)
+			}
+
 			if runParallel {
 				t.Parallel()
+			}
+
+			if config.Phase != 0 {
+				<-phase1Gate
 			}
 
 			// Build extra vars for exclusion matching (config state as env vars)
@@ -331,13 +409,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			}
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
+			if Subset {
+				scriptContent, _ := os.ReadFile(filepath.Join(dir, EntryPointScript))
+				scriptUsesEngine := strings.Contains(string(scriptContent), "$DATABRICKS_BUNDLE_ENGINE") ||
+					anyHelperScriptUsesEngine(dir)
+				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
+			}
 
-			if len(expanded) == 1 {
-				// env vars aren't part of the test case name, so log them for debugging
-				if len(expanded[0]) > 0 {
-					t.Logf("Running test with env %v", expanded[0])
-				}
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
+			// If the matrix expands to a single empty envset, run the test directly
+			// without creating a subtest (avoids the "#00" dummy subtest name).
+			if len(expanded) == 1 && len(expanded[0]) == 0 {
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters)
 			} else {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -350,6 +432,13 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				}
 			}
 		})
+	}
+
+	if usePhases {
+		go func() {
+			phase0wg.Wait()
+			close(phase1Gate)
+		}()
 	}
 
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
@@ -397,17 +486,20 @@ func getTests(t *testing.T) []string {
 	})
 	require.NoError(t, err)
 
-	sort.Strings(testDirs)
+	slices.Sort(testDirs)
 	return testDirs
+}
+
+func validateTestPhase(phase int) error {
+	if phase == 0 || phase == 1 {
+		return nil
+	}
+
+	return fmt.Errorf("Phase must be 0 or 1, got %d", phase)
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
 func getSkipReason(config *internal.TestConfig, configPath string) string {
-	// Apply default first, so that it's visible in out.test.toml
-	if isTruePtr(config.CloudSlow) {
-		config.Cloud = config.CloudSlow
-	}
-
 	if os.Getenv("DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
 		return "Disabled via DATABRICKS_TEST_SKIPLOCAL environment variable in " + configPath
 	}
@@ -539,17 +631,13 @@ func runTest(t *testing.T,
 	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
 
 	// Generate materialized config for this test
-	materializedConfig, err := internal.GenerateMaterializedConfig(config)
-	require.NoError(t, err)
-	testutil.WriteFile(t, filepath.Join(tmpDir, internal.MaterializedConfigFile), materializedConfig)
-
 	inputs := make(map[string]bool, 2)
 	outputs := make(map[string]bool, 2)
 	err = CopyDir(dir, tmpDir, inputs, outputs)
 	require.NoError(t, err)
 
-	// Add materialized config to outputs for comparison
-	outputs[internal.MaterializedConfigFile] = true
+	// out.test.toml is written to the source dir during test discovery, not compared.
+	delete(outputs, internal.MaterializedConfigFile)
 
 	timeout := config.Timeout
 
@@ -567,7 +655,7 @@ func runTest(t *testing.T,
 		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	ctx, cancelFunc := context.WithTimeout(t.Context(), timeout)
 	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
@@ -666,11 +754,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		skipRepls := false
-		if relPath == internal.MaterializedConfigFile {
-			skipRepls = true
-		}
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, skipRepls)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -686,7 +770,7 @@ func runTest(t *testing.T,
 		if _, ok := Ignored[relPath]; ok {
 			continue
 		}
-		if config.CompiledIgnoreObject.MatchesPath(relPath) {
+		if config.CompiledIgnoreObject.MatchesPath(relPath) && !strings.HasPrefix(relPath, "out") {
 			continue
 		}
 		if strings.HasPrefix(filepath.Base(relPath), "LOG") {
@@ -704,7 +788,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, false)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
@@ -734,7 +818,7 @@ func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
 	env := make([]string, 0, len(configEnv)+len(customEnv))
 
 	// Add config.Env first (but skip keys that exist in customEnv)
-	for _, key := range utils.SortedKeys(configEnv) {
+	for _, key := range slices.Sorted(maps.Keys(configEnv)) {
 		if hasKey(customEnv, key) {
 			continue
 		}
@@ -777,7 +861,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, skipRepls bool) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -792,7 +876,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Apply replacements to the new value only.
 	// The reference value is stored after applying replacements.
-	if !NoRepl && !skipRepls {
+	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
 	}
 
@@ -1325,7 +1409,7 @@ func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// so we prepare here by keeping only one.
 	_ = prepareWheelBuildDirectory(t, buildDir)
 
-	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../python", []string{})
+	RunCommand(t, []string{"uv", "build", "-q", "--wheel", "--no-index", "--out-dir", buildDir}, "../python", []string{})
 
 	latestWheel := prepareWheelBuildDirectory(t, buildDir)
 	if latestWheel == "" {
@@ -1403,7 +1487,7 @@ func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.Replacem
 
 func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
 	b, err := os.ReadFile(filepath.Join(tmpDir, userReplacementsFilename))
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return
 	}
 	require.NoError(t, err)

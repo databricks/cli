@@ -24,6 +24,7 @@
         "suspend_timeout_duration": "300s"
       },
       "display_name": "Original Name",
+      "enable_pg_native_login": true,
       "history_retention_duration": "604800s",
       "owner": "[USERNAME]",
       "pg_version": 16,
