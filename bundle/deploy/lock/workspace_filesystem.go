@@ -2,8 +2,11 @@ package lock
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
@@ -39,6 +42,12 @@ func (l *workspaceFilesystemLock) Acquire(ctx context.Context) error {
 	err = lk.Lock(ctx, force)
 	if err != nil {
 		log.Errorf(ctx, "Failed to acquire deployment lock: %v", err)
+
+		if errors.Is(err, fs.ErrPermission) || errors.Is(err, fs.ErrNotExist) {
+			diags := permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.StatePath)
+			return diags.Error()
+		}
+
 		return err
 	}
 
