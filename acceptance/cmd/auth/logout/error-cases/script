@@ -10,7 +10,7 @@ auth_type = databricks-cli
 EOF
 
 title "Logout of non-existent profile\n"
-errcode $CLI auth logout --profile nonexistent --force
+errcode $CLI auth logout --profile nonexistent --auto-approve
 
 title "Logout without --profile in non-interactive mode\n"
-errcode $CLI auth logout --force
+errcode $CLI auth logout --auto-approve

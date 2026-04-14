@@ -2,9 +2,9 @@ package structdiff
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -268,11 +268,7 @@ func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflec
 		keySet[ks] = k
 	}
 
-	var keys []string
-	for s := range keySet {
-		keys = append(keys, s)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(keySet))
 
 	for _, ks := range keys {
 		k := keySet[ks]

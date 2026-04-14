@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/fs"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"testing"
 	"time"
@@ -40,7 +40,7 @@ func TestLock(t *testing.T) {
 	var wg sync.WaitGroup
 	for currentIndex := range numConcurrentLocks {
 		wg.Go(func() {
-			time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
+			time.Sleep(time.Duration(rand.IntN(100)) * time.Millisecond)
 			lockerErrs[currentIndex] = lockers[currentIndex].Lock(ctx, false)
 		})
 	}

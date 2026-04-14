@@ -2,12 +2,13 @@ package configsync
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"os"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -62,8 +63,8 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		})
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Path < result[j].Path
+	slices.SortFunc(result, func(a, b FileChange) int {
+		return cmp.Compare(a.Path, b.Path)
 	})
 
 	return result, nil

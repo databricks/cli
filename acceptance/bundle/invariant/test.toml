@@ -38,6 +38,7 @@ EnvMatrix.INPUT_CONFIG = [
     "job_with_permissions.yml.tmpl",
     "job_with_task.yml.tmpl",
     "model.yml.tmpl",
+    "model_with_permissions.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",
     "pipeline.yml.tmpl",
     "postgres_branch.yml.tmpl",

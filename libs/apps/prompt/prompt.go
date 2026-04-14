@@ -31,6 +31,7 @@ var (
 	colorGray   = lipgloss.Color("#A1A1AA") // Light gray, legible on dark backgrounds
 	colorYellow = lipgloss.Color("#FFAB00") // Databricks yellow / amber
 	colorOrange = lipgloss.Color("#FF5F40") // Databricks orange (code blocks)
+	colorDimmed = lipgloss.AdaptiveColor{Light: "#A1A1AA", Dark: "#52525B"}
 )
 
 // AppkitTheme returns a custom theme for appkit prompts.
@@ -41,6 +42,19 @@ func AppkitTheme() *huh.Theme {
 	t.Focused.Description = t.Focused.Description.Foreground(colorGray)
 	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(colorYellow)
 	t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(colorGray)
+	bracketBorder := lipgloss.Border{Left: "[", Right: "]"}
+	t.Focused.FocusedButton = t.Focused.FocusedButton.
+		Foreground(colorYellow).
+		Background(lipgloss.Color("")).
+		Bold(true).
+		BorderStyle(bracketBorder).
+		BorderLeft(true).BorderRight(true).
+		BorderTop(false).BorderBottom(false).
+		BorderForeground(colorYellow)
+	t.Focused.BlurredButton = t.Focused.BlurredButton.
+		Foreground(colorDimmed).
+		Background(lipgloss.Color("")).
+		Bold(false)
 
 	return t
 }

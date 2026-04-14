@@ -3,6 +3,7 @@ package progress
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -83,9 +84,8 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 	}
 
 	var result []ProgressEvent
-	// we iterate in reverse to return events in chronological order
-	for i := len(events) - 1; i >= 0; i-- {
-		event := events[i]
+	// Return events in chronological order.
+	for _, event := range slices.Backward(events) {
 		// filter to only include update_progress and flow_progress events
 		if event.EventType == "flow_progress" || event.EventType == "update_progress" {
 			result = append(result, ProgressEvent(event))
