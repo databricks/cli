@@ -6,7 +6,9 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -51,7 +53,7 @@ func generateSSHKeyPair() ([]byte, []byte, error) {
 
 func SaveSSHKeyPair(keyPath string, privateKeyBytes, publicKeyBytes []byte) error {
 	err := os.RemoveAll(filepath.Dir(keyPath))
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to remove existing key directory: %w", err)
 	}
 

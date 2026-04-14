@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"maps"
 	"net/http"
 	"os"
@@ -1486,7 +1487,7 @@ func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.Replacem
 
 func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
 	b, err := os.ReadFile(filepath.Join(tmpDir, userReplacementsFilename))
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return
 	}
 	require.NoError(t, err)

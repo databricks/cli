@@ -221,7 +221,7 @@ func loadSchemaAndResolveTemplateDir(path string) (*jsonschema.Schema, fs.FS, er
 	templateDir := filepath.Join(path, schema.TemplateDir)
 
 	// Check if the referenced template directory exists
-	if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+	if _, err := os.Stat(templateDir); errors.Is(err, fs.ErrNotExist) {
 		return nil, nil, fmt.Errorf("template directory %s not found", templateDir)
 	}
 

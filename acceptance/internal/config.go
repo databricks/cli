@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"errors"
 	"hash/fnv"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -181,7 +183,7 @@ func FindConfigs(t *testing.T, dir string) []string {
 
 		dir = filepath.Dir(dir)
 
-		if err == nil || os.IsNotExist(err) {
+		if err == nil || errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
 
