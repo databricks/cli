@@ -1,0 +1,16 @@
+bundle:
+  name: "dashboard_embed"
+
+run_as:
+  service_principal_name: "sp-name"
+
+variables:
+  embed:
+    default: true
+
+resources:
+  dashboards:
+    my_dashboard:
+      display_name: "Dashboard with embed"
+      embed_credentials: ${var.embed}
+      warehouse_id: "1234567890"
