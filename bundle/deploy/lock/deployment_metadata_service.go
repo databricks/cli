@@ -109,8 +109,8 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 		return "", "", err
 	}
 
-	// Only create the deployment record for fresh deployments.
 	if isNew {
+		// Fresh deployment: create the record and start at version 1.
 		_, createErr := svc.CreateDeployment(ctx, tmpdms.CreateDeploymentRequest{
 			DeploymentID: deploymentID,
 			Deployment: &tmpdms.Deployment{
@@ -120,19 +120,15 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 		if createErr != nil {
 			return "", "", fmt.Errorf("failed to create deployment: %w", createErr)
 		}
-	}
-
-	// Get the deployment to determine the next version ID.
-	dep, getErr := svc.GetDeployment(ctx, tmpdms.GetDeploymentRequest{
-		DeploymentID: deploymentID,
-	})
-	if getErr != nil {
-		return "", "", fmt.Errorf("failed to get deployment: %w", getErr)
-	}
-
-	if dep.LastVersionID == "" {
 		versionID = "1"
 	} else {
+		// Existing deployment: get the last version ID to determine the next one.
+		dep, getErr := svc.GetDeployment(ctx, tmpdms.GetDeploymentRequest{
+			DeploymentID: deploymentID,
+		})
+		if getErr != nil {
+			return "", "", fmt.Errorf("failed to get deployment: %w", getErr)
+		}
 		lastVersion, parseErr := strconv.ParseInt(dep.LastVersionID, 10, 64)
 		if parseErr != nil {
 			return "", "", fmt.Errorf("failed to parse last_version_id %q: %w", dep.LastVersionID, parseErr)
