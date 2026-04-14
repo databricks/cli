@@ -2,8 +2,10 @@ package client
 
 import (
 	"context"
+	"crypto/md5"
 	_ "embed"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -119,6 +121,20 @@ func (o *ClientOptions) Validate() error {
 		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
 	}
 	return nil
+}
+
+// GenerateDefaultConnectionName creates a deterministic connection name from
+// the workspace host and accelerator type. The name includes a hash of the
+// workspace host so that different workspaces produce different names,
+// avoiding SSH known_hosts conflicts.
+func GenerateDefaultConnectionName(host, accelerator string) string {
+	h := md5.Sum([]byte(host))
+	hashStr := hex.EncodeToString(h[:4])
+	if accelerator != "" {
+		acc := strings.ToLower(strings.ReplaceAll(accelerator, "_", "-"))
+		return fmt.Sprintf("databricks-%s-%s", acc, hashStr)
+	}
+	return fmt.Sprintf("databricks-ssh-%s", hashStr)
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {

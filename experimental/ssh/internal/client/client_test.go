@@ -3,6 +3,7 @@ package client_test
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -104,6 +105,67 @@ func TestValidate(t *testing.T) {
 				assert.EqualError(t, err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestGenerateDefaultConnectionName(t *testing.T) {
+	tests := []struct {
+		name        string
+		host        string
+		accelerator string
+		want        string
+	}{
+		{
+			name: "no accelerator",
+			host: "https://my-workspace.cloud.databricks.com",
+			want: "databricks-ssh-961dabbd",
+		},
+		{
+			name:        "GPU_1xA10 accelerator",
+			host:        "https://my-workspace.cloud.databricks.com",
+			accelerator: "GPU_1xA10",
+			want:        "databricks-gpu-1xa10-961dabbd",
+		},
+		{
+			name:        "GPU_8xH100 accelerator",
+			host:        "https://my-workspace.cloud.databricks.com",
+			accelerator: "GPU_8xH100",
+			want:        "databricks-gpu-8xh100-961dabbd",
+		},
+		{
+			name: "different host produces different name",
+			host: "https://other-workspace.cloud.databricks.com",
+			want: "databricks-ssh-e8a8ec19",
+		},
+		{
+			name: "deterministic for same input",
+			host: "https://my-workspace.cloud.databricks.com",
+			want: "databricks-ssh-961dabbd",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := client.GenerateDefaultConnectionName(tt.host, tt.accelerator)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGenerateDefaultConnectionNameMatchesRegex(t *testing.T) {
+	hosts := []string{
+		"https://workspace1.cloud.databricks.com",
+		"https://workspace2.azuredatabricks.net",
+		"https://workspace3.gcp.databricks.com",
+	}
+	accelerators := []string{"", "GPU_1xA10", "GPU_8xH100"}
+	nameRegex := regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+
+	for _, host := range hosts {
+		for _, acc := range accelerators {
+			name := client.GenerateDefaultConnectionName(host, acc)
+			assert.Regexp(t, nameRegex, name, "host=%q accelerator=%q name=%q", host, acc, name)
+		}
 	}
 }
 
