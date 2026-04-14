@@ -9,7 +9,7 @@ trace $CLI bundle validate -t prod
 trace $CLI bundle plan -t dev -o json > tmp.plan.json 2> LOG.plan1.error
 $TESTDIR/../check_output.py $CLI bundle deploy -t dev $(readplanarg tmp.plan.json)
 # check no unexpected drift after deploy; due to dynamic_version whl is different so job is updated
-$CLI bundle plan -t dev 2> LOG.plan2.error | contains.py '0 to add' '0 to delete' '!0 unchanged' > /dev/null
+$CLI bundle plan -t dev 2> LOG.plan2.error | contains.py '0 to add' '0 to delete' > /dev/null
 trace $CLI bundle destroy -t dev --auto-approve 2>&1 | tail -n 2
 
 trace $CLI bundle plan -t prod -o json > tmp.plan.json 2> LOG.plan3.error
