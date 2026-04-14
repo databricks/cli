@@ -41,6 +41,9 @@ func ResolveConfigType(cfg *config.Config) config.ConfigType {
 		return configType
 	}
 
+	// The WorkspaceConfig return is a no-op when configType is already
+	// WorkspaceConfig, but is needed for InvalidConfig (legacy IsUnifiedHost
+	// profiles where the SDK dropped the UnifiedHost case in v0.126.0).
 	if cfg.WorkspaceID != "" && cfg.WorkspaceID != WorkspaceIDNone {
 		return config.WorkspaceConfig
 	}
