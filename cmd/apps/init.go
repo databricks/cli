@@ -1404,8 +1404,8 @@ func removeEmptyDirs(root string) error {
 	if err != nil {
 		return err
 	}
-	for i := len(dirs) - 1; i >= 0; i-- {
-		_ = os.Remove(dirs[i])
+	for _, dir := range slices.Backward(dirs) {
+		_ = os.Remove(dir)
 	}
 	return nil
 }
