@@ -3,8 +3,10 @@ package artifacts
 import (
 	"context"
 	"errors"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -15,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/python"
-	"github.com/databricks/cli/libs/utils"
 )
 
 func Prepare() bundle.Mutator {
@@ -34,7 +35,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.FromErr(err)
 	}
 
-	for _, artifactName := range utils.SortedKeys(b.Config.Artifacts) {
+	for _, artifactName := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
 		artifact := b.Config.Artifacts[artifactName]
 		if artifact == nil {
 			l := b.Config.GetLocation("artifacts." + artifactName)

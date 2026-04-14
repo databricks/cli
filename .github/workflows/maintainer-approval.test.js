@@ -509,7 +509,7 @@ describe("maintainer-approval", () => {
     assert.ok(body.includes("## Approval status: pending"));
     assert.ok(body.includes("`/cmd/pipelines/`"));
     assert.ok(body.includes("`/bundle/`"));
-    assert.ok(body.includes("approved by @jefferycheng1"));
+    assert.ok(body.includes("approved by `@jefferycheng1`"));
     assert.ok(body.includes("needs approval"));
   });
 });

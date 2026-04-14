@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -117,7 +118,7 @@ func processAttributeType(typ cty.Type, resourceName, attributePath string) stri
 }
 
 func nestedBlockKeys(block *tfjson.SchemaBlock) []string {
-	keys := sortKeys(block.NestedBlocks)
+	keys := slices.Sorted(maps.Keys(block.NestedBlocks))
 
 	// Remove TF specific "timeouts" block.
 	if i := slices.Index(keys, "timeouts"); i != -1 {
@@ -163,7 +164,7 @@ func (w *walker) walk(block *tfjson.SchemaBlock, name []string) error {
 	}
 
 	// Declare attributes.
-	for _, k := range sortKeys(block.Attributes) {
+	for _, k := range slices.Sorted(maps.Keys(block.Attributes)) {
 		v := block.Attributes[k]
 
 		// Assert the attribute type is always set.

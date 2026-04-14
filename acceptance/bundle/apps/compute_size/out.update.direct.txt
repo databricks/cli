@@ -7,5 +7,5 @@ Deployment complete!
 
 >>> [CLI] apps get app-[UNIQUE_NAME]
 {
-  "compute_size": "LARGE"
+  "compute_size": "MEDIUM"
 }

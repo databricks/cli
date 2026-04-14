@@ -1,10 +1,11 @@
 package render
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"io"
-	"sort"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -188,12 +189,12 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 // Helper function to sort and render resource groups using the template
 func renderResourcesTemplate(out io.Writer, resourceGroups []ResourceGroup) error {
 	// Sort everything to ensure consistent output
-	sort.Slice(resourceGroups, func(i, j int) bool {
-		return resourceGroups[i].GroupName < resourceGroups[j].GroupName
+	slices.SortFunc(resourceGroups, func(a, b ResourceGroup) int {
+		return cmp.Compare(a.GroupName, b.GroupName)
 	})
 	for _, group := range resourceGroups {
-		sort.Slice(group.Resources, func(i, j int) bool {
-			return group.Resources[i].Key < group.Resources[j].Key
+		slices.SortFunc(group.Resources, func(a, b ResourceInfo) int {
+			return cmp.Compare(a.Key, b.Key)
 		})
 	}
 
