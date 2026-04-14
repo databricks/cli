@@ -51,8 +51,9 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 
 	if a.DiscoveryURL != "" {
 		cfg.DiscoveryURL = a.DiscoveryURL
-	} else if err := cfg.EnsureResolved(); err == nil {
+	} else {
 		// EnsureResolved populates cfg.DiscoveryURL from .well-known.
+		_ = cfg.EnsureResolved()
 	}
 
 	host := cfg.CanonicalHostName()
