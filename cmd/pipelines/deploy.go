@@ -4,6 +4,8 @@ package pipelines
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
@@ -11,7 +13,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
-	libsutils "github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +64,7 @@ func deployCommand() *cobra.Command {
 		}
 
 		for _, group := range b.Config.Resources.AllResources() {
-			for _, resourceKey := range libsutils.SortedKeys(group.Resources) {
+			for _, resourceKey := range slices.Sorted(maps.Keys(group.Resources)) {
 				resource := group.Resources[resourceKey]
 				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", resource.ResourceDescription().SingularName, resourceKey, resource.GetURL()))
 			}

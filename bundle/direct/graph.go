@@ -2,17 +2,18 @@ package direct
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/dagrun"
-	"github.com/databricks/cli/libs/utils"
 )
 
 func makeGraph(plan *deployplan.Plan) (*dagrun.Graph, error) {
 	g := dagrun.NewGraph()
 
 	// Add all nodes first
-	for _, resourceKey := range utils.SortedKeys(plan.Plan) {
+	for _, resourceKey := range slices.Sorted(maps.Keys(plan.Plan)) {
 		g.AddNode(resourceKey)
 	}
 

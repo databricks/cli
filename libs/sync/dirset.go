@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"maps"
 	"path"
 	"slices"
 )
@@ -33,12 +34,7 @@ func MakeDirSet(files []string) DirSet {
 
 // Slice returns a sorted copy of the dirset elements as a slice.
 func (dirset DirSet) Slice() []string {
-	out := make([]string, 0, len(dirset))
-	for dir := range dirset {
-		out = append(out, dir)
-	}
-	slices.Sort(out)
-	return out
+	return slices.Sorted(maps.Keys(dirset))
 }
 
 // Remove returns the set difference of two DirSets.

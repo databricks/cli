@@ -3,6 +3,7 @@ package debug
 import (
 	"fmt"
 	"io"
+	"maps"
 	"reflect"
 	"slices"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ func dumpRemoteSchemas(out io.Writer) error {
 		return fmt.Errorf("failed to initialize adapters: %w", err)
 	}
 
-	for _, resourceName := range utils.SortedKeys(adapters) {
+	for _, resourceName := range slices.Sorted(maps.Keys(adapters)) {
 		adapter := adapters[resourceName]
 
 		var resourcePrefix string
@@ -100,9 +100,9 @@ func dumpRemoteSchemas(out io.Writer) error {
 		}
 
 		var lines []string
-		for _, p := range utils.SortedKeys(pathTypes) {
+		for _, p := range slices.Sorted(maps.Keys(pathTypes)) {
 			byType := pathTypes[p]
-			for _, t := range utils.SortedKeys(byType) {
+			for _, t := range slices.Sorted(maps.Keys(byType)) {
 				info := formatTags(byType[t])
 				sep := "."
 				if strings.HasPrefix(p, "[") {
@@ -125,5 +125,5 @@ func formatTags(sources map[string]struct{}) string {
 	if len(sources) == 3 {
 		return "ALL"
 	}
-	return strings.Join(utils.SortedKeys(sources), "\t")
+	return strings.Join(slices.Sorted(maps.Keys(sources)), "\t")
 }

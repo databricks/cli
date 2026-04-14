@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -55,12 +56,7 @@ func (r Resource) HasFields() bool {
 
 // FieldNames returns the field names in sorted order for deterministic iteration.
 func (r Resource) FieldNames() []string {
-	names := make([]string, 0, len(r.Fields))
-	for k := range r.Fields {
-		names = append(names, k)
-	}
-	slices.Sort(names)
-	return names
+	return slices.Sorted(maps.Keys(r.Fields))
 }
 
 // Resources defines the required and optional resources for a plugin.
@@ -171,12 +167,7 @@ func (m *Manifest) GetPluginByName(name string) *Plugin {
 
 // GetPluginNames returns a list of all plugin names.
 func (m *Manifest) GetPluginNames() []string {
-	names := make([]string, 0, len(m.Plugins))
-	for name := range m.Plugins {
-		names = append(names, name)
-	}
-	slices.Sort(names)
-	return names
+	return slices.Sorted(maps.Keys(m.Plugins))
 }
 
 // ValidatePluginNames checks that all provided plugin names exist in the manifest.

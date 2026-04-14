@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -294,11 +295,7 @@ func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Respo
 
 	// Convert back to slice sorted by key for stable output
 	tags := make([]serving.EndpointTag, 0, len(tagMap))
-	keys := make([]string, 0, len(tagMap))
-	for key := range tagMap {
-		keys = append(keys, key)
-	}
-	slices.Sort(keys)
+	keys := slices.Sorted(maps.Keys(tagMap))
 	for _, key := range keys {
 		tags = append(tags, serving.EndpointTag{Key: key, Value: tagMap[key]})
 	}

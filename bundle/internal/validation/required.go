@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"fmt"
 	"go/format"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -138,11 +139,7 @@ func filterTargetsAndEnvironments(patterns map[string][]RequiredPatternInfo) map
 // sortGroupedPatterns sorts patterns within each group and returns them as a sorted slice
 func sortGroupedPatterns(groupedPatterns map[string][]RequiredPatternInfo) [][]RequiredPatternInfo {
 	// Get sorted group keys
-	groupKeys := make([]string, 0, len(groupedPatterns))
-	for key := range groupedPatterns {
-		groupKeys = append(groupKeys, key)
-	}
-	slices.Sort(groupKeys)
+	groupKeys := slices.Sorted(maps.Keys(groupedPatterns))
 
 	// Build sorted result
 	result := make([][]RequiredPatternInfo, 0, len(groupKeys))

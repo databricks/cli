@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -84,7 +85,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 
 	if state.Release == latestTag && !opts.Force {
 		cmdio.LogString(ctx, "Already up to date.")
-		return &UpdateResult{Unchanged: sortedKeys(state.Skills)}, nil
+		return &UpdateResult{Unchanged: slices.Sorted(maps.Keys(state.Skills))}, nil
 	}
 
 	manifest, err := src.FetchManifest(ctx, latestTag)
@@ -105,7 +106,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	isDev := strings.HasPrefix(cliVersion, build.DefaultSemver)
 
 	// Sort skill names for deterministic output.
-	names := sortedKeys(skillSet)
+	names := slices.Sorted(maps.Keys(skillSet))
 
 	for _, name := range names {
 		meta, inManifest := manifest.Skills[name]
@@ -228,16 +229,6 @@ func hasLegacyInstall(ctx context.Context, globalDir string) bool {
 		return false
 	}
 	return hasSkillsOnDisk(filepath.Join(homeDir, ".databricks", "agent-skills"))
-}
-
-// sortedKeys returns the keys of a map sorted alphabetically.
-func sortedKeys[V any](m map[string]V) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	return keys
 }
 
 // FormatUpdateResult returns a human-readable summary of the update result.
