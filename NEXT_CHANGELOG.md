@@ -12,6 +12,7 @@
 ### Bundles
 * Added support for lifecycle.started option for apps ([#4672](https://github.com/databricks/cli/pull/4672))
 * engine/direct: Fix permissions for resources.models ([#4941](https://github.com/databricks/cli/pull/4941))
+* Fix resource references not correctly resolved in apps config section ([#4964](https://github.com/databricks/cli/pull/4964))
 
 ### Dependency updates
 
