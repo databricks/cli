@@ -34,6 +34,10 @@ linters:
           deny:
             - pkg: "github.com/databricks/cli/experimental"
               desc: "must not import experimental/ packages; use an interface or move the dependency"
+        no-legacy-rand:
+          deny:
+            - pkg: "math/rand$"
+              desc: "use math/rand/v2 instead of math/rand"
         no-stdlib-log:
           files:
             - "**"
