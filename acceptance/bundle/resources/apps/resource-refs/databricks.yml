@@ -1,6 +1,10 @@
 bundle:
   name: resource-refs
 
+variables:
+  example_var:
+    default: "example_value"
+
 resources:
   apps:
     data_app:
@@ -14,6 +18,10 @@ resources:
           value: ${resources.schemas.example.catalog_name}
         - name: MY_EXAMPLE_JOB
           value: ${resources.jobs.example_job.name}
+        - name: MY_EXAMPLE_JOB_ID
+          value: ${resources.jobs.example_job.id}
+        - name: MY_EXAMPLE_VAR
+          value: ${var.example_var}
   schemas:
     example:
       name: "example_schema"

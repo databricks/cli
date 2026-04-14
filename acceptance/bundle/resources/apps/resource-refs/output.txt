@@ -49,6 +49,14 @@ You can access the app at data-app-123.cloud.databricksapps.com
       {
         "name": "MY_EXAMPLE_JOB",
         "value": "example_job"
+      },
+      {
+        "name": "MY_EXAMPLE_JOB_ID",
+        "value": "[NUMID]"
+      },
+      {
+        "name": "MY_EXAMPLE_VAR",
+        "value": "example_value"
       }
     ],
     "mode": "SNAPSHOT",
