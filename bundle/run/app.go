@@ -163,7 +163,7 @@ func (a *appRunner) resolvedConfig() (*resources.AppConfig, error) {
 
 	// Get the app's config section as a dyn.Value to resolve references in it.
 	// The key is of the form "apps.<name>", so the full path is "resources.apps.<name>.config".
-	configPath := dyn.MustPathFromString("resources." + a.key.Key() + ".config")
+	configPath := dyn.MustPathFromString("resources." + a.Key() + ".config")
 	configV, err := dyn.GetByPath(root, configPath)
 	if err != nil || !configV.IsValid() {
 		return a.app.Config, nil
