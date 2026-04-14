@@ -120,6 +120,11 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 		if createErr != nil {
 			return "", "", fmt.Errorf("failed to create deployment: %w", createErr)
 		}
+		// Write the deployment ID to workspace only after the server-side
+		// record is created. This avoids leaving a dangling ID if creation fails.
+		if err := writeDeploymentID(ctx, b, deploymentID); err != nil {
+			return "", "", err
+		}
 		versionID = "1"
 	} else {
 		// Existing deployment: get the last version ID to determine the next one.
@@ -157,8 +162,10 @@ func acquireLock(ctx context.Context, b *bundle.Bundle, svc *tmpdms.DeploymentMe
 
 // resolveDeploymentID reads the deployment ID from resources.json in the
 // workspace state directory. If the file doesn't exist or has no deployment ID,
-// a new UUID is generated and written. The boolean return indicates whether
-// this is a fresh deployment (true) or an existing one (false).
+// a new UUID is generated. The boolean return indicates whether this is a fresh
+// deployment (true) or an existing one (false). For fresh deployments, the
+// caller is responsible for writing the deployment ID to workspace after the
+// server-side deployment record is created successfully.
 func resolveDeploymentID(ctx context.Context, b *bundle.Bundle) (string, bool, error) {
 	f, err := deploy.StateFiler(b)
 	if err != nil {
@@ -184,18 +191,28 @@ func resolveDeploymentID(ctx context.Context, b *bundle.Bundle) (string, bool, e
 		return "", false, fmt.Errorf("failed to read resources.json: %w", readErr)
 	}
 
-	// Fresh deployment: generate a new ID and write resources.json.
-	deploymentID := uuid.New().String()
+	// Fresh deployment: generate a new ID but don't write yet.
+	return uuid.New().String(), true, nil
+}
+
+// writeDeploymentID writes the deployment ID to resources.json in the workspace
+// state directory. This should be called after the server-side deployment record
+// is created successfully.
+func writeDeploymentID(ctx context.Context, b *bundle.Bundle, deploymentID string) error {
+	f, err := deploy.StateFiler(b)
+	if err != nil {
+		return fmt.Errorf("failed to create state filer: %w", err)
+	}
 	rj := statemgmt.ResourcesJSON{DeploymentID: deploymentID}
 	data, err := json.Marshal(rj)
 	if err != nil {
-		return "", false, fmt.Errorf("failed to marshal resources.json: %w", err)
+		return fmt.Errorf("failed to marshal resources.json: %w", err)
 	}
 	err = f.Write(ctx, "resources.json", bytes.NewReader(data), filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
-		return "", false, fmt.Errorf("failed to write resources.json: %w", err)
+		return fmt.Errorf("failed to write resources.json: %w", err)
 	}
-	return deploymentID, true, nil
+	return nil
 }
 
 // makeOperationReporter returns an OperationReporter that reports each resource
