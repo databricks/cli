@@ -21,24 +21,24 @@ func newSSHCommand() *cobra.Command {
 	var gatewayPort string
 
 	cmd := &cobra.Command{
-		Use:   "ssh [lakebox-id]",
+		Use:   "ssh [lakebox-id] [-- <ssh-args-or-command>...]",
 		Short: "SSH into a Lakebox environment",
 		Long: `SSH into a Lakebox environment.
 
-This command:
-1. Authenticates to the Databricks workspace
-2. Ensures you have a local SSH key (~/.ssh/id_ed25519)
-3. Creates a lakebox if one doesn't exist (installs your public key)
-4. Updates ~/.ssh/config with a Host entry for the lakebox
-5. Connects via SSH using the lakebox ID as the SSH username
+Connect to your default or a named lakebox via SSH. Extra arguments
+after -- are passed directly to the ssh process. This lets you run
+remote commands, set up port forwarding, or pass any other ssh flags.
 
-Without arguments, creates a new lakebox. With a lakebox ID argument,
-connects to the specified lakebox.
-
-Example:
-  databricks lakebox ssh                    # create and connect to a new lakebox
-  databricks lakebox ssh happy-panda-1234   # connect to existing lakebox`,
-		Args: cobra.MaximumNArgs(1),
+Examples:
+  lakebox ssh                                  # interactive shell on default lakebox
+  lakebox ssh happy-panda-1234                 # interactive shell on specific lakebox
+  lakebox ssh -- ls -la /home                  # run command on default lakebox
+  lakebox ssh happy-panda-1234 -- cat /etc/os-release  # run command on specific lakebox
+  lakebox ssh -- -L 8080:localhost:8080        # port forwarding on default lakebox`,
+		// Disable flag parsing after -- so extra args are passed through.
+		DisableFlagParsing: false,
+		// Accept any number of args: [lakebox-id] [-- extra...]
+		Args: cobra.ArbitraryArgs,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return root.MustWorkspaceClient(cmd, args)
 		},
@@ -61,39 +61,47 @@ Example:
 			}
 			fmt.Fprintf(cmd.ErrOrStderr(), "Using SSH key: %s\n", keyPath)
 
-			// Determine lakebox ID:
-			// 1. Explicit arg → use it
-			// 2. Local default exists → use it
-			// 3. Neither → create a new one and set as default
+			// Parse args: first arg (if not starting with -) is lakebox ID,
+			// everything else is passed through to ssh.
 			var lakeboxID string
-			if len(args) > 0 {
+			var extraArgs []string
+
+			if len(args) > 0 && args[0] != "--" && args[0][0] != '-' {
 				lakeboxID = args[0]
-			} else if def := getDefault(profile); def != "" {
-				lakeboxID = def
-				fmt.Fprintf(cmd.ErrOrStderr(), "Using default lakebox: %s\n", lakeboxID)
+				extraArgs = args[1:]
 			} else {
-				api := newLakeboxAPI(w)
-				pubKeyData, err := os.ReadFile(keyPath + ".pub")
-				if err != nil {
-					return fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
-				}
+				extraArgs = args
+			}
 
-				fmt.Fprintf(cmd.ErrOrStderr(), "Creating lakebox...\n")
-				result, err := api.create(ctx, string(pubKeyData))
-				if err != nil {
-					return fmt.Errorf("failed to create lakebox: %w", err)
-				}
-				lakeboxID = result.LakeboxID
-				fmt.Fprintf(cmd.ErrOrStderr(), "Lakebox %s created (status: %s)\n", lakeboxID, result.Status)
+			// Determine lakebox ID if not explicit.
+			if lakeboxID == "" {
+				if def := getDefault(profile); def != "" {
+					lakeboxID = def
+					fmt.Fprintf(cmd.ErrOrStderr(), "Using default lakebox: %s\n", lakeboxID)
+				} else {
+					api := newLakeboxAPI(w)
+					pubKeyData, err := os.ReadFile(keyPath + ".pub")
+					if err != nil {
+						return fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
+					}
 
-				if err := setDefault(profile, lakeboxID); err != nil {
-					fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to save default: %v\n", err)
+					fmt.Fprintf(cmd.ErrOrStderr(), "Creating lakebox...\n")
+					result, err := api.create(ctx, string(pubKeyData))
+					if err != nil {
+						return fmt.Errorf("failed to create lakebox: %w", err)
+					}
+					lakeboxID = result.LakeboxID
+					fmt.Fprintf(cmd.ErrOrStderr(), "Lakebox %s created (status: %s)\n", lakeboxID, result.Status)
+
+					if err := setDefault(profile, lakeboxID); err != nil {
+						fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to save default: %v\n", err)
+					}
 				}
 			}
 
 			fmt.Fprintf(cmd.ErrOrStderr(), "Connecting to %s@%s:%s...\n",
 				lakeboxID, gatewayHost, gatewayPort)
-			return execSSHDirect(lakeboxID, gatewayHost, gatewayPort, keyPath)
+			return execSSHDirect(lakeboxID, gatewayHost, gatewayPort, keyPath, extraArgs)
 		},
 	}
 
@@ -104,7 +112,8 @@ Example:
 }
 
 // execSSHDirect execs into ssh with all options passed as args (no ~/.ssh/config needed).
-func execSSHDirect(lakeboxID, host, port, keyPath string) error {
+// Extra args are appended after the destination (for remote commands or ssh flags).
+func execSSHDirect(lakeboxID, host, port, keyPath string, extraArgs []string) error {
 	sshPath, err := exec.LookPath("ssh")
 	if err != nil {
 		return fmt.Errorf("ssh not found in PATH: %w", err)
@@ -121,6 +130,7 @@ func execSSHDirect(lakeboxID, host, port, keyPath string) error {
 		"-o", "LogLevel=ERROR",
 		fmt.Sprintf("%s@%s", lakeboxID, host),
 	}
+	args = append(args, extraArgs...)
 
 	if runtime.GOOS == "windows" {
 		cmd := exec.Command(sshPath, args[1:]...)
