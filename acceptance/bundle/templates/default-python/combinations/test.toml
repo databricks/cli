@@ -8,8 +8,8 @@ EnvMatrix.READPLAN = ["", "1"]
 # INCLUDE_NOTEBOOK
 EnvMatrix.NBOOK = ["yes", "no"]
 
-# INCLUDE_PIPELINE
-EnvMatrix.PIPELINE = ["yes", "no"]
+# INCLUDE_DLT
+EnvMatrix.DLT = ["yes", "no"]
 
 # INCLUDE_PYTHON
 EnvMatrix.PY = ["yes", "no"]
