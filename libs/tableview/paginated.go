@@ -148,6 +148,7 @@ func NewPaginatedProgram(ctx context.Context, w io.Writer, cfg *TableConfig, ite
 		rowIter:      iter,
 		makeFetchCmd: newFetchCmdFunc(ctx),
 		maxItems:     maxItems,
+		loading:      true, // Init() fires the first fetch
 	}
 
 	if cfg.Search != nil {
