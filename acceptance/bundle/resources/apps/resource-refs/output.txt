@@ -1,0 +1,57 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/resource-refs/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle run data_app
+✓ Getting the status of the app data-app
+✓ App is in RUNNING state
+✓ App compute is in STOPPED state
+✓ Starting the app data-app
+✓ App is starting...
+✓ App is started!
+✓ Deployment succeeded
+You can access the app at data-app-123.cloud.databricksapps.com
+
+>>> print_requests.py //apps
+{
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
+  "body": {
+    "description": "A Streamlit app that uses a SQL warehouse",
+    "name": "data-app"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/data-app/start",
+  "body": {}
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/data-app/deployments",
+  "body": {
+    "command": [
+      "streamlit",
+      "run",
+      "app.py"
+    ],
+    "env_vars": [
+      {
+        "name": "MY_EXAMPLE_SCHEMA",
+        "value": "main"
+      },
+      {
+        "name": "MY_EXAMPLE_JOB",
+        "value": "example_job"
+      }
+    ],
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/resource-refs/default/files/app"
+  }
+}
