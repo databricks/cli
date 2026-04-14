@@ -2,6 +2,7 @@ package lock
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/env"
@@ -46,8 +47,23 @@ func NewDeploymentLock(ctx context.Context, b *bundle.Bundle, goal Goal) Deploym
 		if ok {
 			return newMetadataServiceLock(b, versionType)
 		}
+		// Bind and unbind are not yet supported with the deployment metadata service.
+		return &unsupportedLock{goal: goal}
 	}
 	return newWorkspaceFilesystemLock(b, goal)
+}
+
+// unsupportedLock is returned when a goal is not supported with DMS.
+type unsupportedLock struct {
+	goal Goal
+}
+
+func (l *unsupportedLock) Acquire(context.Context) error {
+	return fmt.Errorf("%s is not supported with the deployment metadata service", l.goal)
+}
+
+func (l *unsupportedLock) Release(context.Context, DeploymentStatus) error {
+	return nil
 }
 
 func goalToVersionType(goal Goal) (tmpdms.VersionType, bool) {
