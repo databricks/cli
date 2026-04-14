@@ -240,45 +240,19 @@ func TestProfileLoadUnifiedHostFallback(t *testing.T) {
 	assert.NotEmpty(t, p.AuthType)
 }
 
-func TestProfileLoadSPOGAccountWithDiscovery(t *testing.T) {
-	// Supplementary SPOG case: a host with account-scoped OIDC from discovery
-	// is validated as account config (via Workspaces.List, not CurrentUser.Me).
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		switch r.URL.Path {
-		case "/.well-known/databricks-config":
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"account_id":    "classic-acct",
-				"oidc_endpoint": r.Host + "/oidc/accounts/classic-acct",
-			})
-		case "/api/2.0/accounts/classic-acct/workspaces":
-			_ = json.NewEncoder(w).Encode([]map[string]any{})
-		default:
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	dir := t.TempDir()
-	configFile := filepath.Join(dir, ".databrickscfg")
-	t.Setenv("HOME", dir)
-	if runtime.GOOS == "windows" {
-		t.Setenv("USERPROFILE", dir)
+func TestClassicAccountsHostConfigType(t *testing.T) {
+	// Classic accounts.* hosts can't be tested through Load() because httptest
+	// generates 127.0.0.1 URLs. Verify directly that ConfigType() classifies
+	// them as AccountConfig, so the SPOG override is never needed.
+	cfg := &config.Config{
+		Host:      "https://accounts.cloud.databricks.com",
+		AccountID: "acct-123",
 	}
+	assert.Equal(t, config.AccountConfig, cfg.ConfigType())
 
-	content := "[acct-profile]\nhost = " + server.URL + "\ntoken = test-token\naccount_id = classic-acct\n"
-	require.NoError(t, os.WriteFile(configFile, []byte(content), 0o600))
-
-	p := &profileMetadata{
-		Name:      "acct-profile",
-		Host:      server.URL,
-		AccountID: "classic-acct",
-	}
-	p.Load(t.Context(), configFile, false)
-
-	assert.True(t, p.Valid, "classic account profile should be valid")
-	assert.NotEmpty(t, p.Host)
-	assert.NotEmpty(t, p.AuthType)
+	// Even with SPOG-like discovery data, accounts.* stays AccountConfig.
+	cfg.DiscoveryURL = "https://accounts.cloud.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server"
+	assert.Equal(t, config.AccountConfig, cfg.ConfigType())
 }
 
 func TestProfileLoadNoDiscoveryStaysWorkspace(t *testing.T) {

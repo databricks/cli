@@ -90,6 +90,10 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		}
 	}
 
+	if configType != cfg.ConfigType() {
+		log.Debugf(ctx, "Profile %q: overrode config type from %s to %s (SPOG host)", c.Name, cfg.ConfigType(), configType)
+	}
+
 	switch configType {
 	case config.AccountConfig:
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
