@@ -1,12 +1,12 @@
 package testdiff
 
 import (
+	"cmp"
 	"encoding/json"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -51,8 +51,8 @@ func (r *ReplacementsContext) Replace(s string) string {
 	// Sort replacements stably by Order to guarantee deterministic application sequence.
 	// A cloned slice is used to avoid mutating the original order held in the context.
 	repls := slices.Clone(r.Repls)
-	sort.SliceStable(repls, func(i, j int) bool {
-		return repls[i].Order < repls[j].Order
+	slices.SortStableFunc(repls, func(a, b Replacement) int {
+		return cmp.Compare(a.Order, b.Order)
 	})
 	for _, repl := range repls {
 		if !repl.Distinct {

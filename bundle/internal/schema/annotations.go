@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"os"
 	"reflect"
 	"regexp"
@@ -183,12 +184,7 @@ func saveYamlWithStyle(outputPath string, annotations annotation.File) error {
 }
 
 func getAlphabeticalOrder[T any](mapping map[string]T) *yamlsaver.Order {
-	var order []string
-	for k := range mapping {
-		order = append(order, k)
-	}
-	slices.Sort(order)
-	return yamlsaver.NewOrder(order)
+	return yamlsaver.NewOrder(slices.Sorted(maps.Keys(mapping)))
 }
 
 func convertLinksToAbsoluteUrl(s string) string {

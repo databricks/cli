@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -223,7 +224,7 @@ func (s *FakeWorkspace) JobsList() Response {
 		list = append(list, baseJob)
 	}
 
-	sort.Slice(list, func(i, j int) bool { return list[i].JobId < list[j].JobId })
+	slices.SortFunc(list, func(a, b jobs.BaseJob) int { return cmp.Compare(a.JobId, b.JobId) })
 	return Response{Body: jobs.ListJobsResponse{Jobs: list}}
 }
 

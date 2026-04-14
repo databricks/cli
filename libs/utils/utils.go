@@ -2,17 +2,7 @@ package utils
 
 import (
 	"reflect"
-	"sort"
 )
-
-func SortedKeys[T any](m map[string]T) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
-}
 
 // FilterFields creates a new slice with fields present only in the provided type,
 // excluding any fields specified in the excludeFields list.
