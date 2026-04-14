@@ -118,7 +118,7 @@ func TestGenerateDefaultConnectionName(t *testing.T) {
 		{
 			name: "no accelerator",
 			host: "https://my-workspace.cloud.databricks.com",
-			want: "databricks-ssh-961dabbd",
+			want: "databricks-cpu-961dabbd",
 		},
 		{
 			name:        "GPU_1xA10 accelerator",
@@ -135,12 +135,12 @@ func TestGenerateDefaultConnectionName(t *testing.T) {
 		{
 			name: "different host produces different name",
 			host: "https://other-workspace.cloud.databricks.com",
-			want: "databricks-ssh-e8a8ec19",
+			want: "databricks-cpu-e8a8ec19",
 		},
 		{
 			name: "deterministic for same input",
 			host: "https://my-workspace.cloud.databricks.com",
-			want: "databricks-ssh-961dabbd",
+			want: "databricks-cpu-961dabbd",
 		},
 	}
 
