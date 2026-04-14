@@ -12,6 +12,8 @@ import (
 type stateFile struct {
 	// Profile name → default lakebox ID.
 	Defaults map[string]string `json:"defaults"`
+	// Last profile used with 'lakebox auth login'.
+	LastProfile string `json:"last_profile,omitempty"`
 }
 
 func stateFilePath() (string, error) {
@@ -77,6 +79,25 @@ func setDefault(profile, lakeboxID string) error {
 		return err
 	}
 	state.Defaults[profile] = lakeboxID
+	return saveState(state)
+}
+
+// GetLastProfile returns the profile saved by the most recent 'lakebox auth login'.
+func GetLastProfile() string {
+	state, err := loadState()
+	if err != nil {
+		return ""
+	}
+	return state.LastProfile
+}
+
+// SetLastProfile persists the profile used during 'lakebox auth login'.
+func SetLastProfile(profile string) error {
+	state, err := loadState()
+	if err != nil {
+		return err
+	}
+	state.LastProfile = profile
 	return saveState(state)
 }
 
