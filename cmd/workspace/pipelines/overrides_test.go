@@ -23,7 +23,7 @@ func TestLooksLikeUUID_resourceName(t *testing.T) {
 func TestListPipelinesTableConfig(t *testing.T) {
 	cmd := newListPipelines()
 
-	cfg := tableview.GetConfig(cmd)
+	cfg := tableview.GetTableConfig(cmd.Context())
 	require.NotNil(t, cfg)
 	require.Len(t, cfg.Columns, 3)
 	require.NotNil(t, cfg.Search)
@@ -42,7 +42,7 @@ func TestListPipelinesTableConfig(t *testing.T) {
 func TestListPipelinesSearchEscapesLikeWildcards(t *testing.T) {
 	cmd := newListPipelines()
 
-	cfg := tableview.GetConfig(cmd)
+	cfg := tableview.GetTableConfig(cmd.Context())
 	require.NotNil(t, cfg)
 	require.NotNil(t, cfg.Search)
 
@@ -63,7 +63,7 @@ func TestListPipelinesSearchDisabledWhenFilterSet(t *testing.T) {
 	err := cmd.Flags().Set("filter", "state = 'RUNNING'")
 	require.NoError(t, err)
 
-	cfg := tableview.GetConfig(cmd)
+	cfg := tableview.GetTableConfig(cmd.Context())
 	require.NotNil(t, cfg)
 	require.NotNil(t, cfg.Search)
 
@@ -76,7 +76,7 @@ func TestListPipelinesSearchDisabledWhenFilterSet(t *testing.T) {
 func TestListPipelinesSearchNotDisabledWithoutFilter(t *testing.T) {
 	cmd := newListPipelines()
 
-	cfg := tableview.GetConfig(cmd)
+	cfg := tableview.GetTableConfig(cmd.Context())
 	require.NotNil(t, cfg)
 	require.NotNil(t, cfg.Search)
 

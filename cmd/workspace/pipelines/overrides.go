@@ -34,7 +34,7 @@ func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipeli
 		}},
 	}
 
-	tableview.RegisterConfig(listCmd, tableview.TableConfig{
+	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{
 		Columns: columns,
 		Search: &tableview.SearchConfig{
 			Placeholder: "Filter by name...",
@@ -50,7 +50,7 @@ func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipeli
 				return tableview.WrapIterator(w.Pipelines.ListPipelines(ctx, req), columns)
 			},
 		},
-	})
+	}))
 
 	// The pipelines API does not support composite filters, so disable
 	// TUI search when the user passes --filter on the command line.
@@ -88,7 +88,7 @@ func listPipelineEventsOverride(listCmd *cobra.Command, _ *pipelines.ListPipelin
 		}},
 	}
 
-	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
+	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{Columns: columns}))
 }
 
 func init() {
@@ -159,7 +159,7 @@ With a PIPELINE_ID: Stops the pipeline identified by the UUID using the API.`
 // disableSearchIfFilterSet clears the TUI search config when --filter is active.
 func disableSearchIfFilterSet(cmd *cobra.Command) {
 	if cmd.Flags().Changed("filter") {
-		if cfg := tableview.GetConfig(cmd); cfg != nil {
+		if cfg := tableview.GetTableConfig(cmd.Context()); cfg != nil {
 			cfg.Search = nil
 		}
 	}

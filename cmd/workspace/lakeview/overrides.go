@@ -28,7 +28,7 @@ func listOverride(listCmd *cobra.Command, _ *dashboards.ListDashboardsRequest) {
 		}},
 	}
 
-	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
+	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{Columns: columns}))
 }
 
 func publishOverride(cmd *cobra.Command, req *dashboards.PublishRequest) {

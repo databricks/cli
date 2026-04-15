@@ -282,24 +282,22 @@ func RenderIterator[T any](ctx context.Context, cmd *cobra.Command, i listing.It
 
 	// Only launch TUI when an explicit TableConfig is registered via overrides.
 	if c.outputFormat == flags.OutputText && c.capabilities.SupportsTUI() {
-		if cmd != nil {
-			if cfg := tableview.GetConfig(cmd); cfg != nil {
-				iter := tableview.WrapIterator(i, cfg.Columns)
-				maxItems := GetMaxItems(ctx)
-				p := tableview.NewPaginatedProgram(ctx, c.out, cfg, iter, maxItems)
-				c.acquireTeaProgram(p)
-				defer c.releaseTeaProgram()
-				finalModel, err := p.Run()
-				if err != nil {
-					return err
-				}
-				if pm, ok := finalModel.(tableview.FinalModel); ok {
-					if modelErr := pm.Err(); modelErr != nil {
-						return modelErr
-					}
-				}
-				return nil
+		if cfg := tableview.GetTableConfig(ctx); cfg != nil {
+			iter := tableview.WrapIterator(i, cfg.Columns)
+			maxItems := GetMaxItems(ctx)
+			p := tableview.NewPaginatedProgram(ctx, c.out, cfg, iter, maxItems)
+			c.acquireTeaProgram(p)
+			defer c.releaseTeaProgram()
+			finalModel, err := p.Run()
+			if err != nil {
+				return err
 			}
+			if pm, ok := finalModel.(tableview.FinalModel); ok {
+				if modelErr := pm.Err(); modelErr != nil {
+					return modelErr
+				}
+			}
+			return nil
 		}
 	}
 

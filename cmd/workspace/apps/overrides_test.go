@@ -12,7 +12,7 @@ import (
 func TestListTableConfig(t *testing.T) {
 	cmd := newList()
 
-	cfg := tableview.GetConfig(cmd)
+	cfg := tableview.GetTableConfig(cmd.Context())
 	require.NotNil(t, cfg)
 	require.Len(t, cfg.Columns, 4)
 

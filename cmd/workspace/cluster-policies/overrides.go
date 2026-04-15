@@ -29,7 +29,7 @@ func listOverride(listCmd *cobra.Command, _ *compute.ListClusterPoliciesRequest)
 		}},
 	}
 
-	tableview.RegisterConfig(listCmd, tableview.TableConfig{Columns: columns})
+	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{Columns: columns}))
 }
 
 func getOverride(getCmd *cobra.Command, _ *compute.GetClusterPolicyRequest) {
