@@ -1,0 +1,8 @@
+Ignore = [
+    ".databricks",
+    "pipeline.py",
+]
+
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
