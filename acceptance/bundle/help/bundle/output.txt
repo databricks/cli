@@ -17,7 +17,7 @@ Online documentation: https://docs.databricks.com/en/dev-tools/bundles/index.htm
 Usage:
   databricks bundle [command]
 
-Available Commands:
+Main Commands:
   deploy             Deploy bundle
   deployment         Deployment related commands
   destroy            Destroy deployed bundle resources

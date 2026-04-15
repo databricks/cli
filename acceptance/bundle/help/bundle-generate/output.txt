@@ -26,7 +26,7 @@ Use --bind to automatically bind the generated resource to the existing workspac
 Usage:
   databricks bundle generate [command]
 
-Available Commands:
+Main Commands:
   alert       Generate configuration for an alert
   app         Generate bundle configuration for a Databricks app
   dashboard   Generate configuration for a dashboard
