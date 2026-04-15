@@ -17,7 +17,7 @@ var grantResourceToSecurableType = map[string]string{
 	"schemas":            "schema",
 	"external_locations": "external_location",
 	"volumes":            "volume",
-	"registered_models":  "model",
+	"registered_models":  "function",
 }
 
 type GrantsState struct {

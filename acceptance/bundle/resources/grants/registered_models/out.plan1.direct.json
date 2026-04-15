@@ -29,7 +29,7 @@
       "action": "create",
       "new_state": {
         "value": {
-          "securable_type": "model",
+          "securable_type": "function",
           "full_name": "",
           "__embed__": [
             {

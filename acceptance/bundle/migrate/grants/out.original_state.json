@@ -18,7 +18,7 @@
             "credential": null,
             "external_location": null,
             "foreign_connection": null,
-            "function": null,
+            "function": "main.schema_grants.mymodel",
             "grant": [
               {
                 "principal": "deco-test-user@databricks.com",
@@ -27,9 +27,9 @@
                 ]
               }
             ],
-            "id": "model/main.schema_grants.mymodel",
+            "id": "function/main.schema_grants.mymodel",
             "metastore": null,
-            "model": "main.schema_grants.mymodel",
+            "model": null,
             "pipeline": null,
             "provider_config": [],
             "recipient": null,

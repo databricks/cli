@@ -563,7 +563,7 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 	out := produceTerraformConfiguration(t, config)
 	convertToResourceStruct(t, &resource, out.Resource.Grants["registered_model_my_registered_model"])
 
-	assert.NotEmpty(t, resource.Model)
+	assert.NotEmpty(t, resource.Function)
 	assert.Len(t, resource.Grant, 1)
 	assert.Equal(t, "jane@doe.com", resource.Grant[0].Principal)
 	assert.Equal(t, "EXECUTE", resource.Grant[0].Privileges[0])

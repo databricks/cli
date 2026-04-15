@@ -20,9 +20,9 @@
    ]
   },
   "resources.registered_models.my_registered_model.grants": {
-   "__id__": "model/main.schema_grants.mymodel",
+   "__id__": "function/main.schema_grants.mymodel",
    "state": {
-    "securable_type": "model",
+    "securable_type": "function",
     "full_name": "main.schema_grants.mymodel",
     "__embed__": [
      {

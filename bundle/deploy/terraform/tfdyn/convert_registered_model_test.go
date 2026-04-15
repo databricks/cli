@@ -46,7 +46,7 @@ func TestConvertRegisteredModel(t *testing.T) {
 
 	// Assert equality on the grants
 	assert.Equal(t, &schema.ResourceGrants{
-		Model: "${databricks_registered_model.my_registered_model.id}",
+		Function: "${databricks_registered_model.my_registered_model.id}",
 		Grant: []schema.ResourceGrantsGrant{
 			{
 				Privileges: []string{"EXECUTE"},
