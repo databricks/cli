@@ -3,7 +3,7 @@ Debug information about bundles
 Usage:
   databricks bundle debug [command]
 
-Main Commands:
+Available Commands:
   refschema              Dump all relevant fields all bundle resources
   states                 Show available state files
 
