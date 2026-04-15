@@ -3,7 +3,6 @@ package lakebox
 import (
 	"fmt"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +19,7 @@ creator (same auth token) can delete a lakebox.
 Example:
   databricks lakebox delete happy-panda-1234`,
 		Args:    cobra.ExactArgs(1),
-		PreRunE: root.MustWorkspaceClient,
+		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)

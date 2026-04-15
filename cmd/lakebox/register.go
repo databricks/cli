@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
@@ -30,7 +29,7 @@ Run this once per machine.
 
 Example:
   lakebox register`,
-		PreRunE: root.MustWorkspaceClient,
+		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)

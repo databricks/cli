@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -35,13 +34,8 @@ Examples:
   lakebox ssh -- ls -la /home                  # run command on default lakebox
   lakebox ssh happy-panda-1234 -- cat /etc/os-release  # run command on specific lakebox
   lakebox ssh -- -L 8080:localhost:8080        # port forwarding on default lakebox`,
-		// Disable flag parsing after -- so extra args are passed through.
-		DisableFlagParsing: false,
-		// Accept any number of args: [lakebox-id] [-- extra...]
-		Args: cobra.ArbitraryArgs,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return root.MustWorkspaceClient(cmd, args)
-		},
+		Args:    cobra.ArbitraryArgs,
+		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
@@ -61,16 +55,24 @@ Examples:
 			}
 			fmt.Fprintf(cmd.ErrOrStderr(), "Using SSH key: %s\n", keyPath)
 
-			// Parse args: first arg (if not starting with -) is lakebox ID,
-			// everything else is passed through to ssh.
+			// Parse args: everything before -- is the optional lakebox ID,
+			// everything after -- is passed through to ssh.
 			var lakeboxID string
 			var extraArgs []string
 
-			if len(args) > 0 && args[0] != "--" && args[0][0] != '-' {
-				lakeboxID = args[0]
-				extraArgs = args[1:]
+			dashAt := cmd.ArgsLenAtDash()
+			if dashAt == -1 {
+				// No -- found: first arg (if any) is lakebox ID.
+				if len(args) > 0 {
+					lakeboxID = args[0]
+				}
+			} else if dashAt == 0 {
+				// -- is first: no lakebox ID, rest is extra args.
+				extraArgs = args[dashAt:]
 			} else {
-				extraArgs = args
+				// lakebox ID before --, extra args after.
+				lakeboxID = args[0]
+				extraArgs = args[dashAt:]
 			}
 
 			// Determine lakebox ID if not explicit.

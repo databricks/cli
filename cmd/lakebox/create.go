@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +25,7 @@ authorized_keys so you can SSH directly. Otherwise the gateway key is used.
 Example:
   databricks lakebox create
   databricks lakebox create --public-key-file ~/.ssh/id_ed25519.pub`,
-		PreRunE: root.MustWorkspaceClient,
+		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
