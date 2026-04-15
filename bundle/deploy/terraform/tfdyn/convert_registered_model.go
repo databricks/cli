@@ -38,7 +38,7 @@ func (registeredModelConverter) Convert(ctx context.Context, key string, vin dyn
 
 	// Configure grants for this resource.
 	if grants := convertGrantsResource(ctx, vin); grants != nil {
-		grants.Function = fmt.Sprintf("${databricks_registered_model.%s.id}", key)
+		grants.Model = fmt.Sprintf("${databricks_registered_model.%s.id}", key)
 		out.Grants["registered_model_"+key] = grants
 	}
 
