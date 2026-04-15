@@ -9,6 +9,7 @@
 * Added `--limit` flag to all paginated list commands for client-side result capping ([#4984](https://github.com/databricks/cli/pull/4984)).
 
 ### Bundles
+* Fix nil pointer dereference in `WaitForDeploymentToComplete` when app deployment status is nil (denik/random-bugfixes-5)
 
 ### Dependency updates
 
