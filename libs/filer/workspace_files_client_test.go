@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
@@ -130,4 +132,77 @@ func TestWorkspaceFilesClient_wsfsUnmarshal(t *testing.T) {
 	assert.Equal(t, time.UnixMilli(1671032235392), info.ModTime())
 	assert.False(t, info.IsDir())
 	assert.NotNil(t, info.Sys())
+}
+
+func TestWorkspaceFilesClientStatReturnsAPIErrors(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		errorCode  string
+	}{
+		{"forbidden", 403, "PERMISSION_DENIED"},
+		{"internal_error", 500, "INTERNAL_ERROR"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := testserver.New(t)
+
+			server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
+				return testserver.Response{
+					StatusCode: tt.statusCode,
+					Body: map[string]string{
+						"error_code": tt.errorCode,
+						"message":    "test error",
+					},
+				}
+			})
+
+			testserver.AddDefaultHandlers(server)
+
+			client, err := databricks.NewWorkspaceClient(&databricks.Config{
+				Host:  server.URL,
+				Token: "testtoken",
+			})
+			require.NoError(t, err)
+
+			f, err := NewWorkspaceFilesClient(client, "/test")
+			require.NoError(t, err)
+
+			_, err = f.Stat(t.Context(), "file")
+			require.Error(t, err)
+
+			var apiErr *apierr.APIError
+			require.ErrorAs(t, err, &apiErr)
+			assert.Equal(t, tt.statusCode, apiErr.StatusCode)
+		})
+	}
+}
+
+func TestWorkspaceFilesClientStatReturnsNotFoundAsFileDoesNotExist(t *testing.T) {
+	server := testserver.New(t)
+
+	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
+		return testserver.Response{
+			StatusCode: 404,
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    "not found",
+			},
+		}
+	})
+
+	testserver.AddDefaultHandlers(server)
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	f, err := NewWorkspaceFilesClient(client, "/test")
+	require.NoError(t, err)
+
+	_, err = f.Stat(t.Context(), "file")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
