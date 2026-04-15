@@ -1,0 +1,16 @@
+
+=== SPOG account profile should be valid
+>>> [CLI] auth profiles --output json
+{
+  "profiles": [
+    {
+      "name":"spog-account",
+      "host":"[DATABRICKS_URL]",
+      "account_id":"spog-acct-123",
+      "workspace_id":"none",
+      "cloud":"aws",
+      "auth_type":"pat",
+      "valid":true
+    }
+  ]
+}

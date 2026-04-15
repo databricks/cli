@@ -2,6 +2,8 @@ package sync
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -12,7 +14,7 @@ func WriteGitIgnore(ctx context.Context, dir string) {
 	gitignorePath := filepath.Join(dir, ".databricks", ".gitignore")
 	file, err := os.OpenFile(gitignorePath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
 	if err != nil {
-		if os.IsExist(err) {
+		if errors.Is(err, fs.ErrExist) {
 			return
 		}
 		log.Debugf(ctx, "Failed to create %s: %s", gitignorePath, err)

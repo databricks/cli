@@ -3,6 +3,7 @@ package vscode
 import (
 	"encoding/json"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -193,7 +194,7 @@ func TestLoadSettings_NotExists(t *testing.T) {
 
 	_, err := loadSettings(settingsPath)
 	assert.Error(t, err)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestValidateSettings_Complete(t *testing.T) {

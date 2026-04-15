@@ -1,0 +1,2 @@
+trace errcode $CLI bundle validate --var embed=false
+trace errcode $CLI bundle validate --var embed=true

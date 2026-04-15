@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -94,7 +95,7 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 		// Clean up orphaned symlinks and delete state file.
 		cleanOrphanedSymlinks(ctx, baseDir, scope, cwd)
 		stateFile := filepath.Join(baseDir, stateFileName)
-		if err := os.Remove(stateFile); err != nil && !os.IsNotExist(err) {
+		if err := os.Remove(stateFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("failed to remove state file: %w", err)
 		}
 	} else {
@@ -130,7 +131,7 @@ func removeSymlinksFromAgents(ctx context.Context, skillName, canonicalDir, scop
 
 		// Use Lstat to detect symlinks (Stat follows them).
 		fi, err := os.Lstat(destDir)
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
 		if err != nil {
