@@ -7,8 +7,6 @@
 # truth for the maintainer-approval workflow.
 #
 # GitHub team pages:
-#   bundle:          https://github.com/orgs/databricks/teams/cli-maintainers
-#   platform:        https://github.com/orgs/databricks/teams/cli-platform
 #   eng-apps-devex:  https://github.com/orgs/databricks/teams/eng-apps-devex
 
 team:bundle     @andrewnester @anton-107 @denik @janniklasrose @pietern @shreyas-goenka
