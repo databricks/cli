@@ -1,7 +1,0 @@
-bundle:
-  name: metadata-service-test
-
-resources:
-  jobs:
-    test_job:
-      name: test-job
