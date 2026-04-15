@@ -967,11 +967,7 @@ func dynPathToStructPath(p dyn.Path) *structpath.PathNode {
 	var node *structpath.PathNode
 	for _, c := range p {
 		if key := c.Key(); key != "" {
-			if strings.ContainsAny(key, ".[") {
-				node = structpath.NewBracketString(node, key)
-			} else {
-				node = structpath.NewDotString(node, key)
-			}
+			node = structpath.NewStringKey(node, key)
 		} else {
 			node = structpath.NewIndex(node, c.Index())
 		}
