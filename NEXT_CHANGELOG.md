@@ -9,6 +9,7 @@
 * Added `--limit` flag to all paginated list commands for client-side result capping ([#4984](https://github.com/databricks/cli/pull/4984)).
 
 ### Bundles
+* Fix false duplicate source code path error for git-sourced apps (denik/random-bugfixes-2)
 
 ### Dependency updates
 
