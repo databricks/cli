@@ -222,55 +222,71 @@ func TestPaginatedViewNotReady(t *testing.T) {
 	assert.Equal(t, "Loading...", view)
 }
 
-func TestPaginatedMaybeFetchTriggered(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.rows = make([][]string, 15)
-	m.cursor = 10
-	m.loading = false
-	m.exhausted = false
-
-	m, cmd := maybeFetch(m)
-	assert.NotNil(t, cmd)
-	assert.True(t, m.loading, "loading should be true after fetch triggered")
-}
-
-func TestPaginatedMaybeFetchNotTriggeredWhenExhausted(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.rows = make([][]string, 15)
-	m.cursor = 10
-	m.exhausted = true
-
-	_, cmd := maybeFetch(m)
-	assert.Nil(t, cmd)
-}
-
-func TestPaginatedMaybeFetchNotTriggeredWhenLoading(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.rows = make([][]string, 15)
-	m.cursor = 10
-	m.loading = true
-
-	_, cmd := maybeFetch(m)
-	assert.Nil(t, cmd)
-}
-
-func TestPaginatedMaybeFetchNotTriggeredWhenSearching(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.rows = make([][]string, 15)
-	m.cursor = 10
-	m.searching = true
-
-	_, cmd := maybeFetch(m)
-	assert.Nil(t, cmd)
-}
-
-func TestPaginatedMaybeFetchNotTriggeredWhenFarFromBottom(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.rows = make([][]string, 50)
-	m.cursor = 0
-
-	_, cmd := maybeFetch(m)
-	assert.Nil(t, cmd)
+func TestMaybeFetch(t *testing.T) {
+	tests := []struct {
+		name      string
+		setup     func(*paginatedModel)
+		wantFetch bool
+	}{
+		{
+			name: "triggers when near bottom and not loading",
+			setup: func(m *paginatedModel) {
+				m.rows = make([][]string, 15)
+				m.cursor = 10
+				m.loading = false
+				m.exhausted = false
+			},
+			wantFetch: true,
+		},
+		{
+			name: "does not trigger when exhausted",
+			setup: func(m *paginatedModel) {
+				m.rows = make([][]string, 15)
+				m.cursor = 10
+				m.exhausted = true
+			},
+			wantFetch: false,
+		},
+		{
+			name: "does not trigger when loading",
+			setup: func(m *paginatedModel) {
+				m.rows = make([][]string, 15)
+				m.cursor = 10
+				m.loading = true
+			},
+			wantFetch: false,
+		},
+		{
+			name: "does not trigger when searching",
+			setup: func(m *paginatedModel) {
+				m.rows = make([][]string, 15)
+				m.cursor = 10
+				m.searching = true
+			},
+			wantFetch: false,
+		},
+		{
+			name: "does not trigger when far from bottom",
+			setup: func(m *paginatedModel) {
+				m.rows = make([][]string, 50)
+				m.cursor = 0
+			},
+			wantFetch: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t, nil, 0)
+			tt.setup(&m)
+			m, cmd := maybeFetch(m)
+			if tt.wantFetch {
+				assert.NotNil(t, cmd)
+				assert.True(t, m.loading, "loading should be true after fetch triggered")
+			} else {
+				assert.Nil(t, cmd)
+			}
+		})
+	}
 }
 
 func TestPaginatedSearchEnterAndRestore(t *testing.T) {

@@ -268,7 +268,7 @@ type listingInterface interface {
 func Render(ctx context.Context, v any) error {
 	c := fromContext(ctx)
 	if _, ok := v.(listingInterface); ok {
-		panic("use RenderIterator instead")
+		return errors.New("cannot render listing.Iterator directly; use RenderIterator instead")
 	}
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
@@ -307,7 +307,7 @@ func RenderIterator[T any](ctx context.Context, cmd *cobra.Command, i listing.It
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
 	c := fromContext(ctx)
 	if _, ok := v.(listingInterface); ok {
-		panic("use RenderIteratorWithTemplate instead")
+		return errors.New("cannot render listing.Iterator directly; use RenderIteratorWithTemplate instead")
 	}
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, headerTemplate, template)
 }
