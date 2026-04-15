@@ -271,7 +271,7 @@ func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
 	c := fromContext(ctx)
 	if _, ok := v.(listingInterface); ok {
-		panic("use RenderIteratorWithTemplate instead")
+		panic("use RenderIterator instead")
 	}
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, headerTemplate, template)
 }
