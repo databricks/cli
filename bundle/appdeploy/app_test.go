@@ -1,40 +1,66 @@
-package appdeploy
+package appdeploy_test
 
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/appdeploy"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	sdkapps "github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWaitForDeploymentToCompleteNilStatus(t *testing.T) {
-	ctx := t.Context()
+	server := testserver.New(t)
 
-	// ActiveDeployment with nil Status should not panic.
+	getDeploymentCalled := 0
+	server.Handle("GET", "/api/2.0/apps/{appName}/deployments/{deploymentId}", func(req testserver.Request) any {
+		getDeploymentCalled++
+		return sdkapps.AppDeployment{
+			DeploymentId: req.Vars["deploymentId"],
+			Status: &sdkapps.AppDeploymentStatus{
+				State: sdkapps.AppDeploymentStateSucceeded,
+			},
+		}
+	})
+
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	ctx := cmdio.MockDiscard(t.Context())
+
 	app := &sdkapps.App{
+		Name: "test-app",
 		ActiveDeployment: &sdkapps.AppDeployment{
-			Status: nil,
+			DeploymentId: "dep-1",
+			Status:       nil,
 		},
 		PendingDeployment: &sdkapps.AppDeployment{
-			Status: nil,
+			DeploymentId: "dep-2",
+			Status:       nil,
 		},
 	}
-	err := WaitForDeploymentToComplete(ctx, nil, app)
-	assert.NoError(t, err)
+	err = appdeploy.WaitForDeploymentToComplete(ctx, client, app)
+	require.NoError(t, err)
+	assert.Equal(t, 2, getDeploymentCalled)
 }
 
 func TestWaitForDeploymentToCompleteNilDeployments(t *testing.T) {
-	ctx := t.Context()
+	ctx := cmdio.MockDiscard(t.Context())
 
 	app := &sdkapps.App{}
-	err := WaitForDeploymentToComplete(ctx, nil, app)
+	err := appdeploy.WaitForDeploymentToComplete(ctx, nil, app)
 	assert.NoError(t, err)
 }
 
 func TestWaitForDeploymentToCompleteNonInProgress(t *testing.T) {
-	ctx := t.Context()
+	ctx := cmdio.MockDiscard(t.Context())
 
-	// Status with a non-InProgress state should not wait.
 	app := &sdkapps.App{
 		ActiveDeployment: &sdkapps.AppDeployment{
 			Status: &sdkapps.AppDeploymentStatus{
@@ -47,6 +73,6 @@ func TestWaitForDeploymentToCompleteNonInProgress(t *testing.T) {
 			},
 		},
 	}
-	err := WaitForDeploymentToComplete(ctx, nil, app)
+	err := appdeploy.WaitForDeploymentToComplete(ctx, nil, app)
 	assert.NoError(t, err)
 }
