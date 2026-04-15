@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"text/tabwriter"
 	"time"
 	"unicode/utf8"
 
@@ -248,22 +247,10 @@ func (m *paginatedModel) computeWidths() {
 }
 
 func (m paginatedModel) renderContent() string {
-	var buf strings.Builder
-	tw := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
-
-	// Header
-	fmt.Fprintln(tw, strings.Join(m.headers, "\t"))
-
-	// Separator
-	seps := make([]string, len(m.headers))
-	for i, w := range m.widths {
-		seps[i] = strings.Repeat("─", w)
-	}
-	fmt.Fprintln(tw, strings.Join(seps, "\t"))
-
-	// Data rows.
-	// MaxWidth truncation is destructive; horizontal scroll won't recover hidden text.
-	for _, row := range m.rows {
+	// Pre-truncate rows for display. MaxWidth truncation is destructive;
+	// horizontal scroll won't recover hidden text.
+	truncated := make([][]string, len(m.rows))
+	for ri, row := range m.rows {
 		vals := make([]string, len(m.headers))
 		for i := range m.headers {
 			if i < len(row) {
@@ -283,16 +270,12 @@ func (m paginatedModel) renderContent() string {
 				vals[i] = v
 			}
 		}
-		fmt.Fprintln(tw, strings.Join(vals, "\t"))
-	}
-	tw.Flush()
-
-	lines := strings.Split(buf.String(), "\n")
-	if len(lines) > 0 && lines[len(lines)-1] == "" {
-		lines = lines[:len(lines)-1]
+		truncated[ri] = vals
 	}
 
-	// Apply cursor highlighting
+	lines := renderTableToLines(m.headers, m.widths, truncated)
+
+	// Apply cursor highlighting.
 	result := make([]string, len(lines))
 	for i, line := range lines {
 		if i == m.cursor+headerLines {

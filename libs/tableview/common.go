@@ -53,17 +53,17 @@ func computeColumnWidths(headers []string, rows [][]string, maxWidths []int) []i
 	return widths
 }
 
-// renderTableLines produces aligned table text as individual lines.
-func renderTableLines(columns []string, rows [][]string) []string {
+// renderTableToLines renders headers, a separator, and data rows through tabwriter,
+// returning the output split into lines. Widths are used for the separator only.
+func renderTableToLines(headers []string, widths []int, rows [][]string) []string {
 	var buf strings.Builder
 	tw := tabwriter.NewWriter(&buf, 0, 4, 2, ' ', 0)
 
 	// Header.
-	fmt.Fprintln(tw, strings.Join(columns, "\t"))
+	fmt.Fprintln(tw, strings.Join(headers, "\t"))
 
 	// Separator.
-	widths := computeColumnWidths(columns, rows, nil)
-	seps := make([]string, len(columns))
+	seps := make([]string, len(headers))
 	for i, w := range widths {
 		seps[i] = strings.Repeat("─", w)
 	}
@@ -71,8 +71,8 @@ func renderTableLines(columns []string, rows [][]string) []string {
 
 	// Data rows.
 	for _, row := range rows {
-		vals := make([]string, len(columns))
-		for i := range columns {
+		vals := make([]string, len(headers))
+		for i := range headers {
 			if i < len(row) {
 				vals[i] = row[i]
 			}
@@ -88,6 +88,12 @@ func renderTableLines(columns []string, rows [][]string) []string {
 		lines = lines[:len(lines)-1]
 	}
 	return lines
+}
+
+// renderTableLines produces aligned table text as individual lines.
+func renderTableLines(columns []string, rows [][]string) []string {
+	widths := computeColumnWidths(columns, rows, nil)
+	return renderTableToLines(columns, widths, rows)
 }
 
 // findMatches returns line indices containing the query (case-insensitive).
@@ -158,32 +164,17 @@ func scrollViewportToCursor(vp *viewport.Model, cursor int) {
 func RenderStaticTable(w io.Writer, columns []string, rows [][]string) error {
 	const maxColumnWidth = 40
 
-	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-	// Header
-	fmt.Fprintln(tw, strings.Join(columns, "\t"))
-	// Separator
 	caps := make([]int, len(columns))
 	for i := range caps {
 		caps[i] = maxColumnWidth
 	}
 	widths := computeColumnWidths(columns, rows, caps)
-	seps := make([]string, len(columns))
-	for i, w := range widths {
-		seps[i] = strings.Repeat("─", w)
-	}
-	fmt.Fprintln(tw, strings.Join(seps, "\t"))
-	// Data rows (no cell truncation; truncation is a TUI display concern)
-	for _, row := range rows {
-		vals := make([]string, len(columns))
-		for i := range columns {
-			if i < len(row) {
-				vals[i] = row[i]
-			}
+	lines := renderTableToLines(columns, widths, rows)
+
+	for _, line := range lines {
+		if _, err := fmt.Fprintln(w, line); err != nil {
+			return err
 		}
-		fmt.Fprintln(tw, strings.Join(vals, "\t"))
-	}
-	if err := tw.Flush(); err != nil {
-		return err
 	}
 	_, err := fmt.Fprintf(w, "\n%d rows\n", len(rows))
 	return err
