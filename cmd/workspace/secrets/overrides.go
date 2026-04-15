@@ -14,6 +14,8 @@ func cmdOverride(cmd *cobra.Command) {
 }
 
 func listScopesOverride(listScopesCmd *cobra.Command) {
+	// Template is the text-mode fallback for non-interactive/piped output.
+	// TableConfig drives the interactive TUI when the terminal supports it.
 	listScopesCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Scope"}}	{{header "Backend Type"}}`)
 	listScopesCmd.Annotations["template"] = cmdio.Heredoc(`

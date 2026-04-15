@@ -258,7 +258,7 @@ func newListExternalLineageRelationships() *cobra.Command {
 		}
 
 		response := w.ExternalLineage.ListExternalLineageRelationships(ctx, listExternalLineageRelationshipsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

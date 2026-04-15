@@ -338,7 +338,7 @@ func newListOnlineStores() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.FeatureStore.ListOnlineStores(ctx, listOnlineStoresReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

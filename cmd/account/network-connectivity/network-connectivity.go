@@ -510,7 +510,7 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		response := a.NetworkConnectivity.ListNetworkConnectivityConfigurations(ctx, listNetworkConnectivityConfigurationsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -565,7 +565,7 @@ func newListPrivateEndpointRules() *cobra.Command {
 		listPrivateEndpointRulesReq.NetworkConnectivityConfigId = args[0]
 
 		response := a.NetworkConnectivity.ListPrivateEndpointRules(ctx, listPrivateEndpointRulesReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

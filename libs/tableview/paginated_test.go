@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
 	"testing"
 
@@ -56,24 +55,6 @@ func TestPaginatedModelInit(t *testing.T) {
 	m := newTestModel(t, [][]string{{"alice", "30"}}, 0)
 	cmd := m.Init()
 	require.NotNil(t, cmd)
-}
-
-func TestNewPaginatedProgramSetsLoadingTrue(t *testing.T) {
-	cfg := newTestConfig()
-	iter := &stringRowIterator{rows: [][]string{{"alice", "30"}}}
-	p := NewPaginatedProgram(t.Context(), io.Discard, cfg, iter, 0)
-	require.NotNil(t, p)
-
-	// The model inside the program isn't exported, so verify the invariant
-	// indirectly: construct the same model and confirm loading is set.
-	m := paginatedModel{
-		cfg:          cfg,
-		headers:      []string{"Name", "Age"},
-		rowIter:      iter,
-		makeFetchCmd: newFetchCmdFunc(t.Context()),
-		loading:      true,
-	}
-	assert.True(t, m.loading)
 }
 
 // TestKeyBeforeFirstFetchDoesNotDoubleFetch verifies that a keypress arriving

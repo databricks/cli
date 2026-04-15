@@ -271,7 +271,7 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ProviderProviders.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

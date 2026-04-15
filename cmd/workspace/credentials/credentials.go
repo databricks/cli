@@ -395,7 +395,7 @@ func newListCredentials() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Credentials.ListCredentials(ctx, listCredentialsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

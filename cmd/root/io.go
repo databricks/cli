@@ -49,7 +49,6 @@ func (f *outputFlag) initializeIO(ctx context.Context, cmd *cobra.Command) (cont
 
 	cmdIO := cmdio.NewIO(ctx, f.output, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), headerTemplate, template)
 	ctx = cmdio.InContext(ctx, cmdIO)
-	ctx = cmdio.WithCommand(ctx, cmd)
 	cmd.SetContext(ctx)
 	return ctx, nil
 }

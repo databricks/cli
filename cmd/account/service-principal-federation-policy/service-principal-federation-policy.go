@@ -341,7 +341,7 @@ func newList() *cobra.Command {
 		}
 
 		response := a.ServicePrincipalFederationPolicy.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

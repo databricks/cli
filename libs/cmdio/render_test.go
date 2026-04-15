@@ -176,7 +176,7 @@ func TestRender(t *testing.T) {
 			ctx = InContext(ctx, cmdIO)
 			var err error
 			if vv, ok := c.v.(listing.Iterator[*provisioning.Workspace]); ok {
-				err = RenderIterator(ctx, vv)
+				err = RenderIterator(ctx, nil, vv)
 			} else {
 				err = Render(ctx, c.v)
 			}

@@ -690,7 +690,7 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Lakeview.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -744,7 +744,7 @@ func newListSchedules() *cobra.Command {
 		listSchedulesReq.DashboardId = args[0]
 
 		response := w.Lakeview.ListSchedules(ctx, listSchedulesReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -800,7 +800,7 @@ func newListSubscriptions() *cobra.Command {
 		listSubscriptionsReq.ScheduleId = args[1]
 
 		response := w.Lakeview.ListSubscriptions(ctx, listSubscriptionsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -1668,7 +1668,7 @@ func newListBranches() *cobra.Command {
 		listBranchesReq.Parent = args[0]
 
 		response := w.Postgres.ListBranches(ctx, listBranchesReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1728,7 +1728,7 @@ func newListDatabases() *cobra.Command {
 		listDatabasesReq.Parent = args[0]
 
 		response := w.Postgres.ListDatabases(ctx, listDatabasesReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1785,7 +1785,7 @@ func newListEndpoints() *cobra.Command {
 		listEndpointsReq.Parent = args[0]
 
 		response := w.Postgres.ListEndpoints(ctx, listEndpointsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1837,7 +1837,7 @@ func newListProjects() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Postgres.ListProjects(ctx, listProjectsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1894,7 +1894,7 @@ func newListRoles() *cobra.Command {
 		listRolesReq.Parent = args[0]
 
 		response := w.Postgres.ListRoles(ctx, listRolesReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

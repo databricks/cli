@@ -729,7 +729,7 @@ func newListMonitor() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.DataQuality.ListMonitor(ctx, listMonitorReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -814,7 +814,7 @@ func newListRefresh() *cobra.Command {
 		listRefreshReq.ObjectId = args[1]
 
 		response := w.DataQuality.ListRefresh(ctx, listRefreshReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -38,7 +38,7 @@ func newList() *cobra.Command {
 
 		//nolint:staticcheck // this API is deprecated but we still need to expose this in the CLI.
 		response := w.Shares.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

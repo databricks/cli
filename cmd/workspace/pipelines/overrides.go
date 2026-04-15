@@ -16,6 +16,8 @@ import (
 )
 
 func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipelinesRequest) {
+	// Template is the text-mode fallback for non-interactive/piped output.
+	// TableConfig drives the interactive TUI when the terminal supports it.
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{green "%s" .PipelineId}}	{{.Name}}	{{blue "%s" .State}}
 	{{end}}`)

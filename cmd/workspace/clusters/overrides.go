@@ -12,6 +12,8 @@ import (
 // Below we add overrides for filter flags for cluster list command to allow for custom filtering
 // Auto generating such flags is not yet supported by the CLI generator
 func listOverride(listCmd *cobra.Command, listReq *compute.ListClustersRequest) {
+	// Template is the text-mode fallback for non-interactive/piped output.
+	// TableConfig drives the interactive TUI when the terminal supports it.
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "ID"}}	{{header "Name"}}	{{header "State"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

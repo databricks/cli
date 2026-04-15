@@ -11,6 +11,8 @@ import (
 )
 
 func listOverride(listCmd *cobra.Command, _ *apps.ListAppsRequest) {
+	// Template is the text-mode fallback for non-interactive/piped output.
+	// TableConfig drives the interactive TUI when the terminal supports it.
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Name"}}	{{header "Url"}}	{{header "ComputeStatus"}}	{{header "DeploymentStatus"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

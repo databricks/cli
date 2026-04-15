@@ -150,7 +150,7 @@ func newListQuotas() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ResourceQuotas.ListQuotas(ctx, listQuotasReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

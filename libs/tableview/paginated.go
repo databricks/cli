@@ -319,6 +319,7 @@ func (m paginatedModel) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if m.cfg.Search != nil {
 			m.searching = true
 			m.searchInput = ""
+			// Shrink viewport by one row to make room for the search input bar.
 			m.viewport.Height--
 			return m, nil
 		}
@@ -441,12 +442,16 @@ func (m paginatedModel) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "enter":
 		m.searching = false
+		// Restore viewport height now that search bar is hidden.
 		m.viewport.Height++
 		// Execute final search immediately (bypass debounce).
 		return m.executeSearch(m.searchInput)
-	case "esc", "ctrl+c":
+	case "ctrl+c":
+		return m, tea.Quit
+	case "esc":
 		m.searching = false
 		m.searchInput = ""
+		// Restore viewport height now that search bar is hidden.
 		m.viewport.Height++
 		m.restorePreSearchState()
 		return m, nil

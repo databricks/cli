@@ -371,7 +371,7 @@ func newListPolicies() *cobra.Command {
 		listPoliciesReq.OnSecurableFullname = args[1]
 
 		response := w.Policies.ListPolicies(ctx, listPoliciesReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

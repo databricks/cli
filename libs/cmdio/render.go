@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/fatih/color"
 	"github.com/nwidger/jsoncolor"
+	"github.com/spf13/cobra"
 )
 
 // Heredoc is the equivalent of compute.TrimLeadingWhitespace
@@ -252,6 +253,14 @@ func renderWithTemplate(ctx context.Context, r any, outputFormat flags.Output, w
 	}
 }
 
+type maxItemsKeyType struct{}
+
+// GetMaxItems retrieves the max items limit from context (0 = unlimited).
+func GetMaxItems(ctx context.Context) int {
+	n, _ := ctx.Value(maxItemsKeyType{}).(int)
+	return n
+}
+
 type listingInterface interface {
 	HasNext(context.Context) bool
 }
@@ -264,13 +273,11 @@ func Render(ctx context.Context, v any) error {
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
-func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
+func RenderIterator[T any](ctx context.Context, cmd *cobra.Command, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
 
-	// Only launch TUI when an explicit TableConfig is registered.
-	// AutoDetect is available but opt-in from the override layer.
+	// Only launch TUI when an explicit TableConfig is registered via overrides.
 	if c.outputFormat == flags.OutputText && c.capabilities.SupportsTUI() {
-		cmd := CommandFromContext(ctx)
 		if cmd != nil {
 			if cfg := tableview.GetConfig(cmd); cfg != nil {
 				iter := tableview.WrapIterator(i, cfg.Columns)

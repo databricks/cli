@@ -8,6 +8,8 @@ import (
 )
 
 func listOverride(listCmd *cobra.Command, _ *compute.ListClusterPoliciesRequest) {
+	// Template is the text-mode fallback for non-interactive/piped output.
+	// TableConfig drives the interactive TUI when the terminal supports it.
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{.PolicyId | green}}	{{.Name}}
 	{{end}}`)

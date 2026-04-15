@@ -80,7 +80,7 @@ func newAllClusterStatuses() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		response := w.Libraries.AllClusterStatuses(ctx)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -139,7 +139,7 @@ func newClusterStatus() *cobra.Command {
 		clusterStatusReq.ClusterId = args[0]
 
 		response := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

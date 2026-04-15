@@ -197,7 +197,7 @@ func newListAccountSettingsMetadata() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		response := a.SettingsV2.ListAccountSettingsMetadata(ctx, listAccountSettingsMetadataReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -260,7 +260,7 @@ func newListAccountUserPreferencesMetadata() *cobra.Command {
 		listAccountUserPreferencesMetadataReq.UserId = args[0]
 
 		response := a.SettingsV2.ListAccountUserPreferencesMetadata(ctx, listAccountUserPreferencesMetadataReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -77,7 +77,7 @@ func TestRenderStaticTable(t *testing.T) {
 	assert.Contains(t, output, "name")
 	assert.Contains(t, output, "alice")
 	assert.Contains(t, output, "bob")
-	assert.Contains(t, output, "---")
+	assert.Contains(t, output, "───")
 	assert.Contains(t, output, "2 rows")
 }
 

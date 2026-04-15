@@ -1102,7 +1102,7 @@ func newGetLatestVersions() *cobra.Command {
 		}
 
 		response := w.ModelRegistry.GetLatestVersions(ctx, getLatestVersionsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1441,7 +1441,7 @@ func newListModels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.ListModels(ctx, listModelsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1496,7 +1496,7 @@ func newListTransitionRequests() *cobra.Command {
 		listTransitionRequestsReq.Version = args[1]
 
 		response := w.ModelRegistry.ListTransitionRequests(ctx, listTransitionRequestsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1549,7 +1549,7 @@ func newListWebhooks() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.ListWebhooks(ctx, listWebhooksReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1782,7 +1782,7 @@ func newSearchModelVersions() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.SearchModelVersions(ctx, searchModelVersionsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1835,7 +1835,7 @@ func newSearchModels() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.SearchModels(ctx, searchModelsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

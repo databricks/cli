@@ -153,7 +153,7 @@ func RenderStaticTable(w io.Writer, columns []string, rows [][]string) error {
 				width = max(width, min(utf8.RuneCountInString(row[i]), maxColumnWidth))
 			}
 		}
-		seps[i] = strings.Repeat("-", width)
+		seps[i] = strings.Repeat("─", width)
 	}
 	fmt.Fprintln(tw, strings.Join(seps, "\t"))
 	// Data rows (no cell truncation; truncation is a TUI display concern)

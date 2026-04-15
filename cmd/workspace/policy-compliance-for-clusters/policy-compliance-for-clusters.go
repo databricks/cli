@@ -242,7 +242,7 @@ func newListCompliance() *cobra.Command {
 		listComplianceReq.PolicyId = args[0]
 
 		response := w.PolicyComplianceForClusters.ListCompliance(ctx, listComplianceReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

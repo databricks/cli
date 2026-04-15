@@ -409,7 +409,7 @@ func newList() *cobra.Command {
 		listReq.CleanRoomName = args[0]
 
 		response := w.CleanRoomAssets.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.

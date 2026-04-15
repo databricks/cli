@@ -173,7 +173,9 @@ func (m model) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			scrollViewportToCursor(&m.viewport, m.cursor)
 		}
 		return m, nil
-	case "esc", "ctrl+c":
+	case "ctrl+c":
+		return m, tea.Quit
+	case "esc":
 		m.searching = false
 		m.searchInput = ""
 		m.viewport.Height++

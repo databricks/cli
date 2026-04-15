@@ -207,7 +207,7 @@ func newList() *cobra.Command {
 		listReq.ExchangeId = args[0]
 
 		response := w.ProviderExchangeFilters.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIterator(ctx, cmd, response)
 	}
 
 	// Disable completions since they are not applicable.
