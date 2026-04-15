@@ -1,0 +1,9 @@
+# This tests that non-404 API errors from workspace/get-status are properly
+# propagated to the user. Before the fix in WorkspaceFilesClient.Stat()
+# (commit 58849af6b), Stat() silently swallowed non-404 API errors, returning
+# (nil, nil). This caused a nil pointer panic in filerFS.Open() when it tried
+# to call stat.IsDir() on the nil result. After the fix, the 403 error is
+# properly returned and the user sees a clear error message.
+
+mkdir -p "$TEST_TMP_DIR/export"
+trace errcode $CLI workspace export-dir /test-dir "$TEST_TMP_DIR/export"
