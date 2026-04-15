@@ -24,6 +24,7 @@ TEMPLATE_PATH optionally specifies which template to use. It can be one of the f
 
 Examples:
   databricks bundle init                   # Choose from built-in templates
+  databricks bundle init default-bare      # Bare skeleton for importing existing resources
   databricks bundle init default-python    # Python jobs and notebooks
   databricks bundle init dbt-sql           # dbt + SQL warehouse project
   databricks bundle init --output-dir ./my-project
@@ -42,8 +43,8 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 	cmd.Flags().StringVar(&configFile, "config-file", "", "JSON file containing key value pairs of input parameters required for template initialization.")
 	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory path within a Git repository containing the template.")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
-	cmd.Flags().StringVar(&branch, "tag", "", "Git tag to use for template initialization")
-	cmd.Flags().StringVar(&tag, "branch", "", "Git branch to use for template initialization")
+	cmd.Flags().StringVar(&tag, "tag", "", "Git tag to use for template initialization")
+	cmd.Flags().StringVar(&branch, "branch", "", "Git branch to use for template initialization")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

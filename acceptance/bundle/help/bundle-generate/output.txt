@@ -6,6 +6,8 @@ Common patterns:
   databricks bundle generate job --existing-job-id 123 --key my_job
   databricks bundle generate pipeline --existing-pipeline-id abc123 --key etl_pipeline
   databricks bundle generate dashboard --existing-path /my-dashboard --key sales_dash
+  databricks bundle generate cluster --existing-cluster-id 1234-567890-abcd123 --bind
+  databricks bundle generate catalog --existing-catalog-name main --init-bare
   databricks bundle generate dashboard --resource my_dashboard --watch --force  # Keep local copy in sync. Useful for development.
   databricks bundle generate dashboard --resource my_dashboard --force # Do a one-time sync.
 
@@ -22,19 +24,39 @@ Migration workflows:
 
 Use --key to specify the resource name in your bundle configuration.
 Use --bind to automatically bind the generated resource to the existing workspace resource.
+Use --init-bare to initialize a bare bundle skeleton when no databricks.yml exists.
 
 Usage:
   databricks bundle generate [command]
 
 Available Commands:
-  alert       Generate configuration for an alert
-  app         Generate bundle configuration for a Databricks app
-  dashboard   Generate configuration for a dashboard
-  job         Generate bundle configuration for a job
-  pipeline    Generate bundle configuration for a pipeline
+  alert                  Generate configuration for an alert
+  app                    Generate bundle configuration for a Databricks app
+  catalog                Generate bundle configuration for a catalog
+  cluster                Generate bundle configuration for a cluster
+  dashboard              Generate configuration for a dashboard
+  database-catalog       Generate bundle configuration for a database catalog
+  database-instance      Generate bundle configuration for a database instance
+  experiment             Generate bundle configuration for an experiment
+  external-location      Generate bundle configuration for an external location
+  job                    Generate bundle configuration for a job
+  model                  Generate bundle configuration for a model
+  model-serving-endpoint Generate bundle configuration for a model serving endpoint
+  pipeline               Generate bundle configuration for a pipeline
+  postgres-branch        Generate bundle configuration for a postgres branch
+  postgres-endpoint      Generate bundle configuration for a postgres endpoint
+  postgres-project       Generate bundle configuration for a postgres project
+  quality-monitor        Generate bundle configuration for a quality monitor
+  registered-model       Generate bundle configuration for a registered model
+  schema                 Generate bundle configuration for a schema
+  secret-scope           Generate bundle configuration for a secret scope
+  sql-warehouse          Generate bundle configuration for a SQL warehouse
+  synced-database-table  Generate bundle configuration for a synced database table
+  volume                 Generate bundle configuration for a volume
 
 Flags:
   -h, --help         help for generate
+      --init-bare    initialize a bare bundle skeleton if no databricks.yml is found
       --key string   resource key to use for the generated configuration
 
 Global Flags:

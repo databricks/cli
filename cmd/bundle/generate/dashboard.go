@@ -418,11 +418,18 @@ func (d *dashboard) runForExisting(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
-	ctx := logdiag.InitContext(cmd.Context())
-	cmd.SetContext(ctx)
+	ctx := initGenerateContext(cmd)
+
+	env, err := ensureGenerateBundle(cmd)
+	if err != nil {
+		return err
+	}
+	if !env.hadExistingBundle && (d.bind || d.resource != "" || d.watch) {
+		return errors.New("--bind, --resource, and --watch require an existing bundle. Re-run this command from a bundle directory or omit those flags")
+	}
 
 	b := root.MustConfigureBundle(cmd)
-	if b == nil || logdiag.HasError(ctx) {
+	if b == nil || logdiag.HasError(cmd.Context()) {
 		return root.ErrAlreadyPrinted
 	}
 
@@ -465,8 +472,9 @@ func dashboardResourceCompletion(cmd *cobra.Command, args []string, toComplete s
 
 func NewGenerateDashboardCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "dashboard",
-		Short: "Generate configuration for a dashboard",
+		Use:     "dashboard",
+		Short:   "Generate configuration for a dashboard",
+		PreRunE: root.MustWorkspaceClient,
 		Long: `Generate bundle configuration for an existing Databricks dashboard.
 
 This command downloads an existing AI/BI dashboard and creates bundle files

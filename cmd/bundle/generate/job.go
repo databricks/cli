@@ -29,8 +29,9 @@ func NewGenerateJobCommand() *cobra.Command {
 	var bind bool
 
 	cmd := &cobra.Command{
-		Use:   "job",
-		Short: "Generate bundle configuration for a job",
+		Use:     "job",
+		Short:   "Generate bundle configuration for a job",
+		PreRunE: root.MustWorkspaceClient,
 		Long: `Generate bundle configuration for an existing Databricks job.
 
 This command downloads an existing job's configuration and creates bundle files
@@ -66,11 +67,18 @@ After generation, you can deploy this job to other targets using:
 	cmd.Flags().MarkHidden("bind")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
+		ctx := initGenerateContext(cmd)
+
+		env, err := ensureGenerateBundle(cmd)
+		if err != nil {
+			return err
+		}
+		if bind && !env.hadExistingBundle {
+			return errors.New("--bind requires an existing bundle. Re-run this command from a bundle directory or omit --bind")
+		}
 
 		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(ctx) {
+		if b == nil || logdiag.HasError(cmd.Context()) {
 			return root.ErrAlreadyPrinted
 		}
 

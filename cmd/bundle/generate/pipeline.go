@@ -30,6 +30,7 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pipeline",
 		Short: "Generate bundle configuration for a pipeline",
+		PreRunE: root.MustWorkspaceClient,
 		Long: `Generate bundle configuration for an existing pipeline.
 
 This command downloads an existing pipeline's configuration and any associated
@@ -65,11 +66,18 @@ like catalogs, schemas, and compute configurations per target.`,
 	cmd.Flags().MarkHidden("bind")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
+		ctx := initGenerateContext(cmd)
+
+		env, err := ensureGenerateBundle(cmd)
+		if err != nil {
+			return err
+		}
+		if bind && !env.hadExistingBundle {
+			return errors.New("--bind requires an existing bundle. Re-run this command from a bundle directory or omit --bind")
+		}
 
 		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(ctx) {
+		if b == nil || logdiag.HasError(cmd.Context()) {
 			return root.ErrAlreadyPrinted
 		}
 

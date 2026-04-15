@@ -1,0 +1,35 @@
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+Response.Body = '''
+{
+    "job_id": 11223344,
+    "settings": {
+        "name": "gitjob",
+        "tasks": [
+            {
+                "task_key": "test_task",
+                "notebook_task": {
+                    "notebook_path": "/Workspace/Users/tester@databricks.com/outnotebook"
+                }
+            }
+        ]
+    }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/get-status"
+Response.Body = '''
+{
+    "path": "/Workspace/Users/tester@databricks.com/outnotebook",
+    "object_type": "NOTEBOOK",
+    "language": "PYTHON",
+    "repos_export_format": "SOURCE"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/export"
+Response.Body = '''
+print("Hello, World!")
+'''

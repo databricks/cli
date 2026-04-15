@@ -1,0 +1,22 @@
+{
+    "welcome_message": "Welcome to the bare Databricks Asset Bundle template!\n\nThis template creates the smallest bundle skeleton for importing or copying existing resources.\nYou can add more files and targets later as needed.\n\nYour workspace at {{workspace_host}} is used for initialization.",
+    "properties": {
+        "template_name": {
+            "//": "This property is always set to 'default-bare'",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "default-bare",
+            "description": "Template name for documentation",
+            "order": 0
+        },
+        "project_name": {
+            "type": "string",
+            "default": "my_bundle",
+            "description": "Bundle name",
+            "order": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
+        }
+    },
+    "success_message": "\n✨ Your bare bundle has been created.\n\nAdd generated resources under `resources/` and supporting code under `src/`."
+}

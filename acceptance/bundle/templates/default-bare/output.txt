@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle init default-bare --config-file ./input.json --output-dir output
+Welcome to the bare Databricks Asset Bundle template!
+
+This template creates the smallest bundle skeleton for importing or copying existing resources.
+You can add more files and targets later as needed.
+
+Your workspace at [DATABRICKS_URL] is used for initialization.
+
+✨ Your bare bundle has been created.
+
+Add generated resources under `resources/` and supporting code under `src/`.
+
+>>> [CLI] bundle validate -t dev
+Name: my_default_bare
+Target: dev
+Workspace:
+  Host: [DATABRICKS_URL]
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_default_bare/dev
+
+Validation OK!

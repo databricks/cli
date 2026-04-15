@@ -1,0 +1,13 @@
+$CLI bundle generate job --existing-job-id 1234 --key out --force --init-bare
+
+[ -f "databricks.yml" ] || exit 1
+[ -f "resources/out.job.yml" ] || exit 1
+[ -f "src/outnotebook.py" ] || exit 1
+
+mv resources/out.job.yml out.job.yml
+mv src/outnotebook.py outnotebook.py
+
+mv .gitignore out.gitignore
+rm README.md
+rm -r resources src
+rm -rf .databricks

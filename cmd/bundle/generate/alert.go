@@ -30,8 +30,9 @@ func NewGenerateAlertCommand() *cobra.Command {
 	var force bool
 
 	cmd := &cobra.Command{
-		Use:   "alert",
-		Short: "Generate configuration for an alert",
+		Use:     "alert",
+		Short:   "Generate configuration for an alert",
+		PreRunE: root.MustWorkspaceClient,
 		Long: `Generate bundle configuration for an existing Databricks alert.
 
 This command downloads an existing SQL alert and creates bundle files
@@ -67,11 +68,15 @@ After generation, you can deploy this alert to other targets using:
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
+		ctx := initGenerateContext(cmd)
+
+		_, err := ensureGenerateBundle(cmd)
+		if err != nil {
+			return err
+		}
 
 		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(ctx) {
+		if b == nil || logdiag.HasError(cmd.Context()) {
 			return root.ErrAlreadyPrinted
 		}
 

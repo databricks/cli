@@ -8,7 +8,8 @@ import (
 )
 
 func TestTemplateHelpDescriptions(t *testing.T) {
-	expected := `- default-python: The default Python template for Notebooks and Lakeflow
+	expected := `- default-bare: The bare template for importing existing resources
+- default-python: The default Python template for Notebooks and Lakeflow
 - default-sql: The default SQL template for .sql files that run with Databricks SQL
 - default-minimal: The minimal template, for advanced users
 - default-scala: The default Scala template for JAR jobs
@@ -20,6 +21,7 @@ func TestTemplateHelpDescriptions(t *testing.T) {
 
 func TestTemplateOptions(t *testing.T) {
 	expected := []cmdio.Tuple{
+		{Name: "default-bare", Id: "The bare template for importing existing resources"},
 		{Name: "default-python", Id: "The default Python template for Notebooks and Lakeflow"},
 		{Name: "default-sql", Id: "The default SQL template for .sql files that run with Databricks SQL"},
 		{Name: "default-minimal", Id: "The minimal template, for advanced users"},
@@ -56,6 +58,7 @@ func TestTemplateTelemetryIsCapturedForAllDefaultTemplates(t *testing.T) {
 
 func TestTemplateGetDatabricksTemplate(t *testing.T) {
 	names := []TemplateName{
+		DefaultBare,
 		DefaultPython,
 		DefaultMinimal,
 		DefaultScala,

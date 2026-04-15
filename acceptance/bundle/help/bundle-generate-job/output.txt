@@ -36,6 +36,7 @@ Flags:
 
 Global Flags:
       --debug            enable debug logging
+      --init-bare        initialize a bare bundle skeleton if no databricks.yml is found
       --key string       resource key to use for the generated configuration
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile

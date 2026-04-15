@@ -1,0 +1,6 @@
+# my_default_bare
+
+This is a bare Databricks Asset Bundle skeleton.
+
+- Put generated bundle resource definitions in `resources/`
+- Put notebooks, scripts, and other source files in `src/`
