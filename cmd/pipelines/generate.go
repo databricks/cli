@@ -191,7 +191,7 @@ type sdpPipeline struct {
 
 // sdpPipelineLibrary contains 'library' field in spark-pipeline.yml
 type sdpPipelineLibrary struct {
-	Glob sdpPipelineLibraryGlob `json:"glob,omitempty"`
+	Glob sdpPipelineLibraryGlob `json:"glob"`
 }
 
 // sdpPipelineLibrary contains 'library.glob' field in spark-pipeline.yml

@@ -1491,8 +1491,8 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 		return
 	}
 	require.NoError(t, err)
-	lines := strings.Split(string(b), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(b), "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue

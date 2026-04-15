@@ -22,7 +22,7 @@ type Target struct {
 
 	// Mutator configurations that e.g. change the
 	// name prefix of deployed resources.
-	Presets Presets `json:"presets,omitempty"`
+	Presets Presets `json:"presets"`
 
 	// DEPRECATED: Overrides the compute used for jobs and other supported assets.
 	ComputeId string `json:"compute_id,omitempty"`
@@ -62,7 +62,7 @@ type Target struct {
 	//       lookup: "resource_name"
 	Variables map[string]*variable.TargetVariable `json:"variables,omitempty"`
 
-	Git Git `json:"git,omitempty"`
+	Git Git `json:"git"`
 
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 

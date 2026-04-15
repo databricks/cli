@@ -51,6 +51,11 @@ jobs:
           make fmtfull
           git diff --exit-code
 
+      - name: "make gofix: ensure go fix has been applied"
+        run: |
+          make gofix
+          git diff --exit-code
+
       - name: "make checks: custom checks outside of fmt and lint"
         run: |-
           make checks

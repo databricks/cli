@@ -7,7 +7,7 @@ type Foo struct {
 }
 
 type Bar struct {
-	Foo Foo `json:"foo,omitempty"`
+	Foo Foo `json:"foo"`
 }
 
 type Outer struct {
@@ -21,5 +21,5 @@ type Self struct {
 }
 
 type OuterSelf struct {
-	Self Self `json:"self,omitempty"`
+	Self Self `json:"self"`
 }

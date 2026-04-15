@@ -10,7 +10,7 @@ type Bundle struct {
 	Name   string     `json:"name,omitempty"`
 	Target string     `json:"target,omitempty"`
 	Mode   string     `json:"mode,omitempty"`
-	Git    config.Git `json:"git,omitempty"`
+	Git    config.Git `json:"git"`
 }
 
 type Workspace struct {
@@ -46,10 +46,10 @@ type Presets struct {
 }
 
 type Config struct {
-	Bundle    Bundle    `json:"bundle,omitempty"`
-	Workspace Workspace `json:"workspace,omitempty"`
-	Resources Resources `json:"resources,omitempty"`
-	Presets   Presets   `json:"presets,omitempty"`
+	Bundle    Bundle    `json:"bundle"`
+	Workspace Workspace `json:"workspace"`
+	Resources Resources `json:"resources"`
+	Presets   Presets   `json:"presets"`
 }
 
 type Extra struct {

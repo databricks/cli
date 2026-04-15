@@ -32,7 +32,7 @@ func safeMutatorName(m Mutator) string {
 	t := reflect.TypeOf(m)
 
 	// Handle pointer types by getting the element type
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 

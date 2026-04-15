@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -318,9 +319,7 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			resp = normalizeResponse(s.t, respAny)
 		}
 
-		for k, v := range resp.Headers {
-			w.Header()[k] = v
-		}
+		maps.Copy(w.Header(), resp.Headers)
 
 		w.WriteHeader(resp.StatusCode)
 
@@ -352,7 +351,7 @@ func isNil(i any) bool {
 	}
 	v := reflect.ValueOf(i)
 	switch v.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Slice:
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Pointer, reflect.Interface, reflect.Slice:
 		return v.IsNil()
 	default:
 		return false

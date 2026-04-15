@@ -6,11 +6,11 @@ type FrontendLog struct {
 	// A UUID for the log event generated from the CLI.
 	FrontendLogEventID string `json:"frontend_log_event_id,omitempty"`
 
-	Entry FrontendLogEntry `json:"entry,omitempty"`
+	Entry FrontendLogEntry `json:"entry"`
 }
 
 type FrontendLogEntry struct {
-	DatabricksCliLog DatabricksCliLog `json:"databricks_cli_log,omitempty"`
+	DatabricksCliLog DatabricksCliLog `json:"databricks_cli_log"`
 }
 
 type DatabricksCliLog struct {

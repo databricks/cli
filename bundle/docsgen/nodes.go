@@ -155,8 +155,8 @@ func getMapKeyPrefix(s string) string {
 }
 
 func removePluralForm(s string) string {
-	if strings.HasSuffix(s, "s") {
-		return strings.TrimSuffix(s, "s")
+	if before, ok := strings.CutSuffix(s, "s"); ok {
+		return before
 	}
 	return s
 }

@@ -25,10 +25,10 @@ type Experimental struct {
 	UseLegacyRunAs bool `json:"use_legacy_run_as,omitempty"`
 
 	// PyDABs is deprecated use Python instead.
-	PyDABs PyDABs `json:"pydabs,omitempty"`
+	PyDABs PyDABs `json:"pydabs"`
 
 	// Python configures loading of Python code defined with 'databricks-bundles' package.
-	Python Python `json:"python,omitempty"`
+	Python Python `json:"python"`
 
 	// SkipArtifactCleanup determines whether to skip cleaning up the .internal folder
 	// containing build artifacts such as wheels. When set to true, the .internal folder

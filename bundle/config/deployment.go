@@ -6,5 +6,5 @@ type Deployment struct {
 	FailOnActiveRuns bool `json:"fail_on_active_runs,omitempty"`
 
 	// Lock configures locking behavior on deployment.
-	Lock Lock `json:"lock,omitempty"`
+	Lock Lock `json:"lock"`
 }

@@ -32,7 +32,7 @@ type Bundle struct {
 
 	// Contains Git information like current commit, current branch and
 	// origin url. Automatically loaded by reading .git directory if not specified
-	Git Git `json:"git,omitempty"`
+	Git Git `json:"git"`
 
 	// Determines the mode of the target.
 	// For example, 'mode: development' can be used for deployments for
@@ -51,7 +51,7 @@ type Bundle struct {
 	Engine engine.EngineType `json:"engine,omitempty"`
 
 	// Deployment section specifies deployment related configuration for bundle
-	Deployment Deployment `json:"deployment,omitempty"`
+	Deployment Deployment `json:"deployment"`
 
 	// Databricks CLI version constraints required to run the bundle.
 	DatabricksCliVersion string `json:"databricks_cli_version,omitempty"`

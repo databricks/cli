@@ -34,7 +34,7 @@ type Root struct {
 
 	// Bundle contains details about this bundle, such as its name,
 	// version of the spec (TODO), default cluster, default warehouse, etc.
-	Bundle Bundle `json:"bundle,omitempty"`
+	Bundle Bundle `json:"bundle"`
 
 	// Include specifies a list of patterns of file names to load and
 	// merge into the this configuration. Only includes defined in the root
@@ -43,14 +43,14 @@ type Root struct {
 
 	// Workspace contains details about the workspace to connect to
 	// and paths in the workspace tree to use for this bundle.
-	Workspace Workspace `json:"workspace,omitempty"`
+	Workspace Workspace `json:"workspace"`
 
 	// Artifacts contains a description of all code artifacts in this bundle.
 	Artifacts Artifacts `json:"artifacts,omitempty"`
 
 	// Resources contains a description of all Databricks resources
 	// to deploy in this bundle (e.g. jobs, pipelines, etc.).
-	Resources Resources `json:"resources,omitempty"`
+	Resources Resources `json:"resources"`
 
 	// Targets can be used to differentiate settings and resources between
 	// bundle deployment targets (e.g. development, staging, production).
@@ -62,14 +62,14 @@ type Root struct {
 	Environments map[string]*Target `json:"environments,omitempty"`
 
 	// Sync section specifies options for files synchronization
-	Sync Sync `json:"sync,omitempty"`
+	Sync Sync `json:"sync"`
 
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
 	// Presets applies preset transformations throughout the bundle, e.g.
 	// adding a name prefix to deployed resources.
-	Presets Presets `json:"presets,omitempty"`
+	Presets Presets `json:"presets"`
 
 	Experimental *Experimental `json:"experimental,omitempty"`
 
@@ -84,7 +84,7 @@ type Root struct {
 	Scripts map[string]Script `json:"scripts,omitempty"`
 
 	// Python configures loading of Python code defined with 'databricks-bundles' package.
-	Python Python `json:"python,omitempty"`
+	Python Python `json:"python"`
 
 	// Not supported, must not be set. Placeholder to give better diagnostics in for OSS pipelines case.
 	Definitions any `json:"definitions,omitempty" bundle:"internal"`

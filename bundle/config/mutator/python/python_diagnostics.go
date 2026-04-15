@@ -14,7 +14,7 @@ type pythonDiagnostic struct {
 	Severity pythonSeverity           `json:"severity"`
 	Summary  string                   `json:"summary"`
 	Detail   string                   `json:"detail,omitempty"`
-	Location pythonDiagnosticLocation `json:"location,omitempty"`
+	Location pythonDiagnosticLocation `json:"location"`
 	Path     string                   `json:"path,omitempty"`
 }
 

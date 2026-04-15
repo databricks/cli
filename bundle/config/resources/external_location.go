@@ -17,7 +17,7 @@ type ExternalLocation struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	// Note: We intentionally don't include BaseResource.URL here to avoid conflict with Url field below
-	Lifecycle Lifecycle `json:"lifecycle,omitempty"`
+	Lifecycle Lifecycle `json:"lifecycle"`
 
 	catalog.CreateExternalLocation
 

@@ -65,6 +65,10 @@ wsfix:
 links:
 	./tools/update_github_links.py
 
+.PHONY: gofix
+gofix:
+	go fix ./...
+
 # Checks other than 'fmt' and 'lint'; these are fast, so can be run first
 .PHONY: checks
 checks: tidy ws links

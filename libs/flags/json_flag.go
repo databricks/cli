@@ -59,7 +59,7 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 
 	if !nv.IsValid() {
 		kind := reflect.TypeOf(v).Kind()
-		if kind == reflect.Ptr {
+		if kind == reflect.Pointer {
 			kind = reflect.TypeOf(v).Elem().Kind()
 		}
 
@@ -88,7 +88,7 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 	}
 
 	kind := reflect.ValueOf(v).Kind()
-	if kind == reflect.Ptr {
+	if kind == reflect.Pointer {
 		kind = reflect.ValueOf(v).Elem().Kind()
 	}
 

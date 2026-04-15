@@ -40,7 +40,7 @@ func getScalarFields(t *testing.T, typ reflect.Type) map[string]any {
 }
 
 func TestTypeNilCallback(t *testing.T) {
-	err := WalkType(reflect.TypeOf(""), nil)
+	err := WalkType(reflect.TypeFor[string](), nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "visit callback must not be nil")
 }
@@ -50,7 +50,7 @@ func TestTypeNil(t *testing.T) {
 }
 
 func TestTypeScalar(t *testing.T) {
-	assert.Equal(t, map[string]any{"": 0}, getScalarFields(t, reflect.TypeOf(5)))
+	assert.Equal(t, map[string]any{"": 0}, getScalarFields(t, reflect.TypeFor[int]()))
 }
 
 func TestTypes(t *testing.T) {
@@ -74,7 +74,7 @@ func TestTypes(t *testing.T) {
 		"omit_str":           "",
 		"valid_field":        "",
 		"valid_field_ptr":    "",
-	}, getScalarFields(t, reflect.TypeOf(Types{})))
+	}, getScalarFields(t, reflect.TypeFor[Types]()))
 }
 
 func TestTypeSelf(t *testing.T) {
@@ -88,7 +88,7 @@ func TestTypeSelf(t *testing.T) {
 		"SelfReference.valid_field":     "",
 		"SelfSlicePtr[*].valid_field":   "",
 		"SelfSlice[*].valid_field":      "",
-	}, getScalarFields(t, reflect.TypeOf(Self{})))
+	}, getScalarFields(t, reflect.TypeFor[Self]()))
 }
 
 func testStruct(t *testing.T, typ reflect.Type, minLen, maxLen int, present map[string]any, notPresent []string) {
@@ -111,7 +111,7 @@ func testStruct(t *testing.T, typ reflect.Type, minLen, maxLen int, present map[
 
 func TestTypeJobSettings(t *testing.T) {
 	testStruct(t,
-		reflect.TypeOf(jobs.JobSettings{}),
+		reflect.TypeFor[jobs.JobSettings](),
 		// Verify we found a reasonable number of fields (it's 533 at the time of writing)
 		500, 600,
 		map[string]any{
@@ -135,7 +135,7 @@ func TestTypeJobSettings(t *testing.T) {
 
 func TestTypeRoot(t *testing.T) {
 	testStruct(t,
-		reflect.TypeOf(config.Root{}),
+		reflect.TypeFor[config.Root](),
 		4600, 5000, // 4814 after adding external locations support
 		map[string]any{
 			"bundle.target":                "",
@@ -182,7 +182,7 @@ func getReadonlyFields(t *testing.T, rootType reflect.Type) []string {
 }
 
 func TestTypeReadonlyFields(t *testing.T) {
-	readonlyFields := getReadonlyFields(t, reflect.TypeOf(config.Root{}))
+	readonlyFields := getReadonlyFields(t, reflect.TypeFor[config.Root]())
 
 	expected := []string{
 		"bundle.mode",
@@ -206,7 +206,7 @@ func TestTypeBundleTag(t *testing.T) {
 	}
 
 	var readonly, internal []string
-	err := WalkType(reflect.TypeOf(Foo{}), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(reflect.TypeFor[Foo](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil || field == nil {
 			return true
 		}
@@ -236,7 +236,7 @@ func TestWalkTypeEmbedTag(t *testing.T) {
 	}
 
 	var visited []string
-	err := WalkType(reflect.TypeOf(Container{}), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(reflect.TypeFor[Container](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil {
 			return true
 		}
@@ -269,7 +269,7 @@ func TestWalkTypeVisited(t *testing.T) {
 	}
 
 	var visited []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(reflect.TypeFor[Outer](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil {
 			return true
 		}
@@ -308,7 +308,7 @@ func TestWalkSkip(t *testing.T) {
 	}
 
 	var seen []string
-	err := WalkType(reflect.TypeOf(Outer{}), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
+	err := WalkType(reflect.TypeFor[Outer](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) (continueWalk bool) {
 		if path == nil {
 			return true
 		}

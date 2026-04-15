@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -28,18 +29,18 @@ func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) [
 }
 
 func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineEvent) {
-	logString := ""
+	var logString strings.Builder
 	if event.Message != "" {
-		logString += fmt.Sprintf(" %s\n", event.Message)
+		logString.WriteString(fmt.Sprintf(" %s\n", event.Message))
 	}
 	if event.Error != nil && len(event.Error.Exceptions) > 0 {
-		logString += "trace for most recent exception: \n"
+		logString.WriteString("trace for most recent exception: \n")
 		for i := range len(event.Error.Exceptions) {
-			logString += event.Error.Exceptions[i].Message + "\n"
+			logString.WriteString(event.Error.Exceptions[i].Message + "\n")
 		}
 	}
-	if logString != "" {
-		log.Errorf(ctx, "[%s] %s", event.EventType, logString)
+	if logString.String() != "" {
+		log.Errorf(ctx, "[%s] %s", event.EventType, logString.String())
 	}
 }
 

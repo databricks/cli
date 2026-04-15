@@ -8,8 +8,7 @@ import (
 // TypeOf returns reflect.Type for type parameter T, analogous to
 // reflect.TypeOf((*T)(nil)).Elem().
 func TypeOf[T any]() reflect.Type {
-	var t *T
-	return reflect.TypeOf(t).Elem()
+	return reflect.TypeFor[T]()
 }
 
 // BoundCaller encapsulates a bound method and metadata about its signature.
@@ -53,7 +52,7 @@ func (c *BoundCaller) call(args ...any) ([]reflect.Value, error) {
 		it := c.InTypes[i]
 		if a == nil {
 			// Allow untyped nil for pointer types, converting to typed nil
-			if it.Kind() == reflect.Ptr {
+			if it.Kind() == reflect.Pointer {
 				in[i+1] = reflect.Zero(it)
 				continue
 			}

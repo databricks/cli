@@ -56,22 +56,23 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 
 	// Set all available env vars, wrapping values in quotes, escaping quotes, and stripping newlines
-	setEnv := "SetEnv"
+	var setEnv strings.Builder
+	setEnv.WriteString("SetEnv")
 	for _, env := range os.Environ() {
 		parts := strings.SplitN(env, "=", 2)
 		if len(parts) == 2 {
-			setEnv += " " + parts[0] + "=\"" + escapeEnvValue(parts[1]) + "\""
+			setEnv.WriteString(" " + parts[0] + "=\"" + escapeEnvValue(parts[1]) + "\"")
 		}
 	}
-	setEnv += " DATABRICKS_CLI_UPSTREAM=databricks_ssh_tunnel"
-	setEnv += " DATABRICKS_CLI_UPSTREAM_VERSION=" + opts.Version
-	setEnv += " DATABRICKS_SDK_UPSTREAM=databricks_ssh_tunnel"
-	setEnv += " DATABRICKS_SDK_UPSTREAM_VERSION=" + opts.Version
-	setEnv += " GIT_CONFIG_GLOBAL=/Workspace/.proc/self/git/config"
-	setEnv += " ENABLE_DATABRICKS_CLI=true"
-	setEnv += " PYTHONPYCACHEPREFIX=/tmp/pycache"
+	setEnv.WriteString(" DATABRICKS_CLI_UPSTREAM=databricks_ssh_tunnel")
+	setEnv.WriteString(" DATABRICKS_CLI_UPSTREAM_VERSION=" + opts.Version)
+	setEnv.WriteString(" DATABRICKS_SDK_UPSTREAM=databricks_ssh_tunnel")
+	setEnv.WriteString(" DATABRICKS_SDK_UPSTREAM_VERSION=" + opts.Version)
+	setEnv.WriteString(" GIT_CONFIG_GLOBAL=/Workspace/.proc/self/git/config")
+	setEnv.WriteString(" ENABLE_DATABRICKS_CLI=true")
+	setEnv.WriteString(" PYTHONPYCACHEPREFIX=/tmp/pycache")
 	if opts.Serverless {
-		setEnv += " DATABRICKS_JUPYTER_SERVERLESS=true"
+		setEnv.WriteString(" DATABRICKS_JUPYTER_SERVERLESS=true")
 	}
 
 	sshdConfigContent := "PubkeyAuthentication yes\n" +
@@ -80,7 +81,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		"Subsystem sftp internal-sftp\n" +
 		"HostKey " + keyPath + "\n" +
 		"AuthorizedKeysFile " + authKeysPath + "\n" +
-		setEnv + "\n"
+		setEnv.String() + "\n"
 
 	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent), 0o600); err != nil {
 		return "", err

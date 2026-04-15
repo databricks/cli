@@ -293,7 +293,7 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 // TestSupportedTypeTasksComplete verifies that supportedTypeTasks includes all task types with a Source field.
 func TestSupportedTypeTasksComplete(t *testing.T) {
 	// Use reflection to find all task types that have a Source field
-	taskType := reflect.TypeOf(jobs.Task{})
+	taskType := reflect.TypeFor[jobs.Task]()
 	var tasksWithSource []string
 
 	for i := range taskType.NumField() {
@@ -306,7 +306,7 @@ func TestSupportedTypeTasksComplete(t *testing.T) {
 
 		// Get the type of the task field (e.g., *NotebookTask)
 		taskFieldType := field.Type
-		if taskFieldType.Kind() == reflect.Ptr {
+		if taskFieldType.Kind() == reflect.Pointer {
 			taskFieldType = taskFieldType.Elem()
 		}
 
@@ -341,7 +341,7 @@ func TestSupportedTypeTasksComplete(t *testing.T) {
 // findSourceFieldsShallow searches for Source fields in a struct type, going only one level deep.
 // Returns a list of paths to Source fields (e.g., "" for direct Source, "file" for sql_task.file).
 func findSourceFieldsShallow(t reflect.Type) []string {
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 
@@ -362,7 +362,7 @@ func findSourceFieldsShallow(t reflect.Type) []string {
 
 		// Only search one level deep in nested structs
 		fieldType := field.Type
-		if fieldType.Kind() == reflect.Ptr {
+		if fieldType.Kind() == reflect.Pointer {
 			fieldType = fieldType.Elem()
 		}
 
