@@ -32,7 +32,7 @@ func listOverride(listCmd *cobra.Command, listReq *compute.ListClustersRequest) 
 		}},
 	}
 
-	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{Columns: columns}))
+	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})
 
 	listReq.FilterBy = &compute.ListClustersFilterBy{}
 	listCmd.Flags().BoolVar(&listReq.FilterBy.IsPinned, "is-pinned", false, "Filter clusters by pinned status")

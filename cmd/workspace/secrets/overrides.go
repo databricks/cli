@@ -31,7 +31,7 @@ func listScopesOverride(listScopesCmd *cobra.Command) {
 		}},
 	}
 
-	listScopesCmd.SetContext(tableview.SetTableConfig(listScopesCmd.Context(), &tableview.TableConfig{Columns: columns}))
+	tableview.SetTableConfigOnCmd(listScopesCmd, &tableview.TableConfig{Columns: columns})
 }
 
 func listSecretsOverride(listSecretsCommand *cobra.Command, _ *workspace.ListSecretsRequest) {
@@ -56,7 +56,7 @@ func listSecretsOverride(listSecretsCommand *cobra.Command, _ *workspace.ListSec
 		}},
 	}
 
-	listSecretsCommand.SetContext(tableview.SetTableConfig(listSecretsCommand.Context(), &tableview.TableConfig{Columns: columns}))
+	tableview.SetTableConfigOnCmd(listSecretsCommand, &tableview.TableConfig{Columns: columns})
 }
 
 func init() {

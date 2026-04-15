@@ -29,7 +29,7 @@ func listOverride(listCmd *cobra.Command) {
 		}},
 	}
 
-	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{Columns: columns}))
+	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})
 }
 
 func init() {

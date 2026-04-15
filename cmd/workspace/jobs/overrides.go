@@ -30,7 +30,7 @@ func listOverride(listCmd *cobra.Command, listReq *jobs.ListJobsRequest) {
 		}},
 	}
 
-	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{
+	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{
 		Columns: columns,
 		Search: &tableview.SearchConfig{
 			Placeholder: "Search by exact name...",
@@ -43,7 +43,7 @@ func listOverride(listCmd *cobra.Command, listReq *jobs.ListJobsRequest) {
 				return tableview.WrapIterator(w.Jobs.List(ctx, req), columns)
 			},
 		},
-	}))
+	})
 }
 
 func listRunsOverride(listRunsCmd *cobra.Command, _ *jobs.ListRunsRequest) {

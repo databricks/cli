@@ -28,7 +28,7 @@ func listOverride(listCmd *cobra.Command, _ *catalog.ListSchemasRequest) {
 		}},
 	}
 
-	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{Columns: columns}))
+	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})
 }
 
 func init() {

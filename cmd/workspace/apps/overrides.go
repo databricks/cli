@@ -44,7 +44,7 @@ func listOverride(listCmd *cobra.Command, _ *apps.ListAppsRequest) {
 		}},
 	}
 
-	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{Columns: columns}))
+	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})
 }
 
 func listDeploymentsOverride(listDeploymentsCmd *cobra.Command, _ *apps.ListAppDeploymentsRequest) {

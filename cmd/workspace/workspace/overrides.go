@@ -42,7 +42,7 @@ func listOverride(listCmd *cobra.Command, listReq *workspace.ListWorkspaceReques
 		}},
 	}
 
-	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{Columns: columns}))
+	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})
 }
 
 func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest) {

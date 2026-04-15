@@ -39,7 +39,7 @@ func listOverride(listCmd *cobra.Command, _ *workspace.ListReposRequest) {
 		}},
 	}
 
-	listCmd.SetContext(tableview.SetTableConfig(listCmd.Context(), &tableview.TableConfig{Columns: columns}))
+	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})
 }
 
 func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoRequest) {

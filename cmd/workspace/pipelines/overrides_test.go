@@ -23,7 +23,7 @@ func TestLooksLikeUUID_resourceName(t *testing.T) {
 func TestListPipelinesTableConfig(t *testing.T) {
 	cmd := newListPipelines()
 
-	cfg := tableview.GetTableConfig(cmd.Context())
+	cfg := tableview.GetTableConfigForCmd(cmd)
 	require.NotNil(t, cfg)
 	require.Len(t, cfg.Columns, 3)
 	require.NotNil(t, cfg.Search)
@@ -42,7 +42,7 @@ func TestListPipelinesTableConfig(t *testing.T) {
 func TestListPipelinesSearchEscapesLikeWildcards(t *testing.T) {
 	cmd := newListPipelines()
 
-	cfg := tableview.GetTableConfig(cmd.Context())
+	cfg := tableview.GetTableConfigForCmd(cmd)
 	require.NotNil(t, cfg)
 	require.NotNil(t, cfg.Search)
 
@@ -63,12 +63,12 @@ func TestListPipelinesSearchDisabledWhenFilterSet(t *testing.T) {
 	err := cmd.Flags().Set("filter", "state = 'RUNNING'")
 	require.NoError(t, err)
 
-	cfg := tableview.GetTableConfig(cmd.Context())
+	cfg := tableview.GetTableConfigForCmd(cmd)
 	require.NotNil(t, cfg)
 	require.NotNil(t, cfg.Search)
 
-	// The pipelines API does not support composite filters, so the
-	// PreRunE hook calls disableSearchIfFilterSet to nil out search.
+	// Simulate context setup so disableSearchIfFilterSet can read the config.
+	cmd.SetContext(tableview.SetTableConfig(t.Context(), cfg))
 	disableSearchIfFilterSet(cmd)
 	assert.Nil(t, cfg.Search)
 }
@@ -76,10 +76,11 @@ func TestListPipelinesSearchDisabledWhenFilterSet(t *testing.T) {
 func TestListPipelinesSearchNotDisabledWithoutFilter(t *testing.T) {
 	cmd := newListPipelines()
 
-	cfg := tableview.GetTableConfig(cmd.Context())
+	cfg := tableview.GetTableConfigForCmd(cmd)
 	require.NotNil(t, cfg)
-	require.NotNil(t, cfg.Search)
 
+	// Simulate context setup so disableSearchIfFilterSet can read the config.
+	cmd.SetContext(tableview.SetTableConfig(t.Context(), cfg))
 	disableSearchIfFilterSet(cmd)
 	assert.NotNil(t, cfg.Search)
 }
