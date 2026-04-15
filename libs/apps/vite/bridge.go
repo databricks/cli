@@ -133,7 +133,7 @@ func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName strin
 }
 
 func (vb *Bridge) getAuthHeaders(wsURL string) (http.Header, error) {
-	req, err := http.NewRequestWithContext(vb.ctx, "GET", wsURL, nil)
+	req, err := http.NewRequestWithContext(vb.ctx, http.MethodGet, wsURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
