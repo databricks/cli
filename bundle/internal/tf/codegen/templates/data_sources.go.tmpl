@@ -7,3 +7,11 @@ type DataSources struct {
 	{{ .FieldName }} map[string]any `json:"{{ .TerraformName }},omitempty"`
 	{{- end }}
 }
+
+func NewDataSources() *DataSources {
+	return &DataSources{
+		{{- range .Blocks }}
+		{{ .FieldName }}: make(map[string]any),
+		{{- end }}
+	}
+}

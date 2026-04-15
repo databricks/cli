@@ -31,11 +31,11 @@ import re
 import subprocess
 import sys
 
-# Directories to exclude entirely. Everything in these directories is a
-# false positive. Each entry is matched as a prefix of the file path in
-# deadcode output.
+# Directories to exclude entirely. Each entry is matched as a substring
+# of the file path in deadcode output.
 EXCLUDED_DIRS = [
-    "libs/gorules/",
+    "libs/gorules/",  # Lint rule definitions loaded by golangci-lint's ruleguard
+    "bundle/internal/tf/schema/",  # Generated from Terraform provider schema
 ]
 
 ALLOW_COMMENT = "//deadcode:allow"
@@ -47,6 +47,11 @@ def main():
         capture_output=True,
         text=True,
     )
+    if result.returncode != 0 and not result.stdout.strip():
+        print("deadcode failed:\n", file=sys.stderr)
+        print(result.stderr, file=sys.stderr)
+        sys.exit(1)
+
     output = result.stdout.strip()
     if not output:
         print("No dead code found.")
