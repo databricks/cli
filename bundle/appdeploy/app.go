@@ -49,8 +49,8 @@ func BuildDeployment(sourcePath string, config *resources.AppConfig, gitSource *
 // WaitForDeploymentToComplete waits for active and pending deployments on an app to finish.
 func WaitForDeploymentToComplete(ctx context.Context, w *databricks.WorkspaceClient, app *sdkapps.App) error {
 	if app.ActiveDeployment != nil &&
-		(app.ActiveDeployment.Status == nil ||
-			app.ActiveDeployment.Status.State == sdkapps.AppDeploymentStateInProgress) {
+		app.ActiveDeployment.Status != nil &&
+		app.ActiveDeployment.Status.State == sdkapps.AppDeploymentStateInProgress {
 		logProgress(ctx, "Waiting for the active deployment to complete...")
 		_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, app.ActiveDeployment.DeploymentId, 20*time.Minute, nil)
 		if err != nil {
@@ -60,8 +60,8 @@ func WaitForDeploymentToComplete(ctx context.Context, w *databricks.WorkspaceCli
 	}
 
 	if app.PendingDeployment != nil &&
-		(app.PendingDeployment.Status == nil ||
-			app.PendingDeployment.Status.State == sdkapps.AppDeploymentStateInProgress) {
+		app.PendingDeployment.Status != nil &&
+		app.PendingDeployment.Status.State == sdkapps.AppDeploymentStateInProgress {
 		logProgress(ctx, "Waiting for the pending deployment to complete...")
 		_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, app.PendingDeployment.DeploymentId, 20*time.Minute, nil)
 		if err != nil {
