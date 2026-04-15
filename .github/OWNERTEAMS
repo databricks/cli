@@ -1,6 +1,15 @@
 # Team aliases for OWNERS file.
 # Use "team:<name>" in OWNERS to reference a team defined here.
 # Format: team:<name>  @member1 @member2 ...
+#
+# Keep these in sync with actual GitHub team rosters. GITHUB_TOKEN can't
+# resolve org team membership via the API, so this file is the source of
+# truth for the maintainer-approval workflow.
+#
+# GitHub team pages:
+#   bundle:          https://github.com/orgs/databricks/teams/cli-maintainers
+#   platform:        https://github.com/orgs/databricks/teams/cli-platform
+#   eng-apps-devex:  https://github.com/orgs/databricks/teams/eng-apps-devex
 
 team:bundle     @andrewnester @anton-107 @denik @janniklasrose @pietern @shreyas-goenka
 team:platform   @simonfaltum @renaudhartert-db @hectorcast-db @parthban-db @tanmay-db @Divyansh-db @tejaskochar-db @mihaimitrea-db @chrisst @rauchy
