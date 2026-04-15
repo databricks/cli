@@ -286,7 +286,7 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Queries.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -354,7 +354,7 @@ func newListVisualizations() *cobra.Command {
 		listVisualizationsReq.Id = args[0]
 
 		response := w.Queries.ListVisualizations(ctx, listVisualizationsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

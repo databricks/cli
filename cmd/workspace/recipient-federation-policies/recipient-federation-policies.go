@@ -329,7 +329,7 @@ func newList() *cobra.Command {
 		listReq.RecipientName = args[0]
 
 		response := w.RecipientFederationPolicies.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

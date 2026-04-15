@@ -1146,7 +1146,7 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Apps.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1202,7 +1202,7 @@ func newListDeployments() *cobra.Command {
 		listDeploymentsReq.AppName = args[0]
 
 		response := w.Apps.ListDeployments(ctx, listDeploymentsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1256,7 +1256,7 @@ func newListSpaces() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Apps.ListSpaces(ctx, listSpacesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

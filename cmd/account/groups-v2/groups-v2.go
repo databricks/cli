@@ -278,7 +278,7 @@ func newList() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		response := a.GroupsV2.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

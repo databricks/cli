@@ -290,7 +290,7 @@ func newListEndpoints() *cobra.Command {
 		listEndpointsReq.Parent = args[0]
 
 		response := a.Endpoints.ListEndpoints(ctx, listEndpointsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -70,7 +70,13 @@ func TestListPipelinesSearchDisabledWhenFilterSet(t *testing.T) {
 	// Simulate context setup so disableSearchIfFilterSet can read the config.
 	cmd.SetContext(tableview.SetTableConfig(t.Context(), cfg))
 	disableSearchIfFilterSet(cmd)
-	assert.Nil(t, cfg.Search)
+
+	// The original config must not be mutated.
+	assert.NotNil(t, cfg.Search, "original config must not be mutated")
+	// The config stored in context should have Search disabled.
+	ctxCfg := tableview.GetTableConfig(cmd.Context())
+	require.NotNil(t, ctxCfg)
+	assert.Nil(t, ctxCfg.Search)
 }
 
 func TestListPipelinesSearchNotDisabledWithoutFilter(t *testing.T) {

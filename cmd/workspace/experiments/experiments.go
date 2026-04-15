@@ -1032,7 +1032,7 @@ func newGetHistory() *cobra.Command {
 		getHistoryReq.MetricKey = args[0]
 
 		response := w.Experiments.GetHistory(ctx, getHistoryReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1320,7 +1320,7 @@ func newListArtifacts() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Experiments.ListArtifacts(ctx, listArtifactsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1372,7 +1372,7 @@ func newListExperiments() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Experiments.ListExperiments(ctx, listExperimentsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2329,7 +2329,7 @@ func newSearchExperiments() *cobra.Command {
 		}
 
 		response := w.Experiments.SearchExperiments(ctx, searchExperimentsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2476,7 +2476,7 @@ func newSearchRuns() *cobra.Command {
 		}
 
 		response := w.Experiments.SearchRuns(ctx, searchRunsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

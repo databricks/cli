@@ -508,7 +508,7 @@ func newListKnowledgeAssistants() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.KnowledgeAssistants.ListKnowledgeAssistants(ctx, listKnowledgeAssistantsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -565,7 +565,7 @@ func newListKnowledgeSources() *cobra.Command {
 		listKnowledgeSourcesReq.Parent = args[0]
 
 		response := w.KnowledgeAssistants.ListKnowledgeSources(ctx, listKnowledgeSourcesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

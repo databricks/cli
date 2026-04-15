@@ -112,8 +112,9 @@ func findMatches(lines []string, query string) []int {
 }
 
 // highlightSearch applies search match highlighting to a single line.
-// It works in rune-space so that case-folding length changes (e.g. "ß"→"ss")
-// do not misalign the highlighted spans in the original string.
+// It works in rune-space so that ANSI escape sequences (which have varying
+// byte lengths) and multi-byte UTF-8 characters do not misalign the
+// highlighted spans when mapping positions back to the original string.
 func highlightSearch(line, query string) string {
 	if query == "" {
 		return line

@@ -338,7 +338,7 @@ func newListFeatureTags() *cobra.Command {
 		listFeatureTagsReq.FeatureName = args[1]
 
 		response := w.MaterializedFeatures.ListFeatureTags(ctx, listFeatureTagsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -88,7 +88,7 @@ func listPipelineEventsOverride(listCmd *cobra.Command, _ *pipelines.ListPipelin
 			return v.(pipelines.PipelineEvent).EventType
 		}},
 		{Header: "Message", MaxWidth: 200, Extract: func(v any) string {
-			return sanitizeWhitespace(v.(pipelines.PipelineEvent).Message)
+			return cmdio.SanitizeControlWhitespace(v.(pipelines.PipelineEvent).Message)
 		}},
 	}
 
@@ -161,20 +161,15 @@ With a PIPELINE_ID: Stops the pipeline identified by the UUID using the API.`
 }
 
 // disableSearchIfFilterSet clears the TUI search config when --filter is active.
+// It creates a shallow copy to avoid mutating the shared config registered on the command.
 func disableSearchIfFilterSet(cmd *cobra.Command) {
 	if cmd.Flags().Changed("filter") {
 		if cfg := tableview.GetTableConfig(cmd.Context()); cfg != nil {
-			cfg.Search = nil
+			copied := *cfg
+			copied.Search = nil
+			cmd.SetContext(tableview.SetTableConfig(cmd.Context(), &copied))
 		}
 	}
-}
-
-var controlWhitespaceReplacer = strings.NewReplacer("\n", " ", "\r", " ", "\t", " ")
-
-// sanitizeWhitespace replaces control whitespace (newlines, tabs) with spaces
-// to prevent corrupting tab-delimited or TUI table output.
-func sanitizeWhitespace(s string) string {
-	return controlWhitespaceReplacer.Replace(s)
 }
 
 var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)

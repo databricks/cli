@@ -289,7 +289,7 @@ func newListTagPolicies() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.TagPolicies.ListTagPolicies(ctx, listTagPoliciesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -880,7 +880,7 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Warehouses.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -932,7 +932,7 @@ func newListDefaultWarehouseOverrides() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Warehouses.ListDefaultWarehouseOverrides(ctx, listDefaultWarehouseOverridesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

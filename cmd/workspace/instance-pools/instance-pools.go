@@ -591,7 +591,7 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 		response := w.InstancePools.List(ctx)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

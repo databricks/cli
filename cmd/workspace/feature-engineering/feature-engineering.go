@@ -728,7 +728,7 @@ func newListFeatures() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.FeatureEngineering.ListFeatures(ctx, listFeaturesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -781,7 +781,7 @@ func newListKafkaConfigs() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.FeatureEngineering.ListKafkaConfigs(ctx, listKafkaConfigsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -831,7 +831,7 @@ func newListMaterializedFeatures() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.FeatureEngineering.ListMaterializedFeatures(ctx, listMaterializedFeaturesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

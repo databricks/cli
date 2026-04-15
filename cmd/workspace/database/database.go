@@ -1222,7 +1222,7 @@ func newListDatabaseCatalogs() *cobra.Command {
 		listDatabaseCatalogsReq.InstanceName = args[0]
 
 		response := w.Database.ListDatabaseCatalogs(ctx, listDatabaseCatalogsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1282,7 +1282,7 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 		listDatabaseInstanceRolesReq.InstanceName = args[0]
 
 		response := w.Database.ListDatabaseInstanceRoles(ctx, listDatabaseInstanceRolesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1331,7 +1331,7 @@ func newListDatabaseInstances() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Database.ListDatabaseInstances(ctx, listDatabaseInstancesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1390,7 +1390,7 @@ func newListSyncedDatabaseTables() *cobra.Command {
 		listSyncedDatabaseTablesReq.InstanceName = args[0]
 
 		response := w.Database.ListSyncedDatabaseTables(ctx, listSyncedDatabaseTablesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -454,7 +454,7 @@ func newListWorkspaceBaseEnvironments() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Environments.ListWorkspaceBaseEnvironments(ctx, listWorkspaceBaseEnvironmentsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

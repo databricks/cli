@@ -166,7 +166,7 @@ func newGetBindings() *cobra.Command {
 		getBindingsReq.SecurableName = args[1]
 
 		response := w.WorkspaceBindings.GetBindings(ctx, getBindingsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -65,6 +65,7 @@ type paginatedModel struct {
 
 	// Search
 	searching      bool
+	searchLoading  bool
 	searchInput    string
 	debounceSeq    int
 	hasSearchState bool
@@ -196,7 +197,13 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = nil
 
 		isFirstBatch := len(m.rows) == 0
-		m.rows = append(m.rows, msg.rows...)
+		if m.searchLoading {
+			m.rows = msg.rows
+			m.searchLoading = false
+			isFirstBatch = true
+		} else {
+			m.rows = append(m.rows, msg.rows...)
+		}
 		m.exhausted = msg.exhausted
 
 		if m.maxItems > 0 && len(m.rows) >= m.maxItems {
@@ -381,6 +388,7 @@ func (m *paginatedModel) restorePreSearchState() {
 		m.savedExhaust = false
 		m.limitReached = false
 		m.loading = false
+		m.searchLoading = false
 	}
 	m.cursor = 0
 	if m.ready {
@@ -406,10 +414,10 @@ func (m paginatedModel) executeSearch(query string) (tea.Model, tea.Cmd) {
 	}
 
 	m.fetchGeneration++
-	m.rows = nil
 	m.exhausted = false
 	m.limitReached = false
 	m.loading = true
+	m.searchLoading = true
 	m.cursor = 0
 	m.rowIter = m.makeSearchIter(query)
 	return m, m.makeFetchCmd(m)
@@ -456,6 +464,9 @@ func (m paginatedModel) View() string {
 		return "Loading..."
 	}
 	if len(m.rows) == 0 && m.loading {
+		if m.searchLoading {
+			return "Searching..."
+		}
 		return "Fetching results..."
 	}
 	if len(m.rows) == 0 && m.exhausted {
@@ -483,7 +494,11 @@ func (m paginatedModel) renderFooter() string {
 			input = footerStyle.Render(placeholder)
 		}
 		prompt := searchStyle.Render("/ " + input + "█")
-		return footerStyle.Render(fmt.Sprintf("%d rows loaded", len(m.rows))) + "\n" + prompt
+		status := fmt.Sprintf("%d rows loaded", len(m.rows))
+		if m.searchLoading {
+			status = "Searching..."
+		}
+		return footerStyle.Render(status) + "\n" + prompt
 	}
 
 	var parts []string

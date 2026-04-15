@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/fatih/color"
 	"github.com/nwidger/jsoncolor"
-	"github.com/spf13/cobra"
 )
 
 // Heredoc is the equivalent of compute.TrimLeadingWhitespace
@@ -273,11 +272,10 @@ func Render(ctx context.Context, v any) error {
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
-// RenderIterator renders the items from i. When cmd is non-nil and has a
+// RenderIterator renders the items from i. When the context carries a
 // registered TableConfig, a paginated TUI table is shown in interactive
-// terminals. Pass nil for cmd to skip TUI lookup and always use template
-// rendering.
-func RenderIterator[T any](ctx context.Context, cmd *cobra.Command, i listing.Iterator[T]) error {
+// terminals.
+func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
 
 	// Only launch TUI when an explicit TableConfig is registered via overrides.
@@ -324,9 +322,9 @@ func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error
 
 var controlWhitespaceReplacer = strings.NewReplacer("\n", " ", "\r", " ", "\t", " ")
 
-// sanitizeControlWhitespace replaces newlines and tabs with spaces to prevent
-// corrupting tab-delimited text output.
-func sanitizeControlWhitespace(s string) string {
+// SanitizeControlWhitespace replaces newlines and tabs with spaces to prevent
+// corrupting tab-delimited or TUI table output.
+func SanitizeControlWhitespace(s string) string {
 	return controlWhitespaceReplacer.Replace(s)
 }
 
@@ -348,7 +346,7 @@ var renderFuncMap = template.FuncMap{
 		return color.New(color.Italic).Sprintf(format, a...)
 	},
 	"replace":  strings.ReplaceAll,
-	"sanitize": sanitizeControlWhitespace,
+	"sanitize": SanitizeControlWhitespace,
 	"join":     strings.Join,
 	"sub": func(a, b int) int {
 		return a - b

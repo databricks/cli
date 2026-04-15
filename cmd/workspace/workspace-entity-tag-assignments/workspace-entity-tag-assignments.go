@@ -306,7 +306,7 @@ func newListTagAssignments() *cobra.Command {
 		listTagAssignmentsReq.EntityId = args[1]
 
 		response := w.WorkspaceEntityTagAssignments.ListTagAssignments(ctx, listTagAssignmentsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

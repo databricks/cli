@@ -299,7 +299,7 @@ func newListCustomTemplates() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.AppsSettings.ListCustomTemplates(ctx, listCustomTemplatesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -73,7 +73,7 @@ func newGet() *cobra.Command {
 		getReq.ListingId = args[0]
 
 		response := w.ConsumerFulfillments.Get(ctx, getReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -130,7 +130,7 @@ func newList() *cobra.Command {
 		listReq.ListingId = args[0]
 
 		response := w.ConsumerFulfillments.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

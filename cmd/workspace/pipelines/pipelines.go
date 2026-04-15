@@ -588,7 +588,7 @@ func newListPipelineEvents() *cobra.Command {
 		listPipelineEventsReq.PipelineId = args[0]
 
 		response := w.Pipelines.ListPipelineEvents(ctx, listPipelineEventsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -641,7 +641,7 @@ func newListPipelines() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Pipelines.ListPipelines(ctx, listPipelinesReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

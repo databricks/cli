@@ -1027,7 +1027,7 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Jobs.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1086,7 +1086,7 @@ func newListRuns() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Jobs.ListRuns(ctx, listRunsReq)
-		return cmdio.RenderIterator(ctx, cmd, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
