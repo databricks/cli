@@ -3,7 +3,6 @@ package lakebox
 import (
 	"fmt"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -19,7 +18,7 @@ The default is stored locally in ~/.databricks/lakebox.json per profile.
 Example:
   databricks lakebox set-default happy-panda-1234`,
 		Args:    cobra.ExactArgs(1),
-		PreRunE: root.MustWorkspaceClient,
+		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			w := cmdctx.WorkspaceClient(cmd.Context())
 			profile := w.Config.Profile

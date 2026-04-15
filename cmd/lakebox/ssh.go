@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -39,9 +38,7 @@ Example:
   databricks lakebox ssh                    # create and connect to a new lakebox
   databricks lakebox ssh happy-panda-1234   # connect to existing lakebox`,
 		Args: cobra.MaximumNArgs(1),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return root.MustWorkspaceClient(cmd, args)
-		},
+		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)

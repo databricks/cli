@@ -3,11 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/cmd/auth"
 	"github.com/databricks/cli/cmd/lakebox"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
 
@@ -62,14 +63,33 @@ The CLI manages your ~/.ssh/config so you can also connect directly:
 				}
 				fmt.Fprintf(cmd.ErrOrStderr(), "Using SSH key: %s\n", keyPath)
 
-				if err := root.MustWorkspaceClient(cmd, args); err != nil {
+				host := cmd.Flag("host").Value.String()
+				if host == "" && len(args) > 0 {
+					host = args[0]
+				}
+				profile := cmd.Flag("profile").Value.String()
+				if profile == "" && host != "" {
+					// Derive profile name the same way auth login does.
+					h := strings.TrimPrefix(host, "https://")
+					h = strings.TrimPrefix(h, "http://")
+					profile = strings.SplitN(h, ".", 2)[0]
+				}
+				if profile != "" {
+					if err := lakebox.SetLastProfile(profile); err != nil {
+						fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to save last profile: %v\n", err)
+					}
+				}
+				w, err := databricks.NewWorkspaceClient(&databricks.Config{
+					Host:    host,
+					Profile: profile,
+				})
+				if err != nil {
 					fmt.Fprintf(cmd.ErrOrStderr(),
-						"Could not initialize workspace client for key registration.\n"+
-							"Run 'lakebox register' to complete setup.\n")
+						"Could not initialize workspace client for key registration: %v\n"+
+							"Run 'lakebox register' to complete setup.\n", err)
 					return nil
 				}
 
-				w := cmdctx.WorkspaceClient(cmd.Context())
 				if err := lakebox.RegisterKey(cmd.Context(), w, pubKey); err != nil {
 					fmt.Fprintf(cmd.ErrOrStderr(),
 						"Key registration failed: %v\n"+

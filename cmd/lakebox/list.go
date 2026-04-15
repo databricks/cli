@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
 )
@@ -23,7 +22,7 @@ current status and ID.
 Example:
   databricks lakebox list
   databricks lakebox list --json`,
-		PreRunE: root.MustWorkspaceClient,
+		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)

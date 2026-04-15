@@ -1,6 +1,7 @@
 package lakebox
 
 import (
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -32,12 +33,24 @@ The CLI manages your ~/.ssh/config so you can also connect directly:
 	}
 
 	cmd.AddCommand(newRegisterCommand())
+	cmd.AddCommand(newSetDefaultCommand())
 	cmd.AddCommand(newSSHCommand())
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newCreateCommand())
 	cmd.AddCommand(newDeleteCommand())
 	cmd.AddCommand(newStatusCommand())
-	cmd.AddCommand(newSetDefaultCommand())
 
 	return cmd
+}
+
+// mustWorkspaceClient applies the saved last-login profile when the user
+// hasn't explicitly set --profile, then delegates to root.MustWorkspaceClient.
+func mustWorkspaceClient(cmd *cobra.Command, args []string) error {
+	profileFlag := cmd.Flag("profile")
+	if profileFlag != nil && !profileFlag.Changed {
+		if last := GetLastProfile(); last != "" {
+			_ = profileFlag.Value.Set(last)
+		}
+	}
+	return root.MustWorkspaceClient(cmd, args)
 }
