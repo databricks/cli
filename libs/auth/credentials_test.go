@@ -176,7 +176,7 @@ func TestCLICredentialsConfigure(t *testing.T) {
 			}
 
 			// Verify the credentials provider sets the correct Bearer token.
-			req, err := http.NewRequest("GET", tt.cfg.Host, nil)
+			req, err := http.NewRequest(http.MethodGet, tt.cfg.Host, nil)
 			if err != nil {
 				t.Fatalf("creating request: %v", err)
 			}

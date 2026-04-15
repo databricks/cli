@@ -8,18 +8,23 @@ const runModule = require("./maintainer-approval");
 
 // --- Test helpers ---
 
-function makeTmpOwners(content) {
+function makeTmpOwners(content, ownerTeamsContent) {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "approval-test-"));
   const ghDir = path.join(tmpDir, ".github");
   fs.mkdirSync(ghDir);
   fs.writeFileSync(path.join(ghDir, "OWNERS"), content);
+  if (ownerTeamsContent) {
+    fs.writeFileSync(path.join(ghDir, "OWNERTEAMS"), ownerTeamsContent);
+  }
   return tmpDir;
 }
+
+const OWNERTEAMS_CONTENT = "team:eng-apps-devex @teamdev1 @teamdev2\n";
 
 const OWNERS_CONTENT = [
   "* @maintainer1 @maintainer2",
   "/cmd/pipelines/ @jefferycheng1 @kanterov",
-  "/cmd/apps/ @databricks/eng-apps-devex",
+  "/cmd/apps/ team:eng-apps-devex",
   "/bundle/ @bundleowner",
 ].join("\n");
 
@@ -121,7 +126,7 @@ describe("maintainer-approval", () => {
 
   before(() => {
     originalWorkspace = process.env.GITHUB_WORKSPACE;
-    tmpDir = makeTmpOwners(OWNERS_CONTENT);
+    tmpDir = makeTmpOwners(OWNERS_CONTENT, OWNERTEAMS_CONTENT);
     process.env.GITHUB_WORKSPACE = tmpDir;
   });
 
@@ -283,13 +288,12 @@ describe("maintainer-approval", () => {
     assert.equal(github._checkRuns.length, 0);
   });
 
-  it("team member approved -> success for team-owned path", async () => {
+  it("OWNERTEAMS member approved -> success for team-owned path", async () => {
     const github = makeGithub({
       reviews: [
         { state: "APPROVED", user: { login: "teamdev1" } },
       ],
       files: [{ filename: "cmd/apps/main.go" }],
-      teamMembers: { "eng-apps-devex": ["teamdev1"] },
     });
     const core = makeCore();
     const context = makeContext();
@@ -300,13 +304,12 @@ describe("maintainer-approval", () => {
     assert.equal(github._checkRuns[0].conclusion, "success");
   });
 
-  it("non-team-member approval for team-owned path -> pending", async () => {
+  it("non-OWNERTEAMS-member approval for team-owned path -> pending", async () => {
     const github = makeGithub({
       reviews: [
         { state: "APPROVED", user: { login: "outsider" } },
       ],
       files: [{ filename: "cmd/apps/main.go" }],
-      teamMembers: { "eng-apps-devex": [] },
     });
     const core = makeCore();
     const context = makeContext();
