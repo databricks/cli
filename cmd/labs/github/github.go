@@ -56,7 +56,7 @@ func getPagedBytes(ctx context.Context, method, url string, body io.Reader) (*pa
 		url = strings.Replace(url, gitHubUserContent, uco, 1)
 	}
 	log.Tracef(ctx, "%s %s", method, url)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, body)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func getPagedBytes(ctx context.Context, method, url string, body io.Reader) (*pa
 	if err != nil {
 		return nil, err
 	}
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		return nil, ErrNotFound
 	}
 	if res.StatusCode >= 400 {

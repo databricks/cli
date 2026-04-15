@@ -19,7 +19,7 @@ const (
 )
 
 func sendTestRequest(t *testing.T, url, path string) (int, []byte) {
-	req, err := http.NewRequest("GET", url+path, bytes.NewBufferString("{'test': 'value'}"))
+	req, err := http.NewRequest(http.MethodGet, url+path, bytes.NewBufferString("{'test': 'value'}"))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
