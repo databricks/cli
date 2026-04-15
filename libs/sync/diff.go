@@ -125,7 +125,7 @@ func (d diff) groupedRmdir() [][]string {
 		dir = path.Dir(dir)
 		for dir != "." && dir != "/" {
 			// Increment the prefix count for this directory, only if it
-			// it one of the directories we are deleting.
+			// one of the directories we are deleting.
 			if _, ok := prefixes[dir]; ok {
 				prefixes[dir]++
 			}
@@ -152,7 +152,7 @@ func (d diff) groupedRmdir() [][]string {
 			dir = path.Dir(dir)
 			for dir != "." && dir != "/" {
 				// Decrement the prefix count for this directory, only if it
-				// it one of the directories we are deleting.
+				// one of the directories we are deleting.
 				if _, ok := prefixes[dir]; ok {
 					prefixes[dir]--
 				}

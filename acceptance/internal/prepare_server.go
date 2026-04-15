@@ -123,7 +123,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	}
 
 	// For the purposes of replacements, use testUser for local runs.
-	// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
+	// Note, users might have overridden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
 	return cfg, testUser
 }
 
