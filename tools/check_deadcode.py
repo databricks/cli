@@ -19,14 +19,20 @@ Suppression mechanisms
    through Go's call graph.
 
 2. Inline comments:
-   Add "//deadcode:allow <reason>" on the line directly above a function
-   to suppress a specific finding. Example:
+   Add "//deadcode:allow <reason>" above a function to suppress a
+   specific finding. The comment can appear on the line directly above
+   the func keyword, or above a doc comment block. The script scans
+   up to 5 lines above the reported line, stopping at a blank line.
+
+   Example:
 
        //deadcode:allow loaded by golangci-lint ruleguard, not via Go imports
+       // ProcessRule applies a lint rule.
        func MyLintRule(m dsl.Matcher) {
 
    This matches the //nolint: pattern Go developers already know.
 """
+
 import re
 import subprocess
 import sys
@@ -75,7 +81,19 @@ def main():
         try:
             with open(filepath) as f:
                 file_lines = f.readlines()
-            if lineno >= 2 and ALLOW_COMMENT in file_lines[lineno - 2]:
+            # Scan up to 5 lines above the reported line, stopping at a
+            # blank line. This handles doc comments between the allow
+            # comment and the func keyword.
+            suppressed = False
+            start = max(0, lineno - 6)
+            for check_line in file_lines[start : lineno - 1]:
+                stripped = check_line.strip()
+                if not stripped:
+                    break
+                if ALLOW_COMMENT in stripped:
+                    suppressed = True
+                    break
+            if suppressed:
                 continue
         except (OSError, IndexError):
             pass
