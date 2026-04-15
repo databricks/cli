@@ -8,21 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPathStringRoundTrip(t *testing.T) {
-	for _, tc := range []Path{
-		NewPath(Key("foo"), Key("bar")),
-		NewPath(Key("foo"), Index(1), Key("bar")),
-		NewPath(Key("configuration"), Key("europris.swipe.egress_streaming_schema")),
-		NewPath(Key("foo"), Key("it's.here")),
-		NewPath(Key("a.b"), Key("c"), Index(0)),
-	} {
-		s := tc.String()
-		p, err := NewPathFromString(s)
-		assert.NoError(t, err, s)
-		assert.Equal(t, tc, p, s)
-	}
-}
-
 func TestNewPathFromString(t *testing.T) {
 	for _, tc := range []struct {
 		input  string
@@ -117,36 +102,6 @@ func TestNewPathFromString(t *testing.T) {
 			// This is an invalid path (but would be valid for patterns)
 			input: "foo[*].bar",
 			err:   errors.New("invalid path: foo[*].bar"),
-		},
-		{
-			// Bracket notation with quoted key containing dots.
-			input:  "foo['bar.baz']",
-			output: NewPath(Key("foo"), Key("bar.baz")),
-		},
-		{
-			// Bracket notation at the start.
-			input:  "['a.b'].foo",
-			output: NewPath(Key("a.b"), Key("foo")),
-		},
-		{
-			// Bracket notation with escaped single quote.
-			input:  "foo['it''s.here']",
-			output: NewPath(Key("foo"), Key("it's.here")),
-		},
-		{
-			// Bracket notation followed by index.
-			input:  "foo['bar.baz'][0]",
-			output: NewPath(Key("foo"), Key("bar.baz"), Index(0)),
-		},
-		{
-			// Unterminated bracket notation.
-			input: "foo['bar",
-			err:   errors.New("invalid path: foo['bar"),
-		},
-		{
-			// Missing closing bracket.
-			input: "foo['bar'",
-			err:   errors.New("invalid path: foo['bar'"),
 		},
 	} {
 		p, err := NewPathFromString(tc.input)

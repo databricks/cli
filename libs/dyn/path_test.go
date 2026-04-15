@@ -154,16 +154,4 @@ func TestPathString(t *testing.T) {
 
 	p3 := dyn.NewPath(dyn.Key("foo"), dyn.Index(1), dyn.Key("bar"), dyn.Index(2), dyn.Key("baz"))
 	assert.Equal(t, "foo[1].bar[2].baz", p3.String())
-
-	// Keys with dots use bracket notation.
-	p4 := dyn.NewPath(dyn.Key("configuration"), dyn.Key("europris.swipe.egress_streaming_schema"))
-	assert.Equal(t, "configuration['europris.swipe.egress_streaming_schema']", p4.String())
-
-	// Keys with brackets use bracket notation.
-	p5 := dyn.NewPath(dyn.Key("foo"), dyn.Key("bar[0]"))
-	assert.Equal(t, "foo['bar[0]']", p5.String())
-
-	// Keys with single quotes are escaped.
-	p6 := dyn.NewPath(dyn.Key("foo"), dyn.Key("it's.here"))
-	assert.Equal(t, "foo['it''s.here']", p6.String())
 }

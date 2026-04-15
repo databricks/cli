@@ -3,7 +3,6 @@ package dyn
 import (
 	"bytes"
 	"fmt"
-	"strings"
 )
 
 type pathComponent struct {
@@ -128,30 +127,18 @@ func (p Path) CutSuffix(q Path) (Path, bool) {
 	return p[:len(p)-len(q)], true
 }
 
-// keyNeedsBracketNotation returns true if the key contains characters
-// that would be ambiguous in dot notation (e.g. dots or brackets).
-func keyNeedsBracketNotation(key string) bool {
-	return strings.ContainsAny(key, ".[")
-}
-
 // String returns a string representation of the path.
 func (p Path) String() string {
 	var buf bytes.Buffer
 
 	for i, c := range p {
+		if i > 0 && c.key != "" {
+			buf.WriteRune('.')
+		}
 		if c.key != "" {
-			if keyNeedsBracketNotation(c.key) {
-				buf.WriteString("['")
-				buf.WriteString(strings.ReplaceAll(c.key, "'", "''"))
-				buf.WriteString("']")
-			} else {
-				if i > 0 {
-					buf.WriteRune('.')
-				}
-				buf.WriteString(c.key)
-			}
+			buf.WriteString(c.key)
 		} else {
-			fmt.Fprintf(&buf, "[%d]", c.index)
+			buf.WriteString(fmt.Sprintf("[%d]", c.index))
 		}
 	}
 

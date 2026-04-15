@@ -47,40 +47,7 @@ func NewPathFromString(input string) (Path, error) {
 			return nil, fmt.Errorf("invalid path: %s", input)
 		}
 
-		if p[0] == '[' && len(p) > 1 && p[1] == '\'' {
-			// Bracket notation with quoted key: ['key']
-			// Find closing '] sequence, handling escaped quotes ('')
-			p = p[2:] // skip ['
-			var key strings.Builder
-			for {
-				if p == "" {
-					return nil, fmt.Errorf("invalid path: %s", input)
-				}
-				idx := strings.Index(p, "'")
-				if idx < 0 {
-					return nil, fmt.Errorf("invalid path: %s", input)
-				}
-				key.WriteString(p[:idx])
-				p = p[idx+1:]
-				if len(p) > 0 && p[0] == '\'' {
-					// Escaped quote
-					key.WriteByte('\'')
-					p = p[1:]
-					continue
-				}
-				if len(p) == 0 || p[0] != ']' {
-					return nil, fmt.Errorf("invalid path: %s", input)
-				}
-				p = p[1:] // skip ]
-				break
-			}
-			path = append(path, Key(key.String()))
-
-			// The next character must be a . or [
-			if p != "" && strings.IndexAny(p, ".[") != 0 {
-				return nil, fmt.Errorf("invalid path: %s", input)
-			}
-		} else if p[0] == '[' {
+		if p[0] == '[' {
 			// Find next ]
 			i := strings.Index(p, "]")
 			if i < 0 {
