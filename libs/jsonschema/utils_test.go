@@ -95,8 +95,7 @@ func TestTemplateFromString(t *testing.T) {
 
 	v, err = fromString("1.1", NumberType)
 	assert.NoError(t, err)
-	// Floating point conversions are not perfect
-	assert.Less(t, (v.(float64) - 1.1), 0.000001)
+	assert.Equal(t, 1.1, v)
 
 	v, err = fromString("12345", IntegerType)
 	assert.NoError(t, err)
@@ -104,7 +103,7 @@ func TestTemplateFromString(t *testing.T) {
 
 	v, err = fromString("123", NumberType)
 	assert.NoError(t, err)
-	assert.InDelta(t, float64(123), v.(float64), 0.0001)
+	assert.Equal(t, float64(123), v)
 
 	_, err = fromString("qrt", ArrayType)
 	assert.EqualError(t, err, "cannot parse string as object of type array. Value of string: \"qrt\"")
