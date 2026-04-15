@@ -75,48 +75,36 @@ var resourcesYAML []byte
 //go:embed resources.generated.yml
 var resourcesGeneratedYAML []byte
 
-var (
-	configOnce          sync.Once
-	globalConfig        *Config
-	generatedConfigOnce sync.Once
-	generatedConfig     *Config
-	empty               = ResourceLifecycleConfig{
-		IgnoreRemoteChanges: nil,
-		IgnoreLocalChanges:  nil,
-		RecreateOnChanges:   nil,
-		UpdateIDOnChanges:   nil,
-		BackendDefaults:     nil,
-	}
-)
-
-// MustLoadConfig loads and parses the embedded resources.yml configuration.
-// The config is loaded once and cached for subsequent calls.
-// Panics if the embedded YAML is invalid.
-func MustLoadConfig() *Config {
-	configOnce.Do(func() {
-		globalConfig = &Config{
-			Resources: nil,
-		}
-		if err := yaml.Unmarshal(resourcesYAML, globalConfig); err != nil {
-			panic(err)
-		}
-	})
-	return globalConfig
+var empty = ResourceLifecycleConfig{
+	IgnoreRemoteChanges: nil,
+	IgnoreLocalChanges:  nil,
+	RecreateOnChanges:   nil,
+	UpdateIDOnChanges:   nil,
+	BackendDefaults:     nil,
 }
 
-// MustLoadGeneratedConfig loads and parses the embedded resources.generated.yml configuration.
-// The config is loaded once and cached for subsequent calls.
-// Panics if the embedded YAML is invalid.
-func MustLoadGeneratedConfig() *Config {
-	generatedConfigOnce.Do(func() {
-		generatedConfig = &Config{
-			Resources: nil,
-		}
-		if err := yaml.Unmarshal(resourcesGeneratedYAML, generatedConfig); err != nil {
+func mustParseConfig(data []byte) func() *Config {
+	return sync.OnceValue(func() *Config {
+		c := &Config{Resources: nil}
+		if err := yaml.Unmarshal(data, c); err != nil {
 			panic(err)
 		}
+		return c
 	})
-	return generatedConfig
+}
+
+var loadConfig = mustParseConfig(resourcesYAML)
+
+var loadGeneratedConfig = mustParseConfig(resourcesGeneratedYAML)
+
+// MustLoadConfig returns the parsed resources.yml configuration.
+func MustLoadConfig() *Config {
+	return loadConfig()
+}
+
+// MustLoadGeneratedConfig returns the parsed resources.generated.yml configuration.
+func MustLoadGeneratedConfig() *Config {
+	return loadGeneratedConfig()
 }
 
 // GetResourceConfig returns the lifecycle config for a given resource type.

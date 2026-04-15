@@ -76,6 +76,11 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 		protoLogs[i] = string(b)
 	}
 
+	if !cmdctx.HasConfigUsed(ctx) {
+		log.Debugf(ctx, "no auth config available; skipping telemetry upload")
+		return nil
+	}
+
 	apiClient, err := client.New(cmdctx.ConfigUsed(ctx))
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)

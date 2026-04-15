@@ -96,7 +96,7 @@ async function checkPerPathApproval(files, rulesWithTeams, approverLogins, githu
 
 // --- Git history & scoring helpers ---
 
-const MENTION_REVIEWERS = true;
+const MENTION_REVIEWERS = false;
 const OWNERS_LINK = "[OWNERS](.github/OWNERS)";
 const MARKER = "<!-- MAINTAINER_APPROVAL -->";
 const STATUS_CONTEXT = "maintainer-approval";
@@ -203,9 +203,8 @@ function topDirs(ds, n = 3) {
 }
 
 function fmtReviewer(login, dirs) {
-  const mention = MENTION_REVIEWERS ? `@${login}` : login;
   const dirList = dirs.map((d) => `\`${d}/\``).join(", ");
-  return `- ${mention} -- recent work in ${dirList}`;
+  return `- ${fmtLogin(login)} -- recent work in ${dirList}`;
 }
 
 function selectReviewers(ss) {
@@ -221,8 +220,12 @@ function selectReviewers(ss) {
 }
 
 function fmtEligible(owners) {
-  if (MENTION_REVIEWERS) return owners.map((o) => `@${o}`).join(", ");
-  return owners.join(", ");
+  return owners.map((o) => fmtLogin(o)).join(", ");
+}
+
+function fmtLogin(login) {
+  if (MENTION_REVIEWERS) return `@${login}`;
+  return `\`@${login}\``;
 }
 
 async function countRecentReviews(github, owner, repo, logins, days = 30) {
@@ -267,7 +270,7 @@ function buildPendingPerGroupComment(groups, scores, dirScores, approvedBy, main
 
     const approver = approvedBy.get(pattern);
     if (approver) {
-      lines.push(`### \`${pattern}\` - approved by @${approver}`);
+      lines.push(`### \`${pattern}\` - approved by ${fmtLogin(approver)}`);
     } else {
       lines.push(`### \`${pattern}\` - needs approval`);
     }
@@ -277,13 +280,13 @@ function buildPendingPerGroupComment(groups, scores, dirScores, approvedBy, main
     const individuals = owners.filter(o => !o.includes("/") && o.toLowerCase() !== authorLower);
 
     if (teams.length > 0) {
-      lines.push(`Teams: ${teams.map(t => `@${t}`).join(", ")}`);
+      lines.push(`Teams: ${teams.map(t => fmtLogin(t)).join(", ")}`);
     }
 
     if (!approver && individuals.length > 0) {
       const scored = individuals.map(o => [o, scores[o] || 0]).sort((a, b) => b[1] - a[1]);
       if (scored[0][1] > 0) {
-        lines.push(`Suggested: @${scored[0][0]}`);
+        lines.push(`Suggested: ${fmtLogin(scored[0][0])}`);
         const rest = scored.slice(1).map(([o]) => o);
         if (rest.length > 0) {
           lines.push(`Also eligible: ${fmtEligible(rest)}`);
@@ -320,7 +323,7 @@ function buildPendingPerGroupComment(groups, scores, dirScores, approvedBy, main
 
   const maintainerList = maintainers
     .filter(m => m.toLowerCase() !== authorLower)
-    .map(m => `@${m}`)
+    .map(m => fmtLogin(m))
     .join(", ");
 
   lines.push(
@@ -349,7 +352,7 @@ function buildSingleDomainPendingComment(sortedScores, dirScores, scoredCount, e
   } else if (roundRobinReviewer) {
     lines.push(
       "Could not determine reviewers from git history.",
-      `Round-robin suggestion: @${roundRobinReviewer}`,
+      `Round-robin suggestion: ${fmtLogin(roundRobinReviewer)}`,
       ""
     );
   }
@@ -443,11 +446,11 @@ module.exports = async ({ github, context, core }) => {
   const prNumber = context.issue.number;
   const authorLogin = pr?.user?.login;
   const sha = pr.head.sha;
-  const statusParams = {
+  const checkParams = {
     owner: context.repo.owner,
     repo: context.repo.repo,
-    sha,
-    context: STATUS_CONTEXT,
+    head_sha: sha,
+    name: STATUS_CONTEXT,
   };
 
   const reviews = await github.paginate(github.rest.pulls.listReviews, {
@@ -464,10 +467,11 @@ module.exports = async ({ github, context, core }) => {
   if (maintainerApproval) {
     const approver = maintainerApproval.user.login;
     core.info(`Maintainer approval from @${approver}`);
-    await github.rest.repos.createCommitStatus({
-      ...statusParams,
-      state: "success",
-      description: `Approved by @${approver}`,
+    await github.rest.checks.create({
+      ...checkParams,
+      status: "completed",
+      conclusion: "success",
+      output: { title: STATUS_CONTEXT, summary: `Approved by @${approver}` },
     });
     await deleteMarkerComments(github, owner, repo, prNumber);
     return;
@@ -481,10 +485,11 @@ module.exports = async ({ github, context, core }) => {
     );
     if (hasAnyApproval) {
       core.info(`Maintainer-authored PR approved by a reviewer.`);
-      await github.rest.repos.createCommitStatus({
-        ...statusParams,
-        state: "success",
-        description: "Approved (maintainer-authored PR)",
+      await github.rest.checks.create({
+        ...checkParams,
+        status: "completed",
+        conclusion: "success",
+        output: { title: STATUS_CONTEXT, summary: "Approved (maintainer-authored PR)" },
       });
       await deleteMarkerComments(github, owner, repo, prNumber);
       return;
@@ -514,13 +519,17 @@ module.exports = async ({ github, context, core }) => {
     core
   );
 
-  // Set commit status. Approved PRs return early (commit status is sufficient).
+  // Approved PRs get a success check run and return early.
+  // Pending PRs intentionally create NO check run or status. The required
+  // status check "maintainer-approval" stays as "Expected" (yellow dot) in
+  // the GitHub UI, which blocks the merge until approval is granted.
   if (result.allCovered && approverLogins.length > 0) {
     core.info("All ownership groups have per-path approval.");
-    await github.rest.repos.createCommitStatus({
-      ...statusParams,
-      state: "success",
-      description: "All ownership groups approved",
+    await github.rest.checks.create({
+      ...checkParams,
+      status: "completed",
+      conclusion: "success",
+      output: { title: STATUS_CONTEXT, summary: "All ownership groups approved" },
     });
     await deleteMarkerComments(github, owner, repo, prNumber);
     return;
@@ -528,36 +537,20 @@ module.exports = async ({ github, context, core }) => {
 
   if (result.hasWildcardFiles) {
     const fileList = result.wildcardFiles.join(", ");
-    const msg =
+    core.info(
       `Files need maintainer review: ${fileList}. ` +
-      `Maintainers: ${maintainers.join(", ")}`;
-    core.info(msg);
-    await github.rest.repos.createCommitStatus({
-      ...statusParams,
-      state: "pending",
-      description: msg.length > 140 ? msg.slice(0, 137) + "..." : msg,
-    });
+      `Maintainers: ${maintainers.join(", ")}`
+    );
   } else if (result.uncovered && result.uncovered.length > 0) {
     const groupList = result.uncovered
       .map(({ pattern, owners }) => `${pattern} (needs: ${owners.join(", ")})`)
       .join("; ");
-    const msg = `Needs approval: ${groupList}`;
     core.info(
-      `${msg}. Alternatively, any maintainer can approve: ${maintainers.join(", ")}.`
+      `Needs approval: ${groupList}. ` +
+      `Alternatively, any maintainer can approve: ${maintainers.join(", ")}.`
     );
-    await github.rest.repos.createCommitStatus({
-      ...statusParams,
-      state: "pending",
-      description: msg.length > 140 ? msg.slice(0, 137) + "..." : msg,
-    });
   } else {
-    const msg = `Waiting for maintainer approval: ${maintainers.join(", ")}`;
-    core.info(msg);
-    await github.rest.repos.createCommitStatus({
-      ...statusParams,
-      state: "pending",
-      description: msg.length > 140 ? msg.slice(0, 137) + "..." : msg,
-    });
+    core.info(`Waiting for maintainer approval: ${maintainers.join(", ")}`);
   }
 
   // Score contributors via git history

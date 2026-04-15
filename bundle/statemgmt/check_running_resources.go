@@ -42,11 +42,7 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 	var state ExportedResourcesMap
 
 	if l.engine.IsDirect() {
-		_, fullPathDirect := b.StateFilenameDirect(ctx)
-		state, err = b.DeploymentBundle.ExportState(ctx, fullPathDirect)
-		if err != nil {
-			return diag.FromErr(err)
-		}
+		state = b.DeploymentBundle.ExportState(ctx)
 	} else {
 		state, err = terraform.ParseResourcesState(ctx, b)
 		if err != nil {

@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path"
@@ -28,7 +30,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 	sshDir := path.Join(homeDir, opts.ConfigDir)
 
 	err = os.RemoveAll(sshDir)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("failed to remove existing SSH directory: %w", err)
 	}
 

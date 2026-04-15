@@ -2,7 +2,8 @@ package configsync
 
 import (
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -17,21 +18,13 @@ func FormatTextOutput(changes Changes) string {
 
 	output.WriteString(fmt.Sprintf("Detected changes in %d resource(s):\n\n", len(changes)))
 
-	resourceKeys := make([]string, 0, len(changes))
-	for key := range changes {
-		resourceKeys = append(resourceKeys, key)
-	}
-	sort.Strings(resourceKeys)
+	resourceKeys := slices.Sorted(maps.Keys(changes))
 
 	for _, resourceKey := range resourceKeys {
 		resourceChanges := changes[resourceKey]
 		output.WriteString(fmt.Sprintf("Resource: %s\n", resourceKey))
 
-		paths := make([]string, 0, len(resourceChanges))
-		for path := range resourceChanges {
-			paths = append(paths, path)
-		}
-		sort.Strings(paths)
+		paths := slices.Sorted(maps.Keys(resourceChanges))
 
 		for _, path := range paths {
 			configChange := resourceChanges[path]

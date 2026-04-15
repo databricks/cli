@@ -2105,6 +2105,7 @@ resources.models.*.latest_versions[*].user_id	string	REMOTE
 resources.models.*.latest_versions[*].version	string	REMOTE
 resources.models.*.lifecycle	resources.Lifecycle	INPUT
 resources.models.*.lifecycle.prevent_destroy	bool	INPUT
+resources.models.*.model_id	string	REMOTE
 resources.models.*.modified_status	string	INPUT
 resources.models.*.name	string	ALL
 resources.models.*.permission_level	ml.PermissionLevel	REMOTE

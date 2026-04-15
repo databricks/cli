@@ -2,7 +2,9 @@ package sshconfig
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,7 +44,7 @@ func GetMainConfigPathOrDefault(ctx context.Context, configPath string) (string,
 
 func EnsureMainConfigExists(configPath string) error {
 	_, err := os.Stat(configPath)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		sshDir := filepath.Dir(configPath)
 		err = os.MkdirAll(sshDir, 0o700)
 		if err != nil {
@@ -152,7 +154,7 @@ func HostConfigExists(ctx context.Context, hostName string) (bool, error) {
 		return false, err
 	}
 	_, err = os.Stat(configPath)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return false, nil
 	}
 	if err != nil {

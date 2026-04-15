@@ -13,6 +13,15 @@ type ResourceMlflowModel struct {
 	client *databricks.WorkspaceClient
 }
 
+// MlflowModelRemote wraps the API response with the numeric model ID.
+// The state ID for models is the model name (used for CRUD operations), but
+// the permissions API requires the numeric ID. This wrapper exposes the numeric
+// ID as model_id, analogous to RefreshOutput.EndpointId for serving endpoints.
+type MlflowModelRemote struct {
+	ml.ModelDatabricks
+	ModelId string `json:"model_id"`
+}
+
 func (*ResourceMlflowModel) New(client *databricks.WorkspaceClient) *ResourceMlflowModel {
 	return &ResourceMlflowModel{client: client}
 }
@@ -21,53 +30,39 @@ func (*ResourceMlflowModel) PrepareState(input *resources.MlflowModel) *ml.Creat
 	return &input.CreateModelRequest
 }
 
-func (*ResourceMlflowModel) RemapState(model *ml.ModelDatabricks) *ml.CreateModelRequest {
+func (*ResourceMlflowModel) RemapState(output *MlflowModelRemote) *ml.CreateModelRequest {
 	return &ml.CreateModelRequest{
-		Name:            model.Name,
-		Tags:            model.Tags,
-		Description:     model.Description,
-		ForceSendFields: utils.FilterFields[ml.CreateModelRequest](model.ForceSendFields),
+		Name:            output.Name,
+		Tags:            output.Tags,
+		Description:     output.Description,
+		ForceSendFields: utils.FilterFields[ml.CreateModelRequest](output.ForceSendFields),
 	}
 }
 
-func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string) (*ml.ModelDatabricks, error) {
+func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string) (*MlflowModelRemote, error) {
 	response, err := r.client.ModelRegistry.GetModel(ctx, ml.GetModelRequest{
 		Name: id,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return response.RegisteredModelDatabricks, nil
+	return &MlflowModelRemote{
+		ModelDatabricks: *response.RegisteredModelDatabricks,
+		ModelId:         response.RegisteredModelDatabricks.Id,
+	}, nil
 }
 
-func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateModelRequest) (string, *ml.ModelDatabricks, error) {
+func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateModelRequest) (string, *MlflowModelRemote, error) {
 	response, err := r.client.ModelRegistry.CreateModel(ctx, *config)
 	if err != nil {
 		return "", nil, err
 	}
-	// Create API call returns [ml.Model] while DoRead returns [ml.ModelDatabricks].
-	// Thus we need to convert the response to the expected type.
-	modelDatabricks := &ml.ModelDatabricks{
-		Name:            response.RegisteredModel.Name,
-		Description:     response.RegisteredModel.Description,
-		Tags:            response.RegisteredModel.Tags,
-		ForceSendFields: utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
-
-		// Coping the fields only to satisfy the linter. These fields are not
-		// part of the configuration tree so they don't need to be copied.
-		// The linter works as a safeguard to ensure we add new fields to the bundle config tree
-		// to the mapping logic here as well.
-		CreationTimestamp:    0,
-		Id:                   "",
-		LastUpdatedTimestamp: 0,
-		LatestVersions:       nil,
-		PermissionLevel:      "",
-		UserId:               "",
-	}
-	return response.RegisteredModel.Name, modelDatabricks, nil
+	// Return nil for refresh output; the engine will call DoRead to populate the full state
+	// including the numeric model ID needed for permissions.
+	return response.RegisteredModel.Name, nil, nil
 }
 
-func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, _ *PlanEntry) (*ml.ModelDatabricks, error) {
+func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, entry *PlanEntry) (*MlflowModelRemote, error) {
 	updateRequest := ml.UpdateModelRequest{
 		Name:            id,
 		Description:     config.Description,
@@ -79,26 +74,27 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 		return nil, err
 	}
 
-	// Update API call returns [ml.Model] while DoRead returns [ml.ModelDatabricks].
-	// Thus we need to convert the response to the expected type.
-	modelDatabricks := &ml.ModelDatabricks{
-		Name:            response.RegisteredModel.Name,
-		Description:     response.RegisteredModel.Description,
-		Tags:            response.RegisteredModel.Tags,
-		ForceSendFields: utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
-
-		// Coping the fields only to satisfy the linter. These fields are not
-		// part of the configuration tree so they don't need to be copied.
-		// The linter works as a safeguard to ensure we add new fields to the bundle config tree
-		// to the mapping logic here as well.
-		CreationTimestamp:    0,
-		Id:                   "",
-		LastUpdatedTimestamp: 0,
-		LatestVersions:       nil,
-		PermissionLevel:      "",
-		UserId:               "",
+	// Carry forward model_id from existing state since UpdateModelResponse doesn't include it.
+	var modelId string
+	if old, ok := entry.RemoteState.(*MlflowModelRemote); ok {
+		modelId = old.ModelId
 	}
-	return modelDatabricks, nil
+
+	return &MlflowModelRemote{
+		ModelDatabricks: ml.ModelDatabricks{
+			CreationTimestamp:    0,
+			Description:          response.RegisteredModel.Description,
+			Id:                   "",
+			LastUpdatedTimestamp: 0,
+			LatestVersions:       nil,
+			Name:                 response.RegisteredModel.Name,
+			PermissionLevel:      "",
+			Tags:                 response.RegisteredModel.Tags,
+			UserId:               "",
+			ForceSendFields:      utils.FilterFields[ml.ModelDatabricks](response.RegisteredModel.ForceSendFields, "CreationTimestamp", "Id", "LastUpdatedTimestamp", "LatestVersions", "PermissionLevel", "UserId"),
+		},
+		ModelId: modelId,
+	}, nil
 }
 
 func (r *ResourceMlflowModel) DoDelete(ctx context.Context, id string) error {

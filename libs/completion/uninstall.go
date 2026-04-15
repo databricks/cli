@@ -1,7 +1,9 @@
 package completion
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"regexp"
 	"strings"
@@ -25,7 +27,7 @@ func Uninstall(shell Shell, homeDir string) (filePath string, wasInstalled bool,
 // manager or created by the user.
 func uninstallFish(filePath string) (string, bool, error) {
 	content, err := os.ReadFile(filePath)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return filePath, false, nil
 	}
 	if err != nil {
@@ -45,7 +47,7 @@ func uninstallFish(filePath string) (string, bool, error) {
 // uninstallRC handles the RC file model: find and remove the marker block.
 func uninstallRC(filePath string) (string, bool, error) {
 	info, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return filePath, false, nil
 	}
 	if err != nil {
