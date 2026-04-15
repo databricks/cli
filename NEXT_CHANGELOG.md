@@ -15,6 +15,7 @@
 * Fix resource references not correctly resolved in apps config section ([#4964](https://github.com/databricks/cli/pull/4964))
 * Allow run_as for dashboards with embed_credentials set to false ([#4961](https://github.com/databricks/cli/pull/4961))
 * direct: Pass changed fields into update mask for apps instead of wildcard ([#4963](https://github.com/databricks/cli/pull/4963))
+* engine/direct: Fix deploy of pipelines with dotted configuration keys (denik/migrate-dots)
 
 ### Dependency updates
 
