@@ -43,15 +43,18 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 			continue
 		}
 
-		if _, ok := usedSourceCodePaths[app.SourceCodePath]; ok {
-			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "Duplicate app source code path",
-				Detail:    fmt.Sprintf("app resource '%s' has the same source code path as app resource '%s', this will lead to the app configuration being overridden by each other", key, usedSourceCodePaths[app.SourceCodePath]),
-				Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key, "source_code_path")),
-			})
+		// Git-sourced apps have no source_code_path, so they must not share the "" key.
+		if app.SourceCodePath != "" {
+			if _, ok := usedSourceCodePaths[app.SourceCodePath]; ok {
+				diags = append(diags, diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "Duplicate app source code path",
+					Detail:    fmt.Sprintf("app resource '%s' has the same source code path as app resource '%s', this will lead to the app configuration being overridden by each other", key, usedSourceCodePaths[app.SourceCodePath]),
+					Locations: b.Config.GetLocationsOf(structpath.NewPath(nil, "resources", "apps", key, "source_code_path")),
+				})
+			}
+			usedSourceCodePaths[app.SourceCodePath] = key
 		}
-		usedSourceCodePaths[app.SourceCodePath] = key
 
 		diags = diags.Extend(warnForAppResourcePermissions(b, key, app))
 	}
