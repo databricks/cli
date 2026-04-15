@@ -16,13 +16,11 @@ type testIface interface {
 type partialType struct{}
 
 func (*partialType) Foo() {}
-func (*partialType) baz() {} //nolint:unused
 
 type goodType struct{}
 
 func (*goodType) Foo() {}
 func (*goodType) Bar() {}
-func (*goodType) baz() {} //nolint:unused
 
 type badType struct{}
 

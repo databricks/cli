@@ -26,6 +26,3 @@ func RandomName(prefix ...string) string {
 	return out
 }
 
-func ReplaceWindowsLineEndings(s string) string {
-	return strings.ReplaceAll(s, "\r\n", "\n")
-}

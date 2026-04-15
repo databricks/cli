@@ -276,16 +276,6 @@ func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template str
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, headerTemplate, template)
 }
 
-func RenderIteratorWithTemplate[T any](ctx context.Context, i listing.Iterator[T], headerTemplate, template string) error {
-	c := fromContext(ctx)
-	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, headerTemplate, template)
-}
-
-func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error {
-	c := fromContext(ctx)
-	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
-}
-
 var renderFuncMap = template.FuncMap{
 	// we render colored output if stdout is TTY, otherwise we render text.
 	// in the future we'll check if we can explicitly check for stderr being

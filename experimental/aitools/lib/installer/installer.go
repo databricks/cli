@@ -67,14 +67,6 @@ type InstallOptions struct {
 	Scope               string   // ScopeGlobal or ScopeProject (default: global)
 }
 
-// FetchManifest fetches the skills manifest from the skills repo.
-// This is a convenience wrapper that uses the default GitHubManifestSource.
-func FetchManifest(ctx context.Context) (*Manifest, error) {
-	src := &GitHubManifestSource{}
-	ref := GetSkillsRef(ctx)
-	return src.FetchManifest(ctx, ref)
-}
-
 func fetchSkillFile(ctx context.Context, ref, skillName, filePath string) ([]byte, error) {
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s/%s/%s",
 		skillsRepoOwner, skillsRepoName, ref, skillsRepoPath, skillName, filePath)
@@ -301,19 +293,6 @@ func InstallAllSkills(ctx context.Context) error {
 	PrintInstallingFor(ctx, installed)
 	src := &GitHubManifestSource{}
 	return InstallSkillsForAgents(ctx, src, installed, InstallOptions{})
-}
-
-// InstallSkill installs a single skill by name for all detected agents.
-func InstallSkill(ctx context.Context, skillName string) error {
-	installed := agents.DetectInstalled(ctx)
-	if len(installed) == 0 {
-		printNoAgentsDetected(ctx)
-		return nil
-	}
-
-	PrintInstallingFor(ctx, installed)
-	src := &GitHubManifestSource{}
-	return InstallSkillsForAgents(ctx, src, installed, InstallOptions{SpecificSkills: []string{skillName}})
 }
 
 // PrintInstallingFor prints the "Installing..." header with agent names.
