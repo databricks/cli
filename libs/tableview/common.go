@@ -26,6 +26,33 @@ var (
 	searchStyle          = lipgloss.NewStyle().Foreground(lipgloss.Color("229"))
 )
 
+// computeColumnWidths returns the display width for each column.
+// It scans headers and all rows, taking the max rune count per column.
+// If maxWidths[i] > 0, the width for column i is capped at that value.
+// Pass nil for maxWidths to use no caps.
+func computeColumnWidths(headers []string, rows [][]string, maxWidths []int) []int {
+	widths := make([]int, len(headers))
+	for i, h := range headers {
+		widths[i] = utf8.RuneCountInString(h)
+	}
+	for _, row := range rows {
+		for i := range widths {
+			if i < len(row) {
+				w := utf8.RuneCountInString(row[i])
+				if w > widths[i] {
+					widths[i] = w
+				}
+			}
+		}
+	}
+	for i := range widths {
+		if maxWidths != nil && i < len(maxWidths) && maxWidths[i] > 0 {
+			widths[i] = min(widths[i], maxWidths[i])
+		}
+	}
+	return widths
+}
+
 // renderTableLines produces aligned table text as individual lines.
 func renderTableLines(columns []string, rows [][]string) []string {
 	var buf strings.Builder
@@ -34,18 +61,8 @@ func renderTableLines(columns []string, rows [][]string) []string {
 	// Header.
 	fmt.Fprintln(tw, strings.Join(columns, "\t"))
 
-	// Separator: compute widths from header + data for dash line.
-	widths := make([]int, len(columns))
-	for i, col := range columns {
-		widths[i] = utf8.RuneCountInString(col)
-	}
-	for _, row := range rows {
-		for i := range columns {
-			if i < len(row) {
-				widths[i] = max(widths[i], utf8.RuneCountInString(row[i]))
-			}
-		}
-	}
+	// Separator.
+	widths := computeColumnWidths(columns, rows, nil)
 	seps := make([]string, len(columns))
 	for i, w := range widths {
 		seps[i] = strings.Repeat("─", w)
@@ -145,15 +162,14 @@ func RenderStaticTable(w io.Writer, columns []string, rows [][]string) error {
 	// Header
 	fmt.Fprintln(tw, strings.Join(columns, "\t"))
 	// Separator
+	caps := make([]int, len(columns))
+	for i := range caps {
+		caps[i] = maxColumnWidth
+	}
+	widths := computeColumnWidths(columns, rows, caps)
 	seps := make([]string, len(columns))
-	for i, col := range columns {
-		width := utf8.RuneCountInString(col)
-		for _, row := range rows {
-			if i < len(row) {
-				width = max(width, min(utf8.RuneCountInString(row[i]), maxColumnWidth))
-			}
-		}
-		seps[i] = strings.Repeat("─", width)
+	for i, w := range widths {
+		seps[i] = strings.Repeat("─", w)
 	}
 	fmt.Fprintln(tw, strings.Join(seps, "\t"))
 	// Data rows (no cell truncation; truncation is a TUI display concern)

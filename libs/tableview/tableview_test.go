@@ -83,3 +83,65 @@ func TestHighlightSearchNoMatch(t *testing.T) {
 	result := highlightSearch("hello bob", "alice")
 	assert.Equal(t, "hello bob", result)
 }
+
+func TestComputeColumnWidths(t *testing.T) {
+	tests := []struct {
+		name      string
+		headers   []string
+		rows      [][]string
+		maxWidths []int
+		want      []int
+	}{
+		{
+			name:    "header wider than data",
+			headers: []string{"username", "id"},
+			rows:    [][]string{{"al", "1"}, {"bo", "2"}},
+			want:    []int{8, 2},
+		},
+		{
+			name:    "data wider than header",
+			headers: []string{"id", "name"},
+			rows:    [][]string{{"1", "alexander"}, {"2", "bob"}},
+			want:    []int{2, 9},
+		},
+		{
+			name:      "cap limits wide data",
+			headers:   []string{"a", "b"},
+			rows:      [][]string{{"short", "this-is-a-very-long-value"}},
+			maxWidths: []int{10, 10},
+			want:      []int{5, 10},
+		},
+		{
+			name:    "nil maxWidths applies no caps",
+			headers: []string{"x"},
+			rows:    [][]string{{"a-really-long-string-with-no-cap"}},
+			want:    []int{32},
+		},
+		{
+			name:    "empty rows returns header widths",
+			headers: []string{"name", "age"},
+			rows:    nil,
+			want:    []int{4, 3},
+		},
+		{
+			name:    "uneven row lengths",
+			headers: []string{"a", "b", "c"},
+			rows:    [][]string{{"longvalue"}, {"x", "y"}},
+			want:    []int{9, 1, 1},
+		},
+		{
+			name:      "zero cap value means no cap for that column",
+			headers:   []string{"a", "b"},
+			rows:      [][]string{{"longvalue", "longvalue"}},
+			maxWidths: []int{0, 5},
+			want:      []int{9, 5},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := computeColumnWidths(tt.headers, tt.rows, tt.maxWidths)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

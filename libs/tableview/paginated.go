@@ -236,21 +236,15 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *paginatedModel) computeWidths() {
-	m.widths = make([]int, len(m.headers))
-	for i, h := range m.headers {
-		m.widths[i] = utf8.RuneCountInString(h)
-	}
-	for _, row := range m.rows {
-		for i := range m.widths {
-			if i < len(row) {
-				maxW := defaultMaxColumnWidth
-				if i < len(m.cfg.Columns) && m.cfg.Columns[i].MaxWidth > 0 {
-					maxW = m.cfg.Columns[i].MaxWidth
-				}
-				m.widths[i] = min(max(m.widths[i], utf8.RuneCountInString(row[i])), maxW)
-			}
+	caps := make([]int, len(m.headers))
+	for i := range caps {
+		maxW := defaultMaxColumnWidth
+		if i < len(m.cfg.Columns) && m.cfg.Columns[i].MaxWidth > 0 {
+			maxW = m.cfg.Columns[i].MaxWidth
 		}
+		caps[i] = maxW
 	}
+	m.widths = computeColumnWidths(m.headers, m.rows, caps)
 }
 
 func (m paginatedModel) renderContent() string {
