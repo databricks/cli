@@ -1,6 +1,7 @@
 package fileutil_test
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -19,7 +20,7 @@ func TestBackupFile_EmptyData(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = os.Stat(path + fileutil.SuffixOriginalBak)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestBackupFile_FirstBackup(t *testing.T) {
@@ -35,7 +36,7 @@ func TestBackupFile_FirstBackup(t *testing.T) {
 	assert.Equal(t, data, content)
 
 	_, err = os.Stat(path + fileutil.SuffixLatestBak)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestBackupFile_SubsequentBackup(t *testing.T) {

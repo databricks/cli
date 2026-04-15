@@ -49,35 +49,27 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		Loaders: []config.Loader{config.ConfigAttributes},
 	}
 
-	discoveryURL := a.DiscoveryURL
-	if discoveryURL == "" {
-		// No cached discovery, resolve fresh.
-		if err := cfg.EnsureResolved(); err == nil {
-			discoveryURL = cfg.DiscoveryURL
-		}
+	if a.DiscoveryURL != "" {
+		cfg.DiscoveryURL = a.DiscoveryURL
+	} else {
+		// EnsureResolved populates cfg.DiscoveryURL from .well-known.
+		_ = cfg.EnsureResolved()
 	}
 
 	host := cfg.CanonicalHostName()
 
-	// Classic accounts.* hosts always use account OAuth, even if discovery
-	// returned data. SPOG/unified hosts are handled below via discovery or
-	// the IsUnifiedHost flag.
+	// Classic accounts.* hosts always use account OAuth.
 	if strings.HasPrefix(host, "https://accounts.") || strings.HasPrefix(host, "https://accounts-dod.") {
 		return u2m.NewProfileAccountOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 
-	// Route based on discovery data: a non-accounts host with an account-scoped
-	// OIDC endpoint is a SPOG/unified host. We check a.AccountID (the caller-
-	// provided value) rather than cfg.AccountID to avoid env var contamination
-	// (e.g. DATABRICKS_ACCOUNT_ID set in the environment). We also require the
-	// DiscoveryURL to contain "/oidc/accounts/" to distinguish SPOG hosts from
-	// classic workspace hosts that may also return discovery metadata.
-	if a.AccountID != "" && discoveryURL != "" && strings.Contains(discoveryURL, "/oidc/accounts/") {
-		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
-	}
-
-	// Legacy backward compat: existing profiles with IsUnifiedHost flag.
-	if a.IsUnifiedHost && a.AccountID != "" {
+	// Pass a.AccountID (not cfg.AccountID) because EnsureResolved can
+	// back-fill cfg.AccountID from two sources: the DATABRICKS_ACCOUNT_ID
+	// env var (via ConfigAttributes) and .well-known/databricks-config
+	// discovery (which returns account_id for every host since PR #4809).
+	// Using cfg.AccountID would cause IsSPOG to misroute plain workspace
+	// hosts as SPOG simply because their metadata includes an account_id.
+	if IsSPOG(cfg, a.AccountID) {
 		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 

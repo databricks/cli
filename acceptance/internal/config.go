@@ -1,12 +1,14 @@
 package internal
 
 import (
+	"errors"
 	"hash/fnv"
+	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
-	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -181,7 +183,7 @@ func FindConfigs(t *testing.T, dir string) []string {
 
 		dir = filepath.Dir(dir)
 
-		if err == nil || os.IsNotExist(err) {
+		if err == nil || errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
 
@@ -346,11 +348,7 @@ func ExpandEnvMatrix(matrix, exclude map[string][]string, extraVars []string) []
 		return result
 	}
 
-	keys := make([]string, 0, len(filteredMatrix))
-	for key := range filteredMatrix {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(filteredMatrix))
 
 	// Build an expansion of all combinations.
 	// At each step we look at a given key and append each possible value to each

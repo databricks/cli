@@ -2,12 +2,11 @@ package dynloc
 
 import (
 	"fmt"
+	"maps"
 	"path/filepath"
 	"slices"
-	"sort"
 
 	"github.com/databricks/cli/libs/dyn"
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -93,8 +92,7 @@ func (l *Locations) registerFileNames(locs []dyn.Location) error {
 		cache[loc.File] = out
 	}
 
-	l.Files = maps.Values(cache)
-	sort.Strings(l.Files)
+	l.Files = slices.Sorted(maps.Values(cache))
 
 	// Build the file-to-index map.
 	for i, file := range l.Files {
@@ -146,7 +144,7 @@ func Build(v dyn.Value, basePath string) (Locations, error) {
 
 	// Normalize file paths and add locations.
 	// This step adds files to the [Files] array in alphabetical order.
-	err = l.registerFileNames(slices.Concat(maps.Values(pathToLocations)...))
+	err = l.registerFileNames(slices.Concat(slices.Collect(maps.Values(pathToLocations))...))
 	if err != nil {
 		return l, err
 	}

@@ -1,0 +1,22 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy with run_as"
+trace $CLI bundle deploy
+trace print_requests.py //jobs | contains.py "!GET" "POST"
+JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.job_with_run_as.id')
+trace $CLI jobs get $JOB_ID | jq -r '.settings.run_as'
+
+update_file.py databricks.yml "run_as:
+        user_name: deco-test-user@databricks.com" ''
+
+title "Remove run_as and redeploy"
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs | contains.py "!GET" "POST"
+trace $CLI jobs get $JOB_ID | jq -r '.settings.run_as'

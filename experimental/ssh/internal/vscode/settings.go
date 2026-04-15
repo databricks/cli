@@ -3,7 +3,9 @@ package vscode
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -76,7 +78,7 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 
 	settings, err := loadSettings(settingsPath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return handleMissingFile(ctx, ide, connectionName, settingsPath)
 		}
 		return fmt.Errorf("failed to load settings: %w", err)

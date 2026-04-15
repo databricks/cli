@@ -2,7 +2,9 @@ package runlocal
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,7 +38,7 @@ func ReadAppSpecFile(config *Config) (*AppSpec, error) {
 	for _, file := range config.AppSpecFiles {
 		// Read the yaml file
 		yamlFile, err := os.ReadFile(filepath.Join(config.AppPath, file))
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
 

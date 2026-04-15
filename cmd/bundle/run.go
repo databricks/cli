@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/env"
@@ -22,7 +24,6 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/maps"
 )
 
 func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
@@ -239,7 +240,7 @@ Example usage:
 
 		if len(args) == 0 {
 			completions := resources.Completions(b, run.IsRunnable)
-			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
+			return slices.Collect(maps.Keys(completions)), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.
 			runner, err := keyToRunner(b, args[0])

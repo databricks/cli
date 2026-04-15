@@ -206,8 +206,7 @@ func newWorkspaceFilesReadaheadCache(ctx context.Context, f Filer) *cache {
 	}
 
 	for range kNumCacheWorkers {
-		c.wg.Add(1)
-		go c.work(ctx)
+		c.wg.Go(func() { c.work(ctx) })
 	}
 
 	return c
@@ -215,8 +214,6 @@ func newWorkspaceFilesReadaheadCache(ctx context.Context, f Filer) *cache {
 
 // work until the queue is closed.
 func (c *cache) work(ctx context.Context) {
-	defer c.wg.Done()
-
 	for e := range c.queue {
 		e.execute(ctx, c)
 	}
