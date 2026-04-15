@@ -11,7 +11,6 @@ require (
 	github.com/hashicorp/terraform-json v0.27.2
 	github.com/iancoleman/strcase v0.3.0
 	github.com/zclconf/go-cty v1.16.4
-	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6
 )
 
 require (

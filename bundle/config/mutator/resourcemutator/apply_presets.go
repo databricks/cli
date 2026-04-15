@@ -1,10 +1,10 @@
 package resourcemutator
 
 import (
+	"cmp"
 	"context"
 	"path"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -323,8 +323,8 @@ func toTagArray(tags map[string]string) []Tag {
 	for key, value := range tags {
 		tagArray = append(tagArray, Tag{Key: key, Value: value})
 	}
-	sort.Slice(tagArray, func(i, j int) bool {
-		return tagArray[i].Key < tagArray[j].Key
+	slices.SortFunc(tagArray, func(a, b Tag) int {
+		return cmp.Compare(a.Key, b.Key)
 	})
 	return tagArray
 }

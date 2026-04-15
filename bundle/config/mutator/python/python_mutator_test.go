@@ -3,18 +3,18 @@ package python
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn/convert"
 
 	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/require"
-
-	"golang.org/x/exp/maps"
 
 	"github.com/databricks/cli/libs/dyn"
 
@@ -103,7 +103,7 @@ workspace: { current_user: { userName: test }}`)
 
 	assert.NoError(t, diags.Error())
 
-	assert.ElementsMatch(t, []string{"job0", "job1"}, maps.Keys(b.Config.Resources.Jobs))
+	assert.ElementsMatch(t, []string{"job0", "job1"}, slices.Collect(maps.Keys(b.Config.Resources.Jobs)))
 
 	if job0, ok := b.Config.Resources.Jobs["job0"]; ok {
 		assert.Equal(t, "job_0", job0.Name)
@@ -212,7 +212,7 @@ resources:
 
 	assert.NoError(t, diag.Error())
 
-	assert.ElementsMatch(t, []string{"job0"}, maps.Keys(b.Config.Resources.Jobs))
+	assert.ElementsMatch(t, []string{"job0"}, slices.Collect(maps.Keys(b.Config.Resources.Jobs)))
 	assert.Equal(t, "job_0", b.Config.Resources.Jobs["job0"].Name)
 	assert.Equal(t, "my job", b.Config.Resources.Jobs["job0"].Description)
 

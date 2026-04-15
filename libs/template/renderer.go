@@ -1,6 +1,7 @@
 package template
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"path"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -288,8 +288,8 @@ func (r *renderer) walk() error {
 			return err
 		}
 		// Sort by name to ensure deterministic ordering
-		sort.Slice(entries, func(i, j int) bool {
-			return entries[i].Name() < entries[j].Name()
+		slices.SortFunc(entries, func(a, b fs.DirEntry) int {
+			return cmp.Compare(a.Name(), b.Name())
 		})
 		for _, entry := range entries {
 			if entry.IsDir() {

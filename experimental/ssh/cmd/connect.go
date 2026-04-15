@@ -85,6 +85,9 @@ the SSH server and handling the connection proxy.
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		wsClient := cmdctx.WorkspaceClient(ctx)
+		if connectionName == "" && clusterID == "" && !proxyMode {
+			connectionName = client.GenerateDefaultConnectionName(wsClient.Config.Host, accelerator)
+		}
 		opts := client.ClientOptions{
 			Profile:              wsClient.Config.Profile,
 			ClusterID:            clusterID,
