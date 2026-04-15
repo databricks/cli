@@ -6,13 +6,59 @@ Deployment complete!
 Warn: Failed to release deployment lock: simulated complete version failure
 
 >>> print_requests.py --get //bundle ^//workspace-files ^//import-file
-Traceback (most recent call last):
-  File "[TESTROOT]/bin/print_requests.py", line 197, in <module>
-    main()
-  File "[TESTROOT]/bin/print_requests.py", line 178, in main
-    filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort)
-  File "[TESTROOT]/bin/print_requests.py", line 114, in filter_requests
-    positive_filters.append(f.removeprefix(ADD_PREFIX))
-AttributeError: 'str' object has no attribute 'removeprefix'
-
-Exit code: 1
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "q": {
+    "deployment_id": "[UUID]"
+  },
+  "body": {
+    "target_name": "fail-complete"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[DEV_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "target_name": "fail-complete"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/operations",
+  "q": {
+    "resource_key": "jobs.test_job"
+  },
+  "body": {
+    "resource_key": "jobs.test_job",
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "state": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-release-lock-error/fail-complete/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "test-job",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "resource_id": "[NUMID]",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "body": {
+    "name": "deployments/[UUID]/versions/1",
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}

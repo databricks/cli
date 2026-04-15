@@ -13,13 +13,125 @@ Deployment complete!
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> print_requests.py --get //bundle ^//workspace-files ^//import-file
-Traceback (most recent call last):
-  File "[TESTROOT]/bin/print_requests.py", line 197, in <module>
-    main()
-  File "[TESTROOT]/bin/print_requests.py", line 172, in main
-    data = fobj.read()
-  File "/usr/lib/python3.6/encodings/ascii.py", line 26, in decode
-    return codecs.ascii_decode(input, self.errors)[0]
-UnicodeDecodeError: 'ascii' codec can't decode byte 0xe2 in position 6985: ordinal not in range(128)
-
-Exit code: 1
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "q": {
+    "deployment_id": "[UUID]"
+  },
+  "body": {
+    "target_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[DEV_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "target_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/operations",
+  "q": {
+    "resource_key": "jobs.job_a"
+  },
+  "body": {
+    "resource_key": "jobs.job_a",
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "state": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "job-a",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "resource_id": "[NUMID]",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/1/complete",
+  "body": {
+    "name": "deployments/[UUID]/versions/1",
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[UUID]/resources",
+  "q": {
+    "page_size": "1000"
+  },
+  "body": null
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[UUID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions",
+  "q": {
+    "version_id": "2"
+  },
+  "body": {
+    "cli_version": "[DEV_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "target_name": "default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/2/operations",
+  "q": {
+    "resource_key": "jobs.job_b"
+  },
+  "body": {
+    "resource_key": "jobs.job_b",
+    "action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "state": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/add-resources-test/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "job-b",
+      "queue": {
+        "enabled": true
+      }
+    },
+    "resource_id": "[NUMID]",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[UUID]/versions/2/complete",
+  "body": {
+    "name": "deployments/[UUID]/versions/2",
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[UUID]/resources",
+  "q": {
+    "page_size": "1000"
+  },
+  "body": null
+}
