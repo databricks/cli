@@ -4,16 +4,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sequential-deploys
 Deploying resources...
 Deployment complete!
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default/files...
-Deploying resources...
-Deployment complete!
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default/files...
-Deploying resources...
-Deployment complete!
-
 >>> print_requests.py --get //bundle ^//workspace-files ^//import-file
 {
   "method": "POST",
@@ -71,6 +61,13 @@ Deployment complete!
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_requests.py --get //bundle ^//workspace-files ^//import-file
 {
   "method": "GET",
   "path": "/api/2.0/bundle/deployments/[UUID]/resources",
@@ -129,6 +126,13 @@ Deployment complete!
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/sequential-deploys-test/default/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_requests.py --get //bundle ^//workspace-files ^//import-file
 {
   "method": "GET",
   "path": "/api/2.0/bundle/deployments/[UUID]/resources",
