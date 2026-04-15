@@ -51,10 +51,14 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	cmdio.LogString(ctx, fmt.Sprintf("Executing '%s' script", m.scriptHook))
 
 	reader := bufio.NewReader(out)
-	line, err := reader.ReadString('\n')
-	for err == nil {
-		cmdio.LogString(ctx, strings.TrimSpace(line))
-		line, err = reader.ReadString('\n')
+	for {
+		line, err := reader.ReadString('\n')
+		if line != "" {
+			cmdio.LogString(ctx, strings.TrimSpace(line))
+		}
+		if err != nil {
+			break
+		}
 	}
 
 	err = cmd.Wait()
