@@ -124,4 +124,3 @@ func getAnnotations(path string) (annotation.File, error) {
 	err = yaml.Unmarshal(b, &data)
 	return data, err
 }
-

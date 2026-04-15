@@ -16,4 +16,3 @@ func configureVariables(cmd *cobra.Command, b *bundle.Bundle, variables []string
 		}
 	})
 }
-

@@ -67,4 +67,3 @@ func putSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, k
 	}
 	return nil
 }
-

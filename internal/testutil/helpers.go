@@ -25,4 +25,3 @@ func RandomName(prefix ...string) string {
 	out += strings.ReplaceAll(uuid.New().String(), "-", "")
 	return out
 }
-
