@@ -65,6 +65,8 @@ func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipeli
 }
 
 func listPipelineEventsOverride(listCmd *cobra.Command, _ *pipelines.ListPipelineEventsRequest) {
+	// Template is the text-mode fallback for non-interactive/piped output.
+	// TableConfig drives the interactive TUI when the terminal supports it.
 	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Timestamp"}}	{{header "Level"}}	{{header "Event Type"}}	{{header "Message"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`

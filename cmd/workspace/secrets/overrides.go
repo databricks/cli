@@ -35,6 +35,8 @@ func listScopesOverride(listScopesCmd *cobra.Command) {
 }
 
 func listSecretsOverride(listSecretsCommand *cobra.Command, _ *workspace.ListSecretsRequest) {
+	// Template is the text-mode fallback for non-interactive/piped output.
+	// TableConfig drives the interactive TUI when the terminal supports it.
 	listSecretsCommand.Annotations["headerTemplate"] = cmdio.Heredoc(`
 	{{header "Key"}}	{{header "Last Updated Timestamp"}}`)
 	listSecretsCommand.Annotations["template"] = cmdio.Heredoc(`

@@ -273,6 +273,10 @@ func Render(ctx context.Context, v any) error {
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
+// RenderIterator renders the items from i. When cmd is non-nil and has a
+// registered TableConfig, a paginated TUI table is shown in interactive
+// terminals. Pass nil for cmd to skip TUI lookup and always use template
+// rendering.
 func RenderIterator[T any](ctx context.Context, cmd *cobra.Command, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
 
