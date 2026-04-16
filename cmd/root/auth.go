@@ -19,6 +19,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// errNotWorkspaceClient is a CLI-internal sentinel error. It signals that the
+// configured host is an account host, not a workspace host.
+//
+// workspaceClientOrPrompt synthesizes this error (line ~214) when it detects a
+// wrong host type via cfg.HostType(). MustAnyClient checks for it to decide
+// whether to fall through and try an account client instead.
+//
+// The SDK exported this as databricks.ErrNotWorkspaceClient until v0.126.0. The
+// SDK stopped *returning* it in v0.125.0 (host-type validation moved to host
+// metadata resolution), but the CLI was already synthesizing it locally. The
+// SDK removed the variable entirely in v0.127.0, so we now own it here.
+var errNotWorkspaceClient = errors.New("invalid Databricks Workspace configuration - host is not a workspace host")
+
 type ErrNoWorkspaceProfiles struct {
 	path string
 }
@@ -69,7 +82,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	// (as of v0.125.0, host-type validation was removed in favor of host
 	// metadata resolution). Use HostType() to detect the wrong host type.
 	var needsPrompt bool
-	switch cfg.HostType() {
+	switch cfg.HostType() { //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	case config.AccountHost, config.UnifiedHost:
 		// Valid host type for account client, but still need account ID.
 		needsPrompt = cfg.AccountID == ""
@@ -117,7 +130,7 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 	// If the error indicates a wrong config type (workspace host used for account client,
 	// or config type mismatch detected by workspaceClientOrPrompt), fall through to try
 	// account client.
-	if !errors.Is(werr, databricks.ErrNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
+	if !errors.Is(werr, errNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
 		return false, werr
 	}
 
@@ -193,7 +206,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	// ErrNotWorkspaceClient from NewWorkspaceClient (as of v0.125.0, host-type
 	// validation was removed in favor of host metadata resolution). Use
 	// HostType() to detect wrong host type, and check for ErrCannotConfigureDefault.
-	wrongHostType := cfg.HostType() == config.AccountHost
+	wrongHostType := cfg.HostType() == config.AccountHost //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	needsPrompt := wrongHostType || errors.Is(err, config.ErrCannotConfigureDefault)
 
 	if !needsPrompt {
@@ -206,7 +219,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 		// For other errors (e.g. ErrCannotConfigureDefault), return the
 		// original error to preserve actionable error messages.
 		if wrongHostType {
-			return w, databricks.ErrNotWorkspaceClient
+			return w, errNotWorkspaceClient
 		}
 		return w, err
 	}

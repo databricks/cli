@@ -192,7 +192,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		}
 
 		// Create parent directory.
-		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
+		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath)) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			if errors.As(err, &aerr) && aerr.StatusCode == http.StatusForbidden {
 				return permissionError{absPath}
@@ -267,7 +267,7 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 
 	recursive := slices.Contains(mode, DeleteRecursively)
 
-	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
+	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		Path:      absPath,
 		Recursive: recursive,
 	})
@@ -301,7 +301,7 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 		return nil, err
 	}
 
-	objects, err := w.workspaceClient.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+	objects, err := w.workspaceClient.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		Path: absPath,
 	})
 
@@ -333,7 +333,7 @@ func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	return w.workspaceClient.Workspace.Mkdirs(ctx, workspace.Mkdirs{
+	return w.workspaceClient.Workspace.Mkdirs(ctx, workspace.Mkdirs{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		Path: dirPath,
 	})
 }
