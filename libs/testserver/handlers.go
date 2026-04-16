@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -417,6 +418,32 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/apps/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.Apps, req.Vars["name"])
+	})
+
+	// App Spaces:
+
+	server.Handle("GET", "/api/2.0/app-spaces/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.AppSpaces, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/app-spaces", func(req Request) any {
+		return req.Workspace.AppSpaceUpsert(req, "")
+	})
+
+	server.Handle("PATCH", "/api/2.0/app-spaces/{name}", func(req Request) any {
+		return req.Workspace.AppSpaceUpsert(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/app-spaces/{name}", func(req Request) any {
+		delete(req.Workspace.AppSpaces, req.Vars["name"])
+		return apps.Operation{
+			Done: true,
+			Name: req.Vars["name"],
+		}
+	})
+
+	server.Handle("GET", "/api/2.0/app-spaces/{name}/operation", func(req Request) any {
+		return req.Workspace.AppSpaceGetOperation(req, req.Vars["name"])
 	})
 
 	// Schemas:
