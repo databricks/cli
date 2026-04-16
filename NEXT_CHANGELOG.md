@@ -13,6 +13,7 @@
 
 ### Bundles
 * Fix script output dropping last line without trailing newline (denik/random-bugfixes-4)
+* Fix script output dropping last line without trailing newline ([#4995](https://github.com/databricks/cli/pull/4995))
 
 * Translate relative paths in `alert_task.workspace_path` on job tasks to fully qualified workspace paths, matching the behavior of other task path fields. Applies to both regular tasks and `for_each_task` nested tasks ([#4836](https://github.com/databricks/cli/pull/4836)).
 
