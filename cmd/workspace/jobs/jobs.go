@@ -1014,6 +1014,8 @@ func newList() *cobra.Command {
 	var listLimit int
 
 	cmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", listReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
+	cmd.Flags().IntVar(&listReq.Limit, "page-size", listReq.Limit, `The number of jobs to return.`)
+	cmd.Flags().Lookup("page-size").Hidden = true
 	cmd.Flags().StringVar(&listReq.Name, "name", listReq.Name, `A filter on the list based on the exact (case insensitive) job name.`)
 	cmd.Flags().IntVar(&listReq.Offset, "offset", listReq.Offset, `The offset of the first job to return, relative to the most recently created job.`)
 
@@ -1021,10 +1023,6 @@ func newList() *cobra.Command {
 	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	// The Jobs API names its page size field "limit" which collides with the
-	// genkit --limit flag above. Expose it as --page-size instead, hidden.
-	cmd.Flags().IntVar(&listReq.Limit, "page-size", listReq.Limit, `The number of jobs to return. This value must be greater than 0 and less or equal to 100. The default value is 20.`)
-	cmd.Flags().Lookup("page-size").Hidden = true
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
@@ -1091,6 +1089,8 @@ func newListRuns() *cobra.Command {
 	cmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", listRunsReq.CompletedOnly, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
 	cmd.Flags().BoolVar(&listRunsReq.ExpandTasks, "expand-tasks", listRunsReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
 	cmd.Flags().Int64Var(&listRunsReq.JobId, "job-id", listRunsReq.JobId, `The job for which to list runs.`)
+	cmd.Flags().IntVar(&listRunsReq.Limit, "page-size", listRunsReq.Limit, `The number of runs to return.`)
+	cmd.Flags().Lookup("page-size").Hidden = true
 	cmd.Flags().IntVar(&listRunsReq.Offset, "offset", listRunsReq.Offset, `The offset of the first run to return, relative to the most recent run.`)
 	cmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return. Supported values: [JOB_RUN, SUBMIT_RUN, WORKFLOW_RUN]`)
 	cmd.Flags().Int64Var(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value.`)
@@ -1100,10 +1100,6 @@ func newListRuns() *cobra.Command {
 	cmd.Flags().IntVar(&listRunsLimit, "limit", 0, `Maximum number of results to return.`)
 
 	// Hidden pagination flags (internal API parameters).
-	// The Jobs API names its page size field "limit" which collides with the
-	// genkit --limit flag above. Expose it as --page-size instead, hidden.
-	cmd.Flags().IntVar(&listRunsReq.Limit, "page-size", listRunsReq.Limit, `The number of runs to return. This value must be greater than 0 and less or equal to 25. The default value is 25.`)
-	cmd.Flags().Lookup("page-size").Hidden = true
 	cmd.Flags().StringVar(&listRunsReq.PageToken, "page-token", listRunsReq.PageToken, `Pagination token.`)
 	cmd.Flags().Lookup("page-token").Hidden = true
 
