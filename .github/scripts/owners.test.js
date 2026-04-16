@@ -5,6 +5,7 @@ const os = require("os");
 const path = require("path");
 
 const {
+  parseOwnerTeams,
   ownersMatch,
   parseOwnersFile,
   findOwners,
@@ -122,6 +123,99 @@ describe("parseOwnersFile", () => {
     const rules = parseOwnersFile(ownersPath);
     assert.equal(rules.length, 1);
     assert.equal(rules[0].pattern, "*");
+  });
+});
+
+// --- parseOwnerTeams ---
+
+describe("parseOwnerTeams", () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "ownerteams-test-"));
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true });
+  });
+
+  it("parses team definitions", () => {
+    const teamsPath = path.join(tmpDir, "OWNERTEAMS");
+    fs.writeFileSync(teamsPath, "team:platform @alice @bob @carol\n");
+    const teams = parseOwnerTeams(teamsPath);
+    assert.equal(teams.size, 1);
+    assert.deepEqual(teams.get("team:platform"), ["alice", "bob", "carol"]);
+  });
+
+  it("parses multiple teams", () => {
+    const teamsPath = path.join(tmpDir, "OWNERTEAMS");
+    fs.writeFileSync(teamsPath, "team:platform @alice @bob\nteam:bundle @carol @dave\n");
+    const teams = parseOwnerTeams(teamsPath);
+    assert.equal(teams.size, 2);
+    assert.deepEqual(teams.get("team:platform"), ["alice", "bob"]);
+    assert.deepEqual(teams.get("team:bundle"), ["carol", "dave"]);
+  });
+
+  it("skips comments and blank lines", () => {
+    const teamsPath = path.join(tmpDir, "OWNERTEAMS");
+    fs.writeFileSync(teamsPath, "# comment\n\nteam:platform @alice\n");
+    const teams = parseOwnerTeams(teamsPath);
+    assert.equal(teams.size, 1);
+  });
+
+  it("returns empty map if file does not exist", () => {
+    const teams = parseOwnerTeams(path.join(tmpDir, "NONEXISTENT"));
+    assert.equal(teams.size, 0);
+  });
+});
+
+// --- parseOwnersFile with team aliases ---
+
+describe("parseOwnersFile with OWNERTEAMS", () => {
+  let tmpDir;
+  let ownersPath;
+  let teamsPath;
+
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "owners-teams-test-"));
+    ownersPath = path.join(tmpDir, "OWNERS");
+    teamsPath = path.join(tmpDir, "OWNERTEAMS");
+  });
+
+  after(() => {
+    fs.rmSync(tmpDir, { recursive: true });
+  });
+
+  it("expands team aliases to members", () => {
+    fs.writeFileSync(teamsPath, "team:platform @alice @bob\n");
+    fs.writeFileSync(ownersPath, "/cmd/auth/ team:platform\n");
+    const rules = parseOwnersFile(ownersPath);
+    assert.equal(rules.length, 1);
+    assert.deepEqual(rules[0].owners, ["alice", "bob"]);
+  });
+
+  it("mixes team aliases with individual owners", () => {
+    fs.writeFileSync(teamsPath, "team:platform @alice @bob\n");
+    fs.writeFileSync(ownersPath, "/cmd/auth/ team:platform @carol\n");
+    const rules = parseOwnersFile(ownersPath);
+    assert.equal(rules.length, 1);
+    assert.deepEqual(rules[0].owners, ["alice", "bob", "carol"]);
+  });
+
+  it("unknown team alias is ignored", () => {
+    fs.writeFileSync(teamsPath, "team:platform @alice\n");
+    fs.writeFileSync(ownersPath, "/cmd/auth/ team:unknown @bob\n");
+    const rules = parseOwnersFile(ownersPath);
+    assert.deepEqual(rules[0].owners, ["bob"]);
+  });
+
+  it("works without OWNERTEAMS file", () => {
+    const tmpDir2 = fs.mkdtempSync(path.join(os.tmpdir(), "owners-noteams-"));
+    const ownersPath2 = path.join(tmpDir2, "OWNERS");
+    fs.writeFileSync(ownersPath2, "* @alice\n");
+    const rules = parseOwnersFile(ownersPath2);
+    assert.deepEqual(rules[0].owners, ["alice"]);
+    fs.rmSync(tmpDir2, { recursive: true });
   });
 });
 

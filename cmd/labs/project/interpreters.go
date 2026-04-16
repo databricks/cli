@@ -1,6 +1,7 @@
 package project
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/env"
@@ -100,14 +101,12 @@ func DetectInterpreters(ctx context.Context) (allInterpreters, error) {
 	if len(found) == 0 {
 		return nil, ErrNoPythonInterpreters
 	}
-	sort.Slice(found, func(i, j int) bool {
-		a := found[i].Version
-		b := found[j].Version
-		cmp := semver.Compare(a, b)
-		if cmp != 0 {
-			return cmp < 0
+	slices.SortFunc(found, func(a, b Interpreter) int {
+		c := semver.Compare(a.Version, b.Version)
+		if c != 0 {
+			return c
 		}
-		return a < b
+		return cmp.Compare(a.Version, b.Version)
 	})
 	return found, nil
 }

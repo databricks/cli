@@ -3,7 +3,7 @@ package process
 import (
 	"os/exec"
 	"runtime"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -38,7 +38,7 @@ func TestWorksWithLibsEnv(t *testing.T) {
 	assert.NoError(t, err)
 
 	vars := cmd.Environ()
-	sort.Strings(vars)
+	slices.Sort(vars)
 
 	assert.GreaterOrEqual(t, len(vars), 2)
 	assert.Equal(t, "CCC=DDD", vars[0])

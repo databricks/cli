@@ -2,7 +2,9 @@ package testdiff
 
 import (
 	"context"
+	"errors"
 	"flag"
+	"io/fs"
 	"os"
 	"strings"
 
@@ -19,7 +21,7 @@ func init() {
 func ReadFile(t testutil.TestingT, ctx context.Context, filename string) string {
 	t.Helper()
 	data, err := os.ReadFile(filename)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return ""
 	}
 	assert.NoError(t, err, "Failed to read %s", filename)

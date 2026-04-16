@@ -1,6 +1,6 @@
 # NEXT CHANGELOG
 
-## Release v0.297.0
+## Release v0.298.0
 
 ### Notable Changes
 

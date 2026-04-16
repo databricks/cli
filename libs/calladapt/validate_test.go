@@ -1,6 +1,7 @@
 package calladapt_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/libs/calladapt"
@@ -32,19 +33,19 @@ func (*badType) Extra() {}
 
 func TestEnsureNoExtraMethods_AllowsPartial(t *testing.T) {
 	typedNil := (*partialType)(nil)
-	err := calladapt.EnsureNoExtraMethods(typedNil, calladapt.TypeOf[testIface]())
+	err := calladapt.EnsureNoExtraMethods(typedNil, reflect.TypeFor[testIface]())
 	require.NoError(t, err)
 }
 
 func TestEnsureNoExtraMethods_AllowsGood(t *testing.T) {
 	typedNil := (*goodType)(nil)
-	err := calladapt.EnsureNoExtraMethods(typedNil, calladapt.TypeOf[testIface]())
+	err := calladapt.EnsureNoExtraMethods(typedNil, reflect.TypeFor[testIface]())
 	require.NoError(t, err)
 }
 
 func TestEnsureNoExtraMethods_RejectsExtra(t *testing.T) {
 	typedNil := (*badType)(nil)
-	err := calladapt.EnsureNoExtraMethods(typedNil, calladapt.TypeOf[testIface]())
+	err := calladapt.EnsureNoExtraMethods(typedNil, reflect.TypeFor[testIface]())
 	require.Error(t, err)
 	assert.Equal(t, "unexpected method Extra on *calladapt_test.badType; only methods from [calladapt_test.testIface] are allowed", err.Error())
 }

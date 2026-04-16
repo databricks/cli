@@ -95,7 +95,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		return nil, err
 	}
 
-	// Finalize to write temp state to disk so CalculatePlan can read it
+	// Finalize to persist temp state to disk
 	err = b.StateDB.Finalize()
 	if err != nil {
 		os.Remove(tmpStatePath)
@@ -105,7 +105,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	log.Infof(ctx, "Bound %s to id=%s (in temp state)", resourceKey, resourceID)
 
 	// First plan + update: populate state with resolved config
-	plan, err := b.CalculatePlan(ctx, client, configRoot, tmpStatePath)
+	plan, err := b.CalculatePlan(ctx, client, configRoot)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -146,7 +146,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Second plan: this is the plan to present to the user (change between remote resource and config)
-	plan, err = b.CalculatePlan(ctx, client, configRoot, tmpStatePath)
+	plan, err = b.CalculatePlan(ctx, client, configRoot)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err

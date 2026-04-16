@@ -1,0 +1,41 @@
+bundle:
+  name: resource-refs
+
+variables:
+  example_var:
+    default: "example_value"
+
+resources:
+  apps:
+    data_app:
+      name: "data-app"
+      source_code_path: ./app
+      description: "A Streamlit app that uses a SQL warehouse"
+      config:
+        command: ["streamlit", "run", "app.py"]
+        env:
+          - name: MY_EXAMPLE_SCHEMA
+            value: ${resources.schemas.example.catalog_name}
+          - name: MY_EXAMPLE_JOB
+            value: ${resources.jobs.example_job.name}
+          - name: MY_EXAMPLE_JOB_ID
+            value: ${resources.jobs.example_job.id}
+          - name: MY_EXAMPLE_VAR
+            value: ${var.example_var}
+  schemas:
+    example:
+      name: "example_schema"
+      catalog_name: "main"
+
+  jobs:
+    example_job:
+      name: "example_job"
+      tasks:
+        - task_key: "example_task"
+          spark_python_task:
+            python_file: "./app/app.py"
+          environment_key: "default"
+      environments:
+        - environment_key: "default"
+          spec:
+            client: "1"

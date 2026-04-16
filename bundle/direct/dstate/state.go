@@ -3,7 +3,9 @@ package dstate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -113,15 +115,12 @@ func (db *DeploymentState) Open(path string) error {
 	defer db.mu.Unlock()
 
 	if db.Path != "" {
-		if db.Path == path {
-			return nil
-		}
-		return fmt.Errorf("already read state %v, cannot open %v", db.Path, path)
+		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			// Create new database with serial=0, will be incremented to 1 in Finalize()
 			db.Data = NewDatabase("", 0)
 			db.Path = path

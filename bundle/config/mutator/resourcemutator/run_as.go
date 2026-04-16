@@ -103,12 +103,17 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 
 	// Dashboards do not support run_as in the API.
 	if len(b.Config.Resources.Dashboards) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"dashboards",
-			b.Config.GetLocation("resources.dashboards"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
+		for key, dashboard := range b.Config.Resources.Dashboards {
+			if !dashboard.EmbedCredentials {
+				continue
+			}
+			diags = diags.Extend(reportRunAsNotSupported(
+				"dashboards with embed_credentials set to true",
+				b.Config.GetLocation("resources.dashboards."+key),
+				b.Config.Workspace.CurrentUser.UserName,
+				identity,
+			))
+		}
 	}
 
 	// Apps do not support run_as in the API.

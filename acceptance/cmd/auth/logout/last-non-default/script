@@ -1,12 +1,12 @@
 sethome "./home"
 
-cat > "./home/.databrickscfg" <<'EOF'
+cat > "./home/.databrickscfg" <<EOF
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
 
 ; The only non-default profile
 [only-profile]
-host = https://only.cloud.databricks.com
+host = ${DATABRICKS_HOST}
 auth_type = databricks-cli
 EOF
 
@@ -14,7 +14,7 @@ title "Initial config\n"
 cat "./home/.databrickscfg"
 
 title "Delete the only non-default profile"
-trace $CLI auth logout --profile only-profile --force --delete
+trace $CLI auth logout --profile only-profile --auto-approve --delete
 
 title "Backup file should exist\n"
 assert_backup_exists

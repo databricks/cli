@@ -47,6 +47,14 @@ func (err ErrIsNotNotebook) Error() string {
 	return fmt.Sprintf("file at %s is not a notebook", err.path)
 }
 
+// seenKey is the cache key for the seen map in translateContext.
+// It includes both the local path and the translation mode to prevent
+// cross-mode cache collisions (e.g. artifact vs. workspace path translations).
+type seenKey struct {
+	path string
+	mode paths.TranslateMode
+}
+
 type translatePaths struct{}
 
 type translatePathsDashboards struct{}
@@ -76,9 +84,9 @@ func (m *translatePathsDashboards) Name() string {
 type translateContext struct {
 	b *bundle.Bundle
 
-	// seen is a map of local paths to their corresponding remote paths.
-	// If a local path has already been successfully resolved, we do not need to resolve it again.
-	seen map[string]string
+	// seen is a map of (local path, translation mode) pairs to their corresponding remote paths.
+	// If a local path has already been successfully resolved for a given mode, we do not need to resolve it again.
+	seen map[seenKey]string
 
 	// remoteRoot is the root path of the remote workspace.
 	// It is equal to ${workspace.file_path} for regular deployments.
@@ -135,7 +143,8 @@ func (t *translateContext) rewritePath(
 
 	// Local path is relative to the directory the resource was defined in.
 	localPath := filepath.Join(dir, input)
-	if interp, ok := t.seen[localPath]; ok {
+	key := seenKey{path: localPath, mode: opts.Mode}
+	if interp, ok := t.seen[key]; ok {
 		return interp, nil
 	}
 
@@ -181,7 +190,7 @@ func (t *translateContext) rewritePath(
 		return "", err
 	}
 
-	t.seen[localPath] = interp
+	t.seen[key] = interp
 	return interp, nil
 }
 
@@ -337,7 +346,7 @@ func applyTranslations(ctx context.Context, b *bundle.Bundle, t *translateContex
 func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
 		b:                       b,
-		seen:                    make(map[string]string),
+		seen:                    make(map[seenKey]string),
 		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 
@@ -354,7 +363,7 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 func (m *translatePathsDashboards) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
 		b:                       b,
-		seen:                    make(map[string]string),
+		seen:                    make(map[seenKey]string),
 		skipLocalFileValidation: b.SkipLocalFileValidation,
 	}
 

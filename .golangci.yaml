@@ -20,6 +20,7 @@ linters:
     - copyloopvar
     - forbidigo
     - depguard
+    - usestdlibvars
   settings:
     depguard:
       rules:
@@ -34,6 +35,19 @@ linters:
           deny:
             - pkg: "github.com/databricks/cli/experimental"
               desc: "must not import experimental/ packages; use an interface or move the dependency"
+        no-legacy-rand:
+          deny:
+            - pkg: "math/rand$"
+              desc: "use math/rand/v2 instead of math/rand"
+        no-stdlib-log:
+          files:
+            - "**"
+            - "!**/bundle/docsgen/**"
+            - "!**/bundle/internal/schema/**"
+            - "!**/bundle/internal/validation/**"
+          deny:
+            - pkg: "log$"
+              desc: "use libs/log instead of the standard library log package"
     forbidigo:
       forbid:
         - pattern: 'term\.IsTerminal'
@@ -46,6 +60,24 @@ linters:
           msg: Use env.UserHomeDir(ctx) from libs/env instead.
         - pattern: 'os\.Getenv'
           msg: Use env.Get(ctx) from the libs/env package instead of os.Getenv.
+        - pattern: 'sort\.Slice'
+          msg: Use slices.SortFunc from the standard library instead.
+        - pattern: 'sort\.SliceStable'
+          msg: Use slices.SortStableFunc from the standard library instead.
+        - pattern: 'sort\.Strings'
+          msg: Use slices.Sort from the standard library instead.
+        - pattern: 'sort\.Ints'
+          msg: Use slices.Sort from the standard library instead.
+        - pattern: 'sort\.Float64s'
+          msg: Use slices.Sort from the standard library instead.
+        - pattern: 'os\.IsNotExist'
+          msg: Use errors.Is(err, fs.ErrNotExist) instead.
+        - pattern: 'os\.IsExist'
+          msg: Use errors.Is(err, fs.ErrExist) instead.
+        - pattern: 'os\.IsPermission'
+          msg: Use errors.Is(err, fs.ErrPermission) instead.
+        - pattern: 'sync\.Once\b($|[^FV])'
+          msg: Use sync.OnceFunc, sync.OnceValue, or sync.OnceValues instead.
       analyze-types: true
     copyloopvar:
       check-alias: true

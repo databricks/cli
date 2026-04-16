@@ -1,7 +1,8 @@
 package main
 
 import (
-	"sort"
+	"cmp"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/jsonschema"
@@ -130,8 +131,8 @@ func buildNodes(s jsonschema.Schema, refs map[string]*jsonschema.Schema, ownFiel
 		}
 	}
 
-	sort.Slice(nodes, func(i, j int) bool {
-		return nodes[i].Title < nodes[j].Title
+	slices.SortFunc(nodes, func(a, b rootNode) int {
+		return cmp.Compare(a.Title, b.Title)
 	})
 	return nodes
 }
@@ -193,8 +194,8 @@ func getAttributes(props, refs map[string]*jsonschema.Schema, ownFields map[stri
 			Link:        reference,
 		})
 	}
-	sort.Slice(attributes, func(i, j int) bool {
-		return attributes[i].Title < attributes[j].Title
+	slices.SortFunc(attributes, func(a, b attributeNode) int {
+		return cmp.Compare(a.Title, b.Title)
 	})
 	return attributes
 }
