@@ -25,9 +25,9 @@ func (*ResourceExternalLocation) RemapState(info *catalog.ExternalLocationInfo) 
 	return &catalog.CreateExternalLocation{
 		Comment:        info.Comment,
 		CredentialName: info.CredentialName,
-		// Output-only field mirrored into state to avoid churn in remapped config.
+		// Output-only fields mirrored into state to avoid churn in remapped config.
 		EffectiveEnableFileEvents: info.EffectiveEnableFileEvents,
-		EffectiveFileEventQueue:   nil,
+		EffectiveFileEventQueue:   info.EffectiveFileEventQueue,
 		EnableFileEvents:          info.EnableFileEvents,
 		EncryptionDetails:         info.EncryptionDetails,
 		Fallback:                  info.Fallback,

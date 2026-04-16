@@ -25,7 +25,7 @@ func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCat
 	return &catalog.CreateCatalog{
 		Comment:                   info.Comment,
 		ConnectionName:            info.ConnectionName,
-		ManagedEncryptionSettings: nil,
+		ManagedEncryptionSettings: info.ManagedEncryptionSettings,
 		Name:                      info.Name,
 		Options:                   info.Options,
 		Properties:                info.Properties,
@@ -54,7 +54,7 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 		Comment:                      config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		IsolationMode:                "", // Not supported by DABs
-		ManagedEncryptionSettings:    nil,
+		ManagedEncryptionSettings:    config.ManagedEncryptionSettings,
 		Name:                         id,
 		NewName:                      "", // Only set if name actually changes (see DoUpdateWithID)
 		Options:                      config.Options,
@@ -77,7 +77,7 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 		Comment:                      config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		IsolationMode:                "", // Not supported by DABs
-		ManagedEncryptionSettings:    nil,
+		ManagedEncryptionSettings:    config.ManagedEncryptionSettings,
 		Name:                         id,
 		NewName:                      "", // Initialized below if needed
 		Options:                      config.Options,
