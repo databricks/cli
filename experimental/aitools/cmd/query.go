@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -69,7 +70,7 @@ func selectQueryOutputMode(outputType flags.Output, stdoutInteractive, promptSup
 func newQueryCmd() *cobra.Command {
 	var warehouseID string
 	var filePath string
-	var format string
+	var outputFormat string
 
 	cmd := &cobra.Command{
 		Use:   "query [SQL | file.sql]",
@@ -84,26 +85,33 @@ The command auto-detects an available warehouse unless --warehouse is set
 or the DATABRICKS_WAREHOUSE_ID environment variable is configured.
 
 Output is JSON in non-interactive contexts. In interactive terminals it renders
-tables, and large results open an interactive table browser. Use --format csv
+tables, and large results open an interactive table browser. Use --output csv
 to export results as CSV.`,
 		Example: `  databricks experimental aitools tools query "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --warehouse abc123 "SELECT 1"
   databricks experimental aitools tools query --file report.sql
   databricks experimental aitools tools query report.sql
-  databricks experimental aitools tools query --format csv "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
+  databricks experimental aitools tools query --output csv "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   echo "SELECT 1" | databricks experimental aitools tools query`,
 		Args:    cobra.MaximumNArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if format != "" && format != "csv" {
-				return fmt.Errorf("unsupported format %q, supported values: csv", format)
-			}
-
-			if format != "" && cmd.Flag("output").Changed {
-				return errors.New("cannot use --format and --output together; use --format csv or --output json/text")
-			}
-
 			ctx := cmd.Context()
+
+			// If --output wasn't explicitly passed, check the env var
+			// (mirrors the root command's DATABRICKS_OUTPUT_FORMAT handling).
+			if !cmd.Flag("output").Changed {
+				if v, ok := env.Lookup(ctx, "DATABRICKS_OUTPUT_FORMAT"); ok {
+					outputFormat = strings.ToLower(v)
+				}
+			}
+
+			switch outputFormat {
+			case "text", "json", "csv":
+			default:
+				return fmt.Errorf("unsupported output format %q, accepted values: text, json, csv", outputFormat)
+			}
+
 			w := cmdctx.WorkspaceClient(ctx)
 
 			sqlStatement, err := resolveSQL(ctx, cmd, args, filePath)
@@ -127,8 +135,8 @@ to export results as CSV.`,
 				return err
 			}
 
-			// CSV format bypasses the normal output mode selection.
-			if format == "csv" {
+			// CSV bypasses the normal output mode selection.
+			if outputFormat == "csv" {
 				if len(columns) == 0 && len(rows) == 0 {
 					return nil
 				}
@@ -145,7 +153,7 @@ to export results as CSV.`,
 			stdoutInteractive := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
 			promptSupported := cmdio.IsPromptSupported(ctx)
 
-			switch selectQueryOutputMode(root.OutputType(cmd), stdoutInteractive, promptSupported, len(rows)) {
+			switch selectQueryOutputMode(flags.Output(outputFormat), stdoutInteractive, promptSupported, len(rows)) {
 			case queryOutputModeJSON:
 				return renderJSON(cmd.OutOrStdout(), columns, rows)
 			case queryOutputModeStaticTable:
@@ -158,7 +166,12 @@ to export results as CSV.`,
 
 	cmd.Flags().StringVarP(&warehouseID, "warehouse", "w", "", "SQL warehouse ID to use for execution")
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to a SQL file to execute")
-	cmd.Flags().StringVar(&format, "format", "", "Output format (supported: csv). When omitted, uses --output flag behavior.")
+	// Local --output flag shadows the root command's persistent --output flag,
+	// adding csv support for this command only.
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Output format: text, json, or csv")
+	cmd.RegisterFlagCompletionFunc("output", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		return []string{"text", "json", "csv"}, cobra.ShellCompDirectiveNoFileComp
+	})
 
 	return cmd
 }

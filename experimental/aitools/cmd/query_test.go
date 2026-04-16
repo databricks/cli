@@ -448,23 +448,13 @@ func TestResolveSQLMissingFileReturnsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "read SQL file")
 }
 
-func TestQueryCommandUnsupportedFormatReturnsError(t *testing.T) {
+func TestQueryCommandUnsupportedOutputReturnsError(t *testing.T) {
 	cmd := newQueryCmd()
 	cmd.PreRunE = nil
-	cmd.SetArgs([]string{"--format", "xml", "SELECT 1"})
+	cmd.SetArgs([]string{"--output", "xml", "SELECT 1"})
 	err := cmd.Execute()
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unsupported format")
-}
-
-func TestQueryCommandFormatAndOutputConflictReturnsError(t *testing.T) {
-	cmd := newQueryCmd()
-	cmd.PreRunE = nil
-	cmd.PersistentFlags().String("output", "text", "output type")
-	cmd.SetArgs([]string{"--format", "csv", "--output", "json", "SELECT 1"})
-	err := cmd.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot use --format and --output together")
+	assert.Contains(t, err.Error(), "unsupported output format")
 }
 
 func TestRenderCSVOutput(t *testing.T) {
