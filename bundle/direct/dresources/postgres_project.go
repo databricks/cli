@@ -40,6 +40,7 @@ func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresPr
 		ProjectSpec: postgres.ProjectSpec{
 			BudgetPolicyId:           "",
 			CustomTags:               nil,
+			DefaultBranch:            "",
 			DefaultEndpointSettings:  nil,
 			DisplayName:              "",
 			EnablePgNativeLogin:      false,
