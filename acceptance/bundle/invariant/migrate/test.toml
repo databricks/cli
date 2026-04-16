@@ -19,3 +19,7 @@ EnvMatrixExclude.no_grant_ref = ["INPUT_CONFIG=schema_grant_ref.yml.tmpl"]
 
 # SQL warehouses currently failing with migration with permanent drift. TODO: fix this.
 EnvMatrixExclude.no_sql_warehouse = ["INPUT_CONFIG=sql_warehouse.yml.tmpl"]
+
+# Terraform does not apply keyed-slice ordering for depends_on, so migration
+# detects drift when depends_on order in config differs from server-side order.
+EnvMatrixExclude.no_depends_on = ["INPUT_CONFIG=job_with_depends_on.yml.tmpl"]

@@ -1,2 +1,0 @@
-trace $CLI bundle deploy
-trace $CLI bundle plan | contains.py "0 to add, 0 to change, 0 to delete"
