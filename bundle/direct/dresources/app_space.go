@@ -43,7 +43,7 @@ func (r *ResourceAppSpace) DoUpdate(ctx context.Context, id string, config *apps
 	waiter, err := r.client.Apps.UpdateSpace(ctx, apps.UpdateSpaceRequest{
 		Name:       id,
 		Space:      *config,
-		UpdateMask: fieldmask.FieldMask{Paths: []string{"*"}},
+		UpdateMask: fieldmask.FieldMask{Paths: []string{"description", "resources", "user_api_scopes", "usage_policy_id"}},
 	})
 	if err != nil {
 		return nil, err
