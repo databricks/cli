@@ -1,0 +1,21 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: main.py
+        - task_key: process
+          depends_on:
+            - task_key: main
+          notebook_task:
+            notebook_path: main.py
+        - task_key: finalize
+          depends_on:
+            - task_key: process
+            - task_key: main
+          notebook_task:
+            notebook_path: main.py
