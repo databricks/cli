@@ -31,12 +31,12 @@ const (
 	DefaultSql                TemplateName = "default-sql"
 	LakeflowPipelines         TemplateName = "lakeflow-pipelines"
 	// CLIPipelines is deprecated. Use LakeflowPipelines instead
-	CLIPipelines           TemplateName = "cli-pipelines"
-	DbtSql                 TemplateName = "dbt-sql"
-	MlopsStacks            TemplateName = "mlops-stacks"
-	Pydabs                 TemplateName = "pydabs"
-	Custom                 TemplateName = "custom"
-	Default                TemplateName = "default"
+	CLIPipelines TemplateName = "cli-pipelines"
+	DbtSql       TemplateName = "dbt-sql"
+	MlopsStacks  TemplateName = "mlops-stacks"
+	Pydabs       TemplateName = "pydabs"
+	Custom       TemplateName = "custom"
+	Default      TemplateName = "default"
 )
 
 var databricksTemplates = []Template{
