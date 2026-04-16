@@ -268,27 +268,35 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		}
 	}
 
-	secretScopeName, err := keys.CreateKeysSecretScope(ctx, client, sessionID)
-	if err != nil {
-		return fmt.Errorf("failed to create secret scope: %w", err)
-	}
+	// Proxy mode only proxies stdin/stdout over a WebSocket — it doesn't need
+	// SSH keys. Skipping key operations avoids a race where SaveSSHKeyPair
+	// deletes the key files that the SSH client (parent process) is reading.
+	var keyPath string
+	var secretScopeName string
+	if !opts.ProxyMode {
+		var err error
+		secretScopeName, err = keys.CreateKeysSecretScope(ctx, client, sessionID)
+		if err != nil {
+			return fmt.Errorf("failed to create secret scope: %w", err)
+		}
 
-	privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, secretScopeName, opts.ClientPrivateKeyName, opts.ClientPublicKeyName)
-	if err != nil {
-		return fmt.Errorf("failed to get or generate SSH key pair from secrets: %w", err)
-	}
+		privateKeyBytes, publicKeyBytes, err := keys.CheckAndGenerateSSHKeyPairFromSecrets(ctx, client, secretScopeName, opts.ClientPrivateKeyName, opts.ClientPublicKeyName)
+		if err != nil {
+			return fmt.Errorf("failed to get or generate SSH key pair from secrets: %w", err)
+		}
 
-	keyPath, err := keys.GetLocalSSHKeyPath(ctx, sessionID, opts.SSHKeysDir)
-	if err != nil {
-		return fmt.Errorf("failed to get local keys folder: %w", err)
-	}
+		keyPath, err = keys.GetLocalSSHKeyPath(ctx, sessionID, opts.SSHKeysDir)
+		if err != nil {
+			return fmt.Errorf("failed to get local keys folder: %w", err)
+		}
 
-	err = keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes)
-	if err != nil {
-		return fmt.Errorf("failed to save SSH key pair locally: %w", err)
+		err = keys.SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes)
+		if err != nil {
+			return fmt.Errorf("failed to save SSH key pair locally: %w", err)
+		}
+		log.Infof(ctx, "Using SSH key: %s", keyPath)
+		log.Infof(ctx, "Secrets scope: %s, key name: %s", secretScopeName, opts.ClientPublicKeyName)
 	}
-	log.Infof(ctx, "Using SSH key: %s", keyPath)
-	log.Infof(ctx, "Secrets scope: %s, key name: %s", secretScopeName, opts.ClientPublicKeyName)
 
 	var userName string
 	var serverPort int
@@ -323,10 +331,11 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		if userName == "" {
 			return fmt.Errorf("remote user name is empty in the metadata: %s", opts.ServerMetadata)
 		}
-		serverPort, err = strconv.Atoi(metadata[1])
+		port, err := strconv.Atoi(metadata[1])
 		if err != nil {
 			return fmt.Errorf("cannot parse port from metadata: %s, %w", opts.ServerMetadata, err)
 		}
+		serverPort = port
 		if len(metadata) >= 3 {
 			clusterID = metadata[2]
 		} else {

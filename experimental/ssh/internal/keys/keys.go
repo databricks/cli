@@ -52,9 +52,13 @@ func generateSSHKeyPair() ([]byte, []byte, error) {
 }
 
 func SaveSSHKeyPair(keyPath string, privateKeyBytes, publicKeyBytes []byte) error {
-	err := os.RemoveAll(filepath.Dir(keyPath))
-	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove existing key directory: %w", err)
+	// Remove only the specific key files, not the entire parent directory.
+	// Using os.RemoveAll on the parent would break concurrent sessions
+	// that store their keys in the same directory.
+	for _, f := range []string{keyPath, keyPath + ".pub"} {
+		if err := os.Remove(f); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("failed to remove existing key file %s: %w", f, err)
+		}
 	}
 
 	if err := os.MkdirAll(filepath.Dir(keyPath), 0o700); err != nil {
