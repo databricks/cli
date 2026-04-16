@@ -134,56 +134,50 @@ func TestWorkspaceFilesClient_wsfsUnmarshal(t *testing.T) {
 	assert.NotNil(t, info.Sys())
 }
 
-func TestWorkspaceFilesClientStatErrorHandling(t *testing.T) {
-	tests := []struct {
-		name       string
-		statusCode int
-		errorCode  string
-		assertErr  func(t *testing.T, err error)
-	}{
-		{"forbidden", 403, "PERMISSION_DENIED", func(t *testing.T, err error) {
-			var apiErr *apierr.APIError
-			require.ErrorAs(t, err, &apiErr)
-			assert.Equal(t, 403, apiErr.StatusCode)
-		}},
-		{"internal_error", 500, "INTERNAL_ERROR", func(t *testing.T, err error) {
-			var apiErr *apierr.APIError
-			require.ErrorAs(t, err, &apiErr)
-			assert.Equal(t, 500, apiErr.StatusCode)
-		}},
-		{"not_found", 404, "RESOURCE_DOES_NOT_EXIST", func(t *testing.T, err error) {
-			assert.ErrorIs(t, err, fs.ErrNotExist)
-		}},
-	}
+func statWithError(t *testing.T, statusCode int, errorCode string) error {
+	t.Helper()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := testserver.New(t)
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
+		return testserver.Response{
+			StatusCode: statusCode,
+			Body: map[string]string{
+				"error_code": errorCode,
+				"message":    "test error",
+			},
+		}
+	})
+	testserver.AddDefaultHandlers(server)
 
-			server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
-				return testserver.Response{
-					StatusCode: tt.statusCode,
-					Body: map[string]string{
-						"error_code": tt.errorCode,
-						"message":    "test error",
-					},
-				}
-			})
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
 
-			testserver.AddDefaultHandlers(server)
+	f, err := NewWorkspaceFilesClient(client, "/test")
+	require.NoError(t, err)
 
-			client, err := databricks.NewWorkspaceClient(&databricks.Config{
-				Host:  server.URL,
-				Token: "testtoken",
-			})
-			require.NoError(t, err)
+	_, err = f.Stat(t.Context(), "file")
+	require.Error(t, err)
+	return err
+}
 
-			f, err := NewWorkspaceFilesClient(client, "/test")
-			require.NoError(t, err)
+func TestWorkspaceFilesClientStatForbidden(t *testing.T) {
+	err := statWithError(t, 403, "PERMISSION_DENIED")
+	var apiErr *apierr.APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, 403, apiErr.StatusCode)
+}
 
-			_, err = f.Stat(t.Context(), "file")
-			require.Error(t, err)
-			tt.assertErr(t, err)
-		})
-	}
+func TestWorkspaceFilesClientStatInternalError(t *testing.T) {
+	err := statWithError(t, 500, "INTERNAL_ERROR")
+	var apiErr *apierr.APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, 500, apiErr.StatusCode)
+}
+
+func TestWorkspaceFilesClientStatNotFound(t *testing.T) {
+	err := statWithError(t, 404, "RESOURCE_DOES_NOT_EXIST")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
