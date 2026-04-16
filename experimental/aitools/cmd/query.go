@@ -39,6 +39,12 @@ const (
 	// staticTableThreshold is the maximum number of rows rendered as a static table.
 	// Beyond this, an interactive scrollable table is used.
 	staticTableThreshold = 30
+
+	// outputCSV is the csv output format, supported only by the query command.
+	outputCSV = "csv"
+
+	// envOutputFormat matches the env var name in cmd/root/io.go.
+	envOutputFormat = "DATABRICKS_OUTPUT_FORMAT"
 )
 
 type queryOutputMode int
@@ -101,13 +107,13 @@ to export results as CSV.`,
 			// If --output wasn't explicitly passed, check the env var
 			// (mirrors the root command's DATABRICKS_OUTPUT_FORMAT handling).
 			if !cmd.Flag("output").Changed {
-				if v, ok := env.Lookup(ctx, "DATABRICKS_OUTPUT_FORMAT"); ok {
+				if v, ok := env.Lookup(ctx, envOutputFormat); ok {
 					outputFormat = strings.ToLower(v)
 				}
 			}
 
-			switch outputFormat {
-			case "text", "json", "csv":
+			switch flags.Output(outputFormat) {
+			case flags.OutputText, flags.OutputJSON, outputCSV:
 			default:
 				return fmt.Errorf("unsupported output format %q, accepted values: text, json, csv", outputFormat)
 			}
@@ -136,7 +142,7 @@ to export results as CSV.`,
 			}
 
 			// CSV bypasses the normal output mode selection.
-			if outputFormat == "csv" {
+			if flags.Output(outputFormat) == outputCSV {
 				if len(columns) == 0 && len(rows) == 0 {
 					return nil
 				}
@@ -168,9 +174,9 @@ to export results as CSV.`,
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to a SQL file to execute")
 	// Local --output flag shadows the root command's persistent --output flag,
 	// adding csv support for this command only.
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Output format: text, json, or csv")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", string(flags.OutputText), "Output format: text, json, or csv")
 	cmd.RegisterFlagCompletionFunc("output", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
-		return []string{"text", "json", "csv"}, cobra.ShellCompDirectiveNoFileComp
+		return []string{string(flags.OutputText), string(flags.OutputJSON), string(outputCSV)}, cobra.ShellCompDirectiveNoFileComp
 	})
 
 	return cmd
