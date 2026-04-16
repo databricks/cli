@@ -115,9 +115,9 @@ func InsertPythonArtifact(ctx context.Context, b *bundle.Bundle) error {
 	// checking if there is setup.py in the bundle root
 	setupPy := filepath.Join(b.BundleRootPath, "setup.py")
 	_, err := os.Stat(setupPy)
-	if err != nil { //nolint:nilerr // setup.py not found means no wheel project to detect
+	if err != nil {
 		log.Infof(ctx, "No Python wheel project found at bundle root folder")
-		return nil
+		return nil //nolint:nilerr // setup.py not found means no wheel project to detect
 	}
 
 	log.Infof(ctx, "Found Python wheel project at %s", b.BundleRootPath)

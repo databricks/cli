@@ -93,10 +93,10 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 		spinner.Close()
 		stepDuration := time.Since(stepStart)
 
-		if stepErr != nil { //nolint:nilerr // validation error is returned in the ValidateResult struct
+		if stepErr != nil {
 			log.Errorf(ctx, "%s failed (duration: %.1fs)", step.name, stepDuration.Seconds())
 			cmdio.LogString(ctx, fmt.Sprintf("❌ %s failed (%.1fs)", step.displayName, stepDuration.Seconds()))
-			return &ValidateResult{
+			return &ValidateResult{ //nolint:nilerr // validation error is returned in the ValidateResult struct
 				Success: false,
 				Message: step.errorPrefix,
 				Details: stepErr,

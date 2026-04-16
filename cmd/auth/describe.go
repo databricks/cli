@@ -79,8 +79,8 @@ type tryAuth func(cmd *cobra.Command, args []string) (*config.Config, bool, erro
 func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn tryAuth) (*authStatus, error) {
 	cfg, isAccount, err := fn(cmd, args)
 	ctx := cmd.Context()
-	if err != nil { //nolint:nilerr // error is returned in the authStatus struct
-		return &authStatus{
+	if err != nil {
+		return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
 			Status:  "error",
 			Error:   err,
 			Details: getAuthDetails(cmd, cfg, showSensitive),
@@ -92,8 +92,8 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 
 		// Doing a simple API call to check if the auth is valid
 		_, err := a.Workspaces.List(ctx)
-		if err != nil { //nolint:nilerr // error is returned in the authStatus struct
-			return &authStatus{
+		if err != nil {
+			return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
 				Status:  "error",
 				Error:   err,
 				Details: getAuthDetails(cmd, cfg, showSensitive),
@@ -112,8 +112,8 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 
 	w := cmdctx.WorkspaceClient(ctx)
 	me, err := w.CurrentUser.Me(ctx)
-	if err != nil { //nolint:nilerr // error is returned in the authStatus struct
-		return &authStatus{
+	if err != nil {
+		return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
 			Status:  "error",
 			Error:   err,
 			Details: getAuthDetails(cmd, cfg, showSensitive),

@@ -281,8 +281,8 @@ func strPathToJSONPointer(pathStr string) (string, error) {
 // when empty mappings are serialized as "{}" during patch operations
 func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, error) {
 	var doc yaml.Node
-	if err := yaml.Unmarshal(content, &doc); err != nil { //nolint:nilerr // return original content if YAML parsing fails
-		return content, nil
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return content, nil //nolint:nilerr // return original content if YAML parsing fails
 	}
 	for _, fc := range fieldChanges {
 		for _, candidate := range fc.FieldCandidates {
