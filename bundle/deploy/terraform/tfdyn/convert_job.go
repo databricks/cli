@@ -114,20 +114,6 @@ func patchApplyPolicyDefaultValues(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 	return v, nil
 }
 
-func sortDependsOn(v dyn.Value, key string) dyn.Value {
-	deps, ok := v.Get(key).AsSequence()
-	if !ok || len(deps) < 2 {
-		return v
-	}
-	slices.SortFunc(deps, func(a, b dyn.Value) int {
-		ak, _ := a.Get("task_key").AsString()
-		bk, _ := b.Get("task_key").AsString()
-		return cmp.Compare(ak, bk)
-	})
-	v, _ = dyn.Set(v, key, dyn.V(deps))
-	return v
-}
-
 func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the input value to the underlying job schema.
 	// This removes superfluous keys and adapts the input to the expected schema.
@@ -167,21 +153,6 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
-	}
-
-	// Sort depends_on entries within each task by task_key. The terraform provider
-	// sorts depends_on on Read (see https://github.com/databricks/terraform-provider-databricks/pull/3000).
-	// Since depends_on uses TypeList (order-sensitive), the config order must match the
-	// state order to avoid perpetual drift in terraform plan.
-	vout, err = dyn.Map(vout, "tasks", dyn.Foreach(func(_ dyn.Path, task dyn.Value) (dyn.Value, error) {
-		task = sortDependsOn(task, "depends_on")
-		task, _ = dyn.Map(task, "for_each_task.task", func(_ dyn.Path, inner dyn.Value) (dyn.Value, error) {
-			return sortDependsOn(inner, "depends_on"), nil
-		})
-		return task, nil
-	}))
-	if err != nil {
-		return dyn.InvalidValue, err
 	}
 
 	// Apply default task source logic

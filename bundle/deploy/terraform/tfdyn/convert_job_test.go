@@ -65,10 +65,6 @@ func TestConvertJob(t *testing.T) {
 				{
 					TaskKey:       "task_key_c",
 					JobClusterKey: "job_cluster_key_c",
-					DependsOn: []jobs.TaskDependency{
-						{TaskKey: "task_key_b"},
-						{TaskKey: "task_key_a"},
-					},
 				},
 				{
 					Description: "missing task key 😱",
@@ -141,10 +137,6 @@ func TestConvertJob(t *testing.T) {
 			map[string]any{
 				"task_key":        "task_key_c",
 				"job_cluster_key": "job_cluster_key_c",
-				"depends_on": []any{
-					map[string]any{"task_key": "task_key_a"},
-					map[string]any{"task_key": "task_key_b"},
-				},
 			},
 		},
 	}, out.Job["my_job"])
