@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  apps:
+    app1:
+      name: app1
+      git_source:
+        branch: main
+    app2:
+      name: app2
+      git_source:
+        branch: dev
