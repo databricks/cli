@@ -72,7 +72,7 @@ func (i *InitializerNodeJs) SupportsDevRemote() bool {
 // runNpmInstall runs npm install in the project directory.
 func (i *InitializerNodeJs) runNpmInstall(ctx context.Context, workDir string) error {
 	// Check if npm is available
-	if _, err := exec.LookPath("npm"); err != nil {
+	if _, err := exec.LookPath("npm"); err != nil { //nolint:nilerr // npm not found is a non-critical warning
 		cmdio.LogString(ctx, "⚠ npm not found. Please install Node.js and run 'npm install' manually.")
 		return nil
 	}
@@ -90,7 +90,7 @@ func (i *InitializerNodeJs) runNpmInstall(ctx context.Context, workDir string) e
 // runAppkitSetup runs npx appkit-setup in the project directory.
 func (i *InitializerNodeJs) runAppkitSetup(ctx context.Context, workDir string) error {
 	// Check if npx is available
-	if _, err := exec.LookPath("npx"); err != nil {
+	if _, err := exec.LookPath("npx"); err != nil { //nolint:nilerr // npx not found is a non-critical warning
 		log.Debugf(ctx, "npx not found, skipping appkit setup")
 		return nil
 	}

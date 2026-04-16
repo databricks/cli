@@ -96,7 +96,7 @@ func (i *InitializerPythonPip) createVenv(ctx context.Context, workDir string) e
 	pythonCmd := "python3"
 	if _, err := exec.LookPath(pythonCmd); err != nil {
 		pythonCmd = "python"
-		if _, err := exec.LookPath(pythonCmd); err != nil {
+		if _, err := exec.LookPath(pythonCmd); err != nil { //nolint:nilerr // python not found is a non-critical warning
 			cmdio.LogString(ctx, "⚠ Python not found. Please install Python and create a virtual environment manually.")
 			return nil
 		}

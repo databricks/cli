@@ -25,7 +25,7 @@ type Script struct {
 	Content string `json:"content"`
 }
 
-type Root struct {
+type Root struct { //nolint:recvcheck // value receivers for read-only accessors, pointer for mutators
 	value dyn.Value
 	depth int
 

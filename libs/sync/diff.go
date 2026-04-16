@@ -7,7 +7,7 @@ import (
 )
 
 // List of operations to apply to synchronize local file systems changes to WSFS.
-type diff struct {
+type diff struct { //nolint:recvcheck // value receivers for read-only methods, pointer for mutation
 	delete []string
 	rmdir  []string
 	mkdir  []string

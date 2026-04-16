@@ -44,7 +44,7 @@ func StartDefaultServer(t *testing.T, logRequests bool) {
 	// This approach ensures test reliability across platforms.
 	//
 	// See debugging journey in https://github.com/databricks/cli/pull/3575.
-	homeDir, err := os.MkdirTemp("", "acceptance-home-dir")
+	homeDir, err := os.MkdirTemp("", "acceptance-home-dir") //nolint:usetesting // t.TempDir() fails on Windows; see PR #3575
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		err := os.RemoveAll(homeDir)
