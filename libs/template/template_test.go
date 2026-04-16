@@ -73,6 +73,7 @@ func TestTemplateGetDatabricksTemplate(t *testing.T) {
 	notExist := []string{
 		"/some/path",
 		"doesnotexist",
+		"experimental-jobs-as-code",
 		"https://www.someurl.com",
 	}
 
@@ -83,5 +84,4 @@ func TestTemplateGetDatabricksTemplate(t *testing.T) {
 
 	// Assert aliases work.
 	assert.Equal(t, MlopsStacks, GetDatabricksTemplate(TemplateName("mlops-stack")).name)
-	assert.Equal(t, Pydabs, GetDatabricksTemplate(TemplateName("experimental-jobs-as-code")).name)
 }
