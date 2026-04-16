@@ -36,7 +36,6 @@ const (
 	MlopsStacks            TemplateName = "mlops-stacks"
 	Pydabs                 TemplateName = "pydabs"
 	Custom                 TemplateName = "custom"
-	ExperimentalJobsAsCode TemplateName = "experimental-jobs-as-code"
 	Default                TemplateName = "default"
 )
 
@@ -96,15 +95,9 @@ var databricksTemplates = []Template{
 		name:        Pydabs,
 		hidden:      false,
 		description: "A variant of the 'default-python' template that defines resources in Python instead of YAML",
+		aliases:     []string{"experimental-jobs-as-code"},
 		Reader:      &builtinReader{name: string(Pydabs)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: Pydabs}},
-	},
-	{
-		name:        ExperimentalJobsAsCode,
-		hidden:      true,
-		description: "Jobs as code template (experimental)",
-		Reader:      &builtinReader{name: string(ExperimentalJobsAsCode)},
-		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: ExperimentalJobsAsCode}},
 	},
 }
 
