@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
@@ -30,6 +31,8 @@ type SetupOptions struct {
 	Profile string
 	// Proxy command to use for the SSH connection
 	ProxyCommand string
+	// If true, enable SSH ControlMaster multiplexing for connection reuse by scp/rsync/sftp.
+	Multiplex bool
 }
 
 func validateClusterAccess(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) error {
@@ -49,8 +52,22 @@ func generateHostConfig(ctx context.Context, opts SetupOptions) (string, error) 
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, opts.ProxyCommand)
-	return hostConfig, nil
+	configOpts := sshconfig.HostConfigOptions{
+		HostName:     opts.HostName,
+		UserName:     "root",
+		IdentityFile: identityFilePath,
+		ProxyCommand: opts.ProxyCommand,
+	}
+
+	if opts.Multiplex {
+		socketsDir, sockErr := sshconfig.GetSocketsDir(ctx)
+		if sockErr != nil {
+			return "", sockErr
+		}
+		configOpts.ControlPath = filepath.ToSlash(filepath.Join(socketsDir, "%h"))
+	}
+
+	return sshconfig.GenerateHostConfig(configOpts), nil
 }
 
 func clusterSelectionPrompt(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
@@ -98,6 +115,12 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 	err = sshconfig.EnsureIncludeDirective(ctx, configPath)
 	if err != nil {
 		return err
+	}
+
+	if opts.Multiplex {
+		if err := sshconfig.EnsureSocketsDir(ctx); err != nil {
+			return err
+		}
 	}
 
 	hostConfig, err := generateHostConfig(ctx, opts)

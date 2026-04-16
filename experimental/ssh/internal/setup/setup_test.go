@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -199,6 +200,43 @@ func TestGenerateHostConfig_PathEscaping(t *testing.T) {
 	// Check that quotes are properly escaped
 	expectedPath := filepath.Join(specialDir, "cluster-123")
 	assert.Contains(t, result, fmt.Sprintf(`IdentityFile %q`, expectedPath))
+}
+
+func TestGenerateHostConfig_WithMultiplex(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	clientOpts := client.ClientOptions{
+		ClusterID:        "cluster-123",
+		AutoStartCluster: true,
+		ShutdownDelay:    30 * time.Second,
+	}
+	proxyCommand, err := clientOpts.ToProxyCommand()
+	require.NoError(t, err)
+
+	opts := SetupOptions{
+		HostName:      "test-host",
+		ClusterID:     "cluster-123",
+		SSHKeysDir:    tmpDir,
+		ShutdownDelay: 30 * time.Second,
+		ProxyCommand:  proxyCommand,
+		Multiplex:     true,
+	}
+
+	result, err := generateHostConfig(t.Context(), opts)
+	require.NoError(t, err)
+
+	assert.Contains(t, result, "Host test-host")
+	assert.Contains(t, result, "--cluster=cluster-123")
+
+	if runtime.GOOS == "windows" {
+		assert.NotContains(t, result, "ControlMaster")
+	} else {
+		assert.Contains(t, result, "ControlMaster auto")
+		assert.Contains(t, result, "ControlPath")
+		assert.Contains(t, result, "ControlPersist 10m")
+	}
 }
 
 func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {

@@ -3,6 +3,7 @@ package sshconfig
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -393,4 +394,68 @@ func TestCreateOrUpdateHostConfig_ExistingConfigWithRecreate(t *testing.T) {
 	content, err := os.ReadFile(configPath)
 	assert.NoError(t, err)
 	assert.Equal(t, newConfig, string(content))
+}
+
+func TestGetSocketsDir(t *testing.T) {
+	dir, err := GetSocketsDir(t.Context())
+	assert.NoError(t, err)
+	assert.Contains(t, dir, filepath.Join(".databricks", "ssh-sockets"))
+}
+
+func TestEnsureSocketsDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	err := EnsureSocketsDir(t.Context())
+	require.NoError(t, err)
+
+	socketsDir := filepath.Join(tmpDir, socketsDirName)
+	info, err := os.Stat(socketsDir)
+	require.NoError(t, err)
+	assert.True(t, info.IsDir())
+}
+
+func TestGenerateHostConfig_Basic(t *testing.T) {
+	config := GenerateHostConfig(HostConfigOptions{
+		HostName:     "my-cluster",
+		UserName:     "root",
+		IdentityFile: "/home/user/.databricks/ssh-tunnel-keys/abc-123",
+		ProxyCommand: `"/usr/local/bin/databricks" ssh connect --proxy --cluster=abc-123`,
+	})
+
+	assert.Contains(t, config, "Host my-cluster")
+	assert.Contains(t, config, "User root")
+	assert.Contains(t, config, "ConnectTimeout 360")
+	assert.Contains(t, config, "StrictHostKeyChecking accept-new")
+	assert.Contains(t, config, "IdentitiesOnly yes")
+	assert.Contains(t, config, `IdentityFile "/home/user/.databricks/ssh-tunnel-keys/abc-123"`)
+	assert.Contains(t, config, `ProxyCommand "/usr/local/bin/databricks" ssh connect --proxy --cluster=abc-123`)
+	assert.NotContains(t, config, "ControlMaster")
+	assert.NotContains(t, config, "ControlPath")
+	assert.NotContains(t, config, "ControlPersist")
+}
+
+func TestGenerateHostConfig_WithControlMaster(t *testing.T) {
+	config := GenerateHostConfig(HostConfigOptions{
+		HostName:     "my-cluster",
+		UserName:     "root",
+		IdentityFile: "/home/user/.databricks/ssh-tunnel-keys/abc-123",
+		ProxyCommand: `"/usr/local/bin/databricks" ssh connect --proxy --cluster=abc-123`,
+		ControlPath:  "~/.databricks/ssh-sockets/%h",
+	})
+
+	assert.Contains(t, config, "Host my-cluster")
+	assert.Contains(t, config, "User root")
+	assert.Contains(t, config, `ProxyCommand "/usr/local/bin/databricks" ssh connect --proxy --cluster=abc-123`)
+
+	if runtime.GOOS == "windows" {
+		assert.NotContains(t, config, "ControlMaster")
+		assert.NotContains(t, config, "ControlPath")
+		assert.NotContains(t, config, "ControlPersist")
+	} else {
+		assert.Contains(t, config, "ControlMaster auto")
+		assert.Contains(t, config, "ControlPath ~/.databricks/ssh-sockets/%h")
+		assert.Contains(t, config, "ControlPersist 10m")
+	}
 }
