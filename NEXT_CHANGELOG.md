@@ -10,7 +10,7 @@
 
 ### Bundles
 
-* Remove `experimental-jobs-as-code` template, superseded by `pydabs` (denik/remove-experimental-jobs-as-code).
+* Remove `experimental-jobs-as-code` template, superseded by `pydabs` ([#4999](https://github.com/databricks/cli/pull/4999)).
 
 ### Dependency updates
 
