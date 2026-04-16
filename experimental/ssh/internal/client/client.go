@@ -479,7 +479,7 @@ func printSSHToolHints(ctx context.Context, hostName string) {
 	cmdio.LogString(ctx, fmt.Sprintf("SSH config written for '%s'. You can now use SSH tools in another terminal:", hostName))
 	cmdio.LogString(ctx, fmt.Sprintf("  scp %s:remote-file local-file", hostName))
 	cmdio.LogString(ctx, fmt.Sprintf("  rsync -avz %s:remote-dir/ local-dir/", hostName))
-	cmdio.LogString(ctx, fmt.Sprintf("  sftp %s", hostName))
+	cmdio.LogString(ctx, "  sftp "+hostName)
 }
 
 // getServerMetadata retrieves the server metadata from the workspace and validates it via Driver Proxy.
