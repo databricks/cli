@@ -7,7 +7,6 @@
 ### CLI
 
 ### Bundles
-* Fix `WorkspaceFilesClient.Stat()` silently swallowing non-404 API errors (denik/random-bugfixes-1)
 
 ### Dependency updates
 

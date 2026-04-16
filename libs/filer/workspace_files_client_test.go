@@ -134,14 +134,26 @@ func TestWorkspaceFilesClient_wsfsUnmarshal(t *testing.T) {
 	assert.NotNil(t, info.Sys())
 }
 
-func TestWorkspaceFilesClientStatReturnsAPIErrors(t *testing.T) {
+func TestWorkspaceFilesClientStatErrorHandling(t *testing.T) {
 	tests := []struct {
 		name       string
 		statusCode int
 		errorCode  string
+		assertErr  func(t *testing.T, err error)
 	}{
-		{"forbidden", 403, "PERMISSION_DENIED"},
-		{"internal_error", 500, "INTERNAL_ERROR"},
+		{"forbidden", 403, "PERMISSION_DENIED", func(t *testing.T, err error) {
+			var apiErr *apierr.APIError
+			require.ErrorAs(t, err, &apiErr)
+			assert.Equal(t, 403, apiErr.StatusCode)
+		}},
+		{"internal_error", 500, "INTERNAL_ERROR", func(t *testing.T, err error) {
+			var apiErr *apierr.APIError
+			require.ErrorAs(t, err, &apiErr)
+			assert.Equal(t, 500, apiErr.StatusCode)
+		}},
+		{"not_found", 404, "RESOURCE_DOES_NOT_EXIST", func(t *testing.T, err error) {
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+		}},
 	}
 
 	for _, tt := range tests {
@@ -171,38 +183,7 @@ func TestWorkspaceFilesClientStatReturnsAPIErrors(t *testing.T) {
 
 			_, err = f.Stat(t.Context(), "file")
 			require.Error(t, err)
-
-			var apiErr *apierr.APIError
-			require.ErrorAs(t, err, &apiErr)
-			assert.Equal(t, tt.statusCode, apiErr.StatusCode)
+			tt.assertErr(t, err)
 		})
 	}
-}
-
-func TestWorkspaceFilesClientStatReturnsNotFoundAsFileDoesNotExist(t *testing.T) {
-	server := testserver.New(t)
-
-	server.Handle("GET", "/api/2.0/workspace/get-status", func(req testserver.Request) any {
-		return testserver.Response{
-			StatusCode: 404,
-			Body: map[string]string{
-				"error_code": "RESOURCE_DOES_NOT_EXIST",
-				"message":    "not found",
-			},
-		}
-	})
-
-	testserver.AddDefaultHandlers(server)
-
-	client, err := databricks.NewWorkspaceClient(&databricks.Config{
-		Host:  server.URL,
-		Token: "testtoken",
-	})
-	require.NoError(t, err)
-
-	f, err := NewWorkspaceFilesClient(client, "/test")
-	require.NoError(t, err)
-
-	_, err = f.Stat(t.Context(), "file")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
