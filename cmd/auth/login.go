@@ -417,7 +417,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 	}
 
-	switch cfg.HostType() {
+	switch cfg.HostType() { //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	case config.AccountHost:
 		// Account host: prompt for account ID if not provided
 		if authArguments.AccountID == "" {
@@ -449,7 +449,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		// Regular workspace host: no additional prompts needed.
 		// If discovery already populated account_id/workspace_id, those are kept.
 	default:
-		return fmt.Errorf("unknown host type: %v", cfg.HostType())
+		return fmt.Errorf("unknown host type: %v", cfg.HostType()) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	}
 
 	return nil

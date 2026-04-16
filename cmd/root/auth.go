@@ -82,7 +82,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	// (as of v0.125.0, host-type validation was removed in favor of host
 	// metadata resolution). Use HostType() to detect the wrong host type.
 	var needsPrompt bool
-	switch cfg.HostType() {
+	switch cfg.HostType() { //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	case config.AccountHost, config.UnifiedHost:
 		// Valid host type for account client, but still need account ID.
 		needsPrompt = cfg.AccountID == ""
@@ -206,7 +206,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	// ErrNotWorkspaceClient from NewWorkspaceClient (as of v0.125.0, host-type
 	// validation was removed in favor of host metadata resolution). Use
 	// HostType() to detect wrong host type, and check for ErrCannotConfigureDefault.
-	wrongHostType := cfg.HostType() == config.AccountHost
+	wrongHostType := cfg.HostType() == config.AccountHost //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	needsPrompt := wrongHostType || errors.Is(err, config.ErrCannotConfigureDefault)
 
 	if !needsPrompt {
