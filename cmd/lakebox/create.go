@@ -19,17 +19,14 @@ func newCreateCommand() *cobra.Command {
 Creates a new personal development environment backed by a microVM.
 Blocks until the lakebox is running and prints the lakebox ID.
 
-If --public-key-file is provided, the key is installed in the lakebox's
-authorized_keys so you can SSH directly. Otherwise the gateway key is used.
-
 Example:
-  databricks lakebox create
-  databricks lakebox create --public-key-file ~/.ssh/id_ed25519.pub`,
+  lakebox create`,
 		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 			api := newLakeboxAPI(w)
+			stderr := cmd.ErrOrStderr()
 
 			var publicKey string
 			if publicKeyFile != "" {
@@ -40,37 +37,37 @@ Example:
 				publicKey = string(data)
 			}
 
-			fmt.Fprintf(cmd.ErrOrStderr(), "Creating lakebox...\n")
+			s := spin(stderr, "Provisioning your lakebox…")
 
 			result, err := api.create(ctx, publicKey)
 			if err != nil {
+				s.fail("Failed to create lakebox")
 				return fmt.Errorf("failed to create lakebox: %w", err)
 			}
+
+			s.ok(fmt.Sprintf("Lakebox %s is %s", bold(result.LakeboxID), status(result.Status)))
 
 			profile := w.Config.Profile
 			if profile == "" {
 				profile = w.Config.Host
 			}
 
-			// Set as default if no default exists, or the current default
-			// has been deleted (no longer in the list).
 			currentDefault := getDefault(profile)
 			shouldSetDefault := currentDefault == ""
 			if !shouldSetDefault && currentDefault != "" {
-				// Check if the current default still exists.
 				if _, err := api.get(ctx, currentDefault); err != nil {
 					shouldSetDefault = true
 				}
 			}
 			if shouldSetDefault {
 				if err := setDefault(profile, result.LakeboxID); err != nil {
-					fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to save default: %v\n", err)
+					warn(stderr, fmt.Sprintf("Could not save default: %v", err))
 				} else {
-					fmt.Fprintf(cmd.ErrOrStderr(), "Set as default lakebox.\n")
+					field(stderr, "default", result.LakeboxID)
 				}
 			}
 
-			fmt.Fprintf(cmd.ErrOrStderr(), "Lakebox created (status: %s)\n", result.Status)
+			blank(stderr)
 			fmt.Fprintln(cmd.OutOrStdout(), result.LakeboxID)
 			return nil
 		},

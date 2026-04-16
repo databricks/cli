@@ -40,10 +40,11 @@ Example:
 				return fmt.Errorf("failed to ensure lakebox SSH key: %w", err)
 			}
 
+			stderr := cmd.ErrOrStderr()
 			if generated {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Generated SSH key: %s\n", keyPath)
+				ok(stderr, fmt.Sprintf("Generated SSH key at %s", dim(keyPath)))
 			} else {
-				fmt.Fprintf(cmd.ErrOrStderr(), "Using existing SSH key: %s\n", keyPath)
+				field(stderr, "key", keyPath)
 			}
 
 			pubKeyData, err := os.ReadFile(keyPath + ".pub")
@@ -51,11 +52,15 @@ Example:
 				return fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
 			}
 
+			s := spin(stderr, "Registering key…")
 			if err := api.registerKey(ctx, string(pubKeyData)); err != nil {
+				s.fail("Failed to register key")
 				return fmt.Errorf("failed to register key: %w", err)
 			}
+			s.ok("SSH key registered")
 
-			fmt.Fprintln(cmd.ErrOrStderr(), "Registered. You can now use 'lakebox ssh' to connect.")
+			blank(stderr)
+			fmt.Fprintf(stderr, "  Run %s to connect.\n\n", bold("lakebox ssh"))
 			return nil
 		},
 	}

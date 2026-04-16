@@ -17,8 +17,8 @@ func newStatusCommand() *cobra.Command {
 		Long: `Show detailed status of a Lakebox environment.
 
 Example:
-  databricks lakebox status happy-panda-1234
-  databricks lakebox status happy-panda-1234 --json`,
+  lakebox status happy-panda-1234
+  lakebox status happy-panda-1234 --json`,
 		Args:    cobra.ExactArgs(1),
 		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -39,11 +39,14 @@ Example:
 				return enc.Encode(entry)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "ID:     %s\n", extractLakeboxID(entry.Name))
-			fmt.Fprintf(cmd.OutOrStdout(), "Status: %s\n", entry.Status)
+			out := cmd.OutOrStdout()
+			blank(out)
+			field(out, "id", bold(extractLakeboxID(entry.Name)))
+			field(out, "status", status(entry.Status))
 			if entry.FQDN != "" {
-				fmt.Fprintf(cmd.OutOrStdout(), "FQDN:   %s\n", entry.FQDN)
+				field(out, "fqdn", dim(entry.FQDN))
 			}
+			blank(out)
 			return nil
 		},
 	}

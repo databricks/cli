@@ -53,7 +53,7 @@ Examples:
 			if _, err := os.Stat(keyPath); os.IsNotExist(err) {
 				return fmt.Errorf("lakebox SSH key not found at %s — run 'lakebox register' first", keyPath)
 			}
-			fmt.Fprintf(cmd.ErrOrStderr(), "Using SSH key: %s\n", keyPath)
+			stderr := cmd.ErrOrStderr()
 
 			// Parse args: everything before -- is the optional lakebox ID,
 			// everything after -- is passed through to ssh.
@@ -62,15 +62,12 @@ Examples:
 
 			dashAt := cmd.ArgsLenAtDash()
 			if dashAt == -1 {
-				// No -- found: first arg (if any) is lakebox ID.
 				if len(args) > 0 {
 					lakeboxID = args[0]
 				}
 			} else if dashAt == 0 {
-				// -- is first: no lakebox ID, rest is extra args.
 				extraArgs = args[dashAt:]
 			} else {
-				// lakebox ID before --, extra args after.
 				lakeboxID = args[0]
 				extraArgs = args[dashAt:]
 			}
@@ -79,7 +76,6 @@ Examples:
 			if lakeboxID == "" {
 				if def := getDefault(profile); def != "" {
 					lakeboxID = def
-					fmt.Fprintf(cmd.ErrOrStderr(), "Using default lakebox: %s\n", lakeboxID)
 				} else {
 					api := newLakeboxAPI(w)
 					pubKeyData, err := os.ReadFile(keyPath + ".pub")
@@ -87,22 +83,23 @@ Examples:
 						return fmt.Errorf("failed to read public key %s.pub: %w", keyPath, err)
 					}
 
-					fmt.Fprintf(cmd.ErrOrStderr(), "Creating lakebox...\n")
+					s := spin(stderr, "Provisioning your lakebox…")
 					result, err := api.create(ctx, string(pubKeyData))
 					if err != nil {
+						s.fail("Failed to create lakebox")
 						return fmt.Errorf("failed to create lakebox: %w", err)
 					}
 					lakeboxID = result.LakeboxID
-					fmt.Fprintf(cmd.ErrOrStderr(), "Lakebox %s created (status: %s)\n", lakeboxID, result.Status)
+					s.ok(fmt.Sprintf("Lakebox %s ready", bold(lakeboxID)))
 
 					if err := setDefault(profile, lakeboxID); err != nil {
-						fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to save default: %v\n", err)
+						warn(stderr, fmt.Sprintf("Could not save default: %v", err))
 					}
 				}
 			}
 
-			fmt.Fprintf(cmd.ErrOrStderr(), "Connecting to %s@%s:%s...\n",
-				lakeboxID, gatewayHost, gatewayPort)
+			s := spin(stderr, fmt.Sprintf("Connecting to %s…", bold(lakeboxID)))
+			s.ok(fmt.Sprintf("Connected to %s", bold(lakeboxID)))
 			return execSSHDirect(lakeboxID, gatewayHost, gatewayPort, keyPath, extraArgs)
 		},
 	}

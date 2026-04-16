@@ -13,35 +13,36 @@ func newDeleteCommand() *cobra.Command {
 		Short: "Delete a Lakebox environment",
 		Long: `Delete a Lakebox environment.
 
-Permanently terminates and removes the specified lakebox. Only the
-creator (same auth token) can delete a lakebox.
+Permanently terminates and removes the specified lakebox.
 
 Example:
-  databricks lakebox delete happy-panda-1234`,
+  lakebox delete happy-panda-1234`,
 		Args:    cobra.ExactArgs(1),
 		PreRunE: mustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 			api := newLakeboxAPI(w)
+			stderr := cmd.ErrOrStderr()
 
 			lakeboxID := args[0]
+			s := spin(stderr, fmt.Sprintf("Removing %s…", lakeboxID))
 
 			if err := api.delete(ctx, lakeboxID); err != nil {
+				s.fail(fmt.Sprintf("Failed to delete %s", lakeboxID))
 				return fmt.Errorf("failed to delete lakebox %s: %w", lakeboxID, err)
 			}
 
-			// Clear default if we just deleted it.
 			profile := w.Config.Profile
 			if profile == "" {
 				profile = w.Config.Host
 			}
 			if getDefault(profile) == lakeboxID {
 				_ = clearDefault(profile)
-				fmt.Fprintf(cmd.ErrOrStderr(), "Cleared default lakebox.\n")
+				s.ok(fmt.Sprintf("Removed %s %s", bold(lakeboxID), dim("(default cleared)")))
+			} else {
+				s.ok(fmt.Sprintf("Removed %s", bold(lakeboxID)))
 			}
-
-			fmt.Fprintf(cmd.ErrOrStderr(), "Deleted lakebox %s\n", lakeboxID)
 			return nil
 		},
 	}
