@@ -167,6 +167,10 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.apps.*.resources (merges app resources with the same name)
 		MergeApps(),
 
+		// Reads (dynamic): resources.app_spaces.*.resources (reads app space resources to merge)
+		// Updates (dynamic): resources.app_spaces.*.resources (merges app space resources with the same name)
+		MergeAppSpaces(),
+
 		// Reads (dynamic): resources.{catalogs,schemas,external_locations,volumes,registered_models}.*.grants
 		// Updates (dynamic): same paths — merges grant entries by principal and deduplicates privileges
 		MergeGrants(),

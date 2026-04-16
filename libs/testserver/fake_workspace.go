@@ -168,6 +168,8 @@ type FakeWorkspace struct {
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 
+	AppSpaces map[string]apps.Space
+
 	PostgresProjects   map[string]postgres.Project
 	PostgresBranches   map[string]postgres.Branch
 	PostgresEndpoints  map[string]postgres.Endpoint
@@ -271,6 +273,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PipelineUpdates:     map[string]bool{},
 		Monitors:            map[string]catalog.MonitorInfo{},
 		Apps:                map[string]apps.App{},
+		AppSpaces:           map[string]apps.Space{},
 		Catalogs:            map[string]catalog.CatalogInfo{},
 		ExternalLocations:   map[string]catalog.ExternalLocationInfo{},
 		Schemas:             map[string]catalog.SchemaInfo{},

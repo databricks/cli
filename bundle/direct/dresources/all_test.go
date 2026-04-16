@@ -40,6 +40,12 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"app_spaces": &resources.AppSpace{
+		Space: apps.Space{
+			Name: "my-app-space",
+		},
+	},
+
 	"catalogs": &resources.Catalog{
 		CreateCatalog: catalog.CreateCatalog{
 			Name:    "mycatalog",
