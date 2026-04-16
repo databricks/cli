@@ -20,7 +20,7 @@
             "dataset_catalog": null,
             "dataset_schema": null,
             "display_name": "test dashboard [UNIQUE_NAME]",
-            "embed_credentials": null,
+            "embed_credentials": false,
             "etag": [ETAG],
             "file_path": null,
             "id": "[DASHBOARD_ID]",
