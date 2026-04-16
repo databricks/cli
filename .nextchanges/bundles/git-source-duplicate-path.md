@@ -1,1 +1,1 @@
-* Fix false duplicate source code path error for git-sourced apps (denik/random-bugfixes-2).
+* Fix false duplicate source code path error for git-sourced apps ([#4996](https://github.com/databricks/cli/pull/4996)).
