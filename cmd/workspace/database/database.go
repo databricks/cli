@@ -96,7 +96,7 @@ func newCreateDatabaseCatalog() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'database_instance_name', 'database_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'database_instance_name', 'database_name' in your JSON input")
 			}
 			return nil
 		}
@@ -135,6 +135,7 @@ func newCreateDatabaseCatalog() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -199,7 +200,7 @@ func newCreateDatabaseInstance() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -337,6 +338,7 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -390,7 +392,7 @@ func newCreateDatabaseTable() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -423,6 +425,7 @@ func newCreateDatabaseTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -474,7 +477,7 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -507,6 +510,7 @@ func newCreateSyncedDatabaseTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -830,6 +834,7 @@ func newFindDatabaseInstanceByUid() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -899,6 +904,7 @@ func newGenerateDatabaseCredential() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -950,6 +956,7 @@ func newGetDatabaseCatalog() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1004,6 +1011,7 @@ func newGetDatabaseInstance() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1061,6 +1069,7 @@ func newGetDatabaseInstanceRole() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1112,6 +1121,7 @@ func newGetDatabaseTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1163,6 +1173,7 @@ func newGetSyncedDatabaseTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1191,9 +1202,19 @@ func newListDatabaseCatalogs() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listDatabaseCatalogsReq database.ListDatabaseCatalogsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listDatabaseCatalogsLimit int
 
 	cmd.Flags().IntVar(&listDatabaseCatalogsReq.PageSize, "page-size", listDatabaseCatalogsReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDatabaseCatalogsReq.PageToken, "page-token", listDatabaseCatalogsReq.PageToken, `Pagination token to go to the next page of synced database tables.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listDatabaseCatalogsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listDatabaseCatalogsReq.PageToken, "page-token", listDatabaseCatalogsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-database-catalogs INSTANCE_NAME"
 	cmd.Short = `List all Database Catalogs in a Database Instance.`
@@ -1222,6 +1243,13 @@ func newListDatabaseCatalogs() *cobra.Command {
 		listDatabaseCatalogsReq.InstanceName = args[0]
 
 		response := w.Database.ListDatabaseCatalogs(ctx, listDatabaseCatalogsReq)
+		if listDatabaseCatalogsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabaseCatalogsLimit)
+		}
+		if listDatabaseCatalogsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listDatabaseCatalogsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1250,9 +1278,19 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listDatabaseInstanceRolesReq database.ListDatabaseInstanceRolesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listDatabaseInstanceRolesLimit int
 
 	cmd.Flags().IntVar(&listDatabaseInstanceRolesReq.PageSize, "page-size", listDatabaseInstanceRolesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDatabaseInstanceRolesReq.PageToken, "page-token", listDatabaseInstanceRolesReq.PageToken, `Pagination token to go to the next page of Database Instances.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listDatabaseInstanceRolesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listDatabaseInstanceRolesReq.PageToken, "page-token", listDatabaseInstanceRolesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-database-instance-roles INSTANCE_NAME"
 	cmd.Short = `List roles for a Database Instance.`
@@ -1282,6 +1320,13 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 		listDatabaseInstanceRolesReq.InstanceName = args[0]
 
 		response := w.Database.ListDatabaseInstanceRoles(ctx, listDatabaseInstanceRolesReq)
+		if listDatabaseInstanceRolesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabaseInstanceRolesLimit)
+		}
+		if listDatabaseInstanceRolesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listDatabaseInstanceRolesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1310,9 +1355,19 @@ func newListDatabaseInstances() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listDatabaseInstancesReq database.ListDatabaseInstancesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listDatabaseInstancesLimit int
 
 	cmd.Flags().IntVar(&listDatabaseInstancesReq.PageSize, "page-size", listDatabaseInstancesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listDatabaseInstancesReq.PageToken, "page-token", listDatabaseInstancesReq.PageToken, `Pagination token to go to the next page of Database Instances.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listDatabaseInstancesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listDatabaseInstancesReq.PageToken, "page-token", listDatabaseInstancesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-database-instances"
 	cmd.Short = `List Database Instances.`
@@ -1331,6 +1386,13 @@ func newListDatabaseInstances() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Database.ListDatabaseInstances(ctx, listDatabaseInstancesReq)
+		if listDatabaseInstancesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listDatabaseInstancesLimit)
+		}
+		if listDatabaseInstancesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listDatabaseInstancesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1359,9 +1421,19 @@ func newListSyncedDatabaseTables() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listSyncedDatabaseTablesReq database.ListSyncedDatabaseTablesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listSyncedDatabaseTablesLimit int
 
 	cmd.Flags().IntVar(&listSyncedDatabaseTablesReq.PageSize, "page-size", listSyncedDatabaseTablesReq.PageSize, `Upper bound for items returned.`)
-	cmd.Flags().StringVar(&listSyncedDatabaseTablesReq.PageToken, "page-token", listSyncedDatabaseTablesReq.PageToken, `Pagination token to go to the next page of synced database tables.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listSyncedDatabaseTablesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listSyncedDatabaseTablesReq.PageToken, "page-token", listSyncedDatabaseTablesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-synced-database-tables INSTANCE_NAME"
 	cmd.Short = `List all synced database tables in a Database Instance.`
@@ -1390,6 +1462,13 @@ func newListSyncedDatabaseTables() *cobra.Command {
 		listSyncedDatabaseTablesReq.InstanceName = args[0]
 
 		response := w.Database.ListSyncedDatabaseTables(ctx, listSyncedDatabaseTablesReq)
+		if listSyncedDatabaseTablesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSyncedDatabaseTablesLimit)
+		}
+		if listSyncedDatabaseTablesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listSyncedDatabaseTablesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -1484,6 +1563,7 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1570,6 +1650,7 @@ func newUpdateDatabaseInstance() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1652,6 +1733,7 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

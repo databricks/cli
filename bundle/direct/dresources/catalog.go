@@ -23,15 +23,16 @@ func (*ResourceCatalog) PrepareState(input *resources.Catalog) *catalog.CreateCa
 
 func (*ResourceCatalog) RemapState(info *catalog.CatalogInfo) *catalog.CreateCatalog {
 	return &catalog.CreateCatalog{
-		Comment:         info.Comment,
-		ConnectionName:  info.ConnectionName,
-		Name:            info.Name,
-		Options:         info.Options,
-		Properties:      info.Properties,
-		ProviderName:    info.ProviderName,
-		ShareName:       info.ShareName,
-		StorageRoot:     info.StorageRoot,
-		ForceSendFields: utils.FilterFields[catalog.CreateCatalog](info.ForceSendFields),
+		Comment:                   info.Comment,
+		ConnectionName:            info.ConnectionName,
+		ManagedEncryptionSettings: nil,
+		Name:                      info.Name,
+		Options:                   info.Options,
+		Properties:                info.Properties,
+		ProviderName:              info.ProviderName,
+		ShareName:                 info.ShareName,
+		StorageRoot:               info.StorageRoot,
+		ForceSendFields:           utils.FilterFields[catalog.CreateCatalog](info.ForceSendFields),
 	}
 }
 
@@ -53,6 +54,7 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 		Comment:                      config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		IsolationMode:                "", // Not supported by DABs
+		ManagedEncryptionSettings:    nil,
 		Name:                         id,
 		NewName:                      "", // Only set if name actually changes (see DoUpdateWithID)
 		Options:                      config.Options,
@@ -75,6 +77,7 @@ func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config 
 		Comment:                      config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		IsolationMode:                "", // Not supported by DABs
+		ManagedEncryptionSettings:    nil,
 		Name:                         id,
 		NewName:                      "", // Initialized below if needed
 		Options:                      config.Options,

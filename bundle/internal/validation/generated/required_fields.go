@@ -37,6 +37,7 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*.telemetry_export_destinations[*].unity_catalog": {"logs_table", "metrics_table", "traces_table"},
 
 	"resources.catalogs.*": {"name"},
+	"resources.catalogs.*.managed_encryption_settings.azure_encryption_settings": {"azure_tenant_id"},
 
 	"resources.clusters.*.cluster_log_conf.dbfs":     {"destination"},
 	"resources.clusters.*.cluster_log_conf.s3":       {"destination"},
@@ -206,8 +207,10 @@ var RequiredFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].report":                                              {"destination_catalog", "destination_schema", "source_url"},
 	"resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy": {"enabled"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema":                                              {"destination_catalog", "destination_schema", "source_schema"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.google_ads_options":         {"manager_account_id"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy": {"enabled"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table":                                               {"destination_catalog", "destination_schema", "source_table"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.google_ads_options":          {"manager_account_id"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy":  {"enabled"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy":                   {"enabled"},
 	"resources.pipelines.*.libraries[*].maven":                                                                  {"coordinates"},
