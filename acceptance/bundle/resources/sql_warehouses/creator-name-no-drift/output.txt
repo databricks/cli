@@ -1,0 +1,27 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/creator_name_no_drift/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> jq .plan["resources.sql_warehouses.example_sql_warehouse"].changes.creator_name out.plan.json
+{
+  "action": "skip",
+  "reason": "managed",
+  "remote": "[USERNAME]"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.sql_warehouses.example_sql_warehouse
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/creator_name_no_drift/default
+
+Deleting files...
+Destroy complete!

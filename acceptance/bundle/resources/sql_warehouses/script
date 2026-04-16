@@ -9,6 +9,7 @@ cleanup() {
 }
 trap cleanup EXIT
 trace $CLI bundle deploy
+trace $CLI bundle plan
 
 title "Verify the create request"
 trace jq 'select(.method == "POST" and (.path | contains("/sql/warehouses")))' out.requests.txt
@@ -18,6 +19,7 @@ trace $CLI bundle summary
 title "Update the warehouse name"
 trace update_file.py databricks.yml sql_warehouse_name sql_warehouse_name_2
 trace $CLI bundle deploy
+trace $CLI bundle plan
 
 title "Verify the update request"
 trace jq 'select(.method == "POST" and (.path | contains("/sql/warehouses")) and (.body."name" == "sql_warehouse_name_2")) | del(.body.creator_name, .body.warehouse_type)' out.requests.txt
