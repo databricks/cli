@@ -558,10 +558,16 @@ func TestGetStructDiffEmbedTagWithKeyFunc(t *testing.T) {
 	}
 }
 
+type Dep struct {
+	TaskKey string `json:"task_key,omitempty"`
+	Outcome string `json:"outcome,omitempty"`
+}
+
 type Task struct {
 	TaskKey     string `json:"task_key,omitempty"`
 	Description string `json:"description,omitempty"`
 	Timeout     int    `json:"timeout,omitempty"`
+	DependsOn   []Dep  `json:"depends_on,omitempty"`
 }
 
 type Job struct {
@@ -571,6 +577,10 @@ type Job struct {
 
 func taskKeyFunc(task Task) (string, string) {
 	return "task_key", task.TaskKey
+}
+
+func depKeyFunc(dep Dep) (string, string) {
+	return "task_key", dep.TaskKey
 }
 
 func TestGetStructDiffSliceKeys(t *testing.T) {
