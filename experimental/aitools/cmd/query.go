@@ -104,11 +104,17 @@ to export results as CSV.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			// If --output wasn't explicitly passed, check the env var
-			// (mirrors the root command's DATABRICKS_OUTPUT_FORMAT handling).
+			// Normalize case to match root --output behavior (flags.Output.Set lowercases).
+			outputFormat = strings.ToLower(outputFormat)
+
+			// If --output wasn't explicitly passed, check the env var.
+			// Invalid env values are silently ignored, matching cmd/root/io.go.
 			if !cmd.Flag("output").Changed {
 				if v, ok := env.Lookup(ctx, envOutputFormat); ok {
-					outputFormat = strings.ToLower(v)
+					switch flags.Output(strings.ToLower(v)) {
+					case flags.OutputText, flags.OutputJSON, outputCSV:
+						outputFormat = strings.ToLower(v)
+					}
 				}
 			}
 
