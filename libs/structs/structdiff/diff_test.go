@@ -654,7 +654,7 @@ func TestGetStructDiffSliceKeys(t *testing.T) {
 
 func TestGetStructDiffNestedDependsOn(t *testing.T) {
 	sliceKeys := map[string]KeyFunc{
-		"tasks":              taskKeyFunc,
+		"tasks":               taskKeyFunc,
 		"tasks[*].depends_on": depKeyFunc,
 	}
 
@@ -665,26 +665,26 @@ func TestGetStructDiffNestedDependsOn(t *testing.T) {
 	}{
 		{
 			name: "depends_on reordered no diff",
-			a: Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
-			b: Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "b"}, {TaskKey: "a"}}}}},
+			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
+			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "b"}, {TaskKey: "a"}}}}},
 			want: nil,
 		},
 		{
 			name: "depends_on field change",
-			a: Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a", Outcome: "success"}}}}},
-			b: Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a", Outcome: "failed"}}}}},
+			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a", Outcome: "success"}}}}},
+			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a", Outcome: "failed"}}}}},
 			want: []ResolvedChange{{Field: "tasks[task_key='c'].depends_on[task_key='a'].outcome", Old: "success", New: "failed"}},
 		},
 		{
 			name: "depends_on element added",
-			a: Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}}}}},
-			b: Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
+			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}}}}},
+			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
 			want: []ResolvedChange{{Field: "tasks[task_key='c'].depends_on[task_key='b']", Old: nil, New: Dep{TaskKey: "b"}}},
 		},
 		{
 			name: "depends_on element removed",
-			a: Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
-			b: Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}}}}},
+			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
+			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}}}}},
 			want: []ResolvedChange{{Field: "tasks[task_key='c'].depends_on[task_key='b']", Old: Dep{TaskKey: "b"}, New: nil}},
 		},
 		{
