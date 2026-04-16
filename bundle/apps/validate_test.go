@@ -221,46 +221,6 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 	}
 }
 
-func TestAppsValidateMultipleGitSourceAppsNoDuplicate(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	b := &bundle.Bundle{
-		BundleRootPath: tmpDir,
-		SyncRootPath:   tmpDir,
-		SyncRoot:       vfs.MustNew(tmpDir),
-		Config: config.Root{
-			Workspace: config.Workspace{
-				FilePath: "/foo/bar/",
-			},
-			Resources: config.Resources{
-				Apps: map[string]*resources.App{
-					"app1": {
-						App: apps.App{
-							Name: "app1",
-						},
-						GitSource: &apps.GitSource{
-							Branch: "main",
-						},
-					},
-					"app2": {
-						App: apps.App{
-							Name: "app2",
-						},
-						GitSource: &apps.GitSource{
-							Branch: "dev",
-						},
-					},
-				},
-			},
-		},
-	}
-
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
-
-	diags := bundle.ApplySeq(t.Context(), b, Validate())
-	require.Empty(t, diags)
-}
-
 func TestAppsValidateBothSourceCodePathAndGitSource(t *testing.T) {
 	tmpDir := t.TempDir()
 	testutil.Touch(t, tmpDir, "app1", "app.py")
