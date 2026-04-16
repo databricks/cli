@@ -10,6 +10,8 @@
 
 ### Bundles
 
+* Remove `experimental-jobs-as-code` template, superseded by `pydabs` (denik/remove-experimental-jobs-as-code).
+
 ### Dependency updates
 
 * Bump `github.com/databricks/databricks-sdk-go` from v0.126.0 to v0.127.0 ([#4984](https://github.com/databricks/cli/pull/4984)).
