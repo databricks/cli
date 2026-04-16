@@ -23,7 +23,6 @@ linters:
     - usestdlibvars
     - nilerr
     - fatcontext
-    - wastedassign
     - nosprintfhostport
     - recvcheck
     - usetesting
