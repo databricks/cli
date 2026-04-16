@@ -56,7 +56,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		}
 	}
 
-	// One or more SDP pipelines is being recreated.
+	// One or more pipelines is being recreated.
 	if len(pipelineActions) != 0 {
 		cmdio.LogString(ctx, deleteOrRecreatePipelineMessage)
 		for _, action := range pipelineActions {
