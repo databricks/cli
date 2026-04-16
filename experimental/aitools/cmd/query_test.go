@@ -464,7 +464,7 @@ func TestQueryCommandOutputFlagIsCaseInsensitive(t *testing.T) {
 	cmd.SetArgs([]string{"--output", "JSON", "SELECT 1"})
 	// "JSON" is lowercased and passes validation. The command proceeds to
 	// WorkspaceClient and panics (no client in test), confirming validation passed.
-	assert.Panics(t, func() { cmd.Execute() })
+	assert.Panics(t, func() { _ = cmd.Execute() })
 }
 
 func TestQueryCommandEnvVarOverridesDefault(t *testing.T) {
@@ -475,7 +475,7 @@ func TestQueryCommandEnvVarOverridesDefault(t *testing.T) {
 	cmd.SetArgs([]string{"SELECT 1"})
 	// Env var "json" is valid, so validation passes and the command proceeds
 	// to WorkspaceClient (panics because no client in test context).
-	assert.Panics(t, func() { cmd.Execute() })
+	assert.Panics(t, func() { _ = cmd.Execute() })
 }
 
 func TestQueryCommandInvalidEnvVarIsIgnored(t *testing.T) {
@@ -486,7 +486,7 @@ func TestQueryCommandInvalidEnvVarIsIgnored(t *testing.T) {
 	cmd.SetArgs([]string{"SELECT 1"})
 	// Invalid env value is silently ignored (falls back to default "text"),
 	// so validation passes and the command proceeds to WorkspaceClient.
-	assert.Panics(t, func() { cmd.Execute() })
+	assert.Panics(t, func() { _ = cmd.Execute() })
 }
 
 func TestQueryCommandExplicitFlagOverridesEnvVar(t *testing.T) {
@@ -497,7 +497,7 @@ func TestQueryCommandExplicitFlagOverridesEnvVar(t *testing.T) {
 	cmd.SetArgs([]string{"--output", "csv", "SELECT 1"})
 	// Explicit --output csv overrides env var. Validation passes,
 	// command proceeds to WorkspaceClient.
-	assert.Panics(t, func() { cmd.Execute() })
+	assert.Panics(t, func() { _ = cmd.Execute() })
 }
 
 func TestRenderCSVOutput(t *testing.T) {
