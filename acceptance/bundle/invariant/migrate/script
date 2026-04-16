@@ -34,14 +34,7 @@ cat LOG.deploy | contains.py '!panic:' '!internal error' > /dev/null
 
 echo INPUT_CONFIG_OK
 
-MIGRATE_ARGS=""
-# Terraform does not apply keyed-slice ordering for depends_on, so its plan
-# detects drift when depends_on order in config differs from server-side order.
-if [[ "$INPUT_CONFIG" == "job_with_depends_on.yml.tmpl" ]]; then
-    MIGRATE_ARGS="--noplancheck"
-fi
-
-trace $CLI bundle deployment migrate $MIGRATE_ARGS &> LOG.migrate
+trace $CLI bundle deployment migrate &> LOG.migrate
 
 cat LOG.migrate | contains.py '!panic:' '!internal error' > /dev/null
 
