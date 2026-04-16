@@ -81,6 +81,7 @@ func TestTemplateGetDatabricksTemplate(t *testing.T) {
 		assert.Nil(t, tmpl)
 	}
 
-	// Assert the alias works.
+	// Assert aliases work.
 	assert.Equal(t, MlopsStacks, GetDatabricksTemplate(TemplateName("mlops-stack")).name)
+	assert.Equal(t, Pydabs, GetDatabricksTemplate(TemplateName("experimental-jobs-as-code")).name)
 }
