@@ -6,15 +6,17 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Simulate remote change: set effective_budget_policy_id (e.g. inherited workspace policy)
->>> [CLI] vector-search-endpoints update-endpoint-budget-policy vs-endpoint-[UNIQUE_NAME] inherited-policy
+=== Simulate remote drift: set budget_policy_id outside the bundle
+>>> [CLI] vector-search-endpoints update-endpoint-budget-policy vs-endpoint-[UNIQUE_NAME] remote-policy
 {
-  "effective_budget_policy_id":"inherited-policy"
+  "effective_budget_policy_id":"remote-policy"
 }
 
-=== Plan shows no drift: remote budget_policy_id changes are ignored
+=== Plan detects drift and proposes update
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+update vector_search_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -27,6 +27,7 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	}
 
 	endpoint := vectorsearch.EndpointInfo{
+		BudgetPolicyId:          createReq.BudgetPolicyId,
 		EffectiveBudgetPolicyId: createReq.BudgetPolicyId,
 		Creator:                 s.CurrentUser().UserName,
 		CreationTimestamp:       nowMilli(),
@@ -69,6 +70,7 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdateBudgetPolicy(req Request, endp
 		}
 	}
 
+	endpoint.BudgetPolicyId = patchReq.BudgetPolicyId
 	endpoint.EffectiveBudgetPolicyId = patchReq.BudgetPolicyId // assume it always becomes the effective policy
 	endpoint.LastUpdatedTimestamp = nowMilli()
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName

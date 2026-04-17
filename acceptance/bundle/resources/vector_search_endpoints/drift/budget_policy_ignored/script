@@ -11,8 +11,8 @@ trace $CLI bundle deploy
 
 endpoint_name="vs-endpoint-${UNIQUE_NAME}"
 
-title "Simulate remote change: set effective_budget_policy_id (e.g. inherited workspace policy)"
-trace $CLI vector-search-endpoints update-endpoint-budget-policy "${endpoint_name}" "inherited-policy"
+title "Simulate remote drift: set budget_policy_id outside the bundle"
+trace $CLI vector-search-endpoints update-endpoint-budget-policy "${endpoint_name}" "remote-policy"
 
-title "Plan shows no drift: remote budget_policy_id changes are ignored"
-trace $CLI bundle plan
+title "Plan detects drift and proposes update"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged"

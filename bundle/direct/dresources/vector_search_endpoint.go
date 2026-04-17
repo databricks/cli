@@ -16,18 +16,18 @@ var (
 	pathMinQps         = structpath.MustParsePath("min_qps")
 )
 
-// VectorSearchRefreshOutput is remote state for a vector search endpoint. It embeds API response
+// VectorSearchEndpointRemote is remote state for a vector search endpoint. It embeds API response
 // fields for drift comparison and adds endpoint_uuid for permissions; deployment state id remains the endpoint name.
-type VectorSearchRefreshOutput struct {
+type VectorSearchEndpointRemote struct {
 	*vectorsearch.EndpointInfo
 	EndpointUuid string `json:"endpoint_uuid"`
 }
 
-func newVectorSearchRefreshOutput(info *vectorsearch.EndpointInfo) *VectorSearchRefreshOutput {
+func newVectorSearchEndpointRemote(info *vectorsearch.EndpointInfo) *VectorSearchEndpointRemote {
 	if info == nil {
 		return nil
 	}
-	return &VectorSearchRefreshOutput{
+	return &VectorSearchEndpointRemote{
 		EndpointInfo: info,
 		EndpointUuid: info.Id,
 	}
@@ -45,57 +45,46 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 	return &input.CreateEndpoint
 }
 
-func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchRefreshOutput) *vectorsearch.CreateEndpoint {
-	if remote == nil || remote.EndpointInfo == nil {
-		return &vectorsearch.CreateEndpoint{
-			BudgetPolicyId:  "",
-			EndpointType:    "",
-			MinQps:          0,
-			Name:            "",
-			ForceSendFields: nil,
-		}
-	}
-	info := remote.EndpointInfo
-	budgetPolicyId := info.EffectiveBudgetPolicyId // TODO: use info.BudgetPolicyId when available
+func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpoint {
 	var minQps int64
-	if info.ScalingInfo != nil {
-		minQps = info.ScalingInfo.RequestedMinQps
+	if remote.ScalingInfo != nil {
+		minQps = remote.ScalingInfo.RequestedMinQps
 	}
 	return &vectorsearch.CreateEndpoint{
-		Name:            info.Name,
-		EndpointType:    info.EndpointType,
-		BudgetPolicyId:  budgetPolicyId,
+		Name:            remote.Name,
+		EndpointType:    remote.EndpointType,
+		BudgetPolicyId:  remote.BudgetPolicyId,
 		MinQps:          minQps,
-		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](info.ForceSendFields),
+		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](remote.ForceSendFields),
 	}
 }
 
-func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*VectorSearchRefreshOutput, error) {
+func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*VectorSearchEndpointRemote, error) {
 	info, err := r.client.VectorSearchEndpoints.GetEndpointByEndpointName(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return newVectorSearchRefreshOutput(info), nil
+	return newVectorSearchEndpointRemote(info), nil
 }
 
-func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (string, *VectorSearchRefreshOutput, error) {
+func (r *ResourceVectorSearchEndpoint) DoCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (string, *VectorSearchEndpointRemote, error) {
 	waiter, err := r.client.VectorSearchEndpoints.CreateEndpoint(ctx, *config)
 	if err != nil {
 		return "", nil, err
 	}
 	id := config.Name
-	return id, newVectorSearchRefreshOutput(waiter.Response), nil
+	return id, newVectorSearchEndpointRemote(waiter.Response), nil
 }
 
-func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (*VectorSearchRefreshOutput, error) {
+func (r *ResourceVectorSearchEndpoint) WaitAfterCreate(ctx context.Context, config *vectorsearch.CreateEndpoint) (*VectorSearchEndpointRemote, error) {
 	info, err := r.client.VectorSearchEndpoints.WaitGetEndpointVectorSearchEndpointOnline(ctx, config.Name, 60*time.Minute, nil)
 	if err != nil {
 		return nil, err
 	}
-	return newVectorSearchRefreshOutput(info), nil
+	return newVectorSearchEndpointRemote(info), nil
 }
 
-func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint, entry *PlanEntry) (*VectorSearchRefreshOutput, error) {
+func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, config *vectorsearch.CreateEndpoint, entry *PlanEntry) (*VectorSearchEndpointRemote, error) {
 	if entry.Changes.HasChange(pathBudgetPolicyId) {
 		_, err := r.client.VectorSearchEndpoints.UpdateEndpointBudgetPolicy(ctx, vectorsearch.PatchEndpointBudgetPolicyRequest{
 			EndpointName:   id,
@@ -110,7 +99,7 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 		_, err := r.client.VectorSearchEndpoints.PatchEndpoint(ctx, vectorsearch.PatchEndpointRequest{
 			EndpointName:    id,
 			MinQps:          config.MinQps,
-			ForceSendFields: utils.FilterFields[vectorsearch.PatchEndpointRequest](config.ForceSendFields, "MinQps"),
+			ForceSendFields: nil,
 		})
 		if err != nil {
 			return nil, err

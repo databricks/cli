@@ -505,8 +505,3 @@ resources:
     recreate_on_changes:
       - field: endpoint_type
         reason: immutable
-    ignore_remote_changes:
-      # The API returns effective_budget_policy_id which may include inherited workspace policies,
-      # not the user-set budget_policy_id. Ignore until the API exposes the user-set value directly.
-      - field: budget_policy_id
-        reason: effective_vs_requested
