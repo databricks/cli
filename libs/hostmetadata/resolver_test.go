@@ -67,6 +67,27 @@ func TestNewResolver_FetchError_CachesNegative(t *testing.T) {
 	assert.Equal(t, first, calls.Load(), "negative cache must skip the fetch")
 }
 
+func TestNewResolver_CancellationNotCached(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+
+	var calls atomic.Int32
+	fetch := func(ctx context.Context, host string) (*config.HostMetadata, error) {
+		calls.Add(1)
+		return nil, context.Canceled
+	}
+	r := hostmetadata.NewResolver(fetch)
+
+	m1, err := r(t.Context(), "https://example")
+	require.NoError(t, err)
+	assert.Nil(t, m1)
+
+	m2, err := r(t.Context(), "https://example")
+	require.NoError(t, err)
+	assert.Nil(t, m2)
+
+	assert.Equal(t, int32(2), calls.Load(), "cancellation must not be negatively cached")
+}
+
 func TestNewResolver_DifferentHosts_SeparateEntries(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 

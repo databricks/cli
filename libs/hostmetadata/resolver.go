@@ -23,6 +23,11 @@ const (
 // anything, since GetOrCompute only writes on success.
 var errNotCached = errors.New("not cached")
 
+// errNegativeHit is returned from the positive-cache compute callback when the
+// negative cache already has a sentinel for the host. It signals the outer
+// resolver to return (nil, nil) without running fetch or writing to positive.
+var errNegativeHit = errors.New("negative cache hit")
+
 // hostFingerprint is the cache key for a given host.
 type hostFingerprint struct {
 	Host string `json:"host"`
@@ -34,10 +39,11 @@ type negativeSentinel struct {
 	Message string `json:"message"`
 }
 
-// NewResolver returns a HostMetadataResolver that consults the negative cache
-// before hitting the positive cache, and records failed fetches so subsequent
-// calls within negativeCacheTTL skip the network entirely. The fetch function
-// is invoked on positive cache miss, typically cfg.DefaultHostMetadataResolver().
+// NewResolver returns a HostMetadataResolver backed by a positive and negative
+// file cache. On positive hit it returns the cached metadata; on miss it
+// probes the negative cache, then falls through to fetch and records failures
+// so subsequent calls within negativeCacheTTL skip the network. The fetch
+// function is invoked on miss, typically cfg.DefaultHostMetadataResolver().
 func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver {
 	// cache.NewCache uses ctx only for env lookups and cleanup-walk debug
 	// logs; there is no cancellation signal to propagate. Using a background
@@ -50,30 +56,35 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 	return func(ctx context.Context, host string) (*config.HostMetadata, error) {
 		fp := hostFingerprint{Host: host}
 
-		// Check negative cache first. errNotCached makes GetOrCompute skip the
-		// write, so this is a read-only probe.
-		sentinel, err := cache.GetOrCompute[*negativeSentinel](ctx, negative, fp, func(ctx context.Context) (*negativeSentinel, error) {
-			return nil, errNotCached
-		})
-		if err == nil && sentinel != nil && sentinel.Error {
-			log.Debugf(ctx, "[hostmetadata] negative cache hit for %s: %s", host, sentinel.Message)
-			return nil, nil
-		}
-
-		// Positive cache: on miss, delegate to the injected fetch function.
+		// Positive cache wraps the whole miss path so that the happy path (hit)
+		// is a single disk read — no synthetic probe, no negative-cache traffic.
 		meta, err := cache.GetOrCompute[*config.HostMetadata](ctx, positive, fp, func(ctx context.Context) (*config.HostMetadata, error) {
+			sentinel, sErr := cache.GetOrCompute[*negativeSentinel](ctx, negative, fp, func(ctx context.Context) (*negativeSentinel, error) {
+				return nil, errNotCached
+			})
+			if sErr == nil && sentinel != nil && sentinel.Error {
+				log.Debugf(ctx, "[hostmetadata] negative cache hit for %s: %s", host, sentinel.Message)
+				return nil, errNegativeHit
+			}
 			return fetch(ctx, host)
 		})
-		if err != nil {
-			log.Debugf(ctx, "[hostmetadata] fetch failed for %s, recording negative: %v", host, err)
-			// Best-effort write to negative cache; ignore errors.
-			_, _ = cache.GetOrCompute[*negativeSentinel](ctx, negative, fp, func(ctx context.Context) (*negativeSentinel, error) {
-				return &negativeSentinel{Error: true, Message: err.Error()}, nil
-			})
+		if err == nil {
+			return meta, nil
+		}
+		if errors.Is(err, errNegativeHit) {
 			return nil, nil
 		}
-
-		return meta, nil
+		// Transient errors (cancellation, deadline) say nothing about the
+		// host's long-term availability — don't cache them.
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return nil, nil
+		}
+		log.Debugf(ctx, "[hostmetadata] fetch failed for %s, recording negative: %v", host, err)
+		// Best-effort write; ignore failures.
+		_, _ = cache.GetOrCompute[*negativeSentinel](ctx, negative, fp, func(ctx context.Context) (*negativeSentinel, error) {
+			return &negativeSentinel{Error: true, Message: err.Error()}, nil
+		})
+		return nil, nil
 	}
 }
 

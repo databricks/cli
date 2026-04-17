@@ -2,12 +2,12 @@
 >>> [CLI] selftest send-telemetry --debug
 HH:MM:SS Info: start pid=PID version=[DEV_VERSION] args="[CLI], selftest, send-telemetry, --debug"
 HH:MM:SS Debug: [Local Cache] using cache key: [SHA256_HASH] pid=PID
+HH:MM:SS Debug: [Local Cache] failed to stat cache file: stat [TEST_TMP_DIR]_PARENT/002/.cache/[DEV_VERSION]-0c8b5a07aebf/host-metadata/[SHA256_HASH].json: no such file or directory pid=PID
+HH:MM:SS Debug: [Local Cache] cache miss, computing pid=PID
+HH:MM:SS Debug: [Local Cache] using cache key: [SHA256_HASH] pid=PID
 HH:MM:SS Debug: [Local Cache] failed to stat cache file: stat [TEST_TMP_DIR]_PARENT/002/.cache/[DEV_VERSION]-0c8b5a07aebf/host-metadata-negative/[SHA256_HASH].json: no such file or directory pid=PID
 HH:MM:SS Debug: [Local Cache] cache miss, computing pid=PID
 HH:MM:SS Debug: [Local Cache] error while computing: not cached pid=PID
-HH:MM:SS Debug: [Local Cache] using cache key: [SHA256_HASH] pid=PID
-HH:MM:SS Debug: [Local Cache] failed to stat cache file: stat [TEST_TMP_DIR]_PARENT/002/.cache/[DEV_VERSION]-0c8b5a07aebf/host-metadata/[SHA256_HASH].json: no such file or directory pid=PID
-HH:MM:SS Debug: [Local Cache] cache miss, computing pid=PID
 HH:MM:SS Debug: GET /.well-known/databricks-config
 < HTTP/1.1 200 OK
 < {
