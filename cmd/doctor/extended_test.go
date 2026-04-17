@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -38,7 +39,8 @@ func TestCheckToolchain(t *testing.T) {
 		return func(_ context.Context, name string, _ ...string) (string, error) {
 			v, ok := versions[name]
 			if !ok {
-				return "", errors.New("not found")
+				// Wrap in the same error that os/exec returns for a missing binary.
+				return "", &exec.Error{Name: name, Err: exec.ErrNotFound}
 			}
 			return v, nil
 		}
@@ -58,7 +60,7 @@ func TestCheckToolchain(t *testing.T) {
 		assert.Contains(t, result.Message, "terraform v1.5.0")
 	})
 
-	t.Run("missing tools reported inline", func(t *testing.T) {
+	t.Run("missing tools reported as not found", func(t *testing.T) {
 		run := mockExec(map[string]string{"git": "git version 2.42.0"})
 		result := checkToolchain(t.Context(), run)
 		assert.Equal(t, statusInfo, result.Status)
@@ -66,6 +68,34 @@ func TestCheckToolchain(t *testing.T) {
 		assert.Contains(t, result.Message, "terraform not found")
 		assert.Contains(t, result.Message, "python not found")
 	})
+
+	t.Run("non-not-found errors are surfaced verbatim", func(t *testing.T) {
+		run := func(_ context.Context, name string, _ ...string) (string, error) {
+			if name == "git" {
+				return "", errors.New("permission denied")
+			}
+			return "", &exec.Error{Name: name, Err: exec.ErrNotFound}
+		}
+		result := checkToolchain(t.Context(), run)
+		assert.Contains(t, result.Message, "git error: permission denied")
+		assert.Contains(t, result.Message, "python not found")
+	})
+}
+
+func TestToolchainErrorLabel(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{"not found", &exec.Error{Name: "foo", Err: exec.ErrNotFound}, "not found"},
+		{"other error", errors.New("permission denied"), "error: permission denied"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, toolchainErrorLabel(tt.err))
+		})
+	}
 }
 
 func TestCheckProxy(t *testing.T) {
@@ -101,8 +131,20 @@ func TestCheckProxy(t *testing.T) {
 		ctx := cmdio.MockDiscard(t.Context())
 		ctx = env.Set(ctx, "HTTPS_PROXY", "http://user:secret@proxy.example.com:8080")
 		result := checkProxy(ctx)
-		assert.Contains(t, result.Message, "user:***@proxy.example.com")
+		assert.Contains(t, result.Message, "***@proxy.example.com")
 		assert.NotContains(t, result.Message, "secret")
+		assert.NotContains(t, result.Message, "user")
+	})
+
+	t.Run("masks token-only userinfo", func(t *testing.T) {
+		for _, v := range proxyEnvVars {
+			t.Setenv(v, "")
+		}
+		ctx := cmdio.MockDiscard(t.Context())
+		ctx = env.Set(ctx, "HTTPS_PROXY", "http://glpat-SECRETTOKEN@proxy.example.com:8080")
+		result := checkProxy(ctx)
+		assert.Contains(t, result.Message, "***@proxy.example.com")
+		assert.NotContains(t, result.Message, "glpat-SECRETTOKEN")
 	})
 
 	t.Run("deduplicates upper and lower case variants", func(t *testing.T) {
@@ -123,7 +165,8 @@ func TestMaskProxyValue(t *testing.T) {
 		in, want string
 	}{
 		{"http://proxy.example.com:8080", "http://proxy.example.com:8080"},
-		{"http://user:secret@proxy.example.com:8080", "http://user:***@proxy.example.com:8080"},
+		{"http://user:secret@proxy.example.com:8080", "http://***@proxy.example.com:8080"},
+		{"http://tokenonly@proxy.example.com:8080", "http://***@proxy.example.com:8080"},
 		{"not a url", "not a url"},
 		{"localhost,127.0.0.1", "localhost,127.0.0.1"},
 	}

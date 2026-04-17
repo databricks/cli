@@ -193,9 +193,8 @@ func checkIdentity(ctx context.Context, authCfg *config.Config) CheckResult {
 	ctx, cancel := withCheckTimeout(ctx)
 	defer cancel()
 
-	// Account-level configs don't support the /me endpoint for workspace identity.
 	if isAccountLevelConfig(authCfg) {
-		return skip("Identity", "Skipped (account-level profile, workspace identity not available)")
+		return checkAccountIdentity(ctx, authCfg)
 	}
 
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(authCfg))
@@ -209,6 +208,23 @@ func checkIdentity(ctx context.Context, authCfg *config.Config) CheckResult {
 	}
 
 	return pass("Identity", me.UserName)
+}
+
+// checkAccountIdentity issues a lightweight authenticated account API call so
+// account-level profiles get server-side credential validation instead of being
+// skipped (which would let invalid account PAT/OAuth report Authentication: OK).
+func checkAccountIdentity(ctx context.Context, authCfg *config.Config) CheckResult {
+	a, err := databricks.NewAccountClient((*databricks.Config)(authCfg))
+	if err != nil {
+		return fail("Identity", "Cannot create account client", err)
+	}
+
+	workspaces, err := a.Workspaces.List(ctx)
+	if err != nil {
+		return fail("Identity", "Cannot list account workspaces", err)
+	}
+
+	return pass("Identity", fmt.Sprintf("account %s (%d workspaces)", authCfg.AccountID, len(workspaces)))
 }
 
 func checkNetwork(ctx context.Context, cfg *config.Config, resolveErr error, authCfg *config.Config) CheckResult {

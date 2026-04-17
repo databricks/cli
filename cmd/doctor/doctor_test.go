@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -293,20 +294,30 @@ func TestResolveConfig(t *testing.T) {
 }
 
 func TestCheckIdentity(t *testing.T) {
-	okServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/2.0/preview/scim/v2/Me" {
+	workspaceOK := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/scim/v2/Me") {
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"userName": "test@example.com"}`))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
 	}))
-	defer okServer.Close()
+	defer workspaceOK.Close()
 
-	failServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	accountOK := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/accounts/") && strings.HasSuffix(r.URL.Path, "/workspaces") {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[{"workspace_id": 1}, {"workspace_id": 2}]`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer accountOK.Close()
+
+	unauthorized := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	}))
-	defer failServer.Close()
+	defer unauthorized.Close()
 
 	tests := []struct {
 		name       string
@@ -315,36 +326,37 @@ func TestCheckIdentity(t *testing.T) {
 		wantMsg    string
 	}{
 		{
-			name:       "success",
-			cfg:        &config.Config{Host: okServer.URL, Token: "test-token"},
+			name:       "workspace success",
+			cfg:        &config.Config{Host: workspaceOK.URL, Token: "test-token"},
 			wantStatus: statusPass,
 			wantMsg:    "test@example.com",
 		},
 		{
-			name:       "failure",
-			cfg:        &config.Config{Host: failServer.URL, Token: "bad-token"},
+			name:       "workspace failure",
+			cfg:        &config.Config{Host: unauthorized.URL, Token: "bad-token"},
 			wantStatus: statusFail,
 		},
 		{
-			name: "skipped for account-level",
+			name: "account success (unified host)",
 			cfg: &config.Config{
-				Host:      "https://accounts.cloud.databricks.com",
-				AccountID: "test-account-123",
-				Token:     "test-token",
-			},
-			wantStatus: statusSkip,
-			wantMsg:    "account-level",
-		},
-		{
-			name: "skipped for unified-host account",
-			cfg: &config.Config{
-				Host:                       "https://myhost.databricks.com",
+				Host:                       accountOK.URL,
 				AccountID:                  "test-account-123",
 				Token:                      "test-token",
 				Experimental_IsUnifiedHost: true,
 			},
-			wantStatus: statusSkip,
-			wantMsg:    "account-level",
+			wantStatus: statusPass,
+			wantMsg:    "account test-account-123 (2 workspaces)",
+		},
+		{
+			name: "account failure (unified host)",
+			cfg: &config.Config{
+				Host:                       unauthorized.URL,
+				AccountID:                  "test-account-123",
+				Token:                      "bad-token",
+				Experimental_IsUnifiedHost: true,
+			},
+			wantStatus: statusFail,
+			wantMsg:    "Cannot list account workspaces",
 		},
 	}
 
@@ -355,11 +367,7 @@ func TestCheckIdentity(t *testing.T) {
 			assert.Equal(t, "Identity", result.Name)
 			assert.Equal(t, tt.wantStatus, result.Status)
 			if tt.wantMsg != "" {
-				if tt.wantStatus == statusPass {
-					assert.Equal(t, tt.wantMsg, result.Message)
-				} else {
-					assert.Contains(t, result.Message, tt.wantMsg)
-				}
+				assert.Contains(t, result.Message, tt.wantMsg)
 			}
 		})
 	}

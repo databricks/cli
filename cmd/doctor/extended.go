@@ -3,6 +3,7 @@ package doctor
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -45,12 +46,25 @@ func checkToolchain(ctx context.Context, run execFunc) CheckResult {
 	for _, t := range tools {
 		out, err := run(ctx, t.cmd, t.arg)
 		if err != nil {
-			parts = append(parts, t.name+" not found")
+			parts = append(parts, t.name+" "+toolchainErrorLabel(err))
 			continue
 		}
 		parts = append(parts, t.name+" "+firstLineVersion(out))
 	}
 	return info("Toolchain", strings.Join(parts, ", "))
+}
+
+// toolchainErrorLabel distinguishes a missing binary from one that ran but failed,
+// so users can tell "install this tool" apart from "this tool is broken".
+func toolchainErrorLabel(err error) string {
+	if errors.Is(err, exec.ErrNotFound) {
+		return "not found"
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return fmt.Sprintf("exited %d", exitErr.ExitCode())
+	}
+	return "error: " + err.Error()
 }
 
 // firstLineVersion returns a short version string from a tool's --version output.
@@ -117,7 +131,9 @@ func checkProxy(ctx context.Context) CheckResult {
 	return info("Proxy/TLS", strings.Join(seen, ", "))
 }
 
-// maskProxyValue hides credentials in proxy URLs (user:pass@host).
+// maskProxyValue hides credentials in proxy URLs. Any userinfo (user:pass@host,
+// token@host, or just user@host) is replaced with "***" since even a bare
+// username can be a secret (e.g. http://TOKEN@proxy).
 // net/url would percent-encode "***", so the replacement is done via string rewrite
 // on the exact userinfo segment.
 func maskProxyValue(v string) string {
@@ -126,11 +142,10 @@ func maskProxyValue(v string) string {
 		return v
 	}
 	userinfo := u.User.String()
-	if _, hasPassword := u.User.Password(); !hasPassword {
+	if userinfo == "" {
 		return v
 	}
-	masked := u.User.Username() + ":***"
-	return strings.Replace(v, userinfo, masked, 1)
+	return strings.Replace(v, userinfo, "***", 1)
 }
 
 // checkUpdates fetches the latest CLI release and compares it to the current build.
