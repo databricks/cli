@@ -582,7 +582,7 @@ func TestNewCommandJSON(t *testing.T) {
 		},
 	})
 
-	cmd := New()
+	cmd := NewDoctorCmd()
 	cmd.SetContext(ctx)
 
 	outputFlag := flags.OutputText

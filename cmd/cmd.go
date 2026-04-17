@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/cmd/cache"
 	"github.com/databricks/cli/cmd/completion"
 	"github.com/databricks/cli/cmd/configure"
-	"github.com/databricks/cli/cmd/doctor"
 	"github.com/databricks/cli/cmd/experimental"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
@@ -102,7 +101,6 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(experimental.New())
 	cli.AddCommand(psql.New())
 	cli.AddCommand(configure.New())
-	cli.AddCommand(doctor.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))
 	cli.AddCommand(sync.New())

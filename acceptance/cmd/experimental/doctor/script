@@ -7,4 +7,4 @@ token = $DATABRICKS_TOKEN
 EOF
 
 title "Doctor with --profile flag\n"
-trace $CLI doctor --profile my-workspace --output json | jq -r '.[] | "\(.name): \(.status) - \(.message)"'
+trace $CLI experimental doctor --profile my-workspace --output json | jq -r '.[] | "\(.name): \(.status) - \(.message)"'

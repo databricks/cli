@@ -1,7 +1,7 @@
 
 === Doctor with --profile flag
 
->>> [CLI] doctor --profile my-workspace --output json
+>>> [CLI] experimental doctor --profile my-workspace --output json
 CLI Version: info - [DEV_VERSION]
 Updates: info - development build ([DEV_VERSION])
 Toolchain: info - [TOOLCHAIN]

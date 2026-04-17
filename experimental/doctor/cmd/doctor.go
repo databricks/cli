@@ -20,13 +20,13 @@ type CheckResult struct {
 	Detail  string `json:"detail,omitempty"`
 }
 
-// New returns the doctor command.
-func New() *cobra.Command {
+// NewDoctorCmd returns the doctor command.
+func NewDoctorCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "doctor",
 		Args:          root.NoArgs,
 		Short:         "Validate your Databricks CLI setup",
-		GroupID:       "development",
+		Hidden:        true,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
