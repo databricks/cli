@@ -68,22 +68,34 @@ func NewKeyringCache() *KeyringCache {
 // entry is not an error.
 func (k *KeyringCache) Store(key string, t *oauth2.Token) error {
 	if t == nil {
-		err := k.backend.Delete(k.keyringSvcName, key)
-		if errors.Is(err, k.errNotFound) {
-			return nil
-		}
-		return err
+		return k.withTimeout("delete", func() error {
+			err := k.backend.Delete(k.keyringSvcName, key)
+			if errors.Is(err, k.errNotFound) {
+				return nil
+			}
+			return err
+		})
 	}
 	raw, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Errorf("marshal token: %w", err)
 	}
-	return k.backend.Set(k.keyringSvcName, key, string(raw))
+	return k.withTimeout("set", func() error {
+		return k.backend.Set(k.keyringSvcName, key, string(raw))
+	})
 }
 
 // Lookup returns the token under key or cache.ErrNotFound.
 func (k *KeyringCache) Lookup(key string) (*oauth2.Token, error) {
-	raw, err := k.backend.Get(k.keyringSvcName, key)
+	var raw string
+	err := k.withTimeout("get", func() error {
+		got, gerr := k.backend.Get(k.keyringSvcName, key)
+		if gerr != nil {
+			return gerr
+		}
+		raw = got
+		return nil
+	})
 	if errors.Is(err, k.errNotFound) {
 		return nil, cache.ErrNotFound
 	}
@@ -100,3 +112,34 @@ func (k *KeyringCache) Lookup(key string) (*oauth2.Token, error) {
 
 // Compile-time confirmation that KeyringCache satisfies the SDK interface.
 var _ cache.TokenCache = (*KeyringCache)(nil)
+
+// TimeoutError is returned when a keyring operation exceeds the configured
+// timeout. Callers can use errors.As to detect and present a clear message.
+type TimeoutError struct {
+	Op string
+}
+
+func (e *TimeoutError) Error() string {
+	if e.Op == "" {
+		return "keyring operation timed out"
+	}
+	return fmt.Sprintf("keyring %s timed out", e.Op)
+}
+
+// withTimeout runs op in a goroutine and returns its error, or a
+// *TimeoutError if op does not complete before k.timeout elapses. The
+// goroutine is not cancelled; it will complete (or outlive the process)
+// in the background. This mirrors the pattern used by GitHub CLI; see
+// https://github.com/cli/cli/blob/trunk/internal/keyring/keyring.go.
+func (k *KeyringCache) withTimeout(op string, fn func() error) error {
+	ch := make(chan error, 1)
+	go func() {
+		ch <- fn()
+	}()
+	select {
+	case err := <-ch:
+		return err
+	case <-time.After(k.timeout):
+		return &TimeoutError{Op: op}
+	}
+}

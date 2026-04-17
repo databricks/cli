@@ -183,3 +183,41 @@ func TestKeyringCache_StoreNil_PropagatesOtherDeleteErrors(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
 }
+
+func TestKeyringCache_Store_TimesOut(t *testing.T) {
+	backend := newFakeBackend()
+	backend.setBlock = true
+	c := newTestCache(backend) // 100ms timeout from newTestCache
+
+	start := time.Now()
+	err := c.Store("my-profile", &oauth2.Token{AccessToken: "x"})
+	require.Error(t, err)
+
+	var timeoutErr *TimeoutError
+	assert.True(t, errors.As(err, &timeoutErr), "expected TimeoutError, got %T: %v", err, err)
+	assert.Less(t, time.Since(start), 2*time.Second, "should time out quickly")
+}
+
+func TestKeyringCache_Lookup_TimesOut(t *testing.T) {
+	backend := newFakeBackend()
+	backend.getBlock = true
+	c := newTestCache(backend)
+
+	_, err := c.Lookup("my-profile")
+	require.Error(t, err)
+
+	var timeoutErr *TimeoutError
+	assert.True(t, errors.As(err, &timeoutErr), "expected TimeoutError, got %T: %v", err, err)
+}
+
+func TestKeyringCache_StoreNil_TimesOut(t *testing.T) {
+	backend := newFakeBackend()
+	backend.deleteBlock = true
+	c := newTestCache(backend)
+
+	err := c.Store("my-profile", nil)
+	require.Error(t, err)
+
+	var timeoutErr *TimeoutError
+	assert.True(t, errors.As(err, &timeoutErr), "expected TimeoutError, got %T: %v", err, err)
+}
