@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -133,9 +132,9 @@ to specify it explicitly.
 			profileName = selected
 		}
 
-		tokenCache, err := storage.NewFileTokenCache(ctx)
+		tokenCache, _, err := newAuthCache(ctx, "")
 		if err != nil {
-			return fmt.Errorf("failed to open token cache, please check if the file version is up-to-date and that the file is not corrupted: %w", err)
+			return fmt.Errorf("failed to open token cache: %w", err)
 		}
 
 		return runLogout(ctx, logoutArgs{
