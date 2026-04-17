@@ -85,7 +85,7 @@ func newCreateAlert() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name', 'query_text', 'warehouse_id', 'evaluation', 'schedule' in your JSON input")
 			}
 			return nil
 		}
@@ -138,6 +138,7 @@ func newCreateAlert() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -203,6 +204,7 @@ func newGetAlert() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -231,9 +233,19 @@ func newListAlerts() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listAlertsReq sql.ListAlertsV2Request
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listAlertsLimit int
 
 	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, ``)
-	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listAlertsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-alerts"
 	cmd.Short = `List alerts.`
@@ -254,6 +266,13 @@ func newListAlerts() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.AlertsV2.ListAlerts(ctx, listAlertsReq)
+		if listAlertsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAlertsLimit)
+		}
+		if listAlertsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listAlertsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -449,6 +468,7 @@ func newUpdateAlert() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

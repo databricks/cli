@@ -119,6 +119,7 @@ func newCancelRefresh() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -203,7 +204,7 @@ func newCreateMonitor() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'object_type', 'object_id' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'object_type', 'object_id' in your JSON input")
 			}
 			return nil
 		}
@@ -239,6 +240,7 @@ func newCreateMonitor() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -335,6 +337,7 @@ func newCreateRefresh() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -588,6 +591,7 @@ func newGetMonitor() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -678,6 +682,7 @@ func newGetRefresh() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -706,9 +711,19 @@ func newListMonitor() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listMonitorReq dataquality.ListMonitorRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listMonitorLimit int
 
 	cmd.Flags().IntVar(&listMonitorReq.PageSize, "page-size", listMonitorReq.PageSize, ``)
-	cmd.Flags().StringVar(&listMonitorReq.PageToken, "page-token", listMonitorReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listMonitorLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listMonitorReq.PageToken, "page-token", listMonitorReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-monitor"
 	cmd.Short = `List monitors.`
@@ -729,6 +744,13 @@ func newListMonitor() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.DataQuality.ListMonitor(ctx, listMonitorReq)
+		if listMonitorLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listMonitorLimit)
+		}
+		if listMonitorLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listMonitorLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -757,9 +779,19 @@ func newListRefresh() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listRefreshReq dataquality.ListRefreshRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listRefreshLimit int
 
 	cmd.Flags().IntVar(&listRefreshReq.PageSize, "page-size", listRefreshReq.PageSize, ``)
-	cmd.Flags().StringVar(&listRefreshReq.PageToken, "page-token", listRefreshReq.PageToken, ``)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listRefreshLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listRefreshReq.PageToken, "page-token", listRefreshReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-refresh OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `List refreshes.`
@@ -814,6 +846,13 @@ func newListRefresh() *cobra.Command {
 		listRefreshReq.ObjectId = args[1]
 
 		response := w.DataQuality.ListRefresh(ctx, listRefreshReq)
+		if listRefreshLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listRefreshLimit)
+		}
+		if listRefreshLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listRefreshLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -950,6 +989,7 @@ func newUpdateMonitor() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1075,6 +1115,7 @@ func newUpdateRefresh() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

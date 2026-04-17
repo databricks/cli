@@ -8,3 +8,6 @@ EnvMatrixExclude.no_model_with_permissions = ["INPUT_CONFIG=model_with_permissio
 
 # vector_search_endpoints resource is not supported on v0.293.0
 EnvMatrixExclude.no_vector_search_endpoint = ["INPUT_CONFIG=vector_search_endpoint.yml.tmpl"]
+
+# Dotted pipeline configuration keys are not supported on v0.293.0
+EnvMatrixExclude.no_pipeline_config_dots = ["INPUT_CONFIG=pipeline_config_dots.yml.tmpl"]

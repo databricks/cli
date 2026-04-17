@@ -18,7 +18,7 @@ import (
 var TestMetastore = catalog.MetastoreAssignment{
 	DefaultCatalogName: "hive_metastore",
 	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
-	WorkspaceId:        470123456789500,
+	WorkspaceId:        900800700600,
 }
 
 func AddDefaultHandlers(server *Server) {

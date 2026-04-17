@@ -439,7 +439,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
 	log.Debugf(ctx, "Metadata URL: %s", metadataURL)
-	req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL, nil)
 	if err != nil {
 		return 0, "", "", err
 	}
@@ -476,7 +476,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
 
-	err = client.Workspace.MkdirsByPath(ctx, contentDir)
+	err = client.Workspace.MkdirsByPath(ctx, contentDir) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}

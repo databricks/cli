@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	mocksql "github.com/databricks/databricks-sdk-go/experimental/mocks/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -446,4 +447,69 @@ func TestResolveSQLMissingFileReturnsError(t *testing.T) {
 	_, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, "/nonexistent/path/query.sql")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "read SQL file")
+}
+
+func TestQueryCommandUnsupportedOutputReturnsError(t *testing.T) {
+	cmd := newQueryCmd()
+	cmd.PreRunE = nil
+	cmd.SetArgs([]string{"--output", "xml", "SELECT 1"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported output format")
+}
+
+func TestQueryCommandOutputFlagIsCaseInsensitive(t *testing.T) {
+	cmd := newQueryCmd()
+	cmd.PreRunE = nil
+	cmd.SetArgs([]string{"--output", "JSON", "SELECT 1"})
+	// "JSON" is lowercased and passes validation. The command proceeds to
+	// WorkspaceClient and panics (no client in test), confirming validation passed.
+	assert.Panics(t, func() { _ = cmd.Execute() })
+}
+
+func TestQueryCommandEnvVarOverridesDefault(t *testing.T) {
+	cmd := newQueryCmd()
+	cmd.PreRunE = nil
+	ctx := env.Set(t.Context(), "DATABRICKS_OUTPUT_FORMAT", "json")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"SELECT 1"})
+	// Env var "json" is valid, so validation passes and the command proceeds
+	// to WorkspaceClient (panics because no client in test context).
+	assert.Panics(t, func() { _ = cmd.Execute() })
+}
+
+func TestQueryCommandInvalidEnvVarIsIgnored(t *testing.T) {
+	cmd := newQueryCmd()
+	cmd.PreRunE = nil
+	ctx := env.Set(t.Context(), "DATABRICKS_OUTPUT_FORMAT", "xml")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"SELECT 1"})
+	// Invalid env value is silently ignored (falls back to default "text"),
+	// so validation passes and the command proceeds to WorkspaceClient.
+	assert.Panics(t, func() { _ = cmd.Execute() })
+}
+
+func TestQueryCommandExplicitFlagOverridesEnvVar(t *testing.T) {
+	cmd := newQueryCmd()
+	cmd.PreRunE = nil
+	ctx := env.Set(t.Context(), "DATABRICKS_OUTPUT_FORMAT", "json")
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"--output", "csv", "SELECT 1"})
+	// Explicit --output csv overrides env var. Validation passes,
+	// command proceeds to WorkspaceClient.
+	assert.Panics(t, func() { _ = cmd.Execute() })
+}
+
+func TestRenderCSVOutput(t *testing.T) {
+	var buf strings.Builder
+	err := renderCSV(&buf, []string{"id", "name"}, [][]string{{"1", "alice"}, {"2", "bob"}})
+	require.NoError(t, err)
+	assert.Equal(t, "id,name\r\n1,alice\r\n2,bob\r\n", buf.String())
+}
+
+func TestRenderCSVHeadersOnlyWhenNoRows(t *testing.T) {
+	var buf strings.Builder
+	err := renderCSV(&buf, []string{"id", "name"}, nil)
+	require.NoError(t, err)
+	assert.Equal(t, "id,name\r\n", buf.String())
 }

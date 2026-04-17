@@ -165,11 +165,7 @@ resources:
     ignore_remote_changes:
       - field: effective_enable_file_events
         reason: spec:output_only
-      - field: file_event_queue.managed_aqs.managed_resource_id
-        reason: spec:output_only
-      - field: file_event_queue.managed_pubsub.managed_resource_id
-        reason: spec:output_only
-      - field: file_event_queue.managed_sqs.managed_resource_id
+      - field: effective_file_event_queue
         reason: spec:output_only
 
   # jobs: no api field behaviors
@@ -244,6 +240,8 @@ resources:
       - field: budget_policy_id
         reason: spec:input_only
       - field: custom_tags
+        reason: spec:input_only
+      - field: default_branch
         reason: spec:input_only
       - field: default_endpoint_settings
         reason: spec:input_only

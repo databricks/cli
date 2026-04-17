@@ -852,6 +852,9 @@ github.com/databricks/cli/bundle/config/resources.PostgresProject:
   "custom_tags":
     "description": |-
       PLACEHOLDER
+  "default_branch":
+    "description": |-
+      PLACEHOLDER
   "default_endpoint_settings":
     "description": |-
       PLACEHOLDER

@@ -67,6 +67,7 @@ var knownMissingInRemoteType = map[string][]string{
 	"postgres_projects": {
 		"budget_policy_id",
 		"custom_tags",
+		"default_branch",
 		"default_endpoint_settings",
 		"display_name",
 		"enable_pg_native_login",
