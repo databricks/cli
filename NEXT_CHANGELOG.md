@@ -7,7 +7,6 @@
 ### CLI
 
 * Added `--limit` flag to all paginated list commands for client-side result capping ([#4984](https://github.com/databricks/cli/pull/4984)).
-* Added experimental `databricks experimental doctor` command that runs diagnostic checks (CLI version, updates, toolchain, proxy/TLS, log file, config file, profile, authentication, identity, network) and reports results as a checklist or JSON ([#4730](https://github.com/databricks/cli/pull/4730)).
 
 ### Bundles
 
