@@ -23,15 +23,9 @@ func listPipelinesOverride(listCmd *cobra.Command, listReq *pipelines.ListPipeli
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Pipeline ID", Extract: func(v any) string {
-			return v.(pipelines.PipelineStateInfo).PipelineId
-		}},
-		{Header: "Name", Extract: func(v any) string {
-			return v.(pipelines.PipelineStateInfo).Name
-		}},
-		{Header: "State", Extract: func(v any) string {
-			return string(v.(pipelines.PipelineStateInfo).State)
-		}},
+		tableview.Col("Pipeline ID", func(p pipelines.PipelineStateInfo) string { return p.PipelineId }),
+		tableview.Col("Name", func(p pipelines.PipelineStateInfo) string { return p.Name }),
+		tableview.Col("State", func(p pipelines.PipelineStateInfo) string { return string(p.State) }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{
@@ -78,18 +72,12 @@ func listPipelineEventsOverride(listCmd *cobra.Command, _ *pipelines.ListPipelin
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Timestamp", Extract: func(v any) string {
-			return v.(pipelines.PipelineEvent).Timestamp
-		}},
-		{Header: "Level", Extract: func(v any) string {
-			return string(v.(pipelines.PipelineEvent).Level)
-		}},
-		{Header: "Event Type", Extract: func(v any) string {
-			return v.(pipelines.PipelineEvent).EventType
-		}},
-		{Header: "Message", MaxWidth: 200, Extract: func(v any) string {
-			return cmdio.SanitizeControlWhitespace(v.(pipelines.PipelineEvent).Message)
-		}},
+		tableview.Col("Timestamp", func(e pipelines.PipelineEvent) string { return e.Timestamp }),
+		tableview.Col("Level", func(e pipelines.PipelineEvent) string { return string(e.Level) }),
+		tableview.Col("Event Type", func(e pipelines.PipelineEvent) string { return e.EventType }),
+		tableview.ColMax("Message", 200, func(e pipelines.PipelineEvent) string {
+			return cmdio.SanitizeControlWhitespace(e.Message)
+		}),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

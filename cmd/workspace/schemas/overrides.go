@@ -17,15 +17,9 @@ func listOverride(listCmd *cobra.Command, _ *catalog.ListSchemasRequest) {
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Full Name", Extract: func(v any) string {
-			return v.(catalog.SchemaInfo).FullName
-		}},
-		{Header: "Owner", Extract: func(v any) string {
-			return v.(catalog.SchemaInfo).Owner
-		}},
-		{Header: "Comment", MaxWidth: 40, Extract: func(v any) string {
-			return v.(catalog.SchemaInfo).Comment
-		}},
+		tableview.Col("Full Name", func(s catalog.SchemaInfo) string { return s.FullName }),
+		tableview.Col("Owner", func(s catalog.SchemaInfo) string { return s.Owner }),
+		tableview.ColMax("Comment", 40, func(s catalog.SchemaInfo) string { return s.Comment }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

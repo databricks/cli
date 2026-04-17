@@ -17,15 +17,9 @@ func listOverride(listCmd *cobra.Command, _ *dashboards.ListDashboardsRequest) {
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Dashboard ID", Extract: func(v any) string {
-			return v.(dashboards.Dashboard).DashboardId
-		}},
-		{Header: "Name", Extract: func(v any) string {
-			return v.(dashboards.Dashboard).DisplayName
-		}},
-		{Header: "State", Extract: func(v any) string {
-			return string(v.(dashboards.Dashboard).LifecycleState)
-		}},
+		tableview.Col("Dashboard ID", func(d dashboards.Dashboard) string { return d.DashboardId }),
+		tableview.Col("Name", func(d dashboards.Dashboard) string { return d.DisplayName }),
+		tableview.Col("State", func(d dashboards.Dashboard) string { return string(d.LifecycleState) }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

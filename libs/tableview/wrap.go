@@ -11,6 +11,23 @@ func WrapIterator[T any](iter listing.Iterator[T], columns []ColumnDef) RowItera
 	return &typedRowIterator[T]{inner: iter, columns: columns}
 }
 
+// Col builds a ColumnDef for a typed SDK struct, hiding the type assertion.
+func Col[T any](header string, extract func(T) string) ColumnDef {
+	return ColumnDef{
+		Header:  header,
+		Extract: func(v any) string { return extract(v.(T)) },
+	}
+}
+
+// ColMax is like Col but with a display-width cap.
+func ColMax[T any](header string, maxWidth int, extract func(T) string) ColumnDef {
+	return ColumnDef{
+		Header:   header,
+		MaxWidth: maxWidth,
+		Extract:  func(v any) string { return extract(v.(T)) },
+	}
+}
+
 type typedRowIterator[T any] struct {
 	inner   listing.Iterator[T]
 	columns []ColumnDef

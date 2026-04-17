@@ -17,15 +17,9 @@ func listOverride(listCmd *cobra.Command, _ *catalog.ListExternalLocationsReques
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Name", Extract: func(v any) string {
-			return v.(catalog.ExternalLocationInfo).Name
-		}},
-		{Header: "Credential", Extract: func(v any) string {
-			return v.(catalog.ExternalLocationInfo).CredentialName
-		}},
-		{Header: "URL", Extract: func(v any) string {
-			return v.(catalog.ExternalLocationInfo).Url
-		}},
+		tableview.Col("Name", func(l catalog.ExternalLocationInfo) string { return l.Name }),
+		tableview.Col("Credential", func(l catalog.ExternalLocationInfo) string { return l.CredentialName }),
+		tableview.Col("URL", func(l catalog.ExternalLocationInfo) string { return l.Url }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

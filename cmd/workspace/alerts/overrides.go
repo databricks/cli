@@ -15,15 +15,9 @@ func listOverride(listCmd *cobra.Command, _ *sql.ListAlertsRequest) {
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "ID", Extract: func(v any) string {
-			return v.(sql.ListAlertsResponseAlert).Id
-		}},
-		{Header: "Name", Extract: func(v any) string {
-			return v.(sql.ListAlertsResponseAlert).DisplayName
-		}},
-		{Header: "State", Extract: func(v any) string {
-			return string(v.(sql.ListAlertsResponseAlert).State)
-		}},
+		tableview.Col("ID", func(a sql.ListAlertsResponseAlert) string { return a.Id }),
+		tableview.Col("Name", func(a sql.ListAlertsResponseAlert) string { return a.DisplayName }),
+		tableview.Col("State", func(a sql.ListAlertsResponseAlert) string { return string(a.State) }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

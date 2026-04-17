@@ -21,15 +21,9 @@ func listOverride(listCmd *cobra.Command, listReq *compute.ListClustersRequest) 
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Cluster ID", Extract: func(v any) string {
-			return v.(compute.ClusterDetails).ClusterId
-		}},
-		{Header: "Name", Extract: func(v any) string {
-			return v.(compute.ClusterDetails).ClusterName
-		}},
-		{Header: "State", Extract: func(v any) string {
-			return string(v.(compute.ClusterDetails).State)
-		}},
+		tableview.Col("Cluster ID", func(c compute.ClusterDetails) string { return c.ClusterId }),
+		tableview.Col("Name", func(c compute.ClusterDetails) string { return c.ClusterName }),
+		tableview.Col("State", func(c compute.ClusterDetails) string { return string(c.State) }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

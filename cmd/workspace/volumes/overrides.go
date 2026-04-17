@@ -15,15 +15,9 @@ func listOverride(listCmd *cobra.Command, _ *catalog.ListVolumesRequest) {
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Name", Extract: func(v any) string {
-			return v.(catalog.VolumeInfo).Name
-		}},
-		{Header: "Volume Type", Extract: func(v any) string {
-			return string(v.(catalog.VolumeInfo).VolumeType)
-		}},
-		{Header: "Full Name", Extract: func(v any) string {
-			return v.(catalog.VolumeInfo).FullName
-		}},
+		tableview.Col("Name", func(vol catalog.VolumeInfo) string { return vol.Name }),
+		tableview.Col("Volume Type", func(vol catalog.VolumeInfo) string { return string(vol.VolumeType) }),
+		tableview.Col("Full Name", func(vol catalog.VolumeInfo) string { return vol.FullName }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

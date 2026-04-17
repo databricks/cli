@@ -23,12 +23,8 @@ func listScopesOverride(listScopesCmd *cobra.Command) {
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Scope", Extract: func(v any) string {
-			return v.(workspace.SecretScope).Name
-		}},
-		{Header: "Backend Type", Extract: func(v any) string {
-			return string(v.(workspace.SecretScope).BackendType)
-		}},
+		tableview.Col("Scope", func(s workspace.SecretScope) string { return s.Name }),
+		tableview.Col("Backend Type", func(s workspace.SecretScope) string { return string(s.BackendType) }),
 	}
 
 	tableview.SetTableConfigOnCmd(listScopesCmd, &tableview.TableConfig{Columns: columns})
@@ -44,16 +40,13 @@ func listSecretsOverride(listSecretsCommand *cobra.Command, _ *workspace.ListSec
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Key", Extract: func(v any) string {
-			return v.(workspace.SecretMetadata).Key
-		}},
-		{Header: "Last Updated", Extract: func(v any) string {
-			ts := v.(workspace.SecretMetadata).LastUpdatedTimestamp
-			if ts == 0 {
+		tableview.Col("Key", func(s workspace.SecretMetadata) string { return s.Key }),
+		tableview.Col("Last Updated", func(s workspace.SecretMetadata) string {
+			if s.LastUpdatedTimestamp == 0 {
 				return ""
 			}
-			return time.UnixMilli(ts).UTC().Format("2006-01-02 15:04:05")
-		}},
+			return time.UnixMilli(s.LastUpdatedTimestamp).UTC().Format("2006-01-02 15:04:05")
+		}),
 	}
 
 	tableview.SetTableConfigOnCmd(listSecretsCommand, &tableview.TableConfig{Columns: columns})

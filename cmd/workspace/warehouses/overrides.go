@@ -17,18 +17,10 @@ func listOverride(listCmd *cobra.Command, _ *sql.ListWarehousesRequest) {
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "ID", Extract: func(v any) string {
-			return v.(sql.EndpointInfo).Id
-		}},
-		{Header: "Name", Extract: func(v any) string {
-			return v.(sql.EndpointInfo).Name
-		}},
-		{Header: "Size", Extract: func(v any) string {
-			return v.(sql.EndpointInfo).ClusterSize
-		}},
-		{Header: "State", Extract: func(v any) string {
-			return string(v.(sql.EndpointInfo).State)
-		}},
+		tableview.Col("ID", func(e sql.EndpointInfo) string { return e.Id }),
+		tableview.Col("Name", func(e sql.EndpointInfo) string { return e.Name }),
+		tableview.Col("Size", func(e sql.EndpointInfo) string { return e.ClusterSize }),
+		tableview.Col("State", func(e sql.EndpointInfo) string { return string(e.State) }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

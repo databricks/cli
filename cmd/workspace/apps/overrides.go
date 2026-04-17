@@ -20,28 +20,20 @@ func listOverride(listCmd *cobra.Command, _ *apps.ListAppsRequest) {
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Name", Extract: func(v any) string {
-			a := v.(apps.App)
-			return a.Name
-		}},
-		{Header: "URL", Extract: func(v any) string {
-			a := v.(apps.App)
-			return a.Url
-		}},
-		{Header: "Compute Status", Extract: func(v any) string {
-			a := v.(apps.App)
+		tableview.Col("Name", func(a apps.App) string { return a.Name }),
+		tableview.Col("URL", func(a apps.App) string { return a.Url }),
+		tableview.Col("Compute Status", func(a apps.App) string {
 			if a.ComputeStatus != nil {
 				return string(a.ComputeStatus.State)
 			}
 			return ""
-		}},
-		{Header: "Deploy Status", Extract: func(v any) string {
-			a := v.(apps.App)
+		}),
+		tableview.Col("Deploy Status", func(a apps.App) string {
 			if a.ActiveDeployment != nil && a.ActiveDeployment.Status != nil {
 				return string(a.ActiveDeployment.Status.State)
 			}
 			return ""
-		}},
+		}),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

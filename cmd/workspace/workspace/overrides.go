@@ -28,18 +28,10 @@ func listOverride(listCmd *cobra.Command, listReq *workspace.ListWorkspaceReques
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "ID", Extract: func(v any) string {
-			return strconv.FormatInt(v.(workspace.ObjectInfo).ObjectId, 10)
-		}},
-		{Header: "Type", Extract: func(v any) string {
-			return string(v.(workspace.ObjectInfo).ObjectType)
-		}},
-		{Header: "Language", Extract: func(v any) string {
-			return string(v.(workspace.ObjectInfo).Language)
-		}},
-		{Header: "Path", Extract: func(v any) string {
-			return v.(workspace.ObjectInfo).Path
-		}},
+		tableview.Col("ID", func(o workspace.ObjectInfo) string { return strconv.FormatInt(o.ObjectId, 10) }),
+		tableview.Col("Type", func(o workspace.ObjectInfo) string { return string(o.ObjectType) }),
+		tableview.Col("Language", func(o workspace.ObjectInfo) string { return string(o.Language) }),
+		tableview.Col("Path", func(o workspace.ObjectInfo) string { return o.Path }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

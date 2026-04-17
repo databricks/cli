@@ -15,18 +15,14 @@ func listOverride(listCmd *cobra.Command, _ *compute.ListClusterPoliciesRequest)
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Policy ID", Extract: func(v any) string {
-			return v.(compute.Policy).PolicyId
-		}},
-		{Header: "Name", Extract: func(v any) string {
-			return v.(compute.Policy).Name
-		}},
-		{Header: "Default", Extract: func(v any) string {
-			if v.(compute.Policy).IsDefault {
+		tableview.Col("Policy ID", func(p compute.Policy) string { return p.PolicyId }),
+		tableview.Col("Name", func(p compute.Policy) string { return p.Name }),
+		tableview.Col("Default", func(p compute.Policy) string {
+			if p.IsDefault {
 				return "yes"
 			}
 			return ""
-		}},
+		}),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

@@ -15,18 +15,10 @@ func listOverride(listCmd *cobra.Command) {
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Pool ID", Extract: func(v any) string {
-			return v.(compute.InstancePoolAndStats).InstancePoolId
-		}},
-		{Header: "Name", Extract: func(v any) string {
-			return v.(compute.InstancePoolAndStats).InstancePoolName
-		}},
-		{Header: "Node Type", Extract: func(v any) string {
-			return v.(compute.InstancePoolAndStats).NodeTypeId
-		}},
-		{Header: "State", Extract: func(v any) string {
-			return string(v.(compute.InstancePoolAndStats).State)
-		}},
+		tableview.Col("Pool ID", func(p compute.InstancePoolAndStats) string { return p.InstancePoolId }),
+		tableview.Col("Name", func(p compute.InstancePoolAndStats) string { return p.InstancePoolName }),
+		tableview.Col("Node Type", func(p compute.InstancePoolAndStats) string { return p.NodeTypeId }),
+		tableview.Col("State", func(p compute.InstancePoolAndStats) string { return string(p.State) }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})

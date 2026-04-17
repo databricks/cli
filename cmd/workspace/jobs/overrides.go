@@ -19,15 +19,13 @@ func listOverride(listCmd *cobra.Command, listReq *jobs.ListJobsRequest) {
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "Job ID", Extract: func(v any) string {
-			return strconv.FormatInt(v.(jobs.BaseJob).JobId, 10)
-		}},
-		{Header: "Name", Extract: func(v any) string {
-			if v.(jobs.BaseJob).Settings != nil {
-				return v.(jobs.BaseJob).Settings.Name
+		tableview.Col("Job ID", func(j jobs.BaseJob) string { return strconv.FormatInt(j.JobId, 10) }),
+		tableview.Col("Name", func(j jobs.BaseJob) string {
+			if j.Settings != nil {
+				return j.Settings.Name
 			}
 			return ""
-		}},
+		}),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{

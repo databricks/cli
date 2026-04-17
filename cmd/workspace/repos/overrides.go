@@ -25,18 +25,10 @@ func listOverride(listCmd *cobra.Command, _ *workspace.ListReposRequest) {
 	{{end}}`)
 
 	columns := []tableview.ColumnDef{
-		{Header: "ID", Extract: func(v any) string {
-			return strconv.FormatInt(v.(workspace.RepoInfo).Id, 10)
-		}},
-		{Header: "Path", Extract: func(v any) string {
-			return v.(workspace.RepoInfo).Path
-		}},
-		{Header: "Branch", Extract: func(v any) string {
-			return v.(workspace.RepoInfo).Branch
-		}},
-		{Header: "URL", Extract: func(v any) string {
-			return v.(workspace.RepoInfo).Url
-		}},
+		tableview.Col("ID", func(r workspace.RepoInfo) string { return strconv.FormatInt(r.Id, 10) }),
+		tableview.Col("Path", func(r workspace.RepoInfo) string { return r.Path }),
+		tableview.Col("Branch", func(r workspace.RepoInfo) string { return r.Branch }),
+		tableview.Col("URL", func(r workspace.RepoInfo) string { return r.Url }),
 	}
 
 	tableview.SetTableConfigOnCmd(listCmd, &tableview.TableConfig{Columns: columns})
