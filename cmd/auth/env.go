@@ -50,7 +50,7 @@ func writeEnvOutput(w io.Writer, envVars map[string]string, textMode bool) error
 		}
 		return nil
 	}
-	raw, err := json.MarshalIndent(envVars, "", "  ")
+	raw, err := json.MarshalIndent(map[string]any{"env": envVars}, "", "  ")
 	if err != nil {
 		return err
 	}

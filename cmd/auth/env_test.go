@@ -47,10 +47,10 @@ func TestWriteEnvOutput(t *testing.T) {
 		assert.Equal(t, "DATABRICKS_HOST=https://test.cloud.databricks.com\nDATABRICKS_TOKEN='secret value'\n", buf.String())
 	})
 
-	t.Run("json mode emits flat map with trailing newline", func(t *testing.T) {
+	t.Run("json mode wraps env in {\"env\": ...} with trailing newline", func(t *testing.T) {
 		var buf bytes.Buffer
 		require.NoError(t, writeEnvOutput(&buf, envVars, false))
-		assert.Equal(t, "{\n  \"DATABRICKS_HOST\": \"https://test.cloud.databricks.com\",\n  \"DATABRICKS_TOKEN\": \"secret value\"\n}\n", buf.String())
+		assert.Equal(t, "{\n  \"env\": {\n    \"DATABRICKS_HOST\": \"https://test.cloud.databricks.com\",\n    \"DATABRICKS_TOKEN\": \"secret value\"\n  }\n}\n", buf.String())
 	})
 
 	t.Run("empty map", func(t *testing.T) {
@@ -58,6 +58,6 @@ func TestWriteEnvOutput(t *testing.T) {
 		require.NoError(t, writeEnvOutput(&textBuf, map[string]string{}, true))
 		require.NoError(t, writeEnvOutput(&jsonBuf, map[string]string{}, false))
 		assert.Empty(t, textBuf.String())
-		assert.Equal(t, "{}\n", jsonBuf.String())
+		assert.Equal(t, "{\n  \"env\": {}\n}\n", jsonBuf.String())
 	})
 }
