@@ -60,8 +60,9 @@ func writeEnvOutput(w io.Writer, envVars map[string]string, textMode bool) error
 const shellQuotedSpecialChars = " \t\n\r\"\\$`!#&|;(){}[]<>?*~'"
 
 // quoteEnvValue quotes a value for KEY=VALUE output if it contains spaces or
-// shell-special characters. Single quotes prevent shell expansion, and
-// embedded single quotes are escaped as '\'' (POSIX-compatible).
+// shell-special characters. The value is wrapped in single quotes to prevent
+// shell expansion; embedded single quotes are escaped POSIX-style by closing
+// the quoted string, emitting a backslash-escaped quote, and reopening.
 func quoteEnvValue(v string) string {
 	if v == "" {
 		return `''`
