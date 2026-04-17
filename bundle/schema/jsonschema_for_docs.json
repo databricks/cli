@@ -1309,7 +1309,7 @@
                   }
                 },
                 "additionalProperties": false,
-                "markdownDescription": "The pipeline resource allows you to create Spark Declarative [Pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/dlt/index.html). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
+                "markdownDescription": "The pipeline resource allows you to create [Spark Declarative Pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/dlt/index.html). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
               },
               "resources.PipelinePermission": {
                 "type": "object",
