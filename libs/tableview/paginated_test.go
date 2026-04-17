@@ -87,63 +87,66 @@ func TestKeyBeforeFirstFetchDoesNotDoubleFetch(t *testing.T) {
 	assert.True(t, pm.loading, "loading must remain true")
 }
 
-func TestPaginatedFetchFirstBatch(t *testing.T) {
-	rows := [][]string{{"alice", "30"}, {"bob", "25"}}
-	m := newTestModel(t, rows, 0)
-	m.ready = true
-	m.viewport.Width = 80
-	m.viewport.Height = 20
-
-	msg := rowsFetchedMsg{rows: rows, exhausted: true}
-	result, _ := m.Update(msg)
-	pm := result.(paginatedModel)
-
-	assert.Len(t, pm.rows, 2)
-	assert.True(t, pm.exhausted)
-	assert.Equal(t, 0, pm.cursor)
-	assert.NotNil(t, pm.widths)
-}
-
-func TestPaginatedFetchSubsequentBatch(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.ready = true
-	m.viewport.Width = 80
-	m.viewport.Height = 20
-	m.rows = [][]string{{"alice", "30"}}
-	m.widths = []int{5, 3}
-
-	msg := rowsFetchedMsg{rows: [][]string{{"bob", "25"}}, exhausted: false}
-	result, _ := m.Update(msg)
-	pm := result.(paginatedModel)
-
-	assert.Len(t, pm.rows, 2)
-	assert.False(t, pm.exhausted)
-}
-
-func TestPaginatedFetchExhaustion(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.ready = true
-	m.viewport.Width = 80
-	m.viewport.Height = 20
-
-	msg := rowsFetchedMsg{rows: nil, exhausted: true}
-	result, _ := m.Update(msg)
-	pm := result.(paginatedModel)
-
-	assert.True(t, pm.exhausted)
-	assert.Empty(t, pm.rows)
-}
-
-func TestPaginatedFetchError(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.ready = true
-
-	msg := rowsFetchedMsg{err: errors.New("network error")}
-	result, _ := m.Update(msg)
-	pm := result.(paginatedModel)
-
-	require.Error(t, pm.err)
-	assert.Equal(t, "network error", pm.err.Error())
+func TestPaginatedFetch(t *testing.T) {
+	tests := []struct {
+		name   string
+		setup  func(*paginatedModel)
+		msg    rowsFetchedMsg
+		verify func(*testing.T, paginatedModel)
+	}{
+		{
+			name:  "first batch",
+			setup: func(*paginatedModel) {},
+			msg:   rowsFetchedMsg{rows: [][]string{{"alice", "30"}, {"bob", "25"}}, exhausted: true},
+			verify: func(t *testing.T, pm paginatedModel) {
+				assert.Len(t, pm.rows, 2)
+				assert.True(t, pm.exhausted)
+				assert.Equal(t, 0, pm.cursor)
+				assert.NotNil(t, pm.widths)
+			},
+		},
+		{
+			name: "subsequent batch appends",
+			setup: func(m *paginatedModel) {
+				m.rows = [][]string{{"alice", "30"}}
+				m.widths = []int{5, 3}
+			},
+			msg: rowsFetchedMsg{rows: [][]string{{"bob", "25"}}, exhausted: false},
+			verify: func(t *testing.T, pm paginatedModel) {
+				assert.Len(t, pm.rows, 2)
+				assert.False(t, pm.exhausted)
+			},
+		},
+		{
+			name:  "exhaustion with no rows",
+			setup: func(*paginatedModel) {},
+			msg:   rowsFetchedMsg{rows: nil, exhausted: true},
+			verify: func(t *testing.T, pm paginatedModel) {
+				assert.True(t, pm.exhausted)
+				assert.Empty(t, pm.rows)
+			},
+		},
+		{
+			name:  "error",
+			setup: func(*paginatedModel) {},
+			msg:   rowsFetchedMsg{err: errors.New("network error")},
+			verify: func(t *testing.T, pm paginatedModel) {
+				require.Error(t, pm.err)
+				assert.Equal(t, "network error", pm.err.Error())
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t, nil, 0)
+			m.ready = true
+			m.viewport.Width = 80
+			m.viewport.Height = 20
+			tt.setup(&m)
+			result, _ := m.Update(tt.msg)
+			tt.verify(t, result.(paginatedModel))
+		})
+	}
 }
 
 func TestPaginatedCursorMovement(t *testing.T) {
@@ -192,34 +195,24 @@ func TestPaginatedMaxItemsLimit(t *testing.T) {
 	assert.Len(t, pm.rows, 3)
 }
 
-func TestPaginatedViewLoading(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.ready = true
-	m.loading = true
-	view := m.View()
-	assert.Equal(t, "Fetching results...", view)
-}
-
-func TestPaginatedViewNoResults(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.ready = true
-	m.exhausted = true
-	view := m.View()
-	assert.Equal(t, "No results found.", view)
-}
-
-func TestPaginatedViewError(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.ready = true
-	m.err = errors.New("something broke")
-	view := m.View()
-	assert.Contains(t, view, "Error: something broke")
-}
-
-func TestPaginatedViewNotReady(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	view := m.View()
-	assert.Equal(t, "Loading...", view)
+func TestPaginatedView(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(*paginatedModel)
+		want  string
+	}{
+		{"not ready", func(*paginatedModel) {}, "Loading..."},
+		{"loading", func(m *paginatedModel) { m.ready = true; m.loading = true }, "Fetching results..."},
+		{"no results", func(m *paginatedModel) { m.ready = true; m.exhausted = true }, "No results found."},
+		{"error", func(m *paginatedModel) { m.ready = true; m.err = errors.New("something broke") }, "Error: something broke"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t, nil, 0)
+			tt.setup(&m)
+			assert.Contains(t, m.View(), tt.want)
+		})
+	}
 }
 
 func TestMaybeFetch(t *testing.T) {
@@ -261,7 +254,7 @@ func TestMaybeFetch(t *testing.T) {
 			setup: func(m *paginatedModel) {
 				m.rows = make([][]string, 15)
 				m.cursor = 10
-				m.searching = true
+				m.search.active = true
 			},
 			wantFetch: false,
 		},
@@ -319,29 +312,28 @@ func TestPaginatedSearchEnterAndRestore(t *testing.T) {
 	m.viewport.Height = 20
 
 	// Enter search mode
-	m.searching = true
-	m.searchInput = "test"
+	m.search.active = true
+	m.search.input = "test"
 
 	// Submit search
 	result, cmd := m.updateSearch(tea.KeyMsg{Type: tea.KeyEnter})
 	pm := result.(paginatedModel)
 
-	assert.False(t, pm.searching)
+	assert.False(t, pm.search.active)
 	assert.True(t, searchCalled)
 	assert.NotNil(t, cmd)
-	assert.True(t, pm.hasSearchState)
+	assert.NotNil(t, pm.search.saved)
 	assert.Equal(t, 1, pm.fetchGeneration)
 
 	// Restore by submitting empty search
-	pm.searching = true
-	pm.searchInput = ""
+	pm.search.active = true
+	pm.search.input = ""
 	pm.rows = [][]string{{"found:test"}}
 	result, _ = pm.updateSearch(tea.KeyMsg{Type: tea.KeyEnter})
 	pm = result.(paginatedModel)
 
 	assert.Equal(t, [][]string{{"original"}}, pm.rows)
-	assert.False(t, pm.hasSearchState)
-	assert.Nil(t, pm.savedRows)
+	assert.Nil(t, pm.search.saved)
 	assert.Equal(t, 2, pm.fetchGeneration)
 }
 
@@ -372,19 +364,19 @@ func TestPaginatedSearchRestoreEmptyOriginalTable(t *testing.T) {
 	m.viewport.Width = 80
 	m.viewport.Height = 20
 
-	m.searching = true
-	m.searchInput = "test"
+	m.search.active = true
+	m.search.input = "test"
 
 	result, cmd := m.updateSearch(tea.KeyMsg{Type: tea.KeyEnter})
 	pm := result.(paginatedModel)
 
 	assert.NotNil(t, cmd)
-	assert.True(t, pm.hasSearchState)
-	assert.Nil(t, pm.savedRows)
+	assert.NotNil(t, pm.search.saved)
+	assert.Nil(t, pm.search.saved.rows)
 	assert.Equal(t, 1, pm.fetchGeneration)
 
-	pm.searching = true
-	pm.searchInput = ""
+	pm.search.active = true
+	pm.search.input = ""
 	pm.rows = [][]string{{"found:test"}}
 	result, _ = pm.updateSearch(tea.KeyMsg{Type: tea.KeyEnter})
 	pm = result.(paginatedModel)
@@ -392,81 +384,98 @@ func TestPaginatedSearchRestoreEmptyOriginalTable(t *testing.T) {
 	assert.Nil(t, pm.rows)
 	assert.Equal(t, originalIter, pm.rowIter)
 	assert.True(t, pm.exhausted)
-	assert.False(t, pm.hasSearchState)
+	assert.Nil(t, pm.search.saved)
 	assert.Equal(t, 2, pm.fetchGeneration)
 }
 
 func TestPaginatedSearchEscCancels(t *testing.T) {
 	m := newTestModel(t, nil, 0)
-	m.searching = true
-	m.searchInput = "partial"
+	m.search.active = true
+	m.search.input = "partial"
 	m.viewport.Height = 20
 
 	result, _ := m.updateSearch(tea.KeyMsg{Type: tea.KeyEscape})
 	pm := result.(paginatedModel)
 
-	assert.False(t, pm.searching)
-	assert.Equal(t, "", pm.searchInput)
+	assert.False(t, pm.search.active)
+	assert.Equal(t, "", pm.search.input)
 	assert.Equal(t, 21, pm.viewport.Height)
 }
 
-func TestPaginatedSearchBackspace(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.searching = true
-	m.searchInput = "abc"
-
-	result, cmd := m.updateSearch(tea.KeyMsg{Type: tea.KeyBackspace})
-	pm := result.(paginatedModel)
-
-	assert.Equal(t, "ab", pm.searchInput)
-	assert.NotNil(t, cmd, "backspace should schedule a debounce tick")
+func TestPaginatedSearchInputKeys(t *testing.T) {
+	tests := []struct {
+		name      string
+		initial   string
+		key       tea.KeyMsg
+		wantInput string
+	}{
+		{"backspace", "abc", tea.KeyMsg{Type: tea.KeyBackspace}, "ab"},
+		{"typing", "", tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")}, "a"},
+		{"space", "my", tea.KeyMsg{Type: tea.KeySpace}, "my "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t, nil, 0)
+			m.search.active = true
+			m.search.input = tt.initial
+			result, cmd := m.updateSearch(tt.key)
+			pm := result.(paginatedModel)
+			assert.Equal(t, tt.wantInput, pm.search.input)
+			assert.NotNil(t, cmd, "input change should schedule a debounce tick")
+		})
+	}
 }
 
-func TestPaginatedSearchTyping(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.searching = true
-	m.searchInput = ""
-
-	result, cmd := m.updateSearch(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
-	pm := result.(paginatedModel)
-
-	assert.Equal(t, "a", pm.searchInput)
-	assert.NotNil(t, cmd, "typing should schedule a debounce tick")
-}
-
-func TestPaginatedRenderFooterExhausted(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.rows = [][]string{{"a", "1"}, {"b", "2"}}
-	m.exhausted = true
-	m.cfg = newTestConfig()
-	m.ready = true
-	m.viewport.Width = 80
-	m.viewport.Height = 20
-
-	footer := m.renderFooter()
-	assert.Contains(t, footer, "2 rows")
-	assert.Contains(t, footer, "q quit")
-}
-
-func TestPaginatedRenderFooterMoreAvailable(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.rows = [][]string{{"a", "1"}}
-	m.exhausted = false
-	m.cfg = newTestConfig()
-
-	footer := m.renderFooter()
-	assert.Contains(t, footer, "more available")
-}
-
-func TestPaginatedRenderFooterLimitReached(t *testing.T) {
-	m := newTestModel(t, nil, 10)
-	m.rows = make([][]string, 10)
-	m.limitReached = true
-	m.exhausted = true
-	m.cfg = newTestConfig()
-
-	footer := m.renderFooter()
-	assert.Contains(t, footer, "limit: 10")
+func TestPaginatedRenderFooter(t *testing.T) {
+	searchCfg := &TableConfig{
+		Columns: []ColumnDef{{Header: "Name"}},
+		Search:  &SearchConfig{Placeholder: "type here"},
+	}
+	tests := []struct {
+		name     string
+		maxItems int
+		cfg      *TableConfig
+		setup    func(*paginatedModel)
+		contains []string
+	}{
+		{
+			name:     "exhausted",
+			setup:    func(m *paginatedModel) { m.rows = [][]string{{"a", "1"}, {"b", "2"}}; m.exhausted = true },
+			contains: []string{"2 rows", "q quit"},
+		},
+		{
+			name:     "more available",
+			setup:    func(m *paginatedModel) { m.rows = [][]string{{"a", "1"}}; m.exhausted = false },
+			contains: []string{"more available"},
+		},
+		{
+			name:     "limit reached",
+			maxItems: 10,
+			setup:    func(m *paginatedModel) { m.rows = make([][]string, 10); m.limitReached = true; m.exhausted = true },
+			contains: []string{"limit: 10"},
+		},
+		{
+			name:     "with search configured",
+			cfg:      searchCfg,
+			setup:    func(m *paginatedModel) { m.rows = [][]string{{"a"}} },
+			contains: []string{"/ search"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t, nil, tt.maxItems)
+			if tt.cfg != nil {
+				m.cfg = tt.cfg
+			} else {
+				m.cfg = newTestConfig()
+			}
+			tt.setup(&m)
+			footer := m.renderFooter()
+			for _, want := range tt.contains {
+				assert.Contains(t, footer, want)
+			}
+		})
+	}
 }
 
 func TestMaybeFetchSetsLoadingAndPreventsDoubleFetch(t *testing.T) {
@@ -562,30 +571,18 @@ func TestFetchCmdExhaustsSmallIterator(t *testing.T) {
 	assert.True(t, fetched.exhausted, "small iterator should be exhausted")
 }
 
-func TestPaginatedRenderFooterWithSearch(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.cfg = &TableConfig{
-		Columns: []ColumnDef{{Header: "Name"}},
-		Search:  &SearchConfig{Placeholder: "type here"},
-	}
-	m.rows = [][]string{{"a"}}
-
-	footer := m.renderFooter()
-	assert.Contains(t, footer, "/ search")
-}
-
 func TestPaginatedSearchDebounceIncrementsSeq(t *testing.T) {
 	m := newTestModel(t, nil, 0)
-	m.searching = true
-	m.searchInput = ""
+	m.search.active = true
+	m.search.input = ""
 
 	result, _ := m.updateSearch(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")})
 	pm := result.(paginatedModel)
-	assert.Equal(t, 1, pm.debounceSeq)
+	assert.Equal(t, 1, pm.search.debounceSeq)
 
 	result, _ = pm.updateSearch(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("b")})
 	pm = result.(paginatedModel)
-	assert.Equal(t, 2, pm.debounceSeq)
+	assert.Equal(t, 2, pm.search.debounceSeq)
 }
 
 func TestPaginatedSearchDebounceStaleTickIgnored(t *testing.T) {
@@ -607,10 +604,12 @@ func TestPaginatedSearchDebounceStaleTickIgnored(t *testing.T) {
 		rowIter:        &stringRowIterator{},
 		makeFetchCmd:   newFetchCmdFunc(ctx),
 		makeSearchIter: newSearchIterFunc(ctx, cfg.Search),
-		searching:      true,
-		searchInput:    "test",
-		debounceSeq:    5,
-		ready:          true,
+		search: searchState{
+			active:      true,
+			input:       "test",
+			debounceSeq: 5,
+		},
+		ready: true,
 	}
 	m.viewport.Width = 80
 	m.viewport.Height = 20
@@ -644,12 +643,14 @@ func TestPaginatedSearchDebounceCurrentSeqTriggers(t *testing.T) {
 		rowIter:        &stringRowIterator{rows: [][]string{{"original"}}},
 		makeFetchCmd:   newFetchCmdFunc(ctx),
 		makeSearchIter: newSearchIterFunc(ctx, cfg.Search),
-		searching:      true,
-		searchInput:    "hello",
-		debounceSeq:    3,
-		rows:           [][]string{{"original"}},
-		widths:         []int{8},
-		ready:          true,
+		search: searchState{
+			active:      true,
+			input:       "hello",
+			debounceSeq: 3,
+		},
+		rows:   [][]string{{"original"}},
+		widths: []int{8},
+		ready:  true,
 	}
 	m.viewport.Width = 80
 	m.viewport.Height = 20
@@ -660,20 +661,20 @@ func TestPaginatedSearchDebounceCurrentSeqTriggers(t *testing.T) {
 
 	assert.True(t, searchCalled)
 	assert.NotNil(t, cmd, "should return fetch command")
-	assert.True(t, pm.hasSearchState)
-	assert.Equal(t, [][]string{{"original"}}, pm.savedRows)
+	assert.NotNil(t, pm.search.saved)
+	assert.Equal(t, [][]string{{"original"}}, pm.search.saved.rows)
 }
 
 func TestPaginatedSearchDebounceIgnoredWhenNotSearching(t *testing.T) {
 	m := newTestModel(t, nil, 0)
-	m.searching = false
-	m.debounceSeq = 1
+	m.search.active = false
+	m.search.debounceSeq = 1
 
 	result, cmd := m.Update(searchDebounceMsg{seq: 1})
 	pm := result.(paginatedModel)
 
 	assert.Nil(t, cmd)
-	assert.False(t, pm.searching)
+	assert.False(t, pm.search.active)
 }
 
 func TestPaginatedSearchEnterBypassesDebounce(t *testing.T) {
@@ -698,10 +699,12 @@ func TestPaginatedSearchEnterBypassesDebounce(t *testing.T) {
 		makeSearchIter: newSearchIterFunc(ctx, cfg.Search),
 		rows:           [][]string{{"original"}},
 		widths:         []int{8},
-		searching:      true,
-		searchInput:    "test",
-		debounceSeq:    5,
-		ready:          true,
+		search: searchState{
+			active:      true,
+			input:       "test",
+			debounceSeq: 5,
+		},
+		ready: true,
 	}
 	m.viewport.Width = 80
 	m.viewport.Height = 20
@@ -711,7 +714,7 @@ func TestPaginatedSearchEnterBypassesDebounce(t *testing.T) {
 
 	assert.True(t, searchCalled, "enter should trigger search immediately")
 	assert.NotNil(t, cmd)
-	assert.False(t, pm.searching, "search mode should be exited")
+	assert.False(t, pm.search.active, "search mode should be exited")
 }
 
 func TestPaginatedSearchModeBlocksFetch(t *testing.T) {
@@ -745,7 +748,7 @@ func TestPaginatedSearchModeBlocksFetch(t *testing.T) {
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
 	pm := result.(paginatedModel)
 
-	assert.True(t, pm.searching)
+	assert.True(t, pm.search.active)
 	assert.False(t, pm.loading, "entering search mode should not overload loading flag")
 
 	// Verify maybeFetch is blocked by the searching flag.
@@ -800,17 +803,20 @@ func TestPaginatedSearchEscRestoresData(t *testing.T) {
 	ctx := t.Context()
 	originalIter := &stringRowIterator{rows: [][]string{{"original"}}}
 	m := paginatedModel{
-		cfg:             cfg,
-		headers:         []string{"Name"},
-		rowIter:         &stringRowIterator{rows: [][]string{{"search-result"}}},
-		makeFetchCmd:    newFetchCmdFunc(ctx),
-		makeSearchIter:  newSearchIterFunc(ctx, cfg.Search),
-		searching:       true,
-		searchInput:     "test",
-		hasSearchState:  true,
-		savedRows:       [][]string{{"original"}},
-		savedIter:       originalIter,
-		savedExhaust:    true,
+		cfg:            cfg,
+		headers:        []string{"Name"},
+		rowIter:        &stringRowIterator{rows: [][]string{{"search-result"}}},
+		makeFetchCmd:   newFetchCmdFunc(ctx),
+		makeSearchIter: newSearchIterFunc(ctx, cfg.Search),
+		search: searchState{
+			active: true,
+			input:  "test",
+			saved: &savedSearch{
+				rows:      [][]string{{"original"}},
+				iter:      originalIter,
+				exhausted: true,
+			},
+		},
 		rows:            [][]string{{"search-result"}},
 		widths:          []int{13},
 		ready:           true,
@@ -822,28 +828,27 @@ func TestPaginatedSearchEscRestoresData(t *testing.T) {
 	result, _ := m.updateSearch(tea.KeyMsg{Type: tea.KeyEscape})
 	pm := result.(paginatedModel)
 
-	assert.False(t, pm.searching)
-	assert.Equal(t, "", pm.searchInput)
+	assert.False(t, pm.search.active)
+	assert.Equal(t, "", pm.search.input)
 	assert.Equal(t, [][]string{{"original"}}, pm.rows)
 	assert.Equal(t, originalIter, pm.rowIter)
 	assert.True(t, pm.exhausted)
-	assert.False(t, pm.hasSearchState)
-	assert.Nil(t, pm.savedRows)
+	assert.Nil(t, pm.search.saved)
 	assert.Equal(t, 3, pm.fetchGeneration)
 	assert.Equal(t, 0, pm.cursor)
 }
 
 func TestPaginatedSearchEscWithNoSearchStateDoesNothing(t *testing.T) {
 	m := newTestModel(t, nil, 0)
-	m.searching = true
-	m.searchInput = "partial"
+	m.search.active = true
+	m.search.input = "partial"
 	m.rows = [][]string{{"data"}}
 	m.viewport.Height = 20
 
 	result, _ := m.updateSearch(tea.KeyMsg{Type: tea.KeyEscape})
 	pm := result.(paginatedModel)
 
-	assert.False(t, pm.searching)
+	assert.False(t, pm.search.active)
 	assert.Equal(t, [][]string{{"data"}}, pm.rows, "rows should not change when there is no saved search state")
 }
 
@@ -853,18 +858,6 @@ func TestPaginatedModelErr(t *testing.T) {
 
 	m.err = errors.New("test error")
 	assert.Equal(t, "test error", m.Err().Error())
-}
-
-func TestPaginatedSearchSpaceCharacterInput(t *testing.T) {
-	m := newTestModel(t, nil, 0)
-	m.searching = true
-	m.searchInput = "my"
-
-	result, cmd := m.updateSearch(tea.KeyMsg{Type: tea.KeySpace})
-	pm := result.(paginatedModel)
-
-	assert.Equal(t, "my ", pm.searchInput)
-	assert.NotNil(t, cmd, "space should schedule a debounce tick")
 }
 
 func TestPaginatedFetchErrorClearedOnSuccess(t *testing.T) {
@@ -890,8 +883,8 @@ func TestPaginatedFetchErrorClearedOnSuccess(t *testing.T) {
 
 func TestPaginatedSearchEscWithoutSearchStateKeepsGeneration(t *testing.T) {
 	m := newTestModel(t, nil, 0)
-	m.searching = true
-	m.searchInput = ""
+	m.search.active = true
+	m.search.input = ""
 	m.loading = true // fetch was in-flight before entering search
 	m.viewport.Height = 20
 	m.fetchGeneration = 5
@@ -933,14 +926,14 @@ func TestPaginatedSearchEscWithoutExecutingUnblocksFetch(t *testing.T) {
 	// Enter search mode via "/".
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("/")})
 	pm := result.(paginatedModel)
-	assert.True(t, pm.searching)
+	assert.True(t, pm.search.active)
 	assert.False(t, pm.loading, "loading should not be overloaded by search mode")
 
 	// Cancel immediately with esc (no search executed).
 	result, _ = pm.updateSearch(tea.KeyMsg{Type: tea.KeyEscape})
 	pm = result.(paginatedModel)
 
-	assert.False(t, pm.searching)
+	assert.False(t, pm.search.active)
 	assert.False(t, pm.loading, "loading should remain false after esc")
 
 	// Verify maybeFetch can fire again (searching=false, loading=false).
@@ -979,8 +972,8 @@ func TestPaginatedSearchEscBeforeFetchCompletesKeepsRows(t *testing.T) {
 	startGen := m.fetchGeneration
 
 	// User enters search mode (pressing "/").
-	m.searching = true
-	m.searchInput = ""
+	m.search.active = true
+	m.search.input = ""
 
 	// User immediately cancels with esc (no search executed).
 	result, _ := m.updateSearch(tea.KeyMsg{Type: tea.KeyEscape})
@@ -988,7 +981,7 @@ func TestPaginatedSearchEscBeforeFetchCompletesKeepsRows(t *testing.T) {
 
 	// Generation must be unchanged so the in-flight fetch is accepted.
 	assert.Equal(t, startGen, pm.fetchGeneration)
-	assert.False(t, pm.hasSearchState)
+	assert.Nil(t, pm.search.saved)
 
 	// Simulate the in-flight fetch completing with the original generation.
 	fetched := rowsFetchedMsg{
@@ -1023,16 +1016,19 @@ func TestPaginatedSearchDebounceEmptyQueryRestores(t *testing.T) {
 		rowIter:        &stringRowIterator{rows: [][]string{{"search-result"}}},
 		makeFetchCmd:   newFetchCmdFunc(ctx),
 		makeSearchIter: newSearchIterFunc(ctx, cfg.Search),
-		searching:      true,
-		searchInput:    "",
-		debounceSeq:    2,
-		hasSearchState: true,
-		savedRows:      [][]string{{"original"}},
-		savedIter:      originalIter,
-		savedExhaust:   true,
-		rows:           [][]string{{"search-result"}},
-		widths:         []int{13},
-		ready:          true,
+		search: searchState{
+			active:      true,
+			input:       "",
+			debounceSeq: 2,
+			saved: &savedSearch{
+				rows:      [][]string{{"original"}},
+				iter:      originalIter,
+				exhausted: true,
+			},
+		},
+		rows:   [][]string{{"search-result"}},
+		widths: []int{13},
+		ready:  true,
 	}
 	m.viewport.Width = 80
 	m.viewport.Height = 20
@@ -1044,5 +1040,5 @@ func TestPaginatedSearchDebounceEmptyQueryRestores(t *testing.T) {
 	assert.Nil(t, cmd)
 	assert.Equal(t, [][]string{{"original"}}, pm.rows)
 	assert.Equal(t, originalIter, pm.rowIter)
-	assert.False(t, pm.hasSearchState)
+	assert.Nil(t, pm.search.saved)
 }

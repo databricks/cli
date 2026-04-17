@@ -64,18 +64,28 @@ type paginatedModel struct {
 	widths []int
 
 	// Search
-	searching      bool
-	searchLoading  bool
-	searchInput    string
-	debounceSeq    int
-	hasSearchState bool
-	savedRows      [][]string
-	savedIter      RowIterator
-	savedExhaust   bool
+	search searchState
 
 	// Limits
 	maxItems     int
 	limitReached bool
+}
+
+// searchState groups the server-side search / debounce state.
+// When a search replaces the original iterator, saved holds the
+// pre-search snapshot so it can be restored on cancel/clear.
+type searchState struct {
+	active      bool
+	loading     bool
+	input       string
+	debounceSeq int
+	saved       *savedSearch
+}
+
+type savedSearch struct {
+	rows      [][]string
+	iter      RowIterator
+	exhausted bool
 }
 
 // Err returns the error recorded during data fetching, if any.
@@ -166,7 +176,7 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		fh := footerHeight
-		if m.searching {
+		if m.search.active {
 			fh = searchFooterHeight
 		}
 		if !m.ready {
@@ -197,9 +207,9 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = nil
 
 		isFirstBatch := len(m.rows) == 0
-		if m.searchLoading {
+		if m.search.loading {
 			m.rows = msg.rows
-			m.searchLoading = false
+			m.search.loading = false
 			isFirstBatch = true
 		} else {
 			m.rows = append(m.rows, msg.rows...)
@@ -224,13 +234,13 @@ func (m paginatedModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case searchDebounceMsg:
-		if msg.seq != m.debounceSeq || !m.searching {
+		if msg.seq != m.search.debounceSeq || !m.search.active {
 			return m, nil
 		}
-		return m.executeSearch(m.searchInput)
+		return m.executeSearch(m.search.input)
 
 	case tea.KeyMsg:
-		if m.searching {
+		if m.search.active {
 			return m.updateSearch(msg)
 		}
 		return m.updateNormal(msg)
@@ -301,8 +311,8 @@ func (m paginatedModel) updateNormal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case "/":
 		if m.cfg.Search != nil {
-			m.searching = true
-			m.searchInput = ""
+			m.search.active = true
+			m.search.input = ""
 			// Shrink viewport by one row to make room for the search input bar.
 			m.viewport.Height--
 			return m, nil
@@ -352,7 +362,7 @@ func (m *paginatedModel) moveCursor(delta int) {
 }
 
 func maybeFetch(m paginatedModel) (paginatedModel, tea.Cmd) {
-	if m.loading || m.exhausted || m.searching {
+	if m.loading || m.exhausted || m.search.active {
 		return m, nil
 	}
 	if len(m.rows)-m.cursor <= fetchThresholdFromBottom {
@@ -364,8 +374,8 @@ func maybeFetch(m paginatedModel) (paginatedModel, tea.Cmd) {
 
 // scheduleSearchDebounce returns a command that sends a searchDebounceMsg after the delay.
 func (m *paginatedModel) scheduleSearchDebounce() tea.Cmd {
-	m.debounceSeq++
-	seq := m.debounceSeq
+	m.search.debounceSeq++
+	seq := m.search.debounceSeq
 	return tea.Tick(searchDebounceDelay, func(_ time.Time) tea.Msg {
 		return searchDebounceMsg{seq: seq}
 	})
@@ -375,20 +385,17 @@ func (m *paginatedModel) scheduleSearchDebounce() tea.Cmd {
 // loading so that maybeFetch is unblocked. Safe to call even when there is
 // no saved search state.
 func (m *paginatedModel) restorePreSearchState() {
-	if m.hasSearchState {
+	if m.search.saved != nil {
 		// Bump generation to discard any in-flight search fetch, since we're
 		// switching back to the original iterator.
 		m.fetchGeneration++
-		m.rows = m.savedRows
-		m.rowIter = m.savedIter
-		m.exhausted = m.savedExhaust
-		m.hasSearchState = false
-		m.savedRows = nil
-		m.savedIter = nil
-		m.savedExhaust = false
+		m.rows = m.search.saved.rows
+		m.rowIter = m.search.saved.iter
+		m.exhausted = m.search.saved.exhausted
+		m.search.saved = nil
 		m.limitReached = false
 		m.loading = false
-		m.searchLoading = false
+		m.search.loading = false
 	}
 	m.cursor = 0
 	if m.ready {
@@ -406,18 +413,19 @@ func (m paginatedModel) executeSearch(query string) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	if !m.hasSearchState {
-		m.hasSearchState = true
-		m.savedRows = m.rows
-		m.savedIter = m.rowIter
-		m.savedExhaust = m.exhausted
+	if m.search.saved == nil {
+		m.search.saved = &savedSearch{
+			rows:      m.rows,
+			iter:      m.rowIter,
+			exhausted: m.exhausted,
+		}
 	}
 
 	m.fetchGeneration++
 	m.exhausted = false
 	m.limitReached = false
 	m.loading = true
-	m.searchLoading = true
+	m.search.loading = true
 	m.cursor = 0
 	m.rowIter = m.makeSearchIter(query)
 	return m, m.makeFetchCmd(m)
@@ -426,33 +434,33 @@ func (m paginatedModel) executeSearch(query string) (tea.Model, tea.Cmd) {
 func (m paginatedModel) updateSearch(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "enter":
-		m.searching = false
+		m.search.active = false
 		// Restore viewport height now that search bar is hidden.
 		m.viewport.Height++
 		// Execute final search immediately (bypass debounce).
-		return m.executeSearch(m.searchInput)
+		return m.executeSearch(m.search.input)
 	case "ctrl+c":
 		return m, tea.Quit
 	case "esc":
-		m.searching = false
-		m.searchInput = ""
+		m.search.active = false
+		m.search.input = ""
 		// Restore viewport height now that search bar is hidden.
 		m.viewport.Height++
 		m.restorePreSearchState()
 		return m, nil
 	case "backspace":
-		if len(m.searchInput) > 0 {
-			_, size := utf8.DecodeLastRuneInString(m.searchInput)
-			m.searchInput = m.searchInput[:len(m.searchInput)-size]
+		if len(m.search.input) > 0 {
+			_, size := utf8.DecodeLastRuneInString(m.search.input)
+			m.search.input = m.search.input[:len(m.search.input)-size]
 		}
 		return m, m.scheduleSearchDebounce()
 	default:
 		if msg.Type == tea.KeyRunes {
-			m.searchInput += msg.String()
+			m.search.input += msg.String()
 			return m, m.scheduleSearchDebounce()
 		}
 		if msg.Type == tea.KeySpace {
-			m.searchInput += " "
+			m.search.input += " "
 			return m, m.scheduleSearchDebounce()
 		}
 		return m, nil
@@ -464,7 +472,7 @@ func (m paginatedModel) View() string {
 		return "Loading..."
 	}
 	if len(m.rows) == 0 && m.loading {
-		if m.searchLoading {
+		if m.search.loading {
 			return "Searching..."
 		}
 		return "Fetching results..."
@@ -484,18 +492,18 @@ func (m paginatedModel) View() string {
 }
 
 func (m paginatedModel) renderFooter() string {
-	if m.searching {
+	if m.search.active {
 		placeholder := ""
 		if m.cfg.Search != nil {
 			placeholder = m.cfg.Search.Placeholder
 		}
-		input := m.searchInput
+		input := m.search.input
 		if input == "" && placeholder != "" {
 			input = footerStyle.Render(placeholder)
 		}
 		prompt := searchStyle.Render("/ " + input + "█")
 		status := fmt.Sprintf("%d rows loaded", len(m.rows))
-		if m.searchLoading {
+		if m.search.loading {
 			status = "Searching..."
 		}
 		return footerStyle.Render(status) + "\n" + prompt
