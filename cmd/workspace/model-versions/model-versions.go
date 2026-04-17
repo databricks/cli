@@ -168,6 +168,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -233,6 +234,7 @@ func newGetByAlias() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -261,10 +263,20 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq catalog.ListModelVersionsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include model versions in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of model versions to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list FULL_NAME"
 	cmd.Short = `List Model Versions.`
@@ -308,6 +320,13 @@ func newList() *cobra.Command {
 		listReq.FullName = args[0]
 
 		response := w.ModelVersions.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -409,6 +428,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

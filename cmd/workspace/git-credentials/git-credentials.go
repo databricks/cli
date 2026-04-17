@@ -89,7 +89,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'git_provider' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'git_provider' in your JSON input")
 			}
 			return nil
 		}
@@ -122,6 +122,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -268,6 +269,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -296,8 +298,17 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq workspace.ListCredentialsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listLimit int
 
 	cmd.Flags().Int64Var(&listReq.PrincipalId, "principal-id", listReq.PrincipalId, `The ID of the service principal whose credentials will be listed.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
 
 	cmd.Use = "list"
 	cmd.Short = `Get Git credentials.`
@@ -318,6 +329,13 @@ func newList() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.GitCredentials.List(ctx, listReq)
+		if listLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listLimit)
+		}
+		if listLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

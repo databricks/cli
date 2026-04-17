@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
+from databricks.bundles.pipelines._models.connector_options import (
+    ConnectorOptions,
+    ConnectorOptionsParam,
+)
 from databricks.bundles.pipelines._models.table_specific_config import (
     TableSpecificConfig,
     TableSpecificConfigParam,
@@ -30,6 +34,13 @@ class SchemaSpec:
     source_schema: VariableOr[str]
     """
     Required. Schema name in the source database.
+    """
+
+    connector_options: VariableOrOptional[ConnectorOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional) Source Specific Connector Options
     """
 
     source_catalog: VariableOrOptional[str] = None
@@ -66,6 +77,13 @@ class SchemaSpecDict(TypedDict, total=False):
     source_schema: VariableOr[str]
     """
     Required. Schema name in the source database.
+    """
+
+    connector_options: VariableOrOptional[ConnectorOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional) Source Specific Connector Options
     """
 
     source_catalog: VariableOrOptional[str]

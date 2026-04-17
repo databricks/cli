@@ -261,6 +261,13 @@ async function selectRoundRobin(github, owner, repo, eligibleOwners, prAuthor) {
 
 // --- Comment builders ---
 
+function fmtFileList(files) {
+  if (files.length < 4) {
+    return `Files: ${files.map(f => `\`${f}\``).join(", ")}`;
+  }
+  return `${files.length} files changed`;
+}
+
 function buildPendingPerGroupComment(groups, scores, dirScores, approvedBy, maintainers, prAuthor) {
   const authorLower = (prAuthor || "").toLowerCase();
   const lines = [MARKER, "## Approval status: pending", ""];
@@ -274,7 +281,7 @@ function buildPendingPerGroupComment(groups, scores, dirScores, approvedBy, main
     } else {
       lines.push(`### \`${pattern}\` - needs approval`);
     }
-    lines.push(`Files: ${files.map(f => `\`${f}\``).join(", ")}`);
+    lines.push(fmtFileList(files));
 
     const teams = owners.filter(o => o.includes("/"));
     const individuals = owners.filter(o => !o.includes("/") && o.toLowerCase() !== authorLower);
@@ -301,7 +308,7 @@ function buildPendingPerGroupComment(groups, scores, dirScores, approvedBy, main
   const starGroup = groups.get("*");
   if (starGroup) {
     lines.push("### General files (require maintainer)");
-    lines.push(`Files: ${starGroup.files.map(f => `\`${f}\``).join(", ")}`);
+    lines.push(fmtFileList(starGroup.files));
 
     const maintainerSet = new Set(maintainers.map(m => m.toLowerCase()));
     const maintainerScores = Object.entries(scores)
