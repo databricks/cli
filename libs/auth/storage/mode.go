@@ -48,6 +48,9 @@ const EnvVar = "DATABRICKS_AUTH_STORAGE"
 //  4. StorageModeLegacy.
 //
 // An empty override means "no flag set; fall through to env/config/default."
+// An invalid override is a caller bug (callers are expected to pass typed
+// StorageMode values); invalid env or config values are user-input errors
+// and are wrapped with the source name for clarity.
 func ResolveStorageMode(ctx context.Context, override StorageMode) (StorageMode, error) {
 	if override != "" {
 		if err := validateMode(override); err != nil {

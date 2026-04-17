@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/auth/storage"
-	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,19 +65,18 @@ func TestResolveStorageMode(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := t.Context()
-
 			cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
 			if tc.configBody != "" {
 				require.NoError(t, os.WriteFile(cfgPath, []byte(tc.configBody), 0o600))
 			}
-			ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", cfgPath)
 
-			if tc.envVal != "" {
-				ctx = env.Set(ctx, storage.EnvVar, tc.envVal)
-			}
+			// Use t.Setenv so the OS env is hermetically overridden for this
+			// subtest, regardless of what the caller's shell has exported.
+			// t.Setenv cleans up automatically at the end of the subtest.
+			t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+			t.Setenv(storage.EnvVar, tc.envVal)
 
-			got, err := storage.ResolveStorageMode(ctx, tc.override)
+			got, err := storage.ResolveStorageMode(t.Context(), tc.override)
 			if tc.wantErrSub != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.wantErrSub)
