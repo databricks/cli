@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	envlib "github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/hostmetadata"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
@@ -156,6 +157,8 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
+	hostmetadata.Attach(ctx, cfg)
+
 	profiler := profile.GetProfiler(ctx)
 
 	resolveDefaultProfile(ctx, cfg)
@@ -261,6 +264,8 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 
 	ctx = cmdctx.SetConfigUsed(cmd.Context(), cfg)
 	cmd.SetContext(ctx)
+
+	hostmetadata.Attach(ctx, cfg)
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
 	if !shouldSkipLoadBundle(cmd.Context()) {
