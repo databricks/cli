@@ -1,9 +1,6 @@
 name: Bump Go toolchain
 
 on:
-  push:
-    branches:
-      - auto-go-bumper
   schedule:
     # Run daily at 05:00 UTC.
     - cron: "0 5 * * *"
@@ -81,7 +78,7 @@ jobs:
         run: git diff
 
       - name: Create pull request
-        if: steps.check.outputs.needed == 'true' && github.event_name == 'schedule'
+        if: steps.check.outputs.needed == 'true' && inputs.version == ''
         uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
         with:
           branch: auto/bump-go-toolchain
