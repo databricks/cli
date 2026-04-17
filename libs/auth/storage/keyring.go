@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -124,10 +125,7 @@ type TimeoutError struct {
 }
 
 func (e *TimeoutError) Error() string {
-	if e.Op == "" {
-		return "keyring operation timed out"
-	}
-	return fmt.Sprintf("keyring %s timed out", e.Op)
+	return fmt.Sprintf("keyring %s timed out", cmp.Or(e.Op, "operation"))
 }
 
 // withTimeout runs op in a goroutine and returns its error, or a
