@@ -60,6 +60,23 @@ func discoveryErr(msg string, err error) error {
 	return fmt.Errorf("%s%s", msg, discoveryFallbackTip)
 }
 
+// dualWriteLegacyHostKey mirrors the freshly minted token under the legacy
+// host-based cache key so users alternating between CLI and SDK find it.
+// Skipped for secure mode to avoid multiplying keyring entries.
+func dualWriteLegacyHostKey(ctx context.Context, tokenCache cache.TokenCache, arg u2m.OAuthArgument, mode storage.StorageMode) {
+	if mode != storage.StorageModeLegacy {
+		return
+	}
+	t, err := tokenCache.Lookup(arg.GetCacheKey())
+	if err != nil || t == nil {
+		return
+	}
+	dual := storage.NewDualWritingTokenCache(tokenCache, arg)
+	if err := dual.Store(arg.GetCacheKey(), t); err != nil {
+		log.Debugf(ctx, "token cache dual-write failed: %v", err)
+	}
+}
+
 type discoveryPersistentAuth interface {
 	Challenge() error
 	Token() (*oauth2.Token, error)
@@ -141,11 +158,28 @@ a new profile is created.
 	cmd.Flags().StringVar(&scopes, "scopes", "",
 		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
 
+	var secureStorage bool
+	cmd.Flags().BoolVar(&secureStorage, "secure-storage", false,
+		"Experimental: write OAuth tokens to the OS-native secure store")
+	// Hidden during MS1; discovery is via release notes and the
+	// DATABRICKS_AUTH_STORAGE env var. See
+	// documents/fy2027-q2/cli-ga/2026-04-13-cli-ga-rollout-contract.md.
+	_ = cmd.Flags().MarkHidden("secure-storage")
+
 	cmd.PreRunE = profileHostConflictCheck
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
+
+		var storageOverride storage.StorageMode
+		if secureStorage {
+			storageOverride = storage.StorageModeSecure
+		}
+		tokenCache, mode, err := newAuthCache(ctx, storageOverride)
+		if err != nil {
+			return err
+		}
 
 		// Cluster and Serverless are mutually exclusive.
 		if configureCluster && configureServerless {
@@ -191,18 +225,13 @@ a new profile is created.
 			return err
 		}
 
-		tokenCache, err := storage.NewFileTokenCache(ctx)
-		if err != nil {
-			return fmt.Errorf("opening token cache: %w", err)
-		}
-
 		// If no host is available from any source, use the discovery flow
 		// via login.databricks.com.
 		if shouldUseDiscovery(authArguments.Host, args, existingProfile) {
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
 			}
-			return discoveryLogin(ctx, &defaultDiscoveryClient{}, tokenCache, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
+			return discoveryLogin(ctx, &defaultDiscoveryClient{}, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd), tokenCache, mode)
 		}
 
 		// Load unified host flag from the profile if not explicitly set via CLI flag.
@@ -235,9 +264,9 @@ a new profile is created.
 			return err
 		}
 		persistentAuthOpts := []u2m.PersistentAuthOption{
-			u2m.WithTokenCache(storage.NewDualWritingTokenCache(tokenCache, oauthArgument)),
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
+			u2m.WithTokenCache(tokenCache),
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -254,6 +283,7 @@ a new profile is created.
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
+		dualWriteLegacyHostKey(ctx, tokenCache, oauthArgument, mode)
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
@@ -570,7 +600,7 @@ func validateDiscoveryFlagCompatibility(cmd *cobra.Command) error {
 // discoveryLogin runs the login.databricks.com discovery flow. The user
 // authenticates in the browser, selects a workspace, and the CLI receives
 // the workspace host from the OAuth callback's iss parameter.
-func discoveryLogin(ctx context.Context, dc discoveryClient, tokenCache cache.TokenCache, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
+func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error, tokenCache cache.TokenCache, mode storage.StorageMode) error {
 	arg, err := dc.NewOAuthArgument(profileName)
 	if err != nil {
 		return discoveryErr("setting up login.databricks.com", err)
@@ -582,10 +612,10 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, tokenCache cache.To
 	}
 
 	opts := []u2m.PersistentAuthOption{
-		u2m.WithTokenCache(storage.NewDualWritingTokenCache(tokenCache, arg)),
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(browserFunc),
 		u2m.WithDiscoveryLogin(),
+		u2m.WithTokenCache(tokenCache),
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
@@ -605,6 +635,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, tokenCache cache.To
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
+	dualWriteLegacyHostKey(ctx, tokenCache, arg, mode)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {
