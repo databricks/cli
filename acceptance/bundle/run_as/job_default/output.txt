@@ -8,37 +8,7 @@ Deployment complete!
 
 >>> print_requests.py //jobs
 {
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "Untitled",
-    "queue": {
-      "enabled": true
-    },
-    "run_as": {
-      "user_name": "deco-test-user@databricks.com"
-    },
-    "tasks": [
-      {
-        "new_cluster": {
-          "node_type_id": "[NODE_TYPE_ID]",
-          "num_workers": 1,
-          "spark_version": "13.3.x-snapshot-scala2.12"
-        },
-        "notebook_task": {
-          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default/files/test"
-        },
-        "task_key": "task_one"
-      }
-    ]
-  }
+  "user_name": "deco-test-user@databricks.com"
 }
 
 >>> [CLI] jobs get [NUMID]
@@ -59,39 +29,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py //jobs
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/reset",
-  "body": {
-    "job_id": [NUMID],
-    "new_settings": {
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default/state/metadata.json"
-      },
-      "edit_mode": "UI_LOCKED",
-      "format": "MULTI_TASK",
-      "max_concurrent_runs": 1,
-      "name": "Untitled",
-      "queue": {
-        "enabled": true
-      },
-      "tasks": [
-        {
-          "new_cluster": {
-            "node_type_id": "[NODE_TYPE_ID]",
-            "num_workers": 1,
-            "spark_version": "13.3.x-snapshot-scala2.12"
-          },
-          "notebook_task": {
-            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default/files/test"
-          },
-          "task_key": "task_one"
-        }
-      ]
-    }
-  }
-}
+null
 
 >>> [CLI] jobs get [NUMID]
 {
