@@ -32,7 +32,7 @@ where = ["src"]
 dev-dependencies = [
     "databricks-bundles==x.y.z",
 
-    ## Add code completion support for Lakeflow Spark Declarative Pipelines
+    ## Add code completion support for DLT
     # "databricks-dlt",
 
     ## databricks-connect can be used to run parts of this project locally.

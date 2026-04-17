@@ -9,7 +9,7 @@ my_jobs_as_code_pipeline = Pipeline.from_dict(
         "libraries": [
             {
                 "notebook": {
-                    "path": "src/sdp_pipeline.ipynb",
+                    "path": "src/dlt_pipeline.ipynb",
                 },
             },
         ],

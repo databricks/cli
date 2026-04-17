@@ -95,7 +95,7 @@ Warning: Ignoring Databricks CLI version constraint for development build. Requi
       "libraries": [
         {
           "notebook": {
-            "path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/sdp_pipeline"
+            "path": "/Workspace/Users/[USERNAME]/.bundle/my_jobs_as_code/dev/files/src/dlt_pipeline"
           }
         }
       ],

@@ -1,11 +1,11 @@
-{{$include_sdp := "no" -}}
+{{$include_dlt := "no" -}}
 from databricks.bundles.jobs import Job
 
 """
 The main job for {{.project_name}}.
 
-{{- /* Clarify what this job is for for SDP-only users. */}}
-{{if and (eq $include_sdp "yes") (and (eq .include_notebook "no") (eq .include_python "no")) -}}
+{{- /* Clarify what this job is for for DLT-only users. */}}
+{{if and (eq $include_dlt "yes") (and (eq .include_notebook "no") (eq .include_python "no")) -}}
 This job runs {{.project_name}}_pipeline on a schedule.
 {{end -}}
 """
@@ -37,7 +37,7 @@ This job runs {{.project_name}}_pipeline on a schedule.
                 },
             },
             {{- end -}}
-            {{- if (eq $include_sdp "yes") -}}
+            {{- if (eq $include_dlt "yes") -}}
             {{- "\n            " -}}
             {
                 "task_key": "refresh_pipeline",
@@ -58,7 +58,7 @@ This job runs {{.project_name}}_pipeline on a schedule.
             {{- "\n            " -}}
             {
                 "task_key": "main_task",
-                {{- if (eq $include_sdp "yes") }}
+                {{- if (eq $include_dlt "yes") }}
                 "depends_on": [
                     {
                         "task_key": "refresh_pipeline",

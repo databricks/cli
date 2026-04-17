@@ -4,7 +4,7 @@ This file only contains template directives; it is skipped for the actual output
 
 {{skip "__preamble"}}
 
-{{$notSDP := not (eq .include_sdp "yes")}}
+{{$notDLT := not (eq .include_dlt "yes")}}
 {{$notNotebook := not (eq .include_notebook "yes")}}
 {{$notPython := not (eq .include_python "yes")}}
 
@@ -13,8 +13,8 @@ This file only contains template directives; it is skipped for the actual output
   {{skip "{{.project_name}}/tests/main_test.py"}}
 {{end}}
 
-{{if $notSDP}}
-  {{skip "{{.project_name}}/src/sdp_pipeline.ipynb"}}
+{{if $notDLT}}
+  {{skip "{{.project_name}}/src/dlt_pipeline.ipynb"}}
   {{skip "{{.project_name}}/resources/{{.project_name}}_pipeline.py"}}
 {{end}}
 
@@ -22,7 +22,7 @@ This file only contains template directives; it is skipped for the actual output
   {{skip "{{.project_name}}/src/notebook.ipynb"}}
 {{end}}
 
-{{if (and $notSDP $notNotebook $notPython)}}
+{{if (and $notDLT $notNotebook $notPython)}}
   {{skip "{{.project_name}}/resources/{{.project_name}}_job.py"}}
 {{else}}
   {{skip "{{.project_name}}/resources/.gitkeep"}}
