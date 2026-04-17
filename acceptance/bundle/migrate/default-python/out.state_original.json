@@ -141,6 +141,7 @@
             },
             "task": [
               {
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
                 "compute": [],
                 "condition_task": [],
@@ -207,6 +208,7 @@
                 "webhook_notifications": []
               },
               {
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
                 "compute": [],
                 "condition_task": [],
@@ -283,6 +285,7 @@
                 "webhook_notifications": []
               },
               {
+                "alert_task": [],
                 "clean_rooms_notebook_task": [],
                 "compute": [],
                 "condition_task": [],

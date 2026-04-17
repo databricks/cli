@@ -101,7 +101,11 @@ func (ir iteratorRenderer[T]) renderJson(ctx context.Context, w writeFlusher) er
 	if err != nil {
 		return err
 	}
+	limit := limitFromContext(ctx)
 	for i := 0; ir.t.HasNext(ctx); i++ {
+		if limit > 0 && i >= limit {
+			break
+		}
 		if i != 0 {
 			_, err = w.Write([]byte(",\n  "))
 			if err != nil {
@@ -136,7 +140,11 @@ func (ir iteratorRenderer[T]) renderJson(ctx context.Context, w writeFlusher) er
 
 func (ir iteratorRenderer[T]) renderTemplate(ctx context.Context, t *template.Template, w *tabwriter.Writer) error {
 	buf := make([]any, 0, ir.getBufferSize())
+	limit := limitFromContext(ctx)
 	for i := 0; ir.t.HasNext(ctx); i++ {
+		if limit > 0 && i >= limit {
+			break
+		}
 		n, err := ir.t.Next(ctx)
 		if err != nil {
 			return err

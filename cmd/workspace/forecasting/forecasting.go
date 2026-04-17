@@ -108,7 +108,7 @@ func newCreateExperiment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'train_data_path', 'target_column', 'time_column', 'forecast_granularity', 'forecast_horizon' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'train_data_path', 'target_column', 'time_column', 'forecast_granularity', 'forecast_horizon' in your JSON input")
 			}
 			return nil
 		}
@@ -226,6 +226,7 @@ func newGetExperiment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
