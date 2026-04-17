@@ -901,13 +901,11 @@
                 "properties": {
                   "prevent_destroy": {
                     "description": "Lifecycle setting to prevent the resource from being destroyed.",
-                    "$ref": "#/$defs/bool",
-                    "x-since-version": "v0.297.0"
+                    "$ref": "#/$defs/bool"
                   },
                   "started": {
                     "description": "Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.",
-                    "$ref": "#/$defs/bool",
-                    "x-since-version": "v0.297.0"
+                    "$ref": "#/$defs/bool"
                   }
                 },
                 "additionalProperties": false
@@ -1317,7 +1315,7 @@
                   }
                 },
                 "additionalProperties": false,
-                "markdownDescription": "The pipeline resource allows you to create Delta Live Tables [pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/dlt/index.html). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
+                "markdownDescription": "This resource allows you to create [pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/dlt/index.html). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
               },
               "resources.PipelinePermission": {
                 "type": "object",
@@ -1712,7 +1710,7 @@
                   "catalog_name",
                   "name"
                 ],
-                "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
+                "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your jobs and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
               },
               "resources.SecretScope": {
                 "type": "object",
@@ -2623,7 +2621,7 @@
                   "x-since-version": "v0.296.0"
                 },
                 "artifact_path": {
-                  "description": "The artifact path to use within the workspace for both deployments and workflow runs",
+                  "description": "The artifact path to use within the workspace for both deployments and job runs",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.229.0"
                 },
@@ -2673,7 +2671,7 @@
                   "x-since-version": "v0.285.0"
                 },
                 "file_path": {
-                  "description": "The file path to use within the workspace for both deployments and workflow runs",
+                  "description": "The file path to use within the workspace for both deployments and job runs",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.229.0"
                 },
@@ -9824,9 +9822,9 @@
       "x-since-version": "v0.229.0"
     },
     "run_as": {
-      "description": "The identity to use when running Declarative Automation Bundles workflows.",
+      "description": "The identity to use when running Declarative Automation Bundles resources.",
       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
-      "markdownDescription": "The identity to use when running Declarative Automation Bundles workflows. See [link](https://docs.databricks.com/dev-tools/bundles/run-as.html).",
+      "markdownDescription": "The identity to use when running Declarative Automation Bundles resources. See [link](https://docs.databricks.com/dev-tools/bundles/run-as.html).",
       "x-since-version": "v0.229.0"
     },
     "scripts": {

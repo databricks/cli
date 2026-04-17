@@ -1328,7 +1328,7 @@
                       }
                     },
                     "additionalProperties": false,
-                    "markdownDescription": "The pipeline resource allows you to create Delta Live Tables [pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/dlt/index.html). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
+                    "markdownDescription": "This resource allows you to create [pipelines](https://docs.databricks.com/api/workspace/pipelines/create). For information about pipelines, see [link](https://docs.databricks.com/dlt/index.html). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [link](https://docs.databricks.com/dev-tools/bundles/pipelines-tutorial.html)."
                   },
                   {
                     "type": "string",
@@ -1705,7 +1705,7 @@
                       "catalog_name",
                       "name"
                     ],
-                    "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
+                    "markdownDescription": "The schema resource type allows you to define Unity Catalog [schemas](https://docs.databricks.com/api/workspace/schemas/create) for tables and other assets in your jobs and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:\n\n- The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.\n- Only fields supported by the corresponding [Schemas object create API](https://docs.databricks.com/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](https://docs.databricks.com/api/workspace/schemas/update)."
                   },
                   {
                     "type": "string",
@@ -2663,7 +2663,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "artifact_path": {
-                      "description": "The artifact path to use within the workspace for both deployments and workflow runs",
+                      "description": "The artifact path to use within the workspace for both deployments and job runs",
                       "$ref": "#/$defs/string"
                     },
                     "auth_type": {
@@ -2703,7 +2703,7 @@
                       "$ref": "#/$defs/bool"
                     },
                     "file_path": {
-                      "description": "The file path to use within the workspace for both deployments and workflow runs",
+                      "description": "The file path to use within the workspace for both deployments and job runs",
                       "$ref": "#/$defs/string"
                     },
                     "google_service_account": {
@@ -12360,9 +12360,9 @@
       "markdownDescription": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Declarative Automation Bundles supported resources, and resource definition reference, see [link](https://docs.databricks.com/dev-tools/bundles/resources.html).\n\n```yaml\nresources:\n  \u003cresource-type\u003e:\n    \u003cresource-name\u003e:\n      \u003cresource-field-name\u003e: \u003cresource-field-value\u003e\n```"
     },
     "run_as": {
-      "description": "The identity to use when running Declarative Automation Bundles workflows.",
+      "description": "The identity to use when running Declarative Automation Bundles resources.",
       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
-      "markdownDescription": "The identity to use when running Declarative Automation Bundles workflows. See [link](https://docs.databricks.com/dev-tools/bundles/run-as.html)."
+      "markdownDescription": "The identity to use when running Declarative Automation Bundles resources. See [link](https://docs.databricks.com/dev-tools/bundles/run-as.html)."
     },
     "scripts": {
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Script"

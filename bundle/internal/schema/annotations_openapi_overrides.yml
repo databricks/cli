@@ -328,7 +328,7 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
 github.com/databricks/cli/bundle/config/resources.Pipeline:
   "_":
     "markdown_description": |-
-      The pipeline resource allows you to create Delta Live Tables [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
+      This resource allows you to create [pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
     "markdown_examples": |-
       The following example defines a pipeline with the resource key `hello-pipeline`:
 
@@ -454,7 +454,7 @@ github.com/databricks/cli/bundle/config/resources.RegisteredModel:
 github.com/databricks/cli/bundle/config/resources.Schema:
   "_":
     "markdown_description": |-
-      The schema resource type allows you to define Unity Catalog [schemas](/api/workspace/schemas/create) for tables and other assets in your workflows and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:
+      The schema resource type allows you to define Unity Catalog [schemas](/api/workspace/schemas/create) for tables and other assets in your jobs and pipelines created as part of a bundle. A schema, different from other resource types, has the following limitations:
 
       - The owner of a schema resource is always the deployment user, and cannot be changed. If `run_as` is specified in the bundle, it will be ignored by operations on the schema.
       - Only fields supported by the corresponding [Schemas object create API](/api/workspace/schemas/create) are available for the schema resource. For example, `enable_predictive_optimization` is not supported as it is only available on the [update API](/api/workspace/schemas/update).
