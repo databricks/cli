@@ -980,6 +980,9 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
   "permissions":
     "description": |-
       PLACEHOLDER
+  "usage_policy_id":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-
