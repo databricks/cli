@@ -81,13 +81,11 @@ def main():
         try:
             with open(filepath) as f:
                 file_lines = f.readlines()
-            # Scan up to 5 lines above the reported line, stopping at a
-            # blank line. This handles doc comments between the allow
-            # comment and the func keyword.
+            # Walk backward from the func line; stop at the first blank
+            # line so we only see this function's own comment block.
             suppressed = False
-            start = max(0, lineno - 6)
-            for check_line in file_lines[start : lineno - 1]:
-                stripped = check_line.strip()
+            for i in range(lineno - 2, max(-1, lineno - 8), -1):
+                stripped = file_lines[i].strip()
                 if not stripped:
                     break
                 if ALLOW_COMMENT in stripped:

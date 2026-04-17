@@ -124,3 +124,27 @@ func getAnnotations(path string) (annotation.File, error) {
 	err = yaml.Unmarshal(b, &data)
 	return data, err
 }
+
+//deadcode:allow disabled pending annotation system overhaul; preserved intentionally
+func DisabledTestNoDuplicatedAnnotations(t *testing.T) {
+	// Check for duplicated annotations in annotation files
+	files := []string{
+		"annotations_openapi_overrides.yml",
+		"annotations.yml",
+	}
+
+	annotations := map[string]string{}
+	for _, file := range files {
+		annotationsFile, err := getAnnotations(file)
+		assert.NoError(t, err)
+		for typ, props := range annotationsFile {
+			for prop := range props {
+				key := typ + "_" + prop
+				if prevFile, ok := annotations[key]; ok {
+					t.Errorf("Annotation `%s` is duplicated in %s and %s", key, prevFile, file)
+				}
+				annotations[key] = file
+			}
+		}
+	}
+}
