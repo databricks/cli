@@ -5,7 +5,6 @@ package hostmetadata
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
@@ -35,27 +34,23 @@ type negativeSentinel struct {
 	Message string `json:"message"`
 }
 
-// Attach installs a caching HostMetadataResolver on cfg. The underlying
-// positive and negative caches are created lazily on the first resolver
-// invocation, using the ctx the SDK passes into Resolve.
+// Attach installs a caching HostMetadataResolver on cfg.
 func Attach(cfg *config.Config) {
-	cfg.HostMetadataResolver = newResolver(cfg)
+	// cache.NewCache uses ctx only for env lookups and cleanup-walk debug
+	// logs; there is no cancellation signal to propagate. Using a background
+	// context keeps Attach callable from sites without a caller ctx in scope
+	// (e.g. bundle.Workspace.Client).
+	ctx := context.Background() //nolint:gocritic // Attach has no caller ctx and cache.NewCache does not use ctx for cancellation.
+	positive := cache.NewCache(ctx, positiveCacheComponent, positiveCacheTTL, nil)
+	negative := cache.NewCache(ctx, negativeCacheComponent, negativeCacheTTL, nil)
+	cfg.HostMetadataResolver = newResolver(cfg, positive, negative)
 }
 
 // newResolver returns a HostMetadataResolver that consults the negative cache
 // before hitting the positive cache, and records failed fetches so subsequent
-// calls within negativeCacheTTL skip the network entirely. The positive and
-// negative caches are created lazily on the first invocation.
-func newResolver(cfg *config.Config) config.HostMetadataResolver {
-	var (
-		once               sync.Once
-		positive, negative *cache.Cache
-	)
+// calls within negativeCacheTTL skip the network entirely.
+func newResolver(cfg *config.Config, positive, negative *cache.Cache) config.HostMetadataResolver {
 	return func(ctx context.Context, host string) (*config.HostMetadata, error) {
-		once.Do(func() {
-			positive = cache.NewCache(ctx, positiveCacheComponent, positiveCacheTTL, nil)
-			negative = cache.NewCache(ctx, negativeCacheComponent, negativeCacheTTL, nil)
-		})
 		fp := hostFingerprint{Host: host}
 
 		// Check negative cache first. errNotCached makes GetOrCompute skip the
