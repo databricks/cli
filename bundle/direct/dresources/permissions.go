@@ -53,6 +53,23 @@ type PermissionsState struct {
 	EmbeddedSlice []StatePermission `json:"__embed__,omitempty"`
 }
 
+// objectIDRef returns the reference expression for the permissions object ID.
+// Most resources use ".id", but some use a different field due to API differences.
+func objectIDRef(prefix, baseNode string) string {
+	// Model serving endpoints use an internal numeric ID for permissions (not the name used in CRUD APIs).
+	if strings.HasPrefix(baseNode, "resources.model_serving_endpoints.") {
+		return prefix + "${" + baseNode + ".endpoint_id}"
+	} else if strings.HasPrefix(baseNode, "resources.models.") {
+		// MLflow models use a numeric model ID for permissions (not the model name used as the CRUD state ID).
+		return prefix + "${" + baseNode + ".model_id}"
+	} else if strings.HasPrefix(baseNode, "resources.postgres_projects.") {
+		// Postgres projects store a hierarchical name as state ID; permissions API expects just the project_id.
+		return prefix + "${" + baseNode + ".project_id}"
+	} else {
+		return prefix + "${" + baseNode + ".id}"
+	}
+}
+
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
 	baseNode, ok := strings.CutSuffix(node, ".permissions")
 	if !ok {
@@ -75,34 +92,13 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		return nil, err
 	}
 
-	objectIdRef := prefix + "${" + baseNode + ".id}"
-	// For permissions, model serving endpoint uses its internal ID, which is different
-	// from its CRUD APIs which use the name.
-	// We have a wrapper struct [ModelServingEndpointRemote] from which we read the internal ID
-	// in order to set the appropriate permissions.
-	if strings.HasPrefix(baseNode, "resources.model_serving_endpoints.") {
-		objectIdRef = prefix + "${" + baseNode + ".endpoint_id}"
-	}
-
-	// MLflow models use the model name as the state ID (for CRUD operations),
-	// but the permissions API requires the numeric model ID.
-	if strings.HasPrefix(baseNode, "resources.models.") {
-		objectIdRef = prefix + "${" + baseNode + ".model_id}"
-	}
-
-	// Postgres projects store their hierarchical name ("projects/{project_id}") as the state ID,
-	// but the permissions API expects just the project_id.
-	if strings.HasPrefix(baseNode, "resources.postgres_projects.") {
-		objectIdRef = prefix + "${" + baseNode + ".project_id}"
-	}
-
 	return &structvar.StructVar{
 		Value: &PermissionsState{
 			ObjectID:      "", // Always a reference, defined in Refs below
 			EmbeddedSlice: permissions,
 		},
 		Refs: map[string]string{
-			"object_id": objectIdRef,
+			"object_id": objectIDRef(prefix, baseNode),
 		},
 	}, nil
 }
