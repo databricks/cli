@@ -34,22 +34,19 @@ type negativeSentinel struct {
 	Message string `json:"message"`
 }
 
-// Attach installs a caching HostMetadataResolver on cfg.
-func Attach(cfg *config.Config) {
+// NewResolver returns a HostMetadataResolver that consults the negative cache
+// before hitting the positive cache, and records failed fetches so subsequent
+// calls within negativeCacheTTL skip the network entirely. The fetch function
+// is invoked on positive cache miss, typically cfg.DefaultHostMetadataResolver().
+func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver {
 	// cache.NewCache uses ctx only for env lookups and cleanup-walk debug
 	// logs; there is no cancellation signal to propagate. Using a background
-	// context keeps Attach callable from sites without a caller ctx in scope
-	// (e.g. bundle.Workspace.Client).
-	ctx := context.Background() //nolint:gocritic // Attach has no caller ctx and cache.NewCache does not use ctx for cancellation.
+	// context keeps NewResolver callable from sites without a caller ctx
+	// in scope (e.g. bundle.Workspace.Client).
+	ctx := context.Background() //nolint:gocritic // no caller ctx and cache.NewCache does not use ctx for cancellation.
 	positive := cache.NewCache(ctx, positiveCacheComponent, positiveCacheTTL, nil)
 	negative := cache.NewCache(ctx, negativeCacheComponent, negativeCacheTTL, nil)
-	cfg.HostMetadataResolver = newResolver(cfg, positive, negative)
-}
 
-// newResolver returns a HostMetadataResolver that consults the negative cache
-// before hitting the positive cache, and records failed fetches so subsequent
-// calls within negativeCacheTTL skip the network entirely.
-func newResolver(cfg *config.Config, positive, negative *cache.Cache) config.HostMetadataResolver {
 	return func(ctx context.Context, host string) (*config.HostMetadata, error) {
 		fp := hostFingerprint{Host: host}
 
@@ -63,9 +60,9 @@ func newResolver(cfg *config.Config, positive, negative *cache.Cache) config.Hos
 			return nil, nil
 		}
 
-		// Positive cache: on miss, delegate to the SDK's default HTTP resolver.
+		// Positive cache: on miss, delegate to the injected fetch function.
 		meta, err := cache.GetOrCompute[*config.HostMetadata](ctx, positive, fp, func(ctx context.Context) (*config.HostMetadata, error) {
-			return cfg.DefaultHostMetadataResolver()(ctx, host)
+			return fetch(ctx, host)
 		})
 		if err != nil {
 			log.Debugf(ctx, "[hostmetadata] fetch failed for %s, recording negative: %v", host, err)
@@ -78,4 +75,10 @@ func newResolver(cfg *config.Config, positive, negative *cache.Cache) config.Hos
 
 		return meta, nil
 	}
+}
+
+// Attach installs a caching HostMetadataResolver on cfg, using the SDK's
+// default HTTP resolver as the fetch function on cache miss.
+func Attach(cfg *config.Config) {
+	cfg.HostMetadataResolver = NewResolver(cfg.DefaultHostMetadataResolver())
 }
