@@ -54,8 +54,9 @@ func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemo
 		Name:            remote.Name,
 		EndpointType:    remote.EndpointType,
 		BudgetPolicyId:  remote.BudgetPolicyId,
+		UsagePolicyId:   "", // Missing in remote
 		MinQps:          minQps,
-		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](remote.ForceSendFields),
+		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](remote.ForceSendFields, "UsagePolicyId"),
 	}
 }
 
