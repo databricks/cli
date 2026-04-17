@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/hostmetadata"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -54,6 +55,8 @@ func makeCommand(method string) *cobra.Command {
 			if profileFlag != nil {
 				cfg.Profile = profileFlag.Value.String()
 			}
+
+			hostmetadata.Attach(cfg)
 
 			api, err := client.New(cfg)
 			if err != nil {

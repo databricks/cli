@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/exec"
+	"github.com/databricks/cli/libs/hostmetadata"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -472,6 +473,7 @@ func runHostDiscovery(ctx context.Context, authArguments *auth.AuthArguments) {
 		// loading to avoid interference from existing profiles.
 		Loaders: []config.Loader{config.ConfigAttributes},
 	}
+	hostmetadata.Attach(cfg)
 
 	err := cfg.EnsureResolved()
 	if err != nil {

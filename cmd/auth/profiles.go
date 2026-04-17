@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/hostmetadata"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -42,6 +43,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		Profile:           c.Name,
 		DatabricksCliPath: env.Get(ctx, "DATABRICKS_CLI_PATH"),
 	}
+	hostmetadata.Attach(cfg)
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
 		c.Cloud = "aws"
