@@ -1,0 +1,12 @@
+Local = false
+Cloud = false
+
+# Serverless CPU is only available in newer environments
+RequiresUnityCatalog = true
+
+# Serverless CPU is not available in GCP yet
+[CloudEnvs]
+  gcp = false
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

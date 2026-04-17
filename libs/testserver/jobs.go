@@ -62,6 +62,44 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 	return Response{Body: jobs.CreateResponse{JobId: jobId}}
 }
 
+func (s *FakeWorkspace) JobsSubmit(req Request) Response {
+	var request jobs.SubmitRun
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+
+	defer s.LockUnlock()()
+
+	runId := nextID()
+
+	var tasks []jobs.RunTask
+	for _, t := range request.Tasks {
+		tasks = append(tasks, jobs.RunTask{
+			RunId:   nextID(),
+			TaskKey: t.TaskKey,
+			State: &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateRunning,
+			},
+			Status: &jobs.RunStatus{
+				State: jobs.RunLifecycleStateV2StateRunning,
+			},
+		})
+	}
+
+	s.JobRuns[runId] = jobs.Run{
+		RunId:   runId,
+		State:   &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		RunType: jobs.RunTypeSubmitRun,
+		RunName: request.RunName,
+		Tasks:   tasks,
+	}
+
+	return Response{Body: jobs.SubmitRunResponse{RunId: runId}}
+}
+
 func (s *FakeWorkspace) JobsReset(req Request) Response {
 	var request jobs.ResetJob
 	if err := json.Unmarshal(req.Body, &request); err != nil {

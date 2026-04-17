@@ -169,6 +169,112 @@ func TestGenerateDefaultConnectionNameMatchesRegex(t *testing.T) {
 	}
 }
 
+func TestFormatMetadata(t *testing.T) {
+	tests := []struct {
+		name      string
+		userName  string
+		port      int
+		clusterID string
+		want      string
+	}{
+		{
+			name:      "with cluster ID",
+			userName:  "root",
+			port:      2222,
+			clusterID: "abc-123",
+			want:      "root,2222,abc-123",
+		},
+		{
+			name:     "without cluster ID",
+			userName: "root",
+			port:     2222,
+			want:     "root,2222",
+		},
+		{
+			name: "empty userName returns empty",
+			port: 2222,
+			want: "",
+		},
+		{
+			name:     "zero port returns empty",
+			userName: "root",
+			want:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := client.FormatMetadata(tt.userName, tt.port, tt.clusterID)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestIsServerlessMode(t *testing.T) {
+	tests := []struct {
+		name string
+		opts client.ClientOptions
+		want bool
+	}{
+		{
+			name: "cluster only",
+			opts: client.ClientOptions{ClusterID: "abc-123"},
+			want: false,
+		},
+		{
+			name: "connection name only",
+			opts: client.ClientOptions{ConnectionName: "my-conn"},
+			want: true,
+		},
+		{
+			name: "both cluster and connection name",
+			opts: client.ClientOptions{ClusterID: "abc-123", ConnectionName: "my-conn"},
+			want: false,
+		},
+		{
+			name: "neither",
+			opts: client.ClientOptions{},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.opts.IsServerlessMode())
+		})
+	}
+}
+
+func TestSessionIdentifier(t *testing.T) {
+	tests := []struct {
+		name string
+		opts client.ClientOptions
+		want string
+	}{
+		{
+			name: "cluster mode",
+			opts: client.ClientOptions{ClusterID: "abc-123"},
+			want: "abc-123",
+		},
+		{
+			name: "serverless mode",
+			opts: client.ClientOptions{ConnectionName: "my-conn"},
+			want: "my-conn",
+		},
+		{
+			name: "both returns cluster ID",
+			opts: client.ClientOptions{ClusterID: "abc-123", ConnectionName: "my-conn"},
+			want: "abc-123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.opts.SessionIdentifier())
+		})
+	}
+}
+
 func TestToProxyCommand(t *testing.T) {
 	exe, err := os.Executable()
 	require.NoError(t, err)

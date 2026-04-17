@@ -1,0 +1,18 @@
+Local = true
+Cloud = false
+RecordRequests = true
+Timeout = "10s"
+
+# Return a running cluster for the cluster check
+[[Server]]
+Pattern = "GET /api/2.1/clusters/get"
+Response.Body = '{"cluster_id":"test-cluster-123","state":"RUNNING"}'
+
+# Replace generated RSA key content in request recordings
+[[Repls]]
+Old = '"-----BEGIN RSA PRIVATE KEY-----\\n[^"]*-----END RSA PRIVATE KEY-----\\n"'
+New = '"[PRIVATE_KEY]"'
+
+[[Repls]]
+Old = '"ssh-rsa [A-Za-z0-9+/=]+\\n"'
+New = '"[PUBLIC_KEY]"'

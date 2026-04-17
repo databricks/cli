@@ -1,0 +1,14 @@
+title "Accelerator without serverless\n"
+errcode $CLI ssh connect --cluster abc --accelerator GPU_1xA10
+
+title "Invalid accelerator value\n"
+errcode $CLI ssh connect --name my-conn --accelerator CPU_1x
+
+title "Invalid connection name\n"
+errcode $CLI ssh connect --name "bad name!"
+
+title "Invalid IDE value\n"
+errcode $CLI ssh connect --cluster abc --ide vim
+
+title "Environment version too low\n"
+errcode $CLI ssh connect --cluster abc --environment-version 3

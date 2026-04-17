@@ -84,7 +84,10 @@ func (s *FakeWorkspace) SecretsDeleteScope(req Request) Response {
 	if _, exists := s.SecretScopes[request.Scope]; !exists {
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", request.Scope)},
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Scope %s does not exist", request.Scope),
+			},
 		}
 	}
 
@@ -105,7 +108,10 @@ func (s *FakeWorkspace) SecretsListAcls(req Request) Response {
 	if _, exists := s.SecretScopes[scope]; !exists {
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", scope)},
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Scope %s does not exist", scope),
+			},
 		}
 	}
 

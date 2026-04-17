@@ -23,7 +23,10 @@ func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	if _, exists := s.SecretScopes[request.Scope]; !exists {
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", request.Scope)},
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Scope %s does not exist", request.Scope),
+			},
 		}
 	}
 
@@ -40,6 +43,35 @@ func (s *FakeWorkspace) SecretsPut(req Request) Response {
 	return Response{}
 }
 
+func (s *FakeWorkspace) SecretsListSecrets(req Request) Response {
+	defer s.LockUnlock()()
+
+	scope := req.URL.Query().Get("scope")
+
+	if _, exists := s.SecretScopes[scope]; !exists {
+		return Response{
+			StatusCode: 404,
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Scope %s does not exist", scope),
+			},
+		}
+	}
+
+	var secrets []workspace.SecretMetadata
+	if s.Secrets != nil && s.Secrets[scope] != nil {
+		for key := range s.Secrets[scope] {
+			secrets = append(secrets, workspace.SecretMetadata{Key: key})
+		}
+	}
+
+	return Response{
+		Body: workspace.ListSecretsResponse{
+			Secrets: secrets,
+		},
+	}
+}
+
 func (s *FakeWorkspace) SecretsGet(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -50,7 +82,10 @@ func (s *FakeWorkspace) SecretsGet(req Request) Response {
 	if _, exists := s.SecretScopes[scope]; !exists {
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Scope %s does not exist", scope)},
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Scope %s does not exist", scope),
+			},
 		}
 	}
 
@@ -58,7 +93,10 @@ func (s *FakeWorkspace) SecretsGet(req Request) Response {
 	if s.Secrets == nil || s.Secrets[scope] == nil {
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Secret %s/%s not found", scope, key)},
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Secret %s/%s not found", scope, key),
+			},
 		}
 	}
 
@@ -66,7 +104,10 @@ func (s *FakeWorkspace) SecretsGet(req Request) Response {
 	if !exists {
 		return Response{
 			StatusCode: 404,
-			Body:       map[string]string{"message": fmt.Sprintf("Secret %s/%s not found", scope, key)},
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Secret %s/%s not found", scope, key),
+			},
 		}
 	}
 

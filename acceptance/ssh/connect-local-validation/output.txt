@@ -1,0 +1,25 @@
+
+=== Accelerator without serverless
+Error: --accelerator flag can only be used with serverless compute (--name flag)
+
+Exit code: 1
+
+=== Invalid accelerator value
+Error: invalid accelerator value: "CPU_1x", expected "GPU_1xA10" or "GPU_8xH100"
+
+Exit code: 1
+
+=== Invalid connection name
+Error: connection name "bad name!" must consist of letters, numbers, dashes, and underscores
+
+Exit code: 1
+
+=== Invalid IDE value
+Error: invalid IDE value: "vim", expected "vscode" or "cursor"
+
+Exit code: 1
+
+=== Environment version too low
+Error: environment version must be >= 4, got 3
+
+Exit code: 1

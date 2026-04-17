@@ -261,6 +261,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsGetRunOutput(req)
 	})
 
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req Request) any {
+		return req.Workspace.JobsSubmit(req)
+	})
+
 	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req Request) any {
 		return MapList(req.Workspace, req.Workspace.JobRuns, "runs")
 	})
@@ -613,6 +617,10 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// Secrets:
+	server.Handle("GET", "/api/2.0/secrets/list", func(req Request) any {
+		return req.Workspace.SecretsListSecrets(req)
+	})
+
 	server.Handle("POST", "/api/2.0/secrets/put", func(req Request) any {
 		return req.Workspace.SecretsPut(req)
 	})

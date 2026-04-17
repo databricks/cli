@@ -1,0 +1,8 @@
+# Test the SSH connect flow for a classic cluster with pre-set metadata.
+# The --metadata flag bypasses job submission, so this tests:
+# cluster state check, secret scope creation, SSH key generation/storage, metadata parsing.
+# The flow will fail at SSH spawn (expected, no real SSH server).
+errcode $CLI ssh connect --cluster=test-cluster-123 --metadata=root,2222,test-cluster-123 2>LOG.stderr
+
+# Verify the API sequence: secrets scope creation + key storage
+print_requests.py //secrets //scim --get --sort

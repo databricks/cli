@@ -1,0 +1,75 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/get",
+  "q": {
+    "key": "client-private-key",
+    "scope": "[USERNAME]-test-cluster-123-ssh-tunnel-keys"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/get",
+  "q": {
+    "key": "client-private-key",
+    "scope": "[USERNAME]-test-cluster-123-ssh-tunnel-keys"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/get",
+  "q": {
+    "key": "client-public-key",
+    "scope": "[USERNAME]-test-cluster-123-ssh-tunnel-keys"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/list",
+  "q": {
+    "scope": "[USERNAME]-test-cluster-123-ssh-tunnel-keys"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/secrets/list",
+  "q": {
+    "scope": "[USERNAME]-test-cluster-123-ssh-tunnel-keys"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/put",
+  "body": {
+    "key": "client-private-key",
+    "scope": "[USERNAME]-test-cluster-123-ssh-tunnel-keys",
+    "string_value": "[PRIVATE_KEY]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/put",
+  "body": {
+    "key": "client-public-key",
+    "scope": "[USERNAME]-test-cluster-123-ssh-tunnel-keys",
+    "string_value": "[PUBLIC_KEY]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/create",
+  "body": {
+    "scope": "[USERNAME]-test-cluster-123-ssh-tunnel-keys"
+  }
+}
