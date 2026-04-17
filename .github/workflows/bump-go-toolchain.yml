@@ -73,7 +73,7 @@ jobs:
         if: steps.check.outputs.needed == 'true'
         run: |
           for dir in . ./tools; do
-            (cd "$dir" && go get go@${{ steps.current.outputs.minor }} && go mod tidy)
+            (cd "$dir" && go mod edit -toolchain=${{ steps.latest.outputs.toolchain }})
           done
 
       - name: Show diff
