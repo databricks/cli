@@ -15,7 +15,7 @@ func cmdOverride(cmd *cobra.Command) {
   * **[Cluster policy permissions](:service:clusterpolicies)** — Manage which
   users can use cluster policies.
 
-  * **[Spark Declarative Pipelines permissions](:service:pipelines)** — Manage
+  * **[Lakeflow Spark Declarative Pipelines permissions](:service:pipelines)** — Manage
   which users can view, manage, run, cancel, or own a pipeline.
 
   * **[Job permissions](:service:jobs)** — Manage which users can view,

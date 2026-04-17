@@ -8181,7 +8181,7 @@ Additional metadata for registered model.
   
 **`Type: Map`**
   
-The pipeline resource allows you to create [Spark Declarative Pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
+The pipeline resource allows you to create [Lakeflow Spark Declarative Pipelines](/api/workspace/pipelines/create). For information about pipelines, see [_](/dlt/index.md). For a tutorial that uses the Declarative Automation Bundles template to create a pipeline, see [_](/dev-tools/bundles/pipelines-tutorial.md).
   
 ```yaml
 pipelines:
