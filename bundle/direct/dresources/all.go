@@ -50,11 +50,12 @@ var SupportedResources = map[string]any{
 	"vector_search_endpoints.permissions": (*ResourcePermissions)(nil),
 
 	// Grants
-	"catalogs.grants":           (*ResourceGrants)(nil),
-	"schemas.grants":            (*ResourceGrants)(nil),
-	"external_locations.grants": (*ResourceGrants)(nil),
-	"volumes.grants":            (*ResourceGrants)(nil),
-	"registered_models.grants":  (*ResourceGrants)(nil),
+	"catalogs.grants":              (*ResourceGrants)(nil),
+	"schemas.grants":               (*ResourceGrants)(nil),
+	"external_locations.grants":    (*ResourceGrants)(nil),
+	"volumes.grants":               (*ResourceGrants)(nil),
+	"registered_models.grants":     (*ResourceGrants)(nil),
+	"vector_search_indexes.grants": (*ResourceGrants)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

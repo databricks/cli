@@ -530,3 +530,7 @@ resources:
         reason: immutable
       - field: direct_access_index_spec
         reason: immutable
+    ignore_remote_changes:
+      # columns_to_sync is request-only in the create spec and not returned by the read API.
+      - field: delta_sync_index_spec.columns_to_sync
+        reason: input_only

@@ -1,5 +1,12 @@
 
 === Initial deployment with DELTA_SYNC index_type
+>>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD
+{
+  "id": "[UUID]",
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-[UNIQUE_NAME]/default/files...
 Deploying resources...
@@ -46,3 +53,5 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
+
+>>> [CLI] vector-search-endpoints delete-endpoint vs-endpoint-[UNIQUE_NAME]

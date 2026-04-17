@@ -3106,6 +3106,12 @@ resources.vector_search_indexes.*.status.indexed_row_count	int64	REMOTE
 resources.vector_search_indexes.*.status.message	string	REMOTE
 resources.vector_search_indexes.*.status.ready	bool	REMOTE
 resources.vector_search_indexes.*.url	string	INPUT
+resources.vector_search_indexes.*.grants.full_name	string	ALL
+resources.vector_search_indexes.*.grants.securable_type	string	ALL
+resources.vector_search_indexes.*.grants[*]	catalog.PrivilegeAssignment	ALL
+resources.vector_search_indexes.*.grants[*].principal	string	ALL
+resources.vector_search_indexes.*.grants[*].privileges	[]catalog.Privilege	ALL
+resources.vector_search_indexes.*.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.volumes.*.access_point	string	REMOTE
 resources.volumes.*.browse_only	bool	REMOTE
 resources.volumes.*.catalog_name	string	ALL

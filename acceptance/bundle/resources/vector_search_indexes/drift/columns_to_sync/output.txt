@@ -1,0 +1,37 @@
+
+=== Initial deployment
+>>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD
+{
+  "id": "[UUID]",
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-columns-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Plan ignores request-only columns_to_sync drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] vector-search-indexes get-index vs-index-[UNIQUE_NAME]
+{
+  "name": "vs-index-[UNIQUE_NAME]",
+  "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
+  "index_type": "DELTA_SYNC",
+  "primary_key": "id"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_indexes.my_index
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-columns-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] vector-search-endpoints delete-endpoint vs-endpoint-[UNIQUE_NAME]

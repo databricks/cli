@@ -251,7 +251,7 @@ var testConfig map[string]any = map[string]any{
 	"vector_search_indexes": &resources.VectorSearchIndex{
 		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
 			Name:         "my-index",
-			EndpointName: "my-endpoint",
+			EndpointName: "my-index-endpoint",
 			PrimaryKey:   "id",
 			IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
 			DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
@@ -259,6 +259,10 @@ var testConfig map[string]any = map[string]any{
 				PipelineType: vectorsearch.PipelineTypeTriggered,
 			},
 		},
+		Grants: []catalog.PrivilegeAssignment{{
+			Principal:  "user@example.com",
+			Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+		}},
 	},
 }
 
@@ -279,6 +283,18 @@ var testDeps = map[string]prepareWorkspace{
 				DatabaseInstanceName: "mydbinstance1",
 			},
 		}, err
+	},
+
+	"vector_search_indexes": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		_, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
+			Name:         "my-index-endpoint",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return testConfig["vector_search_indexes"], nil
 	},
 
 	"jobs.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
@@ -593,6 +609,17 @@ var testDeps = map[string]prepareWorkspace{
 			FullName:      "modelid",
 			EmbeddedSlice: []catalog.PrivilegeAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"vector_search_indexes.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "table",
+			FullName:      "main.default.my_index",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
 				Principal:  "user@example.com",
 			}},
 		}, nil

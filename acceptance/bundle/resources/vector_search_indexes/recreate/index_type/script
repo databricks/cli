@@ -1,7 +1,9 @@
 envsubst < databricks.yml.tmpl > databricks.yml
+endpoint_name="vs-endpoint-${UNIQUE_NAME}"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
+    trace $CLI vector-search-endpoints delete-endpoint "${endpoint_name}"
     rm -f out.requests.txt
 }
 trap cleanup EXIT
@@ -13,6 +15,7 @@ print_requests() {
 }
 
 title "Initial deployment with DELTA_SYNC index_type"
+trace $CLI vector-search-endpoints create-endpoint "${endpoint_name}" STANDARD | jq '{id, name, endpoint_type}'
 rm -f out.requests.txt
 trace $CLI bundle deploy
 

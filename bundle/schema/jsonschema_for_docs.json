@@ -1965,6 +1965,9 @@
                   "endpoint_name": {
                     "$ref": "#/$defs/string"
                   },
+                  "grants": {
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                  },
                   "index_type": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.VectorIndexType"
                   },
