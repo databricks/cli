@@ -1,5 +1,10 @@
 # Version changelog
 
+## Release v0.297.1 (2026-04-17)
+
+### Dependency updates
+* Bump Go toolchain to 1.25.9 ([#5004](https://github.com/databricks/cli/pull/5004))
+
 ## Release v0.297.0 (2026-04-15)
 
 ### CLI
