@@ -58,7 +58,7 @@ func TestWorkspaceBaseURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := WorkspaceBaseURL(tt.host, tt.workspaceID)
+			got, err := workspaceBaseURL(tt.host, tt.workspaceID)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, got.String())
 		})
@@ -66,7 +66,7 @@ func TestWorkspaceBaseURL(t *testing.T) {
 }
 
 func TestWorkspaceBaseURLInvalidHost(t *testing.T) {
-	_, err := WorkspaceBaseURL("://invalid", 0)
+	_, err := workspaceBaseURL("://invalid", 0)
 	assert.ErrorContains(t, err, "invalid workspace host")
 }
 
@@ -113,6 +113,8 @@ func TestResourceURL(t *testing.T) {
 		{"notebooks", "notebooks", "12345", "https://host.com/#notebook/12345"},
 		{"notebooks with path", "notebooks", "/Users/u/nb", "https://host.com/#notebook//Users/u/nb"},
 		{"registered_models normalizes dots", "registered_models", "cat.sch.model", "https://host.com/explore/data/models/cat/sch/model"},
+		{"sql_warehouses alias resolves to warehouses", "sql_warehouses", "wh-1", "https://host.com/sql/warehouses/wh-1"},
+		{"warehouses canonical still works", "warehouses", "wh-1", "https://host.com/sql/warehouses/wh-1"},
 		{"unknown returns empty", "nonexistent", "123", ""},
 	}
 

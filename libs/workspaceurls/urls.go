@@ -24,6 +24,15 @@ var resourceURLPatterns = map[string]string{
 	"warehouses":              "sql/warehouses/%s",
 }
 
+// resourceAliases lets callers use bundle-config plural names as synonyms for
+// canonical URL keys. Canonical names match SDK service groups (e.g. the
+// `databricks warehouses` CLI group), bundle plural names match the
+// resources.<Type>.ResourceDescription().PluralName values (e.g. "sql_warehouses").
+// Aliases do not appear in ResourceTypes() so the completion list stays unambiguous.
+var resourceAliases = map[string]string{
+	"sql_warehouses": "warehouses",
+}
+
 // dotSeparatedResources lists resource types where the identifier is commonly
 // provided as a dot-separated name (e.g. "catalog.schema.model") but the URL
 // requires slash-separated segments.
@@ -43,6 +52,7 @@ func ResourceTypes() []string {
 
 // ResourceURL constructs a workspace URL for a named resource type and ID.
 func ResourceURL(baseURL url.URL, resourceType, id string) string {
+	resourceType = resolveAlias(resourceType)
 	pattern, ok := resourceURLPatterns[resourceType]
 	if !ok {
 		return ""
@@ -55,7 +65,7 @@ func ResourceURL(baseURL url.URL, resourceType, id string) string {
 // type name, ID, and workspace ID. It parses the host, appends ?o=<workspace-id>
 // when needed, and formats the resource path.
 func BuildResourceURL(host, resourceType, id string, workspaceID int64) (string, error) {
-	baseURL, err := WorkspaceBaseURL(host, workspaceID)
+	baseURL, err := workspaceBaseURL(host, workspaceID)
 	if err != nil {
 		return "", err
 	}
@@ -67,8 +77,14 @@ func BuildResourceURL(host, resourceType, id string, workspaceID int64) (string,
 	return result, nil
 }
 
-// WorkspaceBaseURL parses a workspace host and appends ?o=<workspace-id> when needed.
-func WorkspaceBaseURL(host string, workspaceID int64) (*url.URL, error) {
+func resolveAlias(resourceType string) string {
+	if canonical, ok := resourceAliases[resourceType]; ok {
+		return canonical
+	}
+	return resourceType
+}
+
+func workspaceBaseURL(host string, workspaceID int64) (*url.URL, error) {
 	baseURL, err := url.Parse(host)
 	if err != nil {
 		return nil, fmt.Errorf("invalid workspace host %q: %w", host, err)
