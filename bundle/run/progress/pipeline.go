@@ -17,8 +17,8 @@ import (
 //
 // Here's short introduction to a few important events we display on the console:
 //
-// 1. `update_progress`: A state transition occured for the entire pipeline update
-// 2. `flow_progress`: A state transition occured for a single flow in the pipeine
+// 1. `update_progress`: A state transition occurred for the entire pipeline update
+// 2. `flow_progress`: A state transition occurred for a single flow in the pipeline
 type ProgressEvent pipelines.PipelineEvent
 
 func (event *ProgressEvent) String() string {
