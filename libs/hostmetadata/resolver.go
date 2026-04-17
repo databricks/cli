@@ -5,6 +5,7 @@ package hostmetadata
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/cache"
@@ -34,19 +35,27 @@ type negativeSentinel struct {
 	Message string `json:"message"`
 }
 
-// Attach creates caching wrappers for positive and negative host-metadata
-// results and installs them on cfg.
-func Attach(ctx context.Context, cfg *config.Config) {
-	positive := cache.NewCache(ctx, positiveCacheComponent, positiveCacheTTL, nil)
-	negative := cache.NewCache(ctx, negativeCacheComponent, negativeCacheTTL, nil)
-	cfg.HostMetadataResolver = newResolver(cfg, positive, negative)
+// Attach installs a caching HostMetadataResolver on cfg. The underlying
+// positive and negative caches are created lazily on the first resolver
+// invocation, using the ctx the SDK passes into Resolve.
+func Attach(cfg *config.Config) {
+	cfg.HostMetadataResolver = newResolver(cfg)
 }
 
 // newResolver returns a HostMetadataResolver that consults the negative cache
 // before hitting the positive cache, and records failed fetches so subsequent
-// calls within negativeCacheTTL skip the network entirely.
-func newResolver(cfg *config.Config, positive, negative *cache.Cache) config.HostMetadataResolver {
+// calls within negativeCacheTTL skip the network entirely. The positive and
+// negative caches are created lazily on the first invocation.
+func newResolver(cfg *config.Config) config.HostMetadataResolver {
+	var (
+		once               sync.Once
+		positive, negative *cache.Cache
+	)
 	return func(ctx context.Context, host string) (*config.HostMetadata, error) {
+		once.Do(func() {
+			positive = cache.NewCache(ctx, positiveCacheComponent, positiveCacheTTL, nil)
+			negative = cache.NewCache(ctx, negativeCacheComponent, negativeCacheTTL, nil)
+		})
 		fp := hostFingerprint{Host: host}
 
 		// Check negative cache first. errNotCached makes GetOrCompute skip the

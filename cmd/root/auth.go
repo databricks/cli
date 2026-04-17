@@ -157,7 +157,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
 
-	hostmetadata.Attach(ctx, cfg)
+	hostmetadata.Attach(cfg)
 
 	profiler := profile.GetProfiler(ctx)
 
@@ -265,7 +265,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	ctx = cmdctx.SetConfigUsed(cmd.Context(), cfg)
 	cmd.SetContext(ctx)
 
-	hostmetadata.Attach(ctx, cfg)
+	hostmetadata.Attach(cfg)
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
 	if !shouldSkipLoadBundle(cmd.Context()) {

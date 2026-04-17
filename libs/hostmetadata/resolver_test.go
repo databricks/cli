@@ -14,18 +14,16 @@ import (
 
 func TestAttach_SetsResolverOnConfig(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
-	ctx := t.Context()
 	cfg := &config.Config{Host: "https://example.cloud.databricks.com"}
 	require.Nil(t, cfg.HostMetadataResolver)
 
-	hostmetadata.Attach(ctx, cfg)
+	hostmetadata.Attach(cfg)
 
 	assert.NotNil(t, cfg.HostMetadataResolver)
 }
 
 func TestCachingResolver_CacheMiss_DelegatesToSDKFetch(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
-	ctx := t.Context()
 
 	var hits atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +37,7 @@ func TestCachingResolver_CacheMiss_DelegatesToSDKFetch(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	cfg := &config.Config{Host: server.URL, Token: "x", Credentials: config.PatCredentials{}}
-	hostmetadata.Attach(ctx, cfg)
+	hostmetadata.Attach(cfg)
 	require.NoError(t, cfg.EnsureResolved())
 
 	assert.Equal(t, "acct-1", cfg.AccountID)
@@ -48,7 +46,6 @@ func TestCachingResolver_CacheMiss_DelegatesToSDKFetch(t *testing.T) {
 
 func TestCachingResolver_CacheHit_SkipsSDKFetch(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
-	ctx := t.Context()
 
 	var hits atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -62,12 +59,12 @@ func TestCachingResolver_CacheHit_SkipsSDKFetch(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	cfg1 := &config.Config{Host: server.URL, Token: "x", Credentials: config.PatCredentials{}}
-	hostmetadata.Attach(ctx, cfg1)
+	hostmetadata.Attach(cfg1)
 	require.NoError(t, cfg1.EnsureResolved())
 	require.Equal(t, int32(1), hits.Load())
 
 	cfg2 := &config.Config{Host: server.URL, Token: "x", Credentials: config.PatCredentials{}}
-	hostmetadata.Attach(ctx, cfg2)
+	hostmetadata.Attach(cfg2)
 	require.NoError(t, cfg2.EnsureResolved())
 
 	assert.Equal(t, "acct-1", cfg2.AccountID)
@@ -76,7 +73,6 @@ func TestCachingResolver_CacheHit_SkipsSDKFetch(t *testing.T) {
 
 func TestCachingResolver_FetchError_CachesNegative(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
-	ctx := t.Context()
 
 	var hits atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -90,14 +86,14 @@ func TestCachingResolver_FetchError_CachesNegative(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	cfg1 := &config.Config{Host: server.URL, Token: "x", Credentials: config.PatCredentials{}}
-	hostmetadata.Attach(ctx, cfg1)
+	hostmetadata.Attach(cfg1)
 	require.NoError(t, cfg1.EnsureResolved(), "fetch error must be non-fatal")
 
 	firstHits := hits.Load()
 	require.GreaterOrEqual(t, firstHits, int32(1), "first resolve must have hit the server")
 
 	cfg2 := &config.Config{Host: server.URL, Token: "x", Credentials: config.PatCredentials{}}
-	hostmetadata.Attach(ctx, cfg2)
+	hostmetadata.Attach(cfg2)
 	require.NoError(t, cfg2.EnsureResolved(), "fetch error must stay non-fatal with negative cache hit")
 
 	assert.Equal(t, firstHits, hits.Load(), "negative cache must prevent subsequent fetches")
@@ -105,7 +101,6 @@ func TestCachingResolver_FetchError_CachesNegative(t *testing.T) {
 
 func TestCachingResolver_DifferentHosts_SeparateEntries(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
-	ctx := t.Context()
 
 	respond := func(accountID string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -123,8 +118,8 @@ func TestCachingResolver_DifferentHosts_SeparateEntries(t *testing.T) {
 
 	cfgA := &config.Config{Host: serverA.URL, Token: "x", Credentials: config.PatCredentials{}}
 	cfgB := &config.Config{Host: serverB.URL, Token: "x", Credentials: config.PatCredentials{}}
-	hostmetadata.Attach(ctx, cfgA)
-	hostmetadata.Attach(ctx, cfgB)
+	hostmetadata.Attach(cfgA)
+	hostmetadata.Attach(cfgB)
 
 	require.NoError(t, cfgA.EnsureResolved())
 	require.NoError(t, cfgB.EnsureResolved())
