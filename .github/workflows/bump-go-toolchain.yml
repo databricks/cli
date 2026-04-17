@@ -1,0 +1,94 @@
+name: Bump Go toolchain
+
+on:
+  schedule:
+    # Run daily at 05:00 UTC.
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >
+          Go toolchain version to use (e.g. "go1.25.9").
+          If empty, the latest patch release is detected automatically.
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-go-toolchain:
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Determine current toolchain version
+        id: current
+        run: |
+          toolchain=$(grep '^toolchain' go.mod | awk '{print $2}')
+          minor=$(echo "$toolchain" | sed 's/^go//' | cut -d. -f1,2)
+          echo "toolchain=$toolchain" >> "$GITHUB_OUTPUT"
+          echo "minor=$minor" >> "$GITHUB_OUTPUT"
+
+      - name: Determine latest patch release
+        id: latest
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            toolchain=${{ inputs.version }}
+          else
+            minor=${{ steps.current.outputs.minor }}
+            toolchain=$(
+              curl -fsSL 'https://go.dev/dl/?mode=json' |
+                jq -r --arg minor "go${minor}." '[.[] | select(.version | startswith($minor))][0].version'
+            )
+          fi
+          echo "toolchain=$toolchain" >> "$GITHUB_OUTPUT"
+
+      - name: Check if update is needed
+        id: check
+        run: |
+          if [ "${{ steps.current.outputs.toolchain }}" = "${{ steps.latest.outputs.toolchain }}" ]; then
+            echo "Up to date: ${{ steps.current.outputs.toolchain }}"
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Update available: ${{ steps.current.outputs.toolchain }} -> ${{ steps.latest.outputs.toolchain }}"
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Go
+        if: steps.check.outputs.needed == 'true'
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: "${{ steps.latest.outputs.toolchain }}"
+
+      - name: Update go.mod files
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          for dir in . ./tools; do
+            (cd "$dir" && go get go@${{ steps.current.outputs.minor }} && go mod tidy)
+          done
+
+      - name: Show diff
+        if: steps.check.outputs.needed == 'true'
+        run: git diff
+
+      - name: Create pull request
+        if: steps.check.outputs.needed == 'true' && inputs.version == ''
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
+        with:
+          branch: auto/bump-go-toolchain
+          commit-message: "Bump Go toolchain to ${{ steps.latest.outputs.toolchain }}"
+          title: "Bump Go toolchain to ${{ steps.latest.outputs.toolchain }}"
+          body: |
+            Automated PR to update the Go toolchain from
+            `${{ steps.current.outputs.toolchain }}` to
+            `${{ steps.latest.outputs.toolchain }}`.
+
+            This ensures the CLI is built with the latest patch release
+            of the Go ${{ steps.current.outputs.minor }} series, including
+            any security fixes.
+          labels: dependencies
