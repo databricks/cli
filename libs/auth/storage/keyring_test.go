@@ -152,3 +152,34 @@ func TestKeyringCache_Lookup_CorruptedJSONReturnsError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unmarshal token")
 }
+
+func TestKeyringCache_StoreNil_DeletesEntry(t *testing.T) {
+	backend := newFakeBackend()
+	c := newTestCache(backend)
+
+	require.NoError(t, c.Store("my-profile", &oauth2.Token{AccessToken: "abc"}))
+	require.NoError(t, c.Store("my-profile", nil))
+
+	_, ok := backend.items[itemKey("databricks-cli", "my-profile")]
+	assert.False(t, ok, "entry should be gone after delete")
+}
+
+func TestKeyringCache_StoreNil_MissingIsIdempotent(t *testing.T) {
+	backend := newFakeBackend()
+	backend.deleteErr = errNotFoundSentinel
+	c := newTestCache(backend)
+
+	err := c.Store("never-stored", nil)
+	require.NoError(t, err, "deleting a missing entry must not error")
+}
+
+func TestKeyringCache_StoreNil_PropagatesOtherDeleteErrors(t *testing.T) {
+	boom := errors.New("backend boom")
+	backend := newFakeBackend()
+	backend.deleteErr = boom
+	c := newTestCache(backend)
+
+	err := c.Store("my-profile", nil)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, boom)
+}

@@ -64,11 +64,15 @@ func NewKeyringCache() *KeyringCache {
 	}
 }
 
-// Store stores t under key. Nil t deletes the entry.
+// Store stores t under key. Nil t deletes the entry; deleting a missing
+// entry is not an error.
 func (k *KeyringCache) Store(key string, t *oauth2.Token) error {
 	if t == nil {
-		// Implemented in Task 5.
-		return errors.New("delete not implemented yet")
+		err := k.backend.Delete(k.keyringSvcName, key)
+		if errors.Is(err, k.errNotFound) {
+			return nil
+		}
+		return err
 	}
 	raw, err := json.Marshal(t)
 	if err != nil {
