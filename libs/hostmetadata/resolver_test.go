@@ -1,6 +1,9 @@
 package hostmetadata_test
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
 	"github.com/databricks/cli/libs/hostmetadata"
@@ -18,4 +21,55 @@ func TestAttach_SetsResolverOnConfig(t *testing.T) {
 	hostmetadata.Attach(ctx, cfg)
 
 	assert.NotNil(t, cfg.HostMetadataResolver)
+}
+
+func TestCachingResolver_CacheMiss_DelegatesToSDKFetch(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx := t.Context()
+
+	var hits atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			hits.Add(1)
+			_, _ = w.Write([]byte(`{"oidc_endpoint":"https://example.com/oidc","account_id":"acct-1","cloud":"aws"}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(server.Close)
+
+	cfg := &config.Config{Host: server.URL, Token: "x", Credentials: config.PatCredentials{}}
+	hostmetadata.Attach(ctx, cfg)
+	require.NoError(t, cfg.EnsureResolved())
+
+	assert.Equal(t, "acct-1", cfg.AccountID)
+	assert.Equal(t, int32(1), hits.Load())
+}
+
+func TestCachingResolver_CacheHit_SkipsSDKFetch(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+	ctx := t.Context()
+
+	var hits atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/databricks-config" {
+			hits.Add(1)
+			_, _ = w.Write([]byte(`{"oidc_endpoint":"https://example.com/oidc","account_id":"acct-1","cloud":"aws"}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(server.Close)
+
+	cfg1 := &config.Config{Host: server.URL, Token: "x", Credentials: config.PatCredentials{}}
+	hostmetadata.Attach(ctx, cfg1)
+	require.NoError(t, cfg1.EnsureResolved())
+	require.Equal(t, int32(1), hits.Load())
+
+	cfg2 := &config.Config{Host: server.URL, Token: "x", Credentials: config.PatCredentials{}}
+	hostmetadata.Attach(ctx, cfg2)
+	require.NoError(t, cfg2.EnsureResolved())
+
+	assert.Equal(t, "acct-1", cfg2.AccountID)
+	assert.Equal(t, int32(1), hits.Load(), "second EnsureResolved must not hit the server")
 }
