@@ -2,7 +2,9 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
@@ -217,7 +219,13 @@ func (fc *fileCache) readFromCacheJSON(ctx context.Context, cachePath string) ([
 	// Check file modification time for expiry
 	info, err := os.Stat(cachePath)
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to stat cache file: %v", err)
+		// ErrNotExist is the common miss case; logging it adds noise and
+		// diverges across OSes (Unix: "no such file or directory";
+		// Windows: "The system cannot find the file specified."). The
+		// follow-up "cache miss, computing" line already captures it.
+		if !errors.Is(err, fs.ErrNotExist) {
+			log.Debugf(ctx, "[Local Cache] failed to stat cache file: %v", err)
+		}
 		return nil, false
 	}
 
