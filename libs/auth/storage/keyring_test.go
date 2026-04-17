@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -107,4 +108,47 @@ func TestKeyringCache_Store_PropagatesBackendError(t *testing.T) {
 	err := c.Store("my-profile", &oauth2.Token{AccessToken: "x"})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
+}
+
+func TestKeyringCache_Lookup_ReturnsStoredToken(t *testing.T) {
+	backend := newFakeBackend()
+	c := newTestCache(backend)
+
+	want := &oauth2.Token{AccessToken: "abc", TokenType: "Bearer"}
+	require.NoError(t, c.Store("my-profile", want))
+
+	got, err := c.Lookup("my-profile")
+	require.NoError(t, err)
+	assert.Equal(t, "abc", got.AccessToken)
+	assert.Equal(t, "Bearer", got.TokenType)
+}
+
+func TestKeyringCache_Lookup_MissingReturnsCacheErrNotFound(t *testing.T) {
+	backend := newFakeBackend()
+	c := newTestCache(backend)
+
+	_, err := c.Lookup("nope")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, cache.ErrNotFound)
+}
+
+func TestKeyringCache_Lookup_PropagatesOtherErrors(t *testing.T) {
+	boom := errors.New("backend boom")
+	backend := newFakeBackend()
+	backend.getErr = boom
+	c := newTestCache(backend)
+
+	_, err := c.Lookup("my-profile")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, boom)
+}
+
+func TestKeyringCache_Lookup_CorruptedJSONReturnsError(t *testing.T) {
+	backend := newFakeBackend()
+	backend.items[itemKey("databricks-cli", "my-profile")] = "{not json"
+	c := newTestCache(backend)
+
+	_, err := c.Lookup("my-profile")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unmarshal token")
 }

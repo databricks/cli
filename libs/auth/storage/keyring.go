@@ -79,8 +79,19 @@ func (k *KeyringCache) Store(key string, t *oauth2.Token) error {
 
 // Lookup returns the token under key or cache.ErrNotFound.
 func (k *KeyringCache) Lookup(key string) (*oauth2.Token, error) {
-	// Implemented in Task 4.
-	return nil, errors.New("not implemented yet")
+	raw, err := k.backend.Get(k.keyringSvcName, key)
+	if errors.Is(err, k.errNotFound) {
+		return nil, cache.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var t oauth2.Token
+	if err := json.Unmarshal([]byte(raw), &t); err != nil {
+		return nil, fmt.Errorf("unmarshal token: %w", err)
+	}
+	return &t, nil
 }
 
 // Compile-time confirmation that KeyringCache satisfies the SDK interface.
