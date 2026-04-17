@@ -40,6 +40,8 @@ const (
 const EnvVar = "DATABRICKS_AUTH_STORAGE"
 
 // ResolveStorageMode returns the storage mode to use for this invocation.
+// It is a thin I/O wrapper: it reads the env var and the .databrickscfg
+// setting, then delegates the precedence logic to resolveStorageMode.
 //
 // Precedence:
 //  1. override (typically from a command-level flag such as --secure-storage).
@@ -52,6 +54,20 @@ const EnvVar = "DATABRICKS_AUTH_STORAGE"
 // StorageMode values); invalid env or config values are user-input errors
 // and are wrapped with the source name for clarity.
 func ResolveStorageMode(ctx context.Context, override StorageMode) (StorageMode, error) {
+	envValue := env.Get(ctx, EnvVar)
+	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	configValue, err := databrickscfg.GetConfiguredAuthStorage(ctx, configPath)
+	if err != nil {
+		return "", fmt.Errorf("read auth_storage setting: %w", err)
+	}
+	return resolveStorageMode(override, envValue, configValue)
+}
+
+// resolveStorageMode is the pure core of ResolveStorageMode. It takes the
+// already-resolved values from the command-line override, the env var, and
+// the config setting as plain strings, runs the precedence rules, and
+// validates. No side effects, no I/O.
+func resolveStorageMode(override StorageMode, envValue, configValue string) (StorageMode, error) {
 	if override != "" {
 		if err := validateMode(override); err != nil {
 			return "", err
@@ -59,21 +75,16 @@ func ResolveStorageMode(ctx context.Context, override StorageMode) (StorageMode,
 		return override, nil
 	}
 
-	if raw := env.Get(ctx, EnvVar); raw != "" {
-		mode, err := parseMode(raw)
+	if envValue != "" {
+		mode, err := parseMode(envValue)
 		if err != nil {
 			return "", fmt.Errorf("%s: %w", EnvVar, err)
 		}
 		return mode, nil
 	}
 
-	configFilePath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
-	raw, err := databrickscfg.GetConfiguredAuthStorage(ctx, configFilePath)
-	if err != nil {
-		return "", fmt.Errorf("read auth_storage setting: %w", err)
-	}
-	if raw != "" {
-		mode, err := parseMode(raw)
+	if configValue != "" {
+		mode, err := parseMode(configValue)
 		if err != nil {
 			return "", fmt.Errorf("auth_storage: %w", err)
 		}
