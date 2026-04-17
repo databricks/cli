@@ -36,12 +36,12 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 
 	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
 	schemaActions := filterGroup(actions, "schemas", types...)
-	dltActions := filterGroup(actions, "pipelines", types...)
+	pipelineActions := filterGroup(actions, "pipelines", types...)
 	volumeActions := filterGroup(actions, "volumes", types...)
 	dashboardActions := filterGroup(actions, "dashboards", types...)
 
 	// We don't need to display any prompts in this case.
-	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
+	if len(schemaActions) == 0 && len(pipelineActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
 		return true, nil
 	}
 
@@ -56,10 +56,10 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		}
 	}
 
-	// One or more DLT pipelines is being recreated.
-	if len(dltActions) != 0 {
+	// One or more pipelines is being recreated.
+	if len(pipelineActions) != 0 {
 		cmdio.LogString(ctx, deleteOrRecreatePipelineMessage)
-		for _, action := range dltActions {
+		for _, action := range pipelineActions {
 			cmdio.Log(ctx, action)
 		}
 	}
