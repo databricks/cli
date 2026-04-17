@@ -10,6 +10,7 @@ import (
 )
 
 func TestAttach_SetsResolverOnConfig(t *testing.T) {
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 	ctx := t.Context()
 	cfg := &config.Config{Host: "https://example.cloud.databricks.com"}
 	require.Nil(t, cfg.HostMetadataResolver)
