@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,70 +30,34 @@ func TestQuoteEnvValue(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := quoteEnvValue(c.in)
-			assert.Equal(t, c.want, got)
+			assert.Equal(t, c.want, quoteEnvValue(c.in))
 		})
 	}
 }
 
-func TestEnvCommand_TextOutput(t *testing.T) {
-	cases := []struct {
-		name     string
-		args     []string
-		wantJSON bool
-	}{
-		{
-			name:     "default output is JSON",
-			args:     nil,
-			wantJSON: true,
-		},
-		{
-			name:     "explicit --output text produces KEY=VALUE lines",
-			args:     []string{"--output", "text"},
-			wantJSON: false,
-		},
-		{
-			name:     "explicit --output json produces JSON",
-			args:     []string{"--output", "json"},
-			wantJSON: true,
-		},
+func TestWriteEnvOutput(t *testing.T) {
+	envVars := map[string]string{
+		"DATABRICKS_HOST":  "https://test.cloud.databricks.com",
+		"DATABRICKS_TOKEN": "secret value",
 	}
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			// Isolate from real config/token cache on the machine.
-			t.Setenv("DATABRICKS_CONFIG_FILE", t.TempDir()+"/.databrickscfg")
-			t.Setenv("HOME", t.TempDir())
-			// Set env vars so MustAnyClient resolves auth via PAT.
-			t.Setenv("DATABRICKS_HOST", "https://test.cloud.databricks.com")
-			t.Setenv("DATABRICKS_TOKEN", "test-token-value")
+	t.Run("text mode emits sorted shell-quoted KEY=VALUE lines", func(t *testing.T) {
+		var buf bytes.Buffer
+		require.NoError(t, writeEnvOutput(&buf, envVars, true))
+		assert.Equal(t, "DATABRICKS_HOST=https://test.cloud.databricks.com\nDATABRICKS_TOKEN='secret value'\n", buf.String())
+	})
 
-			parent := &cobra.Command{Use: "databricks"}
-			outputFlag := flags.OutputText
-			parent.PersistentFlags().VarP(&outputFlag, "output", "o", "output type: text or json")
-			parent.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
+	t.Run("json mode emits flat map with trailing newline", func(t *testing.T) {
+		var buf bytes.Buffer
+		require.NoError(t, writeEnvOutput(&buf, envVars, false))
+		assert.Equal(t, "{\n  \"DATABRICKS_HOST\": \"https://test.cloud.databricks.com\",\n  \"DATABRICKS_TOKEN\": \"secret value\"\n}\n", buf.String())
+	})
 
-			envCmd := newEnvCommand()
-			parent.AddCommand(envCmd)
-			parent.SetContext(cmdio.MockDiscard(t.Context()))
-
-			var buf bytes.Buffer
-			parent.SetOut(&buf)
-			parent.SetArgs(append([]string{"env"}, c.args...))
-
-			err := parent.Execute()
-			require.NoError(t, err)
-
-			output := buf.String()
-			if c.wantJSON {
-				assert.Contains(t, output, "{")
-				assert.Contains(t, output, "DATABRICKS_HOST")
-			} else {
-				assert.NotContains(t, output, "{")
-				assert.Contains(t, output, "DATABRICKS_HOST=")
-				assert.Contains(t, output, "=")
-				assert.NotContains(t, output, `"env"`)
-			}
-		})
-	}
+	t.Run("empty map", func(t *testing.T) {
+		var textBuf, jsonBuf bytes.Buffer
+		require.NoError(t, writeEnvOutput(&textBuf, map[string]string{}, true))
+		require.NoError(t, writeEnvOutput(&jsonBuf, map[string]string{}, false))
+		assert.Empty(t, textBuf.String())
+		assert.Equal(t, "{}\n", jsonBuf.String())
+	})
 }

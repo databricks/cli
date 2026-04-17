@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"maps"
 	"slices"
 	"strings"
@@ -30,43 +31,42 @@ tools that accept Databricks authentication via environment variables.`,
 		}
 
 		cfg := cmdctx.ConfigUsed(cmd.Context())
-		envVars := auth.Env(cfg)
-
-		// Output KEY=VALUE lines when the user explicitly passes --output text.
-		if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText {
-			w := cmd.OutOrStdout()
-			keys := slices.Sorted(maps.Keys(envVars))
-			for _, k := range keys {
-				_, err := fmt.Fprintf(w, "%s=%s\n", k, quoteEnvValue(envVars[k]))
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-
-		raw, err := json.MarshalIndent(envVars, "", "  ")
-		if err != nil {
-			return err
-		}
-		_, err = cmd.OutOrStdout().Write(raw)
-		return err
+		textMode := cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputText
+		return writeEnvOutput(cmd.OutOrStdout(), auth.Env(cfg), textMode)
 	}
 
 	return cmd
+}
+
+// writeEnvOutput writes the env var map as sorted KEY=VALUE lines (textMode) or
+// indented JSON. In text mode values are quoted for shell safety.
+func writeEnvOutput(w io.Writer, envVars map[string]string, textMode bool) error {
+	if textMode {
+		for _, k := range slices.Sorted(maps.Keys(envVars)) {
+			if _, err := fmt.Fprintf(w, "%s=%s\n", k, quoteEnvValue(envVars[k])); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	raw, err := json.MarshalIndent(envVars, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(w, string(raw))
+	return err
 }
 
 const shellQuotedSpecialChars = " \t\n\r\"\\$`!#&|;(){}[]<>?*~'"
 
 // quoteEnvValue quotes a value for KEY=VALUE output if it contains spaces or
 // shell-special characters. Single quotes prevent shell expansion, and
-// embedded single quotes use the POSIX-compatible '\" sequence.
+// embedded single quotes are escaped as '\'' (POSIX-compatible).
 func quoteEnvValue(v string) string {
 	if v == "" {
 		return `''`
 	}
-	needsQuoting := strings.ContainsAny(v, shellQuotedSpecialChars)
-	if !needsQuoting {
+	if !strings.ContainsAny(v, shellQuotedSpecialChars) {
 		return v
 	}
 	return "'" + strings.ReplaceAll(v, "'", "'\\''") + "'"
