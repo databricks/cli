@@ -25,22 +25,21 @@ var errNotCached = errors.New("not cached")
 
 // hostFingerprint is the cache key for a given host.
 type hostFingerprint struct {
-	Host string
+	Host string `json:"host"`
 }
 
 // negativeSentinel records a failed host-metadata fetch in the negative cache.
 type negativeSentinel struct {
-	Error   bool
-	Message string
+	Error   bool   `json:"error"`
+	Message string `json:"message"`
 }
 
 // Attach creates caching wrappers for positive and negative host-metadata
 // results and installs them on cfg.
-func Attach(ctx context.Context, cfg *config.Config) error {
+func Attach(ctx context.Context, cfg *config.Config) {
 	positive := cache.NewCache(ctx, positiveCacheComponent, positiveCacheTTL, nil)
 	negative := cache.NewCache(ctx, negativeCacheComponent, negativeCacheTTL, nil)
 	cfg.HostMetadataResolver = newResolver(cfg, positive, negative)
-	return nil
 }
 
 // newResolver returns a HostMetadataResolver that consults the negative cache

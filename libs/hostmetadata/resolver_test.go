@@ -12,10 +12,9 @@ import (
 func TestAttach_SetsResolverOnConfig(t *testing.T) {
 	ctx := t.Context()
 	cfg := &config.Config{Host: "https://example.cloud.databricks.com"}
-	assert.Nil(t, cfg.HostMetadataResolver)
+	require.Nil(t, cfg.HostMetadataResolver)
 
-	err := hostmetadata.Attach(ctx, cfg)
-	require.NoError(t, err)
+	hostmetadata.Attach(ctx, cfg)
 
 	assert.NotNil(t, cfg.HostMetadataResolver)
 }
