@@ -1,6 +1,9 @@
 name: Bump Go toolchain
 
 on:
+  push:
+    branches:
+      - auto-go-bumper
   schedule:
     # Run daily at 05:00 UTC.
     - cron: "0 5 * * *"
