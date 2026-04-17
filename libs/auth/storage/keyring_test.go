@@ -194,7 +194,7 @@ func TestKeyringCache_Store_TimesOut(t *testing.T) {
 	require.Error(t, err)
 
 	var timeoutErr *TimeoutError
-	assert.True(t, errors.As(err, &timeoutErr), "expected TimeoutError, got %T: %v", err, err)
+	assert.ErrorAs(t, err, &timeoutErr, "expected TimeoutError, got %T: %v", err, err)
 	assert.Less(t, time.Since(start), 2*time.Second, "should time out quickly")
 }
 
@@ -207,7 +207,7 @@ func TestKeyringCache_Lookup_TimesOut(t *testing.T) {
 	require.Error(t, err)
 
 	var timeoutErr *TimeoutError
-	assert.True(t, errors.As(err, &timeoutErr), "expected TimeoutError, got %T: %v", err, err)
+	assert.ErrorAs(t, err, &timeoutErr, "expected TimeoutError, got %T: %v", err, err)
 }
 
 func TestKeyringCache_StoreNil_TimesOut(t *testing.T) {
@@ -219,5 +219,5 @@ func TestKeyringCache_StoreNil_TimesOut(t *testing.T) {
 	require.Error(t, err)
 
 	var timeoutErr *TimeoutError
-	assert.True(t, errors.As(err, &timeoutErr), "expected TimeoutError, got %T: %v", err, err)
+	assert.ErrorAs(t, err, &timeoutErr, "expected TimeoutError, got %T: %v", err, err)
 }
