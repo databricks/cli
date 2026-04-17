@@ -17,6 +17,9 @@ type cacheFactories struct {
 }
 
 // defaultCacheFactories returns the production factory set.
+// newFile is wrapped in a closure because cache.NewFileTokenCache is variadic
+// (func(...FileTokenCacheOption)) and cannot satisfy the non-variadic field type
+// by direct reference. The closure calls it with no options (SDK defaults).
 func defaultCacheFactories() cacheFactories {
 	return cacheFactories{
 		newFile:    func() (cache.TokenCache, error) { return cache.NewFileTokenCache() },
