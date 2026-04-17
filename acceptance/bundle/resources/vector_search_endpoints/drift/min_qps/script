@@ -15,7 +15,7 @@ title "Simulate remote drift: change min_qps to 5 outside the bundle"
 trace $CLI vector-search-endpoints patch-endpoint "${endpoint_name}" --min-qps 5
 
 title "Plan detects drift and proposes update"
-trace $CLI bundle plan
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged"
 
 title "Deploy restores min_qps to 1"
 rm -f out.requests.txt

@@ -6,3 +6,9 @@ resources:
     foo:
       name: test-endpoint-$UNIQUE_NAME
       endpoint_type: STANDARD
+    bar:
+      name: test-endpoint-with-permissions-$UNIQUE_NAME
+      endpoint_type: STANDARD
+      permissions:
+        - level: CAN_USE
+          user_name: viewer@example.com
