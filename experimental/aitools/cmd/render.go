@@ -1,6 +1,7 @@
 package aitools
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,6 +43,28 @@ func renderJSON(w io.Writer, columns []string, rows [][]string) error {
 
 	fmt.Fprintf(w, "%s\n", output)
 	return nil
+}
+
+// renderCSV writes query results as CSV with column headers as the first row.
+func renderCSV(w io.Writer, columns []string, rows [][]string) error {
+	cw := csv.NewWriter(w)
+	cw.UseCRLF = true
+	if err := cw.Write(columns); err != nil {
+		return fmt.Errorf("write CSV header: %w", err)
+	}
+	for _, row := range rows {
+		record := make([]string, len(columns))
+		for i := range columns {
+			if i < len(row) {
+				record[i] = row[i]
+			}
+		}
+		if err := cw.Write(record); err != nil {
+			return fmt.Errorf("write CSV row: %w", err)
+		}
+	}
+	cw.Flush()
+	return cw.Error()
 }
 
 // renderStaticTable writes query results as a formatted text table.

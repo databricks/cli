@@ -70,6 +70,7 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `The budget policy id to be applied.`)
 	cmd.Flags().Int64Var(&createEndpointReq.MinQps, "min-qps", createEndpointReq.MinQps, `Min QPS for the endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.UsagePolicyId, "usage-policy-id", createEndpointReq.UsagePolicyId, `The usage policy id to be applied once we've migrated to usage policies.`)
 
 	cmd.Use = "create-endpoint NAME ENDPOINT_TYPE"
 	cmd.Short = `Create an endpoint.`
@@ -80,7 +81,7 @@ func newCreateEndpoint() *cobra.Command {
   Arguments:
     NAME: Name of the vector search endpoint
     ENDPOINT_TYPE: Type of endpoint
-      Supported values: [STANDARD]`
+      Supported values: [STANDARD, STORAGE_OPTIMIZED]`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -88,7 +89,7 @@ func newCreateEndpoint() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'endpoint_type' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'endpoint_type' in your JSON input")
 			}
 			return nil
 		}
@@ -259,6 +260,7 @@ func newGetEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -287,8 +289,17 @@ func newListEndpoints() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listEndpointsReq vectorsearch.ListEndpointsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listEndpointsLimit int
 
-	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Token for pagination.`)
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listEndpointsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listEndpointsReq.PageToken, "page-token", listEndpointsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints"
 	cmd.Short = `List all endpoints.`
@@ -309,6 +320,13 @@ func newListEndpoints() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.VectorSearchEndpoints.ListEndpoints(ctx, listEndpointsReq)
+		if listEndpointsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listEndpointsLimit)
+		}
+		if listEndpointsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listEndpointsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -382,6 +400,7 @@ func newPatchEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -459,6 +478,7 @@ func newRetrieveUserVisibleMetrics() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -541,6 +561,7 @@ func newUpdateEndpointBudgetPolicy() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -615,6 +636,7 @@ func newUpdateEndpointCustomTags() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

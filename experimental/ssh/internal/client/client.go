@@ -476,7 +476,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
 
-	err = client.Workspace.MkdirsByPath(ctx, contentDir)
+	err = client.Workspace.MkdirsByPath(ctx, contentDir) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}

@@ -281,7 +281,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 	// The API returns 404 if the parent directory doesn't exist.
 	// If the parent directory doesn't exist, create it and try again.
 	if err != nil && apierr.IsMissing(err) {
-		err = r.client.Workspace.MkdirsByPath(ctx, config.ParentPath)
+		err = r.client.Workspace.MkdirsByPath(ctx, config.ParentPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
 		}

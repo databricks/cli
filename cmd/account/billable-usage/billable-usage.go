@@ -95,6 +95,7 @@ func newDownload() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		defer response.Contents.Close()
 		return cmdio.Render(ctx, response.Contents)
 	}

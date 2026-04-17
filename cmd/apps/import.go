@@ -196,7 +196,7 @@ Examples:
 					cmdio.LogString(ctx, "Cleaning up previous app folder")
 				}
 
-				err = w.Workspace.Delete(ctx, workspace.Delete{
+				err = w.Workspace.Delete(ctx, workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 					Path:      oldSourceCodePath,
 					Recursive: true,
 				})
