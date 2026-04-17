@@ -73,7 +73,7 @@ func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath str
 
 func getClosestExistingObject(ctx context.Context, w workspace.WorkspaceInterface, folderPath string) (*workspace.ObjectInfo, error) {
 	for {
-		obj, err := w.GetStatusByPath(ctx, folderPath)
+		obj, err := w.GetStatusByPath(ctx, folderPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err == nil {
 			return obj, nil
 		}

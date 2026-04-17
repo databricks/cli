@@ -164,6 +164,7 @@ var allowList = []string{
 	"alerts",
 	"catalogs",
 	"clusters",
+	"dashboards",
 	"database_catalogs",
 	"database_instances",
 	"external_locations",

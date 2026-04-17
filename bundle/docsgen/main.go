@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path"
@@ -30,7 +32,7 @@ func main() {
 	outputDir := path.Join(docsDir, "output")
 	templatesDir := path.Join(docsDir, "templates")
 
-	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+	if _, err := os.Stat(outputDir); errors.Is(err, fs.ErrNotExist) {
 		if err := os.MkdirAll(outputDir, 0o755); err != nil {
 			log.Fatal(err)
 		}

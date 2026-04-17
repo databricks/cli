@@ -88,7 +88,7 @@ func newEnforceCompliance() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'job_id' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'job_id' in your JSON input")
 			}
 			return nil
 		}
@@ -125,6 +125,7 @@ func newEnforceCompliance() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -186,6 +187,7 @@ func newGetCompliance() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -214,9 +216,19 @@ func newListCompliance() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listComplianceReq jobs.ListJobComplianceRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listComplianceLimit int
 
 	cmd.Flags().IntVar(&listComplianceReq.PageSize, "page-size", listComplianceReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server.`)
-	cmd.Flags().StringVar(&listComplianceReq.PageToken, "page-token", listComplianceReq.PageToken, `A page token that can be used to navigate to the next page or previous page as returned by next_page_token or prev_page_token.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listComplianceLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listComplianceReq.PageToken, "page-token", listComplianceReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-compliance POLICY_ID"
 	cmd.Short = `List job policy compliance.`
@@ -245,6 +257,13 @@ func newListCompliance() *cobra.Command {
 		listComplianceReq.PolicyId = args[0]
 
 		response := w.PolicyComplianceForJobs.ListCompliance(ctx, listComplianceReq)
+		if listComplianceLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listComplianceLimit)
+		}
+		if listComplianceLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listComplianceLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

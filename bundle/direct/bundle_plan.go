@@ -23,7 +23,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -950,14 +949,30 @@ func extractReferences(root dyn.Value, node string) (map[string]string, error) {
 		if !ok {
 			return nil
 		}
-		// Store the original string that contains references, not individual references
-		refs[p.String()] = ref.Str
+		// Store the original string that contains references, not individual references.
+		// Convert dyn.Path to structpath string because refs are later parsed by structpath.ParsePath.
+		// dyn.Path.String() uses dot notation which is ambiguous for keys containing dots;
+		// structpath uses bracket notation (['key.with.dots']) which round-trips correctly.
+		refs[dynPathToStructPath(p).String()] = ref.Str
 		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("parsing refs: %w", err)
 	}
 	return refs, nil
+}
+
+// dynPathToStructPath converts a dyn.Path to a structpath.PathNode.
+func dynPathToStructPath(p dyn.Path) *structpath.PathNode {
+	var node *structpath.PathNode
+	for _, c := range p {
+		if key := c.Key(); key != "" {
+			node = structpath.NewStringKey(node, key)
+		} else {
+			node = structpath.NewIndex(node, c.Index())
+		}
+	}
+	return node
 }
 
 func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Adapter, error) {
@@ -968,7 +983,7 @@ func (b *DeploymentBundle) getAdapterForKey(resourceKey string) (*dresources.Ada
 
 	adapter, ok := b.Adapters[group]
 	if !ok {
-		return nil, fmt.Errorf("resource type %q not supported, available: %s", group, strings.Join(utils.SortedKeys(b.Adapters), ", "))
+		return nil, fmt.Errorf("resource type %q not supported, available: %s", group, strings.Join(slices.Sorted(maps.Keys(b.Adapters)), ", "))
 	}
 
 	return adapter, nil

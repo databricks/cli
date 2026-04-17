@@ -1,11 +1,12 @@
 package yamlsaver
 
 import (
+	"cmp"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -79,8 +80,8 @@ func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, 
 		// The location is set when we convert API response struct to config.Value representation
 		// See convert.convertMap for details
 		pairs := m.Pairs()
-		sort.SliceStable(pairs, func(i, j int) bool {
-			return pairs[i].Value.Location().Line < pairs[j].Value.Location().Line
+		slices.SortStableFunc(pairs, func(a, b dyn.Pair) int {
+			return cmp.Compare(a.Value.Location().Line, b.Value.Location().Line)
 		})
 
 		var content []*yaml.Node

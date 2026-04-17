@@ -10,6 +10,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
+	"maps"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,7 +19,6 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,7 +33,6 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -486,7 +486,7 @@ func getTests(t *testing.T) []string {
 	})
 	require.NoError(t, err)
 
-	sort.Strings(testDirs)
+	slices.Sort(testDirs)
 	return testDirs
 }
 
@@ -818,7 +818,7 @@ func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
 	env := make([]string, 0, len(configEnv)+len(customEnv))
 
 	// Add config.Env first (but skip keys that exist in customEnv)
-	for _, key := range utils.SortedKeys(configEnv) {
+	for _, key := range slices.Sorted(maps.Keys(configEnv)) {
 		if hasKey(customEnv, key) {
 			continue
 		}
@@ -1487,7 +1487,7 @@ func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.Replacem
 
 func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
 	b, err := os.ReadFile(filepath.Join(tmpDir, userReplacementsFilename))
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return
 	}
 	require.NoError(t, err)

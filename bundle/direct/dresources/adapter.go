@@ -154,7 +154,7 @@ func loadKeyedSlices(call *calladapt.BoundCaller) (map[string]any, error) {
 }
 
 func (a *Adapter) initMethods(resource any) error {
-	err := calladapt.EnsureNoExtraMethods(resource, calladapt.TypeOf[IResource]())
+	err := calladapt.EnsureNoExtraMethods(resource, reflect.TypeFor[IResource]())
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	// RemapState is optional when remote type already matches state type.
-	a.remapState, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "RemapState")
+	a.remapState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "RemapState")
 	if err != nil {
 		return err
 	}
@@ -186,37 +186,37 @@ func (a *Adapter) initMethods(resource any) error {
 
 	// Optional methods with varying signatures:
 
-	a.doUpdate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoUpdate")
+	a.doUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoUpdate")
 	if err != nil {
 		return err
 	}
 
-	a.doUpdateWithID, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoUpdateWithID")
+	a.doUpdateWithID, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoUpdateWithID")
 	if err != nil {
 		return err
 	}
 
-	a.waitAfterCreate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "WaitAfterCreate")
+	a.waitAfterCreate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterCreate")
 	if err != nil {
 		return err
 	}
 
-	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "WaitAfterUpdate")
+	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterUpdate")
 	if err != nil {
 		return err
 	}
 
-	a.overrideChangeDesc, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "OverrideChangeDesc")
+	a.overrideChangeDesc, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "OverrideChangeDesc")
 	if err != nil {
 		return err
 	}
 
-	a.doResize, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoResize")
+	a.doResize, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoResize")
 	if err != nil {
 		return err
 	}
 
-	keyedSlicesCall, err := calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "KeyedSlices")
+	keyedSlicesCall, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "KeyedSlices")
 	if err != nil {
 		return err
 	}
@@ -535,7 +535,7 @@ func (a *Adapter) KeyedSlices() map[string]any {
 
 // prepareCallRequired prepares a call and ensures the method is found.
 func prepareCallRequired(resource any, methodName string) (*calladapt.BoundCaller, error) {
-	caller, err := calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), methodName)
+	caller, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), methodName)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", methodName, err)
 	}

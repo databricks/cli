@@ -85,7 +85,7 @@ func newCreateTagPolicy() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'tag_key' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'tag_key' in your JSON input")
 			}
 			return nil
 		}
@@ -118,6 +118,7 @@ func newCreateTagPolicy() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -233,6 +234,7 @@ func newGetTagPolicy() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -261,9 +263,19 @@ func newListTagPolicies() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listTagPoliciesReq tags.ListTagPoliciesRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listTagPoliciesLimit int
 
 	cmd.Flags().IntVar(&listTagPoliciesReq.PageSize, "page-size", listTagPoliciesReq.PageSize, `The maximum number of results to return in this request.`)
-	cmd.Flags().StringVar(&listTagPoliciesReq.PageToken, "page-token", listTagPoliciesReq.PageToken, `An optional page token received from a previous list tag policies call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listTagPoliciesLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listTagPoliciesReq.PageToken, "page-token", listTagPoliciesReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-tag-policies"
 	cmd.Short = `List tag policies.`
@@ -289,6 +301,13 @@ func newListTagPolicies() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.TagPolicies.ListTagPolicies(ctx, listTagPoliciesReq)
+		if listTagPoliciesLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listTagPoliciesLimit)
+		}
+		if listTagPoliciesLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listTagPoliciesLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -381,6 +400,7 @@ func newUpdateTagPolicy() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

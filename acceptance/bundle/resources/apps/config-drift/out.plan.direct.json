@@ -35,6 +35,11 @@
       "state": "RUNNING"
     }
   },
+  "compute_size": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": "MEDIUM"
+  },
   "compute_status": {
     "action": "skip",
     "reason": "spec:output_only",

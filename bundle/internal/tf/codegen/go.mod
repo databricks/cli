@@ -2,7 +2,7 @@ module github.com/databricks/cli/bundle/internal/tf/codegen
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	github.com/hashicorp/go-version v1.7.0
@@ -11,7 +11,6 @@ require (
 	github.com/hashicorp/terraform-json v0.27.2
 	github.com/iancoleman/strcase v0.3.0
 	github.com/zclconf/go-cty v1.16.4
-	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6
 )
 
 require (

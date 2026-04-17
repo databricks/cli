@@ -226,6 +226,10 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 	app.Url = name + "-123.cloud.databricksapps.com"
 	app.Id = strconv.Itoa(len(s.Apps) + 1000)
 
+	if app.ComputeSize == "" {
+		app.ComputeSize = "MEDIUM"
+	}
+
 	// Assign a service principal to the app, mimicking the real platform.
 	if app.ServicePrincipalClientId == "" {
 		app.ServicePrincipalClientId = nextUUID()

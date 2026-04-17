@@ -83,7 +83,7 @@ type Bridge struct {
 	tunnelID           string
 	tunnelWriteChan    chan prioritizedMessage
 	stopChan           chan struct{}
-	stopOnce           sync.Once
+	stop               func()
 	httpClient         *http.Client
 	connectionRequests chan *BridgeMessage
 	port               int
@@ -101,7 +101,7 @@ func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName strin
 		DisableCompression:  false,
 	}
 
-	return &Bridge{
+	b := &Bridge{
 		ctx:     ctx,
 		w:       w,
 		appName: appName,
@@ -114,10 +114,26 @@ func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName strin
 		connectionRequests: make(chan *BridgeMessage, 10),
 		port:               port,
 	}
+
+	b.stop = sync.OnceFunc(func() {
+		close(b.stopChan)
+
+		if b.tunnelConn != nil {
+			_ = b.tunnelConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			b.tunnelConn.Close()
+		}
+
+		if b.hmrConn != nil {
+			_ = b.hmrConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			b.hmrConn.Close()
+		}
+	})
+
+	return b
 }
 
 func (vb *Bridge) getAuthHeaders(wsURL string) (http.Header, error) {
-	req, err := http.NewRequestWithContext(vb.ctx, "GET", wsURL, nil)
+	req, err := http.NewRequestWithContext(vb.ctx, http.MethodGet, wsURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -965,17 +981,5 @@ func (vb *Bridge) Start() error {
 }
 
 func (vb *Bridge) Stop() {
-	vb.stopOnce.Do(func() {
-		close(vb.stopChan)
-
-		if vb.tunnelConn != nil {
-			_ = vb.tunnelConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			vb.tunnelConn.Close()
-		}
-
-		if vb.hmrConn != nil {
-			_ = vb.hmrConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			vb.hmrConn.Close()
-		}
-	})
+	vb.stop()
 }

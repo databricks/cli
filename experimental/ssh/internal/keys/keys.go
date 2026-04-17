@@ -50,23 +50,15 @@ func generateSSHKeyPair() ([]byte, []byte, error) {
 }
 
 func SaveSSHKeyPair(keyPath string, privateKeyBytes, publicKeyBytes []byte) error {
-	err := os.RemoveAll(filepath.Dir(keyPath))
-	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove existing key directory: %w", err)
-	}
-
 	if err := os.MkdirAll(filepath.Dir(keyPath), 0o700); err != nil {
 		return fmt.Errorf("failed to create directory for key: %w", err)
 	}
-
 	if err := os.WriteFile(keyPath, privateKeyBytes, 0o600); err != nil {
 		return fmt.Errorf("failed to write private key to file: %w", err)
 	}
-
 	if err := os.WriteFile(keyPath+".pub", publicKeyBytes, 0o644); err != nil {
 		return fmt.Errorf("failed to write public key to file: %w", err)
 	}
-
 	return nil
 }
 

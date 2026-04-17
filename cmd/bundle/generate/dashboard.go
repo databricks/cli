@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -33,7 +35,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
-	"golang.org/x/exp/maps"
 )
 
 type dashboard struct {
@@ -82,7 +83,7 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
 
 func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) string {
 	w := b.WorkspaceClient()
-	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath)
+	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		if apierr.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("dashboard %q not found", path.Base(d.existingPath)))
@@ -260,7 +261,7 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 	}
 
 	for {
-		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
+		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -459,7 +460,7 @@ func dashboardResourceCompletion(cmd *cobra.Command, args []string, toComplete s
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	return maps.Keys(resources.Completions(b, filterDashboards)), cobra.ShellCompDirectiveNoFileComp
+	return slices.Collect(maps.Keys(resources.Completions(b, filterDashboards))), cobra.ShellCompDirectiveNoFileComp
 }
 
 func NewGenerateDashboardCommand() *cobra.Command {

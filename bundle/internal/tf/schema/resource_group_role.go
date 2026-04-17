@@ -2,8 +2,14 @@
 
 package schema
 
+type ResourceGroupRoleProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceGroupRole struct {
-	GroupId string `json:"group_id"`
-	Id      string `json:"id,omitempty"`
-	Role    string `json:"role"`
+	Api            string                           `json:"api,omitempty"`
+	GroupId        string                           `json:"group_id"`
+	Id             string                           `json:"id,omitempty"`
+	Role           string                           `json:"role"`
+	ProviderConfig *ResourceGroupRoleProviderConfig `json:"provider_config,omitempty"`
 }

@@ -118,39 +118,39 @@ func TestPrepareCallErrors(t *testing.T) {
 		{
 			name:      "void method is supported",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[interface{ PMethodVoid() }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodVoid() }](),
 			method:    "PMethodVoid",
 		},
 		{
 			name:      "correct number of args - concrete matching argument type",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[interface{ PMethodAcceptData(data Data) error }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptData(data Data) error }](),
 			method:    "PMethodAcceptData",
 		},
 		{
 			name:      "correct number of args - interface argument is any",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[interface{ PMethodAcceptData(data any) error }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptData(data any) error }](),
 			method:    "PMethodAcceptData",
 		},
 		{
 			name:      "correct number of args - concrete mismatching  argument type",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[interface{ PMethodAcceptData(data NewData) error }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptData(data NewData) error }](),
 			method:    "PMethodAcceptData",
 			errMsg:    "interface { PMethodAcceptData(calladapt.NewData) error }.PMethodAcceptData: param 0 mismatch: interface calladapt.NewData, concrete calladapt.Data",
 		},
 		{
 			name:      "incorrect number of args",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[interface{ PMethodAcceptData() error }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptData() error }](),
 			method:    "PMethodAcceptData",
 			errMsg:    "interface { PMethodAcceptData() error }.PMethodAcceptData: param count mismatch: interface 0, concrete 1",
 		},
 		{
 			name:       "incorrect number of return values",
 			recv:       (*MyStruct)(nil),
-			ifaceType:  TypeOf[interface{ PMethodAcceptData(any) (any, error) }](),
+			ifaceType:  reflect.TypeFor[interface{ PMethodAcceptData(any) (any, error) }](),
 			method:     "PMethodAcceptData",
 			errMsg:     "interface { PMethodAcceptData(interface {}) (interface {}, error) }.PMethodAcceptData: return count mismatch: interface 2, concrete 1",
 			unexpected: true,
@@ -158,7 +158,7 @@ func TestPrepareCallErrors(t *testing.T) {
 		{
 			name:      "error return convertible to any",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[interface{ PMethodAcceptData(any) any }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptData(any) any }](),
 			method:    "PMethodAcceptData",
 		},
 		{
@@ -171,34 +171,34 @@ func TestPrepareCallErrors(t *testing.T) {
 		{
 			name:      "untyped nil receiver",
 			recv:      nil,
-			ifaceType: TypeOf[interface{ PMethodAcceptData(any) (any, error) }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptData(any) (any, error) }](),
 			method:    "PMethodAcceptData",
 			errMsg:    "first argument must not be untyped nil",
 		},
 		{
 			name:      "method is not on interface",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[any](),
+			ifaceType: reflect.TypeFor[any](),
 			method:    "PMethodAcceptData",
 			errMsg:    "interface {} has no method \"PMethodAcceptData\"",
 		},
 		{
 			name:           "method is not on receiver",
 			recv:           (*MyStruct)(nil),
-			ifaceType:      TypeOf[interface{ Hello(any) (any, error) }](),
+			ifaceType:      reflect.TypeFor[interface{ Hello(any) (any, error) }](),
 			method:         "Hello",
 			methodNotFound: true,
 		},
 		{
 			name:      "any instead of error allowed",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[interface{ PMethodAcceptData(data Data) any }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptData(data Data) any }](),
 			method:    "PMethodAcceptData",
 		},
 		{
 			name:       "error type mismatch",
 			recv:       (*MyStruct)(nil),
-			ifaceType:  TypeOf[interface{ GetCustomError() error }](),
+			ifaceType:  reflect.TypeFor[interface{ GetCustomError() error }](),
 			method:     "GetCustomError",
 			errMsg:     "interface { GetCustomError() error }.GetCustomError: result 0 mismatch: interface error, concrete calladapt.CustomError",
 			unexpected: true,
@@ -206,7 +206,7 @@ func TestPrepareCallErrors(t *testing.T) {
 		{
 			name:      "two returns without error are supported",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[interface{ BadMethod() (int, string) }](),
+			ifaceType: reflect.TypeFor[interface{ BadMethod() (int, string) }](),
 			method:    "BadMethod",
 		},
 	}
@@ -248,7 +248,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "nil receiver - PMethodAcceptData ok",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[interface{ PMethodAcceptData(data Data) error }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptData(data Data) error }](),
 			method:    "PMethodAcceptData",
 			args:      []any{Data{}},
 			expect:    []any{},
@@ -256,7 +256,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "error return",
 			recv:      (*MyStruct)(nil),
-			ifaceType: TypeOf[interface{ PMethodAcceptData(data Data) error }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptData(data Data) error }](),
 			method:    "PMethodAcceptData",
 			args:      []any{Data{1}},
 			errMsg:    "X cannot be 1",
@@ -264,7 +264,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "value return",
 			recv:      my,
-			ifaceType: TypeOf[interface{ VMethodTransformNoError(any) any }](),
+			ifaceType: reflect.TypeFor[interface{ VMethodTransformNoError(any) any }](),
 			method:    "VMethodTransformNoError",
 			args:      []any{Data{2}},
 			expect:    []any{NewData{Y: 12}},
@@ -272,7 +272,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "value return with ptr args",
 			recv:      &my,
-			ifaceType: TypeOf[interface{ PMethodTransformPtrNoError(any) any }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodTransformPtrNoError(any) any }](),
 			method:    "PMethodTransformPtrNoError",
 			args:      []any{&Data{2}},
 			expect:    []any{&NewData{Y: 12}},
@@ -280,7 +280,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "any+error return",
 			recv:      &my,
-			ifaceType: TypeOf[interface{ PMethodTransformData(data Data) (any, error) }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodTransformData(data Data) (any, error) }](),
 			method:    "PMethodTransformData",
 			args:      []any{Data{2}},
 			expect:    []any{NewData{Y: 22}},
@@ -288,7 +288,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "any+error return, error case",
 			recv:      &MyStruct{State: 0},
-			ifaceType: TypeOf[interface{ PMethodTransformData(data Data) (any, error) }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodTransformData(data Data) (any, error) }](),
 			method:    "PMethodTransformData",
 			args:      []any{Data{1}},
 			errMsg:    "X cannot be 1",
@@ -296,7 +296,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "ptr any+error return",
 			recv:      &MyStruct{State: 0},
-			ifaceType: TypeOf[interface{ PMethodTransformDataPtr(data *Data) (any, error) }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodTransformDataPtr(data *Data) (any, error) }](),
 			method:    "PMethodTransformDataPtr",
 			args:      []any{&Data{2}},
 			expect:    []any{&NewData{Y: 12}},
@@ -304,7 +304,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "ptr any+error return, error case (nil)",
 			recv:      &MyStruct{State: 0},
-			ifaceType: TypeOf[interface{ PMethodTransformDataPtr(data *Data) (any, error) }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodTransformDataPtr(data *Data) (any, error) }](),
 			method:    "PMethodTransformDataPtr",
 			args:      []any{nil},
 			errMsg:    "data is nil",
@@ -312,7 +312,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "void method call returns no outs",
 			recv:      &my,
-			ifaceType: TypeOf[interface{ PMethodVoid() }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodVoid() }](),
 			method:    "PMethodVoid",
 			args:      []any{},
 			expect:    []any{},
@@ -320,7 +320,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "too many args error",
 			recv:      my,
-			ifaceType: TypeOf[interface{ VMethodTransformNoError(data Data) any }](),
+			ifaceType: reflect.TypeFor[interface{ VMethodTransformNoError(data Data) any }](),
 			method:    "VMethodTransformNoError",
 			args:      []any{Data{1}, Data{2}},
 			errMsg:    "VMethodTransformNoError: want 1 args, got 2",
@@ -328,7 +328,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "wrong arg type error (different pointer)",
 			recv:      &my,
-			ifaceType: TypeOf[interface{ PMethodTransformPtrNoError(data *Data) any }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodTransformPtrNoError(data *Data) any }](),
 			method:    "PMethodTransformPtrNoError",
 			args:      []any{&NewData{}},
 			errMsg:    "PMethodTransformPtrNoError: arg 0 type mismatch: want *calladapt.Data, got *calladapt.NewData",
@@ -336,7 +336,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "nil interface param allowed",
 			recv:      &my,
-			ifaceType: TypeOf[interface{ PMethodAcceptAny(v any) error }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptAny(v any) error }](),
 			method:    "PMethodAcceptAny",
 			args:      []any{nil},
 			errMsg:    "PMethodAcceptAny: arg 0 type mismatch: want interface {}, got nil",
@@ -344,7 +344,7 @@ func TestCall(t *testing.T) {
 		{
 			name:      "nil slice param allowed",
 			recv:      &my,
-			ifaceType: TypeOf[interface{ PMethodAcceptSlice(s []int) int }](),
+			ifaceType: reflect.TypeFor[interface{ PMethodAcceptSlice(s []int) int }](),
 			method:    "PMethodAcceptSlice",
 			args:      []any{nil},
 			errMsg:    "PMethodAcceptSlice: arg 0 type mismatch: want []int, got nil",
@@ -352,7 +352,7 @@ func TestCall(t *testing.T) {
 		{
 			name: "DoCreate returns id",
 			recv: &my,
-			ifaceType: TypeOf[interface {
+			ifaceType: reflect.TypeFor[interface {
 				DoCreate(ctx context.Context, data *Data) (string, error)
 			}](),
 			method: "DoCreate",
