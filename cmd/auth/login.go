@@ -158,25 +158,13 @@ a new profile is created.
 	cmd.Flags().StringVar(&scopes, "scopes", "",
 		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
 
-	var secureStorage bool
-	cmd.Flags().BoolVar(&secureStorage, "secure-storage", false,
-		"Experimental: write OAuth tokens to the OS-native secure store")
-	// Hidden during MS1; discovery is via release notes and the
-	// DATABRICKS_AUTH_STORAGE env var. See
-	// documents/fy2027-q2/cli-ga/2026-04-13-cli-ga-rollout-contract.md.
-	_ = cmd.Flags().MarkHidden("secure-storage")
-
 	cmd.PreRunE = profileHostConflictCheck
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		var storageOverride storage.StorageMode
-		if secureStorage {
-			storageOverride = storage.StorageModeSecure
-		}
-		tokenCache, mode, err := newAuthCache(ctx, storageOverride)
+		tokenCache, mode, err := newAuthCache(ctx, "")
 		if err != nil {
 			return err
 		}
