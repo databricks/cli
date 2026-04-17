@@ -1,0 +1,11 @@
+
+=== Token cache keys before logout
+[
+  "dev"
+]
+
+>>> [CLI] auth logout --profile dev --auto-approve
+Logged out of profile "dev". Use --delete to also remove it from the config file.
+
+=== Token cache keys after logout (should be empty)
+[]

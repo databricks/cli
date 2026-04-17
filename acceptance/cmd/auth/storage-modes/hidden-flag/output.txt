@@ -1,0 +1,47 @@
+Log into a Databricks workspace or account.
+
+This command authenticates via OAuth in the browser and saves the result
+to a configuration profile (in ~/.databrickscfg by default). Other Databricks CLI
+commands and SDKs can use this profile via the --profile flag. For more
+information, see:
+  AWS: https://docs.databricks.com/dev-tools/auth/index.html
+  Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
+  GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html
+
+If no host is provided, the CLI opens login.databricks.com where you can
+authenticate and select a workspace.
+
+The positional argument is resolved as a profile name first. If no profile
+with that name exists and the argument looks like a URL, it is used as a
+host. The positional argument cannot be combined with --host or --profile;
+use the flags directly to specify both.
+
+The host URL may include query parameters to set the workspace and account ID:
+
+  databricks auth login --host "https://<host>?o=<workspace_id>&account_id=<id>"
+
+Note: URLs containing "?" must be quoted to prevent shell interpretation.
+
+If a profile with the given name already exists, it is updated. Otherwise
+a new profile is created.
+
+Usage:
+  databricks auth login [PROFILE] [flags]
+
+Flags:
+      --configure-cluster      Prompts to configure cluster
+      --configure-serverless   Prompts to configure serverless
+  -h, --help                   help for login
+      --scopes string          Comma-separated list of OAuth scopes to request (defaults to 'all-apis')
+      --skip-workspace         Skip workspace selection for account-level access
+      --timeout duration       Timeout for completing login challenge in the browser (default 1h0m0s)
+
+Global Flags:
+      --account-id string              Databricks Account ID
+      --debug                          enable debug logging
+      --experimental-is-unified-host   Flag to indicate if the host is a unified host
+      --host string                    Databricks Host
+  -o, --output type                    output type: text or json (default text)
+  -p, --profile string                 ~/.databrickscfg profile
+  -t, --target string                  bundle target to use (if applicable)
+      --workspace-id string            Databricks Workspace ID

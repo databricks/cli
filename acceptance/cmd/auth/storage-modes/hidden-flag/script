@@ -1,0 +1,4 @@
+# The --secure-storage flag is hidden during MS1. It must not appear in
+# --help output. Route through contains.py so a regression fails loudly
+# regardless of help-text reordering.
+$CLI auth login --help | contains.py !--secure-storage
