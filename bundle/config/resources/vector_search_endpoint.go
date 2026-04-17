@@ -48,7 +48,7 @@ func (e *VectorSearchEndpoint) ResourceDescription() ResourceDescription {
 }
 
 func (e *VectorSearchEndpoint) InitializeURL(baseURL url.URL) {
-	if e.ID == "" {
+	if e.Name == "" {
 		return
 	}
 	baseURL.Path = "compute/vector-search/" + e.Name
