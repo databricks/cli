@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -127,7 +128,7 @@ func TestBackupThirdPartySkillRegularDir(t *testing.T) {
 
 	// destDir should no longer exist.
 	_, err = os.Stat(destDir)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Backup should contain the original file.
 	matches, err := filepath.Glob(filepath.Join(os.TempDir(), "databricks-skill-backup-databricks-*", "databricks", "custom.md"))
@@ -161,7 +162,7 @@ func TestBackupThirdPartySkillSymlinkToOtherTarget(t *testing.T) {
 
 	// destDir (the symlink) should no longer exist.
 	_, err = os.Lstat(destDir)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Original target should be untouched.
 	content, err := os.ReadFile(filepath.Join(otherDir, "other.md"))
@@ -182,7 +183,7 @@ func TestBackupThirdPartySkillRegularFile(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = os.Stat(destDir)
-	assert.True(t, os.IsNotExist(err))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 // --- InstallSkillsForAgents tests ---
@@ -208,7 +209,7 @@ func TestInstallSkillsForAgentsWritesState(t *testing.T) {
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 	assert.Equal(t, "0.1.0", state.Skills["databricks-jobs"])
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (%s).", defaultSkillsRepoRef))
 }
 
 func TestInstallSkillForSingleWritesState(t *testing.T) {
@@ -231,7 +232,7 @@ func TestInstallSkillForSingleWritesState(t *testing.T) {
 	assert.Len(t, state.Skills, 1)
 	assert.Equal(t, "0.1.0", state.Skills["databricks-sql"])
 
-	assert.Contains(t, stderr.String(), "Installed 1 skill (v0.1.3).")
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 1 skill (%s).", defaultSkillsRepoRef))
 }
 
 func TestInstallSkillsSpecificNotFound(t *testing.T) {
@@ -274,7 +275,7 @@ func TestExperimentalSkillsSkippedByDefault(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-experimental")
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (%s).", defaultSkillsRepoRef))
 }
 
 func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
@@ -304,7 +305,7 @@ func TestExperimentalSkillsIncludedWithFlag(t *testing.T) {
 	assert.Contains(t, state.Skills, "databricks-experimental")
 	assert.True(t, state.IncludeExperimental)
 
-	assert.Contains(t, stderr.String(), "Installed 3 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 3 skills (%s).", defaultSkillsRepoRef))
 }
 
 func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
@@ -338,7 +339,7 @@ func TestMinCLIVersionSkipWithWarningForInstallAll(t *testing.T) {
 	assert.Len(t, state.Skills, 2)
 	assert.NotContains(t, state.Skills, "databricks-future")
 
-	assert.Contains(t, stderr.String(), "Installed 2 skills (v0.1.3).")
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (%s).", defaultSkillsRepoRef))
 	assert.Contains(t, logBuf.String(), "requires CLI version 0.300.0")
 }
 
@@ -679,7 +680,7 @@ func TestInstallProjectScopeFiltersIncompatibleAgents(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, stderr.String(), "Skipped No Project Agent: does not support project-scoped skills.")
-	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (v%s).", strings.TrimPrefix(defaultSkillsRepoRef, "v")))
+	assert.Contains(t, stderr.String(), fmt.Sprintf("Installed 2 skills (%s).", defaultSkillsRepoRef))
 }
 
 func TestInstallProjectScopeZeroCompatibleAgentsReturnsError(t *testing.T) {

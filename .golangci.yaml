@@ -20,6 +20,7 @@ linters:
     - copyloopvar
     - forbidigo
     - depguard
+    - usestdlibvars
   settings:
     depguard:
       rules:
@@ -38,6 +39,15 @@ linters:
           deny:
             - pkg: "math/rand$"
               desc: "use math/rand/v2 instead of math/rand"
+        no-stdlib-log:
+          files:
+            - "**"
+            - "!**/bundle/docsgen/**"
+            - "!**/bundle/internal/schema/**"
+            - "!**/bundle/internal/validation/**"
+          deny:
+            - pkg: "log$"
+              desc: "use libs/log instead of the standard library log package"
     forbidigo:
       forbid:
         - pattern: 'term\.IsTerminal'
@@ -60,6 +70,14 @@ linters:
           msg: Use slices.Sort from the standard library instead.
         - pattern: 'sort\.Float64s'
           msg: Use slices.Sort from the standard library instead.
+        - pattern: 'os\.IsNotExist'
+          msg: Use errors.Is(err, fs.ErrNotExist) instead.
+        - pattern: 'os\.IsExist'
+          msg: Use errors.Is(err, fs.ErrExist) instead.
+        - pattern: 'os\.IsPermission'
+          msg: Use errors.Is(err, fs.ErrPermission) instead.
+        - pattern: 'sync\.Once\b($|[^FV])'
+          msg: Use sync.OnceFunc, sync.OnceValue, or sync.OnceValues instead.
       analyze-types: true
     copyloopvar:
       check-alias: true

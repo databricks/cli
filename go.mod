@@ -2,7 +2,7 @@ module github.com/databricks/cli
 
 go 1.25.0
 
-toolchain go1.25.7
+toolchain go1.25.9
 
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
@@ -12,7 +12,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
-	github.com/databricks/databricks-sdk-go v0.126.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.127.0 // Apache-2.0
 	github.com/fatih/color v1.19.0 // MIT
 	github.com/google/jsonschema-go v0.4.2 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
@@ -92,10 +92,10 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/zclconf/go-cty v1.17.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0 // indirect
-	go.opentelemetry.io/otel v1.40.0 // indirect
-	go.opentelemetry.io/otel/metric v1.40.0 // indirect
-	go.opentelemetry.io/otel/trace v1.40.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 // indirect
+	go.opentelemetry.io/otel v1.43.0 // indirect
+	go.opentelemetry.io/otel/metric v1.43.0 // indirect
+	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/time v0.14.0 // indirect

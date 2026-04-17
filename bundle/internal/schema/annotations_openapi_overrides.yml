@@ -635,6 +635,13 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "uc_securable":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceApp:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
   "database_name":
     "description": |-
@@ -730,6 +737,16 @@ github.com/databricks/databricks-sdk-go/service/catalog.AwsSqsQueue:
     "description": |-
       PLACEHOLDER
   "queue_url":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.AzureEncryptionSettings:
+  "azure_cmk_access_connector_id":
+    "description": |-
+      PLACEHOLDER
+  "azure_cmk_managed_identity_id":
+    "description": |-
+      PLACEHOLDER
+  "azure_tenant_id":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/catalog.AzureQueueStorage:
@@ -947,11 +964,41 @@ github.com/databricks/databricks-sdk-go/service/jobs.Webhook:
   "id":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions:
+  "gdrive_options":
+    "description": |-
+      PLACEHOLDER
+  "sharepoint_options":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
   "quartz_cron_schedule":
     "description": |-
       PLACEHOLDER
   "timezone_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.FileIngestionOptions:
+  "corrupt_record_column":
+    "description": |-
+      PLACEHOLDER
+  "ignore_corrupt_files":
+    "description": |-
+      PLACEHOLDER
+  "infer_column_types":
+    "description": |-
+      PLACEHOLDER
+  "rescued_data_column":
+    "description": |-
+      PLACEHOLDER
+  "single_variant_column":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.GoogleDriveOptions:
+  "entity_type":
+    "description": |-
+      PLACEHOLDER
+  "file_ingestion_options":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinition:

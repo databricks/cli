@@ -16,10 +16,10 @@
 /acceptance/labs/           @alexott @nfx
 
 # Apps
-/cmd/apps/                  @databricks/eng-apps-devex
-/cmd/workspace/apps/        @databricks/eng-apps-devex
-/libs/apps/                 @databricks/eng-apps-devex
-/acceptance/apps/           @databricks/eng-apps-devex
+/cmd/apps/                  team:eng-apps-devex
+/cmd/workspace/apps/        team:eng-apps-devex
+/libs/apps/                 team:eng-apps-devex
+/acceptance/apps/           team:eng-apps-devex
 
 # Auth
 /cmd/auth/                  team:platform
@@ -60,4 +60,4 @@
 /internal/                  team:platform
 
 # Experimental
-/experimental/aitools/      @databricks/eng-apps-devex @lennartkats-db
+/experimental/aitools/      team:eng-apps-devex @lennartkats-db

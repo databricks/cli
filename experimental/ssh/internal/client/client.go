@@ -2,8 +2,10 @@ package client
 
 import (
 	"context"
+	"crypto/md5"
 	_ "embed"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -119,6 +121,20 @@ func (o *ClientOptions) Validate() error {
 		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
 	}
 	return nil
+}
+
+// GenerateDefaultConnectionName creates a deterministic connection name from
+// the workspace host and accelerator type. The name includes a hash of the
+// workspace host so that different workspaces produce different names,
+// avoiding SSH known_hosts conflicts.
+func GenerateDefaultConnectionName(host, accelerator string) string {
+	h := md5.Sum([]byte(host))
+	hashStr := hex.EncodeToString(h[:4])
+	if accelerator != "" {
+		acc := strings.ToLower(strings.ReplaceAll(accelerator, "_", "-"))
+		return fmt.Sprintf("databricks-%s-%s", acc, hashStr)
+	}
+	return "databricks-cpu-" + hashStr
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {
@@ -423,7 +439,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
 	log.Debugf(ctx, "Metadata URL: %s", metadataURL)
-	req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL, nil)
 	if err != nil {
 		return 0, "", "", err
 	}
@@ -460,7 +476,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
 
-	err = client.Workspace.MkdirsByPath(ctx, contentDir)
+	err = client.Workspace.MkdirsByPath(ctx, contentDir) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}

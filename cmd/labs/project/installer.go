@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 
@@ -110,7 +111,7 @@ func (i *installer) Install(ctx context.Context) error {
 		}
 	}
 
-	if _, err := os.Stat(i.LibDir()); os.IsNotExist(err) {
+	if _, err := os.Stat(i.LibDir()); errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("no local installation found: %w", err)
 	}
 	err = i.setupPythonVirtualEnvironment(ctx, w)

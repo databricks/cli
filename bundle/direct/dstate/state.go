@@ -3,7 +3,9 @@ package dstate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -118,7 +120,7 @@ func (db *DeploymentState) Open(path string) error {
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			// Create new database with serial=0, will be incremented to 1 in Finalize()
 			db.Data = NewDatabase("", 0)
 			db.Path = path

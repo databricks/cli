@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"maps"
 	"net/http"
 	"os"
@@ -26,7 +27,7 @@ const (
 	skillsRepoOwner      = "databricks"
 	skillsRepoName       = "databricks-agent-skills"
 	skillsRepoPath       = "skills"
-	defaultSkillsRepoRef = "v0.1.3"
+	defaultSkillsRepoRef = "v0.1.4"
 )
 
 // fetchFileFn is the function used to download individual skill files.
@@ -452,7 +453,7 @@ func agentSkillsDirForScope(ctx context.Context, agent *agents.Agent, scope, cwd
 // a symlink pointing to canonicalDir. This preserves skills installed by other tools.
 func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName, agentName string) error {
 	fi, err := os.Lstat(destDir)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	if err != nil {
