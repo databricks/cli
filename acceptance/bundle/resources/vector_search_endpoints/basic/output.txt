@@ -18,7 +18,7 @@ Resources:
   Vector Search Endpoints:
     my_endpoint:
       Name: vs-endpoint-[UNIQUE_NAME]
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/compute/vector-search/vs-endpoint-[UNIQUE_NAME]?o=[NUMID]
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-endpoint-[UNIQUE_NAME]/default/files...

@@ -12,19 +12,11 @@ Deployment complete!
 >>> update_file.py databricks.yml endpoint_type: STANDARD endpoint_type: STORAGE_OPTIMIZED
 
 >>> [CLI] bundle plan
-Warning: invalid value "STORAGE_OPTIMIZED" for enum field. Valid values are [STANDARD]
-  at resources.vector_search_endpoints.my_endpoint.endpoint_type
-  in databricks.yml:11:22
-
 recreate vector_search_endpoints.my_endpoint
 
 Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
-Warning: invalid value "STORAGE_OPTIMIZED" for enum field. Valid values are [STANDARD]
-  at resources.vector_search_endpoints.my_endpoint.endpoint_type
-  in databricks.yml:11:22
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-vs-endpoint-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
@@ -39,10 +31,6 @@ Deployment complete!
 }
 
 >>> [CLI] bundle destroy --auto-approve
-Warning: invalid value "STORAGE_OPTIMIZED" for enum field. Valid values are [STANDARD]
-  at resources.vector_search_endpoints.my_endpoint.endpoint_type
-  in databricks.yml:11:22
-
 The following resources will be deleted:
   delete resources.vector_search_endpoints.my_endpoint
 

@@ -3030,7 +3030,7 @@ resources.synced_database_tables.*.spec.source_table_full_name	string	ALL
 resources.synced_database_tables.*.spec.timeseries_key	string	ALL
 resources.synced_database_tables.*.unity_catalog_provisioning_state	database.ProvisioningInfoState	ALL
 resources.synced_database_tables.*.url	string	INPUT
-resources.vector_search_endpoints.*.budget_policy_id	string	INPUT	STATE
+resources.vector_search_endpoints.*.budget_policy_id	string	ALL
 resources.vector_search_endpoints.*.creation_timestamp	int64	REMOTE
 resources.vector_search_endpoints.*.creator	string	REMOTE
 resources.vector_search_endpoints.*.custom_tags	[]vectorsearch.CustomTag	REMOTE
@@ -3056,6 +3056,7 @@ resources.vector_search_endpoints.*.scaling_info	*vectorsearch.EndpointScalingIn
 resources.vector_search_endpoints.*.scaling_info.requested_min_qps	int64	REMOTE
 resources.vector_search_endpoints.*.scaling_info.state	vectorsearch.ScalingChangeState	REMOTE
 resources.vector_search_endpoints.*.url	string	INPUT
+resources.vector_search_endpoints.*.usage_policy_id	string	INPUT	STATE
 resources.vector_search_endpoints.*.permissions.object_id	string	ALL
 resources.vector_search_endpoints.*.permissions[*]	dresources.StatePermission	ALL
 resources.vector_search_endpoints.*.permissions[*].group_name	string	ALL
