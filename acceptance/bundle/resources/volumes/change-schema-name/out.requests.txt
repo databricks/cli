@@ -1,14 +1,6 @@
 {
   "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
-  "method": "GET",
   "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume"
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
 }
 {
   "method": "GET",
