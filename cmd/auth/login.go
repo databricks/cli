@@ -297,13 +297,15 @@ a new profile is created.
 			// Create a workspace client to list clusters for interactive selection.
 			// We use a custom CredentialsStrategy that wraps the token we just minted,
 			// avoiding the need to spawn a child CLI process (which AuthType "databricks-cli" does).
-			w, err := databricks.NewWorkspaceClient(&databricks.Config{
+			clusterCfg := &databricks.Config{
 				Host:                       authArguments.Host,
 				AccountID:                  authArguments.AccountID,
 				WorkspaceID:                authArguments.WorkspaceID,
 				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 				Credentials:                config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
-			})
+			}
+			hostmetadata.Attach((*config.Config)(clusterCfg))
+			w, err := databricks.NewWorkspaceClient(clusterCfg)
 			if err != nil {
 				return err
 			}
@@ -723,11 +725,13 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 		return "", nil
 	}
 
-	a, err := databricks.NewAccountClient(&databricks.Config{
+	selectCfg := &databricks.Config{
 		Host:        authArguments.Host,
 		AccountID:   authArguments.AccountID,
 		Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
-	})
+	}
+	hostmetadata.Attach((*config.Config)(selectCfg))
+	a, err := databricks.NewAccountClient(selectCfg)
 	if err != nil {
 		return "", err
 	}
