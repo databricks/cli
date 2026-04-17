@@ -8,19 +8,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-trace $CLI bundle validate
-
-trace $CLI bundle summary
-
+title "Initial deployment"
 trace $CLI vector-search-endpoints create-endpoint "${endpoint_name}" STANDARD | jq '{id, name, endpoint_type}'
-
-rm -f out.requests.txt
 trace $CLI bundle deploy
 
-# Get index details
+title "Plan ignores request-only columns_to_sync drift"
+trace $CLI bundle plan
+
 index_name="vs-index-${UNIQUE_NAME}"
 trace $CLI vector-search-indexes get-index "${index_name}" | jq '{name, endpoint_name, index_type, primary_key}'
-
-trace $CLI bundle summary
-
-trace print_requests.py //vector-search/indexes > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

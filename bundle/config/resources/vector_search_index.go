@@ -3,17 +3,22 @@ package resources
 import (
 	"context"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
 type VectorSearchIndex struct {
 	BaseResource
 	vectorsearch.CreateVectorIndexRequest
+
+	// List of grants to apply on this vector search index.
+	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 func (e *VectorSearchIndex) UnmarshalJSON(b []byte) error {
@@ -46,10 +51,18 @@ func (e *VectorSearchIndex) ResourceDescription() ResourceDescription {
 }
 
 func (e *VectorSearchIndex) InitializeURL(baseURL url.URL) {
-	if e.ID == "" {
+	if e.Name == "" {
 		return
 	}
-	baseURL.Path = "compute/vector-search/indexes/" + e.Name
+	catalog, rest, ok := strings.Cut(e.Name, ".")
+	if !ok {
+		return
+	}
+	schema, name, ok := strings.Cut(rest, ".")
+	if !ok {
+		return
+	}
+	baseURL.Path = "explore/data/" + catalog + "/" + schema + "/" + name
 	e.URL = baseURL.String()
 }
 

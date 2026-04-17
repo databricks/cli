@@ -25,6 +25,15 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search index with name %s already exists", createReq.Name)},
 		}
 	}
+	if _, exists := s.VectorSearchEndpoints[createReq.EndpointName]; !exists {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Vector search endpoint %s not found", createReq.EndpointName),
+			},
+		}
+	}
 
 	index := vectorsearch.VectorIndex{
 		Creator:               s.CurrentUser().UserName,

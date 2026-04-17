@@ -1,5 +1,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 endpoint_name="vs-endpoint-${UNIQUE_NAME}"
+index_name="main.default.vs_index_${UNIQUE_NAME}"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
@@ -8,19 +9,15 @@ cleanup() {
 }
 trap cleanup EXIT
 
-trace $CLI bundle validate
-
-trace $CLI bundle summary
-
 trace $CLI vector-search-endpoints create-endpoint "${endpoint_name}" STANDARD | jq '{id, name, endpoint_type}'
+
+trace $CLI bundle plan
 
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
-# Get index details
-index_name="vs-index-${UNIQUE_NAME}"
-trace $CLI vector-search-indexes get-index "${index_name}" | jq '{name, endpoint_name, index_type, primary_key}'
+trace $CLI bundle plan
 
-trace $CLI bundle summary
+trace $CLI grants get table "${index_name}" | jq --sort-keys
 
-trace print_requests.py //vector-search/indexes > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py '//vector-search/indexes' '//permissions' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
