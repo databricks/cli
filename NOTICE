@@ -175,3 +175,7 @@ go-yaml/yaml - https://github.com/yaml/go-yaml
 Copyright (c) 2011-2019 Canonical Ltd
 Copyright (c) 2006-2011 Kirill Simonov
 License - https://github.com/yaml/go-yaml/blob/v3/LICENSE
+
+zalando/go-keyring - https://github.com/zalando/go-keyring
+Copyright (c) 2016 Zalando SE
+License - https://github.com/zalando/go-keyring/blob/master/LICENSE
