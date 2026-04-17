@@ -1,0 +1,16 @@
+bundle:
+  name: test-list-targets
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      host: https://dev.example.com
+  staging:
+    workspace:
+      host: https://staging.example.com
+  prod:
+    mode: production
+    workspace:
+      host: https://prod.example.com

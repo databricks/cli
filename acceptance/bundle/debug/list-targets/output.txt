@@ -1,0 +1,26 @@
+
+>>> [CLI] bundle debug list-targets
+dev (default) development https://dev.example.com
+prod production https://prod.example.com
+staging https://staging.example.com
+
+>>> [CLI] bundle debug list-targets --output json
+{
+  "targets": [
+    {
+      "name": "dev",
+      "default": true,
+      "mode": "development",
+      "host": "https://dev.example.com"
+    },
+    {
+      "name": "prod",
+      "mode": "production",
+      "host": "https://prod.example.com"
+    },
+    {
+      "name": "staging",
+      "host": "https://staging.example.com"
+    }
+  ]
+}
