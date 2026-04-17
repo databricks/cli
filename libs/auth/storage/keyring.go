@@ -44,19 +44,23 @@ func (zalandoBackend) Delete(service, account string) error {
 	return keyring.Delete(service, account)
 }
 
-// KeyringCache stores OAuth tokens in the OS-native secure store.
+// keyringCache stores OAuth tokens in the OS-native secure store.
 // It implements the SDK's cache.TokenCache interface.
-type KeyringCache struct {
+//
+// The type is unexported so that the only way to construct a working instance
+// is NewKeyringCache. A bare &keyringCache{} has a nil backend and a nil
+// errNotFound sentinel, which would panic on first use.
+type keyringCache struct {
 	backend        keyringBackend
 	timeout        time.Duration
 	errNotFound    error
 	keyringSvcName string
 }
 
-// NewKeyringCache returns a KeyringCache backed by the process-wide
-// zalando/go-keyring provider with a 3-second per-operation timeout.
-func NewKeyringCache() *KeyringCache {
-	return &KeyringCache{
+// NewKeyringCache returns a cache.TokenCache backed by the OS-native secure
+// store (via zalando/go-keyring) with a 3-second per-operation timeout.
+func NewKeyringCache() cache.TokenCache {
+	return &keyringCache{
 		backend:        zalandoBackend{},
 		timeout:        defaultKeyringTimeout,
 		errNotFound:    keyring.ErrNotFound,
@@ -66,7 +70,7 @@ func NewKeyringCache() *KeyringCache {
 
 // Store stores t under key. Nil t deletes the entry; deleting a missing
 // entry is not an error.
-func (k *KeyringCache) Store(key string, t *oauth2.Token) error {
+func (k *keyringCache) Store(key string, t *oauth2.Token) error {
 	if t == nil {
 		return k.withTimeout("delete", func() error {
 			err := k.backend.Delete(k.keyringSvcName, key)
@@ -86,7 +90,7 @@ func (k *KeyringCache) Store(key string, t *oauth2.Token) error {
 }
 
 // Lookup returns the token under key or cache.ErrNotFound.
-func (k *KeyringCache) Lookup(key string) (*oauth2.Token, error) {
+func (k *keyringCache) Lookup(key string) (*oauth2.Token, error) {
 	var raw string
 	err := k.withTimeout("get", func() error {
 		got, gerr := k.backend.Get(k.keyringSvcName, key)
@@ -110,8 +114,8 @@ func (k *KeyringCache) Lookup(key string) (*oauth2.Token, error) {
 	return &t, nil
 }
 
-// Compile-time confirmation that KeyringCache satisfies the SDK interface.
-var _ cache.TokenCache = (*KeyringCache)(nil)
+// Compile-time confirmation that keyringCache satisfies the SDK interface.
+var _ cache.TokenCache = (*keyringCache)(nil)
 
 // TimeoutError is returned when a keyring operation exceeds the configured
 // timeout. Callers can use errors.As to detect and present a clear message.
@@ -131,7 +135,7 @@ func (e *TimeoutError) Error() string {
 // goroutine is not cancelled; it will complete (or outlive the process)
 // in the background. This mirrors the pattern used by GitHub CLI; see
 // https://github.com/cli/cli/blob/trunk/internal/keyring/keyring.go.
-func (k *KeyringCache) withTimeout(op string, fn func() error) error {
+func (k *keyringCache) withTimeout(op string, fn func() error) error {
 	ch := make(chan error, 1)
 	go func() {
 		ch <- fn()

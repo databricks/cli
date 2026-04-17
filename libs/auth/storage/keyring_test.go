@@ -73,8 +73,8 @@ func (f *fakeBackend) Delete(service, account string) error {
 // fake uses its own sentinel that the test wires into the cache.
 var errNotFoundSentinel = errors.New("fake keyring: not found")
 
-func newTestCache(backend keyringBackend) *KeyringCache {
-	return &KeyringCache{
+func newTestCache(backend keyringBackend) *keyringCache {
+	return &keyringCache{
 		backend:        backend,
 		timeout:        100 * time.Millisecond,
 		errNotFound:    errNotFoundSentinel,
