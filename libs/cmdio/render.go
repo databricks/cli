@@ -271,8 +271,20 @@ func Render(ctx context.Context, v any) error {
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
+// RenderIterator renders the items produced by i. When the terminal is
+// fully interactive (stdin + stdout + stderr all TTYs) and the caller
+// hasn't supplied a row template, we page through the iterator's JSON
+// representation instead of dumping the full array at once: 50 items
+// at a time, with a prompt on stderr between pages asking whether to
+// continue. Piped output and explicit --output json against a pipe
+// keep the existing non-paged behavior. Commands that do supply a row
+// template also keep the existing non-paged behavior — a follow-up
+// change will add paging for them.
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
+	if c.template == "" && c.capabilities.SupportsPager() && (c.outputFormat == flags.OutputJSON || c.outputFormat == flags.OutputText) {
+		return renderIteratorPagedJSON(ctx, i, c.out)
+	}
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 

@@ -44,6 +44,8 @@ require (
 	gopkg.in/ini.v1 v1.67.1 // Apache-2.0
 )
 
+require golang.org/x/term v0.41.0
+
 require (
 	cloud.google.com/go/auth v0.18.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
