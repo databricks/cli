@@ -1,0 +1,19 @@
+sethome "./home"
+export DATABRICKS_CACHE_DIR="$TEST_TMP_DIR/cache"
+
+# Point a profile at the mock server so auth profiles triggers a host metadata
+# fetch. Without a profile the command does nothing and the cache is never read.
+cat > "./home/.databrickscfg" <<EOF
+[cached]
+host = ${DATABRICKS_HOST}
+token = test-token
+EOF
+
+title "First invocation populates the cache\n"
+$CLI auth profiles --skip-validate --output json || true
+
+title "Second invocation should read from the cache\n"
+$CLI auth profiles --skip-validate --output json || true
+
+title "Only one /.well-known/databricks-config request recorded\n"
+print_requests.py //.well-known/databricks-config --get --sort
