@@ -17,8 +17,9 @@ import (
 
 func newEnvCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "env",
-		Short: "Get authentication environment variables for the current CLI context",
+		Use:    "env",
+		Short:  "Get authentication environment variables for the current CLI context",
+		Hidden: true,
 		Long: `Output the environment variables needed to authenticate as the same identity
 the CLI is currently authenticated as. This is useful for configuring downstream
 tools that accept Databricks authentication via environment variables.`,
