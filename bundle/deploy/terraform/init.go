@@ -58,10 +58,11 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 
 	// Download Terraform to private bin directory.
 	installer := &releases.ExactVersion{
-		Product:    product.Terraform,
-		Version:    version.Must(version.NewVersion("1.5.5")),
-		InstallDir: binDir,
-		Timeout:    1 * time.Minute,
+		Product:          product.Terraform,
+		Version:          version.Must(version.NewVersion("1.5.5")),
+		InstallDir:       binDir,
+		Timeout:          1 * time.Minute,
+		ArmoredPublicKey: hashicorpPublicKey,
 	}
 	execPath, err = installer.Install(ctx)
 	if err != nil {
