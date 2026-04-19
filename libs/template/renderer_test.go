@@ -464,11 +464,6 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 
-	// Git only preserves the executable bit; other permission bits depend on
-	// the checkout umask. Normalize them here so the test is deterministic.
-	require.NoError(t, os.Chmod("./testdata/executable-bit-read/template/script.sh.tmpl", 0o755))
-	require.NoError(t, os.Chmod("./testdata/executable-bit-read/template/not-a-script.tmpl", 0o644))
-
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/executable-bit-read/template", "./testdata/executable-bit-read/library")
 	require.NoError(t, err)
@@ -573,10 +568,6 @@ func TestRendererFileTreeRendering(t *testing.T) {
 	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
-
-	// Git only preserves the executable bit; other permission bits depend on
-	// the checkout umask. Normalize them here so the test is deterministic.
-	require.NoError(t, os.Chmod("./testdata/file-tree-rendering/template/{{.dir_name}}/{{.file_name}}.tmpl", 0o644))
 
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, map[string]any{
