@@ -38,14 +38,16 @@ jobs:
           ref: ${{ inputs.tag || github.ref }}
 
       # Check out the workflow's own ref into a side directory so local
-      # composite actions (e.g. setup-jfrog) are available even when the
-      # built ref is an older tag that predates them.
+      # composite actions (e.g. setup-jfrog) and the goreleaser config are
+      # available even when the built ref is an older tag that predates them.
       - name: Checkout workflow ref for local actions
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.sha }}
           path: .workflow-actions
-          sparse-checkout: .github
+          sparse-checkout: |
+            .github
+            .goreleaser.yaml
 
       - name: Setup JFrog
         uses: ./.workflow-actions/.github/actions/setup-jfrog
@@ -94,7 +96,7 @@ jobs:
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         with:
           version: v2.14.3
-          args: release --skip=publish --skip=docker ${{ (startsWith(github.ref, 'refs/tags/') || inputs.tag) && '' || '--snapshot' }}
+          args: release --skip=publish --config .workflow-actions/.goreleaser.yaml --skip=docker ${{ (startsWith(github.ref, 'refs/tags/') || inputs.tag) && '' || '--snapshot' }}
 
       - name: Verify Windows binary signatures
         run: |
@@ -133,14 +135,16 @@ jobs:
           ref: ${{ inputs.tag || github.ref }}
 
       # Check out the workflow's own ref into a side directory so local
-      # composite actions (e.g. setup-jfrog) are available even when the
-      # built ref is an older tag that predates them.
+      # composite actions (e.g. setup-jfrog) and the goreleaser config are
+      # available even when the built ref is an older tag that predates them.
       - name: Checkout workflow ref for local actions
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.sha }}
           path: .workflow-actions
-          sparse-checkout: .github
+          sparse-checkout: |
+            .github
+            .goreleaser.yaml
 
       - name: Setup JFrog
         uses: ./.workflow-actions/.github/actions/setup-jfrog
