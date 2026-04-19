@@ -31,7 +31,7 @@ jobs:
 
     permissions:
       id-token: write
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -108,6 +108,8 @@ jobs:
         with:
           version: v2.14.3
           args: release ${{ !inputs.publish && '--skip=publish' || '' }} --config .workflow-actions/.goreleaser.yaml --skip=docker ${{ (!startsWith(github.ref, 'refs/tags/') && !inputs.tag) && '--snapshot' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Verify Windows binary signatures
         run: |
@@ -135,7 +137,7 @@ jobs:
 
     permissions:
       id-token: write
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout repository
