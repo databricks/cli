@@ -50,16 +50,18 @@ tasks:
     cmds:
       - go tool -modfile=tools/go.mod golangci-lint run --fix
 
-  lint:check:
-    desc: Lint all Go files without fixes (root module)
+  # `golangci-lint run` typechecks, so it stops at go.mod boundaries. We have
+  # one task per Go module; `lint:go` composes them to cover the whole repo.
+  lint:go:root:
+    desc: Lint Go files in the root module (no fixes)
     sources:
       - "**/*.go"
       - .golangci.yaml
     cmds:
       - go tool -modfile=tools/go.mod golangci-lint run ./...
 
-  lint:tools:
-    desc: Lint tools/ module
+  lint:go:tools:
+    desc: Lint Go files in tools/ module
     dir: tools
     sources:
       - "**/*.go"
@@ -69,8 +71,8 @@ tasks:
     cmds:
       - go tool -modfile={{.ROOT_DIR}}/tools/go.mod golangci-lint run ./...
 
-  lint:codegen:
-    desc: Lint bundle/internal/tf/codegen module
+  lint:go:codegen:
+    desc: Lint Go files in bundle/internal/tf/codegen module
     dir: bundle/internal/tf/codegen
     sources:
       - "**/*.go"
@@ -79,6 +81,10 @@ tasks:
       - go.sum
     cmds:
       - go tool -modfile={{.ROOT_DIR}}/tools/go.mod golangci-lint run ./...
+
+  lint:go:
+    desc: Lint Go files across all modules (root, tools, codegen)
+    deps: ['lint:go:root', 'lint:go:tools', 'lint:go:codegen']
 
   # --- Formatting ---
 
