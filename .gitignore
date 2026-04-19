@@ -36,6 +36,9 @@ test-output-acc.json
 # Taskfile cache
 .task/
 
+# Snapshot binary from 'task snapshot'
+.databricks/
+
 # Built for 'task fmt' and yamlcheck.py in acceptance tests
 tools/yamlfmt
 tools/yamlfmt.exe

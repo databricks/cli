@@ -4,8 +4,6 @@ vars:
   GO_TOOL: go tool -modfile=tools/go.mod
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
-  MERGE_BASE:
-    sh: git merge-base main HEAD
 
 tasks:
   default:
@@ -15,7 +13,7 @@ tasks:
       - task: fmt:full
       - task: lint:full
       - task: test
-      - task: schema
+      - task: generate:schema
       - task: generate:validation
       - task: python:lint
       - task: python:test
@@ -479,22 +477,79 @@ tasks:
       - "deco env run -i -n aws-prod-ucws -- ./task dbr:integration"
 
   # --- Code generation ---
+  #
+  # Each generator declares tight `sources:` so Task's checksum cache re-runs only
+  # when inputs actually change. The reflection-based generators (schema, docs,
+  # validation) pick up SDK type changes via go.mod / go.sum. The aggregator
+  # `generate` orchestrates all of them; individual tasks can be invoked standalone.
 
-  schema:
-    desc: Generate bundle JSON schema (skipped if schema sources unchanged vs merge base)
-    status:
-      - git diff --quiet {{.MERGE_BASE}} -- bundle/internal/schema/
-      - test -f bundle/schema/jsonschema.json
+  generate:
+    desc: Run all generators (CLI commands, schema, docs, validation, direct, python)
+    cmds:
+      # Runs first: may bump go.mod (SDK version), which invalidates reflection-
+      # based generators below so they re-run automatically.
+      - task: generate:commands
+      - task: generate:schema
+      - task: generate:schema-docs
+      - task: generate:validation
+      - task: generate:docs
+      - task: generate:direct
+      - task: python:codegen
+
+  # Drives genkit from a universe checkout. Genkit writes CLI command files into
+  # cmd/workspace and cmd/account, bumps the SDK version in go.mod, and invokes
+  # tools/post-generate.sh (configured in .codegen.json) to post-process its
+  # output (tagging.py relocation, whitespace cleanup).
+  generate:commands:
+    desc: Generate CLI commands from OpenAPI spec (requires universe repo)
+    sources:
+      - .codegen/_openapi_sha
+      - .gitattributes.manual
+      - tools/post-generate.sh
+    vars:
+      UNIVERSE_DIR:
+        sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
+    cmds:
+      - |
+        echo "Checking out universe at SHA: $(cat .codegen/_openapi_sha)"
+        cd {{.UNIVERSE_DIR}} && \
+          git cat-file -e $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha) 2>/dev/null || \
+          (git fetch --filter=blob:none origin master && \
+          git checkout $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha))
+      - echo "Building genkit..."
+      - cd {{.UNIVERSE_DIR}} && bazel build //openapi/genkit
+      - echo "Generating CLI code..."
+      - "{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk"
+      - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
+      - "-go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null"
+
+  generate:schema:
+    desc: Generate bundle JSON schema
+    sources:
+      - bundle/internal/schema/*.go
+      - exclude: bundle/internal/schema/*_test.go
+      - bundle/internal/schema/annotations*.yml
+      - bundle/config/**/*.go
+      - exclude: bundle/config/**/*_test.go
+      - libs/jsonschema/**/*.go
+      - exclude: libs/jsonschema/**/*_test.go
+      - go.mod
+      - go.sum
+    generates:
+      - bundle/schema/jsonschema.json
     cmds:
       - go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
-  schema:for-docs:
+  generate:schema-docs:
     desc: Generate bundle JSON schema for documentation
     sources:
       - bundle/internal/schema/*.go
+      - exclude: bundle/internal/schema/*_test.go
       - bundle/internal/schema/annotations*.yml
       - bundle/config/**/*.go
+      - exclude: bundle/config/**/*_test.go
       - libs/jsonschema/**/*.go
+      - exclude: libs/jsonschema/**/*_test.go
       - go.mod
       - go.sum
     generates:
@@ -502,15 +557,19 @@ tasks:
     cmds:
       - go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs
 
-  docs:
+  generate:docs:
     desc: Generate bundle documentation
     sources:
       - bundle/docsgen/*.go
+      - exclude: bundle/docsgen/*_test.go
       - bundle/docsgen/templates/**
       - bundle/internal/schema/annotations*.yml
       - bundle/internal/annotation/*.go
+      - exclude: bundle/internal/annotation/*_test.go
       - bundle/config/**/*.go
+      - exclude: bundle/config/**/*_test.go
       - libs/jsonschema/**/*.go
+      - exclude: libs/jsonschema/**/*_test.go
       - go.mod
       - go.sum
     generates:
@@ -520,10 +579,18 @@ tasks:
       - go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
   generate:validation:
-    desc: Generate enum and required field validation code (skipped if sources unchanged vs merge base)
-    status:
-      - git diff --quiet {{.MERGE_BASE}} -- bundle/internal/validation/
-      - test -d bundle/internal/validation/generated
+    desc: Generate enum and required field validation code
+    sources:
+      - bundle/internal/validation/*.go
+      - exclude: bundle/internal/validation/*_test.go
+      - bundle/config/**/*.go
+      - exclude: bundle/config/**/*_test.go
+      - libs/structs/**/*.go
+      - exclude: libs/structs/**/*_test.go
+      - go.mod
+      - go.sum
+    generates:
+      - bundle/internal/validation/generated/**/*.go
     cmds:
       - go run ./bundle/internal/validation/.
       - gofmt -w -s ./bundle/internal/validation/generated
@@ -533,7 +600,7 @@ tasks:
     deps: ['generate:direct-apitypes', 'generate:direct-resources']
 
   generate:direct-apitypes:
-    deps: ['codegen:openapi-json']
+    deps: ['generate:openapi-json']
     sources:
       - bundle/direct/tools/generate_apitypes.py
       - .codegen/openapi.json
@@ -571,29 +638,7 @@ tasks:
     cmds:
       - rm -f bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/resources.generated.yml
 
-  generate:
-    desc: Generate CLI code from OpenAPI spec (requires universe repo)
-    vars:
-      UNIVERSE_DIR:
-        sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
-    cmds:
-      - |
-        echo "Checking out universe at SHA: $(cat .codegen/_openapi_sha)"
-        cd {{.UNIVERSE_DIR}} && \
-          git cat-file -e $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha) 2>/dev/null || \
-          (git fetch --filter=blob:none origin master && \
-          git checkout $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha))
-      - echo "Building genkit..."
-      - cd {{.UNIVERSE_DIR}} && bazel build //openapi/genkit
-      - echo "Generating CLI code..."
-      - "{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk"
-      - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
-      - "-go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null"
-      - echo "Updating direct engine config..."
-      - task: generate:direct
-      - go test ./bundle/internal/schema
-
-  codegen:openapi-json:
+  generate:openapi-json:
     desc: Download OpenAPI spec (triggered by _openapi_sha change)
     sources:
       - .codegen/_openapi_sha

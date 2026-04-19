@@ -17,10 +17,10 @@ make lintfull
 make test
 
 # 4. If you changed bundle config structs or schema-related code:
-make schema
+task generate:schema
 
 # 5. If you changed files in python/:
-cd python && make codegen && make test && make lint && make docs
+task python:codegen python:test python:lint python:docs
 
 # 6. If you changed experimental/aitools or experimental/ssh:
 make test-exp-aitools   # only if aitools code changed

@@ -38,9 +38,10 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 ### Specialized Commands
 
-- `task schema` - Generate bundle JSON schema
-- `task docs` - Generate bundle documentation
-- `task generate` - Generate CLI code from OpenAPI spec (requires universe repo)
+- `task generate:schema` - Generate bundle JSON schema
+- `task generate:docs` - Generate bundle documentation
+- `task generate:commands` - Generate CLI commands from OpenAPI spec (requires universe repo)
+- `task generate` - Run all generators
 
 ### Git Commands
 

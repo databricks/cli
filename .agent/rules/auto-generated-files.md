@@ -64,23 +64,25 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
 
 ### Core generation commands
 
+- Everything, in one shot:
+  - `task generate` — aggregator that runs all generators below
 - OpenAPI SDK/CLI command stubs and related generated artifacts:
-  - `make generate`
-  - Includes generated `cmd/account/**`, `cmd/workspace/**`, `.gitattributes`, `internal/genkit/tagging.py`, and direct engine refresh.
+  - `task generate:commands`
+  - Includes generated `cmd/account/**`, `cmd/workspace/**`, `.gitattributes`, `internal/genkit/tagging.py`.
 - Direct engine generated YAML:
-  - `make generate-direct` (or `make generate-direct-apitypes`, `make generate-direct-resources`)
+  - `task generate:direct` (or `task generate:direct-apitypes`, `task generate:direct-resources`)
 - Bundle schemas:
-  - `make schema`
-  - `make schema-for-docs`
+  - `task generate:schema`
+  - `task generate:schema-docs`
   - This can also refresh `bundle/internal/schema/annotations_openapi.yml` when OpenAPI annotation extraction is enabled.
 - Bundle docs:
-  - `make docs`
+  - `task generate:docs`
 - Validation generated code:
-  - `make generate-validation`
+  - `task generate:validation`
 - Mock files:
   - `go run github.com/vektra/mockery/v2@b9df18e0f7b94f0bc11af3f379c8a9aea1e1e8da`
 - Python bundle codegen:
-  - `make -C python codegen`
+  - `task python:codegen`
 
 ### Acceptance and test generated outputs
 

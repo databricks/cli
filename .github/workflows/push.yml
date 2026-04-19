@@ -340,8 +340,8 @@ jobs:
 
       - name: Verify that the schema is up to date
         run: |
-          if ! ( ./task --force schema && git diff --exit-code ); then
-            echo "The schema is not up to date. Please run 'task schema' and commit the changes."
+          if ! ( ./task --force generate:schema && git diff --exit-code ); then
+            echo "The schema is not up to date. Please run 'task generate:schema' and commit the changes."
             exit 1
           fi
 

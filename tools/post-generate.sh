@@ -2,19 +2,15 @@
 
 set -euxo pipefail
 
+# This script runs inside `task generate:commands` via .codegen.json's
+# `toolchain.post_generate`. It post-processes files that genkit just wrote
+# (generated commands in cmd/, tagging.py, tagging.yml). Generators that read
+# bundle config (schema, schema-for-docs, validation, docs) and Python codegen
+# live as separate Taskfile tasks and run from the `generate` aggregator — go.mod
+# being in their sources invalidates their caches when genkit bumps the SDK.
+
 # Ensure the SDK version is consistent with the OpenAPI SHA the CLI is generated from.
 go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
-
-# Generate the bundle JSON schema.
-make schema
-
-# Fetch version tags (required for make schema-for-docs).
-git fetch origin 'refs/tags/v*:refs/tags/v*'
-
-make schema-for-docs
-
-# Generate bundle validation code for enuma and required fields.
-make generate-validation
 
 # Remove the next-changelog.yml workflow.
 rm .github/workflows/next-changelog.yml
@@ -37,8 +33,5 @@ else
 fi
 go tool -modfile=tools/go.mod yamlfmt .github/workflows/tagging.yml
 
-# Generate PyDABs code.
-make -C python codegen
-
 # Fix whitespace issues in the generated code.
-make wsfix
+./tools/validate_whitespace.py --fix
