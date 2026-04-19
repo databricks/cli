@@ -91,6 +91,9 @@ tasks:
 
   fmt:go:
     desc: Format Go files
+    # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
+    # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
+    # in a single invocation.
     sources:
       - "**/*.go"
       - .golangci.yaml
