@@ -1,14 +1,21 @@
 package main
 
 import (
+	"fmt"
 	"maps"
+	"os"
 	"slices"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
-type targetMapping struct {
-	prefixes []string
-	target   string
+// ciTargetTasks maps the dash-separated output name used by CI to the
+// colon-separated Taskfile task name whose `sources:` define its trigger set.
+var ciTargetTasks = map[string]string{
+	"test-exp-aitools": "test:exp-aitools",
+	"test-exp-ssh":     "test:exp-ssh",
+	"test-pipelines":   "test:pipelines",
 }
 
 // commonTriggerPatterns lists patterns that trigger all test targets.
@@ -18,44 +25,70 @@ var commonTriggerPatterns = []string{
 	".github/actions/setup-build-environment/",
 }
 
-var fileTargetMappings = []targetMapping{
-	{
-		prefixes: slices.Concat(commonTriggerPatterns, []string{
-			// Specify files that match targets below and should still trigger the "test" target.
-		}),
-		target: "test",
-	},
-	{
-		prefixes: slices.Concat(commonTriggerPatterns, []string{
-			"experimental/aitools/",
-		}),
-		target: "test-exp-aitools",
-	},
-	{
-		prefixes: slices.Concat(commonTriggerPatterns, []string{
-			"experimental/ssh/",
-			"acceptance/ssh/",
-		}),
-		target: "test-exp-ssh",
-	},
-	{
-		prefixes: slices.Concat(commonTriggerPatterns, []string{
-			"cmd/pipelines/",
-			"acceptance/pipelines/",
-		}),
-		target: "test-pipelines",
-	},
+type targetMapping struct {
+	prefixes []string
+	target   string
+}
+
+type taskfile struct {
+	Tasks map[string]taskfileTask `yaml:"tasks"`
+}
+
+type taskfileTask struct {
+	Sources []string `yaml:"sources"`
+}
+
+// LoadTargetMappings reads Taskfile.yml and builds target mappings for CI tasks
+// by extracting `sources:` from each task listed in ciTargetTasks.
+func LoadTargetMappings(taskfilePath string) ([]targetMapping, error) {
+	data, err := os.ReadFile(taskfilePath)
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", taskfilePath, err)
+	}
+	var tf taskfile
+	if err := yaml.Unmarshal(data, &tf); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", taskfilePath, err)
+	}
+
+	mappings := []targetMapping{
+		{prefixes: slices.Clone(commonTriggerPatterns), target: "test"},
+	}
+	for _, outputName := range slices.Sorted(maps.Keys(ciTargetTasks)) {
+		taskName := ciTargetTasks[outputName]
+		t, ok := tf.Tasks[taskName]
+		if !ok {
+			return nil, fmt.Errorf("task %q not found in %s", taskName, taskfilePath)
+		}
+		if len(t.Sources) == 0 {
+			return nil, fmt.Errorf("task %q in %s has no sources", taskName, taskfilePath)
+		}
+		prefixes := slices.Clone(commonTriggerPatterns)
+		for _, src := range t.Sources {
+			prefixes = append(prefixes, sourceToPrefix(src))
+		}
+		mappings = append(mappings, targetMapping{prefixes: prefixes, target: outputName})
+	}
+	return mappings, nil
+}
+
+// sourceToPrefix converts a Taskfile source glob like "dir/**" into a prefix
+// suitable for strings.HasPrefix matching ("dir/").
+func sourceToPrefix(src string) string {
+	src = strings.TrimSuffix(src, "/**")
+	if !strings.HasSuffix(src, "/") {
+		src += "/"
+	}
+	return src
 }
 
 // GetTargets matches files to targets based on patterns and returns the matched targets.
-func GetTargets(files []string) []string {
+func GetTargets(files []string, mappings []targetMapping) []string {
 	targetSet := make(map[string]bool)
 	unmatchedFiles := []string{}
 
 	for _, file := range files {
-		// Check all mappings for this file (a file can match multiple targets).
 		matched := false
-		for _, mapping := range fileTargetMappings {
+		for _, mapping := range mappings {
 			for _, prefix := range mapping.prefixes {
 				if strings.HasPrefix(file, prefix) {
 					targetSet[mapping.target] = true
@@ -69,12 +102,10 @@ func GetTargets(files []string) []string {
 		}
 	}
 
-	// If there are unmatched files, add the "test" target to run all tests.
 	if len(unmatchedFiles) > 0 {
 		targetSet["test"] = true
 	}
 
-	// If there are no targets, add the "test" target to run all tests.
 	if len(targetSet) == 0 {
 		return []string{"test"}
 	}
