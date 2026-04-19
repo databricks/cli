@@ -91,6 +91,13 @@ jobs:
       - name: Hide snapshot tag to outsmart GoReleaser
         run: git tag -d snapshot || true
 
+      # Overlay scripts from the workflow ref so goreleaser hooks resolve
+      # correctly even when building an older tag that predates them.
+      - name: Sync workflow scripts to working directory
+        run: |
+          mkdir -p .github/scripts
+          cp -r .workflow-actions/.github/scripts/. .github/scripts/
+
       # Use --snapshot for branch builds (non-tag refs).
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
