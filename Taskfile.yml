@@ -1,0 +1,628 @@
+version: '3'
+
+vars:
+  GO_TOOL: go tool -modfile=tools/go.mod
+  TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
+  ACCEPTANCE_TEST_FILTER: ""
+  MERGE_BASE:
+    sh: git merge-base main HEAD
+
+tasks:
+  default:
+    desc: Run all checks, fmt, lint, tests, and regeneration
+    cmds:
+      - task: checks
+      - task: fmt:full
+      - task: lint:full
+      - task: test
+      - task: schema
+      - task: generate:validation
+      - task: python:lint
+      - task: python:test
+
+  # --- Tool binaries (for acceptance tests that call them by path) ---
+
+  _build-yamlfmt:
+    internal: true
+    sources:
+      - tools/go.mod
+      - tools/go.sum
+    generates:
+      - tools/yamlfmt
+    cmds:
+      - go build -modfile=tools/go.mod -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
+
+  # --- Linting ---
+
+  lint:
+    desc: Lint changed Go files (root module, diff against main)
+    sources:
+      - "**/*.go"
+      - .golangci.yaml
+    cmds:
+      - ./tools/lintdiff.py go tool -modfile=tools/go.mod golangci-lint run --fix
+
+  lint:full:
+    desc: Lint all Go files with fixes (root module)
+    sources:
+      - "**/*.go"
+      - .golangci.yaml
+    cmds:
+      - go tool -modfile=tools/go.mod golangci-lint run --fix
+
+  lint:check:
+    desc: Lint all Go files without fixes (root module)
+    sources:
+      - "**/*.go"
+      - .golangci.yaml
+    cmds:
+      - go tool -modfile=tools/go.mod golangci-lint run ./...
+
+  lint:tools:
+    desc: Lint tools/ module
+    dir: tools
+    sources:
+      - "**/*.go"
+    cmds:
+      - go tool -modfile={{.ROOT_DIR}}/tools/go.mod golangci-lint run ./...
+
+  lint:codegen:
+    desc: Lint bundle/internal/tf/codegen module
+    dir: bundle/internal/tf/codegen
+    sources:
+      - "**/*.go"
+    cmds:
+      - go tool -modfile={{.ROOT_DIR}}/tools/go.mod golangci-lint run ./...
+
+  # --- Formatting ---
+
+  fmt:
+    desc: Format changed files (Python, Go, YAML; diff against main)
+    cmds:
+      - ruff format -n
+      - ./tools/lintdiff.py go tool -modfile=tools/go.mod golangci-lint fmt
+      - go tool -modfile=tools/go.mod yamlfmt .
+
+  fmt:full:
+    desc: Format all files (Python, Go, YAML)
+    cmds:
+      - ruff format -n
+      - go tool -modfile=tools/go.mod golangci-lint fmt
+      - go tool -modfile=tools/go.mod yamlfmt .
+
+  # --- Code checks ---
+
+  tidy:
+    desc: Run go mod tidy
+    sources:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+    cmds:
+      - go mod tidy
+
+  ws:
+    desc: Check whitespace
+    sources:
+      - "**/*.go"
+      - "**/*.py"
+      - "**/*.yml"
+      - "**/*.yaml"
+      - "**/*.md"
+    cmds:
+      - ./tools/validate_whitespace.py
+
+  ws:fix:
+    desc: Fix whitespace issues
+    cmds:
+      - ./tools/validate_whitespace.py --fix
+
+  links:
+    desc: Update GitHub links in docs
+    sources:
+      - "**/*.md"
+    cmds:
+      - ./tools/update_github_links.py
+
+  deadcode:
+    desc: Check for dead code
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    cmds:
+      - ./tools/check_deadcode.py
+
+  checks:
+    desc: Run quick checks (tidy, whitespace, links, deadcode)
+    deps: [tidy, ws, links, deadcode]
+
+  install-pythons:
+    desc: Install Python 3.9-3.13 via uv
+    cmds:
+      - uv python install 3.9 3.10 3.11 3.12 3.13
+
+  # --- Building ---
+
+  build:
+    desc: Build the CLI binary
+    deps: [tidy]
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - databricks
+    cmds:
+      - go build
+
+  build:vm:
+    desc: Build in VM environment (no VCS stamping)
+    deps: [tidy]
+    sources:
+      - "**/*.go"
+    cmds:
+      - go build -buildvcs=false
+
+  snapshot:
+    desc: Build snapshot binary to .databricks/databricks
+    cmds:
+      - go build -o .databricks/databricks
+
+  snapshot:release:
+    desc: Build release binaries locally without uploading
+    cmds:
+      - goreleaser release --clean --skip docker --snapshot
+
+  # --- Testing ---
+
+  test:
+    desc: Run short unit and acceptance tests (in parallel)
+    deps:
+      - task: test:unit
+        vars:
+          TEST_PACKAGES: "{{.TEST_PACKAGES}}"
+      - task: test:acc
+        vars:
+          ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
+    cmds:
+      - cat test-output-unit.json test-output-acc.json > test-output.json
+
+  test:slow:
+    desc: Run all unit and acceptance tests (in parallel, no -short)
+    deps:
+      - task: test:slow-unit
+        vars:
+          TEST_PACKAGES: "{{.TEST_PACKAGES}}"
+      - task: test:slow-acc
+        vars:
+          ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
+    cmds:
+      - cat test-output-unit.json test-output-acc.json > test-output.json
+
+  test:unit:
+    desc: Run short unit tests
+    sources:
+      - "**/*.go"
+    vars:
+      TEST_PACKAGES: '{{.TEST_PACKAGES | default "./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... ."}}'
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output-unit.json \
+          --rerun-fails \
+          --packages "{{.TEST_PACKAGES}}" \
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -short
+
+  test:slow-unit:
+    desc: Run all unit tests (no -short)
+    sources:
+      - "**/*.go"
+    vars:
+      TEST_PACKAGES: '{{.TEST_PACKAGES | default "./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... ."}}'
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output-unit.json \
+          --rerun-fails \
+          --packages "{{.TEST_PACKAGES}}" \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}
+
+  test:acc:
+    desc: Run short acceptance tests
+    sources:
+      - "**/*.go"
+      - acceptance/**
+    vars:
+      ACCEPTANCE_TEST_FILTER: '{{.ACCEPTANCE_TEST_FILTER | default ""}}'
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output-acc.json \
+          --rerun-fails \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -short{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+
+  test:slow-acc:
+    desc: Run all acceptance tests (no -short)
+    sources:
+      - "**/*.go"
+      - acceptance/**
+    vars:
+      ACCEPTANCE_TEST_FILTER: '{{.ACCEPTANCE_TEST_FILTER | default ""}}'
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output-acc.json \
+          --rerun-fails \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+
+  test:update:
+    desc: Update acceptance test output (local)
+    cmds:
+      - "-go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-30m}"
+
+  test:update-templates:
+    desc: Update acceptance test template output
+    cmds:
+      - "-go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-30m}"
+
+  test:update-aws:
+    desc: Update acceptance test output (integration, requires deco access)
+    cmds:
+      - "deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=1 go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
+
+  test:update-all:
+    desc: Update all acceptance test outputs
+    deps: ['test:update', 'test:update-aws']
+
+  generate:out-test-toml:
+    desc: Regenerate out.test.toml files without running tests
+    cmds:
+      - "go test ./acceptance -run '^TestAccept$' -only-out-test-toml -timeout=${LOCAL_TIMEOUT:-30m}"
+
+  slowest:
+    desc: Show 50 slowest tests from last run
+    cmds:
+      - "{{.GO_TOOL}} gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50"
+
+  cover:
+    desc: Run tests with coverage
+    vars:
+      ACCEPTANCE_TEST_FILTER: '{{.ACCEPTANCE_TEST_FILTER | default ""}}'
+      TEST_PACKAGES: '{{.TEST_PACKAGES | default "./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... ."}}'
+    cmds:
+      - rm -fr ./acceptance/build/cover/
+      - |
+        VERBOSE_TEST=1 {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output.json \
+          --rerun-fails \
+          --packages "{{.TEST_PACKAGES}}" \
+          -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT:-30m}
+      - |
+        VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile test-output.json \
+          --rerun-fails \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+      - rm -fr ./acceptance/build/cover-merged/
+      - mkdir -p acceptance/build/cover-merged/
+      - "go tool covdata merge -i $(printf '%s,' acceptance/build/cover/* | sed 's/,$//') -o acceptance/build/cover-merged/"
+      - go tool covdata textfmt -i acceptance/build/cover-merged -o coverage-acceptance.txt
+
+  showcover:
+    desc: Open unit test coverage report in browser
+    cmds:
+      - go tool cover -html=coverage.txt
+
+  showcover:acc:
+    desc: Open acceptance test coverage report in browser
+    cmds:
+      - go tool cover -html=coverage-acceptance.txt
+
+  # --- Specialized test suites ---
+
+  # The `sources:` on each test:* subproject target is the single source of truth for:
+  #   1. Taskfile's own checksum-based caching (skip re-run if nothing changed)
+  #   2. CI triggering — tools/testmask reads these sources to decide which CI jobs to run
+  # Keep patterns narrow and specific. Changes to files outside these paths trigger the
+  # generic `test` target (the catch-all) instead.
+
+  test:exp-aitools:
+    desc: Run experimental aitools unit and acceptance tests (in parallel)
+    sources:
+      - experimental/aitools/**
+      - acceptance/apps/**
+    deps:
+      - task: test:unit
+        vars:
+          TEST_PACKAGES: ./experimental/aitools/...
+      - task: test:acc
+        vars:
+          ACCEPTANCE_TEST_FILTER: TestAccept/apps
+    cmds:
+      - cat test-output-unit.json test-output-acc.json > test-output.json
+
+  test:exp-ssh:
+    desc: Run experimental SSH unit and acceptance tests (in parallel)
+    sources:
+      - experimental/ssh/**
+      - acceptance/ssh/**
+    deps:
+      - task: test:unit
+        vars:
+          TEST_PACKAGES: ./experimental/ssh/...
+      - task: test:acc
+        vars:
+          ACCEPTANCE_TEST_FILTER: TestAccept/ssh
+    cmds:
+      - cat test-output-unit.json test-output-acc.json > test-output.json
+
+  test:pipelines:
+    desc: Run pipelines unit and acceptance tests (in parallel)
+    sources:
+      - cmd/pipelines/**
+      - acceptance/pipelines/**
+    deps:
+      - task: test:unit
+        vars:
+          TEST_PACKAGES: ./cmd/pipelines/...
+      - task: test:acc
+        vars:
+          ACCEPTANCE_TEST_FILTER: TestAccept/pipelines
+    cmds:
+      - cat test-output-unit.json test-output-acc.json > test-output.json
+
+  # --- Integration tests ---
+
+  integration:
+    desc: Run integration tests (requires Databricks workspace)
+    deps: [install-pythons]
+    cmds:
+      - |
+        go run -modfile=tools/go.mod ./tools/testrunner/main.go \
+          {{.GO_TOOL}} gotestsum \
+          --format github-actions \
+          --rerun-fails \
+          --jsonfile output.json \
+          --packages "./acceptance ./integration/..." \
+          -- -parallel 4 -timeout=2h
+
+  integration:short:
+    desc: Run short integration tests
+    deps: [install-pythons]
+    cmds:
+      - |
+        DATABRICKS_TEST_SKIPLOCAL=1 VERBOSE_TEST=1 \
+        go run -modfile=tools/go.mod ./tools/testrunner/main.go \
+          {{.GO_TOOL}} gotestsum \
+          --format github-actions \
+          --rerun-fails \
+          --jsonfile output.json \
+          --packages "./acceptance ./integration/..." \
+          -- -parallel 4 -timeout=2h -short
+
+  dbr:integration:
+    desc: Run DBR acceptance tests on Databricks Runtime
+    deps: [install-pythons]
+    cmds:
+      - "DBR_ENABLED=true go test -v -timeout 4h -run TestDbrAcceptance$ ./acceptance"
+
+  dbr:test:
+    desc: Run DBR tests via deco env (requires deco + aws-prod-ucws access)
+    cmds:
+      - "deco env run -i -n aws-prod-ucws -- go tool -modfile=tools/go.mod task dbr:integration"
+
+  # --- Code generation ---
+
+  schema:
+    desc: Generate bundle JSON schema (skipped if schema sources unchanged vs merge base)
+    status:
+      - git diff --quiet {{.MERGE_BASE}} -- bundle/internal/schema/
+      - test -f bundle/schema/jsonschema.json
+    cmds:
+      - go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
+
+  schema:for-docs:
+    desc: Generate bundle JSON schema for documentation
+    cmds:
+      - go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs
+
+  docs:
+    desc: Generate bundle documentation
+    cmds:
+      - go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
+
+  generate:validation:
+    desc: Generate enum and required field validation code (skipped if sources unchanged vs merge base)
+    status:
+      - git diff --quiet {{.MERGE_BASE}} -- bundle/internal/validation/
+      - test -d bundle/internal/validation/generated
+    cmds:
+      - go run ./bundle/internal/validation/.
+      - gofmt -w -s ./bundle/internal/validation/generated
+
+  generate:direct:
+    desc: Generate direct engine config (apitypes + resources)
+    deps: ['generate:direct-apitypes', 'generate:direct-resources']
+
+  generate:direct-apitypes:
+    deps: ['codegen:openapi-json']
+    sources:
+      - bundle/direct/tools/generate_apitypes.py
+      - .codegen/openapi.json
+      - acceptance/bundle/refschema/out.fields.txt
+    generates:
+      - bundle/direct/dresources/apitypes.generated.yml
+    cmds:
+      - >
+        python3 bundle/direct/tools/generate_apitypes.py
+        .codegen/openapi.json
+        acceptance/bundle/refschema/out.fields.txt
+        > bundle/direct/dresources/apitypes.generated.yml
+
+  generate:direct-resources:
+    deps: ['generate:direct-apitypes']
+    sources:
+      - bundle/direct/tools/generate_resources.py
+      - .codegen/openapi.json
+      - bundle/direct/dresources/apitypes.generated.yml
+      - bundle/direct/dresources/apitypes.yml
+      - acceptance/bundle/refschema/out.fields.txt
+    generates:
+      - bundle/direct/dresources/resources.generated.yml
+    cmds:
+      - >
+        python3 bundle/direct/tools/generate_resources.py
+        .codegen/openapi.json
+        bundle/direct/dresources/apitypes.generated.yml
+        bundle/direct/dresources/apitypes.yml
+        acceptance/bundle/refschema/out.fields.txt
+        > bundle/direct/dresources/resources.generated.yml
+
+  generate:direct-clean:
+    desc: Remove generated direct engine files
+    cmds:
+      - rm -f bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/resources.generated.yml
+
+  generate:
+    desc: Generate CLI code from OpenAPI spec (requires universe repo)
+    vars:
+      UNIVERSE_DIR:
+        sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
+    cmds:
+      - |
+        echo "Checking out universe at SHA: $(cat .codegen/_openapi_sha)"
+        cd {{.UNIVERSE_DIR}} && \
+          git cat-file -e $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha) 2>/dev/null || \
+          (git fetch --filter=blob:none origin master && \
+          git checkout $(cat {{.ROOT_DIR}}/.codegen/_openapi_sha))
+      - echo "Building genkit..."
+      - cd {{.UNIVERSE_DIR}} && bazel build //openapi/genkit
+      - echo "Generating CLI code..."
+      - "{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk"
+      - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
+      - "-go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null"
+      - echo "Updating direct engine config..."
+      - task: generate:direct
+      - go test ./bundle/internal/schema
+
+  codegen:openapi-json:
+    desc: Download OpenAPI spec (triggered by _openapi_sha change)
+    sources:
+      - .codegen/_openapi_sha
+    generates:
+      - .codegen/openapi.json
+    cmds:
+      - "wget -O .codegen/openapi.json.tmp \"https://openapi.dev.databricks.com/$(cat .codegen/_openapi_sha)/specs/all-internal.json\" && mv .codegen/openapi.json.tmp .codegen/openapi.json"
+
+  # --- Python ---
+
+  python:test:
+    desc: Run Python tests
+    dir: python
+    sources:
+      - "**/*.py"
+    cmds:
+      - uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv
+
+  python:lint:
+    desc: Run Python lint checks
+    dir: python
+    sources:
+      - "**/*.py"
+      - pyproject.toml
+      - uv.lock
+    cmds:
+      - uv lock --check
+      - uv run ruff check databricks databricks_tests
+      - uv run pyright
+      - uv run ruff format --diff databricks databricks_tests
+
+  python:fmt:
+    desc: Format Python code
+    dir: python
+    sources:
+      - "**/*.py"
+    cmds:
+      - uv run ruff check --fix databricks databricks_tests || true
+      - uv run ruff format
+
+  python:docs:
+    desc: Generate Python documentation
+    dir: python
+    sources:
+      - "**/*.py"
+    cmds:
+      - uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going
+
+  python:codegen:
+    desc: Run Python codegen
+    dir: python
+    sources:
+      - codegen/**
+    cmds:
+      - |
+        find databricks/bundles -type d -mindepth 1 -maxdepth 1 \
+          ! -path databricks/bundles/core \
+          ! -path databricks/bundles/resources \
+          -exec rm -rf {} \;
+      - cd codegen && uv run -m pytest codegen_tests
+      - cd codegen && uv run -m codegen.main --output ..
+      - uv run ruff check --fix databricks databricks_tests || true
+      - uv run ruff format
+
+  python:build:
+    desc: Build Python wheel
+    dir: python
+    cmds:
+      - rm -rf build dist
+      - uv build .
+
+  # --- Benchmarks ---
+
+  bench:1k:
+    desc: Benchmark with 1000 jobs
+    cmds:
+      - 'BENCHMARK_PARAMS="--jobs 1000" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m | tee bench1k.log'
+
+  bench:100:
+    desc: Benchmark with 100 jobs
+    cmds:
+      - 'BENCHMARK_PARAMS="--jobs 100" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m | tee bench100.log'
+
+  bench:10:
+    desc: Benchmark with 10 jobs (quick)
+    cmds:
+      - 'BENCHMARK_PARAMS="--jobs 10" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m | tee bench10.log'
+
+  bench:1k-summary:
+    desc: Run 1k benchmark and print summary
+    cmds:
+      - task: bench:1k
+      - ./tools/bench_parse.py bench1k.log
+
+  bench:100-summary:
+    desc: Run 100 benchmark and print summary
+    cmds:
+      - task: bench:100
+      - ./tools/bench_parse.py bench100.log
+
+  bench:10-summary:
+    desc: Run 10 benchmark and print summary
+    cmds:
+      - task: bench:10
+      - ./tools/bench_parse.py bench10.log

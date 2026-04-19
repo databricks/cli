@@ -1506,9 +1506,11 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 }
 
 func BuildYamlfmt(t *testing.T) {
-	// Using make here instead of "go build" directly cause it's faster when it's already built
 	args := []string{
-		"make", "-s", "tools/yamlfmt" + exeSuffix,
+		"go", "build",
+		"-modfile=tools/go.mod",
+		"-o", "tools/yamlfmt" + exeSuffix,
+		"github.com/google/yamlfmt/cmd/yamlfmt",
 	}
 	RunCommand(t, args, "..", []string{})
 }

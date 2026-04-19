@@ -28,17 +28,22 @@ __pycache__
 
 .ruff_cache
 
-# Test results from 'make test'
+# Test results from 'task test'
 test-output.json
+test-output-unit.json
+test-output-acc.json
 
-# Built by make for 'make fmt' and yamlcheck.py in acceptance tests
+# Taskfile cache
+.task/
+
+# Built for 'task fmt' and yamlcheck.py in acceptance tests
 tools/yamlfmt
 tools/yamlfmt.exe
 
-# Built by make for 'make lint'
+# Built for 'task lint'
 tools/golangci-lint
 
-# Built by make for test filtering
+# Built for test filtering
 tools/testmask/testmask
 
 # Cache for tools/gh_report.py
