@@ -424,7 +424,7 @@ tasks:
   dbr:test:
     desc: Run DBR tests via deco env (requires deco + aws-prod-ucws access)
     cmds:
-      - "deco env run -i -n aws-prod-ucws -- go tool -modfile=tools/go.mod task dbr:integration"
+      - "deco env run -i -n aws-prod-ucws -- ./task dbr:integration"
 
   # --- Code generation ---
 

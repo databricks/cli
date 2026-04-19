@@ -44,7 +44,7 @@ jobs:
           version: "0.6.5"
 
       - name: Run tests
-        run: go tool -modfile=tools/task/go.mod task python:test
+        run: ./task python:test
 
   python_linters:
     name: lint
@@ -65,7 +65,7 @@ jobs:
           version: "0.6.5"
 
       - name: Run lint
-        run: go tool -modfile=tools/task/go.mod task python:lint
+        run: ./task python:lint
 
   python_docs:
     name: docs
@@ -86,4 +86,4 @@ jobs:
           version: "0.6.5"
 
       - name: Run docs
-        run: go tool -modfile=tools/task/go.mod task python:docs
+        run: ./task python:docs

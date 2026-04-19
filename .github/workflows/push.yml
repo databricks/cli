@@ -137,23 +137,23 @@ jobs:
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.event_name == 'schedule' }}
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-        run: go tool -modfile=tools/task/go.mod task test
+        run: ./task test
 
       - name: Run tests with coverage
         # Only run 'task cover' on push to main to make sure it does not get broken.
         if: ${{ github.event_name == 'push' }}
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
-        run: go tool -modfile=tools/task/go.mod task cover
+        run: ./task cover
 
       - name: Analyze slow tests
-        run: go tool -modfile=tools/task/go.mod task slowest
+        run: ./task slowest
 
       - name: Check out.test.toml files are up to date
         shell: bash
         run: |
           if ! git diff --exit-code; then
-            echo "ERROR: detected changed files in the repository; Most likely you have out.test.toml files that are out of date. Run 'go tool -modfile=tools/task/go.mod task generate:out-test-toml' to update."
+            echo "ERROR: detected changed files in the repository; Most likely you have out.test.toml files that are out of date. Run './task generate:out-test-toml' to update."
             exit 1
           fi
 
@@ -201,7 +201,7 @@ jobs:
 
       - name: Run tests
         run: |
-          go tool -modfile=tools/task/go.mod task test:exp-aitools
+          ./task test:exp-aitools
 
   test-exp-ssh:
     needs:
@@ -246,7 +246,7 @@ jobs:
 
       - name: Run tests
         run: |
-          go tool -modfile=tools/task/go.mod task test:exp-ssh
+          ./task test:exp-ssh
 
   test-pipelines:
     needs:
@@ -291,7 +291,7 @@ jobs:
 
       - name: Run tests
         run: |
-          go tool -modfile=tools/task/go.mod task test:pipelines
+          ./task test:pipelines
 
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
@@ -340,14 +340,14 @@ jobs:
 
       - name: Verify that the schema is up to date
         run: |
-          if ! ( go tool -modfile=tools/task/go.mod task --force schema && git diff --exit-code ); then
+          if ! ( ./task --force schema && git diff --exit-code ); then
             echo "The schema is not up to date. Please run 'task schema' and commit the changes."
             exit 1
           fi
 
       - name: Verify that the generated enum and required fields are up to date
         run: |
-          if ! ( go tool -modfile=tools/task/go.mod task --force generate:validation && git diff --exit-code ); then
+          if ! ( ./task --force generate:validation && git diff --exit-code ); then
             echo "The generated enum and required fields are not up to date. Please run 'task generate:validation' and commit the changes."
             exit 1
           fi
@@ -372,7 +372,7 @@ jobs:
 
       - name: Verify that python/codegen is up to date
         run: |-
-          go tool -modfile=tools/task/go.mod task python:codegen
+          ./task python:codegen
 
           if ! ( git diff --exit-code ); then
             echo "Generated Python code is not up-to-date. Please run 'task python:codegen' and commit the changes."
