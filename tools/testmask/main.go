@@ -1,3 +1,5 @@
+// Command testmask reads Taskfile.yml to decide which CI jobs should run
+// based on the set of files changed in a PR.
 package main
 
 import (
