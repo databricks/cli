@@ -20,18 +20,6 @@ tasks:
       - task: python:lint
       - task: python:test
 
-  # --- Tool binaries (for acceptance tests that call them by path) ---
-
-  _build-yamlfmt:
-    internal: true
-    sources:
-      - tools/go.mod
-      - tools/go.sum
-    generates:
-      - tools/yamlfmt
-    cmds:
-      - go build -modfile=tools/go.mod -o tools/yamlfmt github.com/google/yamlfmt/cmd/yamlfmt
-
   # --- Linting ---
 
   lint:
@@ -185,11 +173,19 @@ tasks:
 
   # --- Building ---
 
+  # The root binary only imports bundle/, cmd/, experimental/, internal/, libs/,
+  # so changes to test-only trees (acceptance/, integration/), separate modules
+  # (tools/, bundle/internal/tf/codegen/), and _test.go files don't affect the build.
   build:
     desc: Build the CLI binary
     deps: [tidy]
     sources:
       - "**/*.go"
+      - exclude: "**/*_test.go"
+      - exclude: acceptance/**
+      - exclude: integration/**
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
       - go.mod
       - go.sum
     generates:
@@ -201,6 +197,11 @@ tasks:
     desc: Build snapshot binary to .databricks/databricks
     sources:
       - "**/*.go"
+      - exclude: "**/*_test.go"
+      - exclude: acceptance/**
+      - exclude: integration/**
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
       - go.mod
       - go.sum
     generates:
@@ -212,6 +213,11 @@ tasks:
     desc: Build release binaries locally without uploading
     sources:
       - "**/*.go"
+      - exclude: "**/*_test.go"
+      - exclude: acceptance/**
+      - exclude: integration/**
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
       - go.mod
       - go.sum
       - .goreleaser.yaml
