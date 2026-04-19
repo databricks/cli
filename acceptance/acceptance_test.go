@@ -659,6 +659,7 @@ func runTest(t *testing.T,
 	defer cancelFunc()
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	setProcessGroup(cmd)
 
 	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
@@ -1307,7 +1308,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout ti
 
 	cmd.Cancel = func() error {
 		processErrCh <- fmt.Errorf("Test script killed due to a timeout (%s)", timeout)
-		_ = cmd.Process.Kill()
+		killTree(cmd)
 		_ = w.Close()
 		return nil
 	}
