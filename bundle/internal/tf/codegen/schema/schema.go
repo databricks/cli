@@ -1,3 +1,5 @@
+// Package schema fetches and loads the Terraform provider schema used by
+// the codegen step.
 package schema
 
 import (
@@ -10,14 +12,17 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
+// DatabricksProvider is the fully qualified Terraform provider address.
 const DatabricksProvider = "registry.terraform.io/databricks/databricks"
 
+// Schema describes the on-disk location of the provider schema artifacts.
 type Schema struct {
 	WorkingDir string
 
 	ProviderSchemaFile string
 }
 
+// New creates a Schema rooted at ./tmp under the current working directory.
 func New() (*Schema, error) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -36,6 +41,7 @@ func New() (*Schema, error) {
 	}, nil
 }
 
+// Load returns the parsed provider schema, fetching and generating it if needed.
 func Load(ctx context.Context) (*tfjson.ProviderSchema, error) {
 	s, err := New()
 	if err != nil {

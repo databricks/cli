@@ -33,7 +33,7 @@ func FetchProviderChecksums(version string) (*ProviderChecksums, error) {
 	if err != nil {
 		return nil, fmt.Errorf("downloading SHA256SUMS for provider v%s: %w", version, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("downloading SHA256SUMS for provider v%s: HTTP %s", version, resp.Status)
@@ -94,7 +94,7 @@ func verifyProviderChecksum(version, platform, expectedChecksum string) error {
 	if err != nil {
 		return fmt.Errorf("downloading provider archive for checksum verification: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("downloading provider archive for checksum verification: HTTP %s", resp.Status)

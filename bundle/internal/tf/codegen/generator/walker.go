@@ -138,7 +138,7 @@ func nestedField(name []string, k string, isRef bool) field {
 		fieldTypePrefix = "[]"
 	}
 	fieldType := fmt.Sprintf("%s%s", fieldTypePrefix, strings.Join(append(name, strcase.ToCamel(k)), ""))
-	fieldTag := fmt.Sprintf("%s,omitempty", k)
+	fieldTag := k + ",omitempty"
 
 	return field{
 		Name: fieldName,
@@ -195,7 +195,7 @@ func (w *walker) walk(block *tfjson.SchemaBlock, name []string) error {
 			return fmt.Errorf("both required and optional are set for attribute %s", k)
 		}
 		if !v.Required {
-			fieldTag = fmt.Sprintf("%s,omitempty", fieldTag)
+			fieldTag += ",omitempty"
 		}
 
 		// Append to list of fields for type.
