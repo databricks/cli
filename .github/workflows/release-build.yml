@@ -172,7 +172,9 @@ jobs:
 
       - name: Build wheel
         working-directory: python
-        run: make build
+        run: |
+          rm -rf build dist
+          uv build .
 
       - name: Upload Python wheel
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0

@@ -44,14 +44,13 @@ jobs:
           version: "0.9.1"
           args: "format --check"
 
-      - name: "make fmtfull: Python and Go formatting"
+      - name: "task fmt:full: Python and Go formatting"
         # Python formatting is already checked above, but this also checks Go and YAML formatting
-        # and verifies that the make command works correctly
         run: |
-          make fmtfull
+          go tool -modfile=tools/task/go.mod task fmt:full
           git diff --exit-code
 
-      - name: "make checks: custom checks outside of fmt and lint"
+      - name: "task checks: custom checks outside of fmt and lint"
         run: |-
-          make checks
+          go tool -modfile=tools/task/go.mod task checks
           git diff --exit-code
