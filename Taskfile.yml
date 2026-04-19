@@ -13,8 +13,7 @@ tasks:
       - task: fmt:full
       - task: lint:full
       - task: test
-      - task: generate:schema
-      - task: generate:validation
+      - task: generate
       - task: python:lint
       - task: python:test
 
@@ -484,11 +483,14 @@ tasks:
   # `generate` orchestrates all of them; individual tasks can be invoked standalone.
 
   generate:
-    desc: Run all generators (CLI commands, schema, docs, validation, direct, python)
+    desc: Run all generators (CLI commands, refschema, schema, docs, validation, direct, python)
     cmds:
       # Runs first: may bump go.mod (SDK version), which invalidates reflection-
       # based generators below so they re-run automatically.
       - task: generate:commands
+      # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
+      # generate:direct-apitypes and generate:direct-resources below.
+      - task: generate:refschema
       - task: generate:schema
       - task: generate:schema-docs
       - task: generate:validation
@@ -521,7 +523,28 @@ tasks:
       - echo "Generating CLI code..."
       - "{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk"
       - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
-      - "-go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null"
+
+  # Refreshes out.fields.txt, which records the field paths / types emitted by
+  # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects
+  # over the dresources adapter types, so sources list both the command and the
+  # adapter packages plus any SDK type changes (go.mod / go.sum).
+  generate:refschema:
+    desc: Regenerate acceptance/bundle/refschema/out.fields.txt
+    sources:
+      - cmd/bundle/debug/**/*.go
+      - exclude: cmd/bundle/debug/**/*_test.go
+      - bundle/direct/dresources/**/*.go
+      - exclude: bundle/direct/dresources/**/*_test.go
+      - libs/structs/**/*.go
+      - exclude: libs/structs/**/*_test.go
+      - acceptance/bundle/refschema/script
+      - acceptance/bundle/refschema/test.toml
+      - go.mod
+      - go.sum
+    generates:
+      - acceptance/bundle/refschema/out.fields.txt
+    cmds:
+      - go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null
 
   generate:schema:
     desc: Generate bundle JSON schema
