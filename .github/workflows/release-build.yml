@@ -97,10 +97,13 @@ jobs:
 
       # Overlay scripts from the workflow ref so goreleaser hooks resolve
       # correctly even when building an older tag that predates them.
+      # Register both injected paths in .git/info/exclude so goreleaser's
+      # dirty-state check does not flag them as untracked files.
       - name: Sync workflow scripts to working directory
         run: |
           mkdir -p .github/scripts
           cp -r .workflow-actions/.github/scripts/. .github/scripts/
+          printf '.workflow-actions/\n.github/scripts/\n' >> .git/info/exclude
 
       # Use --snapshot for branch builds (non-tag refs).
       - name: Run GoReleaser
