@@ -96,10 +96,18 @@ tasks:
       - ruff format -n
 
   fmt:go:
-    desc: Format Go files
-    # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
-    # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
-    # in a single invocation.
+    desc: Format changed Go files (diff vs main)
+    sources:
+      - "**/*.go"
+      - .golangci.yaml
+    cmds:
+      - ./tools/lintdiff.py go tool -modfile=tools/go.mod golangci-lint fmt
+
+  # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
+  # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
+  # in a single invocation.
+  fmt:go:full:
+    desc: Format all Go files
     sources:
       - "**/*.go"
       - .golangci.yaml
@@ -116,12 +124,12 @@ tasks:
       - go tool -modfile=tools/go.mod yamlfmt .
 
   fmt:
-    desc: Format all files (Python, Go, YAML)
+    desc: Format changed files (Python, incremental Go, YAML)
     deps: ['fmt:python', 'fmt:go', 'fmt:yaml']
 
   fmt:full:
-    desc: Format all files (Python, Go, YAML)
-    deps: ['fmt:python', 'fmt:go', 'fmt:yaml']
+    desc: Format all files (Python, full Go, YAML)
+    deps: ['fmt:python', 'fmt:go:full', 'fmt:yaml']
 
   # --- Code checks ---
 
