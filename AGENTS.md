@@ -22,25 +22,25 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 ### Building and Testing
 
-- `make build` - Build the CLI binary
-- `make test` - Run unit tests for all packages
+- `task build` - Build the CLI binary
+- `task test` - Run unit and acceptance tests for all packages
 - `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v` - run a single acceptance test
-- `make integration` - Run integration tests (requires environment variables)
-- `make cover` - Generate test coverage reports
+- `task integration` - Run integration tests (requires environment variables)
+- `task cover` - Generate test coverage reports
 
 ### Code Quality
 
-- `make lint` - Run linter on changed files only (uses lintdiff.py)
-- `make lintfull` - Run full linter with fixes (golangci-lint)
-- `make ws` - Run whitespace linter
-- `make fmt` - Format code (Go, Python, YAML)
-- `make checks` - Run quick checks (tidy, whitespace, links)
+- `task lint` - Run linter on changed files only (uses lintdiff.py)
+- `task lint:full` - Run full linter with fixes (golangci-lint)
+- `task ws` - Run whitespace linter
+- `task fmt` - Format code (Go, Python, YAML)
+- `task checks` - Run quick checks (tidy, whitespace, links)
 
 ### Specialized Commands
 
-- `make schema` - Generate bundle JSON schema
-- `make docs` - Generate bundle documentation
-- `make generate` - Generate CLI code from OpenAPI spec (requires universe repo)
+- `task schema` - Generate bundle JSON schema
+- `task docs` - Generate bundle documentation
+- `task generate` - Generate CLI code from OpenAPI spec (requires universe repo)
 
 ### Git Commands
 
@@ -88,7 +88,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 # Development Tips
 
-- Use `make test-update` to regenerate acceptance test outputs after changes.
+- Use `task test:update` to regenerate acceptance test outputs after changes.
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
 
 **RULE: Comments should explain "why", not "what".** Reviewers consistently reject comments that merely restate the code.
