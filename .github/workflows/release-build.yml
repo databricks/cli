@@ -37,8 +37,18 @@ jobs:
           fetch-tags: true
           ref: ${{ inputs.tag || github.ref }}
 
+      # Check out the workflow's own ref into a side directory so local
+      # composite actions (e.g. setup-jfrog) are available even when the
+      # built ref is an older tag that predates them.
+      - name: Checkout workflow ref for local actions
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          path: .workflow-actions
+          sparse-checkout: .github
+
       - name: Setup JFrog
-        uses: ./.github/actions/setup-jfrog
+        uses: ./.workflow-actions/.github/actions/setup-jfrog
 
       - name: Setup Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
@@ -122,8 +132,18 @@ jobs:
           fetch-tags: true
           ref: ${{ inputs.tag || github.ref }}
 
+      # Check out the workflow's own ref into a side directory so local
+      # composite actions (e.g. setup-jfrog) are available even when the
+      # built ref is an older tag that predates them.
+      - name: Checkout workflow ref for local actions
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          path: .workflow-actions
+          sparse-checkout: .github
+
       - name: Setup JFrog
-        uses: ./.github/actions/setup-jfrog
+        uses: ./.workflow-actions/.github/actions/setup-jfrog
 
       - name: Install uv
         uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
