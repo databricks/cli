@@ -1,0 +1,2 @@
+#!/bin/sh
+exec go tool -modfile="$(git rev-parse --show-toplevel)/tools/task/go.mod" task "$@"
