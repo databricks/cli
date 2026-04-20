@@ -30,10 +30,11 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 ### Code Quality
 
-- `task lint` - Run linter on changed files only (uses lintdiff.py)
-- `task lint:full` - Run full linter with fixes (golangci-lint)
+- `task lint` - Run full linter across all Go modules (root, tools, codegen)
+- `task lint-q` - Run linter on changed files only (uses lintdiff.py, root module, with --fix)
 - `task ws` - Run whitespace linter
-- `task fmt` - Format code (Go, Python, YAML)
+- `task fmt` - Format all code (Go, Python, YAML)
+- `task fmt-q` - Format changed files only (incremental Go + Python + YAML)
 - `task checks` - Run quick checks (tidy, whitespace, links)
 
 ### Specialized Commands

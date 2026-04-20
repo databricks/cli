@@ -7,38 +7,54 @@ vars:
 
 tasks:
   default:
-    desc: Run all checks, fmt, lint, tests, and regeneration
+    desc: Quick dev loop (checks, formatters, incremental lint, tests). Use `all` for the full suite.
     cmds:
       - task: checks
-      - task: fmt:full
-      - task: lint:full
+      - task: fmt-q
+      - task: lint-q
+      - task: test
+
+  all:
+    desc: Run all checks, full fmt, full lint, tests, and regeneration
+    cmds:
+      - task: checks
+      - task: fmt
+      - task: lint
       - task: test
       - task: generate
       - task: python:lint
       - task: python:test
 
   # --- Linting ---
+  #
+  # Naming convention: the plain name is the full variant (default). Quick
+  # / incremental variants carry a `-q` suffix on the top-level namespace
+  # (e.g. `lint-q:go:root`). `./task` (default) uses the -q variants for
+  # speed; `./task all` uses the full variants.
 
   lint:
-    desc: Lint changed Go files (root module, diff against main)
-    sources:
-      - "**/*.go"
-      - .golangci.yaml
+    desc: Lint all Go files (root + tools + codegen modules)
     cmds:
-      - ./tools/lintdiff.py go tool -modfile=tools/go.mod golangci-lint run --fix
+      - task: lint:go
 
-  lint:full:
-    desc: Lint all Go files with fixes (root module)
-    sources:
-      - "**/*.go"
-      - .golangci.yaml
+  lint-q:
+    desc: Lint changed Go files in root module (diff vs main, with --fix)
     cmds:
-      - go tool -modfile=tools/go.mod golangci-lint run --fix
+      - task: lint-q:go:root
 
   # `golangci-lint run` typechecks, so it stops at go.mod boundaries. We have
   # one task per Go module; `lint:go` composes them to cover the whole repo.
+  # Runs the modules sequentially because concurrent golangci-lint invocations
+  # have shown unreliable behavior.
+  lint:go:
+    desc: Lint Go files across all modules (root, tools, codegen)
+    cmds:
+      - task: lint:go:root
+      - task: lint:go:tools
+      - task: lint:go:codegen
+
   lint:go:root:
-    desc: Lint Go files in the root module (no fixes)
+    desc: Lint Go files in the root module
     sources:
       - "**/*.go"
       - .golangci.yaml
@@ -67,11 +83,23 @@ tasks:
     cmds:
       - go tool -modfile={{.ROOT_DIR}}/tools/go.mod golangci-lint run ./...
 
-  lint:go:
-    desc: Lint Go files across all modules (root, tools, codegen)
-    deps: ['lint:go:root', 'lint:go:tools', 'lint:go:codegen']
+  lint-q:go:root:
+    desc: Lint changed Go files in root module (diff vs main, with --fix)
+    sources:
+      - "**/*.go"
+      - .golangci.yaml
+    cmds:
+      - ./tools/lintdiff.py --root-module go tool -modfile=tools/go.mod golangci-lint run --fix
 
   # --- Formatting ---
+
+  fmt:
+    desc: Format all files (Python, Go, YAML)
+    deps: ['fmt:python', 'fmt:go', 'fmt:yaml']
+
+  fmt-q:
+    desc: Format changed files (Python, incremental Go, YAML)
+    deps: ['fmt:python', 'fmt-q:go', 'fmt:yaml']
 
   fmt:python:
     desc: Format Python files
@@ -80,24 +108,24 @@ tasks:
     cmds:
       - ruff format -n
 
-  fmt:go:
-    desc: Format changed Go files (diff vs main)
-    sources:
-      - "**/*.go"
-      - .golangci.yaml
-    cmds:
-      - ./tools/lintdiff.py go tool -modfile=tools/go.mod golangci-lint fmt
-
   # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
   # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
   # in a single invocation.
-  fmt:go:full:
+  fmt:go:
     desc: Format all Go files
     sources:
       - "**/*.go"
       - .golangci.yaml
     cmds:
       - go tool -modfile=tools/go.mod golangci-lint fmt
+
+  fmt-q:go:
+    desc: Format changed Go files (diff vs main)
+    sources:
+      - "**/*.go"
+      - .golangci.yaml
+    cmds:
+      - ./tools/lintdiff.py go tool -modfile=tools/go.mod golangci-lint fmt
 
   fmt:yaml:
     desc: Format YAML files
@@ -107,14 +135,6 @@ tasks:
       - yamlfmt.yml
     cmds:
       - go tool -modfile=tools/go.mod yamlfmt .
-
-  fmt:
-    desc: Format changed files (Python, incremental Go, YAML)
-    deps: ['fmt:python', 'fmt:go', 'fmt:yaml']
-
-  fmt:full:
-    desc: Format all files (Python, full Go, YAML)
-    deps: ['fmt:python', 'fmt:go:full', 'fmt:yaml']
 
   # --- Code checks ---
 

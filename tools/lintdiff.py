@@ -28,6 +28,12 @@ def main():
     parser.add_argument(
         "-H", "--head", action="store_true", help="Shortcut for '--ref HEAD' - test uncommitted changes only"
     )
+    parser.add_argument(
+        "--root-module",
+        action="store_true",
+        help="Only include paths in the root Go module (skip subtrees under nested go.mod files). "
+        "Needed for `golangci-lint run` because it typechecks and fails on paths outside its module.",
+    )
     parser.add_argument("args", nargs=argparse.REMAINDER, help="golangci-lint command and options")
     args = parser.parse_args()
 
@@ -53,6 +59,15 @@ def main():
     cmd = args.args[:]
 
     if changed is not None:
+        nested_modules = []
+        if args.root_module:
+            nested_modules = sorted(
+                os.path.dirname(p) for p in parse_lines(["git", "ls-files", "--", "*/go.mod"]) or []
+            )
+
+        def in_nested_module(path):
+            return any(path == m or path.startswith(m + "/") for m in nested_modules)
+
         # We need to pass packages to golangci-lint, not individual files.
         # QQQ for lint we should also pass all dependent packages
         dirs = set()
@@ -61,6 +76,8 @@ def main():
                 continue
             if filename.endswith(".go"):
                 d = os.path.dirname(filename)
+                if in_nested_module(d):
+                    continue
                 dirs.add(d)
 
         dirs = ["./" + d for d in sorted(dirs) if os.path.exists(d)]
