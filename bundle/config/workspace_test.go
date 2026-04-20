@@ -157,8 +157,8 @@ func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
 
 func TestWorkspaceConfigHTTPTimeout(t *testing.T) {
 	for _, tc := range []struct {
-		envVal  string
-		want    int
+		envVal string
+		want   int
 	}{
 		{"", 90},
 		{"5", 5},
