@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/selftest"
 	"github.com/databricks/cli/cmd/sync"
+	"github.com/databricks/cli/cmd/ucm"
 	"github.com/databricks/cli/cmd/version"
 	"github.com/databricks/cli/cmd/workspace"
 	"github.com/databricks/cli/libs/cmdgroup"
@@ -97,6 +98,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(auth.New())
 	cli.AddCommand(completion.New())
 	cli.AddCommand(bundle.New())
+	cli.AddCommand(ucm.New())
 	cli.AddCommand(cache.New())
 	cli.AddCommand(experimental.New())
 	cli.AddCommand(psql.New())

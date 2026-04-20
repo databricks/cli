@@ -1,0 +1,82 @@
+name: Upstream Sync
+
+# Weekly fetch of databricks/cli upstream/main into this fork.
+# Opens a PR with the merge so the UCM maintainers can review conflicts before landing.
+# Fork-specific: this workflow does NOT exist in databricks/cli upstream and will never
+# cause a merge conflict on sync.
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"   # Mondays 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Merge upstream/main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "ucm-upstream-sync[bot]"
+          git config user.email "ucm-upstream-sync@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/databricks/cli.git
+
+      - name: Fetch upstream
+        run: git fetch upstream main
+
+      - name: Create sync branch
+        id: branch
+        run: |
+          branch="upstream-sync/$(date -u +%Y-%m-%d)"
+          git checkout -b "$branch" origin/main
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Merge upstream/main
+        id: merge
+        continue-on-error: true
+        run: git merge --no-edit upstream/main
+
+      - name: Push sync branch
+        if: always()
+        run: git push origin HEAD --force-with-lease
+
+      - name: Open PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = "${{ steps.branch.outputs.branch }}";
+            const conflict = "${{ steps.merge.outcome }}" !== "success";
+            const title = conflict
+              ? `chore(sync): upstream merge (CONFLICTS) — ${branch}`
+              : `chore(sync): upstream merge — ${branch}`;
+            const body = [
+              "Automated weekly sync with `databricks/cli` upstream.",
+              "",
+              conflict
+                ? "⚠️  **Merge conflicts detected.** Resolve locally before merging this PR."
+                : "✅  Clean merge. Verify `go build ./...` passes in CI before merging.",
+              "",
+              "Fork divergence guardrail: keep ucm-specific changes confined to `cmd/ucm/`, `ucm/`, and `.github/workflows/upstream-sync.yml` to minimize conflict surface.",
+            ].join("\n");
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: branch,
+              base: "main",
+              title,
+              body,
+              draft: conflict,
+            });
+            core.info(`Opened PR #${pr.number}: ${pr.html_url}`);
