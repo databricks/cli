@@ -306,7 +306,7 @@ tasks:
   # --- Testing ---
 
   test:
-    desc: Run unit and acceptance tests (in parallel)
+    desc: Run unit and acceptance tests
     deps:
       - task: test:unit
       - task: test:acc
@@ -473,7 +473,7 @@ tasks:
   # generic `test` target (the catch-all) instead.
 
   test:exp:aitools:
-    desc: Run experimental aitools unit and acceptance tests (in parallel)
+    desc: Run experimental aitools unit and acceptance tests
     sources:
       - experimental/aitools/**
       - acceptance/apps/**
@@ -488,7 +488,7 @@ tasks:
       - cat test-output-unit-root.json test-output-acc.json > test-output.json
 
   test:exp:ssh:
-    desc: Run experimental SSH unit and acceptance tests (in parallel)
+    desc: Run experimental SSH unit and acceptance tests
     sources:
       - experimental/ssh/**
       - acceptance/ssh/**
@@ -503,7 +503,7 @@ tasks:
       - cat test-output-unit-root.json test-output-acc.json > test-output.json
 
   test:pipelines:
-    desc: Run pipelines unit and acceptance tests (in parallel)
+    desc: Run pipelines unit and acceptance tests
     sources:
       - cmd/pipelines/**
       - acceptance/pipelines/**
