@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
 	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{})
 
