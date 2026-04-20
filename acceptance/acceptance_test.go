@@ -610,7 +610,7 @@ func runTest(t *testing.T,
 	if KeepTmp {
 		tempDirBase := filepath.Join(os.TempDir(), "acceptance")
 		_ = os.Mkdir(tempDirBase, 0o755)
-		tmpDir, err = os.MkdirTemp(tempDirBase, "")
+		tmpDir, err = os.MkdirTemp(tempDirBase, "") //nolint:usetesting // KeepTmp: dir must persist after test for debugging
 		require.NoError(t, err)
 		t.Logf("Created directory: %s", tmpDir)
 	} else if WorkspaceTmpDir {

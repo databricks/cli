@@ -18,7 +18,7 @@ type NewData struct {
 	Y int
 }
 
-type MyStruct struct {
+type MyStruct struct { //nolint:recvcheck // intentionally tests both pointer and value receivers
 	State int
 }
 

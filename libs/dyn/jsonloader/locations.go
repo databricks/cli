@@ -11,7 +11,7 @@ type LineOffset struct {
 	Start int64
 }
 
-type Offset struct {
+type Offset struct { //nolint:recvcheck // value receiver for read-only GetPosition, pointer for SetSource
 	offsets []LineOffset
 	source  string
 }
