@@ -21,7 +21,15 @@ tasks:
       - task: fmt
       - task: lint
       - task: test
-      - task: generate
+      # Skips generate:commands (expensive, requires universe checkout, outputs are
+      # committed). Run `./task generate` explicitly when codegen inputs change.
+      - task: generate:refschema
+      - task: generate:schema
+      - task: generate:schema-docs
+      - task: generate:validation
+      - task: generate:docs
+      - task: generate:direct
+      - task: python:codegen
       - task: python:lint
       - task: python:test
 
