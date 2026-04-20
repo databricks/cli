@@ -2,7 +2,8 @@
 >>> [CLI] bundle debug list-targets
 dev (default) development https://dev.example.com
 prod production https://prod.example.com
-staging https://staging.example.com
+staging
+with_vars ${var.target_mode} ${var.target_host}
 
 >>> [CLI] bundle debug list-targets --output json
 {
@@ -19,8 +20,12 @@ staging https://staging.example.com
       "host": "https://prod.example.com"
     },
     {
-      "name": "staging",
-      "host": "https://staging.example.com"
+      "name": "staging"
+    },
+    {
+      "name": "with_vars",
+      "mode": "${var.target_mode}",
+      "host": "${var.target_host}"
     }
   ]
 }

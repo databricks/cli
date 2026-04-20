@@ -1,16 +1,27 @@
 bundle:
   name: test-list-targets
 
+variables:
+  is_default:
+    default: false
+  target_mode:
+    default: production
+  target_host:
+    default: https://var.example.com
+
 targets:
   dev:
     default: true
     mode: development
     workspace:
       host: https://dev.example.com
-  staging:
-    workspace:
-      host: https://staging.example.com
+  staging: {}
   prod:
     mode: production
     workspace:
       host: https://prod.example.com
+  with_vars:
+    default: ${var.is_default}
+    mode: ${var.target_mode}
+    workspace:
+      host: ${var.target_host}
