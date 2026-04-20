@@ -33,9 +33,7 @@ func hasBundleConfig() bool {
 	return err == nil
 }
 
-// bundleDeployOptions holds the flags that configure the bundle-aware deploy path.
-// The fields mirror the flags on `bundle deploy` plus the apps-specific validation
-// controls (skip-validation, skip-tests).
+// bundleDeployOptions holds flags for the bundle-aware deploy path.
 type bundleDeployOptions struct {
 	force            bool
 	forceLock        bool
@@ -46,6 +44,24 @@ type bundleDeployOptions struct {
 	readPlanPath     string
 	skipValidation   bool
 	skipTests        bool
+}
+
+// applyDeployFlags writes the deploy flag values onto the bundle config.
+// Flags that override bundle YAML are only applied when explicitly set by the user.
+func applyDeployFlags(cmd *cobra.Command, b *bundle.Bundle, opts bundleDeployOptions) {
+	b.Config.Bundle.Force = opts.force
+	b.Config.Bundle.Deployment.Lock.Force = opts.forceLock
+	b.AutoApprove = opts.autoApprove
+
+	if cmd.Flag("compute-id").Changed {
+		b.Config.Bundle.ClusterId = opts.clusterId
+	}
+	if cmd.Flag("cluster-id").Changed {
+		b.Config.Bundle.ClusterId = opts.clusterId
+	}
+	if cmd.Flag("fail-on-active-runs").Changed {
+		b.Config.Bundle.Deployment.FailOnActiveRuns = opts.failOnActiveRuns
+	}
 }
 
 // BundleDeployOverrideWithWrapper creates a deploy override function that uses
@@ -63,7 +79,7 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 		deployCmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 		deployCmd.Flags().BoolVar(&opts.verbose, "verbose", false, "Enable verbose output.")
 		deployCmd.Flags().StringVar(&opts.readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
-		// Verbose currently only affects file sync output; it's used by the vscode extension.
+		// Verbose flag currently only affects file sync output, it's used by the vscode extension
 		deployCmd.Flags().MarkHidden("verbose")
 		deployCmd.Flags().BoolVar(&opts.skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")
 		deployCmd.Flags().BoolVar(&opts.skipTests, "skip-tests", true, "Skip running tests during validation")
@@ -162,19 +178,7 @@ func runBundleDeploy(cmd *cobra.Command, opts bundleDeployOptions) error {
 	cmdio.LogString(ctx, "Deploying project...")
 	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 		InitFunc: func(b *bundle.Bundle) {
-			b.Config.Bundle.Force = opts.force
-			b.Config.Bundle.Deployment.Lock.Force = opts.forceLock
-			b.AutoApprove = opts.autoApprove
-
-			if cmd.Flag("compute-id").Changed {
-				b.Config.Bundle.ClusterId = opts.clusterId
-			}
-			if cmd.Flag("cluster-id").Changed {
-				b.Config.Bundle.ClusterId = opts.clusterId
-			}
-			if cmd.Flag("fail-on-active-runs").Changed {
-				b.Config.Bundle.Deployment.FailOnActiveRuns = opts.failOnActiveRuns
-			}
+			applyDeployFlags(cmd, b, opts)
 		},
 		// Context is already initialized by the workspace command's PreRunE
 		SkipInitContext: true,
