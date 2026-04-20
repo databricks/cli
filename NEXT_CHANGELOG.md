@@ -16,6 +16,7 @@
 ### Dependency updates
 
 * Bump `github.com/databricks/databricks-sdk-go` from v0.126.0 to v0.127.0 ([#4984](https://github.com/databricks/cli/pull/4984)).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.127.0 to v0.128.0.
 * Bump Go toolchain to 1.25.9 ([#5004](https://github.com/databricks/cli/pull/5004))
 
 ### API Changes
