@@ -31,7 +31,8 @@ const (
 	// Never dual-writes.
 	StorageModeSecure StorageMode = "secure"
 
-	// StorageModePlaintext is reserved for MS3. When enabled it will write
+	// StorageModePlaintext is for backward compatibility and environments
+	// that do not have access to an OS keyring. When enabled it will write
 	// to ~/.databricks/token-cache.json without host-keyed entries.
 	StorageModePlaintext StorageMode = "plaintext"
 )
