@@ -104,6 +104,9 @@ type ClientOptions struct {
 	SkipConfigWrite bool
 	// If true, enable SSH ControlMaster multiplexing for connection reuse.
 	Multiplex bool
+	// If true, do not attempt to start the SSH server — only connect to an existing one.
+	// Used in ProxyCommand for scp/rsync where the server should already be running.
+	NoServerStart bool
 }
 
 func (o *ClientOptions) Validate() error {
@@ -208,6 +211,10 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 		proxyCommand += " --environment-version=" + strconv.Itoa(o.EnvironmentVersion)
 	}
 
+	if o.NoServerStart {
+		proxyCommand += " --no-start"
+	}
+
 	return proxyCommand, nil
 }
 
@@ -231,6 +238,11 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	sessionID := opts.SessionIdentifier()
 	if sessionID == "" {
 		return errors.New("either --cluster or --name must be provided")
+	}
+
+	// Fast path for scp/rsync: only connect to an existing server, don't start a new one.
+	if opts.ProxyMode && opts.NoServerStart && opts.ServerMetadata == "" {
+		return runProxyWithLivenessCheck(ctx, client, opts)
 	}
 
 	if !opts.ProxyMode {
@@ -463,6 +475,8 @@ func writeSSHConfigForConnect(ctx context.Context, hostName, userName, keyPath s
 		}
 	}
 
+	// The scp/rsync ProxyCommand should not start a new server — only connect to an existing one.
+	opts.NoServerStart = true
 	return ensureSSHConfigEntry(ctx, configPath, hostName, userName, keyPath, opts)
 }
 
@@ -671,6 +685,29 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 	sshCmd.Stderr = os.Stderr
 
 	return sshCmd.Run()
+}
+
+// runProxyWithLivenessCheck checks if the SSH server is still alive before
+// connecting. Used by scp/rsync ProxyCommands to fail fast when the session is gone.
+func runProxyWithLivenessCheck(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) error {
+	sessionID := opts.SessionIdentifier()
+	version := build.GetInfo().Version
+	clusterID := opts.ClusterID
+
+	serverPort, _, effectiveClusterID, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+	if err != nil {
+		reconnectCmd := fmt.Sprintf("databricks ssh connect --cluster=%s", sessionID)
+		if opts.IsServerlessMode() {
+			reconnectCmd = fmt.Sprintf("databricks ssh connect --name=%s", sessionID)
+		}
+		return fmt.Errorf("SSH session is no longer active. Start a new one with:\n  %s", reconnectCmd)
+	}
+
+	err = runSSHProxy(ctx, client, serverPort, effectiveClusterID, opts)
+	if errors.Is(err, context.Canceled) {
+		return nil
+	}
+	return err
 }
 
 func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, serverPort int, clusterID string, opts ClientOptions) error {
