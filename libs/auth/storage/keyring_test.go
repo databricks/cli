@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
 )
 
@@ -52,7 +53,7 @@ func (f *fakeBackend) Get(service, account string) (string, error) {
 	}
 	v, ok := f.items[itemKey(service, account)]
 	if !ok {
-		return "", errNotFoundSentinel
+		return "", keyring.ErrNotFound
 	}
 	return v, nil
 }
@@ -68,16 +69,10 @@ func (f *fakeBackend) Delete(service, account string) error {
 	return nil
 }
 
-// errNotFoundSentinel lets tests assert what the cache does with a missing
-// entry. Production code uses the real zalando/go-keyring ErrNotFound; the
-// fake uses its own sentinel that the test wires into the cache.
-var errNotFoundSentinel = errors.New("fake keyring: not found")
-
 func newTestCache(backend keyringBackend) *keyringCache {
 	return &keyringCache{
 		backend:        backend,
 		timeout:        100 * time.Millisecond,
-		errNotFound:    errNotFoundSentinel,
 		keyringSvcName: "databricks-cli",
 	}
 }
@@ -93,10 +88,11 @@ func TestKeyringCache_Store_WritesJSON(t *testing.T) {
 	stored, ok := backend.items[itemKey("databricks-cli", "my-profile")]
 	require.True(t, ok, "token should be stored under service=databricks-cli, account=my-profile")
 
-	var got oauth2.Token
+	var got keyringEntry
 	require.NoError(t, json.Unmarshal([]byte(stored), &got))
-	assert.Equal(t, "abc", got.AccessToken)
-	assert.Equal(t, "Bearer", got.TokenType)
+	require.NotNil(t, got.Token)
+	assert.Equal(t, "abc", got.Token.AccessToken)
+	assert.Equal(t, "Bearer", got.Token.TokenType)
 }
 
 func TestKeyringCache_Store_PropagatesBackendError(t *testing.T) {
@@ -166,7 +162,7 @@ func TestKeyringCache_StoreNil_DeletesEntry(t *testing.T) {
 
 func TestKeyringCache_StoreNil_MissingIsIdempotent(t *testing.T) {
 	backend := newFakeBackend()
-	backend.deleteErr = errNotFoundSentinel
+	backend.deleteErr = keyring.ErrNotFound
 	c := newTestCache(backend)
 
 	err := c.Store("never-stored", nil)

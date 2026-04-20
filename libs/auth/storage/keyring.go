@@ -34,6 +34,14 @@ type keyringBackend interface {
 	Delete(service, account string) error
 }
 
+// keyringEntry is the on-disk envelope stored under each keyring account.
+// Wrapping the token in a struct lets us add fields later (scopes, profile
+// checksum, store time, ...) without breaking older CLI versions that read
+// the same entry.
+type keyringEntry struct {
+	Token *oauth2.Token `json:"token"`
+}
+
 // zalandoBackend delegates to the process-wide zalando/go-keyring provider.
 type zalandoBackend struct{}
 
@@ -53,12 +61,11 @@ func (zalandoBackend) Delete(service, account string) error {
 // It implements the SDK's cache.TokenCache interface.
 //
 // The type is unexported so that the only way to construct a working instance
-// is NewKeyringCache. A bare &keyringCache{} has a nil backend and a nil
-// errNotFound sentinel, which would panic on first use.
+// is NewKeyringCache. A bare &keyringCache{} has a nil backend, which would
+// panic on first use.
 type keyringCache struct {
 	backend        keyringBackend
 	timeout        time.Duration
-	errNotFound    error
 	keyringSvcName string
 }
 
@@ -68,7 +75,6 @@ func NewKeyringCache() cache.TokenCache {
 	return &keyringCache{
 		backend:        zalandoBackend{},
 		timeout:        defaultKeyringTimeout,
-		errNotFound:    keyring.ErrNotFound,
 		keyringSvcName: keyringServiceName,
 	}
 }
@@ -79,13 +85,13 @@ func (k *keyringCache) Store(key string, t *oauth2.Token) error {
 	if t == nil {
 		return k.withTimeout("delete", func() error {
 			err := k.backend.Delete(k.keyringSvcName, key)
-			if errors.Is(err, k.errNotFound) {
+			if errors.Is(err, keyring.ErrNotFound) {
 				return nil
 			}
 			return err
 		})
 	}
-	raw, err := json.Marshal(t)
+	raw, err := json.Marshal(keyringEntry{Token: t})
 	if err != nil {
 		return fmt.Errorf("marshal token: %w", err)
 	}
@@ -105,18 +111,18 @@ func (k *keyringCache) Lookup(key string) (*oauth2.Token, error) {
 		raw = got
 		return nil
 	})
-	if errors.Is(err, k.errNotFound) {
+	if errors.Is(err, keyring.ErrNotFound) {
 		return nil, cache.ErrNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	var t oauth2.Token
-	if err := json.Unmarshal([]byte(raw), &t); err != nil {
+	var entry keyringEntry
+	if err := json.Unmarshal([]byte(raw), &entry); err != nil {
 		return nil, fmt.Errorf("unmarshal token: %w", err)
 	}
-	return &t, nil
+	return entry.Token, nil
 }
 
 // Compile-time confirmation that keyringCache satisfies the SDK interface.
