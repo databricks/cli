@@ -1,0 +1,8 @@
+{
+  "body": {
+    "description": "my_space_description",
+    "name": "myspacename"
+  },
+  "method": "POST",
+  "path": "/api/2.0/app-spaces"
+}
