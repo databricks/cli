@@ -81,3 +81,19 @@ func AssertDirPermissions(t TestingT, path string, expected os.FileMode) bool {
 	assert.True(t, fi.Mode().IsDir(), "expected a directory, got a file")
 	return assert.Equal(t, expected, fi.Mode().Perm(), "expected 0%o, got 0%o", expected, fi.Mode().Perm())
 }
+
+// AssertFileOwnerExec asserts whether the owner executable bit is set for the file at path.
+func AssertFileOwnerExec(t TestingT, path string, executable bool) bool {
+	fi := StatFile(t, path)
+	assert.False(t, fi.Mode().IsDir(), "expected a file, got a directory")
+	ownerExec := fi.Mode().Perm()&0o100 != 0
+	return assert.Equal(t, executable, ownerExec, "expected owner exec bit %v for %s, got mode 0%o", executable, path, fi.Mode().Perm())
+}
+
+// AssertDirOwnerExec asserts whether the owner executable bit is set for the directory at path.
+func AssertDirOwnerExec(t TestingT, path string, executable bool) bool {
+	fi := StatFile(t, path)
+	assert.True(t, fi.Mode().IsDir(), "expected a directory, got a file")
+	ownerExec := fi.Mode().Perm()&0o100 != 0
+	return assert.Equal(t, executable, ownerExec, "expected owner exec bit %v for %s, got mode 0%o", executable, path, fi.Mode().Perm())
+}
