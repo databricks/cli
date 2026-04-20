@@ -568,8 +568,10 @@ tasks:
   generate:
     desc: Run all generators (genkit, refschema, schema, docs, validation, direct, pydabs)
     cmds:
-      # Runs first: may bump go.mod (SDK version), which invalidates reflection-
-      # based generators below so they re-run automatically.
+      # Runs first: regenerates CLI command stubs from the OpenAPI spec at
+      # .codegen/_openapi_sha. SDK version bumps (go.mod/go.sum) are a manual
+      # step outside this task; TestConsistentDatabricksSdkVersion (run inside
+      # generate:genkit) asserts the two stay in sync.
       - task: generate:genkit
       # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
       # generate:direct:apitypes and generate:direct:resources below.
@@ -582,13 +584,15 @@ tasks:
       - task: pydabs:codegen
 
   # Drives genkit from a universe checkout. Genkit writes CLI command files into
-  # cmd/workspace and cmd/account, bumps the SDK version in go.mod, emits
-  # .github/workflows/tagging.yml + tagging.py (+ lock) in the repo root, plus
-  # a next-changelog workflow we don't keep. The cmds below then post-process
-  # that output: SDK/OpenAPI consistency check, drop the next-changelog
-  # workflow, relocate tagging.py under internal/genkit/ and rewrite the
-  # tagging.yml workflow to match, then yamlfmt + whitespace fix so the tree
-  # is clean.
+  # cmd/workspace and cmd/account, refreshes .gitattributes and
+  # .codegen/_openapi_sha, and emits .github/workflows/tagging.yml +
+  # tagging.py (+ lock) in the repo root plus a next-changelog workflow we
+  # don't keep. Genkit does NOT modify go.mod/go.sum — SDK bumps are a manual
+  # `go get` step before running this task. The cmds below then post-process
+  # genkit's output: assert the SDK version matches the OpenAPI SHA, drop the
+  # next-changelog workflow, relocate tagging.py under internal/genkit/ and
+  # rewrite the tagging.yml workflow to match, then yamlfmt + whitespace fix
+  # so the tree is clean.
   generate:genkit:
     desc: Run genkit to generate CLI commands and tagging workflow (requires universe repo)
     sources:
