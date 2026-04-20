@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle plan
+create app_spaces.mykey
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+=== Change name (immutable field - should recreate)
+>>> update_file.py databricks.yml original-space-name renamed-space
+  File "<fstring>", line 1
+    (old=)
+        ^
+SyntaxError: invalid syntax
+
+Exit code: 1

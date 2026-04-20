@@ -12,7 +12,7 @@ import (
 
 type AppSpace struct {
 	BaseResource
-	apps.Space
+	apps.Space // nolint Space struct also defines Id field with the same json tag "id"
 }
 
 func (s *AppSpace) UnmarshalJSON(b []byte) error {

@@ -1,0 +1,12 @@
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/app-spaces")))' < out.requests.txt
+    rm out.requests.txt
+}
+
+trace $CLI bundle validate
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle summary
+trace $CLI bundle destroy --auto-approve
+trace print_requests >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json
