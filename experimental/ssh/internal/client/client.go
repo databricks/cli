@@ -245,9 +245,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// desired server ports (or socket connection mode) for the connection to go through
 	// (as the majority of the localhost ports on the remote side are blocked by iptable rules).
 	// Plus the platform (always linux), and extensions (python and jupyter), to make the initial experience smoother.
-	// --auto-approve lets non-interactive callers run this path; without it we still
-	// fall back to the prompt-supported short-circuit so existing behavior is preserved.
-	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck && (cmdio.IsPromptSupported(ctx) || opts.AutoApprove) {
+	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck {
 		err := vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName, opts.AutoApprove)
 		if err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("Failed to update IDE settings: %v", err))

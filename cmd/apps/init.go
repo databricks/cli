@@ -201,7 +201,7 @@ type createOptions struct {
 	runChanged     bool     // true if --run flag was explicitly set
 	pluginsChanged bool     // true if --plugins flag was explicitly set
 	setValues      []string // --set plugin.resourceKey.field=value pairs
-	autoApprove    bool     // true if --auto-approve flag was set
+	autoApprove    bool
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -336,8 +336,6 @@ func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, erro
 
 // promptForPluginsAndDeps prompts for plugins and their resource dependencies using the manifest.
 // skipDeployRunPrompt indicates whether to skip prompting for deploy/run (because flags were provided).
-// When autoApprove is true, the optional-resource confirmation is skipped and optional
-// resources are not configured unless their values were provided explicitly.
 func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt, autoApprove bool) (*prompt.CreateProjectConfig, error) {
 	config := &prompt.CreateProjectConfig{
 		Dependencies: make(map[string]string),
