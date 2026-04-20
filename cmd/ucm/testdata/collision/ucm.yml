@@ -1,0 +1,26 @@
+ucm:
+  name: fixture-collision
+
+workspace:
+  host: https://example.cloud.databricks.com
+
+resources:
+  catalogs:
+    team_alpha:
+      name: team_alpha
+      schemas:
+        bronze:
+          name: bronze
+          tags:
+            cost_center: "1234"
+            data_owner: alpha
+            classification: internal
+
+  schemas:
+    bronze:
+      name: bronze
+      catalog: team_alpha
+      tags:
+        cost_center: "1234"
+        data_owner: alpha
+        classification: internal

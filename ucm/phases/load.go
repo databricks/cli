@@ -13,6 +13,8 @@ import (
 // the user did not pass --target.
 func LoadDefaultTarget(ctx context.Context, u *ucm.Ucm) {
 	ucm.ApplySeqContext(ctx, u,
+		mutator.FlattenNestedResources(),
+		mutator.InheritCatalogTags(),
 		mutator.DefineDefaultTarget(),
 		mutator.SelectDefaultTarget(),
 	)
@@ -22,6 +24,8 @@ func LoadDefaultTarget(ctx context.Context, u *ucm.Ucm) {
 // --target <name>.
 func LoadNamedTarget(ctx context.Context, u *ucm.Ucm, name string) {
 	ucm.ApplySeqContext(ctx, u,
+		mutator.FlattenNestedResources(),
+		mutator.InheritCatalogTags(),
 		mutator.DefineDefaultTarget(),
 		mutator.SelectTarget(name),
 	)

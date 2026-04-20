@@ -15,4 +15,10 @@ type Catalog struct {
 
 	// Tags is a key/value map evaluated by ucm's tag-validation mutators.
 	Tags map[string]string `json:"tags,omitempty"`
+
+	// Schemas and Grants are nested-form conveniences: the FlattenNestedResources
+	// mutator moves them to Root.Resources.{Schemas,Grants} (injecting parent
+	// references) before any other mutator runs. Always nil after load.
+	Schemas map[string]*Schema `json:"schemas,omitempty"`
+	Grants  map[string]*Grant  `json:"grants,omitempty"`
 }
