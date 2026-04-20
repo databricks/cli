@@ -1,11 +1,9 @@
 // Package storage selects and constructs the CLI's U2M token storage backend.
 //
 // The CLI is gaining an OS-native secure-storage mode behind an experimental
-// opt-in (MS1 of the CLI GA rollout). A persistent plaintext mode ships
-// separately (MS3). Until MS4, the default remains the legacy file-backed
-// cache with dual-write host-keyed entries for older Go SDK versions.
-//
-// See documents/fy2027-q2/cli-ga/ for the rollout contract and project plan.
+// opt-in. A persistent plaintext mode ships separately. The default remains
+// the legacy file-backed cache with dual-write host-keyed entries for older
+// Go SDK versions.
 package storage
 
 import (
@@ -69,30 +67,27 @@ func ResolveStorageMode(ctx context.Context, override StorageMode) (StorageMode,
 // the config setting as plain strings, runs the precedence rules, and
 // validates. No side effects, no I/O.
 func resolveStorageMode(override StorageMode, envValue, configValue string) (StorageMode, error) {
-	if override != "" {
+	switch {
+	case override != "":
 		if err := validateMode(override); err != nil {
 			return "", err
 		}
 		return override, nil
-	}
-
-	if envValue != "" {
+	case envValue != "":
 		mode, err := parseMode(envValue)
 		if err != nil {
 			return "", fmt.Errorf("%s: %w", EnvVar, err)
 		}
 		return mode, nil
-	}
-
-	if configValue != "" {
+	case configValue != "":
 		mode, err := parseMode(configValue)
 		if err != nil {
 			return "", fmt.Errorf("auth_storage: %w", err)
 		}
 		return mode, nil
+	default:
+		return StorageModeLegacy, nil
 	}
-
-	return StorageModeLegacy, nil
 }
 
 func parseMode(raw string) (StorageMode, error) {
