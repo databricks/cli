@@ -159,13 +159,11 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Git only tracks the executable bit, and permissions on disk depend on
-	// umask at checkout. Normalize to canonical 0o755 for executable files
-	// and 0o644 for regular files so output is independent of the environment.
-	var perm fs.FileMode = 0o644
-	if info.Mode().Perm()&0o100 != 0 {
-		perm = 0o755
-	}
+	perm := info.Mode().Perm()
+
+	// Always include the write bit for the owner of the file.
+	// It does not make sense to have a file that is not writable by the owner.
+	perm |= 0o200
 
 	// Execute relative path template to get destination path for the file
 	relPath, err := r.executeTemplate(relPathTemplate)

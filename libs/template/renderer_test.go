@@ -494,56 +494,6 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	assert.Equal(t, getPermissions(r, "not-a-script"), fs.FileMode(0o644))
 }
 
-// TestRendererNormalizesPermissions guards the canonicalization policy in
-// computeFile: source perms are collapsed to 0o755 when the owner-exec bit is
-// set and 0o644 otherwise, so rendered output is independent of the umask at
-// checkout time.
-func TestRendererNormalizesPermissions(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		t.SkipNow()
-	}
-
-	tests := []struct {
-		name         string
-		filename     string
-		sourcePerm   os.FileMode
-		expectedPerm fs.FileMode
-	}{
-		{"owner-exec restrictive", "exec.sh", 0o700, 0o755},
-		{"owner-rw restrictive", "data.txt", 0o600, 0o644},
-		{"group-restricted executable", "script", 0o750, 0o755},
-		{"group-restricted regular", "config", 0o640, 0o644},
-		{"read-only regular", "readonly", 0o444, 0o644},
-		{"group-exec without owner-exec", "quirky", 0o410, 0o644},
-	}
-
-	ctx := t.Context()
-	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
-	helpers := loadHelpers(ctx)
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			templateDir := filepath.Join(tmpDir, "template")
-			require.NoError(t, os.Mkdir(templateDir, 0o755))
-
-			srcPath := filepath.Join(templateDir, tc.filename)
-			require.NoError(t, os.WriteFile(srcPath, []byte("content"), 0o644))
-			require.NoError(t, os.Chmod(srcPath, tc.sourcePerm))
-
-			r, err := newRenderer(ctx, nil, helpers, os.DirFS(tmpDir), "template", "library")
-			require.NoError(t, err)
-
-			require.NoError(t, r.walk())
-			require.Len(t, r.files, 1)
-
-			cf, ok := r.files[0].(*copyFile)
-			require.True(t, ok, "expected copyFile, got %T", r.files[0])
-			assert.Equal(t, tc.expectedPerm, cf.perm)
-		})
-	}
-}
-
 func TestRendererErrorOnConflictingFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := t.Context()
