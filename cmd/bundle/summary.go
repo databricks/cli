@@ -46,6 +46,7 @@ Useful after deployment to see what was created and where to find it.`,
 		} else {
 			b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 				ReadState:        true,
+				AlwaysPull:       forcePull,
 				IncludeLocations: includeLocations,
 				InitIDs:          true,
 			})

@@ -1,0 +1,21 @@
+trace $CLI bundle deploy > /dev/null
+rm -f out.requests.txt
+
+title "Modify PATH so that real open is not run"
+export PATH=.:$PATH
+
+title "bundle summary without --force-pull: no remote state read\n"
+trace $CLI bundle summary > /dev/null
+print_requests.py --get //workspace-files/
+
+title "bundle summary --force-pull: remote state read\n"
+trace $CLI bundle summary --force-pull > /dev/null
+print_requests.py --get //workspace-files/
+
+title "bundle open without --force-pull: no remote state read\n"
+musterr trace $CLI bundle open foo > /dev/null
+print_requests.py --get //workspace-files/
+
+title "bundle open --force-pull: remote state read\n"
+musterr trace $CLI bundle open foo --force-pull > /dev/null
+print_requests.py --get //workspace-files/

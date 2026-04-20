@@ -75,7 +75,8 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 				arg, err = resolveOpenArgument(ctx, b, args)
 				return err
 			},
-			InitIDs: true,
+			AlwaysPull: forcePull,
+			InitIDs:    true,
 		})
 		if err != nil {
 			return err
