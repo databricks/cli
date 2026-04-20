@@ -6,3 +6,30 @@
   "method": "POST",
   "path": "/api/2.0/app-spaces"
 }
+{
+  "body": {
+    "description": "MY_SPACE_DESCRIPTION",
+    "name": "myspacename"
+  },
+  "method": "PATCH",
+  "path": "/api/2.0/app-spaces/myspacename",
+  "q": {
+    "update_mask": "description,resources,user_api_scopes,usage_policy_id"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/app-spaces/myspacename"
+}
+{
+  "body": {
+    "description": "MY_SPACE_DESCRIPTION",
+    "name": "mynewspacename"
+  },
+  "method": "POST",
+  "path": "/api/2.0/app-spaces"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/app-spaces/mynewspacename"
+}
