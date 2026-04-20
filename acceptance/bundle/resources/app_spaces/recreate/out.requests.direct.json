@@ -6,3 +6,19 @@
   "method": "POST",
   "path": "/api/2.0/app-spaces"
 }
+{
+  "method": "DELETE",
+  "path": "/api/2.0/app-spaces/original-space-name"
+}
+{
+  "body": {
+    "description": "my_space_description",
+    "name": "renamed-space"
+  },
+  "method": "POST",
+  "path": "/api/2.0/app-spaces"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/app-spaces/renamed-space"
+}

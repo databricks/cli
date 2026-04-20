@@ -26,9 +26,84 @@ Resources:
 
 === Update description and re-deploy
 >>> update_file.py databricks.yml my_space_description MY_SPACE_DESCRIPTION
-  File "<fstring>", line 1
-    (old=)
-        ^
-SyntaxError: invalid syntax
 
-Exit code: 1
+>>> [CLI] bundle plan
+update app_spaces.mykey
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  App Spaces:
+    mykey:
+      Name: myspacename
+      URL:  (not deployed)
+
+=== Update name and re-deploy
+>>> update_file.py databricks.yml myspacename mynewspacename
+
+>>> [CLI] bundle plan
+recreate app_spaces.mykey
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  App Spaces:
+    mykey:
+      Name: myspacename
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle plan
+update app_spaces.mykey
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  App Spaces:
+    mykey:
+      Name: mynewspacename
+      URL:  (not deployed)
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.app_spaces.mykey
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
