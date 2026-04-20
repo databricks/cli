@@ -91,7 +91,8 @@ func AskYesOrNo(ctx context.Context, question string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return ans == "y", nil
+	ans = strings.ToLower(strings.TrimSpace(ans))
+	return ans == "y" || ans == "yes", nil
 }
 
 func splitAtLastNewLine(s string) (string, string) {
