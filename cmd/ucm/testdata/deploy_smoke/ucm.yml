@@ -1,0 +1,24 @@
+ucm:
+  name: smoke
+  engine: terraform
+
+workspace:
+  host: https://example.cloud.databricks.com
+
+resources:
+  catalogs:
+    main:
+      name: main
+      comment: smoke catalog
+      tags:
+        cost_center: "9999"
+        data_owner: platform
+        classification: internal
+      schemas:
+        default:
+          name: default
+          comment: smoke schema
+          grants:
+            default_reader:
+              principal: platform-readers
+              privileges: [USE_SCHEMA, SELECT]
