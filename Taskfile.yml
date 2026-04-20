@@ -66,6 +66,8 @@ tasks:
     desc: Lint Go files in the root module
     sources:
       - "**/*.go"
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
       - .golangci.yaml
     cmds:
       - "{{.GO_TOOL}} golangci-lint run ./..."
@@ -96,6 +98,8 @@ tasks:
     desc: Lint changed Go files in root module (diff vs main, with --fix). Does not check tools/ or bundle/internal/tf/codegen — use `lint` for full coverage.
     sources:
       - "**/*.go"
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
       - .golangci.yaml
     cmds:
       - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --fix"
@@ -148,7 +152,36 @@ tasks:
   # --- Code checks ---
 
   tidy:
-    desc: Run go mod tidy
+    desc: Run go mod tidy across all Go modules (root, tools, codegen)
+    cmds:
+      - task: tidy:root
+      - task: tidy:tools
+      - task: tidy:codegen
+
+  tidy:root:
+    desc: Run go mod tidy in root module
+    sources:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
+    cmds:
+      - go mod tidy
+
+  tidy:tools:
+    desc: Run go mod tidy in tools/ module
+    dir: tools
+    sources:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+    cmds:
+      - go mod tidy
+
+  tidy:codegen:
+    desc: Run go mod tidy in bundle/internal/tf/codegen module
+    dir: bundle/internal/tf/codegen
     sources:
       - go.mod
       - go.sum
@@ -204,7 +237,7 @@ tasks:
   # (tools/, bundle/internal/tf/codegen/), and _test.go files don't affect the build.
   build:
     desc: Build the CLI binary
-    deps: [tidy]
+    deps: [tidy:root]
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -221,7 +254,7 @@ tasks:
 
   snapshot:
     desc: Build snapshot binary to .databricks/databricks
-    deps: [tidy]
+    deps: [tidy:root]
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -238,7 +271,7 @@ tasks:
 
   snapshot:release:
     desc: Build release binaries locally without uploading
-    deps: [tidy]
+    deps: [tidy:root]
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
