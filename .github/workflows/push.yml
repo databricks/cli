@@ -164,7 +164,7 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
-    name: "task test:exp-aitools (${{matrix.os.name}})"
+    name: "task test:exp:aitools (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
 
     permissions:
@@ -201,7 +201,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ./task test:exp-aitools
+          ./task test:exp:aitools
 
   test-exp-ssh:
     needs:
@@ -210,7 +210,7 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
-    name: "task test:exp-ssh (${{matrix.os.name}})"
+    name: "task test:exp:ssh (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
 
     permissions:
@@ -246,7 +246,7 @@ jobs:
 
       - name: Run tests
         run: |
-          ./task test:exp-ssh
+          ./task test:exp:ssh
 
   test-pipelines:
     needs:

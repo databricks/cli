@@ -23,8 +23,8 @@ Before submitting a PR, run these commands to match what CI checks. CI uses the 
 ./task pydabs:codegen pydabs:test pydabs:lint pydabs:docs
 
 # 6. If you changed experimental/aitools or experimental/ssh:
-./task test:exp-aitools   # only if aitools code changed
-./task test:exp-ssh       # only if ssh code changed
+./task test:exp:aitools   # only if aitools code changed
+./task test:exp:ssh       # only if ssh code changed
 ```
 
 ## Final cleanup scan

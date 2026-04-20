@@ -13,15 +13,11 @@ tasks:
       - task: checks
       - task: fmt-q
       - task: lint-q
-      - task: test
+      - task: test-update
 
   all:
     desc: Run all checks, full fmt, full lint, tests, and regeneration
     cmds:
-      - task: checks
-      - task: fmt
-      - task: lint
-      - task: test
       # Skips generate:genkit (expensive, requires universe checkout, outputs are
       # committed). Run `./task generate` explicitly when codegen inputs change.
       - task: generate:refschema
@@ -33,6 +29,10 @@ tasks:
       - task: pydabs:codegen
       - task: pydabs:lint
       - task: pydabs:test
+      - task: checks
+      - task: fmt
+      - task: lint
+      - task: test-update-all
 
   # --- Linting ---
   #
@@ -397,22 +397,22 @@ tasks:
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-30m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
 
-  test:update:
+  test-update:
     desc: Update acceptance test output (local)
     cmds:
       - "-go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-30m}"
 
-  test:update-templates:
+  test-update-templates:
     desc: Update acceptance test template output
     cmds:
       - "-go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-30m}"
 
-  test:update-aws:
+  test-update-aws:
     desc: Update acceptance test output (integration, requires deco access)
     cmds:
       - "deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=1 go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
 
-  test:update-all:
+  test-update-all:
     desc: Update all acceptance test outputs
     # Sequential: both tasks overwrite the same acceptance output files.
     cmds:
@@ -472,7 +472,7 @@ tasks:
   # Keep patterns narrow and specific. Changes to files outside these paths trigger the
   # generic `test` target (the catch-all) instead.
 
-  test:exp-aitools:
+  test:exp:aitools:
     desc: Run experimental aitools unit and acceptance tests (in parallel)
     sources:
       - experimental/aitools/**
@@ -487,7 +487,7 @@ tasks:
     cmds:
       - cat test-output-unit-root.json test-output-acc.json > test-output.json
 
-  test:exp-ssh:
+  test:exp:ssh:
     desc: Run experimental SSH unit and acceptance tests (in parallel)
     sources:
       - experimental/ssh/**

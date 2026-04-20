@@ -10,12 +10,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ciTargetTasks maps the dash-separated output name used by CI to the
-// colon-separated Taskfile task name whose `sources:` define its trigger set.
-var ciTargetTasks = map[string]string{
-	"test-exp-aitools": "test:exp-aitools",
-	"test-exp-ssh":     "test:exp-ssh",
-	"test-pipelines":   "test:pipelines",
+// ciTargets lists the dash-separated CI output names whose trigger sets
+// come from the corresponding Taskfile task's `sources:`. The task name is
+// derived by replacing "-" with ":" (e.g. "test-exp-ssh" → "test:exp:ssh").
+var ciTargets = []string{
+	"test-exp-aitools",
+	"test-exp-ssh",
+	"test-pipelines",
 }
 
 // commonTriggerPatterns lists patterns that trigger all test targets.
@@ -42,7 +43,7 @@ type taskfileTask struct {
 }
 
 // LoadTargetMappings reads Taskfile.yml and builds target mappings for CI tasks
-// by extracting `sources:` from each task listed in ciTargetTasks.
+// by extracting `sources:` from each task listed in ciTargets.
 func LoadTargetMappings(taskfilePath string) ([]targetMapping, error) {
 	data, err := os.ReadFile(taskfilePath)
 	if err != nil {
@@ -56,8 +57,8 @@ func LoadTargetMappings(taskfilePath string) ([]targetMapping, error) {
 	mappings := []targetMapping{
 		{prefixes: slices.Clone(commonTriggerPatterns), target: "test"},
 	}
-	for _, outputName := range slices.Sorted(maps.Keys(ciTargetTasks)) {
-		taskName := ciTargetTasks[outputName]
+	for _, outputName := range ciTargets {
+		taskName := strings.ReplaceAll(outputName, "-", ":")
 		t, ok := tf.Tasks[taskName]
 		if !ok {
 			return nil, fmt.Errorf("task %q not found in %s", taskName, taskfilePath)
