@@ -156,24 +156,22 @@ func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
 }
 
 func TestWorkspaceConfigHTTPTimeout(t *testing.T) {
-	w := Workspace{}
-
-	t.Run("default", func(t *testing.T) {
-		cfg := w.Config(t.Context())
-		assert.Equal(t, 90, cfg.HTTPTimeoutSeconds)
-	})
-
-	t.Run("env var", func(t *testing.T) {
-		t.Setenv(env.HTTPTimeoutSecondsVariable, "5")
-		cfg := w.Config(t.Context())
-		assert.Equal(t, 5, cfg.HTTPTimeoutSeconds)
-	})
-
-	t.Run("invalid env var uses default", func(t *testing.T) {
-		t.Setenv(env.HTTPTimeoutSecondsVariable, "not-a-number")
-		cfg := w.Config(t.Context())
-		assert.Equal(t, 90, cfg.HTTPTimeoutSeconds)
-	})
+	for _, tc := range []struct {
+		envVal  string
+		want    int
+	}{
+		{"", 90},
+		{"5", 5},
+		{"not-a-number", 90},
+	} {
+		t.Run(tc.envVal, func(t *testing.T) {
+			if tc.envVal != "" {
+				t.Setenv(env.HTTPTimeoutSecondsVariable, tc.envVal)
+			}
+			w := Workspace{}
+			assert.Equal(t, tc.want, w.Config(t.Context()).HTTPTimeoutSeconds)
+		})
+	}
 }
 
 func TestWorkspaceVerifyProfileForHost(t *testing.T) {
