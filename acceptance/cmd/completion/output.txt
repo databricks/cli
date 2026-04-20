@@ -31,5 +31,7 @@ Shell:   zsh
 File:    home/.zshrc
 Status:  not installed
 # bash completion V2 for databricks                           -*- shell-script -*-
-
-Exit code: 141
+#compdef databricks
+# fish completion for databricks                           -*- shell-script -*-
+# powershell completion for databricks                           -*- shell-script -*-
+# bash completion V2 for databricks                           -*- shell-script -*-
