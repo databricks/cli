@@ -1,7 +1,8 @@
 version: '3'
 
 vars:
-  GO_TOOL: go tool -modfile=tools/go.mod
+  # Absolute path so tasks with `dir:` (lint:go:tools, lint:go:codegen) can use it.
+  GO_TOOL: go tool -modfile={{.ROOT_DIR}}/tools/go.mod
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
 
@@ -67,7 +68,7 @@ tasks:
       - "**/*.go"
       - .golangci.yaml
     cmds:
-      - go tool -modfile=tools/go.mod golangci-lint run ./...
+      - "{{.GO_TOOL}} golangci-lint run ./..."
 
   lint:go:tools:
     desc: Lint Go files in tools/ module
@@ -78,7 +79,7 @@ tasks:
       - go.mod
       - go.sum
     cmds:
-      - go tool -modfile={{.ROOT_DIR}}/tools/go.mod golangci-lint run ./...
+      - "{{.GO_TOOL}} golangci-lint run ./..."
 
   lint:go:codegen:
     desc: Lint Go files in bundle/internal/tf/codegen module
@@ -89,15 +90,15 @@ tasks:
       - go.mod
       - go.sum
     cmds:
-      - go tool -modfile={{.ROOT_DIR}}/tools/go.mod golangci-lint run ./...
+      - "{{.GO_TOOL}} golangci-lint run ./..."
 
   lint-q:go:root:
-    desc: Lint changed Go files in root module (diff vs main, with --fix)
+    desc: Lint changed Go files in root module (diff vs main, with --fix). Does not check tools/ or bundle/internal/tf/codegen — use `lint` for full coverage.
     sources:
       - "**/*.go"
       - .golangci.yaml
     cmds:
-      - ./tools/lintdiff.py go tool -modfile=tools/go.mod golangci-lint run --fix
+      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --fix"
 
   # --- Formatting ---
 
@@ -125,7 +126,7 @@ tasks:
       - "**/*.go"
       - .golangci.yaml
     cmds:
-      - go tool -modfile=tools/go.mod golangci-lint fmt
+      - "{{.GO_TOOL}} golangci-lint fmt"
 
   fmt-q:go:
     desc: Format changed Go files (diff vs main)
@@ -133,7 +134,7 @@ tasks:
       - "**/*.go"
       - .golangci.yaml
     cmds:
-      - ./tools/lintdiff.py go tool -modfile=tools/go.mod golangci-lint fmt
+      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
 
   fmt:yaml:
     desc: Format YAML files
@@ -142,7 +143,7 @@ tasks:
       - "**/*.yaml"
       - yamlfmt.yml
     cmds:
-      - go tool -modfile=tools/go.mod yamlfmt .
+      - "{{.GO_TOOL}} yamlfmt ."
 
   # --- Code checks ---
 
@@ -157,12 +158,6 @@ tasks:
 
   ws:
     desc: Check whitespace
-    sources:
-      - "**/*.go"
-      - "**/*.py"
-      - "**/*.yml"
-      - "**/*.yaml"
-      - "**/*.md"
     cmds:
       - ./tools/validate_whitespace.py
 
@@ -189,7 +184,13 @@ tasks:
 
   checks:
     desc: Run quick checks (tidy, whitespace, links, deadcode)
-    deps: [tidy, ws, links, deadcode]
+    # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
+    # touching more paths should not race with whitespace/link scanners.
+    cmds:
+      - task: tidy
+      - task: ws
+      - task: links
+      - task: deadcode
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
@@ -220,6 +221,7 @@ tasks:
 
   snapshot:
     desc: Build snapshot binary to .databricks/databricks
+    deps: [tidy]
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -236,6 +238,7 @@ tasks:
 
   snapshot:release:
     desc: Build release binaries locally without uploading
+    deps: [tidy]
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -281,8 +284,6 @@ tasks:
     desc: Run short unit tests
     sources:
       - "**/*.go"
-    vars:
-      TEST_PACKAGES: '{{.TEST_PACKAGES | default "./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... ."}}'
     cmds:
       - |
         {{.GO_TOOL}} gotestsum \
@@ -297,8 +298,6 @@ tasks:
     desc: Run all unit tests (no -short)
     sources:
       - "**/*.go"
-    vars:
-      TEST_PACKAGES: '{{.TEST_PACKAGES | default "./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... ."}}'
     cmds:
       - |
         {{.GO_TOOL}} gotestsum \
@@ -314,8 +313,6 @@ tasks:
     sources:
       - "**/*.go"
       - acceptance/**
-    vars:
-      ACCEPTANCE_TEST_FILTER: '{{.ACCEPTANCE_TEST_FILTER | default ""}}'
     cmds:
       - |
         {{.GO_TOOL}} gotestsum \
@@ -331,8 +328,6 @@ tasks:
     sources:
       - "**/*.go"
       - acceptance/**
-    vars:
-      ACCEPTANCE_TEST_FILTER: '{{.ACCEPTANCE_TEST_FILTER | default ""}}'
     cmds:
       - |
         {{.GO_TOOL}} gotestsum \
@@ -360,7 +355,10 @@ tasks:
 
   test:update-all:
     desc: Update all acceptance test outputs
-    deps: ['test:update', 'test:update-aws']
+    # Sequential: both tasks overwrite the same acceptance output files.
+    cmds:
+      - task: test:update
+      - task: test:update-aws
 
   generate:out-test-toml:
     desc: Regenerate out.test.toml files without running tests
@@ -374,9 +372,6 @@ tasks:
 
   cover:
     desc: Run tests with coverage
-    vars:
-      ACCEPTANCE_TEST_FILTER: '{{.ACCEPTANCE_TEST_FILTER | default ""}}'
-      TEST_PACKAGES: '{{.TEST_PACKAGES | default "./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... ."}}'
     cmds:
       - rm -fr ./acceptance/build/cover/
       - |
@@ -506,9 +501,10 @@ tasks:
   # --- Code generation ---
   #
   # Each generator declares tight `sources:` so Task's checksum cache re-runs only
-  # when inputs actually change. The reflection-based generators (schema, docs,
-  # validation) pick up SDK type changes via go.mod / go.sum. The aggregator
-  # `generate` orchestrates all of them; individual tasks can be invoked standalone.
+  # when inputs actually change. The reflection-based generators (refschema,
+  # schema, schema-docs, docs, validation) pick up SDK type changes via go.mod /
+  # go.sum. The aggregator `generate` orchestrates all of them; individual tasks
+  # can be invoked standalone.
 
   generate:
     desc: Run all generators (CLI commands, refschema, schema, docs, validation, direct, python)
@@ -651,6 +647,7 @@ tasks:
     deps: ['generate:direct-apitypes', 'generate:direct-resources']
 
   generate:direct-apitypes:
+    desc: Generate direct engine API types YAML
     deps: ['generate:openapi-json']
     sources:
       - bundle/direct/tools/generate_apitypes.py
@@ -666,6 +663,7 @@ tasks:
         > bundle/direct/dresources/apitypes.generated.yml
 
   generate:direct-resources:
+    desc: Generate direct engine resources YAML
     deps: ['generate:direct-apitypes']
     sources:
       - bundle/direct/tools/generate_resources.py
