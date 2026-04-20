@@ -1,0 +1,34 @@
+
+>>> [CLI] bundle plan
+create app_spaces.mykey
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+
+>>> [CLI] bundle summary
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+Resources:
+  App Spaces:
+    mykey:
+      Name: myspacename
+      URL:  (not deployed)
+
+=== Update description and re-deploy
+>>> update_file.py databricks.yml my_space_description MY_SPACE_DESCRIPTION
+  File "<fstring>", line 1
+    (old=)
+        ^
+SyntaxError: invalid syntax
+
+Exit code: 1

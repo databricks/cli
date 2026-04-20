@@ -284,6 +284,74 @@
                   }
                 ]
               },
+              "resources.AppSpace": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "create_time": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      },
+                      "creator": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "description": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "effective_usage_policy_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "effective_user_api_scopes": {
+                        "$ref": "#/$defs/slice/string"
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "resources": {
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
+                      },
+                      "service_principal_client_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "service_principal_id": {
+                        "$ref": "#/$defs/int64"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.SpaceStatus"
+                      },
+                      "update_time": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      },
+                      "updater": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "usage_policy_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_api_scopes": {
+                        "$ref": "#/$defs/slice/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Catalog": {
                 "oneOf": [
                   {
@@ -2471,6 +2539,9 @@
                     "alerts": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Alert"
                     },
+                    "app_spaces": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.AppSpace"
+                    },
                     "apps": {
                       "description": "The app resource defines a Databricks app.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.App",
@@ -3571,6 +3642,29 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "apps.SpaceStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.SpaceStatusSpaceState"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.SpaceStatusSpaceState": {
+              "type": "string"
             },
             "apps.TelemetryExportDestination": {
               "oneOf": [
@@ -11193,6 +11287,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.App"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.AppSpace": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppSpace"
                       }
                     },
                     {
