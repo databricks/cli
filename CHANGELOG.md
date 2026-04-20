@@ -1,5 +1,19 @@
 # Version changelog
 
+## Release v0.297.2 (2026-04-19)
+
+### Notable Changes
+* This release includes a fix for `error downloading Terraform: unable to verify checksums signature: openpgp: key expired` error
+observed when running `databricks bundle deploy` command.
+
+### Bundles
+* Use hardcoded ArmoredPublicKey for TF binary installation ([#5019](https://github.com/databricks/cli/pull/5019))
+
+## Release v0.297.1 (2026-04-17)
+
+### Dependency updates
+* Bump Go toolchain to 1.25.9 ([#5004](https://github.com/databricks/cli/pull/5004))
+
 ## Release v0.297.0 (2026-04-15)
 
 ### CLI
