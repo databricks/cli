@@ -9,6 +9,7 @@ package bundle
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -141,6 +142,10 @@ type Bundle struct {
 	// (direct only) deployment implementation and state
 	DeploymentBundle direct.DeploymentBundle
 
+	// DeploymentID is the DMS deployment identifier read from workspace state.
+	// Populated during state pull when the deployment metadata service is enabled.
+	DeploymentID string
+
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
 	AutoApprove bool
@@ -227,6 +232,20 @@ func (b *Bundle) initClientOnce() {
 		if err != nil {
 			return nil, fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
 		}
+
+		// If DATABRICKS_LITESWAP_ID is set, wrap the transport to inject the
+		// x-databricks-traffic-id header for routing to the liteswap instance.
+		// This env var is only set during manual testing so os.Getenv is fine.
+		if liteswapID := os.Getenv("DATABRICKS_LITESWAP_ID"); liteswapID != "" { //nolint:forbidigo
+			inner := w.Config.HTTPTransport
+			if inner == nil {
+				inner = http.DefaultTransport
+			}
+			w.Config.HTTPTransport = &liteswapTransport{
+				inner:     inner,
+				trafficID: "testenv://liteswap/" + liteswapID,
+			}
+		}
 		return w, nil
 	})
 }
@@ -245,6 +264,19 @@ func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 	}
 
 	return client
+}
+
+// liteswapTransport injects the x-databricks-traffic-id header to route
+// requests to a liteswap service instance.
+type liteswapTransport struct {
+	inner     http.RoundTripper
+	trafficID string
+}
+
+func (t *liteswapTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	clone := req.Clone(req.Context())
+	clone.Header.Set("x-databricks-traffic-id", t.trafficID)
+	return t.inner.RoundTrip(clone)
 }
 
 // SetWorkpaceClient sets the workspace client for this bundle.

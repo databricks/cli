@@ -1,0 +1,34 @@
+# Deploy with one job.
+trace $CLI bundle deploy
+
+# Delete local cache to force reading state from DMS.
+rm -rf .databricks
+
+# Add a second job and deploy again.
+cat > databricks.yml << 'EOF'
+bundle:
+  name: add-resources-test
+
+resources:
+  jobs:
+    job_a:
+      name: job-a
+    job_b:
+      name: job-b
+EOF
+trace $CLI bundle deploy
+
+# Delete local cache again and run plan — should show no changes.
+rm -rf .databricks
+trace $CLI bundle plan
+
+# Print metadata service requests. Should show:
+# - Deploy 1: CREATE for job_a
+# - Deploy 2: ListResources + CREATE for job_b (job_a is unchanged)
+# - Plan: ListResources (no operations)
+trace print_requests.py --get //bundle ^//workspace-files ^//import-file
+
+# Clean up.
+rm -rf .databricks
+$CLI bundle destroy --auto-approve > /dev/null 2>&1
+print_requests.py --get > /dev/null 2>&1 || true

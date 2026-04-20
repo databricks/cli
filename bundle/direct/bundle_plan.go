@@ -40,6 +40,8 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 // ValidatePlanAgainstState validates that a plan's lineage and serial match the current state.
 // This should be called early in the deployment process, before any file operations.
 // If the plan has no lineage (first deployment), validation is skipped.
+// Serialized plans are not supported with DMS today. When support is added,
+// similar validation will be needed using the deployment ID and version ID.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
 	// If plan has no lineage, this is a first deployment before any state exists
 	// No validation needed

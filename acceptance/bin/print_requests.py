@@ -168,7 +168,7 @@ def main():
     if not requests_file.exists():
         sys.exit(f"File {requests_file} not found")
 
-    with open(requests_file) as fobj:
+    with open(requests_file, encoding="utf-8") as fobj:
         data = fobj.read()
 
     if not data:

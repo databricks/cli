@@ -20,6 +20,11 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		panic("Planning is not done")
 	}
 
+	if migrateMode && b.OperationReporter != nil {
+		logdiag.LogError(ctx, errors.New("migration is not supported with the deployment metadata service"))
+		return
+	}
+
 	if len(plan.Plan) == 0 {
 		// Avoid creating state file if nothing to deploy
 		return
@@ -84,7 +89,23 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				logdiag.LogError(ctx, fmt.Errorf("%s: Unexpected delete action during migration", errorPrefix))
 				return false
 			}
+
+			// Capture the resource ID before deletion for operation reporting.
+			var deleteResourceID string
+			if b.OperationReporter != nil {
+				if dbentry, ok := b.StateDB.GetResourceEntry(resourceKey); ok {
+					deleteResourceID = dbentry.ID
+				}
+			}
+
 			err = d.Destroy(ctx, &b.StateDB)
+			if b.OperationReporter != nil {
+				reportErr := b.OperationReporter(ctx, resourceKey, deleteResourceID, action, err, nil)
+				if reportErr != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: failed to report operation: %w", errorPrefix, reportErr))
+					return false
+				}
+			}
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
@@ -122,6 +143,20 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
 				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
+			}
+
+			// Report the operation inline to the metadata service.
+			if b.OperationReporter != nil {
+				var resourceID string
+				var resourceState json.RawMessage
+				if dbentry, ok := b.StateDB.GetResourceEntry(resourceKey); ok {
+					resourceID = dbentry.ID
+					resourceState = dbentry.State
+				}
+				if reportErr := b.OperationReporter(ctx, resourceKey, resourceID, action, err, resourceState); reportErr != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: failed to report operation: %w", errorPrefix, reportErr))
+					return false
+				}
 			}
 
 			if err != nil {

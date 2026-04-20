@@ -134,13 +134,19 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
-	bundle.ApplyContext(ctx, b, lock.Acquire())
-	if logdiag.HasError(ctx) {
+	dl := lock.NewDeploymentLock(ctx, b, lock.GoalDestroy)
+	if err := dl.Acquire(ctx); err != nil {
+		logdiag.LogError(ctx, err)
 		return
 	}
-
 	defer func() {
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
+		status := lock.DeploymentSuccess
+		if logdiag.HasError(ctx) {
+			status = lock.DeploymentFailure
+		}
+		if err := dl.Release(ctx, status); err != nil {
+			log.Warnf(ctx, "Failed to release deployment lock: %v", err)
+		}
 	}()
 
 	if !engine.IsDirect() {

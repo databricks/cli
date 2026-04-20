@@ -176,6 +176,8 @@ type FakeWorkspace struct {
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
+
+	deploymentMetadata *deploymentMetadata
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -301,6 +303,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresEndpoints:     map[string]postgres.Endpoint{},
 		PostgresOperations:    map[string]postgres.Operation{},
 		clusterVenvs:          map[string]*clusterEnv{},
+		deploymentMetadata:    newDeploymentMetadata(),
 		Alerts:                map[string]sql.AlertV2{},
 		Experiments:           map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:   map[string]ml.Model{},
