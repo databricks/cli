@@ -48,9 +48,8 @@ func newAuthCacheWith(ctx context.Context, override storage.StorageMode, f cache
 	case storage.StorageModeSecure:
 		return f.newKeyring(), mode, nil
 	case storage.StorageModeLegacy, storage.StorageModePlaintext:
-		// MS1 ships no dedicated plaintext implementation; the switch will
-		// be added in MS3. Until then the file cache is the safest existing
-		// behavior and the resolver still accepts the value.
+		// Plaintext currently maps to the file cache; a dedicated
+		// plaintext backend (no host-keyed dual-writes) is a follow-up.
 		c, err := f.newFile()
 		if err != nil {
 			return nil, "", fmt.Errorf("open file token cache: %w", err)
