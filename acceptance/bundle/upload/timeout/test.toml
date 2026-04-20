@@ -1,4 +1,3 @@
-Slow = true
 Timeout = "3m"
 
 [[Server]]
