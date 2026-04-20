@@ -34,8 +34,11 @@ type taskfile struct {
 	Tasks map[string]taskfileTask `yaml:"tasks"`
 }
 
+// Sources uses []any to tolerate non-string entries (e.g. `- exclude: tools/**`)
+// that appear on other tasks in Taskfile.yml. We only care about string globs;
+// map entries are skipped in LoadTargetMappings.
 type taskfileTask struct {
-	Sources []string `yaml:"sources"`
+	Sources []any `yaml:"sources"`
 }
 
 // LoadTargetMappings reads Taskfile.yml and builds target mappings for CI tasks
@@ -64,7 +67,11 @@ func LoadTargetMappings(taskfilePath string) ([]targetMapping, error) {
 		}
 		prefixes := slices.Clone(commonTriggerPatterns)
 		for _, src := range t.Sources {
-			prefixes = append(prefixes, sourceToPrefix(src))
+			s, ok := src.(string)
+			if !ok {
+				continue
+			}
+			prefixes = append(prefixes, sourceToPrefix(s))
 		}
 		mappings = append(mappings, targetMapping{prefixes: prefixes, target: outputName})
 	}

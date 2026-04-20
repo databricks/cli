@@ -309,8 +309,6 @@ tasks:
     desc: Run unit and acceptance tests (in parallel)
     deps:
       - task: test:unit
-        vars:
-          TEST_PACKAGES: "{{.TEST_PACKAGES}}"
       - task: test:acc
         vars:
           ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
@@ -318,17 +316,59 @@ tasks:
       - cat test-output-unit.json test-output-acc.json > test-output.json
 
   test:unit:
-    desc: Run unit tests
+    desc: Run unit tests across all Go modules (root, tools, codegen)
+    deps: ['test:unit:root', 'test:unit:tools', 'test:unit:codegen']
+    cmds:
+      - cat test-output-unit-root.json test-output-unit-tools.json test-output-unit-codegen.json > test-output-unit.json
+
+  test:unit:root:
+    desc: Run unit tests in root module
     sources:
       - "**/*.go"
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
     cmds:
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --jsonfile test-output-unit.json \
+          --jsonfile test-output-unit-root.json \
           --rerun-fails \
           --packages "{{.TEST_PACKAGES}}" \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}
+
+  test:unit:tools:
+    desc: Run unit tests in tools/ module
+    dir: tools
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile {{.ROOT_DIR}}/test-output-unit-tools.json \
+          --rerun-fails \
+          --packages ./... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}
+
+  test:unit:codegen:
+    desc: Run unit tests in bundle/internal/tf/codegen module
+    dir: bundle/internal/tf/codegen
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    cmds:
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --jsonfile {{.ROOT_DIR}}/test-output-unit-codegen.json \
+          --rerun-fails \
+          --packages ./... \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
 
   test:acc:
@@ -427,14 +467,14 @@ tasks:
       - experimental/aitools/**
       - acceptance/apps/**
     deps:
-      - task: test:unit
+      - task: test:unit:root
         vars:
           TEST_PACKAGES: ./experimental/aitools/...
       - task: test:acc
         vars:
           ACCEPTANCE_TEST_FILTER: TestAccept/apps
     cmds:
-      - cat test-output-unit.json test-output-acc.json > test-output.json
+      - cat test-output-unit-root.json test-output-acc.json > test-output.json
 
   test:exp-ssh:
     desc: Run experimental SSH unit and acceptance tests (in parallel)
@@ -442,14 +482,14 @@ tasks:
       - experimental/ssh/**
       - acceptance/ssh/**
     deps:
-      - task: test:unit
+      - task: test:unit:root
         vars:
           TEST_PACKAGES: ./experimental/ssh/...
       - task: test:acc
         vars:
           ACCEPTANCE_TEST_FILTER: TestAccept/ssh
     cmds:
-      - cat test-output-unit.json test-output-acc.json > test-output.json
+      - cat test-output-unit-root.json test-output-acc.json > test-output.json
 
   test:pipelines:
     desc: Run pipelines unit and acceptance tests (in parallel)
@@ -457,14 +497,14 @@ tasks:
       - cmd/pipelines/**
       - acceptance/pipelines/**
     deps:
-      - task: test:unit
+      - task: test:unit:root
         vars:
           TEST_PACKAGES: ./cmd/pipelines/...
       - task: test:acc
         vars:
           ACCEPTANCE_TEST_FILTER: TestAccept/pipelines
     cmds:
-      - cat test-output-unit.json test-output-acc.json > test-output.json
+      - cat test-output-unit-root.json test-output-acc.json > test-output.json
 
   # --- Integration tests ---
 

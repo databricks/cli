@@ -31,6 +31,9 @@ __pycache__
 # Test results from 'task test'
 test-output.json
 test-output-unit.json
+test-output-unit-root.json
+test-output-unit-tools.json
+test-output-unit-codegen.json
 test-output-acc.json
 
 # Taskfile cache
