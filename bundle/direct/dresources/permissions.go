@@ -66,11 +66,9 @@ func objectIDRef(prefix, baseNode string) string {
 	} else if strings.HasPrefix(baseNode, "resources.postgres_projects.") {
 		// Postgres projects store a hierarchical name as state ID; permissions API expects just the project_id.
 		return prefix + "${" + baseNode + ".project_id}"
-  } else if strings.HasPrefix(baseNode, "resources.vector_search_endpoints.") {
-    // Vector search endpoints use the endpoint name as deployment id; the permissions API uses endpoint UUID.
-		objectIdRef = prefix + "${" + baseNode + ".endpoint_uuid}"
-	}
-
+	} else if strings.HasPrefix(baseNode, "resources.vector_search_endpoints.") {
+		// Vector search endpoints use the endpoint name as deployment id; the permissions API uses endpoint UUID.
+		return prefix + "${" + baseNode + ".endpoint_uuid}"
 	} else {
 		return prefix + "${" + baseNode + ".id}"
 	}
