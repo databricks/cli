@@ -87,7 +87,7 @@ func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 // AskYesOrNo is a compatibility layer for the progress logger interfaces.
 // It prompts the user with a question and returns the answer.
 func AskYesOrNo(ctx context.Context, question string) (bool, error) {
-	ans, err := Ask(ctx, question+" [y/n]", "")
+	ans, err := Ask(ctx, question+" [y/N]", "")
 	if err != nil {
 		return false, err
 	}

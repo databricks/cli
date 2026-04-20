@@ -7,7 +7,7 @@
 ### CLI
 
 * Added `--limit` flag to all paginated list commands for client-side result capping ([#4984](https://github.com/databricks/cli/pull/4984)).
-* Accept `yes` in addition to `y` for `[y/n]` confirmation prompts.
+* Accept `yes` in addition to `y` for confirmation prompts, and show `[y/N]` to indicate that no is the default.
 
 ### Bundles
 
