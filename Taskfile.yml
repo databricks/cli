@@ -521,7 +521,7 @@ tasks:
       # based generators below so they re-run automatically.
       - task: generate:commands
       # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
-      # generate:direct-apitypes and generate:direct-resources below.
+      # generate:direct:apitypes and generate:direct:resources below.
       - task: generate:refschema
       - task: generate:schema
       - task: generate:schema-docs
@@ -558,17 +558,13 @@ tasks:
 
   # Refreshes out.fields.txt, which records the field paths / types emitted by
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects
-  # over the dresources adapter types, so sources list both the command and the
-  # adapter packages plus any SDK type changes (go.mod / go.sum).
+  # over types reachable from bundle/, so any bundle change or SDK bump (go.mod
+  # / go.sum) can affect the output.
   generate:refschema:
     desc: Regenerate acceptance/bundle/refschema/out.fields.txt
     sources:
-      - cmd/bundle/debug/**/*.go
-      - exclude: cmd/bundle/debug/**/*_test.go
-      - bundle/direct/dresources/**/*.go
-      - exclude: bundle/direct/dresources/**/*_test.go
-      - libs/structs/**/*.go
-      - exclude: libs/structs/**/*_test.go
+      - bundle/**/*.go
+      - exclude: bundle/**/*_test.go
       - acceptance/bundle/refschema/script
       - acceptance/bundle/refschema/test.toml
       - go.mod
@@ -652,9 +648,9 @@ tasks:
 
   generate:direct:
     desc: Generate direct engine config (apitypes + resources)
-    deps: ['generate:direct-apitypes', 'generate:direct-resources']
+    deps: ['generate:direct:apitypes', 'generate:direct:resources']
 
-  generate:direct-apitypes:
+  generate:direct:apitypes:
     desc: Generate direct engine API types YAML
     deps: ['generate:openapi-json']
     sources:
@@ -670,9 +666,9 @@ tasks:
         acceptance/bundle/refschema/out.fields.txt
         > bundle/direct/dresources/apitypes.generated.yml
 
-  generate:direct-resources:
+  generate:direct:resources:
     desc: Generate direct engine resources YAML
-    deps: ['generate:direct-apitypes']
+    deps: ['generate:direct:apitypes']
     sources:
       - bundle/direct/tools/generate_resources.py
       - .codegen/openapi.json
@@ -690,7 +686,7 @@ tasks:
         acceptance/bundle/refschema/out.fields.txt
         > bundle/direct/dresources/resources.generated.yml
 
-  generate:direct-clean:
+  generate:direct:clean:
     desc: Remove generated direct engine files
     cmds:
       - rm -f bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/resources.generated.yml

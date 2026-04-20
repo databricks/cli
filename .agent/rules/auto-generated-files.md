@@ -70,7 +70,7 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
   - `task generate:commands`
   - Includes generated `cmd/account/**`, `cmd/workspace/**`, `.gitattributes`, `internal/genkit/tagging.py`.
 - Direct engine generated YAML:
-  - `task generate:direct` (or `task generate:direct-apitypes`, `task generate:direct-resources`)
+  - `task generate:direct` (or `task generate:direct:apitypes`, `task generate:direct:resources`)
 - Bundle schemas:
   - `task generate:schema`
   - `task generate:schema-docs`
