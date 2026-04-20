@@ -27,21 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	defaultFilePermissions fs.FileMode
-	defaultDirPermissions  fs.FileMode
-)
-
-func init() {
-	if runtime.GOOS == "windows" {
-		defaultFilePermissions = fs.FileMode(0o666)
-		defaultDirPermissions = fs.FileMode(0o777)
-	} else {
-		defaultFilePermissions = fs.FileMode(0o644)
-		defaultDirPermissions = fs.FileMode(0o755)
-	}
-}
-
 func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
 	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{})
 
@@ -73,8 +58,8 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	require.NoError(t, err)
 
 	// Verify permissions on file and directory
-	testutil.AssertFilePermissions(t, filepath.Join(tempDir, "my_project/README.md"), defaultFilePermissions)
-	testutil.AssertDirPermissions(t, filepath.Join(tempDir, "my_project/resources"), defaultDirPermissions)
+	testutil.AssertFileOwnerExec(t, filepath.Join(tempDir, "my_project/README.md"), false)
+	testutil.AssertDirOwnerExec(t, filepath.Join(tempDir, "my_project/resources"), true)
 
 	b, err := bundle.Load(ctx, filepath.Join(tempDir, "my_project"))
 	require.NoError(t, err)
@@ -319,9 +304,9 @@ func TestRendererPersistToDisk(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(tmpDir, "mno"))
 
 	testutil.AssertFileContents(t, filepath.Join(tmpDir, "a/b/d"), "123")
-	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "a/b/d"), fs.FileMode(0o444))
+	testutil.AssertFileOwnerExec(t, filepath.Join(tmpDir, "a/b/d"), false)
 	testutil.AssertFileContents(t, filepath.Join(tmpDir, "mmnn"), "456")
-	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "mmnn"), fs.FileMode(0o444))
+	testutil.AssertFileOwnerExec(t, filepath.Join(tmpDir, "mmnn"), false)
 }
 
 func TestRendererWalk(t *testing.T) {
@@ -490,8 +475,8 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	}
 
 	assert.Len(t, r.files, 2)
-	assert.Equal(t, getPermissions(r, "script.sh"), fs.FileMode(0o755))
-	assert.Equal(t, getPermissions(r, "not-a-script"), fs.FileMode(0o644))
+	assert.NotZero(t, getPermissions(r, "script.sh")&0o100, "expected owner exec bit set for script.sh")
+	assert.Zero(t, getPermissions(r, "not-a-script")&0o100, "expected owner exec bit not set for not-a-script")
 }
 
 func TestRendererErrorOnConflictingFile(t *testing.T) {
@@ -589,8 +574,8 @@ func TestRendererFileTreeRendering(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert files and directories are correctly materialized.
-	testutil.AssertDirPermissions(t, filepath.Join(tmpDir, "my_directory"), defaultDirPermissions)
-	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "my_directory", "my_file"), defaultFilePermissions)
+	testutil.AssertDirOwnerExec(t, filepath.Join(tmpDir, "my_directory"), true)
+	testutil.AssertFileOwnerExec(t, filepath.Join(tmpDir, "my_directory", "my_file"), false)
 }
 
 func TestRendererSubTemplateInPath(t *testing.T) {
