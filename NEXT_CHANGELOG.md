@@ -10,7 +10,7 @@
 * Accept `yes` in addition to `y` for confirmation prompts, and show `[y/N]` to indicate that no is the default.
 
 ### Bundles
-
+* Remove `experimental-jobs-as-code` template, superseded by `pydabs` ([#4999](https://github.com/databricks/cli/pull/4999)).
 * engine/direct: Added support for Vector Search Endpoints ([#4887](https://github.com/databricks/cli/pull/4887))
 
 ### Dependency updates
