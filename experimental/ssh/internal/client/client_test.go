@@ -224,6 +224,11 @@ func TestToProxyCommand(t *testing.T) {
 			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
 			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --environment-version=4",
 		},
+		{
+			name: "with no-start",
+			opts: client.ClientOptions{ClusterID: "abc-123", NoServerStart: true},
+			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --no-start",
+		},
 	}
 
 	for _, tt := range tests {

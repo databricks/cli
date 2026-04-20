@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -99,6 +100,13 @@ type ClientOptions struct {
 	SkipSettingsCheck bool
 	// Environment version for serverless compute.
 	EnvironmentVersion int
+	// If true, skip writing the SSH config entry in terminal mode.
+	SkipConfigWrite bool
+	// If true, enable SSH ControlMaster multiplexing for connection reuse.
+	Multiplex bool
+	// If true, do not attempt to start the SSH server — only connect to an existing one.
+	// Used in ProxyCommand for scp/rsync where the server should already be running.
+	NoServerStart bool
 }
 
 func (o *ClientOptions) Validate() error {
@@ -203,10 +211,20 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 		proxyCommand += " --environment-version=" + strconv.Itoa(o.EnvironmentVersion)
 	}
 
+	if o.NoServerStart {
+		proxyCommand += " --no-start"
+	}
+
 	return proxyCommand, nil
 }
 
 func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) error {
+	// In proxy mode, the CLI runs as a ProxyCommand subprocess of ssh/scp/rsync.
+	// Suppress all user-facing output so it doesn't interfere with the parent tool.
+	if opts.ProxyMode {
+		ctx = cmdio.MockDiscard(ctx)
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -214,13 +232,17 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGHUP, syscall.SIGTERM)
 	go func() {
 		<-sigCh
-		cmdio.LogString(ctx, "Received termination signal, cleaning up...")
 		cancel()
 	}()
 
 	sessionID := opts.SessionIdentifier()
 	if sessionID == "" {
 		return errors.New("either --cluster or --name must be provided")
+	}
+
+	// Fast path for scp/rsync: only connect to an existing server, don't start a new one.
+	if opts.ProxyMode && opts.NoServerStart && opts.ServerMetadata == "" {
+		return runProxyWithLivenessCheck(ctx, client, opts)
 	}
 
 	if !opts.ProxyMode {
@@ -350,10 +372,24 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	}
 
 	if opts.ProxyMode {
-		return runSSHProxy(ctx, client, serverPort, clusterID, opts)
+		err := runSSHProxy(ctx, client, serverPort, clusterID, opts)
+		// context.Canceled is the normal exit path when the SSH client (scp/rsync) disconnects.
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
+		return err
 	} else if opts.IDE != "" {
 		return runIDE(ctx, client, userName, keyPath, serverPort, clusterID, opts)
 	} else {
+		hostName := opts.SessionIdentifier()
+		if !opts.SkipConfigWrite {
+			if err := writeSSHConfigForConnect(ctx, hostName, userName, keyPath, opts); err != nil {
+				// Non-fatal: log and continue with the SSH session
+				log.Warnf(ctx, "Failed to write SSH config entry: %v", err)
+			} else {
+				printSSHToolHints(ctx, hostName)
+			}
+		}
 		log.Infof(ctx, "Additional SSH arguments: %v", opts.AdditionalArgs)
 		return spawnSSHClient(ctx, userName, keyPath, serverPort, clusterID, opts)
 	}
@@ -377,7 +413,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 		return fmt.Errorf("failed to get SSH config path: %w", err)
 	}
 
-	err = ensureSSHConfigEntry(ctx, configPath, connectionName, userName, keyPath, serverPort, clusterID, opts)
+	err = ensureSSHConfigEntry(ctx, configPath, connectionName, userName, keyPath, opts)
 	if err != nil {
 		return fmt.Errorf("failed to ensure SSH config entry: %w", err)
 	}
@@ -385,23 +421,36 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 	return vscode.LaunchIDE(ctx, opts.IDE, connectionName, userName, currentUser.UserName)
 }
 
-func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {
+func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath string, opts ClientOptions) error {
 	// Ensure the Include directive exists in the main SSH config
 	err := sshconfig.EnsureIncludeDirective(ctx, configPath)
 	if err != nil {
 		return err
 	}
 
-	// Generate ProxyCommand with server metadata
-	optsWithMetadata := opts
-	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
-
-	proxyCommand, err := optsWithMetadata.ToProxyCommand()
+	// Generate ProxyCommand without metadata so the config is resilient to server restarts.
+	// The inline SSH invocation passes metadata separately for fast first-connection.
+	proxyCommand, err := opts.ToProxyCommand()
 	if err != nil {
 		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
 
-	hostConfig := sshconfig.GenerateHostConfig(hostName, userName, keyPath, proxyCommand)
+	configOpts := sshconfig.HostConfigOptions{
+		HostName:     hostName,
+		UserName:     userName,
+		IdentityFile: keyPath,
+		ProxyCommand: proxyCommand,
+	}
+
+	if opts.Multiplex {
+		controlPath, cpErr := controlSocketPath(ctx)
+		if cpErr != nil {
+			return cpErr
+		}
+		configOpts.ControlPath = controlPath
+	}
+
+	hostConfig := sshconfig.GenerateHostConfig(configOpts)
 
 	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, hostName, hostConfig, true)
 	if err != nil {
@@ -410,6 +459,41 @@ func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, k
 
 	log.Infof(ctx, "Updated SSH config entry for '%s'", hostName)
 	return nil
+}
+
+// writeSSHConfigForConnect writes an SSH config entry so that SSH-based tools
+// (scp, rsync, sftp) can connect using the same hostname.
+func writeSSHConfigForConnect(ctx context.Context, hostName, userName, keyPath string, opts ClientOptions) error {
+	configPath, err := sshconfig.GetMainConfigPath(ctx)
+	if err != nil {
+		return err
+	}
+
+	if opts.Multiplex {
+		if err := sshconfig.EnsureSocketsDir(ctx); err != nil {
+			return err
+		}
+	}
+
+	// The scp/rsync ProxyCommand should not start a new server — only connect to an existing one.
+	opts.NoServerStart = true
+	return ensureSSHConfigEntry(ctx, configPath, hostName, userName, keyPath, opts)
+}
+
+// controlSocketPath returns the ControlPath pattern for SSH multiplexing.
+func controlSocketPath(ctx context.Context) (string, error) {
+	socketsDir, err := sshconfig.GetSocketsDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(filepath.Join(socketsDir, "%h")), nil
+}
+
+func printSSHToolHints(ctx context.Context, hostName string) {
+	cmdio.LogString(ctx, fmt.Sprintf("SSH config written for '%s'. You can now use SSH tools in another terminal:", hostName))
+	cmdio.LogString(ctx, fmt.Sprintf("  scp %s:remote-file local-file", hostName))
+	cmdio.LogString(ctx, fmt.Sprintf("  rsync -avz %s:remote-dir/ local-dir/", hostName))
+	cmdio.LogString(ctx, "  sftp "+hostName)
 }
 
 // getServerMetadata retrieves the server metadata from the workspace and validates it via Driver Proxy.
@@ -580,6 +664,16 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 	if opts.UserKnownHostsFile != "" {
 		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
 	}
+	if opts.Multiplex && runtime.GOOS != "windows" {
+		cp, cpErr := controlSocketPath(ctx)
+		if cpErr == nil {
+			sshArgs = append(sshArgs,
+				"-o", "ControlMaster=auto",
+				"-o", "ControlPath="+cp,
+				"-o", "ControlPersist=10m",
+			)
+		}
+	}
 	sshArgs = append(sshArgs, hostName)
 	sshArgs = append(sshArgs, opts.AdditionalArgs...)
 
@@ -591,6 +685,29 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 	sshCmd.Stderr = os.Stderr
 
 	return sshCmd.Run()
+}
+
+// runProxyWithLivenessCheck checks if the SSH server is still alive before
+// connecting. Used by scp/rsync ProxyCommands to fail fast when the session is gone.
+func runProxyWithLivenessCheck(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) error {
+	sessionID := opts.SessionIdentifier()
+	version := build.GetInfo().Version
+	clusterID := opts.ClusterID
+
+	serverPort, _, effectiveClusterID, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
+	if err != nil {
+		reconnectCmd := fmt.Sprintf("databricks ssh connect --cluster=%s", sessionID)
+		if opts.IsServerlessMode() {
+			reconnectCmd = fmt.Sprintf("databricks ssh connect --name=%s", sessionID)
+		}
+		return fmt.Errorf("SSH session is no longer active. Start a new one with:\n  %s", reconnectCmd)
+	}
+
+	err = runSSHProxy(ctx, client, serverPort, effectiveClusterID, opts)
+	if errors.Is(err, context.Canceled) {
+		return nil
+	}
+	return err
 }
 
 func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, serverPort int, clusterID string, opts ClientOptions) error {

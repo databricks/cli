@@ -36,6 +36,9 @@ the SSH server and handling the connection proxy.
 	var liteswap string
 	var skipSettingsCheck bool
 	var environmentVersion int
+	var noConfig bool
+	var multiplex bool
+	var noStart bool
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (for dedicated clusters)")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
@@ -70,6 +73,12 @@ the SSH server and handling the connection proxy.
 
 	cmd.Flags().IntVar(&environmentVersion, "environment-version", defaultEnvironmentVersion, "Environment version for serverless compute")
 	cmd.Flags().MarkHidden("environment-version")
+
+	cmd.Flags().BoolVar(&noConfig, "no-config", false, "Do not write SSH config entry (disables scp/rsync support)")
+	cmd.Flags().BoolVar(&multiplex, "multiplex", false, "Enable SSH connection multiplexing (ControlMaster) for faster scp/rsync")
+
+	cmd.Flags().BoolVar(&noStart, "no-start", false, "Only connect to an existing SSH server, do not start a new one")
+	cmd.Flags().MarkHidden("no-start")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// CLI in the proxy mode is executed by the ssh client and can't prompt for input
@@ -109,6 +118,9 @@ the SSH server and handling the connection proxy.
 			Liteswap:             liteswap,
 			SkipSettingsCheck:    skipSettingsCheck,
 			EnvironmentVersion:   environmentVersion,
+			SkipConfigWrite:      noConfig,
+			Multiplex:            multiplex,
+			NoServerStart:        noStart,
 			AdditionalArgs:       args,
 		}
 		if err := opts.Validate(); err != nil {

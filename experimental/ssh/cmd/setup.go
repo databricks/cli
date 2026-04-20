@@ -28,6 +28,7 @@ an SSH host configuration to your SSH config file.
 	var sshConfigPath string
 	var shutdownDelay time.Duration
 	var autoStartCluster bool
+	var multiplex bool
 
 	cmd.Flags().StringVar(&hostName, "name", "", "Host name to use in SSH config")
 	cmd.MarkFlagRequired("name")
@@ -35,6 +36,7 @@ an SSH host configuration to your SSH config file.
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster when establishing the ssh connection")
 	cmd.Flags().StringVar(&sshConfigPath, "ssh-config", "", "Path to SSH config file (default ~/.ssh/config)")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "SSH server will terminate after this delay if there are no active connections")
+	cmd.Flags().BoolVar(&multiplex, "multiplex", false, "Enable SSH connection multiplexing (ControlMaster) for faster scp/rsync")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// We want to avoid the situation where the setup command works because it pulls the auth config from a bundle,
@@ -53,6 +55,7 @@ an SSH host configuration to your SSH config file.
 			SSHConfigPath:    sshConfigPath,
 			ShutdownDelay:    shutdownDelay,
 			Profile:          wsClient.Config.Profile,
+			Multiplex:        multiplex,
 		}
 		clientOpts := client.ClientOptions{
 			ClusterID:        setupOpts.ClusterID,

@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
@@ -17,6 +18,9 @@ import (
 const (
 	// configDirName is the directory name for Databricks SSH tunnel configs, relative to the user's home directory.
 	configDirName = ".databricks/ssh-tunnel-configs"
+
+	// socketsDirName is the directory name for SSH ControlMaster sockets, relative to the user's home directory.
+	socketsDirName = ".databricks/ssh-sockets"
 )
 
 func GetConfigDir(ctx context.Context) (string, error) {
@@ -201,14 +205,55 @@ func PromptRecreateConfig(ctx context.Context, hostName string) (bool, error) {
 	return response, nil
 }
 
-func GenerateHostConfig(hostName, userName, identityFile, proxyCommand string) string {
-	return fmt.Sprintf(`
-Host %s
-    User %s
-    ConnectTimeout 360
-    StrictHostKeyChecking accept-new
-    IdentitiesOnly yes
-    IdentityFile %q
-    ProxyCommand %s
-`, hostName, userName, identityFile, proxyCommand)
+// GetSocketsDir returns the directory for SSH ControlMaster sockets.
+func GetSocketsDir(ctx context.Context) (string, error) {
+	homeDir, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+	return filepath.Join(homeDir, socketsDirName), nil
+}
+
+// EnsureSocketsDir creates the ControlMaster sockets directory if it does not exist.
+func EnsureSocketsDir(ctx context.Context) error {
+	socketsDir, err := GetSocketsDir(ctx)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(socketsDir, 0o700)
+	if err != nil {
+		return fmt.Errorf("failed to create SSH sockets directory: %w", err)
+	}
+	return nil
+}
+
+// HostConfigOptions contains the parameters for generating an SSH host config entry.
+type HostConfigOptions struct {
+	HostName     string
+	UserName     string
+	IdentityFile string
+	ProxyCommand string
+	// ControlPath enables SSH ControlMaster multiplexing when non-empty.
+	// Ignored on Windows where ControlMaster is not supported.
+	ControlPath string
+}
+
+// GenerateHostConfig generates an SSH host config entry from the given options.
+func GenerateHostConfig(opts HostConfigOptions) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "\nHost %s\n", opts.HostName)
+	fmt.Fprintf(&b, "    User %s\n", opts.UserName)
+	b.WriteString("    ConnectTimeout 360\n")
+	b.WriteString("    StrictHostKeyChecking accept-new\n")
+	b.WriteString("    IdentitiesOnly yes\n")
+	fmt.Fprintf(&b, "    IdentityFile %q\n", opts.IdentityFile)
+	fmt.Fprintf(&b, "    ProxyCommand %s\n", opts.ProxyCommand)
+
+	if opts.ControlPath != "" && runtime.GOOS != "windows" {
+		b.WriteString("    ControlMaster auto\n")
+		fmt.Fprintf(&b, "    ControlPath %s\n", opts.ControlPath)
+		b.WriteString("    ControlPersist 10m\n")
+	}
+
+	return b.String()
 }
