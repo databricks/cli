@@ -113,9 +113,10 @@ func startViteDevServer(ctx context.Context, appURL string, port int) (*exec.Cmd
 
 func newDevRemoteCmd() *cobra.Command {
 	var (
-		appName    string
-		clientPath string
-		port       int
+		appName     string
+		clientPath  string
+		port        int
+		autoApprove bool
 	)
 
 	cmd := &cobra.Command{
@@ -174,7 +175,7 @@ Examples:
 				appName = selected
 			}
 
-			bridge := vite.NewBridge(ctx, w, appName, port)
+			bridge := vite.NewBridge(ctx, w, appName, port, autoApprove)
 
 			// Validate app exists and get domain before starting Vite
 			var appDomain *url.URL
@@ -234,6 +235,7 @@ Examples:
 	cmd.Flags().StringVar(&appName, "name", "", "Name of the app to connect to (prompts if not provided)")
 	cmd.Flags().StringVar(&clientPath, "client-path", "./client", "Path to the Vite client directory")
 	cmd.Flags().IntVar(&port, "port", vitePort, "Port to run the Vite server on")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Automatically approve every viewer connection. Anyone with the shareable dev URL will be trusted for the life of the session; use only in trusted environments.")
 
 	return cmd
 }
