@@ -24,6 +24,10 @@ const keyringServiceName = "databricks-cli"
 // This is needed because keyring backends can block indefinitely with no
 // client-side cancel. For example, on Linux the Secret Service waits for
 // a GUI unlock prompt that no one answers in a headless session.
+//
+// This is needed because keyring backends can block indefinitely with no
+// client-side cancel. For example, on Linux the Secret Service waits for
+// a GUI unlock prompt that no one answers in a headless session.
 const defaultKeyringTimeout = 3 * time.Second
 
 // keyringBackend is the subset of zalando/go-keyring the cache depends on.
