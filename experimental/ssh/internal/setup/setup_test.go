@@ -256,6 +256,54 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 	assert.Contains(t, hostConfigStr, "--profile=test-profile")
 }
 
+func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	// Pre-seed an existing host config so PromptRecreateConfig would fire without --auto-approve.
+	hostConfigDir := filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs")
+	require.NoError(t, os.MkdirAll(hostConfigDir, 0o700))
+	existingHostConfig := filepath.Join(hostConfigDir, "test-host")
+	require.NoError(t, os.WriteFile(existingHostConfig, []byte("# stale\nHost test-host\n    User stale\n"), 0o600))
+
+	configPath := filepath.Join(tmpDir, "ssh_config")
+
+	m := mocks.NewMockWorkspaceClient(t)
+	clustersAPI := m.GetMockClustersAPI()
+	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeSingleUser,
+	}, nil)
+
+	opts := SetupOptions{
+		HostName:      "test-host",
+		ClusterID:     "cluster-123",
+		SSHConfigPath: configPath,
+		SSHKeysDir:    tmpDir,
+		ShutdownDelay: 30 * time.Second,
+		AutoApprove:   true,
+	}
+
+	clientOpts := client.ClientOptions{
+		ClusterID:     opts.ClusterID,
+		ShutdownDelay: opts.ShutdownDelay,
+	}
+	proxyCommand, err := clientOpts.ToProxyCommand()
+	require.NoError(t, err)
+	opts.ProxyCommand = proxyCommand
+
+	err = Setup(ctx, m.WorkspaceClient, opts)
+	assert.NoError(t, err)
+
+	// Host config should be recreated (no longer contains the stale User).
+	content, err := os.ReadFile(existingHostConfig)
+	require.NoError(t, err)
+	s := string(content)
+	assert.NotContains(t, s, "User stale")
+	assert.Contains(t, s, "--cluster=cluster-123")
+}
+
 func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	tmpDir := t.TempDir()
