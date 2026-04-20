@@ -30,9 +30,9 @@ tasks:
       - task: generate:validation
       - task: generate:docs
       - task: generate:direct
-      - task: python:codegen
-      - task: python:lint
-      - task: python:test
+      - task: pydabs:codegen
+      - task: pydabs:lint
+      - task: pydabs:test
 
   # --- Linting ---
   #
@@ -528,7 +528,7 @@ tasks:
       - task: generate:validation
       - task: generate:docs
       - task: generate:direct
-      - task: python:codegen
+      - task: pydabs:codegen
 
   # Drives genkit from a universe checkout. Genkit writes CLI command files into
   # cmd/workspace and cmd/account, bumps the SDK version in go.mod, emits
@@ -710,18 +710,18 @@ tasks:
     cmds:
       - "wget -O .codegen/openapi.json.tmp \"https://openapi.dev.databricks.com/$(cat .codegen/_openapi_sha)/specs/all-internal.json\" && mv .codegen/openapi.json.tmp .codegen/openapi.json"
 
-  # --- Python ---
+  # --- pydabs (python/databricks-bundles package) ---
 
-  python:test:
-    desc: Run Python tests
+  pydabs:test:
+    desc: Run pydabs tests
     dir: python
     sources:
       - "**/*.py"
     cmds:
       - uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv
 
-  python:lint:
-    desc: Run Python lint checks
+  pydabs:lint:
+    desc: Run pydabs lint checks
     dir: python
     sources:
       - "**/*.py"
@@ -733,8 +733,8 @@ tasks:
       - uv run pyright
       - uv run ruff format --diff databricks databricks_tests
 
-  python:fmt:
-    desc: Format Python code
+  pydabs:fmt:
+    desc: Format pydabs code
     dir: python
     sources:
       - "**/*.py"
@@ -742,8 +742,8 @@ tasks:
       - uv run ruff check --fix databricks databricks_tests || true
       - uv run ruff format
 
-  python:docs:
-    desc: Generate Python documentation
+  pydabs:docs:
+    desc: Generate pydabs documentation
     dir: python
     sources:
       - "**/*.py"
@@ -753,8 +753,8 @@ tasks:
     cmds:
       - uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going
 
-  python:codegen:
-    desc: Run Python codegen
+  pydabs:codegen:
+    desc: Run pydabs codegen
     dir: python
     sources:
       - codegen/**
@@ -773,8 +773,8 @@ tasks:
       - uv run ruff check --fix databricks databricks_tests || true
       - uv run ruff format
 
-  python:build:
-    desc: Build Python wheel
+  pydabs:build:
+    desc: Build pydabs wheel
     dir: python
     cmds:
       - rm -rf build dist

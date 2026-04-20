@@ -372,10 +372,10 @@ jobs:
 
       - name: Verify that python/codegen is up to date
         run: |-
-          ./task python:codegen
+          ./task pydabs:codegen
 
           if ! ( git diff --exit-code ); then
-            echo "Generated Python code is not up-to-date. Please run 'task python:codegen' and commit the changes."
+            echo "Generated Python code is not up-to-date. Please run 'task pydabs:codegen' and commit the changes."
 
             exit 1
           fi

@@ -44,7 +44,7 @@ jobs:
           version: "0.6.5"
 
       - name: Run tests
-        run: ./task python:test
+        run: ./task pydabs:test
 
   python_linters:
     name: lint
@@ -65,7 +65,7 @@ jobs:
           version: "0.6.5"
 
       - name: Run lint
-        run: ./task python:lint
+        run: ./task pydabs:lint
 
   python_docs:
     name: docs
@@ -86,4 +86,4 @@ jobs:
           version: "0.6.5"
 
       - name: Run docs
-        run: ./task python:docs
+        run: ./task pydabs:docs

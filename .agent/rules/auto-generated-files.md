@@ -82,7 +82,7 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
 - Mock files:
   - `go run github.com/vektra/mockery/v2@b9df18e0f7b94f0bc11af3f379c8a9aea1e1e8da`
 - Python bundle codegen:
-  - `task python:codegen`
+  - `task pydabs:codegen`
 
 ### Acceptance and test generated outputs
 
