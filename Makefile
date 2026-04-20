@@ -79,11 +79,11 @@ test: test-unit test-acc
 
 .PHONY: test-unit
 test-unit:
-	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT} -short
+	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT}
 
 .PHONY: test-acc
 test-acc:
-	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -short -run ${ACCEPTANCE_TEST_FILTER}
+	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
 
 # Updates acceptance test output (local tests)
 .PHONY: test-update
