@@ -1,0 +1,12 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/vector-search/endpoints",
+  "body": {
+    "endpoint_type": "STORAGE_OPTIMIZED",
+    "name": "vs-endpoint-[UNIQUE_NAME]"
+  }
+}

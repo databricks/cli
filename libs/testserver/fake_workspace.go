@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -150,6 +151,7 @@ type FakeWorkspace struct {
 	ExternalLocations     map[string]catalog.ExternalLocationInfo
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
+	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
@@ -284,6 +286,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 			},
 		},
 		ServingEndpoints:      map[string]serving.ServingEndpointDetailed{},
+		VectorSearchEndpoints: map[string]vectorsearch.EndpointInfo{},
 		Repos:                 map[string]workspace.RepoInfo{},
 		SecretScopes:          map[string]workspace.SecretScope{},
 		Secrets:               map[string]map[string]string{},

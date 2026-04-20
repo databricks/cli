@@ -1,0 +1,22 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+
+trace $CLI bundle summary
+
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+# Get endpoint details
+endpoint_name="vs-endpoint-${UNIQUE_NAME}"
+trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{name, endpoint_type}'
+
+trace $CLI bundle summary
+
+trace print_requests.py //vector-search/endpoints > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

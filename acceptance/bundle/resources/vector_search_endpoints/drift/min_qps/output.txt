@@ -1,0 +1,62 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-min-qps-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Simulate remote drift: change min_qps to 5 outside the bundle
+>>> [CLI] vector-search-endpoints patch-endpoint vs-endpoint-[UNIQUE_NAME] --min-qps 5
+{
+  "creation_timestamp":[UNIX_TIME_MILLIS][0],
+  "creator":"[USERNAME]",
+  "endpoint_status": {
+    "state":"ONLINE"
+  },
+  "endpoint_type":"STANDARD",
+  "id":"[UUID]",
+  "last_updated_timestamp":[UNIX_TIME_MILLIS][1],
+  "last_updated_user":"[USERNAME]",
+  "name":"vs-endpoint-[UNIQUE_NAME]",
+  "scaling_info": {
+    "requested_min_qps":5
+  }
+}
+
+=== Plan detects drift and proposes update
+>>> [CLI] bundle plan
+update vector_search_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== Deploy restores min_qps to 1
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-min-qps-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //vector-search/endpoints
+{
+  "method": "PATCH",
+  "path": "/api/2.0/vector-search/endpoints/vs-endpoint-[UNIQUE_NAME]",
+  "body": {
+    "min_qps": 1
+  }
+}
+
+>>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-min-qps-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
