@@ -22,7 +22,7 @@ tasks:
       - task: fmt
       - task: lint
       - task: test
-      # Skips generate:commands (expensive, requires universe checkout, outputs are
+      # Skips generate:genkit (expensive, requires universe checkout, outputs are
       # committed). Run `./task generate` explicitly when codegen inputs change.
       - task: generate:refschema
       - task: generate:schema
@@ -515,11 +515,11 @@ tasks:
   # can be invoked standalone.
 
   generate:
-    desc: Run all generators (CLI commands, refschema, schema, docs, validation, direct, python)
+    desc: Run all generators (genkit, refschema, schema, docs, validation, direct, pydabs)
     cmds:
       # Runs first: may bump go.mod (SDK version), which invalidates reflection-
       # based generators below so they re-run automatically.
-      - task: generate:commands
+      - task: generate:genkit
       # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
       # generate:direct:apitypes and generate:direct:resources below.
       - task: generate:refschema
@@ -531,15 +531,18 @@ tasks:
       - task: python:codegen
 
   # Drives genkit from a universe checkout. Genkit writes CLI command files into
-  # cmd/workspace and cmd/account, bumps the SDK version in go.mod, and invokes
-  # tools/post-generate.sh (configured in .codegen.json) to post-process its
-  # output (tagging.py relocation, whitespace cleanup).
-  generate:commands:
-    desc: Generate CLI commands from OpenAPI spec (requires universe repo)
+  # cmd/workspace and cmd/account, bumps the SDK version in go.mod, emits
+  # .github/workflows/tagging.yml + tagging.py (+ lock) in the repo root, plus
+  # a next-changelog workflow we don't keep. The cmds below then post-process
+  # that output: SDK/OpenAPI consistency check, drop the next-changelog
+  # workflow, relocate tagging.py under internal/genkit/ and rewrite the
+  # tagging.yml workflow to match, then yamlfmt + whitespace fix so the tree
+  # is clean.
+  generate:genkit:
+    desc: Run genkit to generate CLI commands and tagging workflow (requires universe repo)
     sources:
       - .codegen/_openapi_sha
       - .gitattributes.manual
-      - tools/post-generate.sh
     vars:
       UNIVERSE_DIR:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
@@ -555,6 +558,18 @@ tasks:
       - echo "Generating CLI code..."
       - "{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk"
       - "cat .gitattributes.manual .gitattributes > .gitattributes.tmp && mv .gitattributes.tmp .gitattributes"
+      - go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databricks/cli/internal/build
+      - rm .github/workflows/next-changelog.yml
+      - mv tagging.py internal/genkit/tagging.py
+      - mv tagging.py.lock internal/genkit/tagging.py.lock
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+        else
+          sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+        fi
+      - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
+      - ./tools/validate_whitespace.py --fix
 
   # Refreshes out.fields.txt, which records the field paths / types emitted by
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects
@@ -685,11 +700,6 @@ tasks:
         bundle/direct/dresources/apitypes.yml
         acceptance/bundle/refschema/out.fields.txt
         > bundle/direct/dresources/resources.generated.yml
-
-  generate:direct:clean:
-    desc: Remove generated direct engine files
-    cmds:
-      - rm -f bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/resources.generated.yml
 
   generate:openapi-json:
     desc: Download OpenAPI spec (triggered by _openapi_sha change)
