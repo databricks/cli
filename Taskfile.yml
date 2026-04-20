@@ -53,56 +53,75 @@ tasks:
 
   # `golangci-lint run` typechecks, so it stops at go.mod boundaries. We have
   # one task per Go module; `lint:go` composes them to cover the whole repo.
-  # Runs the modules sequentially because concurrent golangci-lint invocations
-  # have shown unreliable behavior.
+  # Children run in parallel — each uses its own TMPDIR (set inline on the
+  # golangci-lint command below) to avoid the shared /tmp lock that serializes
+  # concurrent golangci-lint invocations. This matters in two scenarios:
+  #   1. siblings of `lint:go` running in parallel on subprojects here, and
+  #   2. `lint:go` invocations in sibling worktrees running at the same time.
+  # The TMPDIR must live under the repo but NOT equal {{.ROOT_DIR}} itself
+  # (the Go toolchain refuses a go.mod inside os.TempDir, which would break
+  # golangci-lint's typechecker).
   lint:go:
     desc: Lint Go files across all modules (root, tools, codegen)
-    cmds:
-      - task: lint:go:root
-      - task: lint:go:tools
-      - task: lint:go:codegen
+    deps: ['lint:go:root', 'lint:go:tools', 'lint:go:codegen']
 
   lint:go:root:
     desc: Lint Go files in the root module
+    vars:
+      TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-root'
     sources:
       - "**/*.go"
       - exclude: tools/**
       - exclude: bundle/internal/tf/codegen/**
       - .golangci.yaml
     cmds:
-      - "{{.GO_TOOL}} golangci-lint run ./..."
+      - cmd: mkdir -p "{{.TMPDIR}}"
+        silent: true
+      - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run ./...
 
   lint:go:tools:
     desc: Lint Go files in tools/ module
     dir: tools
+    vars:
+      TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-tools'
     sources:
       - "**/*.go"
       - .golangci.yaml
       - go.mod
       - go.sum
     cmds:
-      - "{{.GO_TOOL}} golangci-lint run ./..."
+      - cmd: mkdir -p "{{.TMPDIR}}"
+        silent: true
+      - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run ./...
 
   lint:go:codegen:
     desc: Lint Go files in bundle/internal/tf/codegen module
     dir: bundle/internal/tf/codegen
+    vars:
+      TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-codegen'
     sources:
       - "**/*.go"
       - .golangci.yaml
       - go.mod
       - go.sum
     cmds:
-      - "{{.GO_TOOL}} golangci-lint run ./..."
+      - cmd: mkdir -p "{{.TMPDIR}}"
+        silent: true
+      - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run ./...
 
   lint-q:go:root:
     desc: Lint changed Go files in root module (diff vs main, with --fix). Does not check tools/ or bundle/internal/tf/codegen — use `lint` for full coverage.
+    vars:
+      TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-root'
     sources:
       - "**/*.go"
       - exclude: tools/**
       - exclude: bundle/internal/tf/codegen/**
       - .golangci.yaml
     cmds:
-      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --fix"
+      - cmd: mkdir -p "{{.TMPDIR}}"
+        silent: true
+      - TMPDIR="{{.TMPDIR}}" ./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --fix
 
   # --- Formatting ---
 
@@ -153,10 +172,7 @@ tasks:
 
   tidy:
     desc: Run go mod tidy across all Go modules (root, tools, codegen)
-    cmds:
-      - task: tidy:root
-      - task: tidy:tools
-      - task: tidy:codegen
+    deps: ['tidy:root', 'tidy:tools', 'tidy:codegen']
 
   tidy:root:
     desc: Run go mod tidy in root module
@@ -237,7 +253,7 @@ tasks:
   # (tools/, bundle/internal/tf/codegen/), and _test.go files don't affect the build.
   build:
     desc: Build the CLI binary
-    deps: [tidy:root]
+    deps: ['tidy:root']
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -254,7 +270,7 @@ tasks:
 
   snapshot:
     desc: Build snapshot binary to .databricks/databricks
-    deps: [tidy:root]
+    deps: ['tidy:root']
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -271,7 +287,7 @@ tasks:
 
   snapshot:release:
     desc: Build release binaries locally without uploading
-    deps: [tidy:root]
+    deps: ['tidy:root']
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"

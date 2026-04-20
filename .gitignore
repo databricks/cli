@@ -58,6 +58,7 @@ dist/
 # Local development notes, tmp
 /pr-*
 /tmp/
+/.tmp/
 
 # Go workspace file
 go.work
