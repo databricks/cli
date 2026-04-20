@@ -474,7 +474,7 @@ resources:
       - field: min_num_clusters
         reason: managed
 
-      # creator_name is immutable, can't be updated via API
+      # creator_name is readonly, can't be updated via API
       - field: creator_name
         reason: output_only
 
