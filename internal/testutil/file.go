@@ -68,7 +68,6 @@ func AssertFileContents(t TestingT, path, expected string) bool {
 	return assert.Equal(t, expected, actual)
 }
 
-
 // AssertFileOwnerExec asserts whether the owner executable bit is set for the file at path.
 func AssertFileOwnerExec(t TestingT, path string, executable bool) bool {
 	fi := StatFile(t, path)
