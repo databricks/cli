@@ -474,6 +474,10 @@ resources:
       - field: min_num_clusters
         reason: managed
 
+      # creator_name is readonly, can't be updated via API
+      - field: creator_name
+        reason: output_only
+
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L69
       # m["enable_serverless_compute"].Computed = true
