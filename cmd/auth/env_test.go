@@ -35,6 +35,14 @@ func TestQuoteEnvValue(t *testing.T) {
 	}
 }
 
+func TestNewEnvCommandDeprecation(t *testing.T) {
+	cmd := newEnvCommand()
+	assert.True(t, cmd.Hidden, "env command must remain hidden")
+	assert.Contains(t, cmd.Long, "Deprecated", "Long description should mention deprecation")
+	assert.Contains(t, envDeprecationWarning, "deprecated")
+	assert.Contains(t, envDeprecationWarning, "databricks auth env")
+}
+
 func TestWriteEnvOutput(t *testing.T) {
 	envVars := map[string]string{
 		"DATABRICKS_HOST":  "https://test.cloud.databricks.com",

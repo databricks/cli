@@ -15,6 +15,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const envDeprecationWarning = "Warning: 'databricks auth env' is deprecated and will be removed in a future release.\n"
+
 func newEnvCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "env",
@@ -22,10 +24,14 @@ func newEnvCommand() *cobra.Command {
 		Hidden: true,
 		Long: `Output the environment variables needed to authenticate as the same identity
 the CLI is currently authenticated as. This is useful for configuring downstream
-tools that accept Databricks authentication via environment variables.`,
+tools that accept Databricks authentication via environment variables.
+
+Deprecated: this command will be removed in a future release.`,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		fmt.Fprint(cmd.ErrOrStderr(), envDeprecationWarning)
+
 		_, err := root.MustAnyClient(cmd, args)
 		if err != nil {
 			return err

@@ -7,7 +7,7 @@
 ### CLI
 
 * Added `--limit` flag to all paginated list commands for client-side result capping ([#4984](https://github.com/databricks/cli/pull/4984)).
-* Refactored `auth env` to use the CLI's standard auth resolution and added `--output text` support. The command is now hidden from help listings. Breaking: removed the command-specific `--host`/`--profile` flags (use the inherited ones) and only the primary env var per attribute is emitted ([#4904](https://github.com/databricks/cli/pull/4904)).
+* Deprecated `auth env`. The command is now hidden from help listings and prints a deprecation warning to stderr; it will be removed in a future release. It has also been refactored to use the CLI's standard auth resolution and added `--output text` support. Breaking: removed the command-specific `--host`/`--profile` flags (use the inherited ones) and only the primary env var per attribute is emitted ([#4904](https://github.com/databricks/cli/pull/4904)).
 
 ### Bundles
 
