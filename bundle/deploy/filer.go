@@ -25,6 +25,19 @@ type stateFiler struct {
 	root      filer.WorkspaceRootPath
 }
 
+// orgIDHeaders returns headers with X-Databricks-Org-Id set if a workspace ID
+// is configured. SPOG hosts require this header to route requests to the
+// correct workspace.
+func (s stateFiler) orgIDHeaders() map[string]string {
+	wsID := s.apiClient.Config.WorkspaceID
+	if wsID == "" {
+		return nil
+	}
+	return map[string]string{
+		"X-Databricks-Org-Id": wsID,
+	}
+}
+
 func (s stateFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
 	return s.filer.Delete(ctx, path, mode...)
 }
@@ -50,7 +63,7 @@ func (s stateFiler) Read(ctx context.Context, path string) (io.ReadCloser, error
 
 	var buf bytes.Buffer
 	urlPath := "/api/2.0/workspace-files/" + url.PathEscape(strings.TrimLeft(absPath, "/"))
-	err = s.apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, nil, &buf)
+	err = s.apiClient.Do(ctx, http.MethodGet, urlPath, s.orgIDHeaders(), nil, nil, &buf)
 	if err != nil {
 		return nil, err
 	}

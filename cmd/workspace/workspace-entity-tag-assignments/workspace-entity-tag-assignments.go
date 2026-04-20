@@ -81,7 +81,7 @@ func newCreateTagAssignment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'entity_type', 'entity_id', 'tag_key' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'entity_type', 'entity_id', 'tag_key' in your JSON input")
 			}
 			return nil
 		}
@@ -120,6 +120,7 @@ func newCreateTagAssignment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -246,6 +247,7 @@ func newGetTagAssignment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -274,9 +276,19 @@ func newListTagAssignments() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listTagAssignmentsReq tags.ListTagAssignmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listTagAssignmentsLimit int
 
 	cmd.Flags().IntVar(&listTagAssignmentsReq.PageSize, "page-size", listTagAssignmentsReq.PageSize, `Optional.`)
-	cmd.Flags().StringVar(&listTagAssignmentsReq.PageToken, "page-token", listTagAssignmentsReq.PageToken, `Pagination token to go to the next page of tag assignments.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listTagAssignmentsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listTagAssignmentsReq.PageToken, "page-token", listTagAssignmentsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-tag-assignments ENTITY_TYPE ENTITY_ID"
 	cmd.Short = `List tag assignments for an entity.`
@@ -306,6 +318,13 @@ func newListTagAssignments() *cobra.Command {
 		listTagAssignmentsReq.EntityId = args[1]
 
 		response := w.WorkspaceEntityTagAssignments.ListTagAssignments(ctx, listTagAssignmentsReq)
+		if listTagAssignmentsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listTagAssignmentsLimit)
+		}
+		if listTagAssignmentsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listTagAssignmentsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -399,6 +418,7 @@ func newUpdateTagAssignment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

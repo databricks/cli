@@ -84,7 +84,7 @@ func newCreateExternalLineageRelationship() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'source', 'target' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'source', 'target' in your JSON input")
 			}
 			return nil
 		}
@@ -128,6 +128,7 @@ func newCreateExternalLineageRelationship() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -222,11 +223,21 @@ func newListExternalLineageRelationships() *cobra.Command {
 
 	var listExternalLineageRelationshipsReq catalog.ListExternalLineageRelationshipsRequest
 	var listExternalLineageRelationshipsJson flags.JsonFlag
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listExternalLineageRelationshipsLimit int
 
 	cmd.Flags().Var(&listExternalLineageRelationshipsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&listExternalLineageRelationshipsReq.PageSize, "page-size", listExternalLineageRelationshipsReq.PageSize, `Specifies the maximum number of external lineage relationships to return in a single response.`)
-	cmd.Flags().StringVar(&listExternalLineageRelationshipsReq.PageToken, "page-token", listExternalLineageRelationshipsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listExternalLineageRelationshipsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listExternalLineageRelationshipsReq.PageToken, "page-token", listExternalLineageRelationshipsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-external-lineage-relationships"
 	cmd.Short = `List external lineage relationships.`
@@ -258,6 +269,13 @@ func newListExternalLineageRelationships() *cobra.Command {
 		}
 
 		response := w.ExternalLineage.ListExternalLineageRelationships(ctx, listExternalLineageRelationshipsReq)
+		if listExternalLineageRelationshipsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listExternalLineageRelationshipsLimit)
+		}
+		if listExternalLineageRelationshipsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listExternalLineageRelationshipsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -367,6 +385,7 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

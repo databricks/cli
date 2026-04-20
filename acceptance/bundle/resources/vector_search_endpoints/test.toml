@@ -1,0 +1,10 @@
+Local = true
+Cloud = true
+
+# Vector Search endpoints are only available in direct mode (no Terraform provider)
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]

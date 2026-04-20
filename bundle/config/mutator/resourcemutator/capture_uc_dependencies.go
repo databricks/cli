@@ -12,7 +12,7 @@ import (
 
 type captureUCDependencies struct{}
 
-// If a user defines a UC schema in the bundle, they can refer to it in DLT pipelines,
+// If a user defines a UC schema in the bundle, they can refer to it in SDP pipelines,
 // UC Volumes, Registered Models, Quality Monitors, or Model Serving Endpoints using the
 // `${resources.schemas.<schema_key>.name}` syntax. Using this syntax allows TF to capture
 // the deploy time dependency this resource has on the schema and deploy changes to the
@@ -110,7 +110,7 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if p == nil {
 			continue
 		}
-		// "schema" and "target" have the same semantics in the DLT API but are mutually
+		// "schema" and "target" have the same semantics in the SDP API but are mutually
 		// exclusive i.e. only one can be set at a time.
 		p.Schema = resolveSchema(b, p.Catalog, p.Schema)
 		p.Target = resolveSchema(b, p.Catalog, p.Target)

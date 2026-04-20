@@ -1,0 +1,50 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.vector_search_endpoints.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "endpoint_type": "STANDARD",
+          "name": "vs-permissions-endpoint"
+        }
+      }
+    },
+    "resources.vector_search_endpoints.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.vector_search_endpoints.foo",
+          "label": "${resources.vector_search_endpoints.foo.endpoint_uuid}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "",
+          "__embed__": [
+            {
+              "level": "CAN_USE",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "group_name": "data-team"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "service_principal_name": "[UUID]"
+            },
+            {
+              "level": "CAN_MANAGE",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/vector-search-endpoints/${resources.vector_search_endpoints.foo.endpoint_uuid}"
+        }
+      }
+    }
+  }
+}

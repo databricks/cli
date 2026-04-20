@@ -16,7 +16,7 @@ type ResourceMlflowModel struct {
 // MlflowModelRemote wraps the API response with the numeric model ID.
 // The state ID for models is the model name (used for CRUD operations), but
 // the permissions API requires the numeric ID. This wrapper exposes the numeric
-// ID as model_id, analogous to RefreshOutput.EndpointId for serving endpoints.
+// ID as model_id, analogous to ModelServingEndpointRemote.EndpointId for serving endpoints.
 type MlflowModelRemote struct {
 	ml.ModelDatabricks
 	ModelId string `json:"model_id"`

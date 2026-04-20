@@ -17,7 +17,7 @@ func fetchDirs(ctx context.Context, wsc *databricks.WorkspaceClient, path string
 	go func() {
 		defer close(ch)
 
-		files, err := wsc.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+		files, err := wsc.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 			Path: path,
 		})
 		if err != nil {
