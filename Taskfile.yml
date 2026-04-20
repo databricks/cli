@@ -290,7 +290,7 @@ tasks:
   # --- Testing ---
 
   test:
-    desc: Run short unit and acceptance tests (in parallel)
+    desc: Run unit and acceptance tests (in parallel)
     deps:
       - task: test:unit
         vars:
@@ -301,34 +301,8 @@ tasks:
     cmds:
       - cat test-output-unit.json test-output-acc.json > test-output.json
 
-  test:slow:
-    desc: Run all unit and acceptance tests (in parallel, no -short)
-    deps:
-      - task: test:slow-unit
-        vars:
-          TEST_PACKAGES: "{{.TEST_PACKAGES}}"
-      - task: test:slow-acc
-        vars:
-          ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
-    cmds:
-      - cat test-output-unit.json test-output-acc.json > test-output.json
-
   test:unit:
-    desc: Run short unit tests
-    sources:
-      - "**/*.go"
-    cmds:
-      - |
-        {{.GO_TOOL}} gotestsum \
-          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
-          --no-summary=skipped \
-          --jsonfile test-output-unit.json \
-          --rerun-fails \
-          --packages "{{.TEST_PACKAGES}}" \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -short
-
-  test:slow-unit:
-    desc: Run all unit tests (no -short)
+    desc: Run unit tests
     sources:
       - "**/*.go"
     cmds:
@@ -342,22 +316,7 @@ tasks:
           -- -timeout=${LOCAL_TIMEOUT:-30m}
 
   test:acc:
-    desc: Run short acceptance tests
-    sources:
-      - "**/*.go"
-      - acceptance/**
-    cmds:
-      - |
-        {{.GO_TOOL}} gotestsum \
-          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
-          --no-summary=skipped \
-          --jsonfile test-output-acc.json \
-          --rerun-fails \
-          --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -short{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
-
-  test:slow-acc:
-    desc: Run all acceptance tests (no -short)
+    desc: Run acceptance tests
     sources:
       - "**/*.go"
       - acceptance/**
