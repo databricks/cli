@@ -1,0 +1,37 @@
+ucm:
+  name: fixture-valid
+
+workspace:
+  host: https://example.cloud.databricks.com
+
+resources:
+  catalogs:
+    team_alpha:
+      name: team_alpha
+      comment: alpha catalog
+      tags:
+        cost_center: "1234"
+        data_owner: alpha
+        classification: internal
+
+  schemas:
+    bronze:
+      catalog: team_alpha
+      name: bronze
+      tags:
+        cost_center: "1234"
+        data_owner: alpha
+        classification: internal
+
+  grants:
+    alpha_read:
+      securable: { type: catalog, name: team_alpha }
+      principal: alpha-readers
+      privileges: [USE_CATALOG, SELECT]
+
+  tag_validation_rules:
+    enforce_ownership:
+      securable_types: [catalog, schema]
+      required: [cost_center, data_owner, classification]
+      allowed_values:
+        classification: [public, internal, confidential, restricted]
