@@ -89,7 +89,7 @@ tasks:
       - "**/*.go"
       - .golangci.yaml
     cmds:
-      - ./tools/lintdiff.py --root-module go tool -modfile=tools/go.mod golangci-lint run --fix
+      - ./tools/lintdiff.py go tool -modfile=tools/go.mod golangci-lint run --fix
 
   # --- Formatting ---
 

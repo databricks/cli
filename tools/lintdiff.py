@@ -28,12 +28,6 @@ def main():
     parser.add_argument(
         "-H", "--head", action="store_true", help="Shortcut for '--ref HEAD' - test uncommitted changes only"
     )
-    parser.add_argument(
-        "--root-module",
-        action="store_true",
-        help="Only include paths in the root Go module (skip subtrees under nested go.mod files). "
-        "Needed for `golangci-lint run` because it typechecks and fails on paths outside its module.",
-    )
     parser.add_argument("args", nargs=argparse.REMAINDER, help="golangci-lint command and options")
     args = parser.parse_args()
 
@@ -58,9 +52,14 @@ def main():
 
     cmd = args.args[:]
 
+    # `golangci-lint run` typechecks against the target go.mod and errors on
+    # paths under a different module; `fmt` walks the filesystem and is
+    # cross-module safe. Apply the nested-module filter only for `run`.
+    filter_nested = "run" in cmd
+
     if changed is not None:
         nested_modules = []
-        if args.root_module:
+        if filter_nested:
             nested_modules = sorted(
                 os.path.dirname(p) for p in parse_lines(["git", "ls-files", "--", "*/go.mod"]) or []
             )
