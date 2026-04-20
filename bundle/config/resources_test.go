@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/assert"
@@ -239,6 +240,14 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+			"my_vector_search_endpoint": {
+				CreateEndpoint: vectorsearch.CreateEndpoint{
+					Name:         "my_vector_search_endpoint",
+					EndpointType: vectorsearch.EndpointTypeStandard,
+				},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{
 		"model": true,
@@ -270,6 +279,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetProject(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

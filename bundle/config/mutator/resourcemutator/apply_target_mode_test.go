@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -246,6 +247,14 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+					"vs_endpoint1": {
+						CreateEndpoint: vectorsearch.CreateEndpoint{
+							Name:         "vs_endpoint1",
+							EndpointType: vectorsearch.EndpointTypeStandard,
+						},
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -293,6 +302,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Model serving endpoint 1
 	assert.Equal(t, "dev_lennart_servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
+
+	// Vector search endpoint 1
+	assert.Equal(t, "dev_lennart_vs_endpoint1", b.Config.Resources.VectorSearchEndpoints["vs_endpoint1"].Name)
 
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
