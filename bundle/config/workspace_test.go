@@ -154,6 +154,27 @@ func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
 	assert.Equal(t, "ws2", client.Config.Profile)
 }
 
+func TestWorkspaceConfigHTTPTimeout(t *testing.T) {
+	w := Workspace{}
+
+	t.Run("default", func(t *testing.T) {
+		cfg := w.Config()
+		assert.Equal(t, 90, cfg.HTTPTimeoutSeconds)
+	})
+
+	t.Run("env var", func(t *testing.T) {
+		t.Setenv(envHTTPTimeoutSeconds, "5")
+		cfg := w.Config()
+		assert.Equal(t, 5, cfg.HTTPTimeoutSeconds)
+	})
+
+	t.Run("invalid env var uses default", func(t *testing.T) {
+		t.Setenv(envHTTPTimeoutSeconds, "not-a-number")
+		cfg := w.Config()
+		assert.Equal(t, 90, cfg.HTTPTimeoutSeconds)
+	})
+}
+
 func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 	// If both a workspace host and a profile are specified,
 	// verify that the host configured in the profile matches

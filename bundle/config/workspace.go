@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -11,6 +12,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
+
+const envHTTPTimeoutSeconds = "DATABRICKS_BUNDLE_HTTP_TIMEOUT_SECONDS"
 
 // Workspace defines configurables at the workspace level.
 type Workspace struct {
@@ -94,12 +97,19 @@ func (s User) MarshalJSON() ([]byte, error) {
 }
 
 func (w *Workspace) Config() *config.Config {
+	// Once bundle deploy started, old deployment is partially destroyed, so we should do utmost to complete it.
+	// Having client-side timeouts that kill the deployment seems counter-productive. We should just keep on
+	// trying and the user should be the one interrupting it if they decide so.
+	// Default is 30s
+	httpTimeout := 90
+	if v := os.Getenv(envHTTPTimeoutSeconds); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			httpTimeout = n
+		}
+	}
+
 	cfg := &config.Config{
-		// Once bundle deploy started, old deployment is partially destroyed, so we should do utmost to complete it.
-		// Having client-side timeouts that kill the deployment seems counter-productive. We should just keep on
-		// trying and the user should be the one interrupting it if they decide so.
-		// Default is 30s
-		HTTPTimeoutSeconds: 90,
+		HTTPTimeoutSeconds: httpTimeout,
 
 		// Default is 5min
 		RetryTimeoutSeconds: 15 * 60,
