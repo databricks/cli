@@ -35,7 +35,8 @@ func newSummaryCommand() *cobra.Command {
 Reads the local terraform state cached under .databricks/ucm/<target>/ and
 prints a table of resource type + count. Run ` + "`ucm deploy`" + ` (or at least
 ` + "`ucm plan`" + `) first; without a local state the table is empty.`,
-		Args: root.NoArgs,
+		Args:              root.NoArgs,
+		PersistentPreRunE: root.MustWorkspaceClient,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
