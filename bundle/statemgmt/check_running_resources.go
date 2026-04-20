@@ -90,9 +90,8 @@ func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient,
 		if resourceType == "pipelines" {
 			errs.Go(func() error {
 				isRunning, err := IsPipelineRunning(errCtx, w, id)
-				// If there's an error retrieving the pipeline, we assume it's not running
 				if err != nil {
-					return nil
+					return nil //nolint:nilerr // assume not running if pipeline check fails
 				}
 				if isRunning {
 					return &ErrResourceIsRunning{resourceType: "pipeline", resourceId: id}

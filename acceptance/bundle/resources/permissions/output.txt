@@ -411,3 +411,5 @@ DIFF  target_permissions/out.requests_delete.direct.json
    {
      "body": {
        "job_id": "[NUMID]"
+DIRECT_ONLY vector_search_endpoints/current_can_manage/out.requests.deploy.direct.json
+DIRECT_ONLY vector_search_endpoints/current_can_manage/out.requests.destroy.direct.json

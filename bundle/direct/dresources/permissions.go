@@ -26,6 +26,7 @@ var permissionResourceToObjectType = map[string]string{
 	"model_serving_endpoints": "/serving-endpoints/",
 	"pipelines":               "/pipelines/",
 	"sql_warehouses":          "/sql/warehouses/",
+	"vector_search_endpoints": "/vector-search-endpoints/",
 }
 
 type ResourcePermissions struct {
@@ -88,6 +89,11 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 	// but the permissions API requires the numeric model ID.
 	if strings.HasPrefix(baseNode, "resources.models.") {
 		objectIdRef = prefix + "${" + baseNode + ".model_id}"
+	}
+
+	// Vector search endpoints use the endpoint name as deployment id; the permissions API uses endpoint UUID.
+	if strings.HasPrefix(baseNode, "resources.vector_search_endpoints.") {
+		objectIdRef = prefix + "${" + baseNode + ".endpoint_uuid}"
 	}
 
 	// Postgres projects store their hierarchical name ("projects/{project_id}") as the state ID,

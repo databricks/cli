@@ -166,7 +166,7 @@ func (a *appRunner) resolvedConfig() (*resources.AppConfig, error) {
 	configPath := dyn.MustPathFromString("resources." + a.Key() + ".config")
 	configV, err := dyn.GetByPath(root, configPath)
 	if err != nil || !configV.IsValid() {
-		return a.app.Config, nil
+		return a.app.Config, nil //nolint:nilerr // missing config path means use default config
 	}
 
 	resourcesPrefix := dyn.MustPathFromString("resources")

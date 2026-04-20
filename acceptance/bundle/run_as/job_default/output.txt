@@ -1,7 +1,7 @@
 
 === Deploy with run_as
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -13,7 +13,7 @@ Deployment complete!
   "body": {
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
     "format": "MULTI_TASK",
@@ -33,7 +33,7 @@ Deployment complete!
           "spark_version": "13.3.x-snapshot-scala2.12"
         },
         "notebook_task": {
-          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default/files/test"
+          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files/test"
         },
         "task_key": "task_one"
       }
@@ -53,7 +53,7 @@ update jobs.job_with_run_as
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -67,7 +67,7 @@ Deployment complete!
     "new_settings": {
       "deployment": {
         "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default/state/metadata.json"
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/state/metadata.json"
       },
       "edit_mode": "UI_LOCKED",
       "format": "MULTI_TASK",
@@ -84,7 +84,7 @@ Deployment complete!
             "spark_version": "13.3.x-snapshot-scala2.12"
           },
           "notebook_task": {
-            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default/files/test"
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files/test"
           },
           "task_key": "task_one"
         }
@@ -102,7 +102,7 @@ Deployment complete!
 The following resources will be deleted:
   delete resources.jobs.job_with_run_as
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/run_as_job_default/default
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
