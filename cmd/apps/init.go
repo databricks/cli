@@ -635,7 +635,6 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 	// Copy package.json (apply template substitution so the file is valid JSON)
 	// and package-lock.json (no template vars — copy raw).
 	var pkgWritten bool
-	var pkgData []byte
 	for _, name := range []string{"package.json", "package.json.tmpl"} {
 		src := filepath.Join(srcProjectDir, name)
 		content, err := os.ReadFile(src)
@@ -649,18 +648,15 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		})
 		tmpl, err := template.New(name).Option("missingkey=zero").Parse(string(content))
 		if err != nil {
-			pkgData = content
-			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), pkgData, 0o644) == nil
+			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644) == nil
 			break
 		}
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, minVars); err != nil {
-			pkgData = content
-			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), pkgData, 0o644) == nil
+			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644) == nil
 			break
 		}
-		pkgData = buf.Bytes()
-		pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), pkgData, 0o644) == nil
+		pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), buf.Bytes(), 0o644) == nil
 		break
 	}
 
@@ -670,6 +666,7 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 	}
 
 	// Copy any file: protocol dependencies (e.g., local .tgz tarballs) so npm ci can resolve them.
+	pkgData, _ := os.ReadFile(filepath.Join(destDir, "package.json"))
 	copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
 
 	// Copy package-lock.json raw (never has template vars).
