@@ -115,6 +115,10 @@ golang.org/x/sys - https://github.com/golang/sys
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/sys/blob/master/LICENSE
 
+golang.org/x/term - https://github.com/golang/term
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/term/blob/master/LICENSE
+
 golang.org/x/text - https://github.com/golang/text
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/text/blob/master/LICENSE

@@ -271,8 +271,17 @@ func Render(ctx context.Context, v any) error {
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
+// RenderIterator renders the items produced by i. When the terminal is
+// fully interactive (stdin + stdout + stderr all TTYs) and the command
+// has a row template, we page through the existing template + tabwriter
+// pipeline (same colors, same alignment as the non-paged path; widths are
+// locked from the first batch so columns stay aligned across pages).
+// Piped output and JSON output keep the existing non-paged behavior.
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
+	if c.capabilities.SupportsPager() && c.outputFormat == flags.OutputText && c.template != "" {
+		return renderIteratorPagedTemplate(ctx, i, c.out, c.headerTemplate, c.template)
+	}
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
