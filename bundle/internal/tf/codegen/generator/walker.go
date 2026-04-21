@@ -190,12 +190,12 @@ func (w *walker) walk(block *tfjson.SchemaBlock, name []string) error {
 		fieldName := strcase.ToCamel(k)
 		attributePath := buildAttributePath(name, k)
 		fieldType := processAttributeType(v.AttributeType, w.resourceName, attributePath)
-		fieldTag := k
 		if v.Required && v.Optional {
 			return fmt.Errorf("both required and optional are set for attribute %s", k)
 		}
-		if !v.Required {
-			fieldTag += ",omitempty"
+		fieldTag := k + ",omitempty"
+		if v.Required {
+			fieldTag = k
 		}
 
 		// Append to list of fields for type.
