@@ -12,7 +12,8 @@ Detected changes in 2 resource(s):
 
 Resource: resources.jobs.job_one
   max_concurrent_runs: replace
-  tasks[task_key='a_task'].depends_on[0].task_key: replace
+  tasks[task_key='a_task'].depends_on[task_key='c_task']: remove
+  tasks[task_key='a_task'].depends_on[task_key='c_task_renamed']: add
   tasks[task_key='c_task']: remove
   tasks[task_key='c_task_renamed']: add
   tasks[task_key='synced_task']: add
