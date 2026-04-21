@@ -31,6 +31,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	var autoApprove bool
 	var verbose bool
 	var readPlanPath string
+	var deployApps bool
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 	cmd.Flags().BoolVar(&failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running jobs or pipelines in the deployment.")
@@ -40,6 +41,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	cmd.Flags().StringVar(&readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
+	cmd.Flags().BoolVar(&deployApps, "deploy-apps", false, "After resources are reconciled, also upload source code and trigger an AppDeployment for every app in the bundle.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
 	cmd.Flags().MarkHidden("verbose")
 
@@ -49,6 +51,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 				b.Config.Bundle.Force = force
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 				b.AutoApprove = autoApprove
+				b.DeployApps = deployApps
 
 				if cmd.Flag("compute-id").Changed {
 					b.Config.Bundle.ClusterId = clusterId

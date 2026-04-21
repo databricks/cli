@@ -145,6 +145,12 @@ type Bundle struct {
 	// files
 	AutoApprove bool
 
+	// DeployApps extends `bundle deploy` to also upload source code and trigger a
+	// new AppDeployment for every app in the bundle. When false (the default),
+	// `bundle deploy` only reconciles resources and the user must still run
+	// `bundle run <app>` to push source.
+	DeployApps bool
+
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.
 	// Used by config-remote-sync: a user may modify resource paths remotely (e.g.,

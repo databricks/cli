@@ -11,9 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -138,57 +135,18 @@ func (a *appRunner) start(ctx context.Context) error {
 
 func (a *appRunner) deploy(ctx context.Context) error {
 	w := a.bundle.WorkspaceClient(ctx)
-	config, err := a.resolvedConfig()
+	// The runner key is "apps.<name>"; the map key under resources.apps is just "<name>".
+	appKey := a.Key()
+	const prefix = "apps."
+	if len(appKey) > len(prefix) && appKey[:len(prefix)] == prefix {
+		appKey = appKey[len(prefix):]
+	}
+	config, err := appdeploy.ResolveAppConfig(&a.bundle.Config, appKey, a.app)
 	if err != nil {
 		return err
 	}
 	deployment := appdeploy.BuildDeployment(a.app.SourceCodePath, config, a.app.GitSource)
 	return appdeploy.Deploy(ctx, w, a.app.Name, deployment)
-}
-
-// resolvedConfig returns the app config with any ${resources.*} variable references
-// resolved against the current bundle state. This is needed because the app runtime
-// configuration (env vars, command) can reference other bundle resources whose
-// properties are known only after the initialization phase.
-func (a *appRunner) resolvedConfig() (*resources.AppConfig, error) {
-	if a.app.Config == nil {
-		return nil, nil
-	}
-
-	root := a.bundle.Config.Value()
-
-	// Normalize the full config so that all typed fields are present, even those
-	// not explicitly set. This allows looking up resource properties by path.
-	normalized, _ := convert.Normalize(a.bundle.Config, root, convert.IncludeMissingFields)
-
-	// Get the app's config section as a dyn.Value to resolve references in it.
-	// The key is of the form "apps.<name>", so the full path is "resources.apps.<name>.config".
-	configPath := dyn.MustPathFromString("resources." + a.Key() + ".config")
-	configV, err := dyn.GetByPath(root, configPath)
-	if err != nil || !configV.IsValid() {
-		return a.app.Config, nil //nolint:nilerr // missing config path means use default config
-	}
-
-	resourcesPrefix := dyn.MustPathFromString("resources")
-
-	// Resolve ${resources.*} references in the app config against the full bundle config.
-	// Other variable types (bundle.*, workspace.*, variables.*) are already resolved
-	// during the initialization phase and are left in place if encountered here.
-	resolved, err := dynvar.Resolve(configV, func(path dyn.Path) (dyn.Value, error) {
-		if !path.HasPrefix(resourcesPrefix) {
-			return dyn.InvalidValue, dynvar.ErrSkipResolution
-		}
-		return dyn.GetByPath(normalized, path)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var config resources.AppConfig
-	if err := convert.ToTyped(&config, resolved); err != nil {
-		return nil, err
-	}
-	return &config, nil
 }
 
 func (a *appRunner) Cancel(ctx context.Context) error {

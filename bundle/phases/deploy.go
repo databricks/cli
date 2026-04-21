@@ -252,6 +252,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	// Push app source code as part of `bundle deploy` when the user opts in via
+	// --deploy-apps. Historically this was a separate step (`bundle run <app>`).
+	DeployApps(ctx, b)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
