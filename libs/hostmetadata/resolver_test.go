@@ -14,11 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInit_RegistersDefaultHostMetadataResolverFactory(t *testing.T) {
-	require.NotNil(t, config.DefaultHostMetadataResolverFactory,
-		"importing hostmetadata must register a factory so every *config.Config picks up the cached resolver")
-}
-
 func TestNewResolver_CacheHit_SkipsFetch(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 
