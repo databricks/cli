@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm/config"
+	"github.com/databricks/databricks-sdk-go"
 )
 
 // RootEnv is the environment variable that pins a ucm root directory,
@@ -34,6 +35,10 @@ type Ucm struct {
 	// Target is the snapshot of the selected target after SelectTarget runs.
 	// nil until a target has been selected.
 	Target *config.Target
+
+	// getClient memoizes the workspace client built from Config.Workspace.
+	// Initialized lazily by WorkspaceClientE via initClientOnce.
+	getClient func() (*databricks.WorkspaceClient, error)
 }
 
 // Load builds a Ucm for the given root path, reading the ucm.yml file

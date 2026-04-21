@@ -8,9 +8,10 @@ import (
 )
 
 // TestAuthVerbs_UsePreRunE guards against re-introducing the cmdIO panic caused
-// by overriding PersistentPreRunE. Auth-requiring verbs must wire
-// root.MustWorkspaceClient as PreRunE so the root's PersistentPreRunE (which
-// installs cmdio) still executes. See https://github.com/micheledaddetta-databricks/cli/issues/TBD.
+// by overriding PersistentPreRunE. Auth-requiring verbs must wire the UCM
+// workspace-client hook (utils.MustWorkspaceClient) as PreRunE so the root's
+// PersistentPreRunE (which installs cmdio) still executes. See
+// https://github.com/micheledaddetta-databricks/cli/issues/41 and /issues/45.
 func TestAuthVerbs_UsePreRunE(t *testing.T) {
 	root := New()
 	authVerbs := map[string]bool{

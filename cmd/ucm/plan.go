@@ -24,7 +24,7 @@ Common invocations:
   databricks ucm plan                   # Plan against the default target
   databricks ucm plan --target prod     # Plan against a specific target`,
 		Args:    root.NoArgs,
-		PreRunE: root.MustWorkspaceClient,
+		PreRunE: utils.MustWorkspaceClient,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

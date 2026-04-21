@@ -24,7 +24,7 @@ Common invocations:
   databricks ucm deploy                  # Deploy the default target
   databricks ucm deploy --target prod    # Deploy a specific target`,
 		Args:    root.NoArgs,
-		PreRunE: root.MustWorkspaceClient,
+		PreRunE: utils.MustWorkspaceClient,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
