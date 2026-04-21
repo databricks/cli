@@ -65,24 +65,24 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
 ### Core generation commands
 
 - Everything, in one shot:
-  - `task generate` — aggregator that runs all generators below
+  - `./task generate` — aggregator that runs all generators below
 - OpenAPI SDK/CLI command stubs and related generated artifacts:
-  - `task generate-genkit`
+  - `./task generate-genkit`
   - Includes generated `cmd/account/**`, `cmd/workspace/**`, `.gitattributes`, `internal/genkit/tagging.py`.
 - Direct engine generated YAML:
-  - `task generate-direct` (or `task generate-direct-apitypes`, `task generate-direct-resources`)
+  - `./task generate-direct` (or `./task generate-direct-apitypes`, `./task generate-direct-resources`)
 - Bundle schemas:
-  - `task generate-schema`
-  - `task generate-schema-docs`
+  - `./task generate-schema`
+  - `./task generate-schema-docs`
   - This can also refresh `bundle/internal/schema/annotations_openapi.yml` when OpenAPI annotation extraction is enabled.
 - Bundle docs:
-  - `task generate-docs`
+  - `./task generate-docs`
 - Validation generated code:
-  - `task generate-validation`
+  - `./task generate-validation`
 - Mock files:
   - `go run github.com/vektra/mockery/v2@b9df18e0f7b94f0bc11af3f379c8a9aea1e1e8da`
 - Python bundle codegen:
-  - `task pydabs-codegen`
+  - `./task pydabs-codegen`
 
 ### Acceptance and test generated outputs
 

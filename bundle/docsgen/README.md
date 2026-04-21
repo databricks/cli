@@ -1,9 +1,9 @@
 ## docs-autogen
 
 1. Install [Golang](https://go.dev/doc/install)
-2. Run `task generate-docs` from the repo
+2. Run `./task generate-docs` from the repo
 3. See generated documents in `./bundle/docsgen/output` directory
-4. To change descriptions update content in `./bundle/internal/schema/annotations.yml` or `./bundle/internal/schema/annotations_openapi_overrides.yml` and re-run `task generate-docs`
+4. To change descriptions update content in `./bundle/internal/schema/annotations.yml` or `./bundle/internal/schema/annotations_openapi_overrides.yml` and re-run `./task generate-docs`
 
 For simpler usage run it together with copy command to move resulting files to local `docs` repo. Note that it will overwrite any local changes in affected files. Example:
 
@@ -76,4 +76,4 @@ github.com/databricks/cli/bundle/config.Bundle:
 
 ### TODO
 
-Add file watcher to track changes in the annotation files and re-run `task generate-docs` script automtically
+Add file watcher to track changes in the annotation files and re-run `./task generate-docs` script automtically

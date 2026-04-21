@@ -22,27 +22,27 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 ### Building and Testing
 
-- `task build` - Build the CLI binary
-- `task test` - Run unit and acceptance tests for all packages
+- `./task build` - Build the CLI binary
+- `./task test` - Run unit and acceptance tests for all packages
 - `go test ./acceptance -run TestAccept/bundle/<path>/<to>/<folder> -tail -test.v` - run a single acceptance test
-- `task integration` - Run integration tests (requires environment variables)
-- `task cover` - Generate test coverage reports
+- `./task integration` - Run integration tests (requires environment variables)
+- `./task cover` - Generate test coverage reports
 
 ### Code Quality
 
-- `task lint` - Run full linter across all Go modules (root, tools, codegen)
-- `task lint-q` - Run linter on changed files only (uses lintdiff.py, root module, with --fix)
-- `task ws` - Run whitespace linter
-- `task fmt` - Format all code (Go, Python, YAML)
-- `task fmt-q` - Format changed files only (incremental Go + Python + YAML)
-- `task checks` - Run quick checks (tidy, whitespace, links)
+- `./task lint` - Run full linter across all Go modules (root, tools, codegen)
+- `./task lint-q` - Run linter on changed files only (uses lintdiff.py, root module, with --fix)
+- `./task ws` - Run whitespace linter
+- `./task fmt` - Format all code (Go, Python, YAML)
+- `./task fmt-q` - Format changed files only (incremental Go + Python + YAML)
+- `./task checks` - Run quick checks (tidy, whitespace, links)
 
 ### Specialized Commands
 
-- `task generate-schema` - Generate bundle JSON schema
-- `task generate-docs` - Generate bundle documentation
-- `task generate-genkit` - Run genkit to generate CLI commands and tagging workflow (requires universe repo)
-- `task generate` - Run all generators
+- `./task generate-schema` - Generate bundle JSON schema
+- `./task generate-docs` - Generate bundle documentation
+- `./task generate-genkit` - Run genkit to generate CLI commands and tagging workflow (requires universe repo)
+- `./task generate` - Run all generators
 
 ### Git Commands
 
@@ -90,7 +90,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 # Development Tips
 
-- Use `task test-update` to regenerate acceptance test outputs after changes.
+- Use `./task test-update` to regenerate acceptance test outputs after changes.
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
 
 **RULE: Comments should explain "why", not "what".** Reviewers consistently reject comments that merely restate the code.
