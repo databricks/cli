@@ -666,8 +666,12 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 	}
 
 	// Copy any file: protocol dependencies (e.g., local .tgz tarballs) so npm ci can resolve them.
-	pkgData, _ := os.ReadFile(filepath.Join(destDir, "package.json"))
-	copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
+	pkgData, err := os.ReadFile(filepath.Join(destDir, "package.json"))
+	if err != nil {
+		log.Warnf(ctx, "Failed to read package.json for file dep copy: %v", err)
+	} else {
+		copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
+	}
 
 	// Copy package-lock.json raw (never has template vars).
 	lockData, err := os.ReadFile(lockFile)
@@ -701,6 +705,7 @@ func copyFileDeps(ctx context.Context, pkgJSON []byte, srcDir, destDir string) {
 		DevDependencies map[string]string `json:"devDependencies"`
 	}
 	if err := json.Unmarshal(pkgJSON, &pkg); err != nil {
+		log.Debugf(ctx, "Failed to parse package.json for file dep copy: %v", err)
 		return
 	}
 	for _, deps := range []map[string]string{pkg.Dependencies, pkg.DevDependencies} {
