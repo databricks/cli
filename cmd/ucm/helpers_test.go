@@ -140,10 +140,10 @@ func runVerbInDir(t *testing.T, workDir string, args ...string) (string, string,
 	t.Cleanup(func() { _ = os.Chdir(prev) })
 
 	cmd := New()
-	// plan/deploy/destroy/summary attach PersistentPreRunE: root.MustWorkspaceClient
+	// plan/deploy/destroy/summary attach PreRunE: root.MustWorkspaceClient
 	// for real-world auth. Tests fake the workspace client via buildPhaseOptions,
 	// so strip the hook on every subcommand before invoking cobra.
-	stripPersistentPreRunE(cmd)
+	stripAuthHooks(cmd)
 	var out, errOut bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&errOut)
@@ -191,15 +191,17 @@ func validFixtureDir(t *testing.T) string {
 // phases-package errSentinel without colliding.
 var assertSentinel = errors.New("ucm verb test sentinel")
 
-// stripPersistentPreRunE recursively clears PersistentPreRunE on cmd and all
-// of its subcommands. The ucm verbs that need live auth wire
-// root.MustWorkspaceClient there; tests stand in their own Backend via
+// stripAuthHooks recursively clears PersistentPreRunE and PreRunE on cmd and
+// all of its subcommands. The ucm verbs that need live auth wire
+// root.MustWorkspaceClient as PreRunE; tests stand in their own Backend via
 // buildPhaseOptions so the real auth hook would just fail on a missing
 // ~/.databrickscfg.
-func stripPersistentPreRunE(cmd *cobra.Command) {
+func stripAuthHooks(cmd *cobra.Command) {
 	cmd.PersistentPreRunE = nil
 	cmd.PersistentPreRun = nil
+	cmd.PreRunE = nil
+	cmd.PreRun = nil
 	for _, sub := range cmd.Commands() {
-		stripPersistentPreRunE(sub)
+		stripAuthHooks(sub)
 	}
 }

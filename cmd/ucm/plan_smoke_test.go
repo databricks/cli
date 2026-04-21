@@ -78,7 +78,7 @@ func assertSmokeGolden(t *testing.T, ctx context.Context, u *ucmpkg.Ucm) {
 // TestCmd_PlanSmoke_VerbHappyPath drives the cobra plan verb against the same
 // smoke fixture with the fake-tf harness. Complements TestCmd_PlanSmoke_EndToEnd
 // by proving the full CLI pivot (ucm plan → phases.Plan → TerraformWrapper)
-// stays wired once PersistentPreRunE auth is stripped out for tests.
+// stays wired once PreRunE auth is stripped out for tests.
 func TestCmd_PlanSmoke_VerbHappyPath(t *testing.T) {
 	h := newVerbHarness(t)
 	h.tf.PlanResult = &terraform.PlanResult{HasChanges: true, Summary: "smoke plan ready"}
