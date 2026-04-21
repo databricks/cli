@@ -1934,6 +1934,47 @@
                   }
                 ]
               },
+              "resources.VectorSearchEndpoint": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "budget_policy_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "endpoint_type": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "min_qps": {
+                        "$ref": "#/$defs/int64"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      },
+                      "usage_policy_id": {
+                        "$ref": "#/$defs/string",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "endpoint_type",
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Volume": {
                 "oneOf": [
                   {
@@ -2518,6 +2559,9 @@
                     },
                     "synced_database_tables": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable"
+                    },
+                    "vector_search_endpoints": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint"
                     },
                     "volumes": {
                       "description": "The volume definitions for the bundle, where each key is the name of the volume.",
@@ -11005,6 +11049,22 @@
                 }
               ]
             },
+            "vectorsearch.EndpointType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Type of endpoint.",
+                  "enum": [
+                    "STORAGE_OPTIMIZED",
+                    "STANDARD"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "workspace.AzureKeyVaultSecretScopeMetadata": {
               "oneOf": [
                 {
@@ -11413,6 +11473,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.VectorSearchEndpoint": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint"
                       }
                     },
                     {

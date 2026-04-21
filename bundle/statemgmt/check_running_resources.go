@@ -50,7 +50,7 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 	}
 
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	err = checkAnyResourceRunning(ctx, w, state)
 	if err != nil {
 		return diag.FromErr(err)
@@ -90,9 +90,8 @@ func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient,
 		if resourceType == "pipelines" {
 			errs.Go(func() error {
 				isRunning, err := IsPipelineRunning(errCtx, w, id)
-				// If there's an error retrieving the pipeline, we assume it's not running
 				if err != nil {
-					return nil
+					return nil //nolint:nilerr // assume not running if pipeline check fails
 				}
 				if isRunning {
 					return &ErrResourceIsRunning{resourceType: "pipeline", resourceId: id}

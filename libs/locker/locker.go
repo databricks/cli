@@ -42,7 +42,7 @@ const LockFileName = "deploy.lock"
 //     we allow clients to forcefully acquire a lock on TargetDir. However forcefully acquired
 //     locks come with the following caveats:
 //
-//     a.  a forcefully acquired lock does not guarentee exclusive access to
+//     a.  a forcefully acquired lock does not guarantee exclusive access to
 //     TargetDir's scope
 //     b.  forcefully acquiring a lock(s) on TargetDir can break the assumption
 //     of exclusive access that other clients with non forcefully acquired

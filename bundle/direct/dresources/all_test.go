@@ -27,6 +27,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -237,6 +238,13 @@ var testConfig map[string]any = map[string]any{
 
 			DatasetCatalog: "main",
 			DatasetSchema:  "myschema",
+		},
+	},
+
+	"vector_search_endpoints": &resources.VectorSearchEndpoint{
+		CreateEndpoint: vectorsearch.CreateEndpoint{
+			Name:         "my-endpoint",
+			EndpointType: vectorsearch.EndpointTypeStandard,
 		},
 	},
 }
@@ -466,6 +474,24 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"vector_search_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.VectorSearchEndpoints.CreateEndpoint(ctx, vectorsearch.CreateEndpoint{
+			Name:         "vs-endpoint-permissions",
+			EndpointType: vectorsearch.EndpointTypeStandard,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/vector-search-endpoints/" + waiter.Response.Id,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",

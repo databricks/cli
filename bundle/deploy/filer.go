@@ -16,7 +16,7 @@ import (
 )
 
 // FilerFactory is a function that returns a filer.Filer.
-type FilerFactory func(b *bundle.Bundle) (filer.Filer, error)
+type FilerFactory func(ctx context.Context, b *bundle.Bundle) (filer.Filer, error)
 
 type stateFiler struct {
 	filer filer.Filer
@@ -88,13 +88,13 @@ func (s stateFiler) Write(ctx context.Context, path string, reader io.Reader, mo
 // This API has a higher than 10 MB limits and allows to export large state files.
 // We don't use the same API for read because it doesn't correct get the file content for notebooks and returns
 // "File Not Found" error instead.
-func StateFiler(b *bundle.Bundle) (filer.Filer, error) {
-	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.StatePath)
+func StateFiler(ctx context.Context, b *bundle.Bundle) (filer.Filer, error) {
+	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return nil, err
 	}
 
-	apiClient, err := client.New(b.WorkspaceClient().Config)
+	apiClient, err := client.New(b.WorkspaceClient(ctx).Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}

@@ -221,7 +221,7 @@ func TestResolveWithSkip(t *testing.T) {
 	// Check that the skipped variable references are not interpolated.
 	assert.Equal(t, "${b}", getByPath(t, out, "d").MustString())
 	assert.Equal(t, "a ${b}", getByPath(t, out, "e").MustString())
-	assert.Equal(t, "${b} a a ${b}", getByPath(t, out, "f").MustString())
+	assert.Equal(t, "${b} a a ${b}", getByPath(t, out, "f").MustString()) //nolint:dupword
 }
 
 func TestResolveWithSkipEverything(t *testing.T) {

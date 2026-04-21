@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,29 +26,30 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	}
 
 	state := ExportedResourcesMap{
-		"resources.jobs.test_job":                                     {ID: "1"},
-		"resources.pipelines.test_pipeline":                           {ID: "1"},
-		"resources.models.test_mlflow_model":                          {ID: "1"},
-		"resources.experiments.test_mlflow_experiment":                {ID: "1"},
-		"resources.model_serving_endpoints.test_model_serving":        {ID: "1"},
-		"resources.registered_models.test_registered_model":           {ID: "1"},
-		"resources.quality_monitors.test_monitor":                     {ID: "1"},
-		"resources.catalogs.test_catalog":                             {ID: "1"},
-		"resources.schemas.test_schema":                               {ID: "1"},
-		"resources.external_locations.test_external_location":         {ID: "1"},
-		"resources.volumes.test_volume":                               {ID: "1"},
-		"resources.clusters.test_cluster":                             {ID: "1"},
-		"resources.dashboards.test_dashboard":                         {ID: "1"},
-		"resources.apps.test_app":                                     {ID: "app1"},
-		"resources.secret_scopes.test_secret_scope":                   {ID: "secret_scope1"},
-		"resources.sql_warehouses.test_sql_warehouse":                 {ID: "1"},
-		"resources.database_instances.test_database_instance":         {ID: "1"},
-		"resources.database_catalogs.test_database_catalog":           {ID: "1"},
-		"resources.synced_database_tables.test_synced_database_table": {ID: "1"},
-		"resources.alerts.test_alert":                                 {ID: "1"},
-		"resources.postgres_projects.test_postgres_project":           {ID: "projects/test-project"},
-		"resources.postgres_branches.test_postgres_branch":            {ID: "projects/test-project/branches/main"},
-		"resources.postgres_endpoints.test_postgres_endpoint":         {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.jobs.test_job":                                       {ID: "1"},
+		"resources.pipelines.test_pipeline":                             {ID: "1"},
+		"resources.models.test_mlflow_model":                            {ID: "1"},
+		"resources.experiments.test_mlflow_experiment":                  {ID: "1"},
+		"resources.model_serving_endpoints.test_model_serving":          {ID: "1"},
+		"resources.registered_models.test_registered_model":             {ID: "1"},
+		"resources.quality_monitors.test_monitor":                       {ID: "1"},
+		"resources.catalogs.test_catalog":                               {ID: "1"},
+		"resources.schemas.test_schema":                                 {ID: "1"},
+		"resources.external_locations.test_external_location":           {ID: "1"},
+		"resources.volumes.test_volume":                                 {ID: "1"},
+		"resources.clusters.test_cluster":                               {ID: "1"},
+		"resources.dashboards.test_dashboard":                           {ID: "1"},
+		"resources.apps.test_app":                                       {ID: "app1"},
+		"resources.secret_scopes.test_secret_scope":                     {ID: "secret_scope1"},
+		"resources.sql_warehouses.test_sql_warehouse":                   {ID: "1"},
+		"resources.database_instances.test_database_instance":           {ID: "1"},
+		"resources.database_catalogs.test_database_catalog":             {ID: "1"},
+		"resources.synced_database_tables.test_synced_database_table":   {ID: "1"},
+		"resources.alerts.test_alert":                                   {ID: "1"},
+		"resources.postgres_projects.test_postgres_project":             {ID: "projects/test-project"},
+		"resources.postgres_branches.test_postgres_branch":              {ID: "projects/test-project/branches/main"},
+		"resources.postgres_endpoints.test_postgres_endpoint":           {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -115,6 +117,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "projects/test-project/branches/main/endpoints/primary", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -287,6 +292,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+				"test_vector_search_endpoint": {
+					CreateEndpoint: vectorsearch.CreateEndpoint{
+						Name: "test_vector_search_endpoint",
+					},
+				},
+			},
 		},
 	}
 
@@ -361,6 +373,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -646,49 +661,63 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
+				"test_vector_search_endpoint": {
+					CreateEndpoint: vectorsearch.CreateEndpoint{
+						Name: "test_vector_search_endpoint",
+					},
+				},
+				"test_vector_search_endpoint_new": {
+					CreateEndpoint: vectorsearch.CreateEndpoint{
+						Name: "test_vector_search_endpoint_new",
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
-		"resources.jobs.test_job":                                  {ID: "1"},
-		"resources.jobs.test_job_old":                              {ID: "2"},
-		"resources.pipelines.test_pipeline":                        {ID: "1"},
-		"resources.pipelines.test_pipeline_old":                    {ID: "2"},
-		"resources.models.test_mlflow_model":                       {ID: "1"},
-		"resources.models.test_mlflow_model_old":                   {ID: "2"},
-		"resources.experiments.test_mlflow_experiment":             {ID: "1"},
-		"resources.experiments.test_mlflow_experiment_old":         {ID: "2"},
-		"resources.model_serving_endpoints.test_model_serving":     {ID: "1"},
-		"resources.model_serving_endpoints.test_model_serving_old": {ID: "2"},
-		"resources.registered_models.test_registered_model":        {ID: "1"},
-		"resources.registered_models.test_registered_model_old":    {ID: "2"},
-		"resources.quality_monitors.test_monitor":                  {ID: "test_monitor"},
-		"resources.quality_monitors.test_monitor_old":              {ID: "test_monitor_old"},
-		"resources.catalogs.test_catalog":                          {ID: "1"},
-		"resources.catalogs.test_catalog_old":                      {ID: "2"},
-		"resources.schemas.test_schema":                            {ID: "1"},
-		"resources.schemas.test_schema_old":                        {ID: "2"},
-		"resources.volumes.test_volume":                            {ID: "1"},
-		"resources.volumes.test_volume_old":                        {ID: "2"},
-		"resources.clusters.test_cluster":                          {ID: "1"},
-		"resources.clusters.test_cluster_old":                      {ID: "2"},
-		"resources.dashboards.test_dashboard":                      {ID: "1"},
-		"resources.dashboards.test_dashboard_old":                  {ID: "2"},
-		"resources.apps.test_app":                                  {ID: "test_app"},
-		"resources.apps.test_app_old":                              {ID: "test_app_old"},
-		"resources.secret_scopes.test_secret_scope":                {ID: "test_secret_scope"},
-		"resources.secret_scopes.test_secret_scope_old":            {ID: "test_secret_scope_old"},
-		"resources.sql_warehouses.test_sql_warehouse":              {ID: "1"},
-		"resources.sql_warehouses.test_sql_warehouse_old":          {ID: "2"},
-		"resources.database_instances.test_database_instance":      {ID: "1"},
-		"resources.database_instances.test_database_instance_old":  {ID: "2"},
-		"resources.alerts.test_alert":                              {ID: "1"},
-		"resources.alerts.test_alert_old":                          {ID: "2"},
-		"resources.postgres_projects.test_postgres_project":        {ID: "projects/test-project"},
-		"resources.postgres_projects.test_postgres_project_old":    {ID: "projects/test-project-old"},
-		"resources.postgres_branches.test_postgres_branch":         {ID: "projects/test-project/branches/main"},
-		"resources.postgres_branches.test_postgres_branch_old":     {ID: "projects/test-project/branches/old"},
-		"resources.postgres_endpoints.test_postgres_endpoint":      {ID: "projects/test-project/branches/main/endpoints/primary"},
-		"resources.postgres_endpoints.test_postgres_endpoint_old":  {ID: "projects/test-project/branches/main/endpoints/old"},
+		"resources.jobs.test_job":                                           {ID: "1"},
+		"resources.jobs.test_job_old":                                       {ID: "2"},
+		"resources.pipelines.test_pipeline":                                 {ID: "1"},
+		"resources.pipelines.test_pipeline_old":                             {ID: "2"},
+		"resources.models.test_mlflow_model":                                {ID: "1"},
+		"resources.models.test_mlflow_model_old":                            {ID: "2"},
+		"resources.experiments.test_mlflow_experiment":                      {ID: "1"},
+		"resources.experiments.test_mlflow_experiment_old":                  {ID: "2"},
+		"resources.model_serving_endpoints.test_model_serving":              {ID: "1"},
+		"resources.model_serving_endpoints.test_model_serving_old":          {ID: "2"},
+		"resources.registered_models.test_registered_model":                 {ID: "1"},
+		"resources.registered_models.test_registered_model_old":             {ID: "2"},
+		"resources.quality_monitors.test_monitor":                           {ID: "test_monitor"},
+		"resources.quality_monitors.test_monitor_old":                       {ID: "test_monitor_old"},
+		"resources.catalogs.test_catalog":                                   {ID: "1"},
+		"resources.catalogs.test_catalog_old":                               {ID: "2"},
+		"resources.schemas.test_schema":                                     {ID: "1"},
+		"resources.schemas.test_schema_old":                                 {ID: "2"},
+		"resources.volumes.test_volume":                                     {ID: "1"},
+		"resources.volumes.test_volume_old":                                 {ID: "2"},
+		"resources.clusters.test_cluster":                                   {ID: "1"},
+		"resources.clusters.test_cluster_old":                               {ID: "2"},
+		"resources.dashboards.test_dashboard":                               {ID: "1"},
+		"resources.dashboards.test_dashboard_old":                           {ID: "2"},
+		"resources.apps.test_app":                                           {ID: "test_app"},
+		"resources.apps.test_app_old":                                       {ID: "test_app_old"},
+		"resources.secret_scopes.test_secret_scope":                         {ID: "test_secret_scope"},
+		"resources.secret_scopes.test_secret_scope_old":                     {ID: "test_secret_scope_old"},
+		"resources.sql_warehouses.test_sql_warehouse":                       {ID: "1"},
+		"resources.sql_warehouses.test_sql_warehouse_old":                   {ID: "2"},
+		"resources.database_instances.test_database_instance":               {ID: "1"},
+		"resources.database_instances.test_database_instance_old":           {ID: "2"},
+		"resources.alerts.test_alert":                                       {ID: "1"},
+		"resources.alerts.test_alert_old":                                   {ID: "2"},
+		"resources.postgres_projects.test_postgres_project":                 {ID: "projects/test-project"},
+		"resources.postgres_projects.test_postgres_project_old":             {ID: "projects/test-project-old"},
+		"resources.postgres_branches.test_postgres_branch":                  {ID: "projects/test-project/branches/main"},
+		"resources.postgres_branches.test_postgres_branch_old":              {ID: "projects/test-project/branches/old"},
+		"resources.postgres_endpoints.test_postgres_endpoint":               {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.postgres_endpoints.test_postgres_endpoint_old":           {ID: "projects/test-project/branches/main/endpoints/old"},
+		"resources.vector_search_endpoints.test_vector_search_endpoint":     {ID: "vs-endpoint-1"},
+		"resources.vector_search_endpoints.test_vector_search_endpoint_old": {ID: "vs-endpoint-old"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -834,6 +863,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint_old"].ModifiedStatus)
 	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ModifiedStatus)
+
+	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
+	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
+	assert.Equal(t, "vs-endpoint-old", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }

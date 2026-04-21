@@ -538,6 +538,13 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "lifecycle":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-

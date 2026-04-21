@@ -55,10 +55,7 @@ func TestGetProjectInitializer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create temp directory
-			tmpDir, err := os.MkdirTemp("", "initializer-test-*")
-			require.NoError(t, err)
-			defer os.RemoveAll(tmpDir)
+			tmpDir := t.TempDir()
 
 			// Create test files
 			for name, content := range tt.files {
@@ -140,9 +137,7 @@ func TestDetectPythonCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpDir, err := os.MkdirTemp("", "python-cmd-test-*")
-			require.NoError(t, err)
-			defer os.RemoveAll(tmpDir)
+			tmpDir := t.TempDir()
 
 			for name, content := range tt.files {
 				err := os.WriteFile(filepath.Join(tmpDir, name), []byte(content), 0o644)

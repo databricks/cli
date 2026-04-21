@@ -321,7 +321,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		}
 
 		// Verify the app exists
-		exists, err := resource.Exists(ctx, b.WorkspaceClient(), app.Name)
+		exists, err := resource.Exists(ctx, b.WorkspaceClient(ctx), app.Name)
 		if err != nil {
 			return fmt.Errorf("failed to verify app exists: %w", err)
 		}

@@ -192,8 +192,7 @@ func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string
 
 	section, err := configFile.GetSection(databricksSettingsSection)
 	if err != nil {
-		// No settings section means no default to clear.
-		return nil
+		return nil //nolint:nilerr // no settings section means no default to clear
 	}
 
 	section.DeleteKey(defaultProfileKey)

@@ -23,6 +23,7 @@ development. They may change or be removed in future versions without notice.`,
 
 	cmd.AddCommand(aitoolscmd.NewAitoolsCmd())
 	cmd.AddCommand(doctorcmd.NewDoctorCmd())
+	cmd.AddCommand(newWorkspaceOpenCommand())
 
 	return cmd
 }

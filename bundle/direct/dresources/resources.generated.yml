@@ -287,4 +287,6 @@ resources:
       - field: unity_catalog_provisioning_state
         reason: spec:output_only
 
+  # vector_search_endpoints: no api field behaviors
+
   # volumes: no api field behaviors
