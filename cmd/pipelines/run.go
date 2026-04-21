@@ -331,7 +331,7 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		// as runner.Run() returns an error if the pipeline doesn't complete successfully.
 		if ref.Description.SingularName == "pipeline" && runOutput != nil {
 			if pipelineOutput, ok := runOutput.(*bundlerunoutput.PipelineOutput); ok && pipelineOutput.UpdateId != "" {
-				w := b.WorkspaceClient()
+				w := b.WorkspaceClient(ctx)
 				err = fetchAndDisplayPipelineUpdate(ctx, w, ref.Resource.(*resources.Pipeline).ID, pipelineOutput.UpdateId)
 				if err != nil {
 					return fmt.Errorf("failed to fetch and display pipeline update: %w", err)

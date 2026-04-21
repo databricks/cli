@@ -53,7 +53,7 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	}
 
 	logProgress(ctx, "Getting the status of the app "+app.Name)
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 
 	// Check the status of the app first.
 	createdApp, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: app.Name})
@@ -105,7 +105,7 @@ func isAppComputeStarting(app *apps.App) bool {
 func (a *appRunner) start(ctx context.Context) error {
 	app := a.app
 	b := a.bundle
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 
 	logProgress(ctx, "Starting the app "+app.Name)
 	wait, err := w.Apps.Start(ctx, apps.StartAppRequest{Name: app.Name})
@@ -137,7 +137,7 @@ func (a *appRunner) start(ctx context.Context) error {
 }
 
 func (a *appRunner) deploy(ctx context.Context) error {
-	w := a.bundle.WorkspaceClient()
+	w := a.bundle.WorkspaceClient(ctx)
 	config, err := a.resolvedConfig()
 	if err != nil {
 		return err
@@ -199,7 +199,7 @@ func (a *appRunner) Cancel(ctx context.Context) error {
 		return errors.New("app is not defined")
 	}
 
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 
 	logProgress(ctx, "Stopping app "+app.Name)
 	wait, err := w.Apps.Stop(ctx, apps.StopAppRequest{Name: app.Name})
