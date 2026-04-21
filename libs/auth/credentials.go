@@ -3,7 +3,10 @@ package auth
 import (
 	"context"
 	"errors"
+	"path/filepath"
+	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
@@ -93,7 +96,7 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if cfg.Host == "" {
 		return nil, errNoHost
 	}
-	oauthArg, err := authArgumentsFromConfig(cfg).ToOAuthArgument()
+	oauthArg, err := authArgumentsFromConfig(ctx, cfg).ToOAuthArgument()
 	if err != nil {
 		return nil, err
 	}
@@ -122,15 +125,54 @@ func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.Persiste
 }
 
 // authArgumentsFromConfig converts an SDK config to AuthArguments.
-// The legacy IsUnifiedHost signal is no longer read from the SDK config
-// (the field is being removed); DiscoveryURL is the primary signal, and
-// cfg reaches us after EnsureResolved() so it's populated from .well-known.
-func authArgumentsFromConfig(cfg *config.Config) AuthArguments {
+// The SDK config no longer carries Experimental_IsUnifiedHost (the field is
+// being removed). DiscoveryURL is the primary unified-host signal, populated
+// by EnsureResolved() before this runs. For users on hosts where .well-known
+// is unreachable, the signal is recovered from the legacy INI key by
+// legacyUnifiedHostFromProfile so token cache keys continue to match.
+func authArgumentsFromConfig(ctx context.Context, cfg *config.Config) AuthArguments {
 	return AuthArguments{
-		Host:         cfg.Host,
-		AccountID:    cfg.AccountID,
-		WorkspaceID:  cfg.WorkspaceID,
-		Profile:      cfg.Profile,
-		DiscoveryURL: cfg.DiscoveryURL,
+		Host:          cfg.Host,
+		AccountID:     cfg.AccountID,
+		WorkspaceID:   cfg.WorkspaceID,
+		Profile:       cfg.Profile,
+		DiscoveryURL:  cfg.DiscoveryURL,
+		IsUnifiedHost: legacyUnifiedHostFromProfile(ctx, cfg),
 	}
+}
+
+// legacyUnifiedHostFromProfile reads experimental_is_unified_host from the
+// profile section of the resolved .databrickscfg. Best-effort: returns false
+// on any error (missing config file, missing section, parse failure).
+//
+// This exists to carry the legacy unified-host signal forward after the SDK
+// stopped populating cfg.Experimental_IsUnifiedHost from the INI key. Without
+// it, OAuth cache-key generation regresses for profiles that set the key but
+// sit behind a host where .well-known/databricks-config is unreachable.
+func legacyUnifiedHostFromProfile(ctx context.Context, cfg *config.Config) bool {
+	if cfg.Profile == "" {
+		return false
+	}
+	path := cfg.ConfigFile
+	if path == "" {
+		path = env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	}
+	if path == "" {
+		home, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return false
+		}
+		path = filepath.Join(home, ".databrickscfg")
+	} else if strings.HasPrefix(path, "~") {
+		home, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return false
+		}
+		path = filepath.Join(home, path[1:])
+	}
+	f, err := config.LoadFile(path)
+	if err != nil {
+		return false
+	}
+	return f.Section(cfg.Profile).Key("experimental_is_unified_host").MustBool(false)
 }

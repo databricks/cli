@@ -4,12 +4,16 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -50,6 +54,10 @@ func TestCLICredentialsName(t *testing.T) {
 }
 
 func TestAuthArgumentsFromConfig(t *testing.T) {
+	// Point config file at a nonexistent path so legacyUnifiedHostFromProfile
+	// doesn't read the developer's real ~/.databrickscfg.
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "nonexistent.cfg"))
+
 	tests := []struct {
 		name string
 		cfg  *config.Config
@@ -101,10 +109,48 @@ func TestAuthArgumentsFromConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := authArgumentsFromConfig(tt.cfg)
+			got := authArgumentsFromConfig(t.Context(), tt.cfg)
 			if got != tt.want {
 				t.Errorf("want %v, got %v", tt.want, got)
 			}
+		})
+	}
+}
+
+func TestLegacyUnifiedHostFromProfile(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(`
+[unified]
+host = https://unified.example.com
+account_id = acc-1
+experimental_is_unified_host = true
+
+[plain]
+host = https://plain.example.com
+`), 0o600))
+
+	cases := []struct {
+		name    string
+		cfg     *config.Config
+		envFile string
+		want    bool
+	}{
+		{name: "no profile", cfg: &config.Config{ConfigFile: cfgPath}, want: false},
+		{name: "unified profile", cfg: &config.Config{Profile: "unified", ConfigFile: cfgPath}, want: true},
+		{name: "plain profile", cfg: &config.Config{Profile: "plain", ConfigFile: cfgPath}, want: false},
+		{name: "missing profile", cfg: &config.Config{Profile: "nope", ConfigFile: cfgPath}, want: false},
+		{name: "unreadable file", cfg: &config.Config{Profile: "unified", ConfigFile: filepath.Join(dir, "nope.cfg")}, want: false},
+		{name: "picks up DATABRICKS_CONFIG_FILE env", cfg: &config.Config{Profile: "unified"}, envFile: cfgPath, want: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.envFile != "" {
+				t.Setenv("DATABRICKS_CONFIG_FILE", tc.envFile)
+			} else {
+				t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(dir, "nonexistent.cfg"))
+			}
+			assert.Equal(t, tc.want, legacyUnifiedHostFromProfile(t.Context(), tc.cfg))
 		})
 	}
 }
