@@ -1,0 +1,50 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+variables:
+  my_catalog:
+    default: main
+  # Both resolve to same value to test ambiguity (when we have multiple matches → skip)
+  landing_schema:
+    default: raw_data
+  curated_schema:
+    default: raw_data
+  # Variable with value set only in target (no default)
+  target_env:
+    description: "Environment name"
+  # Variable set via .databricks/bundle/<target>/variable-overrides.json
+  file_override_var:
+    description: "Set from variable-overrides.json"
+  # Complex variable to verify no panics
+  cluster_config:
+    type: complex
+    default:
+      node_type_id: Standard_DS3_v2
+      num_workers: 2
+
+resources:
+  jobs:
+    my_job:
+      parameters:
+        - name: catalog
+          default: ${var.my_catalog}
+        - name: env
+          default: ${var.target_env}
+        - name: file_val
+          default: ${var.file_override_var}
+        # Both use variables that resolve to the same value ("raw_data").
+        # Tests disambiguation: original reference is preserved on Replace.
+        - name: landing
+          default: ${var.landing_schema}
+        - name: curated
+          default: ${var.curated_schema}
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+
+targets:
+  default:
+    mode: development
+    variables:
+      target_env: production

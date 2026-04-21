@@ -1,0 +1,35 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Add parameters remotely"
+edit_resource.py jobs $job_id <<EOF
+# "main" matches exactly one variable (my_catalog) -> should be restored to \${var.my_catalog}
+r["parameters"].append({"name": "data_catalog", "default": "main"})
+# "raw_data" matches two variables (landing_schema, curated_schema) -> ambiguous, stays hardcoded
+r["parameters"].append({"name": "some_schema", "default": "raw_data"})
+# "us-west-2" matches no variable -> stays hardcoded
+r["parameters"].append({"name": "region", "default": "us-west-2"})
+# "production" matches target_env (set in target, not default) -> should be restored to \${var.target_env}
+r["parameters"].append({"name": "deploy_env", "default": "production"})
+# "from-overrides-file" matches file_override_var (set via variable-overrides.json) -> should be restored
+r["parameters"].append({"name": "file_sourced", "default": "from-overrides-file"})
+EOF
+
+title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
