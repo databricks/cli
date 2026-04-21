@@ -15,8 +15,16 @@ tasks:
       - task: lint-q
       - task: test-update
 
+  full:
+    desc: More complete dev loop
+    cmds:
+      - task: checks
+      - task: fmt
+      - task: lint
+      - task: test-update
+
   all:
-    desc: Run all checks, full fmt, full lint, tests, and regeneration
+    desc: Run regeneration (except for genkit), all checks, lints and test updates
     cmds:
       # Skips generate-genkit (expensive, requires universe checkout, outputs are
       # committed). Run `./task generate` explicitly when codegen inputs change.
