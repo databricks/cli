@@ -282,7 +282,7 @@ func TestResolveConfig(t *testing.T) {
 			}
 			ctx := cmdio.MockDiscard(t.Context())
 			for k, v := range tt.ctxEnv {
-				ctx = env.Set(ctx, k, v)
+				ctx = env.Set(ctx, k, v) //nolint:fatcontext // accumulating test env vars onto context
 			}
 
 			cfg, err := resolveConfig(ctx, "", false)
