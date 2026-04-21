@@ -25,7 +25,7 @@ type Script struct {
 	Content string `json:"content"`
 }
 
-type Root struct {
+type Root struct { //nolint:recvcheck // value receivers for read-only accessors, pointer for mutators
 	value dyn.Value
 	depth int
 
@@ -347,12 +347,28 @@ func (r *Root) MergeTargetOverrides(name string) error {
 			if vDefault.Kind() != dyn.KindInvalid {
 				defaultPath := varPath.Append(dyn.Key("default"))
 				root, err = dyn.SetByPath(root, defaultPath, vDefault)
+				if err != nil {
+					return root, err
+				}
+
+				// If the target explicitly sets a default value, drop any lookup from the
+				// root variable definition so SetVariables can assign this default.
+				lookupPath := varPath.Append(dyn.Key("lookup"))
+				root, err = dyn.SetByPath(root, lookupPath, dyn.NilValue)
 			}
 
 			vLookup := variable.Get("lookup")
 			if vLookup.Kind() != dyn.KindInvalid {
 				lookupPath := varPath.Append(dyn.Key("lookup"))
 				root, err = dyn.SetByPath(root, lookupPath, vLookup)
+				if err != nil {
+					return root, err
+				}
+
+				// If the target explicitly sets a lookup, drop any default value from the
+				// root variable definition so lookup resolution remains authoritative.
+				defaultPath := varPath.Append(dyn.Key("default"))
+				root, err = dyn.SetByPath(root, defaultPath, dyn.NilValue)
 			}
 
 			return root, err
@@ -427,7 +443,7 @@ var allowedVariableDefinitions = []([]string){
 	{"lookup"},
 }
 
-// isFullVariableOverrideDef checks if the given value is a full syntax varaible override.
+// isFullVariableOverrideDef checks if the given value is a full syntax variable override.
 // A full syntax variable override is a map with either 1 of 2 keys.
 // If it's 2 keys, the keys should be "default" and "type".
 // If it's 1 key, the key should be one of the following keys: "default", "lookup".
@@ -498,7 +514,7 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 
 				// Check if the original definition of variable has a type field.
 				// If it has a type field, it means the shorthand is a value of a complex type.
-				// Type might not be found if the variable overriden in a separate file
+				// Type might not be found if the variable overridden in a separate file
 				// and configuration is not merged yet.
 				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
 				if err == nil && typeV.MustString() == "complex" {

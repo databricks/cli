@@ -21,7 +21,9 @@ type Root struct {
 
 const ProviderHost = "registry.terraform.io"
 const ProviderSource = "databricks/databricks"
-const ProviderVersion = "1.111.0"
+const ProviderVersion = "1.113.0"
+const ProviderChecksumLinuxAmd64 = "4f5caaf7bea4c435ae97c28c45086c213e182b67d1fe9b13f4e91b9e0b6ad7be"
+const ProviderChecksumLinuxArm64 = "69693b0bcbab3a184deb2744e8b90d5a9d1f7e19cdc414bc54a87280e37d65a9"
 
 func NewRoot() *Root {
 	return &Root{

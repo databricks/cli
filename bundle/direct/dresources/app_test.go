@@ -1,6 +1,9 @@
 package dresources
 
 import (
+	"reflect"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/testserver"
@@ -57,7 +60,7 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &apps.App{Name: "test-app"})
+	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
@@ -113,10 +116,54 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 
 	r := (&ResourceApp{}).New(client)
 	ctx := t.Context()
-	name, _, err := r.DoCreate(ctx, &apps.App{Name: "test-app"})
+	name, _, err := r.DoCreate(ctx, &AppState{App: apps.App{Name: "test-app"}})
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-app", name)
 	assert.Equal(t, 2, createCallCount, "expected Create to be called twice")
 	assert.Equal(t, 1, getCallCount, "expected Get to be called once to check app state")
+}
+
+func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
+	// iterate over all apps.App fields using reflection and ensure that UpdateMaskFields contains all of them.
+	config := GetGeneratedResourceConfig("apps")
+	require.NotNil(t, config)
+	var nonUpdatableFields []string
+	for _, field := range config.IgnoreRemoteChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	for _, field := range config.RecreateOnChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	config = GetResourceConfig("apps")
+	require.NotNil(t, config)
+	for _, field := range config.IgnoreRemoteChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	for _, field := range config.RecreateOnChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	app := apps.App{}
+	fields := reflect.TypeOf(app)
+	var allFields []string
+	for i := range fields.NumField() {
+		field := fields.Field(i)
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "" || jsonTag == "-" {
+			continue
+		}
+		jsonTag = strings.TrimSuffix(jsonTag, ",omitempty")
+		allFields = append(allFields, jsonTag)
+		if !slices.Contains(nonUpdatableFields, jsonTag) {
+			assert.Contains(t, UpdateMaskFields, jsonTag, "field %s is not in UpdateMaskFields and not marked as non-updatable", jsonTag)
+		}
+	}
+
+	for _, field := range UpdateMaskFields {
+		assert.Contains(t, allFields, field, "field %s is in UpdateMaskFields but not in apps.App struct", field)
+	}
 }

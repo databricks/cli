@@ -19,17 +19,21 @@ make generate-validation
 # Remove the next-changelog.yml workflow.
 rm .github/workflows/next-changelog.yml
 
-# Move the tagging.py file to the internal/genkit/tagging.py file. We do this to avoid
-# cluttering the root directory.
+# Move the tagging.py file and its lock file to internal/genkit/. We do this to
+# avoid cluttering the root directory. The lock file must stay next to tagging.py
+# for `uv run --locked` to work in the tagging workflow.
 mv tagging.py internal/genkit/tagging.py
+mv tagging.py.lock internal/genkit/tagging.py.lock
 
 # Update the tagging.yml workflow to use the new tagging.py file location.
+# The genkit generates "uv run --locked tagging.py", we need to rewrite it
+# to point at the moved location.
 if [[ "$(uname)" == "Darwin" ]]; then
     # macOS (BSD sed) requires empty string after -i
-    sed -i '' 's|python tagging.py|python internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+    sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
 else
     # Linux (GNU sed)
-    sed -i 's|python tagging.py|python internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+    sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
 fi
 go tool -modfile=tools/go.mod yamlfmt .github/workflows/tagging.yml
 

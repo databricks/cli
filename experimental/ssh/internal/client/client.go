@@ -2,8 +2,10 @@ package client
 
 import (
 	"context"
+	"crypto/md5"
 	_ "embed"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -31,6 +33,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 )
 
@@ -96,6 +99,8 @@ type ClientOptions struct {
 	SkipSettingsCheck bool
 	// Environment version for serverless compute.
 	EnvironmentVersion int
+	// If true, skip confirmation prompts for IDE extension install and IDE settings updates.
+	AutoApprove bool
 }
 
 func (o *ClientOptions) Validate() error {
@@ -105,15 +110,8 @@ func (o *ClientOptions) Validate() error {
 	if o.Accelerator != "" && o.ConnectionName == "" {
 		return errors.New("--accelerator flag can only be used with serverless compute (--name flag)")
 	}
-	// Consider removing this check when we enable serverless CPU connections. Ideally Jobs API should do the validation
-	// for us, but they don't plan on doing it in the nearest future. For now we should not forget to check if there are
-	// any other possible values that can be here.
 	if o.Accelerator != "" && o.Accelerator != "GPU_1xA10" && o.Accelerator != "GPU_8xH100" {
 		return fmt.Errorf("invalid accelerator value: %q, expected %q or %q", o.Accelerator, "GPU_1xA10", "GPU_8xH100")
-	}
-	// TODO: Remove when we add support for serverless CPU
-	if o.ConnectionName != "" && o.Accelerator == "" {
-		return errors.New("--name flag requires --accelerator to be set (for now we only support serverless GPU compute)")
 	}
 	if o.ConnectionName != "" && !connectionNameRegex.MatchString(o.ConnectionName) {
 		return fmt.Errorf("connection name %q must consist of letters, numbers, dashes, and underscores", o.ConnectionName)
@@ -125,6 +123,20 @@ func (o *ClientOptions) Validate() error {
 		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
 	}
 	return nil
+}
+
+// GenerateDefaultConnectionName creates a deterministic connection name from
+// the workspace host and accelerator type. The name includes a hash of the
+// workspace host so that different workspaces produce different names,
+// avoiding SSH known_hosts conflicts.
+func GenerateDefaultConnectionName(host, accelerator string) string {
+	h := md5.Sum([]byte(host))
+	hashStr := hex.EncodeToString(h[:4])
+	if accelerator != "" {
+		acc := strings.ToLower(strings.ReplaceAll(accelerator, "_", "-"))
+		return fmt.Sprintf("databricks-%s-%s", acc, hashStr)
+	}
+	return "databricks-cpu-" + hashStr
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {
@@ -215,13 +227,16 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	if !opts.ProxyMode {
 		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s...", sessionID))
+		if opts.IsServerlessMode() && opts.Accelerator == "" {
+			cmdio.LogString(ctx, color.YellowString("WARNING: serverless compute without an accelerator is in private preview. If you are not enrolled, this command will likely time out with an error. Contact your Databricks account team to enroll."))
+		}
 	}
 
 	if opts.IDE != "" && !opts.ProxyMode {
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
 			return err
 		}
-		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE); err != nil {
+		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
 			return err
 		}
 	}
@@ -230,12 +245,15 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// desired server ports (or socket connection mode) for the connection to go through
 	// (as the majority of the localhost ports on the remote side are blocked by iptable rules).
 	// Plus the platform (always linux), and extensions (python and jupyter), to make the initial experience smoother.
-	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck && cmdio.IsPromptSupported(ctx) {
-		err := vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName)
+	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck {
+		err := vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName, opts.AutoApprove)
 		if err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("Failed to update IDE settings: %v", err))
 			cmdio.LogString(ctx, vscode.GetManualInstructions(opts.IDE, opts.ConnectionName))
 			cmdio.LogString(ctx, "Use --skip-settings-check to bypass IDE settings verification.")
+			if opts.AutoApprove {
+				return fmt.Errorf("aborted: IDE settings need to be updated manually: %w", err)
+			}
 			shouldProceed, promptErr := cmdio.AskYesOrNo(ctx, "Do you want to proceed with the connection?")
 			if promptErr != nil {
 				return fmt.Errorf("failed to prompt user: %w", promptErr)
@@ -294,6 +312,10 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		}
 		userName, serverPort, clusterID, err = ensureSSHServerIsRunning(ctx, client, version, secretScopeName, opts)
 		if err != nil {
+			if opts.IsServerlessMode() && opts.Accelerator == "" && errors.Is(err, errServerMetadata) {
+				return fmt.Errorf("failed to ensure that ssh server is running: %w\n\n"+
+					color.YellowString("This may be because serverless compute without an accelerator is in private preview.\nContact your Databricks account team to enroll."), err)
+			}
 			return fmt.Errorf("failed to ensure that ssh server is running: %w", err)
 		}
 	} else {
@@ -422,7 +444,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
 	log.Debugf(ctx, "Metadata URL: %s", metadataURL)
-	req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL, nil)
 	if err != nil {
 		return 0, "", "", err
 	}
@@ -459,7 +481,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
 
-	err = client.Workspace.MkdirsByPath(ctx, contentDir)
+	err = client.Workspace.MkdirsByPath(ctx, contentDir) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}

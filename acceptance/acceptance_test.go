@@ -10,6 +10,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
+	"maps"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,7 +19,6 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,7 +33,6 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -275,8 +275,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
 	// UV_CACHE_DIR only applies to packages but not Python installations.
-	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
-	uvInstall := filepath.Join(uvCache, "python_installs")
+	// UV_PYTHON_INSTALL_DIR points to the actual managed Python directory so
+	// uv finds pre-installed versions without falling back to system PATH search.
+	uvInstall := getUVPythonInstallDir(t)
 	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
@@ -416,14 +417,20 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				expanded = internal.SubsetExpanded(expanded, dir, scriptUsesEngine)
 			}
 
-			for ind, envset := range expanded {
-				envname := strings.Join(envset, "/")
-				t.Run(envname, func(t *testing.T) {
-					if runParallel {
-						t.Parallel()
-					}
-					runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
-				})
+			// If the matrix expands to a single empty envset, run the test directly
+			// without creating a subtest (avoids the "#00" dummy subtest name).
+			if len(expanded) == 1 && len(expanded[0]) == 0 {
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters)
+			} else {
+				for ind, envset := range expanded {
+					envname := strings.Join(envset, "/")
+					t.Run(envname, func(t *testing.T) {
+						if runParallel {
+							t.Parallel()
+						}
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
+					})
+				}
 			}
 		})
 	}
@@ -480,7 +487,7 @@ func getTests(t *testing.T) []string {
 	})
 	require.NoError(t, err)
 
-	sort.Strings(testDirs)
+	slices.Sort(testDirs)
 	return testDirs
 }
 
@@ -504,10 +511,6 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 
 	if WorkspaceTmpDir && !isTruePtr(config.RunsOnDbr) {
 		return "Disabled because RunsOnDbr is not set in " + configPath
-	}
-
-	if isTruePtr(config.Slow) && testing.Short() {
-		return "Disabled via Slow setting in " + configPath
 	}
 
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
@@ -603,7 +606,7 @@ func runTest(t *testing.T,
 	if KeepTmp {
 		tempDirBase := filepath.Join(os.TempDir(), "acceptance")
 		_ = os.Mkdir(tempDirBase, 0o755)
-		tmpDir, err = os.MkdirTemp(tempDirBase, "")
+		tmpDir, err = os.MkdirTemp(tempDirBase, "") //nolint:usetesting // KeepTmp: dir must persist after test for debugging
 		require.NoError(t, err)
 		t.Logf("Created directory: %s", tmpDir)
 	} else if WorkspaceTmpDir {
@@ -812,7 +815,7 @@ func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
 	env := make([]string, 0, len(configEnv)+len(customEnv))
 
 	// Add config.Env first (but skip keys that exist in customEnv)
-	for _, key := range utils.SortedKeys(configEnv) {
+	for _, key := range slices.Sorted(maps.Keys(configEnv)) {
 		if hasKey(customEnv, key) {
 			continue
 		}
@@ -1266,6 +1269,20 @@ func getUVDefaultCacheDir(t *testing.T) string {
 	}
 }
 
+// getUVPythonInstallDir returns the directory where uv stores managed Python installations.
+// Must be called before HOME is overridden in tests, so that uv resolves the real install path.
+func getUVPythonInstallDir(t *testing.T) string {
+	cmd := exec.Command("uv", "python", "dir")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Logf("uv python dir failed: %v; falling back to cache-based path", err)
+		cacheDir, err2 := os.UserCacheDir()
+		require.NoError(t, err2)
+		return filepath.Join(cacheDir, "uv", "python_installs")
+	}
+	return strings.TrimSpace(string(out))
+}
+
 func RunCommand(t *testing.T, args []string, dir string, env []string) {
 	start := time.Now()
 	cmd := exec.Command(args[0], args[1:]...)
@@ -1481,7 +1498,7 @@ func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.Replacem
 
 func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
 	b, err := os.ReadFile(filepath.Join(tmpDir, userReplacementsFilename))
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return
 	}
 	require.NoError(t, err)

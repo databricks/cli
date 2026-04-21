@@ -66,7 +66,7 @@ func TestGenerateBoth(t *testing.T) {
 	task := &jobs.PythonWheelTask{NamedParameters: map[string]string{"a": "1"}, Parameters: []string{"b"}}
 	_, err := trampoline.generateParameters(task)
 	require.Error(t, err)
-	require.ErrorContains(t, err, "not allowed to pass both paramaters and named_parameters")
+	require.ErrorContains(t, err, "not allowed to pass both parameters and named_parameters")
 }
 
 func TestTransformFiltersWheelTasksOnly(t *testing.T) {

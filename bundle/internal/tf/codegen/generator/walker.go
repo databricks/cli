@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -117,7 +118,7 @@ func processAttributeType(typ cty.Type, resourceName, attributePath string) stri
 }
 
 func nestedBlockKeys(block *tfjson.SchemaBlock) []string {
-	keys := sortKeys(block.NestedBlocks)
+	keys := slices.Sorted(maps.Keys(block.NestedBlocks))
 
 	// Remove TF specific "timeouts" block.
 	if i := slices.Index(keys, "timeouts"); i != -1 {
@@ -137,7 +138,7 @@ func nestedField(name []string, k string, isRef bool) field {
 		fieldTypePrefix = "[]"
 	}
 	fieldType := fmt.Sprintf("%s%s", fieldTypePrefix, strings.Join(append(name, strcase.ToCamel(k)), ""))
-	fieldTag := fmt.Sprintf("%s,omitempty", k)
+	fieldTag := k + ",omitempty"
 
 	return field{
 		Name: fieldName,
@@ -163,7 +164,7 @@ func (w *walker) walk(block *tfjson.SchemaBlock, name []string) error {
 	}
 
 	// Declare attributes.
-	for _, k := range sortKeys(block.Attributes) {
+	for _, k := range slices.Sorted(maps.Keys(block.Attributes)) {
 		v := block.Attributes[k]
 
 		// Assert the attribute type is always set.
@@ -189,12 +190,14 @@ func (w *walker) walk(block *tfjson.SchemaBlock, name []string) error {
 		fieldName := strcase.ToCamel(k)
 		attributePath := buildAttributePath(name, k)
 		fieldType := processAttributeType(v.AttributeType, w.resourceName, attributePath)
-		fieldTag := k
 		if v.Required && v.Optional {
 			return fmt.Errorf("both required and optional are set for attribute %s", k)
 		}
-		if !v.Required {
-			fieldTag = fmt.Sprintf("%s,omitempty", fieldTag)
+		var fieldTag string
+		if v.Required {
+			fieldTag = k
+		} else {
+			fieldTag = k + ",omitempty"
 		}
 
 		// Append to list of fields for type.

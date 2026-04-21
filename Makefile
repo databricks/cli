@@ -70,28 +70,19 @@ links:
 checks: tidy ws links
 
 
-# Run short unit and acceptance tests (testing.Short() is true).
+.PHONY: install-pythons
+install-pythons:
+	uv python install 3.9 3.10 3.11 3.12 3.13
+
 .PHONY: test
 test: test-unit test-acc
 
-# Run all unit and acceptance tests.
-.PHONY: test-slow
-test-slow: test-slow-unit test-slow-acc
-
 .PHONY: test-unit
 test-unit:
-	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT} -short
-
-.PHONY: test-slow-unit
-test-slow-unit:
 	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT}
 
 .PHONY: test-acc
 test-acc:
-	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -short -run ${ACCEPTANCE_TEST_FILTER}
-
-.PHONY: test-slow-acc
-test-slow-acc:
 	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
 
 # Updates acceptance test output (local tests)
@@ -173,15 +164,15 @@ docs:
 INTEGRATION = go run -modfile=tools/go.mod ./tools/testrunner/main.go ${GO_TOOL} gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
 
 .PHONY: integration
-integration:
+integration: install-pythons
 	$(INTEGRATION)
 
 .PHONY: integration-short
-integration-short:
+integration-short: install-pythons
 	DATABRICKS_TEST_SKIPLOCAL=1 VERBOSE_TEST=1 $(INTEGRATION) -short
 
 .PHONY: dbr-integration
-dbr-integration:
+dbr-integration: install-pythons
 	DBR_ENABLED=true go test -v -timeout 4h -run TestDbrAcceptance$$ ./acceptance
 
 # DBR acceptance tests - run on Databricks Runtime using serverless compute

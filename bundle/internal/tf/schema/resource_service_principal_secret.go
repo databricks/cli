@@ -7,6 +7,7 @@ type ResourceServicePrincipalSecretProviderConfig struct {
 }
 
 type ResourceServicePrincipalSecret struct {
+	Api                string                                        `json:"api,omitempty"`
 	CreateTime         string                                        `json:"create_time,omitempty"`
 	ExpireTime         string                                        `json:"expire_time,omitempty"`
 	Id                 string                                        `json:"id,omitempty"`

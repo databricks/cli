@@ -15,7 +15,7 @@ func createWebsocketConnection(ctx context.Context, client *databricks.Workspace
 		return nil, fmt.Errorf("failed to get proxy URL: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

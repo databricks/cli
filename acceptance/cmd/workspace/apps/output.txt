@@ -6,6 +6,7 @@
     "message":"Application is running.",
     "state":"RUNNING"
   },
+  "compute_size":"MEDIUM",
   "compute_status": {
     "message":"App compute is active.",
     "state":"ACTIVE"
@@ -37,6 +38,7 @@
     "message":"Application is running.",
     "state":"RUNNING"
   },
+  "compute_size":"MEDIUM",
   "compute_status": {
     "message":"App compute is active.",
     "state":"ACTIVE"

@@ -1,11 +1,14 @@
+// Package generator produces Go types from the Terraform provider schema.
 package generator
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -29,14 +32,16 @@ func (c *collection) Generate(path string) error {
 		return err
 	}
 
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	return tmpl.Execute(f, c)
 }
 
 type root struct {
-	OutputFile      string
-	ProviderVersion string
+	OutputFile                 string
+	ProviderVersion            string
+	ProviderChecksumLinuxAmd64 string
+	ProviderChecksumLinuxArm64 string
 }
 
 func (r *root) Generate(path string) error {
@@ -46,15 +51,16 @@ func (r *root) Generate(path string) error {
 		return err
 	}
 
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	return tmpl.Execute(f, r)
 }
 
-func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error {
+// Run generates Go type files under path for every resource and data source in schema.
+func Run(_ context.Context, schema *tfjson.ProviderSchema, checksums *schemapkg.ProviderChecksums, path string) error {
 	// Generate types for resources
 	var resources []*namedBlock
-	for _, k := range sortKeys(schema.ResourceSchemas) {
+	for _, k := range slices.Sorted(maps.Keys(schema.ResourceSchemas)) {
 		// Skipping all plugin framework struct generation.
 		// TODO: This is a temporary fix, generation should be fixed in the future.
 		if strings.HasSuffix(k, "_pluginframework") {
@@ -85,7 +91,7 @@ func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error 
 
 	// Generate types for data sources.
 	var dataSources []*namedBlock
-	for _, k := range sortKeys(schema.DataSourceSchemas) {
+	for _, k := range slices.Sorted(maps.Keys(schema.DataSourceSchemas)) {
 		// Skipping all plugin framework struct generation.
 		// TODO: This is a temporary fix, generation should be fixed in the future.
 		if strings.HasSuffix(k, "_pluginframework") {
@@ -147,8 +153,10 @@ func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error 
 	// Generate root.go
 	{
 		r := &root{
-			OutputFile:      "root.go",
-			ProviderVersion: schemapkg.ProviderVersion,
+			OutputFile:                 "root.go",
+			ProviderVersion:            schemapkg.ProviderVersion,
+			ProviderChecksumLinuxAmd64: checksums.LinuxAmd64,
+			ProviderChecksumLinuxArm64: checksums.LinuxArm64,
 		}
 		err := r.Generate(path)
 		if err != nil {

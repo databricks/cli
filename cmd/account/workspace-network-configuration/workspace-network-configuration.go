@@ -90,6 +90,7 @@ func newGetWorkspaceNetworkOptionRpc() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -170,6 +171,7 @@ func newUpdateWorkspaceNetworkOptionRpc() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -15,7 +15,7 @@ func TestCommandGenerateExecIdPanics(t *testing.T) {
 
 	// Expect a panic if the execution ID is set twice.
 	assert.Panics(t, func() {
-		ctx = GenerateExecId(ctx)
+		ctx = GenerateExecId(ctx) //nolint:fatcontext // test verifies this panics on second call
 	})
 }
 

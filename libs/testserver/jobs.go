@@ -1,6 +1,7 @@
 package testserver
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -104,6 +105,12 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 	// Add task-level defaults that match AWS cloud behavior
 	for i := range jobSettings.Tasks {
 		task := &jobSettings.Tasks[i]
+
+		// Sort depends_on by task_key to simulate the real API which returns
+		// dependencies in a different order than submitted.
+		slices.SortFunc(task.DependsOn, func(a, b jobs.TaskDependency) int {
+			return cmp.Compare(a.TaskKey, b.TaskKey)
+		})
 
 		// Set task email notifications to empty struct if not set
 		if task.EmailNotifications == nil {
@@ -223,7 +230,7 @@ func (s *FakeWorkspace) JobsList() Response {
 		list = append(list, baseJob)
 	}
 
-	sort.Slice(list, func(i, j int) bool { return list[i].JobId < list[j].JobId })
+	slices.SortFunc(list, func(a, b jobs.BaseJob) int { return cmp.Compare(a.JobId, b.JobId) })
 	return Response{Body: jobs.ListJobsResponse{Jobs: list}}
 }
 

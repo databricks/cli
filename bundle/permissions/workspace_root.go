@@ -54,7 +54,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 		return nil
 	}
 
-	w := b.WorkspaceClient().Workspace
+	w := b.WorkspaceClient(ctx).Workspace
 	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
 
 	g, ctx := errgroup.WithContext(ctx)
@@ -73,7 +73,7 @@ func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path st
 		return nil
 	}
 
-	obj, err := w.GetStatusByPath(ctx, path)
+	obj, err := w.GetStatusByPath(ctx, path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return err
 	}

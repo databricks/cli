@@ -21,13 +21,12 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDep
 	var state ExportedResourcesMap
 	var err error
 	if directDeployment {
-		_, localPath := b.StateFilenameDirect(ctx)
-		state, err = b.DeploymentBundle.ExportState(ctx, localPath)
+		state = b.DeploymentBundle.ExportState(ctx)
 	} else {
 		state, err = ParseResourcesState(ctx, b)
-	}
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var dashboards []dashboardState
@@ -88,7 +87,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 
 		path := dyn.MustPathFromString("resources.dashboards." + dashboard.Name)
 		loc := b.Config.GetLocation(path.String())
-		actual, err := b.WorkspaceClient().Lakeview.GetByDashboardId(ctx, dashboard.ID)
+		actual, err := b.WorkspaceClient(ctx).Lakeview.GetByDashboardId(ctx, dashboard.ID)
 		if err != nil {
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,

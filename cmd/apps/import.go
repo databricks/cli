@@ -2,12 +2,14 @@ package apps
 
 import (
 	"bufio"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -18,6 +20,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/bundle/statemgmt"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apps/prompt"
@@ -116,13 +119,16 @@ Examples:
 				}
 
 				// Sort apps: owned by current user first
-				sort.Slice(appList, func(i, j int) bool {
-					iOwned := strings.ToLower(appList[i].Creator) == currentUserEmail
-					jOwned := strings.ToLower(appList[j].Creator) == currentUserEmail
-					if iOwned != jOwned {
-						return iOwned
+				slices.SortFunc(appList, func(a, b apps.App) int {
+					aOwned := strings.ToLower(a.Creator) == currentUserEmail
+					bOwned := strings.ToLower(b.Creator) == currentUserEmail
+					if aOwned != bOwned {
+						if aOwned {
+							return -1
+						}
+						return 1
 					}
-					return appList[i].Name < appList[j].Name
+					return cmp.Compare(a.Name, b.Name)
 				})
 
 				// Build selection map
@@ -166,7 +172,7 @@ Examples:
 			// Check if output directory already exists
 			if _, err := os.Stat(outputDir); err == nil {
 				return fmt.Errorf("directory '%s' already exists. Please remove it or choose a different output directory", outputDir)
-			} else if !os.IsNotExist(err) {
+			} else if !errors.Is(err, fs.ErrNotExist) {
 				return fmt.Errorf("failed to check if directory exists: %w", err)
 			}
 
@@ -190,7 +196,7 @@ Examples:
 					cmdio.LogString(ctx, "Cleaning up previous app folder")
 				}
 
-				err = w.Workspace.Delete(ctx, workspace.Delete{
+				err = w.Workspace.Delete(ctx, workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 					Path:      oldSourceCodePath,
 					Recursive: true,
 				})
@@ -295,10 +301,11 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		bindCmd.Flags().StringSlice("var", []string{}, "set values for variables defined in bundle config")
 
 		// Initialize the bundle
+		var stateDesc *statemgmt.StateDesc
 		var err error
-		b, err = bundleutils.ProcessBundle(bindCmd, bundleutils.ProcessOptions{
+		b, stateDesc, err = bundleutils.ProcessBundleRet(bindCmd, bundleutils.ProcessOptions{
 			SkipInitContext: true,
-			ReadState:       true,
+			AlwaysPull:      true,
 			InitFunc: func(b *bundle.Bundle) {
 				b.Config.Bundle.Deployment.Lock.Force = false
 			},
@@ -314,7 +321,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		}
 
 		// Verify the app exists
-		exists, err := resource.Exists(ctx, b.WorkspaceClient(), app.Name)
+		exists, err := resource.Exists(ctx, b.WorkspaceClient(ctx), app.Name)
 		if err != nil {
 			return fmt.Errorf("failed to verify app exists: %w", err)
 		}
@@ -323,13 +330,16 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		}
 
 		// Bind the resource
-		tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+		tfName, ok := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
+		if !ok {
+			tfName = resource.ResourceDescription().PluralName
+		}
 		phases.Bind(ctx, b, &terraform.BindOptions{
 			AutoApprove:  true,
 			ResourceType: tfName,
 			ResourceKey:  appKey,
 			ResourceId:   app.Name,
-		})
+		}, stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return errors.New("failed to bind resource")
 		}

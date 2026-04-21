@@ -105,6 +105,7 @@ func newBatchCreateAccessRequests() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -170,6 +171,7 @@ func newGetAccessRequestDestinations() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -283,6 +285,7 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -1,9 +1,10 @@
 package output
 
 import (
+	"cmp"
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -34,8 +35,8 @@ func (out *JobOutput) String() (string, error) {
 	}
 	result := strings.Builder{}
 	result.WriteString("Output:\n")
-	sort.Slice(out.TaskOutputs, func(i, j int) bool {
-		return out.TaskOutputs[i].EndTime < out.TaskOutputs[j].EndTime
+	slices.SortFunc(out.TaskOutputs, func(a, b TaskOutput) int {
+		return cmp.Compare(a.EndTime, b.EndTime)
 	})
 	for _, v := range out.TaskOutputs {
 		if v.Output == nil {
@@ -43,7 +44,7 @@ func (out *JobOutput) String() (string, error) {
 		}
 		taskString, err := v.Output.String()
 		if err != nil {
-			return "", nil
+			return "", nil //nolint:nilerr // skip tasks with unparseable output
 		}
 		result.WriteString("=======\n")
 		result.WriteString(fmt.Sprintf("Task %s:\n", v.TaskKey))

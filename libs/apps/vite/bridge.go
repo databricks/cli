@@ -83,15 +83,19 @@ type Bridge struct {
 	tunnelID           string
 	tunnelWriteChan    chan prioritizedMessage
 	stopChan           chan struct{}
-	stopOnce           sync.Once
+	stop               func()
 	httpClient         *http.Client
 	connectionRequests chan *BridgeMessage
 	port               int
 	keepaliveDone      chan struct{} // Signals keepalive goroutine to stop on reconnect
 	keepaliveMu        sync.Mutex    // Protects keepaliveDone
+	autoApprove        bool          // If true, approve every viewer connection without asking
 }
 
-func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName string, port int) *Bridge {
+// NewBridge constructs a development bridge to a remote app. When autoApprove is
+// true, inbound connection requests from viewers are approved without prompting
+// on stdin.
+func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName string, port int, autoApprove bool) *Bridge {
 	// Configure HTTP client optimized for local high-volume requests
 	transport := &http.Transport{
 		MaxIdleConns:        100,
@@ -101,7 +105,7 @@ func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName strin
 		DisableCompression:  false,
 	}
 
-	return &Bridge{
+	b := &Bridge{
 		ctx:     ctx,
 		w:       w,
 		appName: appName,
@@ -113,11 +117,28 @@ func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName strin
 		tunnelWriteChan:    make(chan prioritizedMessage, 100), // Buffered channel for async writes
 		connectionRequests: make(chan *BridgeMessage, 10),
 		port:               port,
+		autoApprove:        autoApprove,
 	}
+
+	b.stop = sync.OnceFunc(func() {
+		close(b.stopChan)
+
+		if b.tunnelConn != nil {
+			_ = b.tunnelConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			b.tunnelConn.Close()
+		}
+
+		if b.hmrConn != nil {
+			_ = b.hmrConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			b.hmrConn.Close()
+		}
+	})
+
+	return b
 }
 
 func (vb *Bridge) getAuthHeaders(wsURL string) (http.Header, error) {
-	req, err := http.NewRequestWithContext(vb.ctx, "GET", wsURL, nil)
+	req, err := http.NewRequestWithContext(vb.ctx, http.MethodGet, wsURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -432,32 +453,38 @@ func (vb *Bridge) handleConnectionRequest(msg *BridgeMessage) error {
 	cmdio.LogString(vb.ctx, "")
 	cmdio.LogString(vb.ctx, "🔔 Connection Request")
 	cmdio.LogString(vb.ctx, "   User: "+msg.Viewer)
-	cmdio.LogString(vb.ctx, "   Approve this connection? (y/n)")
-
-	// Read from stdin with timeout to prevent indefinite blocking
-	inputChan := make(chan string, 1)
-	errChan := make(chan error, 1)
-
-	go func() {
-		reader := bufio.NewReader(os.Stdin)
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			errChan <- err
-			return
-		}
-		inputChan <- input
-	}()
 
 	var approved bool
-	select {
-	case input := <-inputChan:
-		approved = strings.ToLower(strings.TrimSpace(input)) == "y"
-	case err := <-errChan:
-		return fmt.Errorf("failed to read user input: %w", err)
-	case <-time.After(BridgeConnTimeout):
-		// Default to denying after timeout
-		cmdio.LogString(vb.ctx, "⏱️  Timeout waiting for response, denying connection")
-		approved = false
+	if vb.autoApprove {
+		cmdio.LogString(vb.ctx, "   Auto-approving (--auto-approve)")
+		approved = true
+	} else {
+		cmdio.LogString(vb.ctx, "   Approve this connection? (y/n)")
+
+		// Read from stdin with timeout to prevent indefinite blocking
+		inputChan := make(chan string, 1)
+		errChan := make(chan error, 1)
+
+		go func() {
+			reader := bufio.NewReader(os.Stdin)
+			input, err := reader.ReadString('\n')
+			if err != nil {
+				errChan <- err
+				return
+			}
+			inputChan <- input
+		}()
+
+		select {
+		case input := <-inputChan:
+			approved = strings.ToLower(strings.TrimSpace(input)) == "y"
+		case err := <-errChan:
+			return fmt.Errorf("failed to read user input: %w", err)
+		case <-time.After(BridgeConnTimeout):
+			// Default to denying after timeout
+			cmdio.LogString(vb.ctx, "⏱️  Timeout waiting for response, denying connection")
+			approved = false
+		}
 	}
 
 	response := BridgeMessage{
@@ -965,17 +992,5 @@ func (vb *Bridge) Start() error {
 }
 
 func (vb *Bridge) Stop() {
-	vb.stopOnce.Do(func() {
-		close(vb.stopChan)
-
-		if vb.tunnelConn != nil {
-			_ = vb.tunnelConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			vb.tunnelConn.Close()
-		}
-
-		if vb.hmrConn != nil {
-			_ = vb.hmrConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			vb.hmrConn.Close()
-		}
-	})
+	vb.stop()
 }

@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
-	"golang.org/x/exp/maps"
 )
 
 // The latest template schema version supported by the CLI
@@ -175,7 +176,7 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 	// Validate the partial config against skip_prompt_if schema
 	validationErr := p.Schema.SkipPromptIf.ValidateInstance(c.values)
 	if validationErr != nil {
-		return false, nil
+		return false, nil //nolint:nilerr // validation failure means skip condition not met
 	}
 
 	if p.Schema.Default == nil {
@@ -306,7 +307,7 @@ func (c *config) promptOrAssignDefaultValues(r *renderer) error {
 // to initialize the template.
 func (c *config) validate() error {
 	// For final validation, all properties in the JSON schema should have a value defined.
-	c.schema.Required = maps.Keys(c.schema.Properties)
+	c.schema.Required = slices.Collect(maps.Keys(c.schema.Properties))
 	if err := c.schema.ValidateInstance(c.values); err != nil {
 		return fmt.Errorf("validation for template input parameters failed. %w", err)
 	}

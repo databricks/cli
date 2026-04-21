@@ -123,3 +123,169 @@ func TestWithHostAndAccountID(t *testing.T) {
 		})
 	}
 }
+
+func TestWithHostAccountIDAndWorkspaceID(t *testing.T) {
+	cases := []struct {
+		name               string
+		inputHost          string
+		inputAccountID     string
+		inputWorkspaceID   string
+		profileHost        string
+		profileAccountID   string
+		profileWorkspaceID string
+		want               bool
+	}{
+		{
+			name:               "all three match",
+			inputHost:          "https://spog.example.com",
+			inputAccountID:     "acc-1",
+			inputWorkspaceID:   "ws-1",
+			profileHost:        "https://spog.example.com",
+			profileAccountID:   "acc-1",
+			profileWorkspaceID: "ws-1",
+			want:               true,
+		},
+		{
+			name:               "different workspace_id",
+			inputHost:          "https://spog.example.com",
+			inputAccountID:     "acc-1",
+			inputWorkspaceID:   "ws-1",
+			profileHost:        "https://spog.example.com",
+			profileAccountID:   "acc-1",
+			profileWorkspaceID: "ws-2",
+			want:               false,
+		},
+		{
+			name:               "different account_id",
+			inputHost:          "https://spog.example.com",
+			inputAccountID:     "acc-1",
+			inputWorkspaceID:   "ws-1",
+			profileHost:        "https://spog.example.com",
+			profileAccountID:   "acc-2",
+			profileWorkspaceID: "ws-1",
+			want:               false,
+		},
+		{
+			name:               "different host",
+			inputHost:          "https://other.example.com",
+			inputAccountID:     "acc-1",
+			inputWorkspaceID:   "ws-1",
+			profileHost:        "https://spog.example.com",
+			profileAccountID:   "acc-1",
+			profileWorkspaceID: "ws-1",
+			want:               false,
+		},
+		{
+			name:               "empty host on profile",
+			inputHost:          "https://spog.example.com",
+			inputAccountID:     "acc-1",
+			inputWorkspaceID:   "ws-1",
+			profileHost:        "",
+			profileAccountID:   "acc-1",
+			profileWorkspaceID: "ws-1",
+			want:               false,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			p := Profile{Host: c.profileHost, AccountID: c.profileAccountID, WorkspaceID: c.profileWorkspaceID}
+			fn := WithHostAccountIDAndWorkspaceID(c.inputHost, c.inputAccountID, c.inputWorkspaceID)
+			assert.Equal(t, c.want, fn(p))
+		})
+	}
+}
+
+func TestMatchWorkspaceProfiles(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile Profile
+		want    bool
+	}{
+		{
+			name:    "regular workspace (no account_id)",
+			profile: Profile{Host: "https://ws.cloud.databricks.com"},
+			want:    true,
+		},
+		{
+			name:    "SPOG workspace (has workspace_id)",
+			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1", WorkspaceID: "ws-1"},
+			want:    true,
+		},
+		{
+			name:    "legacy unified workspace (has workspace_id and IsUnifiedHost)",
+			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", WorkspaceID: "ws-1", IsUnifiedHost: true},
+			want:    true,
+		},
+		{
+			name:    "regular account profile (has account_id, no workspace_id)",
+			profile: Profile{Host: "https://accounts.cloud.databricks.com", AccountID: "acc-1"},
+			want:    false,
+		},
+		{
+			name:    "legacy unified account (IsUnifiedHost, no workspace_id)",
+			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", IsUnifiedHost: true},
+			want:    false,
+		},
+		{
+			name:    "workspace_id none sentinel is not a workspace profile",
+			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1", WorkspaceID: "none"},
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, MatchWorkspaceProfiles(tt.profile))
+		})
+	}
+}
+
+func TestMatchAccountProfiles(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile Profile
+		want    bool
+	}{
+		{
+			name:    "regular account profile",
+			profile: Profile{Host: "https://accounts.cloud.databricks.com", AccountID: "acc-1"},
+			want:    true,
+		},
+		{
+			name:    "SPOG account profile (account_id, no workspace_id)",
+			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1"},
+			want:    true,
+		},
+		{
+			name:    "legacy unified account profile",
+			profile: Profile{Host: "https://unified.example.com", AccountID: "acc-1", IsUnifiedHost: true},
+			want:    true,
+		},
+		{
+			name:    "workspace_id none sentinel matches as account profile",
+			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1", WorkspaceID: "none"},
+			want:    true,
+		},
+		{
+			name:    "SPOG workspace profile (has workspace_id)",
+			profile: Profile{Host: "https://spog.example.com", AccountID: "acc-1", WorkspaceID: "ws-1"},
+			want:    false,
+		},
+		{
+			name:    "regular workspace (no account_id)",
+			profile: Profile{Host: "https://ws.cloud.databricks.com"},
+			want:    false,
+		},
+		{
+			name:    "no host",
+			profile: Profile{AccountID: "acc-1"},
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, MatchAccountProfiles(tt.profile))
+		})
+	}
+}

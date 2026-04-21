@@ -116,8 +116,8 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		DashboardFixups(),
 
 		// Reads (typed): b.Config.Permissions (validates permission levels)
-		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (reads existing permissions)
-		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (adds permissions from bundle-level configuration)
+		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps,vector_search_endpoints,...}.*.permissions (reads existing permissions)
+		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps,vector_search_endpoints,...}.*.permissions (adds permissions from bundle-level configuration)
 		// Applies bundle-level permissions to all supported resources
 		ApplyBundlePermissions(),
 
@@ -171,10 +171,11 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): same paths — merges grant entries by principal and deduplicates privileges
 		MergeGrants(),
 
-		// Reads (typed): resources.pipelines.*.{catalog,schema,target}, resources.volumes.*.{catalog_name,schema_name} (checks for schema references)
-		// Updates (typed): resources.pipelines.*.{schema,target}, resources.volumes.*.schema_name (converts implicit schema references to explicit ${resources.schemas.<schema_key>.name} syntax)
-		// Translates implicit schema references in DLT pipelines or UC Volumes to explicit syntax to capture dependencies
-		CaptureSchemaDependency(),
+		// Reads (typed): resources.{volumes,registered_models,pipelines,quality_monitors,model_serving_endpoints}.*.{catalog_name,schema_name,...}
+		// Updates (typed): same paths — converts implicit schema/catalog references to explicit ${resources.schemas/catalogs.<key>.name} syntax
+		// Also updates: resources.schemas.*.catalog_name (catalog dependency for schemas)
+		// Translates implicit schema and catalog references across all UC resources to explicit syntax to capture dependencies
+		CaptureUCDependencies(),
 
 		// Reads (dynamic): resources.dashboards.*.file_path
 		// Updates (dynamic): resources.dashboards.*.serialized_dashboard

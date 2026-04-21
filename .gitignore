@@ -59,6 +59,7 @@ go.work.sum
 .codegen/openapi.json
 
 .claude/settings.local.json
+.cursor/cli.json
 tools/gofumpt
 .claude/worktrees/
 .worktrees/

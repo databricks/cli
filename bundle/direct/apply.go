@@ -14,39 +14,30 @@ import (
 )
 
 func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState) error {
-	entry, hasEntry := db.GetResourceEntry(d.ResourceKey)
-	if !hasEntry {
+	id := db.GetResourceID(d.ResourceKey)
+	if id == "" {
 		log.Infof(ctx, "Cannot delete %s: missing from state", d.ResourceKey)
 		return nil
 	}
 
-	if entry.ID == "" {
-		return errors.New("invalid state: empty id")
-	}
-
-	return d.Delete(ctx, db, entry.ID)
+	return d.Delete(ctx, db, id)
 }
 
-func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, changes deployplan.Changes) error {
+func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {
 	if actionType == deployplan.Create {
 		return d.Create(ctx, db, newState)
 	}
 
-	entry, hasEntry := db.GetResourceEntry(d.ResourceKey)
-	if !hasEntry {
-		return errors.New("state entry not found")
-	}
-
-	oldID := entry.ID
+	oldID := db.GetResourceID(d.ResourceKey)
 	if oldID == "" {
-		return errors.New("invalid state: empty id")
+		return errors.New("state entry not found")
 	}
 
 	switch actionType {
 	case deployplan.Recreate:
 		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.Update:
-		return d.Update(ctx, db, oldID, newState, changes)
+		return d.Update(ctx, db, oldID, newState, planEntry)
 	case deployplan.UpdateWithID:
 		return d.UpdateWithID(ctx, db, oldID, newState)
 	case deployplan.Resize:
@@ -103,12 +94,12 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	return d.Create(ctx, db, newState)
 }
 
-func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, changes deployplan.Changes) error {
+func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
 	if !d.Adapter.HasDoUpdate() {
 		return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 	}
 
-	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState, changes)
+	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState, planEntry)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
 	}

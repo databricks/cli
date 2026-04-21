@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"errors"
+	"net/http"
 	"strings"
 	"time"
 
@@ -131,12 +132,12 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	return result.Name, result, nil
 }
 
-func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, config *PostgresEndpointState, changes Changes) (*postgres.Endpoint, error) {
+func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, config *PostgresEndpointState, entry *PlanEntry) (*postgres.Endpoint, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Endpoint object,
 	// not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(changes, "spec.")
+	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
 
 	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, postgres.UpdateEndpointRequest{
 		Endpoint: postgres.Endpoint{
@@ -180,7 +181,7 @@ func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string) erro
 		if err != nil {
 			// Check if this is a reconciliation in progress error
 			var apiErr *apierr.APIError
-			if errors.As(err, &apiErr) && apiErr.StatusCode == 409 &&
+			if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict &&
 				strings.Contains(apiErr.Message, "reconciliation") {
 				// Check if we've exceeded the timeout
 				if time.Now().After(deadline) {

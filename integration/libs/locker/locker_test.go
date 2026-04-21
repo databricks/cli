@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/fs"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"testing"
 	"time"
@@ -40,7 +40,7 @@ func TestLock(t *testing.T) {
 	var wg sync.WaitGroup
 	for currentIndex := range numConcurrentLocks {
 		wg.Go(func() {
-			time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
+			time.Sleep(time.Duration(rand.IntN(100)) * time.Millisecond)
 			lockerErrs[currentIndex] = lockers[currentIndex].Lock(ctx, false)
 		})
 	}
@@ -62,7 +62,7 @@ func TestLock(t *testing.T) {
 			assert.ErrorContains(t, lockerErrs[i], "Use --force-lock to override")
 		}
 	}
-	assert.Equal(t, 1, countActive, "Exactly one locker should successfull acquire the lock")
+	assert.Equal(t, 1, countActive, "Exactly one locker should successfully acquire the lock")
 
 	// test remote lock matches active lock
 	remoteLocker, err := locker.GetActiveLockState(ctx)

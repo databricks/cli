@@ -1,0 +1,4 @@
+[[Server]]
+Pattern = "POST /oidc/v1/token"
+Response.StatusCode = 401
+Response.Body = '{"error": "invalid_request", "error_description": "Refresh token is invalid"}'

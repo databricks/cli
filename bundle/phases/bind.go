@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -15,17 +17,10 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/utils"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
+func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) {
 	log.Info(ctx, "Phase: bind")
-
-	engine, err := engine.FromEnv(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
 
 	bundle.ApplyContext(ctx, b, lock.Acquire())
 	if logdiag.HasError(ctx) {
@@ -39,11 +34,14 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	if engine.IsDirect() {
 		// Direct engine: import into temp state, run plan, check for changes
 		// This follows the same pattern as terraform import
-		groupName := terraform.TerraformToGroupName[opts.ResourceType]
+		groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
+		if !ok {
+			groupName = opts.ResourceType
+		}
 		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
 
-		result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(), &b.Config, statePath, resourceKey, opts.ResourceId)
+		result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -58,7 +56,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 			if result.Plan != nil {
 				if entry, ok := result.Plan.Plan[resourceKey]; ok && entry != nil && len(entry.Changes) > 0 {
 					cmdio.LogString(ctx, "\nChanges detected:")
-					for _, field := range utils.SortedKeys(entry.Changes) {
+					for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
 						change := entry.Changes[field]
 						if change.Action != deployplan.Skip {
 							cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
@@ -117,14 +115,8 @@ func jsonDump(ctx context.Context, v any, field string) string {
 	return string(b)
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string) {
+func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) {
 	log.Info(ctx, "Phase: unbind")
-
-	engine, err := engine.FromEnv(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
 
 	bundle.ApplyContext(ctx, b, lock.Acquire())
 	if logdiag.HasError(ctx) {
@@ -136,7 +128,10 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 	}()
 
 	if engine.IsDirect() {
-		groupName := terraform.TerraformToGroupName[tfResourceType]
+		groupName, ok := terraform.TerraformToGroupName[tfResourceType]
+		if !ok {
+			groupName = tfResourceType
+		}
 		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
 		err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)

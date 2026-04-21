@@ -2,12 +2,14 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"go/format"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -52,6 +54,13 @@ func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 			return true
 		}
 
+		// Fields without a json tag (e.g. anonymous embeds) have no independent
+		// JSON key and cannot be required. Continue walking their children.
+		rawTag := field.Tag.Get("json")
+		if rawTag == "" {
+			return true
+		}
+
 		// Do not generate required validation code for fields that are internal or readonly.
 		bundleTag := structtag.BundleTag(field.Tag.Get("bundle"))
 		if bundleTag.Internal() || bundleTag.ReadOnly() {
@@ -59,7 +68,7 @@ func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 		}
 
 		// The "omitempty" tag indicates the field is optional in bundle config.
-		jsonTag := structtag.JSONTag(field.Tag.Get("json"))
+		jsonTag := structtag.JSONTag(rawTag)
 		if jsonTag.OmitEmpty() {
 			return true
 		}
@@ -130,11 +139,7 @@ func filterTargetsAndEnvironments(patterns map[string][]RequiredPatternInfo) map
 // sortGroupedPatterns sorts patterns within each group and returns them as a sorted slice
 func sortGroupedPatterns(groupedPatterns map[string][]RequiredPatternInfo) [][]RequiredPatternInfo {
 	// Get sorted group keys
-	groupKeys := make([]string, 0, len(groupedPatterns))
-	for key := range groupedPatterns {
-		groupKeys = append(groupKeys, key)
-	}
-	sort.Strings(groupKeys)
+	groupKeys := slices.Sorted(maps.Keys(groupedPatterns))
 
 	// Build sorted result
 	result := make([][]RequiredPatternInfo, 0, len(groupKeys))
@@ -142,8 +147,8 @@ func sortGroupedPatterns(groupedPatterns map[string][]RequiredPatternInfo) [][]R
 		patterns := groupedPatterns[key]
 
 		// Sort patterns within each group by parent path
-		sort.Slice(patterns, func(i, j int) bool {
-			return patterns[i].Parent < patterns[j].Parent
+		slices.SortFunc(patterns, func(a, b RequiredPatternInfo) int {
+			return cmp.Compare(a.Parent, b.Parent)
 		})
 
 		result = append(result, patterns)

@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
-	// TODO: re-enable synctests after we update to Go 1.25
-	// "testing/synctest"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConnectionsManager_TryAdd_Success(t *testing.T) {
@@ -137,113 +136,111 @@ func TestConnectionsManager_ThreadSafety(t *testing.T) {
 	assert.Equal(t, 0, finalCount)
 }
 
-// TODO: re-enable synctests after we update to Go 1.25
+func TestConnectionsManager_ShutdownTimer_TriggersOnEmptyConnections(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cm := NewConnectionsManager(3, time.Second)
+		timedOut := false
+		go func() {
+			select {
+			case <-cm.TimedOut:
+				timedOut = true
+			case <-time.After(time.Hour):
+			}
+		}()
+		time.Sleep(time.Hour)
+		synctest.Wait()
+		assert.True(t, timedOut, "Expected timeout signal but didn't receive one")
+	})
+}
 
-// func TestConnectionsManager_ShutdownTimer_TriggersOnEmptyConnections(t *testing.T) {
-// 	synctest.Test(t, func(t *testing.T) {
-// 		cm := NewConnectionsManager(3, time.Second)
-// 		timedOut := false
-// 		go func() {
-// 			select {
-// 			case <-cm.TimedOut:
-// 				timedOut = true
-// 			case <-time.After(time.Hour):
-// 			}
-// 		}()
-// 		time.Sleep(time.Hour)
-// 		synctest.Wait()
-// 		assert.True(t, timedOut, "Expected timeout signal but didn't receive one")
-// 	})
-// }
+func TestConnectionsManager_ShutdownTimer_CancelledWhenConnectionAdded(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cm := NewConnectionsManager(3, time.Second)
+		timedOut := false
+		go func() {
+			select {
+			case <-cm.TimedOut:
+				timedOut = true
+			case <-time.After(time.Hour):
+			}
+		}()
 
-// func TestConnectionsManager_ShutdownTimer_CancelledWhenConnectionAdded(t *testing.T) {
-// 	synctest.Test(t, func(t *testing.T) {
-// 		cm := NewConnectionsManager(3, time.Second)
-// 		timedOut := false
-// 		go func() {
-// 			select {
-// 			case <-cm.TimedOut:
-// 				timedOut = true
-// 			case <-time.After(time.Hour):
-// 			}
-// 		}()
+		// Add connection to cancel shutdown timer
+		conn := &proxyConnection{}
+		result := cm.TryAdd("test-id", conn)
+		require.True(t, result)
 
-// 		// Add connection to cancel shutdown timer
-// 		conn := &proxyConnection{}
-// 		result := cm.TryAdd("test-id", conn)
-// 		require.True(t, result)
+		time.Sleep(time.Hour)
+		synctest.Wait()
+		assert.False(t, timedOut, "Unexpected timeout signal while connection exists")
+	})
+}
 
-// 		time.Sleep(time.Hour)
-// 		synctest.Wait()
-// 		assert.False(t, timedOut, "Unexpected timeout signal while connection exists")
-// 	})
-// }
+func TestConnectionsManager_ShutdownTimer_RestartsWhenLastConnectionRemoved(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cm := NewConnectionsManager(3, time.Second)
+		conn := &proxyConnection{}
+		timedOut := false
+		go func() {
+			select {
+			case <-cm.TimedOut:
+				timedOut = true
+			case <-time.After(time.Hour):
+			}
+		}()
 
-// func TestConnectionsManager_ShutdownTimer_RestartsWhenLastConnectionRemoved(t *testing.T) {
-// 	synctest.Test(t, func(t *testing.T) {
-// 		cm := NewConnectionsManager(3, time.Second)
-// 		conn := &proxyConnection{}
-// 		timedOut := false
-// 		go func() {
-// 			select {
-// 			case <-cm.TimedOut:
-// 				timedOut = true
-// 			case <-time.After(time.Hour):
-// 			}
-// 		}()
+		// Add connection
+		result := cm.TryAdd("test-id", conn)
+		require.True(t, result)
 
-// 		// Add connection
-// 		result := cm.TryAdd("test-id", conn)
-// 		require.True(t, result)
+		// Wait a bit to ensure timer would have triggered if not cancelled
+		time.Sleep(time.Hour)
+		synctest.Wait()
+		assert.False(t, timedOut, "Unexpected timeout signal while connection exists")
 
-// 		// Wait a bit to ensure timer would have triggered if not cancelled
-// 		time.Sleep(time.Hour)
-// 		synctest.Wait()
-// 		assert.False(t, timedOut, "Unexpected timeout signal while connection exists")
+		// Setup new goroutine to listen for timeout signal
+		timedOut = false
+		go func() {
+			select {
+			case <-cm.TimedOut:
+				timedOut = true
+			case <-time.After(time.Hour):
+			}
+		}()
+		// Remove connection - should restart shutdown timer
+		cm.Remove("test-id")
+		time.Sleep(time.Hour)
+		synctest.Wait()
+		assert.True(t, timedOut, "Expected timeout signal after last connection removed but didn't receive one")
+	})
+}
 
-// 		// Setup new goroutine to listen for timeout signal
-// 		timedOut = false
-// 		go func() {
-// 			select {
-// 			case <-cm.TimedOut:
-// 				timedOut = true
-// 			case <-time.After(time.Hour):
-// 			}
-// 		}()
-// 		// Remove connection - should restart shutdown timer
-// 		cm.Remove("test-id")
-// 		time.Sleep(time.Hour)
-// 		synctest.Wait()
-// 		assert.True(t, timedOut, "Expected timeout signal after last connection removed but didn't receive one")
-// 	})
-// }
+func TestConnectionsManager_ShutdownTimer_NoRestartWhenConnectionsRemain(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cm := NewConnectionsManager(3, time.Second)
+		timedOut := false
+		go func() {
+			select {
+			case <-cm.TimedOut:
+				timedOut = true
+			case <-time.After(time.Hour):
+			}
+		}()
+		conn1 := &proxyConnection{}
+		conn2 := &proxyConnection{}
 
-// func TestConnectionsManager_ShutdownTimer_NoRestartWhenConnectionsRemain(t *testing.T) {
-// 	synctest.Test(t, func(t *testing.T) {
-// 		cm := NewConnectionsManager(3, time.Second)
-// 		timedOut := false
-// 		go func() {
-// 			select {
-// 			case <-cm.TimedOut:
-// 				timedOut = true
-// 			case <-time.After(time.Hour):
-// 			}
-// 		}()
-// 		conn1 := &proxyConnection{}
-// 		conn2 := &proxyConnection{}
+		// Add two connections
+		result := cm.TryAdd("conn1", conn1)
+		require.True(t, result)
+		result = cm.TryAdd("conn2", conn2)
+		require.True(t, result)
 
-// 		// Add two connections
-// 		result := cm.TryAdd("conn1", conn1)
-// 		require.True(t, result)
-// 		result = cm.TryAdd("conn2", conn2)
-// 		require.True(t, result)
+		// Remove one connection - timer should not restart since connections remain
+		cm.Remove("conn1")
+		assert.Equal(t, 1, cm.Count())
 
-// 		// Remove one connection - timer should not restart since connections remain
-// 		cm.Remove("conn1")
-// 		assert.Equal(t, 1, cm.Count())
-
-// 		time.Sleep(time.Hour)
-// 		synctest.Wait()
-// 		assert.False(t, timedOut, "Unexpected timeout signal while connections still exist")
-// 	})
-// }
+		time.Sleep(time.Hour)
+		synctest.Wait()
+		assert.False(t, timedOut, "Unexpected timeout signal while connections still exist")
+	})
+}

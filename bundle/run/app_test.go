@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -228,7 +229,7 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 
 	appApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "active_deployment_id", mock.Anything, mock.Anything).Return(nil, nil)
 
-	// Second one should succeeed
+	// Second one should succeed
 	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
 		AppName: "my_app",
 		AppDeployment: apps.AppDeployment{
@@ -294,11 +295,7 @@ func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
 		},
 	}
 
-	runner := &appRunner{
-		app: app,
-	}
-
-	deployment := runner.buildAppDeployment()
+	deployment := appdeploy.BuildDeployment(app.SourceCodePath, app.Config, app.GitSource)
 
 	require.Equal(t, apps.AppDeploymentModeSnapshot, deployment.Mode)
 	require.Equal(t, "/path/to/app", deployment.SourceCodePath)

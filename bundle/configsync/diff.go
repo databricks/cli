@@ -70,7 +70,7 @@ func filterEntityDefaults(basePath string, value any) any {
 	for key, val := range m {
 		fieldPath := basePath + "." + key
 
-		if shouldSkipField(fieldPath, val) {
+		if shouldSkipField(fieldPath, val, false) {
 			continue
 		}
 
@@ -91,7 +91,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
 	}
 
-	if shouldSkipField(path, normalizedValue) {
+	if shouldSkipField(path, normalizedValue, hasConfigValue) {
 		return &ConfigChangeDesc{
 			Operation: OperationSkip,
 		}, nil
@@ -127,15 +127,19 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 		return nil, fmt.Errorf("state snapshot not available: %w", err)
 	}
 
-	deployBundle := &direct.DeploymentBundle{}
-	var statePath string
+	var deployBundle *direct.DeploymentBundle
 	if engine.IsDirect() {
-		_, statePath = b.StateFilenameDirect(ctx)
+		// For direct engine, state is already opened by the caller (process.go).
+		deployBundle = &b.DeploymentBundle
 	} else {
-		_, statePath = b.StateFilenameConfigSnapshot(ctx)
+		deployBundle = &direct.DeploymentBundle{}
+		_, statePath := b.StateFilenameConfigSnapshot(ctx)
+		if err := deployBundle.StateDB.Open(statePath); err != nil {
+			return nil, fmt.Errorf("failed to open state: %w", err)
+		}
 	}
 
-	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, statePath)
+	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate plan: %w", err)
 	}
@@ -149,13 +153,15 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 					continue
 				}
 
-				change, err := convertChangeDesc(resourceKey+"."+path, changeDesc)
+				fullPath := resourceKey + "." + path
+				change, err := convertChangeDesc(fullPath, changeDesc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
 				if change.Operation == OperationSkip {
 					continue
 				}
+				change.Value = stripNamePrefix(fullPath, change.Value, b.Config.Presets.NamePrefix)
 				resourceChanges[path] = change
 			}
 		}
@@ -185,7 +191,7 @@ func ensureSnapshotAvailable(ctx context.Context, b *bundle.Bundle, engine engin
 
 	log.Debugf(ctx, "Resources state snapshot not found locally, pulling from remote")
 
-	f, err := deploy.StateFiler(b)
+	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		return fmt.Errorf("getting state filer: %w", err)
 	}

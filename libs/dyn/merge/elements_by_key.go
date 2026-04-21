@@ -1,7 +1,7 @@
 package merge
 
 import (
-	"sort"
+	"slices"
 
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -48,7 +48,7 @@ func (e elementsByKey) doMap(_ dyn.Path, v dyn.Value, mergeFunc func(a, b dyn.Va
 	}
 
 	if e.sortKeys {
-		sort.Strings(keys)
+		slices.Sort(keys)
 	}
 
 	// Gather resulting elements in natural order.

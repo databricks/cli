@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -33,7 +35,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
-	"golang.org/x/exp/maps"
 )
 
 type dashboard struct {
@@ -81,8 +82,8 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
 }
 
 func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) string {
-	w := b.WorkspaceClient()
-	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath)
+	w := b.WorkspaceClient(ctx)
+	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		if apierr.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("dashboard %q not found", path.Base(d.existingPath)))
@@ -128,7 +129,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 }
 
 func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	obj, err := w.Lakeview.GetByDashboardId(ctx, d.existingID)
 	if err != nil {
 		if apierr.IsMissing(err) {
@@ -260,7 +261,7 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 	}
 
 	for {
-		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
+		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -294,7 +295,7 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 	// Overwrite the dashboard at the path referenced from the resource.
 	dashboardPath := resource.FilePath
 
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 
 	// Start polling the underlying dashboard for changes.
 	var etag string
@@ -330,7 +331,7 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 }
 
 func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, dashboardID string) {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -386,6 +387,14 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
 	if logdiag.HasError(ctx) {
 		return
+	}
+
+	if stateDesc.Engine.IsDirect() {
+		_, localPath := b.StateFilenameDirect(ctx)
+		if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
 	}
 
 	bundle.ApplySeqContext(ctx, b,
@@ -451,7 +460,7 @@ func dashboardResourceCompletion(cmd *cobra.Command, args []string, toComplete s
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	return maps.Keys(resources.Completions(b, filterDashboards)), cobra.ShellCompDirectiveNoFileComp
+	return slices.Collect(maps.Keys(resources.Completions(b, filterDashboards))), cobra.ShellCompDirectiveNoFileComp
 }
 
 func NewGenerateDashboardCommand() *cobra.Command {

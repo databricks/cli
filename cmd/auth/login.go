@@ -4,24 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -93,55 +92,41 @@ func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
 	}
 	cmd := &cobra.Command{
-		Use:   "login [HOST]",
+		Use:   "login [PROFILE]",
 		Short: "Log into a Databricks workspace or account",
 		Long: fmt.Sprintf(`Log into a Databricks workspace or account.
-This command logs you into the Databricks workspace or account and saves
-the authentication configuration in a profile (in %s by default).
 
-This profile can then be used to authenticate other Databricks CLI commands by
-specifying the --profile flag. This profile can also be used to authenticate
-other Databricks tooling that supports the Databricks Unified Authentication
-Specification. This includes the Databricks Go, Python, and Java SDKs. For more information,
-you can refer to the documentation linked below.
+This command authenticates via OAuth in the browser and saves the result
+to a configuration profile (in %s by default). Other Databricks CLI
+commands and SDKs can use this profile via the --profile flag. For more
+information, see:
   AWS: https://docs.databricks.com/dev-tools/auth/index.html
   Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
   GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html
 
+If no host is provided, the CLI opens login.databricks.com where you can
+authenticate and select a workspace.
 
-If no host is provided (via --host, as a positional argument, or from an existing
-profile), the CLI will open login.databricks.com where you can authenticate and
-select a workspace. The workspace URL will be discovered automatically.
+The positional argument is resolved as a profile name first. If no profile
+with that name exists and the argument looks like a URL, it is used as a
+host. The positional argument cannot be combined with --host or --profile;
+use the flags directly to specify both.
 
-A profile name (using --profile) can be specified. If you don't specify these
-values, you'll be prompted for values at runtime.
+The host URL may include query parameters to set the workspace and account ID:
 
-While this command always logs you into the specified host, the runtime behaviour
-depends on the existing profiles you have set in your configuration file
-(at %s by default).
+  databricks auth login --host "https://<host>?o=<workspace_id>&account_id=<id>"
 
-1. If a profile with the specified name exists and specifies a host, you'll
-   be logged into the host specified by the profile. The profile will be updated
-   to use "databricks-cli" as the auth type if that was not the case before.
+Note: URLs containing "?" must be quoted to prevent shell interpretation.
 
-2. If a profile with the specified name exists but does not specify a host,
-   you'll be prompted to specify a host. The profile will be updated to use the
-   specified host. The auth type will be updated to "databricks-cli" if that was
-   not the case before.
-
-3. If a profile with the specified name exists and specifies a host, but you
-   specify a host using --host (or as the [HOST] positional arg), the profile will
-   be updated to use the newly specified host. The auth type will be updated to
-   "databricks-cli" if that was not the case before.
-
-4. If a profile with the specified name does not exist, a new profile will be
-   created with the specified host. The auth type will be set to "databricks-cli".
-`, defaultConfigPath, defaultConfigPath),
+If a profile with the given name already exists, it is updated. Otherwise
+a new profile is created.
+`, defaultConfigPath),
 	}
 
 	var loginTimeout time.Duration
 	var configureCluster bool
 	var configureServerless bool
+	var skipWorkspace bool
 	var scopes string
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
@@ -149,8 +134,12 @@ depends on the existing profiles you have set in your configuration file
 		"Prompts to configure cluster")
 	cmd.Flags().BoolVar(&configureServerless, "configure-serverless", false,
 		"Prompts to configure serverless")
+	cmd.Flags().BoolVar(&skipWorkspace, "skip-workspace", false,
+		"Skip workspace selection for account-level access")
 	cmd.Flags().StringVar(&scopes, "scopes", "",
 		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
+
+	cmd.PreRunE = profileHostConflictCheck
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -159,6 +148,26 @@ depends on the existing profiles you have set in your configuration file
 		// Cluster and Serverless are mutually exclusive.
 		if configureCluster && configureServerless {
 			return errors.New("please either configure serverless or cluster, not both")
+		}
+
+		// The positional argument is a shorthand that resolves to either a
+		// profile or a host. It cannot be combined with explicit flags.
+		// Use "databricks auth login --host X --profile Y" instead.
+		if len(args) > 0 && (authArguments.Host != "" || profileName != "") {
+			return fmt.Errorf("argument %q cannot be combined with --host or --profile. Use the --host and --profile flags instead", args[0])
+		}
+		if len(args) == 1 {
+			resolvedProfile, resolvedHost, err := resolvePositionalArg(ctx, args[0], profile.DefaultProfiler)
+			if err != nil {
+				return err
+			}
+			if resolvedProfile != "" {
+				profileName = resolvedProfile
+				args = nil
+			} else {
+				authArguments.Host = resolvedHost
+				args = nil
+			}
 		}
 
 		// If the user has not specified a profile name, prompt for one.
@@ -189,12 +198,11 @@ depends on the existing profiles you have set in your configuration file
 			return discoveryLogin(ctx, &defaultDiscoveryClient{}, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
 		}
 
-		// Load unified host flags from the profile if not explicitly set via CLI flag
+		// Load unified host flag from the profile if not explicitly set via CLI flag.
+		// WorkspaceID is NOT loaded here; it is deferred to setHostAndAccountId()
+		// so that URL query params (?o=...) can override stale profile values.
 		if !cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
 			authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
-		}
-		if !cmd.Flag("workspace-id").Changed && existingProfile != nil {
-			authArguments.WorkspaceID = existingProfile.WorkspaceID
 		}
 
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
@@ -240,8 +248,33 @@ depends on the existing profiles you have set in your configuration file
 		}
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
-		// 1. Configuring cluster and serverless;
-		// 2. Saving the profile.
+		// 1. Workspace selection for SPOG hosts (best-effort);
+		// 2. Configuring cluster and serverless;
+		// 3. Saving the profile.
+
+		// If discovery gave us an account_id but we still have no workspace_id,
+		// prompt the user to select a workspace. This applies to any host where
+		// .well-known/databricks-config returned an account_id, regardless of
+		// whether IsUnifiedHost is set.
+		shouldPromptWorkspace := authArguments.AccountID != "" &&
+			authArguments.WorkspaceID == "" &&
+			!skipWorkspace
+
+		if skipWorkspace && authArguments.WorkspaceID == "" {
+			authArguments.WorkspaceID = auth.WorkspaceIDNone
+		}
+
+		if shouldPromptWorkspace {
+			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, persistentAuth)
+			if wsErr != nil {
+				log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
+			} else if wsID == "" {
+				// User selected "Skip" from the prompt.
+				authArguments.WorkspaceID = auth.WorkspaceIDNone
+			} else {
+				authArguments.WorkspaceID = wsID
+			}
+		}
 
 		var clusterID, serverlessComputeID string
 
@@ -351,6 +384,29 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 
 	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
 
+	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
+	// URL params from explicit --host override stale profile values.
+	params := auth.ExtractHostQueryParams(authArguments.Host)
+	authArguments.Host = params.Host
+	if authArguments.WorkspaceID == "" {
+		authArguments.WorkspaceID = params.WorkspaceID
+	}
+	if authArguments.AccountID == "" {
+		authArguments.AccountID = params.AccountID
+	}
+
+	// Inherit workspace_id from the existing profile AFTER URL param extraction.
+	// This ensures URL params (?o=...) take precedence over stale profile values,
+	// while explicit CLI flags (--workspace-id) still win (already set on authArguments).
+	if authArguments.WorkspaceID == "" && existingProfile != nil && existingProfile.WorkspaceID != "" {
+		authArguments.WorkspaceID = existingProfile.WorkspaceID
+	}
+
+	// Call discovery to populate account_id/workspace_id from the host's
+	// .well-known/databricks-config endpoint. This is best-effort: failures
+	// are logged as warnings and never block login.
+	runHostDiscovery(ctx, authArguments)
+
 	// Determine the host type and handle account ID / workspace ID accordingly
 	cfg := &config.Config{
 		Host:                       authArguments.Host,
@@ -359,9 +415,9 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 	}
 
-	switch cfg.HostType() {
+	switch cfg.HostType() { //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	case config.AccountHost:
-		// Account host - prompt for account ID if not provided
+		// Account host: prompt for account ID if not provided
 		if authArguments.AccountID == "" {
 			if existingProfile != nil && existingProfile.AccountID != "" {
 				authArguments.AccountID = existingProfile.AccountID
@@ -374,7 +430,8 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 			}
 		}
 	case config.UnifiedHost:
-		// Unified host requires an account ID for OAuth URL construction
+		// Unified host requires an account ID for OAuth URL construction.
+		// Workspace selection happens post-OAuth via promptForWorkspaceSelection.
 		if authArguments.AccountID == "" {
 			if existingProfile != nil && existingProfile.AccountID != "" {
 				authArguments.AccountID = existingProfile.AccountID
@@ -386,31 +443,49 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 				authArguments.AccountID = accountId
 			}
 		}
-
-		// Workspace ID is optional and determines API access level:
-		// - With workspace ID: workspace-level APIs
-		// - Without workspace ID: account-level APIs
-		// If neither is provided via flags, prompt for workspace ID (most common case)
-		hasWorkspaceID := authArguments.WorkspaceID != ""
-		if !hasWorkspaceID {
-			if existingProfile != nil && existingProfile.WorkspaceID != "" {
-				authArguments.WorkspaceID = existingProfile.WorkspaceID
-			} else {
-				// Prompt for workspace ID for workspace-level access
-				workspaceId, err := promptForWorkspaceID(ctx)
-				if err != nil {
-					return err
-				}
-				authArguments.WorkspaceID = workspaceId
-			}
-		}
 	case config.WorkspaceHost:
-		// Workspace host - no additional prompts needed
+		// Regular workspace host: no additional prompts needed.
+		// If discovery already populated account_id/workspace_id, those are kept.
 	default:
-		return fmt.Errorf("unknown host type: %v", cfg.HostType())
+		return fmt.Errorf("unknown host type: %v", cfg.HostType()) //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	}
 
 	return nil
+}
+
+// runHostDiscovery calls EnsureResolved() with a temporary config to fetch
+// .well-known/databricks-config from the host. Populates account_id and
+// workspace_id from discovery if not already set.
+func runHostDiscovery(ctx context.Context, authArguments *auth.AuthArguments) {
+	if authArguments.Host == "" {
+		return
+	}
+
+	cfg := &config.Config{
+		Host:               authArguments.Host,
+		AccountID:          authArguments.AccountID,
+		WorkspaceID:        authArguments.WorkspaceID,
+		HTTPTimeoutSeconds: 5,
+		// Use only ConfigAttributes (env vars + struct tags), skip config file
+		// loading to avoid interference from existing profiles.
+		Loaders: []config.Loader{config.ConfigAttributes},
+	}
+
+	err := cfg.EnsureResolved()
+	if err != nil {
+		log.Warnf(ctx, "Host metadata discovery failed: %v", err)
+		return
+	}
+
+	if authArguments.AccountID == "" && cfg.AccountID != "" {
+		authArguments.AccountID = cfg.AccountID
+	}
+	if authArguments.WorkspaceID == "" && cfg.WorkspaceID != "" {
+		authArguments.WorkspaceID = cfg.WorkspaceID
+	}
+	if authArguments.DiscoveryURL == "" && cfg.DiscoveryURL != "" {
+		authArguments.DiscoveryURL = cfg.DiscoveryURL
+	}
 }
 
 // getProfileName returns the default profile name for a given host/account ID.
@@ -484,22 +559,6 @@ func validateDiscoveryFlagCompatibility(cmd *cobra.Command) error {
 	return nil
 }
 
-// openURLSuppressingStderr opens a URL in the browser while suppressing stderr output.
-// This prevents xdg-open error messages from being displayed to the user.
-func openURLSuppressingStderr(url string) error {
-	// Save the original stderr from the browser package
-	originalStderr := browserpkg.Stderr
-	defer func() {
-		browserpkg.Stderr = originalStderr
-	}()
-
-	// Redirect stderr to discard to suppress xdg-open errors
-	browserpkg.Stderr = io.Discard
-
-	// Call the browser open function
-	return browserpkg.OpenURL(url)
-}
-
 // discoveryLogin runs the login.databricks.com discovery flow. The user
 // authenticates in the browser, selects a workspace, and the CLI receives
 // the workspace host from the OAuth callback's iss parameter.
@@ -543,24 +602,33 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 		return discoveryErr("login succeeded but no workspace host was discovered", nil)
 	}
 
-	// Get the token for introspection
+	// Run host metadata discovery on the discovered host to detect SPOG hosts
+	// and populate account_id/workspace_id. This ensures profiles created via
+	// login.databricks.com have the same metadata as profiles created via the
+	// regular --host login path.
+	hostArgs := &auth.AuthArguments{Host: discoveredHost}
+	runHostDiscovery(ctx, hostArgs)
+	accountID := hostArgs.AccountID
+	workspaceID := hostArgs.WorkspaceID
+
+	// Best-effort introspection as a fallback for workspace_id when host
+	// metadata discovery didn't return it (e.g. classic workspace hosts).
 	tok, err := persistentAuth.Token()
 	if err != nil {
 		return fmt.Errorf("retrieving token after login: %w", err)
 	}
 
-	// Best-effort introspection for metadata.
-	var workspaceID string
 	introspection, err := dc.IntrospectToken(ctx, discoveredHost, tok.AccessToken)
 	if err != nil {
 		log.Debugf(ctx, "token introspection failed (non-fatal): %v", err)
 	} else {
-		// TODO: Save introspection.AccountID once the SDKs are ready to use
-		// account_id as part of the profile/cache key. Adding it now would break
-		// existing auth flows that don't expect account_id on workspace profiles.
-		workspaceID = introspection.WorkspaceID
+		if workspaceID == "" {
+			workspaceID = introspection.WorkspaceID
+		}
+		if accountID == "" {
+			accountID = introspection.AccountID
+		}
 
-		// Warn if the detected account_id differs from what's already saved in the profile.
 		if existingProfile != nil && existingProfile.AccountID != "" && introspection.AccountID != "" &&
 			existingProfile.AccountID != introspection.AccountID {
 			log.Warnf(ctx, "detected account ID %q differs from existing profile account ID %q",
@@ -571,10 +639,10 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	clearKeys := oauthLoginClearKeys()
 	// Discovery login always produces a workspace-level profile pointing at the
-	// discovered host. Any previous routing metadata (account_id, workspace_id,
-	// is_unified_host, cluster_id, serverless_compute_id) from a prior login to
-	// a different host type must be cleared so they don't leak into the new
-	// profile. workspace_id is re-added only when introspection succeeds.
+	// discovered host. Any previous routing metadata (is_unified_host,
+	// cluster_id, serverless_compute_id) from a prior login to a different host
+	// type must be cleared so they don't leak into the new profile. account_id
+	// and workspace_id are re-added from discovery/introspection results.
 	clearKeys = append(clearKeys,
 		"account_id",
 		"workspace_id",
@@ -586,6 +654,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 		Profile:     profileName,
 		Host:        discoveredHost,
 		AuthType:    authTypeDatabricksCLI,
+		AccountID:   accountID,
 		WorkspaceID: workspaceID,
 		Scopes:      scopesList,
 		ConfigFile:  configFile,
@@ -624,37 +693,89 @@ func oauthLoginClearKeys() []string {
 	return databrickscfg.AuthCredentialKeys()
 }
 
-// getBrowserFunc returns a function that opens the given URL in the browser.
-// It respects the BROWSER environment variable:
-// - empty string: uses the default browser
-// - "none": prints the URL to stdout without opening a browser
-// - custom command: executes the specified command with the URL as argument
+// promptForWorkspaceSelection lists workspaces for a SPOG account and lets the
+// user pick one. Returns the selected workspace ID or empty string if skipped.
+// This is best-effort: errors are returned to the caller for logging, not shown
+// to the user.
+func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthArguments, persistentAuth *u2m.PersistentAuth) (string, error) {
+	if !cmdio.IsPromptSupported(ctx) {
+		cmdio.LogString(ctx, "To use workspace commands, set workspace_id in your profile or pass --workspace-id.")
+		return "", nil
+	}
+
+	a, err := databricks.NewAccountClient(&databricks.Config{
+		Host:        authArguments.Host,
+		AccountID:   authArguments.AccountID,
+		Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	workspaces, err := a.Workspaces.List(ctx)
+	if err != nil {
+		log.Debugf(ctx, "Failed to load workspaces (this can happen if the user has no account-level access): %v", err)
+		return promptForWorkspaceID(ctx)
+	}
+
+	if len(workspaces) == 0 {
+		return "", nil
+	}
+
+	const maxWorkspaces = 50
+	if len(workspaces) > maxWorkspaces {
+		cmdio.LogString(ctx, fmt.Sprintf("Account has %d workspaces. Showing first %d. Use --workspace-id to specify directly.", len(workspaces), maxWorkspaces))
+		workspaces = workspaces[:maxWorkspaces]
+	}
+
+	if len(workspaces) == 1 {
+		wsID := strconv.FormatInt(workspaces[0].WorkspaceId, 10)
+		cmdio.LogString(ctx, fmt.Sprintf("Auto-selected workspace %q (%s)", workspaces[0].WorkspaceName, wsID))
+		return wsID, nil
+	}
+
+	items := make([]cmdio.Tuple, 0, len(workspaces)+1)
+	for _, ws := range workspaces {
+		items = append(items, cmdio.Tuple{
+			Name: ws.WorkspaceName,
+			Id:   strconv.FormatInt(ws.WorkspaceId, 10),
+		})
+	}
+	// Allow skipping workspace selection for account-level access.
+	items = append(items, cmdio.Tuple{
+		Name: "Skip (account-level access only)",
+		Id:   "",
+	})
+
+	selected, err := cmdio.SelectOrdered(ctx, items, "Select a workspace")
+	if err != nil {
+		return "", err
+	}
+	return selected, nil
+}
+
+// promptForWorkspaceID asks the user to manually enter a workspace ID.
+// Returns empty string if the user provides no input.
+func promptForWorkspaceID(ctx context.Context) (string, error) {
+	prompt := cmdio.Prompt(ctx)
+	prompt.Label = "Enter workspace ID (empty to skip)"
+	prompt.AllowEdit = true
+	result, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(result), nil
+}
+
+// getBrowserFunc adapts libs/browser to the u2m.WithBrowser callback shape,
+// overriding the BROWSER=none message with auth-specific phrasing.
 func getBrowserFunc(cmd *cobra.Command) func(url string) error {
-	browser := env.Get(cmd.Context(), "BROWSER")
-	switch browser {
-	case "":
-		return openURLSuppressingStderr
-	case "none":
-		return func(url string) error {
-			cmdio.LogString(cmd.Context(), "Please complete authentication by opening this link in your browser:\n"+url)
+	return func(url string) error {
+		ctx := cmd.Context()
+		if browser.IsDisabled(ctx) {
+			cmdio.LogString(ctx, "Please complete authentication by opening this link in your browser:\n"+url)
 			return nil
 		}
-	default:
-		return func(url string) error {
-			// Run the browser command via a shell.
-			// It can be a script or a binary and scripts cannot be executed directly on Windows.
-			e, err := exec.NewCommandExecutor(".")
-			if err != nil {
-				return err
-			}
-
-			e.WithInheritOutput()
-			cmd, err := e.StartCommand(cmd.Context(), fmt.Sprintf("%q %q", browser, url))
-			if err != nil {
-				return err
-			}
-
-			return cmd.Wait()
-		}
+		return browser.Open(ctx, url)
 	}
 }

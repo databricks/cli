@@ -10,6 +10,12 @@ print_requests() {
 
 rm out.requests.txt
 trace errcode $CLI bundle deploy &> out.deploy.txt
+
+# Register the model's numeric ID for output replacement.
+# The permissions API uses the numeric ID, not the model name.
+MODEL_ID=$($CLI model-registry get-model test-model | jq -r '.registered_model_databricks.id')
+add_repl.py "$MODEL_ID" "FOO_MODEL_ID"
+
 print_requests > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle destroy --auto-approve

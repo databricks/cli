@@ -2,6 +2,8 @@ package initializer
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -96,7 +98,7 @@ func (i *InitializerPythonPip) createVenv(ctx context.Context, workDir string) e
 		pythonCmd = "python"
 		if _, err := exec.LookPath(pythonCmd); err != nil {
 			cmdio.LogString(ctx, "⚠ Python not found. Please install Python and create a virtual environment manually.")
-			return nil
+			return nil //nolint:nilerr // python not found is a non-critical warning
 		}
 	}
 
@@ -112,7 +114,7 @@ func (i *InitializerPythonPip) createVenv(ctx context.Context, workDir string) e
 // installDependencies installs dependencies from requirements.txt.
 func (i *InitializerPythonPip) installDependencies(ctx context.Context, workDir string) error {
 	requirementsPath := filepath.Join(workDir, "requirements.txt")
-	if _, err := os.Stat(requirementsPath); os.IsNotExist(err) {
+	if _, err := os.Stat(requirementsPath); errors.Is(err, fs.ErrNotExist) {
 		log.Debugf(ctx, "No requirements.txt found, skipping dependency installation")
 		return nil
 	}
@@ -126,7 +128,7 @@ func (i *InitializerPythonPip) installDependencies(ctx context.Context, workDir 
 	}
 
 	// Check if pip exists in venv
-	if _, err := os.Stat(pipPath); os.IsNotExist(err) {
+	if _, err := os.Stat(pipPath); errors.Is(err, fs.ErrNotExist) {
 		cmdio.LogString(ctx, "⚠ pip not found in virtual environment. Please install dependencies manually.")
 		return nil
 	}

@@ -26,6 +26,7 @@ var permissionResourceToObjectType = map[string]string{
 	"model_serving_endpoints": "/serving-endpoints/",
 	"pipelines":               "/pipelines/",
 	"sql_warehouses":          "/sql/warehouses/",
+	"vector_search_endpoints": "/vector-search-endpoints/",
 }
 
 type ResourcePermissions struct {
@@ -53,6 +54,23 @@ type PermissionsState struct {
 	EmbeddedSlice []StatePermission `json:"__embed__,omitempty"`
 }
 
+// permissionIDFields maps resource types that use a non-standard ID field for
+// the permissions API (most resources use "id").
+var permissionIDFields = map[string]string{
+	"model_serving_endpoints": "endpoint_id",   // internal numeric ID, not the name used in CRUD APIs
+	"models":                  "model_id",      // numeric model ID, not the model name used as CRUD state ID
+	"postgres_projects":       "project_id",    // bare project_id, not the hierarchical "projects/{id}" state ID
+	"vector_search_endpoints": "endpoint_uuid", // endpoint UUID, not the endpoint name used as deployment ID
+}
+
+// objectIDRef returns the reference expression for the permissions object ID.
+func objectIDRef(prefix, baseNode, resourceType string) string {
+	if field, ok := permissionIDFields[resourceType]; ok {
+		return prefix + "${" + baseNode + "." + field + "}"
+	}
+	return prefix + "${" + baseNode + ".id}"
+}
+
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
 	baseNode, ok := strings.CutSuffix(node, ".permissions")
 	if !ok {
@@ -75,28 +93,13 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		return nil, err
 	}
 
-	objectIdRef := prefix + "${" + baseNode + ".id}"
-	// For permissions, model serving endpoint uses its internal ID, which is different
-	// from its CRUD APIs which use the name.
-	// We have a wrapper struct [RefreshOutput] from which we read the internal ID
-	// in order to set the appropriate permissions.
-	if strings.HasPrefix(baseNode, "resources.model_serving_endpoints.") {
-		objectIdRef = prefix + "${" + baseNode + ".endpoint_id}"
-	}
-
-	// Postgres projects store their hierarchical name ("projects/{project_id}") as the state ID,
-	// but the permissions API expects just the project_id.
-	if strings.HasPrefix(baseNode, "resources.postgres_projects.") {
-		objectIdRef = prefix + "${" + baseNode + ".project_id}"
-	}
-
 	return &structvar.StructVar{
 		Value: &PermissionsState{
 			ObjectID:      "", // Always a reference, defined in Refs below
 			EmbeddedSlice: permissions,
 		},
 		Refs: map[string]string{
-			"object_id": objectIdRef,
+			"object_id": objectIDRef(prefix, baseNode, resourceType),
 		},
 	}, nil
 }
@@ -223,7 +226,7 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 }
 
 // DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState, _ Changes) (*PermissionsState, error) {
+func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState, _ *PlanEntry) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(newState.ObjectID)
 	if err != nil {
 		return nil, err

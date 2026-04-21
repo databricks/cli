@@ -1,0 +1,49 @@
+
+>>> [CLI] external-locations create test-location-[UNIQUE_NAME] s3://test-bucket/path test_storage_credential
+{
+  "name": "test-location-[UNIQUE_NAME]",
+  "url": "s3://test-bucket/path",
+  "credential_name": "test_storage_credential"
+}
+
+>>> [CLI] bundle deployment bind test_location test-location-[UNIQUE_NAME] --auto-approve
+Updating deployment state...
+Successfully bound external_location with an id 'test-location-[UNIQUE_NAME]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Deploy bundle
+>>> [CLI] bundle deploy --force-lock --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] external-locations get test-location-[UNIQUE_NAME]
+{
+  "name": "test-location-[UNIQUE_NAME]",
+  "url": "s3://test-bucket/path-dabs",
+  "credential_name": "test_storage_credential"
+}
+
+=== Unbind external location
+>>> [CLI] bundle deployment unbind test_location
+Updating deployment state...
+
+=== Destroy bundle
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+=== Read the pre-defined external location again (expecting it still exists): 
+>>> [CLI] external-locations get test-location-[UNIQUE_NAME]
+{
+  "name": "test-location-[UNIQUE_NAME]",
+  "url": "s3://test-bucket/path-dabs",
+  "credential_name": "test_storage_credential"
+}
+
+=== Test cleanup
+>>> [CLI] external-locations delete test-location-[UNIQUE_NAME]
+0
