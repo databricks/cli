@@ -94,13 +94,15 @@ tasks:
       TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-tools'
     sources:
       - "**/*.go"
-      - .golangci.yaml
+      - '{{.ROOT_DIR}}/.golangci.yaml'
       - go.mod
       - go.sum
     cmds:
       - cmd: mkdir -p "{{.TMPDIR}}"
         silent: true
-      - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run ./...
+      # gocritic is disabled because root's ruleguard rules path is cwd-relative
+      # and cannot be resolved from this nested module.
+      - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run --disable gocritic ./...
 
   lint-go-codegen:
     desc: Lint Go files in bundle/internal/tf/codegen module
@@ -109,13 +111,15 @@ tasks:
       TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-codegen'
     sources:
       - "**/*.go"
-      - .golangci.yaml
+      - '{{.ROOT_DIR}}/.golangci.yaml'
       - go.mod
       - go.sum
     cmds:
       - cmd: mkdir -p "{{.TMPDIR}}"
         silent: true
-      - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run ./...
+      # gocritic is disabled because root's ruleguard rules path is cwd-relative
+      # and cannot be resolved from this nested module.
+      - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run --disable gocritic ./...
 
   lint-q-go-root:
     desc: Lint changed Go files in root module (diff vs main, with --fix). Does not check tools/ or bundle/internal/tf/codegen — use `lint` for full coverage.
