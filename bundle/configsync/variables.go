@@ -15,14 +15,18 @@ import (
 var varPrefix = dyn.NewPath(dyn.Key("var"))
 
 // RestoreVariableReferences replaces hardcoded change values with variable
-// references (e.g., ${var.foo}) when the value matches exactly one bundle
-// variable. To avoid false positives, restoration is only attempted for fields
-// where the original (pre-resolved) YAML contained a variable reference, or
-// whose parent subtree did.
+// references (e.g., ${var.foo}) when the value can be traced back to a
+// variable in the original YAML.
 //
-// When the original field had a specific variable reference, it is restored
-// even if multiple variables resolve to the same value (the original reference
-// disambiguates).
+// For Replace operations, restoration only happens when the pre-resolved YAML
+// at the exact field position was a pure variable reference whose resolved
+// value matches the incoming remote value. The reverse map is NOT used for
+// Replace — this prevents false positives where a sibling's variable context
+// would incorrectly rewrite an unrelated hardcoded field.
+//
+// For Add operations (new fields), the reverse map is used: if the parent
+// subtree uses variables and the new value matches exactly one variable, the
+// variable reference is substituted.
 func RestoreVariableReferences(b *bundle.Bundle, fieldChanges []FieldChange) {
 	fileCache := map[string]dyn.Value{}
 	resolved := b.Config.Value()
@@ -39,11 +43,22 @@ func RestoreVariableReferences(b *bundle.Bundle, fieldChanges []FieldChange) {
 		}
 
 		preResolved, hasContext := fieldVariableContext(fileCache, fc.FilePath, fc.FieldCandidates)
-		if !preResolved.IsValid() && !hasContext {
-			continue
+
+		var newValue any
+		if fc.Change.Operation == OperationReplace {
+			// Replace: only restore if the original field itself was a variable.
+			if !preResolved.IsValid() {
+				continue
+			}
+			newValue = restoreOriginalRefs(fc.Change.Value, preResolved, resolved)
+		} else {
+			// Add: use reverse map when parent context has variables.
+			if !hasContext {
+				continue
+			}
+			newValue = restoreFromReverseMap(fc.Change.Value, reverseMap)
 		}
 
-		newValue := restoreVariableInValue(fc.Change.Value, reverseMap, preResolved, resolved)
 		fc.Change = &ConfigChangeDesc{
 			Operation: fc.Change.Operation,
 			Value:     newValue,
@@ -78,7 +93,7 @@ func buildVariableReverseMap(resolved dyn.Value, fileCache map[string]dyn.Value,
 // references (e.g., ${var.foo}, ${bundle.name}) and adds them to the reverse
 // map keyed by their resolved value.
 func collectReferences(preResolved, resolved dyn.Value, m map[any][]string, seen map[string]bool) {
-	dyn.WalkReadOnly(preResolved, func(p dyn.Path, v dyn.Value) error { //nolint:errcheck
+	dyn.WalkReadOnly(preResolved, func(_ dyn.Path, v dyn.Value) error { //nolint:errcheck
 		if v.Kind() != dyn.KindString {
 			return nil
 		}
@@ -134,19 +149,14 @@ func resolveReferencePath(refStr string) (dyn.Path, bool) {
 	return p, true
 }
 
-// restoreVariableInValue recursively replaces leaf values with variable
-// references. For each leaf it first checks if the pre-resolved config had a
-// specific variable reference at the same position (disambiguating even when
-// multiple variables share a value). If not, it falls back to the reverse map
-// which requires exactly one match.
-func restoreVariableInValue(value any, reverseMap map[any][]string, preResolved, resolved dyn.Value) any {
+// restoreOriginalRefs recursively restores variable references for Replace
+// operations. Only restores a leaf when the pre-resolved config at the same
+// position was a pure variable reference whose resolved value matches.
+func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 	switch v := value.(type) {
 	case string, bool, int64:
 		if ref, ok := matchOriginalRef(value, preResolved, resolved); ok {
 			return ref
-		}
-		if refs := reverseMap[value]; len(refs) == 1 {
-			return refs[0]
 		}
 		return value
 
@@ -159,7 +169,7 @@ func restoreVariableInValue(value any, reverseMap map[any][]string, preResolved,
 					childPre = p.Value
 				}
 			}
-			v[key] = restoreVariableInValue(val, reverseMap, childPre, resolved)
+			v[key] = restoreOriginalRefs(val, childPre, resolved)
 		}
 		return v
 
@@ -170,7 +180,34 @@ func restoreVariableInValue(value any, reverseMap map[any][]string, preResolved,
 			if i < len(preSeq) {
 				childPre = preSeq[i]
 			}
-			v[i] = restoreVariableInValue(val, reverseMap, childPre, resolved)
+			v[i] = restoreOriginalRefs(val, childPre, resolved)
+		}
+		return v
+
+	default:
+		return value
+	}
+}
+
+// restoreFromReverseMap recursively replaces leaf values with variable
+// references for Add operations. Requires exactly one matching variable.
+func restoreFromReverseMap(value any, reverseMap map[any][]string) any {
+	switch v := value.(type) {
+	case string, bool, int64:
+		if refs := reverseMap[value]; len(refs) == 1 {
+			return refs[0]
+		}
+		return value
+
+	case map[string]any:
+		for key, val := range v {
+			v[key] = restoreFromReverseMap(val, reverseMap)
+		}
+		return v
+
+	case []any:
+		for i, val := range v {
+			v[i] = restoreFromReverseMap(val, reverseMap)
 		}
 		return v
 
@@ -181,7 +218,6 @@ func restoreVariableInValue(value any, reverseMap map[any][]string, preResolved,
 
 // matchOriginalRef checks if the pre-resolved config value at this position
 // was a pure variable reference whose resolved value equals remoteValue.
-// Returns the original reference string (e.g., "${var.catalog}") if matched.
 func matchOriginalRef(remoteValue any, preResolved, resolved dyn.Value) (string, bool) {
 	if !preResolved.IsValid() {
 		return "", false
@@ -208,9 +244,10 @@ func matchOriginalRef(remoteValue any, preResolved, resolved dyn.Value) (string,
 }
 
 // fieldVariableContext returns the pre-resolved dyn.Value at the field path
-// and whether the field (or an ancestor) contains a variable reference.
-// This prevents false positives where a value like "false" coincidentally
-// matches a variable.
+// and whether the field's parent subtree contains any variable reference.
+// The returned dyn.Value is valid only when the field itself was found in the
+// pre-resolved YAML (used for Replace). The bool is true when any ancestor
+// uses variables (used for Add).
 func fieldVariableContext(cache map[string]dyn.Value, filePath string, candidates []string) (dyn.Value, bool) {
 	configValue := loadCachedYAML(cache, filePath)
 	if !configValue.IsValid() {
@@ -218,7 +255,7 @@ func fieldVariableContext(cache map[string]dyn.Value, filePath string, candidate
 	}
 
 	for _, candidate := range candidates {
-		candidate = strings.TrimSuffix(candidate, "[*]")
+		candidate = stripBracketStars(candidate)
 
 		p, err := dyn.NewPathFromString(candidate)
 		if err != nil {
@@ -241,6 +278,13 @@ func fieldVariableContext(cache map[string]dyn.Value, filePath string, candidate
 	}
 
 	return dyn.InvalidValue, false
+}
+
+// stripBracketStars removes all [*] segments from a structpath string.
+// resolveSelectors inserts [*] at any array position for Add operations
+// where the target element doesn't exist yet.
+func stripBracketStars(candidate string) string {
+	return strings.ReplaceAll(candidate, "[*]", "")
 }
 
 // loadCachedYAML parses a YAML file and caches the result. Returns the
