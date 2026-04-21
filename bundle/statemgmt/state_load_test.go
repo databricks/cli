@@ -40,6 +40,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.clusters.test_cluster":                               {ID: "1"},
 		"resources.dashboards.test_dashboard":                           {ID: "1"},
 		"resources.apps.test_app":                                       {ID: "app1"},
+		"resources.app_spaces.test_app_space":                           {ID: "app-space-1"},
 		"resources.secret_scopes.test_secret_scope":                     {ID: "secret_scope1"},
 		"resources.sql_warehouses.test_sql_warehouse":                   {ID: "1"},
 		"resources.database_instances.test_database_instance":           {ID: "1"},
@@ -99,6 +100,10 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "app1", config.Resources.Apps["test_app"].ID)
 	assert.Empty(t, config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
+
+	assert.Equal(t, "app-space-1", config.Resources.AppSpaces["test_app_space"].ID)
+	assert.Equal(t, "", config.Resources.AppSpaces["test_app_space"].Name)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.AppSpaces["test_app_space"].ModifiedStatus)
 
 	assert.Equal(t, "secret_scope1", config.Resources.SecretScopes["test_secret_scope"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.SecretScopes["test_secret_scope"].ModifiedStatus)
@@ -232,6 +237,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_app": {
 					App: apps.App{
 						Description: "test_app",
+					},
+				},
+			},
+			AppSpaces: map[string]*resources.AppSpace{
+				"test_app_space": {
+					Space: apps.Space{
+						Description: "test_app_space",
 					},
 				},
 			},
@@ -376,6 +388,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.AppSpaces["test_app_space"].Name)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.AppSpaces["test_app_space"].ModifiedStatus)
 
 	assert.Empty(t, config.Resources.SecretScopes["test_secret_scope"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SecretScopes["test_secret_scope"].ModifiedStatus)
@@ -583,6 +598,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			AppSpaces: map[string]*resources.AppSpace{
+				"test_app_space": {
+					Space: apps.Space{
+						Name: "test_app_space",
+					},
+				},
+				"test_app_space_new": {
+					Space: apps.Space{
+						Name: "test_app_space_new",
+					},
+				},
+			},
 			SecretScopes: map[string]*resources.SecretScope{
 				"test_secret_scope": {
 					Name: "test_secret_scope",
@@ -769,6 +796,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.dashboards.test_dashboard_old":                           {ID: "2"},
 		"resources.apps.test_app":                                           {ID: "test_app"},
 		"resources.apps.test_app_old":                                       {ID: "test_app_old"},
+		"resources.app_spaces.test_app_space":                               {ID: "test_app_space"},
+		"resources.app_spaces.test_app_space_old":                           {ID: "test_app_space_old"},
 		"resources.secret_scopes.test_secret_scope":                         {ID: "test_secret_scope"},
 		"resources.secret_scopes.test_secret_scope_old":                     {ID: "test_secret_scope_old"},
 		"resources.sql_warehouses.test_sql_warehouse":                       {ID: "1"},
@@ -884,6 +913,14 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)
 	assert.Equal(t, "test_app_new", config.Resources.Apps["test_app_new"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app_new"].ModifiedStatus)
+
+	assert.Equal(t, "test_app_space", config.Resources.AppSpaces["test_app_space"].Name)
+	assert.Equal(t, "", config.Resources.AppSpaces["test_app_space"].ModifiedStatus)
+	assert.Equal(t, "test_app_space_old", config.Resources.AppSpaces["test_app_space_old"].ID)
+	assert.Equal(t, "", config.Resources.AppSpaces["test_app_space_old"].Name)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.AppSpaces["test_app_space_old"].ModifiedStatus)
+	assert.Equal(t, "test_app_space_new", config.Resources.AppSpaces["test_app_space_new"].Name)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.AppSpaces["test_app_space_new"].ModifiedStatus)
 
 	assert.Equal(t, "test_secret_scope", config.Resources.SecretScopes["test_secret_scope"].Name)
 	assert.Empty(t, config.Resources.SecretScopes["test_secret_scope"].ModifiedStatus)
