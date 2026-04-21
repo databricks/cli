@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -686,4 +687,69 @@ func TestRunManifestOnlyUsesTemplatePathEnvVar(t *testing.T) {
 	_, _ = io.Copy(&buf, r)
 	out := buf.String()
 	assert.Equal(t, content, out)
+}
+
+func TestCopyFileDeps(t *testing.T) {
+	ctx := t.Context()
+
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Create a fake tarball in srcDir
+	tgzContent := []byte("fake-tarball-content")
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "my-pkg-1.0.0.tgz"), tgzContent, 0o644))
+
+	// package.json with file: dep, a registry dep, and a devDep with file:
+	pkgJSON := []byte(`{
+		"dependencies": {
+			"my-pkg": "file:./my-pkg-1.0.0.tgz",
+			"lodash": "4.17.21"
+		},
+		"devDependencies": {
+			"missing-pkg": "file:./nonexistent.tgz"
+		}
+	}`)
+
+	copyFileDeps(ctx, pkgJSON, srcDir, destDir)
+
+	// The file: dep should be copied
+	copied, err := os.ReadFile(filepath.Join(destDir, "my-pkg-1.0.0.tgz"))
+	require.NoError(t, err)
+	assert.Equal(t, tgzContent, copied)
+
+	// The registry dep should NOT create any file
+	_, err = os.Stat(filepath.Join(destDir, "4.17.21"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	// The missing file: dep should be skipped gracefully (no panic, no error)
+	_, err = os.Stat(filepath.Join(destDir, "nonexistent.tgz"))
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestCopyFileDepsInvalidJSON(t *testing.T) {
+	ctx := t.Context()
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Should not panic on invalid JSON
+	copyFileDeps(ctx, []byte("not json"), srcDir, destDir)
+
+	// destDir should remain empty
+	entries, err := os.ReadDir(destDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func TestCopyFileDepsNoDeps(t *testing.T) {
+	ctx := t.Context()
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// package.json with no file: deps
+	pkgJSON := []byte(`{"dependencies": {"react": "19.0.0"}}`)
+	copyFileDeps(ctx, pkgJSON, srcDir, destDir)
+
+	entries, err := os.ReadDir(destDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }

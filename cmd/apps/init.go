@@ -3,6 +3,7 @@ package apps
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -634,6 +635,7 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 	// Copy package.json (apply template substitution so the file is valid JSON)
 	// and package-lock.json (no template vars — copy raw).
 	var pkgWritten bool
+	var pkgData []byte
 	for _, name := range []string{"package.json", "package.json.tmpl"} {
 		src := filepath.Join(srcProjectDir, name)
 		content, err := os.ReadFile(src)
@@ -647,15 +649,18 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		})
 		tmpl, err := template.New(name).Option("missingkey=zero").Parse(string(content))
 		if err != nil {
-			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644) == nil
+			pkgData = content
+			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), pkgData, 0o644) == nil
 			break
 		}
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, minVars); err != nil {
-			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644) == nil
+			pkgData = content
+			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), pkgData, 0o644) == nil
 			break
 		}
-		pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), buf.Bytes(), 0o644) == nil
+		pkgData = buf.Bytes()
+		pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), pkgData, 0o644) == nil
 		break
 	}
 
@@ -663,6 +668,9 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		log.Warnf(ctx, "Failed to write package.json to %s, skipping background npm install", destDir)
 		return nil
 	}
+
+	// Copy any file: protocol dependencies (e.g., local .tgz tarballs) so npm ci can resolve them.
+	copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
 
 	// Copy package-lock.json raw (never has template vars).
 	lockData, err := os.ReadFile(lockFile)
@@ -686,6 +694,40 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 
 	log.Debugf(ctx, "Started background npm install in %s", destDir)
 	return ch
+}
+
+// copyFileDeps copies local file: protocol dependencies (e.g., .tgz tarballs)
+// from srcDir to destDir so that npm ci can resolve them.
+func copyFileDeps(ctx context.Context, pkgJSON []byte, srcDir, destDir string) {
+	var pkg struct {
+		Dependencies    map[string]string `json:"dependencies"`
+		DevDependencies map[string]string `json:"devDependencies"`
+	}
+	if err := json.Unmarshal(pkgJSON, &pkg); err != nil {
+		return
+	}
+	for _, deps := range []map[string]string{pkg.Dependencies, pkg.DevDependencies} {
+		for _, v := range deps {
+			if !strings.HasPrefix(v, "file:") {
+				continue
+			}
+			relPath := filepath.Clean(strings.TrimPrefix(v, "file:"))
+			src := filepath.Join(srcDir, relPath)
+			data, err := os.ReadFile(src)
+			if err != nil {
+				log.Debugf(ctx, "Skipping file dep %s: %v", relPath, err)
+				continue
+			}
+			dst := filepath.Join(destDir, relPath)
+			if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+				log.Debugf(ctx, "Failed to create dir for file dep %s: %v", relPath, err)
+				continue
+			}
+			if err := os.WriteFile(dst, data, 0o644); err != nil {
+				log.Debugf(ctx, "Failed to copy file dep %s: %v", relPath, err)
+			}
+		}
+	}
 }
 
 // awaitBackgroundNpmInstall waits for the background npm install to complete.
