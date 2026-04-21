@@ -193,9 +193,11 @@ func (w *walker) walk(block *tfjson.SchemaBlock, name []string) error {
 		if v.Required && v.Optional {
 			return fmt.Errorf("both required and optional are set for attribute %s", k)
 		}
-		fieldTag := k + ",omitempty"
+		var fieldTag string
 		if v.Required {
 			fieldTag = k
+		} else {
+			fieldTag = k + ",omitempty"
 		}
 
 		// Append to list of fields for type.
