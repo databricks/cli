@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/appdeploy"
@@ -20,10 +22,14 @@ import (
 // push source code, which is why this exists as a separate phase: `w.Apps.Deploy`
 // and file upload to the workspace are not modelled as resources.
 func DeployApps(ctx context.Context, b *bundle.Bundle) {
+	appCount := len(b.Config.Resources.Apps)
 	if !b.DeployApps {
+		if appCount > 0 {
+			cmdio.LogString(ctx, skippedAppsMessage(b))
+		}
 		return
 	}
-	if len(b.Config.Resources.Apps) == 0 {
+	if appCount == 0 {
 		return
 	}
 
@@ -56,4 +62,19 @@ func DeployApps(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 	cmdio.LogString(ctx, "App source code deployed!")
+}
+
+func skippedAppsMessage(b *bundle.Bundle) string {
+	keys := make([]string, 0, len(b.Config.Resources.Apps))
+	for key := range b.Config.Resources.Apps {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	var lines []string
+	lines = append(lines, fmt.Sprintf("Bundle contains %d Apps, but --deploy-apps was not set, not deploying apps. To deploy, run:", len(keys)))
+	for _, key := range keys {
+		lines = append(lines, "  databricks bundle run "+key)
+	}
+	return strings.Join(lines, "\n")
 }
