@@ -3,7 +3,9 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
@@ -114,6 +116,11 @@ func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.Persiste
 	if c.persistentAuthFn != nil {
 		return c.persistentAuthFn(ctx, opts...)
 	}
+	tc, err := storage.NewFileTokenCache()
+	if err != nil {
+		return nil, fmt.Errorf("opening token cache: %w", err)
+	}
+	opts = append([]u2m.PersistentAuthOption{u2m.WithTokenCache(tc)}, opts...)
 	ts, err := u2m.NewPersistentAuth(ctx, opts...)
 	if err != nil {
 		return nil, err

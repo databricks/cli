@@ -11,12 +11,14 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -273,7 +275,12 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	allArgs := append(args.persistentAuthOpts, u2m.WithOAuthArgument(oauthArgument))
+	tc, err := storage.NewFileTokenCache()
+	if err != nil {
+		return nil, fmt.Errorf("opening token cache: %w", err)
+	}
+	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenCache(tc)}, args.persistentAuthOpts...)
+	allArgs = append(allArgs, u2m.WithOAuthArgument(oauthArgument))
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
 		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
@@ -459,7 +466,12 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 	if err != nil {
 		return "", nil, err
 	}
+	tc, err := storage.NewFileTokenCache()
+	if err != nil {
+		return "", nil, fmt.Errorf("opening token cache: %w", err)
+	}
 	persistentAuthOpts := []u2m.PersistentAuthOption{
+		u2m.WithTokenCache(tc),
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
 	}
@@ -477,6 +489,11 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 
 	if err = persistentAuth.Challenge(); err != nil {
 		return "", nil, err
+	}
+	if t, lookupErr := tc.Lookup(oauthArgument.GetCacheKey()); lookupErr == nil && t != nil {
+		if err := storage.DualWrite(tc, oauthArgument, t); err != nil {
+			log.Debugf(ctx, "token cache dual-write failed: %v", err)
+		}
 	}
 
 	clearKeys := oauthLoginClearKeys()
