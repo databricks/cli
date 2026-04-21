@@ -13,6 +13,8 @@ import sys
 import argparse
 import subprocess
 
+NESTED_MODULES = ("bundle/internal/tf/codegen", "tools")
+
 
 def parse_lines(cmd):
     # print("+ " + " ".join(cmd), file=sys.stderr, flush=True)
@@ -58,14 +60,9 @@ def main():
     filter_nested = "run" in cmd
 
     if changed is not None:
-        nested_modules = []
-        if filter_nested:
-            nested_modules = sorted(
-                os.path.dirname(p) for p in parse_lines(["git", "ls-files", "--", "*/go.mod"]) or []
-            )
 
         def in_nested_module(path):
-            return any(path == m or path.startswith(m + "/") for m in nested_modules)
+            return filter_nested and any(path == m or path.startswith(m + "/") for m in NESTED_MODULES)
 
         # We need to pass packages to golangci-lint, not individual files.
         # QQQ for lint we should also pass all dependent packages
