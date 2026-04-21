@@ -41,7 +41,7 @@ def retrieve(url, path):
 
 def read_version(path):
     for line in path.open():
-        if "ProviderVersion" in line:
+        if "ProviderVersion" in line and not line.lstrip().startswith("//"):
             # Expecting 'const ProviderVersion = "1.64.1"'
             items = line.strip().split()
             assert len(items) >= 3, items
