@@ -23,8 +23,8 @@ the previous seq; re-running the command will re-attempt from a fresh pull.
 Common invocations:
   databricks ucm deploy                  # Deploy the default target
   databricks ucm deploy --target prod    # Deploy a specific target`,
-		Args:              root.NoArgs,
-		PersistentPreRunE: root.MustWorkspaceClient,
+		Args:    root.NoArgs,
+		PreRunE: root.MustWorkspaceClient,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

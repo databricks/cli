@@ -23,8 +23,8 @@ touched.
 Common invocations:
   databricks ucm plan                   # Plan against the default target
   databricks ucm plan --target prod     # Plan against a specific target`,
-		Args:              root.NoArgs,
-		PersistentPreRunE: root.MustWorkspaceClient,
+		Args:    root.NoArgs,
+		PreRunE: root.MustWorkspaceClient,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
