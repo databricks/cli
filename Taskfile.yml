@@ -408,12 +408,12 @@ tasks:
   test-update:
     desc: Update acceptance test output (local)
     cmds:
-      - "-go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-30m}"
+      - "go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-30m}"
 
   test-update-templates:
     desc: Update acceptance test template output
     cmds:
-      - "-go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-30m}"
+      - "go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-30m}"
 
   test-update-aws:
     desc: Update acceptance test output (integration, requires deco access)
