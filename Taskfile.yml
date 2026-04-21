@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  # Absolute path so tasks with `dir:` (lint:go:tools, lint:go:codegen) can use it.
+  # Absolute path so tasks with `dir:` (lint-go-tools, lint-go-codegen) can use it.
   GO_TOOL: go tool -modfile={{.ROOT_DIR}}/tools/go.mod
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
@@ -18,17 +18,17 @@ tasks:
   all:
     desc: Run all checks, full fmt, full lint, tests, and regeneration
     cmds:
-      # Skips generate:genkit (expensive, requires universe checkout, outputs are
+      # Skips generate-genkit (expensive, requires universe checkout, outputs are
       # committed). Run `./task generate` explicitly when codegen inputs change.
-      - task: generate:refschema
-      - task: generate:schema
-      - task: generate:schema-docs
-      - task: generate:validation
-      - task: generate:docs
-      - task: generate:direct
-      - task: pydabs:codegen
-      - task: pydabs:lint
-      - task: pydabs:test
+      - task: generate-refschema
+      - task: generate-schema
+      - task: generate-schema-docs
+      - task: generate-validation
+      - task: generate-docs
+      - task: generate-direct
+      - task: pydabs-codegen
+      - task: pydabs-lint
+      - task: pydabs-test
       - task: checks
       - task: fmt
       - task: lint
@@ -38,34 +38,34 @@ tasks:
   #
   # Naming convention: the plain name is the full variant (default). Quick
   # / incremental variants carry a `-q` suffix on the top-level namespace
-  # (e.g. `lint-q:go:root`). `./task` (default) uses the -q variants for
+  # (e.g. `lint-q-go-root`). `./task` (default) uses the -q variants for
   # speed; `./task all` uses the full variants.
 
   lint:
     desc: Lint all Go files (root + tools + codegen modules)
     cmds:
-      - task: lint:go
+      - task: lint-go
 
   lint-q:
     desc: Lint changed Go files in root module (diff vs main, with --fix)
     cmds:
-      - task: lint-q:go:root
+      - task: lint-q-go-root
 
   # `golangci-lint run` typechecks, so it stops at go.mod boundaries. We have
-  # one task per Go module; `lint:go` composes them to cover the whole repo.
+  # one task per Go module; `lint-go` composes them to cover the whole repo.
   # Children run in parallel — each uses its own TMPDIR (set inline on the
   # golangci-lint command below) to avoid the shared /tmp lock that serializes
   # concurrent golangci-lint invocations. This matters in two scenarios:
-  #   1. siblings of `lint:go` running in parallel on subprojects here, and
-  #   2. `lint:go` invocations in sibling worktrees running at the same time.
+  #   1. siblings of `lint-go` running in parallel on subprojects here, and
+  #   2. `lint-go` invocations in sibling worktrees running at the same time.
   # The TMPDIR must live under the repo but NOT equal {{.ROOT_DIR}} itself
   # (the Go toolchain refuses a go.mod inside os.TempDir, which would break
   # golangci-lint's typechecker).
-  lint:go:
+  lint-go:
     desc: Lint Go files across all modules (root, tools, codegen)
-    deps: ['lint:go:root', 'lint:go:tools', 'lint:go:codegen']
+    deps: ['lint-go-root', 'lint-go-tools', 'lint-go-codegen']
 
-  lint:go:root:
+  lint-go-root:
     desc: Lint Go files in the root module
     vars:
       TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-root'
@@ -79,7 +79,7 @@ tasks:
         silent: true
       - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run ./...
 
-  lint:go:tools:
+  lint-go-tools:
     desc: Lint Go files in tools/ module
     dir: tools
     vars:
@@ -94,7 +94,7 @@ tasks:
         silent: true
       - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run ./...
 
-  lint:go:codegen:
+  lint-go-codegen:
     desc: Lint Go files in bundle/internal/tf/codegen module
     dir: bundle/internal/tf/codegen
     vars:
@@ -109,7 +109,7 @@ tasks:
         silent: true
       - TMPDIR="{{.TMPDIR}}" {{.GO_TOOL}} golangci-lint run ./...
 
-  lint-q:go:root:
+  lint-q-go-root:
     desc: Lint changed Go files in root module (diff vs main, with --fix). Does not check tools/ or bundle/internal/tf/codegen — use `lint` for full coverage.
     vars:
       TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-root'
@@ -127,13 +127,13 @@ tasks:
 
   fmt:
     desc: Format all files (Python, Go, YAML)
-    deps: ['fmt:python', 'fmt:go', 'fmt:yaml']
+    deps: ['fmt-python', 'fmt-go', 'fmt-yaml']
 
   fmt-q:
     desc: Format changed files (Python, incremental Go, YAML)
-    deps: ['fmt:python', 'fmt-q:go', 'fmt:yaml']
+    deps: ['fmt-python', 'fmt-q-go', 'fmt-yaml']
 
-  fmt:python:
+  fmt-python:
     desc: Format Python files
     sources:
       - "**/*.py"
@@ -143,7 +143,7 @@ tasks:
   # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
   # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
   # in a single invocation.
-  fmt:go:
+  fmt-go:
     desc: Format all Go files
     sources:
       - "**/*.go"
@@ -151,7 +151,7 @@ tasks:
     cmds:
       - "{{.GO_TOOL}} golangci-lint fmt"
 
-  fmt-q:go:
+  fmt-q-go:
     desc: Format changed Go files (diff vs main)
     sources:
       - "**/*.go"
@@ -159,7 +159,7 @@ tasks:
     cmds:
       - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
 
-  fmt:yaml:
+  fmt-yaml:
     desc: Format YAML files
     sources:
       - "**/*.yml"
@@ -172,9 +172,9 @@ tasks:
 
   tidy:
     desc: Run go mod tidy across all Go modules (root, tools, codegen)
-    deps: ['tidy:root', 'tidy:tools', 'tidy:codegen']
+    deps: ['tidy-root', 'tidy-tools', 'tidy-codegen']
 
-  tidy:root:
+  tidy-root:
     desc: Run go mod tidy in root module
     sources:
       - go.mod
@@ -185,7 +185,7 @@ tasks:
     cmds:
       - go mod tidy
 
-  tidy:tools:
+  tidy-tools:
     desc: Run go mod tidy in tools/ module
     dir: tools
     sources:
@@ -195,7 +195,7 @@ tasks:
     cmds:
       - go mod tidy
 
-  tidy:codegen:
+  tidy-codegen:
     desc: Run go mod tidy in bundle/internal/tf/codegen module
     dir: bundle/internal/tf/codegen
     sources:
@@ -210,7 +210,7 @@ tasks:
     cmds:
       - ./tools/validate_whitespace.py
 
-  ws:fix:
+  ws-fix:
     desc: Fix whitespace issues
     cmds:
       - ./tools/validate_whitespace.py --fix
@@ -253,7 +253,7 @@ tasks:
   # (tools/, bundle/internal/tf/codegen/), and _test.go files don't affect the build.
   build:
     desc: Build the CLI binary
-    deps: ['tidy:root']
+    deps: ['tidy-root']
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -270,7 +270,7 @@ tasks:
 
   snapshot:
     desc: Build snapshot binary to .databricks/databricks
-    deps: ['tidy:root']
+    deps: ['tidy-root']
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -285,9 +285,9 @@ tasks:
     cmds:
       - go build -o .databricks/databricks
 
-  snapshot:release:
+  snapshot-release:
     desc: Build release binaries locally without uploading
-    deps: ['tidy:root']
+    deps: ['tidy-root']
     sources:
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -308,8 +308,8 @@ tasks:
   test:
     desc: Run unit and acceptance tests
     deps:
-      - task: test:unit
-      - task: test:acc
+      - task: test-unit
+      - task: test-acc
         vars:
           ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
     sources:
@@ -320,9 +320,9 @@ tasks:
     cmds:
       - cat test-output-unit.json test-output-acc.json > test-output.json
 
-  test:unit:
+  test-unit:
     desc: Run unit tests across all Go modules (root, tools, codegen)
-    deps: ['test:unit:root', 'test:unit:tools', 'test:unit:codegen']
+    deps: ['test-unit-root', 'test-unit-tools', 'test-unit-codegen']
     sources:
       - test-output-unit-root.json
       - test-output-unit-tools.json
@@ -332,7 +332,7 @@ tasks:
     cmds:
       - cat test-output-unit-root.json test-output-unit-tools.json test-output-unit-codegen.json > test-output-unit.json
 
-  test:unit:root:
+  test-unit-root:
     desc: Run unit tests in root module
     sources:
       - "**/*.go"
@@ -348,7 +348,7 @@ tasks:
           --packages "{{.TEST_PACKAGES}}" \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
 
-  test:unit:tools:
+  test-unit-tools:
     desc: Run unit tests in tools/ module
     dir: tools
     sources:
@@ -365,7 +365,7 @@ tasks:
           --packages ./... \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
 
-  test:unit:codegen:
+  test-unit-codegen:
     desc: Run unit tests in bundle/internal/tf/codegen module
     dir: bundle/internal/tf/codegen
     sources:
@@ -382,7 +382,7 @@ tasks:
           --packages ./... \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
 
-  test:acc:
+  test-acc:
     desc: Run acceptance tests
     sources:
       - "**/*.go"
@@ -416,10 +416,10 @@ tasks:
     desc: Update all acceptance test outputs
     # Sequential: both tasks overwrite the same acceptance output files.
     cmds:
-      - task: test:update
-      - task: test:update-aws
+      - task: test-update
+      - task: test-update-aws
 
-  generate:out-test-toml:
+  generate-out-test-toml:
     desc: Regenerate out.test.toml files without running tests
     cmds:
       - "go test ./acceptance -run '^TestAccept$' -only-out-test-toml -timeout=${LOCAL_TIMEOUT:-30m}"
@@ -459,7 +459,7 @@ tasks:
     cmds:
       - go tool cover -html=coverage.txt
 
-  showcover:acc:
+  showcover-acc:
     desc: Open acceptance test coverage report in browser
     cmds:
       - go tool cover -html=coverage-acceptance.txt
@@ -472,46 +472,46 @@ tasks:
   # Keep patterns narrow and specific. Changes to files outside these paths trigger the
   # generic `test` target (the catch-all) instead.
 
-  test:exp:aitools:
+  test-exp-aitools:
     desc: Run experimental aitools unit and acceptance tests
     sources:
       - experimental/aitools/**
       - acceptance/apps/**
     deps:
-      - task: test:unit:root
+      - task: test-unit-root
         vars:
           TEST_PACKAGES: ./experimental/aitools/...
-      - task: test:acc
+      - task: test-acc
         vars:
           ACCEPTANCE_TEST_FILTER: TestAccept/apps
     cmds:
       - cat test-output-unit-root.json test-output-acc.json > test-output.json
 
-  test:exp:ssh:
+  test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests
     sources:
       - experimental/ssh/**
       - acceptance/ssh/**
     deps:
-      - task: test:unit:root
+      - task: test-unit-root
         vars:
           TEST_PACKAGES: ./experimental/ssh/...
-      - task: test:acc
+      - task: test-acc
         vars:
           ACCEPTANCE_TEST_FILTER: TestAccept/ssh
     cmds:
       - cat test-output-unit-root.json test-output-acc.json > test-output.json
 
-  test:pipelines:
+  test-pipelines:
     desc: Run pipelines unit and acceptance tests
     sources:
       - cmd/pipelines/**
       - acceptance/pipelines/**
     deps:
-      - task: test:unit:root
+      - task: test-unit-root
         vars:
           TEST_PACKAGES: ./cmd/pipelines/...
-      - task: test:acc
+      - task: test-acc
         vars:
           ACCEPTANCE_TEST_FILTER: TestAccept/pipelines
     cmds:
@@ -571,17 +571,17 @@ tasks:
       # Runs first: regenerates CLI command stubs from the OpenAPI spec at
       # .codegen/_openapi_sha. SDK version bumps (go.mod/go.sum) are a manual
       # step outside this task; TestConsistentDatabricksSdkVersion (run inside
-      # generate:genkit) asserts the two stay in sync.
-      - task: generate:genkit
+      # generate-genkit) asserts the two stay in sync.
+      - task: generate-genkit
       # Refreshes acceptance/bundle/refschema/out.fields.txt, which feeds
-      # generate:direct:apitypes and generate:direct:resources below.
-      - task: generate:refschema
-      - task: generate:schema
-      - task: generate:schema-docs
-      - task: generate:validation
-      - task: generate:docs
-      - task: generate:direct
-      - task: pydabs:codegen
+      # generate-direct-apitypes and generate-direct-resources below.
+      - task: generate-refschema
+      - task: generate-schema
+      - task: generate-schema-docs
+      - task: generate-validation
+      - task: generate-docs
+      - task: generate-direct
+      - task: pydabs-codegen
 
   # Drives genkit from a universe checkout. Genkit writes CLI command files into
   # cmd/workspace and cmd/account, refreshes .gitattributes and
@@ -593,7 +593,7 @@ tasks:
   # next-changelog workflow, relocate tagging.py under internal/genkit/ and
   # rewrite the tagging.yml workflow to match, then yamlfmt + whitespace fix
   # so the tree is clean.
-  generate:genkit:
+  generate-genkit:
     desc: Run genkit to generate CLI commands and tagging workflow (requires universe repo)
     sources:
       - .codegen/_openapi_sha
@@ -630,7 +630,7 @@ tasks:
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects
   # over types reachable from bundle/, so any bundle change or SDK bump (go.mod
   # / go.sum) can affect the output.
-  generate:refschema:
+  generate-refschema:
     desc: Regenerate acceptance/bundle/refschema/out.fields.txt
     sources:
       - bundle/**/*.go
@@ -644,7 +644,7 @@ tasks:
     cmds:
       - go test ./acceptance -run TestAccept/bundle/refschema -update &> /dev/null
 
-  generate:schema:
+  generate-schema:
     desc: Generate bundle JSON schema
     sources:
       - bundle/internal/schema/*.go
@@ -661,7 +661,7 @@ tasks:
     cmds:
       - go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
-  generate:schema-docs:
+  generate-schema-docs:
     desc: Generate bundle JSON schema for documentation
     sources:
       - bundle/internal/schema/*.go
@@ -678,7 +678,7 @@ tasks:
     cmds:
       - go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs
 
-  generate:docs:
+  generate-docs:
     desc: Generate bundle documentation
     sources:
       - bundle/docsgen/*.go
@@ -699,7 +699,7 @@ tasks:
     cmds:
       - go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
-  generate:validation:
+  generate-validation:
     desc: Generate enum and required field validation code
     sources:
       - bundle/internal/validation/*.go
@@ -716,13 +716,13 @@ tasks:
       - go run ./bundle/internal/validation/.
       - gofmt -w -s ./bundle/internal/validation/generated
 
-  generate:direct:
+  generate-direct:
     desc: Generate direct engine config (apitypes + resources)
-    deps: ['generate:direct:apitypes', 'generate:direct:resources']
+    deps: ['generate-direct-apitypes', 'generate-direct-resources']
 
-  generate:direct:apitypes:
+  generate-direct-apitypes:
     desc: Generate direct engine API types YAML
-    deps: ['generate:openapi-json']
+    deps: ['generate-openapi-json']
     sources:
       - bundle/direct/tools/generate_apitypes.py
       - .codegen/openapi.json
@@ -736,9 +736,9 @@ tasks:
         acceptance/bundle/refschema/out.fields.txt
         > bundle/direct/dresources/apitypes.generated.yml
 
-  generate:direct:resources:
+  generate-direct-resources:
     desc: Generate direct engine resources YAML
-    deps: ['generate:direct:apitypes']
+    deps: ['generate-direct-apitypes']
     sources:
       - bundle/direct/tools/generate_resources.py
       - .codegen/openapi.json
@@ -756,7 +756,7 @@ tasks:
         acceptance/bundle/refschema/out.fields.txt
         > bundle/direct/dresources/resources.generated.yml
 
-  generate:openapi-json:
+  generate-openapi-json:
     desc: Download OpenAPI spec (triggered by _openapi_sha change)
     sources:
       - .codegen/_openapi_sha
@@ -767,7 +767,7 @@ tasks:
 
   # --- pydabs (python/databricks-bundles package) ---
 
-  pydabs:test:
+  pydabs-test:
     desc: Run pydabs tests
     dir: python
     sources:
@@ -775,7 +775,7 @@ tasks:
     cmds:
       - uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv
 
-  pydabs:lint:
+  pydabs-lint:
     desc: Run pydabs lint checks
     dir: python
     sources:
@@ -788,7 +788,7 @@ tasks:
       - uv run pyright
       - uv run ruff format --diff databricks databricks_tests
 
-  pydabs:fmt:
+  pydabs-fmt:
     desc: Format pydabs code
     dir: python
     sources:
@@ -797,7 +797,7 @@ tasks:
       - uv run ruff check --fix databricks databricks_tests || true
       - uv run ruff format
 
-  pydabs:docs:
+  pydabs-docs:
     desc: Generate pydabs documentation
     dir: python
     sources:
@@ -808,7 +808,7 @@ tasks:
     cmds:
       - uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going
 
-  pydabs:codegen:
+  pydabs-codegen:
     desc: Run pydabs codegen
     dir: python
     sources:
@@ -828,7 +828,7 @@ tasks:
       - uv run ruff check --fix databricks databricks_tests || true
       - uv run ruff format
 
-  pydabs:build:
+  pydabs-build:
     desc: Build pydabs wheel
     dir: python
     cmds:
@@ -837,35 +837,35 @@ tasks:
 
   # --- Benchmarks ---
 
-  bench:1k:
+  bench-1k:
     desc: Benchmark with 1000 jobs
     cmds:
       - 'BENCHMARK_PARAMS="--jobs 1000" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m | tee bench1k.log'
 
-  bench:100:
+  bench-100:
     desc: Benchmark with 100 jobs
     cmds:
       - 'BENCHMARK_PARAMS="--jobs 100" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m | tee bench100.log'
 
-  bench:10:
+  bench-10:
     desc: Benchmark with 10 jobs (quick)
     cmds:
       - 'BENCHMARK_PARAMS="--jobs 10" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m | tee bench10.log'
 
-  bench:1k-summary:
+  bench-1k-summary:
     desc: Run 1k benchmark and print summary
     cmds:
-      - task: bench:1k
+      - task: bench-1k
       - ./tools/bench_parse.py bench1k.log
 
-  bench:100-summary:
+  bench-100-summary:
     desc: Run 100 benchmark and print summary
     cmds:
-      - task: bench:100
+      - task: bench-100
       - ./tools/bench_parse.py bench100.log
 
-  bench:10-summary:
+  bench-10-summary:
     desc: Run 10 benchmark and print summary
     cmds:
-      - task: bench:10
+      - task: bench-10
       - ./tools/bench_parse.py bench10.log

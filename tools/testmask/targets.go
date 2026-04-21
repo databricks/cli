@@ -10,9 +10,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ciTargets lists the dash-separated CI output names whose trigger sets
-// come from the corresponding Taskfile task's `sources:`. The task name is
-// derived by replacing "-" with ":" (e.g. "test-exp-ssh" → "test:exp:ssh").
+// ciTargets lists the Taskfile task names whose `sources:` define the
+// trigger set for their corresponding CI job of the same name.
 var ciTargets = []string{
 	"test-exp-aitools",
 	"test-exp-ssh",
@@ -57,14 +56,13 @@ func LoadTargetMappings(taskfilePath string) ([]targetMapping, error) {
 	mappings := []targetMapping{
 		{prefixes: slices.Clone(commonTriggerPatterns), target: "test"},
 	}
-	for _, outputName := range ciTargets {
-		taskName := strings.ReplaceAll(outputName, "-", ":")
-		t, ok := tf.Tasks[taskName]
+	for _, name := range ciTargets {
+		t, ok := tf.Tasks[name]
 		if !ok {
-			return nil, fmt.Errorf("task %q not found in %s", taskName, taskfilePath)
+			return nil, fmt.Errorf("task %q not found in %s", name, taskfilePath)
 		}
 		if len(t.Sources) == 0 {
-			return nil, fmt.Errorf("task %q in %s has no sources", taskName, taskfilePath)
+			return nil, fmt.Errorf("task %q in %s has no sources", name, taskfilePath)
 		}
 		prefixes := slices.Clone(commonTriggerPatterns)
 		for _, src := range t.Sources {
@@ -74,7 +72,7 @@ func LoadTargetMappings(taskfilePath string) ([]targetMapping, error) {
 			}
 			prefixes = append(prefixes, sourceToPrefix(s))
 		}
-		mappings = append(mappings, targetMapping{prefixes: prefixes, target: outputName})
+		mappings = append(mappings, targetMapping{prefixes: prefixes, target: name})
 	}
 	return mappings, nil
 }

@@ -39,9 +39,9 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 ### Specialized Commands
 
-- `task generate:schema` - Generate bundle JSON schema
-- `task generate:docs` - Generate bundle documentation
-- `task generate:genkit` - Run genkit to generate CLI commands and tagging workflow (requires universe repo)
+- `task generate-schema` - Generate bundle JSON schema
+- `task generate-docs` - Generate bundle documentation
+- `task generate-genkit` - Run genkit to generate CLI commands and tagging workflow (requires universe repo)
 - `task generate` - Run all generators
 
 ### Git Commands
@@ -90,7 +90,7 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 # Development Tips
 
-- Use `task test:update` to regenerate acceptance test outputs after changes.
+- Use `task test-update` to regenerate acceptance test outputs after changes.
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
 
 **RULE: Comments should explain "why", not "what".** Reviewers consistently reject comments that merely restate the code.
