@@ -13,11 +13,10 @@ import (
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-
-	"github.com/pkg/browser"
 )
 
 func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
@@ -57,7 +56,7 @@ func newOpenCommand() *cobra.Command {
 
 Examples:
   databricks bundle open                    # Prompts to select a resource to open
-  databricks bundle open my_job             # Open specific job in Workflows UI
+  databricks bundle open my_job             # Open specific job in Jobs UI
   databricks bundle open my_dashboard       # Open dashboard in browser
 
 Use after deployment to quickly navigate to your resources in the workspace.`,
@@ -93,8 +92,13 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 			return errors.New("resource does not have a URL associated with it (has it been deployed?)")
 		}
 
-		cmdio.LogString(cmd.Context(), "Opening browser at "+url)
-		return browser.OpenURL(url)
+		ctx := cmd.Context()
+		if browser.IsDisabled(ctx) {
+			cmdio.LogString(ctx, "Open this URL in your browser:\n"+url)
+			return nil
+		}
+		cmdio.LogString(ctx, "Opening browser at "+url)
+		return browser.Open(ctx, url)
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

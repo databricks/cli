@@ -44,4 +44,6 @@ sql_warehouses: sql.EditWarehouseRequest
 
 synced_database_tables: database.SyncedDatabaseTable
 
+vector_search_endpoints: vectorsearch.CreateEndpoint
+
 volumes: catalog.CreateVolumeRequestContent

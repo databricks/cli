@@ -52,7 +52,9 @@ EnvMatrix.INPUT_CONFIG = [
     "secret_scope.yml.tmpl",
     "secret_scope_default_backend_type.yml.tmpl",
     "secret_scope_with_permissions.yml.tmpl",
+    "sql_warehouse.yml.tmpl",
     "synced_database_table.yml.tmpl",
+    "vector_search_endpoint.yml.tmpl",
     "volume.yml.tmpl",
 ]
 

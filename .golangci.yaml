@@ -21,6 +21,19 @@ linters:
     - forbidigo
     - depguard
     - usestdlibvars
+    - nilerr
+    - fatcontext
+    - nosprintfhostport
+    - recvcheck
+    - usetesting
+    - dupword
+    - misspell
+    - nilnesserr
+    - durationcheck
+    - exptostd
+    - gocheckcompilerdirectives
+    - asciicheck
+    - reassign
   settings:
     depguard:
       rules:

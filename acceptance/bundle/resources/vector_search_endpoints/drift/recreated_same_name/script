@@ -1,0 +1,38 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+endpoint_name="vs-endpoint-${UNIQUE_NAME}"
+
+title "Initial deployment"
+trace $CLI bundle deploy
+
+original_endpoint_uuid=$($CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq -r '.id')
+add_repl.py "$original_endpoint_uuid" "ORIGINAL_ENDPOINT_UUID"
+trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{id, name, endpoint_type}'
+
+title "Delete and recreate remotely with the same name"
+trace $CLI vector-search-endpoints delete-endpoint "${endpoint_name}"
+trace $CLI vector-search-endpoints create-endpoint "${endpoint_name}" STANDARD | jq '{id, name, endpoint_type}'
+
+remote_recreated_endpoint_uuid=$($CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq -r '.id')
+add_repl.py "$remote_recreated_endpoint_uuid" "REMOTE_RECREATED_ENDPOINT_UUID"
+trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{id, name, endpoint_type}'
+
+printf "Original endpoint UUID: %s\n" "$original_endpoint_uuid"
+printf "Remote recreated endpoint UUID: %s\n" "$remote_recreated_endpoint_uuid"
+
+if [ "$original_endpoint_uuid" = "$remote_recreated_endpoint_uuid" ]; then
+    echo "Expected remote recreation to assign a different endpoint UUID" >&2
+    exit 1
+fi
+
+title "Badness: bundle should recreate after remote replacement, but currently sees no drift"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+
+trace $CLI bundle deploy
+trace $CLI vector-search-endpoints get-endpoint "${endpoint_name}" | jq '{id, name, endpoint_type}'
