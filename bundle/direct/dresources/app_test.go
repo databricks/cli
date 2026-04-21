@@ -125,17 +125,34 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 }
 
 var nonUpdatableFields = []string{
-	"id", "url", "updater", "create_time",
-	"update_time", "space", "service_principal_name", "service_principal_id",
-	"service_principal_client_id", "oauth2_app_client_id", "oauth2_app_integration_id", "pending_deployment",
-	"active_deployment", "app_status", "compute_status", "creator", "default_source_code_path",
-	"effective_budget_policy_id", "effective_usage_policy_id", "effective_user_api_scopes", "name",
+	"id",
+	"url",
+	"updater",
+	"create_time",
+	"update_time",
+	"space",
+	"service_principal_name",
+	"service_principal_id",
+	"service_principal_client_id",
+	"oauth2_app_client_id",
+	"oauth2_app_integration_id",
+	"pending_deployment",
+	"active_deployment",
+	"app_status",
+	"compute_status",
+	"creator",
+	"default_source_code_path",
+	"effective_budget_policy_id",
+	"effective_usage_policy_id",
+	"effective_user_api_scopes",
+	"name",
 }
 
 func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 	// iterate over all apps.App fields using reflection and ensure that UpdateMaskFields contains all of them.
 	app := apps.App{}
 	fields := reflect.TypeOf(app)
+	allFields := make([]string, 0)
 	for i := 0; i < fields.NumField(); i++ {
 		field := fields.Field(i)
 		jsonTag := field.Tag.Get("json")
@@ -143,8 +160,13 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 			continue
 		}
 		jsonTag = strings.TrimSuffix(jsonTag, ",omitempty")
+		allFields = append(allFields, jsonTag)
 		if !slices.Contains(nonUpdatableFields, jsonTag) {
 			assert.Contains(t, UpdateMaskFields, jsonTag, "field %s is not in UpdateMaskFields and not marked as non-updatable", jsonTag)
 		}
+	}
+
+	for _, field := range UpdateMaskFields {
+		assert.Contains(t, allFields, field, "field %s is in UpdateMaskFields but not in apps.App struct", field)
 	}
 }

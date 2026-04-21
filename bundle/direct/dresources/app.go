@@ -163,9 +163,14 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 }
 
 var UpdateMaskFields = []string{
-	"description", "budget_policy_id", "usage_policy_id", "resources",
-	"user_api_scopes", "compute_size", "compute_min_instances", "compute_max_instances",
-	"git_repository", "telemetry_export_destinations",
+	"description",
+	"budget_policy_id",
+	"usage_policy_id",
+	"resources",
+	"user_api_scopes",
+	"compute_size",
+	"git_repository",
+	"telemetry_export_destinations",
 }
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
