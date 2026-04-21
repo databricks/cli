@@ -7,11 +7,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestHasUnifiedHostSignal(t *testing.T) {
+	cases := []struct {
+		name         string
+		discoveryURL string
+		fallback     bool
+		want         bool
+	}{
+		{name: "no signal", want: false},
+		{name: "account-scoped OIDC", discoveryURL: "https://spog.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server", want: true},
+		{name: "workspace-scoped OIDC", discoveryURL: "https://workspace.databricks.com/oidc/.well-known/oauth-authorization-server", want: false},
+		{name: "fallback only", fallback: true, want: true},
+		{name: "both set", discoveryURL: "https://spog.databricks.com/oidc/accounts/acct-123", fallback: true, want: true},
+		{name: "workspace OIDC with fallback", discoveryURL: "https://workspace.databricks.com/oidc/.well-known", fallback: true, want: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, HasUnifiedHostSignal(tc.discoveryURL, tc.fallback))
+		})
+	}
+}
+
 func TestResolveConfigType(t *testing.T) {
 	cases := []struct {
-		name string
-		cfg  *config.Config
-		want config.ConfigType
+		name                string
+		cfg                 *config.Config
+		unifiedHostFallback bool
+		want                config.ConfigType
 	}{
 		{
 			name: "classic accounts host stays AccountConfig",
@@ -60,26 +82,26 @@ func TestResolveConfigType(t *testing.T) {
 			want: config.WorkspaceConfig,
 		},
 		{
-			name: "IsUnifiedHost fallback without discovery routes to AccountConfig",
+			name: "unifiedHostFallback without discovery routes to AccountConfig",
 			cfg: &config.Config{
-				Host:                       "https://spog.databricks.com",
-				AccountID:                  "acct-123",
-				Experimental_IsUnifiedHost: true,
+				Host:      "https://spog.databricks.com",
+				AccountID: "acct-123",
 			},
-			want: config.AccountConfig,
+			unifiedHostFallback: true,
+			want:                config.AccountConfig,
 		},
 		{
-			name: "IsUnifiedHost fallback with workspace routes to WorkspaceConfig",
+			name: "unifiedHostFallback with workspace routes to WorkspaceConfig",
 			cfg: &config.Config{
-				Host:                       "https://spog.databricks.com",
-				AccountID:                  "acct-123",
-				WorkspaceID:                "ws-456",
-				Experimental_IsUnifiedHost: true,
+				Host:        "https://spog.databricks.com",
+				AccountID:   "acct-123",
+				WorkspaceID: "ws-456",
 			},
-			want: config.WorkspaceConfig,
+			unifiedHostFallback: true,
+			want:                config.WorkspaceConfig,
 		},
 		{
-			name: "no discovery and no IsUnifiedHost stays WorkspaceConfig",
+			name: "no discovery and no fallback stays WorkspaceConfig",
 			cfg: &config.Config{
 				Host:      "https://workspace.databricks.com",
 				AccountID: "acct-123",
@@ -97,7 +119,7 @@ func TestResolveConfigType(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := ResolveConfigType(tc.cfg)
+			got := ResolveConfigType(tc.cfg, tc.unifiedHostFallback)
 			assert.Equal(t, tc.want, got)
 		})
 	}

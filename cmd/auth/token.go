@@ -324,9 +324,6 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 		if v := env.Get(ctx, "DATABRICKS_WORKSPACE_ID"); v != "" {
 			authArgs.WorkspaceID = v
 		}
-		if ok, _ := env.GetBool(ctx, "DATABRICKS_EXPERIMENTAL_IS_UNIFIED_HOST"); ok {
-			authArgs.IsUnifiedHost = true
-		}
 		return "", nil, nil
 	}
 
@@ -480,19 +477,16 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 	}
 
 	clearKeys := oauthLoginClearKeys()
-	if !loginArgs.IsUnifiedHost {
-		clearKeys = append(clearKeys, "experimental_is_unified_host")
-	}
+	clearKeys = append(clearKeys, "experimental_is_unified_host")
 
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
-		Profile:                    profileName,
-		Host:                       loginArgs.Host,
-		AuthType:                   authTypeDatabricksCLI,
-		AccountID:                  loginArgs.AccountID,
-		WorkspaceID:                loginArgs.WorkspaceID,
-		Experimental_IsUnifiedHost: loginArgs.IsUnifiedHost,
-		ConfigFile:                 env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
-		Scopes:                     scopesList,
+		Profile:     profileName,
+		Host:        loginArgs.Host,
+		AuthType:    authTypeDatabricksCLI,
+		AccountID:   loginArgs.AccountID,
+		WorkspaceID: loginArgs.WorkspaceID,
+		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
+		Scopes:      scopesList,
 	}, clearKeys...)
 	if err != nil {
 		return "", nil, err

@@ -122,13 +122,15 @@ func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.Persiste
 }
 
 // authArgumentsFromConfig converts an SDK config to AuthArguments.
+// The legacy IsUnifiedHost signal is no longer read from the SDK config
+// (the field is being removed); DiscoveryURL is the primary signal, and
+// cfg reaches us after EnsureResolved() so it's populated from .well-known.
 func authArgumentsFromConfig(cfg *config.Config) AuthArguments {
 	return AuthArguments{
-		Host:          cfg.Host,
-		AccountID:     cfg.AccountID,
-		WorkspaceID:   cfg.WorkspaceID,
-		IsUnifiedHost: cfg.Experimental_IsUnifiedHost,
-		Profile:       cfg.Profile,
-		DiscoveryURL:  cfg.DiscoveryURL,
+		Host:         cfg.Host,
+		AccountID:    cfg.AccountID,
+		WorkspaceID:  cfg.WorkspaceID,
+		Profile:      cfg.Profile,
+		DiscoveryURL: cfg.DiscoveryURL,
 	}
 }

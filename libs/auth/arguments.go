@@ -30,7 +30,7 @@ type AuthArguments struct {
 
 // ToOAuthArgument converts the AuthArguments to an OAuthArgument from the Go SDK.
 // It calls EnsureResolved() to run host metadata discovery and routes based on
-// the resolved DiscoveryURL rather than the Experimental_IsUnifiedHost flag.
+// the resolved DiscoveryURL, with a.IsUnifiedHost as a legacy fallback.
 func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	// Strip the "none" sentinel so it is never passed to the SDK.
 	workspaceID := a.WorkspaceID
@@ -39,11 +39,10 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	}
 
 	cfg := &config.Config{
-		Host:                       a.Host,
-		AccountID:                  a.AccountID,
-		WorkspaceID:                workspaceID,
-		Experimental_IsUnifiedHost: a.IsUnifiedHost,
-		HTTPTimeoutSeconds:         5,
+		Host:               a.Host,
+		AccountID:          a.AccountID,
+		WorkspaceID:        workspaceID,
+		HTTPTimeoutSeconds: 5,
 		// Skip config file loading. We only want host metadata resolution
 		// based on the explicit fields provided.
 		Loaders: []config.Loader{config.ConfigAttributes},
@@ -69,7 +68,7 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	// discovery (which returns account_id for every host since PR #4809).
 	// Using cfg.AccountID would cause IsSPOG to misroute plain workspace
 	// hosts as SPOG simply because their metadata includes an account_id.
-	if IsSPOG(cfg, a.AccountID) {
+	if IsSPOG(cfg, a.AccountID, a.IsUnifiedHost) {
 		return u2m.NewProfileUnifiedOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 

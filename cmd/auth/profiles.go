@@ -29,6 +29,11 @@ type profileMetadata struct {
 	AuthType    string `json:"auth_type"`
 	Valid       bool   `json:"valid"`
 	Default     bool   `json:"default,omitempty"`
+
+	// isUnifiedHost carries the legacy experimental_is_unified_host value so we
+	// can route unified-host profiles without the SDK field (which is being
+	// removed). Not serialized.
+	isUnifiedHost bool
 }
 
 func (c *profileMetadata) IsEmpty() bool {
@@ -57,7 +62,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	configType := auth.ResolveConfigType(cfg)
+	configType := auth.ResolveConfigType(cfg, c.isUnifiedHost)
 	if configType != cfg.ConfigType() {
 		log.Debugf(ctx, "Profile %q: overrode config type from %s to %s (SPOG host)", c.Name, cfg.ConfigType(), configType)
 	}
@@ -126,11 +131,12 @@ func newProfilesCommand() *cobra.Command {
 		for _, v := range iniFile.Sections() {
 			hash := v.KeysHash()
 			profile := &profileMetadata{
-				Name:        v.Name(),
-				Host:        hash["host"],
-				AccountID:   hash["account_id"],
-				WorkspaceID: hash["workspace_id"],
-				Default:     v.Name() == defaultProfile,
+				Name:          v.Name(),
+				Host:          hash["host"],
+				AccountID:     hash["account_id"],
+				WorkspaceID:   hash["workspace_id"],
+				Default:       v.Name() == defaultProfile,
+				isUnifiedHost: hash["experimental_is_unified_host"] == "true",
 			}
 			if profile.IsEmpty() {
 				continue

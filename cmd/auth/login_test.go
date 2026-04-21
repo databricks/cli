@@ -392,6 +392,31 @@ func TestShouldUseDiscovery(t *testing.T) {
 	}
 }
 
+func TestNeedsAccountIDPrompt(t *testing.T) {
+	cases := []struct {
+		name          string
+		host          string
+		isUnifiedHost bool
+		discoveryURL  string
+		want          bool
+	}{
+		{name: "classic accounts host", host: "https://accounts.cloud.databricks.com", want: true},
+		{name: "accounts-dod host", host: "https://accounts-dod.databricks.com", want: true},
+		{name: "accounts host with path", host: "https://accounts.cloud.databricks.com/some/path", want: true},
+		{name: "plain workspace host", host: "https://workspace.cloud.databricks.com"},
+		{name: "unified flag set", host: "https://spog.cloud.databricks.com", isUnifiedHost: true, want: true},
+		{name: "account-scoped DiscoveryURL", host: "https://spog.cloud.databricks.com", discoveryURL: "https://spog.cloud.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server", want: true},
+		{name: "workspace-scoped DiscoveryURL", host: "https://workspace.cloud.databricks.com", discoveryURL: "https://workspace.cloud.databricks.com/oidc/.well-known/oauth-authorization-server"},
+		{name: "workspace host no signals", host: "https://workspace.cloud.databricks.com"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := needsAccountIDPrompt(tc.host, tc.isUnifiedHost, tc.discoveryURL)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
 func TestSplitScopes(t *testing.T) {
 	tests := []struct {
 		name   string

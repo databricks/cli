@@ -279,15 +279,11 @@ a new profile is created.
 		var clusterID, serverlessComputeID string
 
 		// Keys to explicitly remove from the profile. OAuth login always
-		// clears incompatible credential fields (PAT, basic auth, M2M).
+		// clears incompatible credential fields (PAT, basic auth, M2M) and
+		// the deprecated experimental_is_unified_host key (routing now comes
+		// from .well-known discovery, so stale values would be misleading).
 		clearKeys := oauthLoginClearKeys()
-
-		// Boolean false is zero-valued and skipped by SaveToProfile's IsZero
-		// check. Explicitly clear experimental_is_unified_host when false so
-		// it doesn't remain sticky from a previous login.
-		if !authArguments.IsUnifiedHost {
-			clearKeys = append(clearKeys, "experimental_is_unified_host")
-		}
+		clearKeys = append(clearKeys, "experimental_is_unified_host")
 
 		switch {
 		case configureCluster:
@@ -295,11 +291,10 @@ a new profile is created.
 			// We use a custom CredentialsStrategy that wraps the token we just minted,
 			// avoiding the need to spawn a child CLI process (which AuthType "databricks-cli" does).
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{
-				Host:                       authArguments.Host,
-				AccountID:                  authArguments.AccountID,
-				WorkspaceID:                authArguments.WorkspaceID,
-				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
-				Credentials:                config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
+				Host:        authArguments.Host,
+				AccountID:   authArguments.AccountID,
+				WorkspaceID: authArguments.WorkspaceID,
+				Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
 			})
 			if err != nil {
 				return err
@@ -320,17 +315,19 @@ a new profile is created.
 		}
 
 		if profileName != "" {
+			// experimental_is_unified_host is no longer written to new profiles.
+			// Routing now comes from .well-known discovery; stale keys on existing
+			// profiles are cleaned up via clearKeys above.
 			err := databrickscfg.SaveToProfile(ctx, &config.Config{
-				Profile:                    profileName,
-				Host:                       authArguments.Host,
-				AuthType:                   authTypeDatabricksCLI,
-				AccountID:                  authArguments.AccountID,
-				WorkspaceID:                authArguments.WorkspaceID,
-				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
-				ClusterID:                  clusterID,
-				ConfigFile:                 env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
-				ServerlessComputeID:        serverlessComputeID,
-				Scopes:                     scopesList,
+				Profile:             profileName,
+				Host:                authArguments.Host,
+				AuthType:            authTypeDatabricksCLI,
+				AccountID:           authArguments.AccountID,
+				WorkspaceID:         authArguments.WorkspaceID,
+				ClusterID:           clusterID,
+				ConfigFile:          env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
+				ServerlessComputeID: serverlessComputeID,
+				Scopes:              scopesList,
 			}, clearKeys...)
 			if err != nil {
 				return err
@@ -407,50 +404,31 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	// are logged as warnings and never block login.
 	runHostDiscovery(ctx, authArguments)
 
-	// Determine the host type and handle account ID / workspace ID accordingly
-	cfg := &config.Config{
-		Host:                       authArguments.Host,
-		AccountID:                  authArguments.AccountID,
-		WorkspaceID:                authArguments.WorkspaceID,
-		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
-	}
-
-	switch cfg.HostType() { //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
-	case config.AccountHost:
-		// Account host: prompt for account ID if not provided
-		if authArguments.AccountID == "" {
-			if existingProfile != nil && existingProfile.AccountID != "" {
-				authArguments.AccountID = existingProfile.AccountID
-			} else {
-				accountId, err := promptForAccountID(ctx)
-				if err != nil {
-					return err
-				}
-				authArguments.AccountID = accountId
+	if needsAccountIDPrompt(authArguments.Host, authArguments.IsUnifiedHost, authArguments.DiscoveryURL) && authArguments.AccountID == "" {
+		if existingProfile != nil && existingProfile.AccountID != "" {
+			authArguments.AccountID = existingProfile.AccountID
+		} else {
+			accountId, err := promptForAccountID(ctx)
+			if err != nil {
+				return err
 			}
+			authArguments.AccountID = accountId
 		}
-	case config.UnifiedHost:
-		// Unified host requires an account ID for OAuth URL construction.
-		// Workspace selection happens post-OAuth via promptForWorkspaceSelection.
-		if authArguments.AccountID == "" {
-			if existingProfile != nil && existingProfile.AccountID != "" {
-				authArguments.AccountID = existingProfile.AccountID
-			} else {
-				accountId, err := promptForAccountID(ctx)
-				if err != nil {
-					return err
-				}
-				authArguments.AccountID = accountId
-			}
-		}
-	case config.WorkspaceHost:
-		// Regular workspace host: no additional prompts needed.
-		// If discovery already populated account_id/workspace_id, those are kept.
-	default:
-		return fmt.Errorf("unknown host type: %v", cfg.HostType()) //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	}
 
 	return nil
+}
+
+// needsAccountIDPrompt reports whether the target host requires an account ID
+// for OAuth URL construction. True for classic account hosts (accounts.*) and
+// for unified hosts (either legacy flag or account-scoped DiscoveryURL).
+func needsAccountIDPrompt(host string, isUnifiedHost bool, discoveryURL string) bool {
+	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
+	if strings.HasPrefix(canonicalHost, "https://accounts.") ||
+		strings.HasPrefix(canonicalHost, "https://accounts-dod.") {
+		return true
+	}
+	return auth.HasUnifiedHostSignal(discoveryURL, isUnifiedHost)
 }
 
 // runHostDiscovery calls EnsureResolved() with a temporary config to fetch
