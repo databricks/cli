@@ -1133,8 +1133,6 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
   "budget_policy_id":
     "description": |-
       The budget policy id to be applied
-    "x-databricks-preview": |-
-      PRIVATE
   "endpoint_type":
     "description": |-
       Type of endpoint
@@ -1145,6 +1143,11 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
   "name":
     "description": |-
       Name of the vector search endpoint
+  "usage_policy_id":
+    "description": |-
+      The usage policy id to be applied once we've migrated to usage policies
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/cli/bundle/config/resources.Volume:
   "catalog_name":
     "description": |-
@@ -6225,6 +6228,8 @@ github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType:
     "description": |-
       Type of endpoint.
     "enum":
+      - |-
+        STORAGE_OPTIMIZED
       - |-
         STANDARD
 github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:

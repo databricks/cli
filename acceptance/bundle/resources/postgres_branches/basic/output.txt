@@ -69,6 +69,14 @@ The following resources will be deleted:
   delete resources.postgres_branches.main
   delete resources.postgres_projects.my_project
 
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase branches.
+All data stored in them will be permanently lost:
+  delete resources.postgres_branches.main
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-[UNIQUE_NAME]/default
 
 Deleting files...

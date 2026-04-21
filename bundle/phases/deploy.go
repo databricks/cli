@@ -39,9 +39,15 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	pipelineActions := filterGroup(actions, "pipelines", types...)
 	volumeActions := filterGroup(actions, "volumes", types...)
 	dashboardActions := filterGroup(actions, "dashboards", types...)
+	databaseInstanceActions := filterGroup(actions, "database_instances", types...)
+	syncedDatabaseTableActions := filterGroup(actions, "synced_database_tables", types...)
+	postgresProjectActions := filterGroup(actions, "postgres_projects", types...)
+	postgresBranchActions := filterGroup(actions, "postgres_branches", types...)
 
 	// We don't need to display any prompts in this case.
-	if len(schemaActions) == 0 && len(pipelineActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
+	if len(schemaActions) == 0 && len(pipelineActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 &&
+		len(databaseInstanceActions) == 0 && len(syncedDatabaseTableActions) == 0 &&
+		len(postgresProjectActions) == 0 && len(postgresBranchActions) == 0 {
 		return true, nil
 	}
 
@@ -80,6 +86,38 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		}
 	}
 
+	// One or more database instances is being deleted or recreated.
+	if len(databaseInstanceActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateDatabaseInstanceMessage)
+		for _, action := range databaseInstanceActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more synced database tables is being deleted or recreated.
+	if len(syncedDatabaseTableActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateSyncedDatabaseTableMessage)
+		for _, action := range syncedDatabaseTableActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more Lakebase projects is being deleted or recreated.
+	if len(postgresProjectActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreatePostgresProjectMessage)
+		for _, action := range postgresProjectActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more Lakebase branches is being deleted or recreated.
+	if len(postgresBranchActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreatePostgresBranchMessage)
+		for _, action := range postgresBranchActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
 	if b.AutoApprove {
 		return true, nil
 	}
@@ -103,7 +141,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if targetEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
 		// Finalize state: write to disk even if deploy failed, so partial progress is saved.
 		// Skip for empty plans to avoid creating a state file when nothing was deployed.
 		if len(plan.Plan) > 0 {
@@ -185,7 +223,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	if plan != nil {
 		// Initialize DeploymentBundle for applying the loaded plan
-		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(), plan)
+		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -219,7 +257,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
 	if engine.IsDirect() {
-		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

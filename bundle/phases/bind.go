@@ -41,7 +41,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
 
-		result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(), &b.Config, statePath, resourceKey, opts.ResourceId)
+		result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

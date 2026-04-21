@@ -49,7 +49,7 @@ func isSuccess(task jobs.RunTask) bool {
 }
 
 func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
-	w := r.bundle.WorkspaceClient()
+	w := r.bundle.WorkspaceClient(ctx)
 	red := color.New(color.FgRed).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
@@ -146,7 +146,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 
-	w := r.bundle.WorkspaceClient()
+	w := r.bundle.WorkspaceClient(ctx)
 
 	monitor := &jobRunMonitor{
 		ctx: ctx,
@@ -191,7 +191,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	// The task completed successfully.
 	case jobs.RunResultStateSuccess:
 		log.Infof(ctx, "Run has completed successfully!")
-		return output.GetJobOutput(ctx, r.bundle.WorkspaceClient(), waiter.RunId)
+		return output.GetJobOutput(ctx, r.bundle.WorkspaceClient(ctx), waiter.RunId)
 
 	// The run was stopped after reaching the timeout.
 	case jobs.RunResultStateTimedout:
@@ -245,7 +245,7 @@ func (r *jobRunner) convertPythonParams(opts *Options) error {
 }
 
 func (r *jobRunner) Cancel(ctx context.Context) error {
-	w := r.bundle.WorkspaceClient()
+	w := r.bundle.WorkspaceClient(ctx)
 	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
 	if err != nil {
 		return fmt.Errorf("job ID is not an integer: %s", r.job.ID)

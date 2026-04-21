@@ -139,7 +139,7 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 		}
 	}
 
-	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
+	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate plan: %w", err)
 	}
@@ -191,7 +191,7 @@ func ensureSnapshotAvailable(ctx context.Context, b *bundle.Bundle, engine engin
 
 	log.Debugf(ctx, "Resources state snapshot not found locally, pulling from remote")
 
-	f, err := deploy.StateFiler(b)
+	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
 		return fmt.Errorf("getting state filer: %w", err)
 	}
