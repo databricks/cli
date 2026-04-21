@@ -152,8 +152,8 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 	// iterate over all apps.App fields using reflection and ensure that UpdateMaskFields contains all of them.
 	app := apps.App{}
 	fields := reflect.TypeOf(app)
-	allFields := make([]string, 0)
-	for i := 0; i < fields.NumField(); i++ {
+	var allFields []string
+	for i := range fields.NumField() {
 		field := fields.Field(i)
 		jsonTag := field.Tag.Get("json")
 		if jsonTag == "" || jsonTag == "-" {
