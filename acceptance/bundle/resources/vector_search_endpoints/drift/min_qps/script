@@ -16,6 +16,7 @@ trace $CLI vector-search-endpoints patch-endpoint "${endpoint_name}" --min-qps 5
 
 title "Plan detects drift and proposes update"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged"
+$CLI bundle plan --output json | jq '{plan: .plan | map_values({action, changes})}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 title "Deploy restores min_qps to 1"
 rm -f out.requests.txt
