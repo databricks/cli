@@ -6,7 +6,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --keep //vector-search/endpoints //permissions
+>>> print_requests.py //vector-search/endpoints //permissions
 
 >>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
 {
@@ -29,7 +29,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py --keep //vector-search/endpoints //permissions
+>>> print_requests.py //vector-search/endpoints //permissions
 
 >>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
 {
