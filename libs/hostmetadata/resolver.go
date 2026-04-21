@@ -23,10 +23,6 @@ const (
 	negativeCacheTTL       = 60 * time.Second
 )
 
-// errNotCached forces a cache miss in the negative-cache probe without storing
-// anything, since GetOrCompute only writes on success.
-var errNotCached = errors.New("not cached")
-
 // errNegativeHit is returned from the positive-cache compute callback when the
 // negative cache already has a sentinel for the host. It signals the outer
 // resolver to return (nil, nil) without running fetch or writing to positive.
@@ -38,9 +34,10 @@ type hostFingerprint struct {
 }
 
 // negativeSentinel records a failed host-metadata fetch in the negative cache.
+// Only the presence of the entry matters; no details about the original error
+// are persisted to disk.
 type negativeSentinel struct {
-	Error   bool   `json:"error"`
-	Message string `json:"message"`
+	Error bool `json:"error"`
 }
 
 func init() {
@@ -69,11 +66,8 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 		// Positive cache wraps the whole miss path so that the happy path (hit)
 		// is a single disk read — no synthetic probe, no negative-cache traffic.
 		meta, err := cache.GetOrCompute[*config.HostMetadata](ctx, positive, fp, func(ctx context.Context) (*config.HostMetadata, error) {
-			sentinel, sErr := cache.GetOrCompute[*negativeSentinel](ctx, negative, fp, func(ctx context.Context) (*negativeSentinel, error) {
-				return nil, errNotCached
-			})
-			if sErr == nil && sentinel != nil && sentinel.Error {
-				log.Debugf(ctx, "[hostmetadata] negative cache hit for %s: %s", host, sentinel.Message)
+			if sentinel, ok := cache.Get[*negativeSentinel](ctx, negative, fp); ok && sentinel != nil && sentinel.Error {
+				log.Debugf(ctx, "[hostmetadata] negative cache hit for %s", host)
 				return nil, errNegativeHit
 			}
 			return fetch(ctx, host)
@@ -92,7 +86,7 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 		log.Debugf(ctx, "[hostmetadata] fetch failed for %s, recording negative: %v", host, err)
 		// Best-effort write; ignore failures.
 		_, _ = cache.GetOrCompute[*negativeSentinel](ctx, negative, fp, func(ctx context.Context) (*negativeSentinel, error) {
-			return &negativeSentinel{Error: true, Message: err.Error()}, nil
+			return &negativeSentinel{Error: true}, nil
 		})
 		return nil, nil
 	}

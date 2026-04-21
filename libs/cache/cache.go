@@ -13,12 +13,35 @@ type cacheImpl interface {
 	// The compute function must return JSON-encoded data as []byte.
 	// The returned []byte is also expected to be JSON-encoded.
 	getOrComputeJSON(ctx context.Context, fingerprint any, compute func(ctx context.Context) ([]byte, error)) ([]byte, error)
+
+	// getJSON returns cached JSON bytes for fingerprint, or (nil, false) on
+	// miss or when caching is disabled. Never computes, never writes.
+	getJSON(ctx context.Context, fingerprint any) ([]byte, bool)
 }
 
 // Cache provides a concrete cache that works with any type through the generic GetOrCompute function.
 // Create with NewCache() and use GetOrCompute[T]() for type-safe caching.
 type Cache struct {
 	impl cacheImpl
+}
+
+// Get returns the cached value for the given fingerprint, or (zero, false) on
+// miss. Unlike GetOrCompute it never invokes compute and never writes. Use
+// this when the caller wants a read-only probe and will handle a miss
+// explicitly, without the cache-level "error while computing" log that an
+// erroring compute callback would emit.
+func Get[T any](ctx context.Context, c *Cache, fingerprint any) (T, bool) {
+	var zero T
+	data, ok := c.impl.getJSON(ctx, fingerprint)
+	if !ok {
+		return zero, false
+	}
+	var result T
+	if err := json.Unmarshal(data, &result); err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to unmarshal cached data: %v", err)
+		return zero, false
+	}
+	return result, true
 }
 
 // GetOrCompute retrieves cached content for the given fingerprint, or computes it using the provided function.

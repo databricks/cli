@@ -145,6 +145,20 @@ func NewCache(ctx context.Context, component string, expiry time.Duration, metri
 	return &Cache{impl: fc}
 }
 
+func (fc *fileCache) getJSON(ctx context.Context, fingerprint any) ([]byte, bool) {
+	if !fc.cacheEnabled {
+		return nil, false
+	}
+	cacheKey, err := fingerprintToHash(fingerprint)
+	if err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to generate cache key: %v", err)
+		return nil, false
+	}
+	fc.mu.Lock()
+	defer fc.mu.Unlock()
+	return fc.readFromCacheJSON(ctx, fc.getCachePath(cacheKey))
+}
+
 func (fc *fileCache) addTelemetryMetric(key string) {
 	if fc.metrics != nil {
 		fc.metrics.SetBoolValue(key, true)
