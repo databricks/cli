@@ -117,7 +117,7 @@ func main() {
 }
 
 func downloadConfig(ctx context.Context) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", repoConfigURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, repoConfigURL, nil)
 	if err != nil {
 		return "", err
 	}
