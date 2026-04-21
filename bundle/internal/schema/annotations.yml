@@ -589,6 +589,9 @@ github.com/databricks/cli/bundle/config/resources.AppSpace:
   "name":
     "description": |-
       PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
   "resources":
     "description": |-
       PLACEHOLDER
@@ -614,6 +617,19 @@ github.com/databricks/cli/bundle/config/resources.AppSpace:
     "description": |-
       PLACEHOLDER
   "user_api_scopes":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.AppSpacePermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Catalog:

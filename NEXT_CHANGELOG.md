@@ -14,6 +14,12 @@
 * engine/direct: Added support for Vector Search Endpoints ([#4887](https://github.com/databricks/cli/pull/4887)).
 * engine/direct: Exclude deploy-only fields (e.g. `lifecycle`) from the Apps update mask so requests that change both `description` and `lifecycle.started` in the same deploy no longer fail with `INVALID_PARAMETER_VALUE` ([#5042](https://github.com/databricks/cli/pull/5042), [#5051](https://github.com/databricks/cli/pull/5051)).
 * engine/direct: Fix phantom diffs from `depends_on` reordering in job tasks ([#4990](https://github.com/databricks/cli/pull/4990)).
+* engine/direct: Added support for Vector Search Endpoints ([#4887](https://github.com/databricks/cli/pull/4887))
+* engine/direct: Exclude deploy-only fields (e.g. `lifecycle`) from the Apps update mask so requests that change both `description` and `lifecycle.started` in the same deploy no longer fail with `INVALID_PARAMETER_VALUE`.
+* engine/direct: Fix phantom diffs from `depends_on` reordering in job tasks ([#4990](https://github.com/databricks/cli/pull/4990))
+* Added support for lifecycle.started option for apps ([#4672](https://github.com/databricks/cli/pull/4672))
+* engine/direct: Fix permissions for resources.models ([#4941](https://github.com/databricks/cli/pull/4941))
+* engine/direct: Added support for Databricks App Spaces (`app_spaces` resource type) ([#4982](https://github.com/databricks/cli/pull/4982))
 
 ### Dependency updates
 * Bump `github.com/databricks/databricks-sdk-go` from v0.126.0 to v0.128.0 ([#4984](https://github.com/databricks/cli/pull/4984), [#5031](https://github.com/databricks/cli/pull/5031)).

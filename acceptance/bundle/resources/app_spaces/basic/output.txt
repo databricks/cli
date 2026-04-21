@@ -19,7 +19,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //app-spaces
 
 >>> [CLI] bundle summary
 Name: test-bundle
@@ -42,4 +42,4 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests
+>>> print_requests.py //app-spaces

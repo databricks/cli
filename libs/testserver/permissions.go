@@ -30,6 +30,7 @@ var requestObjectTypeToObjectType = map[string]string{
 	"serving-endpoints":       "serving-endpoint",
 	"vector-search-endpoints": "vector-search-endpoints",
 	"apps":                    "apps",
+	"app-spaces":              "app-spaces",
 	"database-instances":      "database-instances",
 	"database-projects":       "database-projects",
 	"alertsv2":                "alertv2",

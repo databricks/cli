@@ -23,6 +23,7 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = [
 EnvMatrix.INPUT_CONFIG = [
     "alert.yml.tmpl",
     "app.yml.tmpl",
+    "app_space.yml.tmpl",
     "catalog.yml.tmpl",
     "cluster.yml.tmpl",
     "dashboard.yml.tmpl",

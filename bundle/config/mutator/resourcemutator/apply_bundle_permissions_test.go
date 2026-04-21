@@ -18,7 +18,6 @@ import (
 // This list exists to ensure that this mutator is updated when new resource is added.
 // These resources are there because they use grants, not permissions:
 var unsupportedResources = []string{
-	"app_spaces",
 	"catalogs",
 	"external_locations",
 	"volumes",
@@ -78,6 +77,10 @@ func TestApplyBundlePermissions(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app_1": {},
 					"app_2": {},
+				},
+				AppSpaces: map[string]*resources.AppSpace{
+					"space_1": {},
+					"space_2": {},
 				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_1": {},
@@ -143,6 +146,11 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Len(t, b.Config.Resources.Apps["app_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_USE", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.AppSpaces["space_1"].Permissions, 3)
+	require.Contains(t, b.Config.Resources.AppSpaces["space_1"].Permissions, resources.AppSpacePermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.AppSpaces["space_1"].Permissions, resources.AppSpacePermission{Level: "CAN_READ", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.AppSpaces["space_1"].Permissions, resources.AppSpacePermission{Level: "CAN_CREATE_APP", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.VectorSearchEndpoints["vs_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})

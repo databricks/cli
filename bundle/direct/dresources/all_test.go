@@ -380,6 +380,29 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"app_spaces.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.Apps.CreateSpace(ctx, apps.CreateSpaceRequest{
+			Space: apps.Space{
+				Name: "space-permissions",
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		space, err := waiter.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/app-spaces/" + space.Name,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
 	"sql_warehouses.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		return &PermissionsState{
 			ObjectID: "/sql/warehouses/warehouse-permissions",

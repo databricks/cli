@@ -1,18 +1,13 @@
-print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/app-spaces")))' < out.requests.txt
-    rm out.requests.txt
-}
-
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace print_requests > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py //app-spaces > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle summary
 
 title "Update description and re-deploy"
 trace update_file.py databricks.yml my_space_description MY_SPACE_DESCRIPTION
 trace $CLI bundle plan
 trace $CLI bundle deploy
-trace print_requests >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py //app-spaces >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle summary
 
 title "Update name and re-deploy"
@@ -20,9 +15,9 @@ trace update_file.py databricks.yml myspacename mynewspacename
 trace $CLI bundle plan
 trace $CLI bundle summary
 trace $CLI bundle deploy
-trace print_requests >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py //app-spaces >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle plan
 trace $CLI bundle summary
 trace $CLI bundle destroy --auto-approve
-trace print_requests >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py //app-spaces >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json

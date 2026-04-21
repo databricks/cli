@@ -1,20 +1,20 @@
 {
+  "method": "POST",
+  "path": "/api/2.0/app-spaces",
   "body": {
     "description": "my_space_description",
     "name": "myspacename"
-  },
-  "method": "POST",
-  "path": "/api/2.0/app-spaces"
+  }
 }
 {
-  "body": {
-    "description": "MY_SPACE_DESCRIPTION",
-    "name": "myspacename"
-  },
   "method": "PATCH",
   "path": "/api/2.0/app-spaces/myspacename",
   "q": {
     "update_mask": "description,resources,user_api_scopes,usage_policy_id"
+  },
+  "body": {
+    "description": "MY_SPACE_DESCRIPTION",
+    "name": "myspacename"
   }
 }
 {
@@ -22,12 +22,12 @@
   "path": "/api/2.0/app-spaces/myspacename"
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/app-spaces",
   "body": {
     "description": "MY_SPACE_DESCRIPTION",
     "name": "mynewspacename"
-  },
-  "method": "POST",
-  "path": "/api/2.0/app-spaces"
+  }
 }
 {
   "method": "DELETE",
