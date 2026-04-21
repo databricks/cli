@@ -50,7 +50,7 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 	}
 
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	err = checkAnyResourceRunning(ctx, w, state)
 	if err != nil {
 		return diag.FromErr(err)

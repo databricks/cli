@@ -513,10 +513,6 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		return "Disabled because RunsOnDbr is not set in " + configPath
 	}
 
-	if isTruePtr(config.Slow) && testing.Short() {
-		return "Disabled via Slow setting in " + configPath
-	}
-
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)

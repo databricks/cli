@@ -901,11 +901,13 @@
                 "properties": {
                   "prevent_destroy": {
                     "description": "Lifecycle setting to prevent the resource from being destroyed.",
-                    "$ref": "#/$defs/bool"
+                    "$ref": "#/$defs/bool",
+                    "x-since-version": "v0.297.0"
                   },
                   "started": {
                     "description": "Lifecycle setting to deploy the resource in started mode. Only supported for apps, clusters, and sql_warehouses in direct deployment mode.",
-                    "$ref": "#/$defs/bool"
+                    "$ref": "#/$defs/bool",
+                    "x-since-version": "v0.297.0"
                   }
                 },
                 "additionalProperties": false
@@ -1922,9 +1924,7 @@
                 "type": "object",
                 "properties": {
                   "budget_policy_id": {
-                    "$ref": "#/$defs/string",
-                    "x-databricks-preview": "PRIVATE",
-                    "doNotSuggest": true
+                    "$ref": "#/$defs/string"
                   },
                   "endpoint_type": {
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/vectorsearch.EndpointType"
@@ -1940,6 +1940,11 @@
                   },
                   "permissions": {
                     "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                  },
+                  "usage_policy_id": {
+                    "$ref": "#/$defs/string",
+                    "x-databricks-preview": "PRIVATE",
+                    "doNotSuggest": true
                   }
                 },
                 "additionalProperties": false,
@@ -9229,6 +9234,7 @@
               "type": "string",
               "description": "Type of endpoint.",
               "enum": [
+                "STORAGE_OPTIMIZED",
                 "STANDARD"
               ]
             },

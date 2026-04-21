@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -34,7 +35,7 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 
 	t.Run("no config file", func(t *testing.T) {
 		setupWorkspaceTest(t)
-		_, err := w.Client()
+		_, err := w.Client(t.Context())
 		assert.NoError(t, err)
 	})
 
@@ -49,7 +50,7 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		client, err := w.Client()
+		client, err := w.Client(t.Context())
 		assert.NoError(t, err)
 		assert.Equal(t, "default", client.Config.Profile)
 	})
@@ -67,7 +68,7 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
-		client, err := w.Client()
+		client, err := w.Client(t.Context())
 		assert.NoError(t, err)
 		assert.Equal(t, "custom", client.Config.Profile)
 	})
@@ -149,9 +150,28 @@ func TestWorkspaceClientNormalizesHostBeforeProfileResolution(t *testing.T) {
 	w := Workspace{
 		Host: "https://spog.databricks.com/?o=222",
 	}
-	client, err := w.Client()
+	client, err := w.Client(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, "ws2", client.Config.Profile)
+}
+
+func TestWorkspaceConfigHTTPTimeout(t *testing.T) {
+	for _, tc := range []struct {
+		envVal string
+		want   int
+	}{
+		{"", 90},
+		{"5", 5},
+		{"not-a-number", 90},
+	} {
+		t.Run(tc.envVal, func(t *testing.T) {
+			if tc.envVal != "" {
+				t.Setenv(env.HTTPTimeoutSecondsVariable, tc.envVal)
+			}
+			w := Workspace{}
+			assert.Equal(t, tc.want, w.Config(t.Context()).HTTPTimeoutSeconds)
+		})
+	}
 }
 
 func TestWorkspaceVerifyProfileForHost(t *testing.T) {
@@ -165,7 +185,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 
 	t.Run("no config file", func(t *testing.T) {
 		setupWorkspaceTest(t)
-		_, err := w.Client()
+		_, err := w.Client(t.Context())
 		assert.ErrorIs(t, err, fs.ErrNotExist)
 	})
 
@@ -179,7 +199,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, err = w.Client()
+		_, err = w.Client(t.Context())
 		assert.NoError(t, err)
 	})
 
@@ -193,7 +213,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		_, err = w.Client()
+		_, err = w.Client(t.Context())
 		assert.ErrorContains(t, err, "doesn’t match the host configured in the bundle")
 	})
 
@@ -209,7 +229,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
-		_, err = w.Client()
+		_, err = w.Client(t.Context())
 		assert.NoError(t, err)
 	})
 
@@ -225,7 +245,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
-		_, err = w.Client()
+		_, err = w.Client(t.Context())
 		assert.ErrorContains(t, err, "doesn’t match the host configured in the bundle")
 	})
 }
