@@ -1,0 +1,24 @@
+ucm:
+  name: fixture-inherit-opt-out
+
+workspace:
+  host: https://example.cloud.databricks.com
+
+resources:
+  catalogs:
+    team_alpha:
+      name: team_alpha
+      tags:
+        cost_center: "1234"
+        data_owner: alpha
+        classification: internal
+      schemas:
+        bronze:
+          name: bronze
+          tag_inherit: false
+          # no tags — ValidateTags should complain because inheritance is off
+
+  tag_validation_rules:
+    enforce_ownership:
+      securable_types: [catalog, schema]
+      required: [cost_center, data_owner, classification]

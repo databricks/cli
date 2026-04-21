@@ -40,6 +40,15 @@ func newWorkspaceFilerFromInner(inner libsfiler.Filer) *WorkspaceFiler {
 	return &WorkspaceFiler{inner: inner}
 }
 
+// NewStateFilerFromFiler adapts an arbitrary libs/filer.Filer into a
+// StateFiler. Mirrors lock.NewLockerWithFiler: callers that already hold a
+// libs/filer.Filer — tests backed by NewLocalClient, or future s3/adls/gcs
+// implementations — can reuse it as the state-storage backend without going
+// through a workspace client.
+func NewStateFilerFromFiler(inner libsfiler.Filer) StateFiler {
+	return &WorkspaceFiler{inner: inner}
+}
+
 // Read opens the file at path for reading.
 func (w *WorkspaceFiler) Read(ctx context.Context, path string) (io.ReadCloser, error) {
 	rc, err := w.inner.Read(ctx, path)

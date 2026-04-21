@@ -17,7 +17,8 @@ import (
 )
 
 // runValidate invokes the cobra ucm-subtree in a temp cwd set to fixtureDir
-// and returns stdout, stderr, and whatever the Execute call returned.
+// and returns stdout, diag-stream output (cmdio stderr), and whatever the
+// Execute call returned.
 func runValidate(t *testing.T, fixtureDir string) (string, string, error) {
 	t.Helper()
 
@@ -32,13 +33,13 @@ func runValidate(t *testing.T, fixtureDir string) (string, string, error) {
 	cmd.SetErr(&errOut)
 	cmd.SetArgs([]string{"validate"})
 
-	ctx, _ := cmdio.NewTestContextWithStderr(context.Background())
+	ctx, diagOut := cmdio.NewTestContextWithStderr(context.Background())
 	ctx = logdiag.InitContext(ctx)
 	logdiag.SetRoot(ctx, fixtureDir)
 	cmd.SetContext(ctx)
 
 	err = cmd.Execute()
-	return out.String(), errOut.String(), err
+	return out.String(), diagOut.String() + errOut.String(), err
 }
 
 func TestCmd_Validate_ValidFixturePasses(t *testing.T) {
@@ -52,6 +53,26 @@ func TestCmd_Validate_ValidFixturePasses(t *testing.T) {
 func TestCmd_Validate_MissingTagFixtureFails(t *testing.T) {
 	_, _, err := runValidate(t, filepath.Join("testdata", "missing_tag"))
 	require.Error(t, err)
+}
+
+func TestCmd_Validate_NestedFixturePasses(t *testing.T) {
+	stdout, stderr, err := runValidate(t, filepath.Join("testdata", "nested"))
+	t.Logf("stdout=%q", stdout)
+	t.Logf("stderr=%q", stderr)
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "Validation OK!")
+}
+
+func TestCmd_Validate_CollisionFixtureFails(t *testing.T) {
+	_, stderr, err := runValidate(t, filepath.Join("testdata", "collision"))
+	require.Error(t, err)
+	assert.Contains(t, stderr, "declared both as a flat entry and nested")
+}
+
+func TestCmd_Validate_InheritOptOutFailsTagRule(t *testing.T) {
+	_, stderr, err := runValidate(t, filepath.Join("testdata", "inherit_opt_out"))
+	require.Error(t, err)
+	assert.Contains(t, stderr, "requires tag")
 }
 
 func TestCmd_Schema_ProducesValidJSON(t *testing.T) {

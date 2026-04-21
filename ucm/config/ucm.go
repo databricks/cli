@@ -2,10 +2,10 @@ package config
 
 import "github.com/databricks/cli/ucm/config/engine"
 
-// Ucm is the top-level ucm: block of ucm.yml. Mirrors bundle.Bundle for DABs,
-// but scoped to Unity Catalog declarative management.
+// Ucm holds top-level metadata about a ucm deployment (parallel to
+// bundle.Bundle in DAB).
 type Ucm struct {
-	// Name identifies the ucm project. Required.
+	// Name uniquely identifies this ucm deployment.
 	Name string `json:"name"`
 
 	// Engine selects the deployment engine ("terraform" or "direct").

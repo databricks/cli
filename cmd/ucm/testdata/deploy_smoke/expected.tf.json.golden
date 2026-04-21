@@ -1,0 +1,49 @@
+{
+  "resource": {
+    "databricks_catalog": {
+      "main": {
+        "name": "main",
+        "comment": "smoke catalog",
+        "properties": {
+          "data_owner": "platform",
+          "classification": "internal",
+          "cost_center": "9999"
+        },
+        "force_destroy": true
+      }
+    },
+    "databricks_schema": {
+      "default": {
+        "name": "default",
+        "catalog_name": "main",
+        "comment": "smoke schema",
+        "properties": {
+          "classification": "internal",
+          "cost_center": "9999",
+          "data_owner": "platform"
+        },
+        "force_destroy": true,
+        "depends_on": [
+          "databricks_catalog.main"
+        ]
+      }
+    },
+    "databricks_grants": {
+      "default_reader": {
+        "schema": "${databricks_schema.default.id}",
+        "grant": [
+          {
+            "principal": "platform-readers",
+            "privileges": [
+              "USE_SCHEMA",
+              "SELECT"
+            ]
+          }
+        ],
+        "depends_on": [
+          "databricks_schema.default"
+        ]
+      }
+    }
+  }
+}
