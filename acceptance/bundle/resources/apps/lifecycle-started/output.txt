@@ -84,7 +84,7 @@ Deployment complete!
       "description": "MY_APP_DESCRIPTION_2",
       "name": "[UNIQUE_NAME]"
     },
-    "update_mask": "description"
+    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,compute_size,git_repository,telemetry_export_destinations"
   }
 }
 
@@ -112,7 +112,7 @@ Deployment complete!
       "description": "MY_APP_DESCRIPTION_3",
       "name": "[UNIQUE_NAME]"
     },
-    "update_mask": "description"
+    "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,compute_size,git_repository,telemetry_export_destinations"
   }
 }
 {
