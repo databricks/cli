@@ -427,11 +427,6 @@ tasks:
       - task: test-update
       - task: test-update-aws
 
-  generate-out-test-toml:
-    desc: Regenerate out.test.toml files without running tests
-    cmds:
-      - "go test ./acceptance -run '^TestAccept$' -only-out-test-toml -timeout=${LOCAL_TIMEOUT:-30m}"
-
   slowest:
     desc: Show 50 slowest tests from last run
     cmds:
