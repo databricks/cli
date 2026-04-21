@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	envlib "github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/hostmetadata"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go"
@@ -111,9 +110,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	if err != nil {
 		return nil, err
 	}
-	promptCfg := &databricks.Config{Profile: profile}
-	hostmetadata.Attach((*config.Config)(promptCfg))
-	a, err = databricks.NewAccountClient(promptCfg)
+	a, err = databricks.NewAccountClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 		if err != nil {
@@ -158,8 +155,6 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	ctx = cmdctx.SetConfigUsed(ctx, cfg)
 	cmd.SetContext(ctx)
-
-	hostmetadata.Attach(cfg)
 
 	profiler := profile.GetProfiler(ctx)
 
@@ -234,9 +229,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	if err != nil {
 		return nil, err
 	}
-	promptCfg := &databricks.Config{Profile: profile}
-	hostmetadata.Attach((*config.Config)(promptCfg))
-	w, err = databricks.NewWorkspaceClient(promptCfg)
+	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 		if err != nil {
@@ -268,8 +261,6 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 
 	ctx = cmdctx.SetConfigUsed(cmd.Context(), cfg)
 	cmd.SetContext(ctx)
-
-	hostmetadata.Attach(cfg)
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
 	if !shouldSkipLoadBundle(cmd.Context()) {

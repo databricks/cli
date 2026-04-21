@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/hostmetadata"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -147,16 +146,14 @@ func (e *Entrypoint) envAwareConfig(ctx context.Context) (*config.Config, error)
 	if err != nil {
 		return nil, err
 	}
-	cfg := &config.Config{
+	return &config.Config{
 		ConfigFile: filepath.Join(home, ".databrickscfg"),
 		Loaders: []config.Loader{
 			env.NewConfigLoader(ctx),
 			config.ConfigAttributes,
 			config.ConfigFile,
 		},
-	}
-	hostmetadata.Attach(cfg)
-	return cfg, nil
+	}, nil
 }
 
 func (e *Entrypoint) envAwareConfigWithProfile(ctx context.Context, profile string) (*config.Config, error) {

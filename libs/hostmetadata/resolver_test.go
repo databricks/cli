@@ -14,14 +14,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAttach_SetsResolverOnConfig(t *testing.T) {
-	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
-	cfg := &config.Config{Host: "https://example.cloud.databricks.com"}
-	require.Nil(t, cfg.HostMetadataResolver)
-
-	hostmetadata.Attach(cfg)
-
-	assert.NotNil(t, cfg.HostMetadataResolver)
+func TestInit_RegistersDefaultHostMetadataResolverFactory(t *testing.T) {
+	require.NotNil(t, config.DefaultHostMetadataResolverFactory,
+		"importing hostmetadata must register a factory so every *config.Config picks up the cached resolver")
 }
 
 func TestNewResolver_CacheHit_SkipsFetch(t *testing.T) {
@@ -105,11 +100,11 @@ func TestNewResolver_DifferentHosts_SeparateEntries(t *testing.T) {
 	assert.Equal(t, "acct-for-https://b", mB.AccountID)
 }
 
-// TestAttach_EndToEnd_CacheHitSkipsSDKFetch is an integration sanity check that
-// the default fetch wiring through cfg.DefaultHostMetadataResolver() works:
-// two independent *config.Config instances sharing DATABRICKS_CACHE_DIR must
-// hit the well-known endpoint once, not twice.
-func TestAttach_EndToEnd_CacheHitSkipsSDKFetch(t *testing.T) {
+// TestFactory_EndToEnd_CacheHitSkipsSDKFetch is an integration sanity check
+// that importing hostmetadata installs a factory which back-fills every
+// *config.Config with a cached resolver. Two independent configs sharing
+// DATABRICKS_CACHE_DIR must hit the well-known endpoint once, not twice.
+func TestFactory_EndToEnd_CacheHitSkipsSDKFetch(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
 
 	var hits atomic.Int32
@@ -124,12 +119,10 @@ func TestAttach_EndToEnd_CacheHitSkipsSDKFetch(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	cfg1 := &config.Config{Host: server.URL, Token: "x", Credentials: config.PatCredentials{}}
-	hostmetadata.Attach(cfg1)
 	require.NoError(t, cfg1.EnsureResolved())
 	require.Equal(t, int32(1), hits.Load())
 
 	cfg2 := &config.Config{Host: server.URL, Token: "x", Credentials: config.PatCredentials{}}
-	hostmetadata.Attach(cfg2)
 	require.NoError(t, cfg2.EnsureResolved())
 
 	assert.Equal(t, "acct-1", cfg2.AccountID)

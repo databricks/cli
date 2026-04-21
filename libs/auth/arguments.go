@@ -3,7 +3,6 @@ package auth
 import (
 	"strings"
 
-	"github.com/databricks/cli/libs/hostmetadata"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
@@ -49,7 +48,6 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		// based on the explicit fields provided.
 		Loaders: []config.Loader{config.ConfigAttributes},
 	}
-	hostmetadata.Attach(cfg)
 
 	if a.DiscoveryURL != "" {
 		cfg.DiscoveryURL = a.DiscoveryURL

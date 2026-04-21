@@ -8,6 +8,7 @@
 
 * Added `--limit` flag to all paginated list commands for client-side result capping ([#4984](https://github.com/databricks/cli/pull/4984)).
 * Accept `yes` in addition to `y` for confirmation prompts, and show `[y/N]` to indicate that no is the default.
+* Cache `/.well-known/databricks-config` lookups under `~/.cache/databricks/<version>/host-metadata/` so repeat CLI invocations against the same host skip the ~700ms discovery round trip.
 
 ### Bundles
 * Remove `experimental-jobs-as-code` template, superseded by `pydabs` ([#4999](https://github.com/databricks/cli/pull/4999)).

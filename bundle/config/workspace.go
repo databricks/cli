@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg"
-	"github.com/databricks/cli/libs/hostmetadata"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -164,7 +163,6 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 	w.NormalizeHostURL()
 
 	cfg := w.Config()
-	hostmetadata.Attach(cfg)
 
 	// If only the host is configured, we try and unambiguously match it to
 	// a profile in the user's databrickscfg file. Override the default loaders.

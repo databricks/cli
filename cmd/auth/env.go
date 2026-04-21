@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/cli/libs/hostmetadata"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
@@ -108,7 +107,6 @@ func newEnvCommand() *cobra.Command {
 			Host:    host,
 			Profile: profile,
 		}
-		hostmetadata.Attach(cfg)
 		if profile != "" {
 			cfg.Profile = profile
 		} else if cfg.Host == "" {

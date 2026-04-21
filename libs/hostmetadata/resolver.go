@@ -1,5 +1,9 @@
 // Package hostmetadata provides a cached implementation of the SDK's
 // HostMetadataResolver, backed by the CLI's shared file cache.
+//
+// Importing this package (typically via a blank import from main) installs
+// [config.DefaultHostMetadataResolverFactory] so every *config.Config the
+// CLI constructs automatically gets the cached resolver on first EnsureResolved.
 package hostmetadata
 
 import (
@@ -39,6 +43,12 @@ type negativeSentinel struct {
 	Message string `json:"message"`
 }
 
+func init() {
+	config.DefaultHostMetadataResolverFactory = func(cfg *config.Config) config.HostMetadataResolver {
+		return NewResolver(cfg.DefaultHostMetadataResolver())
+	}
+}
+
 // NewResolver returns a HostMetadataResolver backed by a positive and negative
 // file cache. On positive hit it returns the cached metadata; on miss it
 // probes the negative cache, then falls through to fetch and records failures
@@ -48,7 +58,7 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 	// cache.NewCache uses ctx only for env lookups and cleanup-walk debug
 	// logs; there is no cancellation signal to propagate. Using a background
 	// context keeps NewResolver callable from sites without a caller ctx
-	// in scope (e.g. bundle.Workspace.Client).
+	// in scope (e.g. the factory invoked from Config.EnsureResolved).
 	ctx := context.Background() //nolint:gocritic // no caller ctx and cache.NewCache does not use ctx for cancellation.
 	positive := cache.NewCache(ctx, positiveCacheComponent, positiveCacheTTL, nil)
 	negative := cache.NewCache(ctx, negativeCacheComponent, negativeCacheTTL, nil)
@@ -86,10 +96,4 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 		})
 		return nil, nil
 	}
-}
-
-// Attach installs a caching HostMetadataResolver on cfg, using the SDK's
-// default HTTP resolver as the fetch function on cache miss.
-func Attach(cfg *config.Config) {
-	cfg.HostMetadataResolver = NewResolver(cfg.DefaultHostMetadataResolver())
 }
