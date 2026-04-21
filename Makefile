@@ -1,3 +1,2 @@
-.PHONY: $(MAKECMDGOALS)
-%:
+.DEFAULT:
 	@./task "$@"
