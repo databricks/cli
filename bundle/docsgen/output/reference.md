@@ -475,6 +475,10 @@ resources:
   - Map
   - See [\_](#resourcesexternal_locations).
   
+- - `genie_spaces`
+  - Map
+  - See [\_](#resourcesgenie_spaces).
+  
 - - `jobs`
   - Map
   - The job definitions for the bundle, where each key is the name of the job. See [\_](/dev-tools/bundles/resources.md#jobs).
@@ -1474,6 +1478,118 @@ external_locations:
 - - `prevent_destroy`
   - Boolean
   - Lifecycle setting to prevent the resource from being destroyed.
+  
+:::
+  
+  
+### resources.genie_spaces
+  
+**`Type: Map`**
+  
+
+  
+```yaml
+genie_spaces:
+  <genie_space-name>:
+    <genie_space-field-name>: <genie_space-field-value>
+```
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `description`
+  - String
+  - 
+  
+- - `file_path`
+  - String
+  - 
+  
+- - `lifecycle`
+  - Map
+  - See [\_](#resourcesgenie_spacesnamelifecycle).
+  
+- - `parent_path`
+  - String
+  - 
+  
+- - `permissions`
+  - Sequence
+  - See [\_](#resourcesgenie_spacesnamepermissions).
+  
+- - `serialized_space`
+  - Any
+  - 
+  
+- - `space_id`
+  - String
+  - 
+  
+- - `title`
+  - String
+  - 
+  
+- - `warehouse_id`
+  - String
+  - 
+  
+:::
+  
+  
+### resources.genie_spaces._name_.lifecycle
+  
+**`Type: Map`**
+  
+
+  
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `prevent_destroy`
+  - Boolean
+  - Lifecycle setting to prevent the resource from being destroyed.
+  
+:::
+  
+  
+### resources.genie_spaces._name_.permissions
+  
+**`Type: Sequence`**
+  
+
+  
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `group_name`
+  - String
+  - The name of the group that has the permission set in level.
+  
+- - `level`
+  - String
+  - The allowed permission for user, group, service principal defined for this permission.
+  
+- - `service_principal_name`
+  - String
+  - The name of the service principal that has the permission set in level.
+  
+- - `user_name`
+  - String
+  - The name of the user that has the permission set in level.
   
 :::
   
@@ -2553,6 +2669,10 @@ The resource definitions for the target.
   - Map
   - See [\_](#targetsnameresourcesexternal_locations).
   
+- - `genie_spaces`
+  - Map
+  - See [\_](#targetsnameresourcesgenie_spaces).
+  
 - - `jobs`
   - Map
   - The job definitions for the bundle, where each key is the name of the job. See [\_](/dev-tools/bundles/resources.md#jobs).
@@ -3552,6 +3672,118 @@ external_locations:
 - - `prevent_destroy`
   - Boolean
   - Lifecycle setting to prevent the resource from being destroyed.
+  
+:::
+  
+  
+### targets._name_.resources.genie_spaces
+  
+**`Type: Map`**
+  
+
+  
+```yaml
+genie_spaces:
+  <genie_space-name>:
+    <genie_space-field-name>: <genie_space-field-value>
+```
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `description`
+  - String
+  - 
+  
+- - `file_path`
+  - String
+  - 
+  
+- - `lifecycle`
+  - Map
+  - See [\_](#targetsnameresourcesgenie_spacesnamelifecycle).
+  
+- - `parent_path`
+  - String
+  - 
+  
+- - `permissions`
+  - Sequence
+  - See [\_](#targetsnameresourcesgenie_spacesnamepermissions).
+  
+- - `serialized_space`
+  - Any
+  - 
+  
+- - `space_id`
+  - String
+  - 
+  
+- - `title`
+  - String
+  - 
+  
+- - `warehouse_id`
+  - String
+  - 
+  
+:::
+  
+  
+### targets._name_.resources.genie_spaces._name_.lifecycle
+  
+**`Type: Map`**
+  
+
+  
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `prevent_destroy`
+  - Boolean
+  - Lifecycle setting to prevent the resource from being destroyed.
+  
+:::
+  
+  
+### targets._name_.resources.genie_spaces._name_.permissions
+  
+**`Type: Sequence`**
+  
+
+  
+  
+  
+:::list-table
+  
+- - Key
+  - Type
+  - Description
+  
+- - `group_name`
+  - String
+  - The name of the group that has the permission set in level.
+  
+- - `level`
+  - String
+  - The allowed permission for user, group, service principal defined for this permission.
+  
+- - `service_principal_name`
+  - String
+  - The name of the service principal that has the permission set in level.
+  
+- - `user_name`
+  - String
+  - The name of the user that has the permission set in level.
   
 :::
   

@@ -309,6 +309,20 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.DashboardUnpublish(req)
 	})
 
+	// Genie Spaces:
+	server.Handle("GET", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceGet(req)
+	})
+	server.Handle("POST", "/api/2.0/genie/spaces", func(req Request) any {
+		return req.Workspace.GenieSpaceCreate(req)
+	})
+	server.Handle("PATCH", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceUpdate(req)
+	})
+	server.Handle("DELETE", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceTrash(req)
+	})
+
 	// Pipelines:
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {

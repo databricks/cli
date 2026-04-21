@@ -1,0 +1,7 @@
+resources:
+  genie_spaces:
+    test_genie_space:
+      title: "test genie space"
+      warehouse_id: test-warehouse-id
+      file_path: ../genie_space/test_genie_space.genie.json
+      description: test description

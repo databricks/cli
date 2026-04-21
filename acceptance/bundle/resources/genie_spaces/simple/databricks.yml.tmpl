@@ -1,0 +1,11 @@
+bundle:
+  name: deploy-genie-space-test-$UNIQUE_NAME
+
+resources:
+  genie_spaces:
+    sales_analytics:
+      title: "Sales Analytics Genie"
+      description: "AI assistant for sales data analysis"
+      warehouse_id: "test-warehouse-id"
+      parent_path: /Users/$CURRENT_USER_NAME
+      file_path: "sales_analytics.genie.json"

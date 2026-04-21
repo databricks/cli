@@ -1,0 +1,18 @@
+{
+  "full_featured": {
+    "title": "Full Featured Genie Space",
+    "warehouse_id": "my-warehouse-1234",
+    "serialized_space_is_string": true
+  },
+  "inline_yaml": {
+    "title": "Inline YAML Genie Space",
+    "serialized_space_type": "object",
+    "tables_count": 1,
+    "has_column_configs": true,
+    "has_text_instructions": true
+  },
+  "minimal_valid": {
+    "title": "Minimal Valid",
+    "tables_count": 0
+  }
+}

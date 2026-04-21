@@ -192,6 +192,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "external_locations":
     "description": |-
       PLACEHOLDER
+  "genie_spaces":
+    "description": |-
+      PLACEHOLDER
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
@@ -651,6 +654,34 @@ github.com/databricks/cli/bundle/config/resources.ExternalLocation:
     "description": |-
       PLACEHOLDER
   "url":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.GenieSpace:
+  "description":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "serialized_space":
+    "description": |-
+      PLACEHOLDER
+  "space_id":
+    "description": |-
+      PLACEHOLDER
+  "title":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_id":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.JobPermission:
