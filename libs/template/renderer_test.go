@@ -79,7 +79,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 
 	b.Tagging = tags.ForCloud(w.Config)
 	b.SetWorkpaceClient(w)
-	b.WorkspaceClient()
+	b.WorkspaceClient(ctx)
 
 	phases.Initialize(ctx, b)
 	diags = logdiag.FlushCollected(ctx)

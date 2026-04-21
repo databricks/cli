@@ -103,7 +103,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	cmdio.LogString(ctx, "Deploying resources...")
 
 	if targetEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
 		// Finalize state: write to disk even if deploy failed, so partial progress is saved.
 		// Skip for empty plans to avoid creating a state file when nothing was deployed.
 		if len(plan.Plan) > 0 {
@@ -185,7 +185,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	if plan != nil {
 		// Initialize DeploymentBundle for applying the loaded plan
-		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(), plan)
+		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -219,7 +219,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
 	if engine.IsDirect() {
-		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil

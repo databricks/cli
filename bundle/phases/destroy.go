@@ -20,7 +20,7 @@ import (
 )
 
 func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 
 	var aerr *apierr.APIError
@@ -96,7 +96,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
 		// Skip Finalize for empty plans to avoid creating a state file when nothing was destroyed.
 		if len(plan.Plan) > 0 {
 			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
@@ -163,7 +163,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	var plan *deployplan.Plan
 	if engine.IsDirect() {
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil)
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
