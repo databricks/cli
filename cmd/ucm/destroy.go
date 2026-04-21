@@ -25,7 +25,8 @@ cached from the last apply.
 Common invocations:
   databricks ucm destroy --auto-approve                # Destroy default target
   databricks ucm destroy --target dev --auto-approve   # Destroy a specific target`,
-		Args: root.NoArgs,
+		Args:              root.NoArgs,
+		PersistentPreRunE: root.MustWorkspaceClient,
 	}
 
 	var autoApprove bool
