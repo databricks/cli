@@ -81,9 +81,7 @@ Deployment complete!
 >>> print_requests.py //app-spaces
 
 >>> [CLI] bundle plan
-update app_spaces.mykey
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle summary
 Name: test-bundle
