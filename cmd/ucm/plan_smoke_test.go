@@ -12,6 +12,7 @@ import (
 	ucmpkg "github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/deploy/terraform/tfdyn"
+	"github.com/databricks/cli/ucm/deployplan"
 	"github.com/databricks/cli/ucm/phases"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -81,13 +82,25 @@ func assertSmokeGolden(t *testing.T, ctx context.Context, u *ucmpkg.Ucm) {
 // stays wired once PreRunE auth is stripped out for tests.
 func TestCmd_PlanSmoke_VerbHappyPath(t *testing.T) {
 	h := newVerbHarness(t)
-	h.tf.PlanResult = &terraform.PlanResult{HasChanges: true, Summary: "smoke plan ready"}
+	h.tf.PlanResult = &terraform.PlanResult{
+		HasChanges: true,
+		Summary:    "smoke plan ready",
+		Plan: &deployplan.Plan{
+			Plan: map[string]*deployplan.PlanEntry{
+				"resources.catalogs.main":    {Action: deployplan.Create},
+				"resources.schemas.main.raw": {Action: deployplan.Create},
+				"resources.grants.analysts":  {Action: deployplan.Update},
+			},
+		},
+	}
 
 	stdout, stderr, err := runVerb(t, filepath.Join("testdata", "deploy_smoke"), "plan")
 	t.Logf("stdout=%q stderr=%q", stdout, stderr)
 
 	require.NoError(t, err)
-	assert.Contains(t, stdout, "smoke plan ready")
+	assert.Contains(t, stdout, "create catalogs.main")
+	assert.Contains(t, stdout, "update grants.analysts")
+	assert.Contains(t, stdout, "Plan: 2 to add, 1 to change, 0 to delete, 0 unchanged")
 	assert.Equal(t, 1, h.tf.RenderCalls)
 	assert.Equal(t, 1, h.tf.InitCalls)
 	assert.Equal(t, 1, h.tf.PlanCalls)

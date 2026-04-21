@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/ucm/deploy/lock"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/terraform-exec/tfexec"
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 // tfRunner is the minimal terraform-exec surface used by the wrapper.
@@ -24,6 +25,7 @@ import (
 type tfRunner interface {
 	Init(ctx context.Context, opts ...tfexec.InitOption) error
 	Plan(ctx context.Context, opts ...tfexec.PlanOption) (bool, error)
+	ShowPlanFile(ctx context.Context, planPath string, opts ...tfexec.ShowOption) (*tfjson.Plan, error)
 	Apply(ctx context.Context, opts ...tfexec.ApplyOption) error
 	Destroy(ctx context.Context, opts ...tfexec.DestroyOption) error
 	SetEnv(env map[string]string) error
