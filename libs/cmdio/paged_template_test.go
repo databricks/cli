@@ -59,37 +59,30 @@ func runPagedTemplate(t *testing.T, n, pageSize int, keys []byte) string {
 	return out.String()
 }
 
-func TestPagedTemplateDrainsWhenFirstPageExhausts(t *testing.T) {
-	out := runPagedTemplate(t, 3, 10, nil)
-	require.Equal(t, "1\n2\n3\n", out)
-}
-
-func TestPagedTemplateSpaceFetchesOneMorePage(t *testing.T) {
-	out := runPagedTemplate(t, 7, 3, []byte{' '})
-	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-	assert.Len(t, lines, 6)
-}
-
-func TestPagedTemplateEnterDrainsIterator(t *testing.T) {
-	out := runPagedTemplate(t, 25, 5, []byte{'\r'})
-	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-	assert.Len(t, lines, 25)
-}
-
-func TestPagedTemplateQuitKeysExit(t *testing.T) {
-	for _, k := range []byte{'q', 'Q', pagerKeyEscape, pagerKeyCtrlC} {
-		t.Run(fmt.Sprintf("key=%d", k), func(t *testing.T) {
-			out := runPagedTemplate(t, 100, 5, []byte{k})
+func TestPagedTemplateBehavior(t *testing.T) {
+	tests := []struct {
+		name      string
+		items     int
+		pageSize  int
+		keys      []byte
+		wantLines int
+	}{
+		{"drains when first page exhausts iterator", 3, 10, nil, 3},
+		{"space fetches one more page", 7, 3, []byte{' '}, 6},
+		{"enter drains remaining iterator", 25, 5, []byte{'\r'}, 25},
+		{"enter interruptible by ctrl+c", 20, 5, []byte{'\r', pagerKeyCtrlC}, 10},
+		{"q exits after first page", 100, 5, []byte{'q'}, 5},
+		{"Q exits after first page", 100, 5, []byte{'Q'}, 5},
+		{"esc exits after first page", 100, 5, []byte{pagerKeyEscape}, 5},
+		{"ctrl+c exits after first page", 100, 5, []byte{pagerKeyCtrlC}, 5},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := runPagedTemplate(t, tt.items, tt.pageSize, tt.keys)
 			lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-			assert.Len(t, lines, 5)
+			assert.Len(t, lines, tt.wantLines)
 		})
 	}
-}
-
-func TestPagedTemplateEnterInterruptibleByCtrlC(t *testing.T) {
-	out := runPagedTemplate(t, 20, 5, []byte{'\r', pagerKeyCtrlC})
-	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-	assert.Len(t, lines, 10)
 }
 
 func TestPagedTemplateRespectsLimit(t *testing.T) {
@@ -185,6 +178,64 @@ func TestPagedTemplateEmptyIteratorStillFlushesHeader(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, out.String(), "ID")
 	assert.Contains(t, out.String(), "Name")
+}
+
+func TestVisualWidth(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want int
+	}{
+		{"plain ascii", "hello", 5},
+		{"empty", "", 0},
+		{"green SGR wraps text", "\x1b[32mhello\x1b[0m", 5},
+		{"multiple SGR escapes", "\x1b[1;31mfoo\x1b[0m bar", 7},
+		{"multibyte runes count as one each", "héllo", 5},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, visualWidth(tt.in))
+		})
+	}
+}
+
+func TestComputeWidths(t *testing.T) {
+	tests := []struct {
+		name string
+		rows []string
+		want []int
+	}{
+		{"empty input", nil, nil},
+		{"single row", []string{"a\tbb\tccc"}, []int{1, 2, 3}},
+		{"widest wins per column", []string{"a\tbb", "aaa\tb"}, []int{3, 2}},
+		{"ragged rows extend column count", []string{"a", "b\tcc"}, []int{1, 2}},
+		{"SGR escapes don't inflate widths", []string{"\x1b[31mred\x1b[0m\tplain"}, []int{3, 5}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, computeWidths(tt.rows))
+		})
+	}
+}
+
+func TestPadRow(t *testing.T) {
+	tests := []struct {
+		name   string
+		cells  []string
+		widths []int
+		want   string
+	}{
+		{"single cell is emitted as-is", []string{"only"}, []int{10}, "only"},
+		{"pads every cell except the last", []string{"a", "bb", "c"}, []int{3, 3, 3}, "a    bb   c"},
+		{"overflowing cell pushes next column right", []string{"toolong", "b"}, []int{3, 3}, "toolong  b"},
+		{"no widths means no padding", []string{"a", "b"}, nil, "a  b"},
+		{"SGR escape doesn't count toward pad", []string{"\x1b[31mred\x1b[0m", "b"}, []int{5, 1}, "\x1b[31mred\x1b[0m    b"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, padRow(tt.cells, tt.widths))
+		})
+	}
 }
 
 // TestPagedTemplateMatchesNonPagedForSmallList asserts that single-batch
