@@ -93,8 +93,12 @@ func loadFromDatabricksCfg(ctx context.Context, cfg *config.Config) error {
 
 func newEnvCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "env",
-		Short: "Get env",
+		Use:    "env",
+		Short:  "Get env (deprecated)",
+		Hidden: true,
+		Long: `Get env.
+
+Deprecated: this command will be removed in a future release.`,
 	}
 
 	var host string
@@ -103,6 +107,8 @@ func newEnvCommand() *cobra.Command {
 	cmd.Flags().StringVar(&profile, "profile", profile, "Profile to get auth env for")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		fmt.Fprintln(cmd.ErrOrStderr(), "Warning: 'databricks auth env' is deprecated and will be removed in a future release.")
+
 		cfg := &config.Config{
 			Host:    host,
 			Profile: profile,
