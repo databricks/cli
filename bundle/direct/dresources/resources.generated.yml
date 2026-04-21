@@ -24,6 +24,32 @@ resources:
       - field: update_time
         reason: spec:output_only
 
+  app_spaces:
+
+    ignore_remote_changes:
+      - field: create_time
+        reason: spec:output_only
+      - field: creator
+        reason: spec:output_only
+      - field: effective_usage_policy_id
+        reason: spec:output_only
+      - field: effective_user_api_scopes
+        reason: spec:output_only
+      - field: id
+        reason: spec:output_only
+      - field: service_principal_client_id
+        reason: spec:output_only
+      - field: service_principal_id
+        reason: spec:output_only
+      - field: service_principal_name
+        reason: spec:output_only
+      - field: status
+        reason: spec:output_only
+      - field: update_time
+        reason: spec:output_only
+      - field: updater
+        reason: spec:output_only
+
   apps:
 
     ignore_remote_changes:
