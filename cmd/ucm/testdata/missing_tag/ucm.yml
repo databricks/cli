@@ -1,0 +1,15 @@
+ucm:
+  name: fixture-missing-tag
+
+resources:
+  catalogs:
+    team_alpha:
+      name: team_alpha
+      tags:
+        cost_center: "1234"
+        # missing data_owner and classification
+
+  tag_validation_rules:
+    enforce_ownership:
+      securable_types: [catalog]
+      required: [cost_center, data_owner, classification]
