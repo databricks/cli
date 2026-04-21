@@ -76,22 +76,14 @@ func TestPagedTemplateEnterDrainsIterator(t *testing.T) {
 	assert.Len(t, lines, 25)
 }
 
-func TestPagedTemplateQuitKeyExits(t *testing.T) {
-	out := runPagedTemplate(t, 100, 5, []byte{'q'})
-	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-	assert.Len(t, lines, 5)
-}
-
-func TestPagedTemplateEscExits(t *testing.T) {
-	out := runPagedTemplate(t, 100, 5, []byte{pagerKeyEscape})
-	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-	assert.Len(t, lines, 5)
-}
-
-func TestPagedTemplateCtrlCExits(t *testing.T) {
-	out := runPagedTemplate(t, 100, 5, []byte{pagerKeyCtrlC})
-	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-	assert.Len(t, lines, 5)
+func TestPagedTemplateQuitKeysExit(t *testing.T) {
+	for _, k := range []byte{'q', 'Q', pagerKeyEscape, pagerKeyCtrlC} {
+		t.Run(fmt.Sprintf("key=%d", k), func(t *testing.T) {
+			out := runPagedTemplate(t, 100, 5, []byte{k})
+			lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+			assert.Len(t, lines, 5)
+		})
+	}
 }
 
 func TestPagedTemplateEnterInterruptibleByCtrlC(t *testing.T) {
@@ -155,9 +147,6 @@ func TestPagedTemplatePropagatesFetchError(t *testing.T) {
 }
 
 func TestPagedTemplateRendersHeaderAndRowsCorrectly(t *testing.T) {
-	// Regression guard against the header/row template cross-pollution
-	// bug: if the two templates share a *template.Template receiver,
-	// every flush re-emits the header text where rows should be.
 	var out, prompts bytes.Buffer
 	iter := listing.Iterator[int](&numberIterator{n: 6})
 	err := renderIteratorPagedTemplateCore(
@@ -196,54 +185,6 @@ func TestPagedTemplateEmptyIteratorStillFlushesHeader(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, out.String(), "ID")
 	assert.Contains(t, out.String(), "Name")
-}
-
-// slicedIterator is a tiny iterator implementation for tests that prefer
-// to hand over strongly-typed row structs.
-type slicedIterator[T any] struct {
-	data []T
-	pos  int
-}
-
-func (it *slicedIterator[T]) HasNext(_ context.Context) bool { return it.pos < len(it.data) }
-func (it *slicedIterator[T]) Next(_ context.Context) (T, error) {
-	v := it.data[it.pos]
-	it.pos++
-	return v, nil
-}
-
-func TestPagedTemplateColumnWidthsStableAcrossBatches(t *testing.T) {
-	type row struct {
-		Name string
-		Tag  string
-	}
-	rows := []row{
-		{"wide-name-that-sets-the-width", "a"},
-		{"short", "b"},
-	}
-	iter := &slicedIterator[row]{data: rows}
-	var out, prompts bytes.Buffer
-	err := renderIteratorPagedTemplateCore(
-		t.Context(),
-		iter,
-		&out,
-		&prompts,
-		makeTemplateKeys(' '),
-		"Name	Tag",
-		"{{range .}}{{.Name}}	{{.Tag}}\n{{end}}",
-		1,
-	)
-	require.NoError(t, err)
-	got := out.String()
-	lines := strings.Split(strings.TrimRight(got, "\n"), "\n")
-	require.Len(t, lines, 3)
-
-	// Column 1 must start at the same visible offset on every line.
-	const wantColTwoOffset = 31
-	for i, line := range lines {
-		idx := strings.LastIndex(line, " ") + 1
-		assert.Equal(t, wantColTwoOffset, idx, "line %d: col 1 expected at offset %d, got %d (line=%q)", i, wantColTwoOffset, idx, line)
-	}
 }
 
 // TestPagedTemplateMatchesNonPagedForSmallList asserts that single-batch

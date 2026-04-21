@@ -25,22 +25,10 @@ const (
 	pagerKeyCtrlC  = 0x03
 )
 
-// startRawStdinKeyReader puts stdin into raw mode and spawns a goroutine
-// that publishes each keystroke as a byte on the returned channel. The
-// returned restore function must be called (typically via defer) to put
-// the terminal back in its original mode; it is safe to call even if
-// MakeRaw failed (it's a no-op).
-//
-// The goroutine exits when stdin returns an error (e.g. EOF on process
-// shutdown) or when ctx is cancelled, at which point the channel is
-// closed. Leaking the goroutine before that is acceptable because the
-// pager is only invoked by short-lived CLI commands: the process exits
-// shortly after the caller returns.
-//
-// Note: term.MakeRaw also clears the TTY's OPOST flag on most Unixes.
-// With OPOST off, outbound '\n' is not translated to '\r\n', so callers
-// that write newlines while raw mode is active should wrap their output
-// stream in crlfWriter to avoid staircase output.
+// startRawStdinKeyReader puts stdin into raw mode and streams keystrokes
+// onto the returned channel. Callers must defer restore. Raw mode also
+// clears OPOST on Unix, so output written while active needs crlfWriter
+// to avoid staircase newlines.
 func startRawStdinKeyReader(ctx context.Context) (<-chan byte, func(), error) {
 	fd := int(os.Stdin.Fd())
 	oldState, err := term.MakeRaw(fd)
@@ -80,9 +68,8 @@ func pagerNextKey(ctx context.Context, keys <-chan byte) (byte, bool) {
 }
 
 // pagerShouldQuit drains any buffered keys non-blockingly and returns true
-// if one of q/Q/esc/Ctrl+C was pressed. Other keys are consumed and
-// dropped. A closed channel means stdin ran out (EOF) — that's not a
-// quit signal; the caller should keep draining.
+// if q/Q/esc/Ctrl+C was pressed. A closed channel (stdin EOF) is not a
+// quit signal.
 func pagerShouldQuit(keys <-chan byte) bool {
 	for {
 		select {
