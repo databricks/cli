@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -132,7 +133,7 @@ to specify it explicitly.
 			profileName = selected
 		}
 
-		tokenCache, _, err := newAuthCache(ctx, "")
+		tokenCache, _, err := storage.ResolveCache(ctx, "")
 		if err != nil {
 			return fmt.Errorf("failed to open token cache: %w", err)
 		}

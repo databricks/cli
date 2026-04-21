@@ -1,14 +1,13 @@
-package auth
+package storage
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 )
 
-// cacheFactories bundles the constructors newAuthCache depends on. Extracted
+// cacheFactories bundles the constructors ResolveCache depends on. Extracted
 // so unit tests can inject stubs without hitting the real OS keyring or
 // filesystem. Production code uses defaultCacheFactories().
 type cacheFactories struct {
@@ -23,31 +22,35 @@ type cacheFactories struct {
 func defaultCacheFactories() cacheFactories {
 	return cacheFactories{
 		newFile:    func() (cache.TokenCache, error) { return cache.NewFileTokenCache() },
-		newKeyring: storage.NewKeyringCache,
+		newKeyring: NewKeyringCache,
 	}
 }
 
-// newAuthCache resolves the storage mode for this invocation and returns
+// ResolveCache resolves the storage mode for this invocation and returns
 // the corresponding token cache plus the resolved mode (so callers can log
 // or surface it).
 //
-// override is usually the command-level flag value (e.g. the result of
-// --secure-storage). Pass "" when the command has no flag.
-func newAuthCache(ctx context.Context, override storage.StorageMode) (cache.TokenCache, storage.StorageMode, error) {
-	return newAuthCacheWith(ctx, override, defaultCacheFactories())
+// override is usually the command-level flag value. Pass "" when the command
+// has no flag; precedence then falls through to env -> config -> default.
+//
+// Every CLI code path that calls u2m.NewPersistentAuth must route the result
+// through u2m.WithTokenCache, otherwise the SDK defaults to the file cache
+// and splits the user's tokens across two backends.
+func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, StorageMode, error) {
+	return resolveCacheWith(ctx, override, defaultCacheFactories())
 }
 
-// newAuthCacheWith is the pure form of newAuthCache. It takes the factory
+// resolveCacheWith is the pure form of ResolveCache. It takes the factory
 // set as a parameter so tests can inject stubs.
-func newAuthCacheWith(ctx context.Context, override storage.StorageMode, f cacheFactories) (cache.TokenCache, storage.StorageMode, error) {
-	mode, err := storage.ResolveStorageMode(ctx, override)
+func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactories) (cache.TokenCache, StorageMode, error) {
+	mode, err := ResolveStorageMode(ctx, override)
 	if err != nil {
 		return nil, "", err
 	}
 	switch mode {
-	case storage.StorageModeSecure:
+	case StorageModeSecure:
 		return f.newKeyring(), mode, nil
-	case storage.StorageModeLegacy, storage.StorageModePlaintext:
+	case StorageModeLegacy, StorageModePlaintext:
 		// Plaintext currently maps to the file cache; a dedicated
 		// plaintext backend (no host-keyed dual-writes) is a follow-up.
 		c, err := f.newFile()

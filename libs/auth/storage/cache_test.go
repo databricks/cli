@@ -1,10 +1,10 @@
-package auth
+package storage
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/stretchr/testify/assert"
@@ -27,65 +27,80 @@ func fakeFactories(t *testing.T) cacheFactories {
 	}
 }
 
-func TestNewAuthCache_DefaultsToLegacyFile(t *testing.T) {
+// hermetic isolates the test from the caller's real env vars and
+// .databrickscfg so ResolveStorageMode starts from a clean default.
+func hermetic(t *testing.T) {
+	t.Helper()
+	t.Setenv(EnvVar, "")
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "databrickscfg"))
+}
+
+func TestResolveCache_DefaultsToLegacyFile(t *testing.T) {
+	hermetic(t)
 	ctx := t.Context()
 
-	got, mode, err := newAuthCacheWith(ctx, "", fakeFactories(t))
+	got, mode, err := resolveCacheWith(ctx, "", fakeFactories(t))
 
 	require.NoError(t, err)
-	assert.Equal(t, storage.StorageModeLegacy, mode)
+	assert.Equal(t, StorageModeLegacy, mode)
 	assert.Equal(t, "file", got.(stubCache).source)
 }
 
-func TestNewAuthCache_OverrideSecureUsesKeyring(t *testing.T) {
+func TestResolveCache_OverrideSecureUsesKeyring(t *testing.T) {
+	hermetic(t)
 	ctx := t.Context()
 
-	got, mode, err := newAuthCacheWith(ctx, storage.StorageModeSecure, fakeFactories(t))
+	got, mode, err := resolveCacheWith(ctx, StorageModeSecure, fakeFactories(t))
 
 	require.NoError(t, err)
-	assert.Equal(t, storage.StorageModeSecure, mode)
+	assert.Equal(t, StorageModeSecure, mode)
 	assert.Equal(t, "keyring", got.(stubCache).source)
 }
 
-func TestNewAuthCache_EnvVarSelectsSecure(t *testing.T) {
-	ctx := env.Set(t.Context(), storage.EnvVar, "secure")
+func TestResolveCache_EnvVarSelectsSecure(t *testing.T) {
+	hermetic(t)
+	ctx := env.Set(t.Context(), EnvVar, "secure")
 
-	got, mode, err := newAuthCacheWith(ctx, "", fakeFactories(t))
+	got, mode, err := resolveCacheWith(ctx, "", fakeFactories(t))
 
 	require.NoError(t, err)
-	assert.Equal(t, storage.StorageModeSecure, mode)
+	assert.Equal(t, StorageModeSecure, mode)
 	assert.Equal(t, "keyring", got.(stubCache).source)
 }
 
-func TestNewAuthCache_PlaintextFallsBackToFile(t *testing.T) {
+func TestResolveCache_PlaintextFallsBackToFile(t *testing.T) {
+	hermetic(t)
 	ctx := t.Context()
 
-	got, mode, err := newAuthCacheWith(ctx, storage.StorageModePlaintext, fakeFactories(t))
+	got, mode, err := resolveCacheWith(ctx, StorageModePlaintext, fakeFactories(t))
 
 	require.NoError(t, err)
-	assert.Equal(t, storage.StorageModePlaintext, mode)
+	assert.Equal(t, StorageModePlaintext, mode)
 	assert.Equal(t, "file", got.(stubCache).source)
 }
 
-func TestNewAuthCache_InvalidOverrideReturnsError(t *testing.T) {
+func TestResolveCache_InvalidOverrideReturnsError(t *testing.T) {
+	hermetic(t)
 	ctx := t.Context()
 
-	_, _, err := newAuthCacheWith(ctx, storage.StorageMode("bogus"), fakeFactories(t))
+	_, _, err := resolveCacheWith(ctx, StorageMode("bogus"), fakeFactories(t))
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `unknown storage mode "bogus"`)
 }
 
-func TestNewAuthCache_InvalidEnvReturnsError(t *testing.T) {
-	ctx := env.Set(t.Context(), storage.EnvVar, "bogus")
+func TestResolveCache_InvalidEnvReturnsError(t *testing.T) {
+	hermetic(t)
+	ctx := env.Set(t.Context(), EnvVar, "bogus")
 
-	_, _, err := newAuthCacheWith(ctx, "", fakeFactories(t))
+	_, _, err := resolveCacheWith(ctx, "", fakeFactories(t))
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "DATABRICKS_AUTH_STORAGE")
 }
 
-func TestNewAuthCache_FileFactoryErrorPropagates(t *testing.T) {
+func TestResolveCache_FileFactoryErrorPropagates(t *testing.T) {
+	hermetic(t)
 	ctx := t.Context()
 	boom := errors.New("disk full")
 	factories := cacheFactories{
@@ -93,7 +108,7 @@ func TestNewAuthCache_FileFactoryErrorPropagates(t *testing.T) {
 		newKeyring: func() cache.TokenCache { return stubCache{source: "keyring"} },
 	}
 
-	_, _, err := newAuthCacheWith(ctx, storage.StorageModeLegacy, factories)
+	_, _, err := resolveCacheWith(ctx, StorageModeLegacy, factories)
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)

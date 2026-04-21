@@ -109,22 +109,24 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	return cp, nil
 }
 
-// persistentAuth returns a token source. It wraps the file-backed token
-// cache with a dual-writing cache so every token write (Challenge, refresh,
-// discovery) mirrors to the legacy host key for cross-SDK compatibility.
+// persistentAuth returns a token source. It resolves the configured storage
+// mode and plumbs the resulting token cache into the SDK so every read is
+// backed by the same storage the CLI wrote on login, not the SDK's default
+// file cache (which would split tokens for secure-storage users).
 // The persistentAuthFn override is used in tests.
 func (c CLICredentials) persistentAuth(ctx context.Context, arg u2m.OAuthArgument) (auth.TokenSource, error) {
-	if c.persistentAuthFn != nil {
-		return c.persistentAuthFn(ctx, u2m.WithOAuthArgument(arg))
-	}
-	tc, err := storage.NewFileTokenCache(ctx)
+	tokenCache, _, err := storage.ResolveCache(ctx, "")
 	if err != nil {
 		return nil, fmt.Errorf("opening token cache: %w", err)
 	}
-	ts, err := u2m.NewPersistentAuth(ctx,
-		u2m.WithTokenCache(storage.NewDualWritingTokenCache(tc, arg)),
+	opts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(arg),
-	)
+		u2m.WithTokenCache(tokenCache),
+	}
+	if c.persistentAuthFn != nil {
+		return c.persistentAuthFn(ctx, opts...)
+	}
+	ts, err := u2m.NewPersistentAuth(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}

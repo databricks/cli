@@ -79,7 +79,7 @@ and secret is not supported.`,
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
-		tokenCache, mode, err := newAuthCache(ctx, "")
+		tokenCache, mode, err := storage.ResolveCache(ctx, "")
 		if err != nil {
 			return err
 		}
