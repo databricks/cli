@@ -21,22 +21,6 @@ func stub(use, short string) *cobra.Command {
 	return cmd
 }
 
-func newPlanCommand() *cobra.Command {
-	return stub("plan", "Preview the changes ucm deploy would make.")
-}
-
-func newDeployCommand() *cobra.Command {
-	return stub("deploy", "Apply ucm configuration to the target Databricks account/workspace.")
-}
-
-func newDestroyCommand() *cobra.Command {
-	return stub("destroy", "Tear down everything managed by the current target.")
-}
-
-func newSummaryCommand() *cobra.Command {
-	return stub("summary", "Summarize deployed resources and their ids/URLs.")
-}
-
 func newInitCommand() *cobra.Command {
 	return stub("init [template]", "Scaffold a new ucm.yml project from a starter template.")
 }
@@ -63,8 +47,4 @@ func newDriftCommand() *cobra.Command {
 
 func newImportCommand() *cobra.Command {
 	return stub("import <type> <name>", "Import a single existing UC or cloud resource into ucm state.")
-}
-
-func newPolicyCheckCommand() *cobra.Command {
-	return stub("policy-check", "Run only the ucm validation mutators (tags, naming, required fields).")
 }
