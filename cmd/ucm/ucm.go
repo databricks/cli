@@ -35,6 +35,8 @@ Online documentation: https://docs.databricks.com/en/dev-tools/ucm/index.html`,
 		GroupID: "development",
 	}
 
+	cmd.PersistentFlags().StringP("target", "t", "", "ucm target to use (if applicable)")
+
 	cmd.AddCommand(newValidateCommand())
 	cmd.AddCommand(newSchemaCommand())
 	cmd.AddCommand(newPlanCommand())

@@ -21,14 +21,6 @@ func stub(use, short string) *cobra.Command {
 	return cmd
 }
 
-func newValidateCommand() *cobra.Command {
-	return stub("validate", "Validate ucm.yml for errors, warnings, policy violations.")
-}
-
-func newSchemaCommand() *cobra.Command {
-	return stub("schema", "Print the JSON schema for ucm.yml.")
-}
-
 func newPlanCommand() *cobra.Command {
 	return stub("plan", "Preview the changes ucm deploy would make.")
 }
