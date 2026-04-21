@@ -54,24 +54,21 @@ type PermissionsState struct {
 	EmbeddedSlice []StatePermission `json:"__embed__,omitempty"`
 }
 
+// permissionIDFields maps resource types that use a non-standard ID field for
+// the permissions API (most resources use "id").
+var permissionIDFields = map[string]string{
+	"model_serving_endpoints": "endpoint_id",   // internal numeric ID, not the name used in CRUD APIs
+	"models":                  "model_id",      // numeric model ID, not the model name used as CRUD state ID
+	"postgres_projects":       "project_id",    // bare project_id, not the hierarchical "projects/{id}" state ID
+	"vector_search_endpoints": "endpoint_uuid", // endpoint UUID, not the endpoint name used as deployment ID
+}
+
 // objectIDRef returns the reference expression for the permissions object ID.
-// Most resources use ".id", but some use a different field due to API differences.
-func objectIDRef(prefix, baseNode string) string {
-	// Model serving endpoints use an internal numeric ID for permissions (not the name used in CRUD APIs).
-	if strings.HasPrefix(baseNode, "resources.model_serving_endpoints.") {
-		return prefix + "${" + baseNode + ".endpoint_id}"
-	} else if strings.HasPrefix(baseNode, "resources.models.") {
-		// MLflow models use a numeric model ID for permissions (not the model name used as the CRUD state ID).
-		return prefix + "${" + baseNode + ".model_id}"
-	} else if strings.HasPrefix(baseNode, "resources.postgres_projects.") {
-		// Postgres projects store a hierarchical name as state ID; permissions API expects just the project_id.
-		return prefix + "${" + baseNode + ".project_id}"
-	} else if strings.HasPrefix(baseNode, "resources.vector_search_endpoints.") {
-		// Vector search endpoints use the endpoint name as deployment id; the permissions API uses endpoint UUID.
-		return prefix + "${" + baseNode + ".endpoint_uuid}"
-	} else {
-		return prefix + "${" + baseNode + ".id}"
+func objectIDRef(prefix, baseNode, resourceType string) string {
+	if field, ok := permissionIDFields[resourceType]; ok {
+		return prefix + "${" + baseNode + "." + field + "}"
 	}
+	return prefix + "${" + baseNode + ".id}"
 }
 
 func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
@@ -102,7 +99,7 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 			EmbeddedSlice: permissions,
 		},
 		Refs: map[string]string{
-			"object_id": objectIDRef(prefix, baseNode),
+			"object_id": objectIDRef(prefix, baseNode, resourceType),
 		},
 	}, nil
 }
