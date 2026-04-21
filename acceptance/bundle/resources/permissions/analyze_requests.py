@@ -3,10 +3,10 @@
 Analyze all requests recorded in subtests to highlight differences between direct and terraform.
 """
 
-import os
-import re
 import json
+import re
 import sys
+import tomllib
 from pathlib import Path
 from difflib import unified_diff
 
@@ -91,6 +91,20 @@ def to_slash(x):
     return str(x).replace("\\", "/")
 
 
+def load_supported_engines(path):
+    current = path
+    while True:
+        for name in ("out.test.toml", "test.toml"):
+            config_file = current / name
+            if config_file.exists():
+                with config_file.open("rb") as fobj:
+                    config = tomllib.load(fobj)
+                return set(config.get("EnvMatrix", {}).get("DATABRICKS_BUNDLE_ENGINE", []))
+        if current == Path("."):
+            return set()
+        current = current.parent
+
+
 def main():
     current_dir = Path(".")
 
@@ -104,10 +118,13 @@ def main():
         terraform_file = direct_file.parent / direct_file.name.replace(".direct.", ".terraform.")
 
         fname = to_slash(direct_file)
+        supported_engines = load_supported_engines(direct_file.parent)
 
         if terraform_file.exists():
             result, diff = compare_files(direct_file, terraform_file)
             print(result + " " + fname + diff)
+        elif "terraform" not in supported_engines:
+            print(f"DIRECT_ONLY {fname}")
         else:
             print(f"ERROR {fname}: Missing terraform file {to_slash(terraform_file)}")
 

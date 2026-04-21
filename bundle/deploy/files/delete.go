@@ -23,7 +23,7 @@ func (m *delete) Name() string {
 func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	cmdio.LogString(ctx, "Deleting files...")
 
-	err := b.WorkspaceClient().Workspace.Delete(ctx, workspace.Delete{
+	err := b.WorkspaceClient(ctx).Workspace.Delete(ctx, workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		Path:      b.Config.Workspace.RootPath,
 		Recursive: true,
 	})

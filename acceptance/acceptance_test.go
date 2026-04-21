@@ -275,8 +275,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("UV_CACHE_DIR", uvCache)
 
 	// UV_CACHE_DIR only applies to packages but not Python installations.
-	// UV_PYTHON_INSTALL_DIR ensures we cache Python downloads as well
-	uvInstall := filepath.Join(uvCache, "python_installs")
+	// UV_PYTHON_INSTALL_DIR points to the actual managed Python directory so
+	// uv finds pre-installed versions without falling back to system PATH search.
+	uvInstall := getUVPythonInstallDir(t)
 	t.Setenv("UV_PYTHON_INSTALL_DIR", uvInstall)
 
 	cloudEnv := os.Getenv("CLOUD_ENV")
@@ -512,10 +513,6 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		return "Disabled because RunsOnDbr is not set in " + configPath
 	}
 
-	if isTruePtr(config.Slow) && testing.Short() {
-		return "Disabled via Slow setting in " + configPath
-	}
-
 	isEnabled, isPresent := config.GOOS[runtime.GOOS]
 	if isPresent && !isEnabled {
 		return fmt.Sprintf("Disabled via GOOS.%s setting in %s", runtime.GOOS, configPath)
@@ -609,7 +606,7 @@ func runTest(t *testing.T,
 	if KeepTmp {
 		tempDirBase := filepath.Join(os.TempDir(), "acceptance")
 		_ = os.Mkdir(tempDirBase, 0o755)
-		tmpDir, err = os.MkdirTemp(tempDirBase, "")
+		tmpDir, err = os.MkdirTemp(tempDirBase, "") //nolint:usetesting // KeepTmp: dir must persist after test for debugging
 		require.NoError(t, err)
 		t.Logf("Created directory: %s", tmpDir)
 	} else if WorkspaceTmpDir {
@@ -1270,6 +1267,20 @@ func getUVDefaultCacheDir(t *testing.T) string {
 	} else {
 		return cacheDir + "/uv"
 	}
+}
+
+// getUVPythonInstallDir returns the directory where uv stores managed Python installations.
+// Must be called before HOME is overridden in tests, so that uv resolves the real install path.
+func getUVPythonInstallDir(t *testing.T) string {
+	cmd := exec.Command("uv", "python", "dir")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Logf("uv python dir failed: %v; falling back to cache-based path", err)
+		cacheDir, err2 := os.UserCacheDir()
+		require.NoError(t, err2)
+		return filepath.Join(cacheDir, "uv", "python_installs")
+	}
+	return strings.TrimSpace(string(out))
 }
 
 func RunCommand(t *testing.T, args []string, dir string, env []string) {

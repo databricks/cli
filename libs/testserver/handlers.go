@@ -18,7 +18,7 @@ import (
 var TestMetastore = catalog.MetastoreAssignment{
 	DefaultCatalogName: "hive_metastore",
 	MetastoreId:        "120efa64-9b68-46ba-be38-f319458430d2",
-	WorkspaceId:        470123456789500,
+	WorkspaceId:        900800700600,
 }
 
 func AddDefaultHandlers(server *Server) {
@@ -796,6 +796,32 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/tags", func(req Request) any {
 		return req.Workspace.ServingEndpointPatchTags(req, req.Vars["name"])
+	})
+
+	// Vector Search Endpoints:
+
+	server.Handle("POST", "/api/2.0/vector-search/endpoints", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/endpoints", func(req Request) any {
+		return MapList(req.Workspace, req.Workspace.VectorSearchEndpoints, "endpoints")
+	})
+
+	server.Handle("GET", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.VectorSearchEndpoints, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointUpdate(req, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/vector-search/endpoints/{endpoint_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.VectorSearchEndpoints, req.Vars["endpoint_name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/vector-search/endpoints/{endpoint_name}/budget-policy", func(req Request) any {
+		return req.Workspace.VectorSearchEndpointUpdateBudgetPolicy(req, req.Vars["endpoint_name"])
 	})
 
 	// Generic permissions endpoints

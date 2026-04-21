@@ -37,7 +37,7 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
-	appkitDefaultVersion = "template-v0.20.3"
+	appkitDefaultVersion = "template-v0.23.0"
 	defaultProfile       = "DEFAULT"
 )
 
@@ -76,6 +76,7 @@ func newInitCmd() *cobra.Command {
 		deploy       bool
 		run          string
 		setValues    []string
+		autoApprove  bool
 	)
 
 	cmd := &cobra.Command{
@@ -160,6 +161,7 @@ Environment variables:
 				runChanged:     cmd.Flags().Changed("run"),
 				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
 				setValues:      setValues,
+				autoApprove:    autoApprove,
 			})
 		},
 	}
@@ -178,6 +180,7 @@ Environment variables:
 	_ = cmd.Flags().MarkHidden("plugins")
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
 
 	return cmd
 }
@@ -198,6 +201,7 @@ type createOptions struct {
 	runChanged     bool     // true if --run flag was explicitly set
 	pluginsChanged bool     // true if --plugins flag was explicitly set
 	setValues      []string // --set plugin.resourceKey.field=value pairs
+	autoApprove    bool
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -332,7 +336,7 @@ func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, erro
 
 // promptForPluginsAndDeps prompts for plugins and their resource dependencies using the manifest.
 // skipDeployRunPrompt indicates whether to skip prompting for deploy/run (because flags were provided).
-func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt bool) (*prompt.CreateProjectConfig, error) {
+func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt, autoApprove bool) (*prompt.CreateProjectConfig, error) {
 	config := &prompt.CreateProjectConfig{
 		Dependencies: make(map[string]string),
 		Features:     preSelectedPlugins, // Reuse Features field for plugin names
@@ -394,14 +398,18 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 		}
 	}
 
-	// Step 3: Prompt for optional plugin resource dependencies
-	for _, r := range optionalResources {
-		values, err := promptForResource(ctx, r, theme, false)
-		if err != nil {
-			return nil, err
-		}
-		for k, v := range values {
-			config.Dependencies[k] = v
+	// Step 3: Prompt for optional plugin resource dependencies.
+	// With --auto-approve, optional resources are skipped here; they're only
+	// configured when their values are supplied via --set (merged later).
+	if !autoApprove {
+		for _, r := range optionalResources {
+			values, err := promptForResource(ctx, r, theme, false)
+			if err != nil {
+				return nil, err
+			}
+			for k, v := range values {
+				config.Dependencies[k] = v
+			}
 		}
 	}
 
@@ -830,7 +838,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	if isInteractive && !opts.pluginsChanged && !flagsMode {
 		// Interactive mode without --plugins flag: prompt for plugins, dependencies, description
-		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt)
+		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt, opts.autoApprove)
 		if err != nil {
 			return err
 		}

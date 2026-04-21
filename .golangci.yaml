@@ -20,6 +20,20 @@ linters:
     - copyloopvar
     - forbidigo
     - depguard
+    - usestdlibvars
+    - nilerr
+    - fatcontext
+    - nosprintfhostport
+    - recvcheck
+    - usetesting
+    - dupword
+    - misspell
+    - nilnesserr
+    - durationcheck
+    - exptostd
+    - gocheckcompilerdirectives
+    - asciicheck
+    - reassign
   settings:
     depguard:
       rules:
@@ -38,6 +52,15 @@ linters:
           deny:
             - pkg: "math/rand$"
               desc: "use math/rand/v2 instead of math/rand"
+        no-stdlib-log:
+          files:
+            - "**"
+            - "!**/bundle/docsgen/**"
+            - "!**/bundle/internal/schema/**"
+            - "!**/bundle/internal/validation/**"
+          deny:
+            - pkg: "log$"
+              desc: "use libs/log instead of the standard library log package"
     forbidigo:
       forbid:
         - pattern: 'term\.IsTerminal'

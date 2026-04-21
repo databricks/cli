@@ -10,6 +10,15 @@ on:
       - "bugbash-*"
 
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build (e.g. v1.2.3). Leave empty for a snapshot build of the current ref."
+        type: string
+        required: false
+      publish:
+        description: "Publish release artifacts to the GitHub release."
+        type: boolean
+        default: false
 
 jobs:
   cli:
@@ -22,7 +31,7 @@ jobs:
 
     permissions:
       id-token: write
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -30,9 +39,22 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          ref: ${{ inputs.tag || github.ref }}
+
+      # Check out the workflow's own ref into a side directory so local
+      # composite actions (e.g. setup-jfrog) and the goreleaser config are
+      # available even when the built ref is an older tag that predates them.
+      - name: Checkout workflow ref for local actions
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          path: .workflow-actions
+          sparse-checkout: |
+            .github
+            .goreleaser.yaml
 
       - name: Setup JFrog
-        uses: ./.github/actions/setup-jfrog
+        uses: ./.workflow-actions/.github/actions/setup-jfrog
 
       - name: Setup Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
@@ -73,12 +95,24 @@ jobs:
       - name: Hide snapshot tag to outsmart GoReleaser
         run: git tag -d snapshot || true
 
+      # Overlay scripts from the workflow ref so goreleaser hooks resolve
+      # correctly even when building an older tag that predates them.
+      # Register both injected paths in .git/info/exclude so goreleaser's
+      # dirty-state check does not flag them as untracked files.
+      - name: Sync workflow scripts to working directory
+        run: |
+          mkdir -p .github/scripts
+          cp -r .workflow-actions/.github/scripts/. .github/scripts/
+          printf '.workflow-actions/\n.github/scripts/\n' >> .git/info/exclude
+
       # Use --snapshot for branch builds (non-tag refs).
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         with:
           version: v2.14.3
-          args: release --skip=publish ${{ !startsWith(github.ref, 'refs/tags/') && '--snapshot' || '' }}
+          args: release ${{ !inputs.publish && '--skip=publish' || '' }} --config .workflow-actions/.goreleaser.yaml --skip=docker ${{ (!startsWith(github.ref, 'refs/tags/') && !inputs.tag) && '--snapshot' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Verify Windows binary signatures
         run: |
@@ -106,7 +140,7 @@ jobs:
 
     permissions:
       id-token: write
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -114,12 +148,25 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          ref: ${{ inputs.tag || github.ref }}
+
+      # Check out the workflow's own ref into a side directory so local
+      # composite actions (e.g. setup-jfrog) and the goreleaser config are
+      # available even when the built ref is an older tag that predates them.
+      - name: Checkout workflow ref for local actions
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          path: .workflow-actions
+          sparse-checkout: |
+            .github
+            .goreleaser.yaml
 
       - name: Setup JFrog
-        uses: ./.github/actions/setup-jfrog
+        uses: ./.workflow-actions/.github/actions/setup-jfrog
 
       - name: Install uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
         with:
           version: "0.6.5"
 

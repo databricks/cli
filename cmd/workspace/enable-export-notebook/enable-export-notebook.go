@@ -65,6 +65,7 @@ func newGetEnableExportNotebook() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -131,6 +132,7 @@ func newPatchEnableExportNotebook() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

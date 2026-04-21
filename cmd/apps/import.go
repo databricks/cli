@@ -196,7 +196,7 @@ Examples:
 					cmdio.LogString(ctx, "Cleaning up previous app folder")
 				}
 
-				err = w.Workspace.Delete(ctx, workspace.Delete{
+				err = w.Workspace.Delete(ctx, workspace.Delete{ //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 					Path:      oldSourceCodePath,
 					Recursive: true,
 				})
@@ -321,7 +321,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		}
 
 		// Verify the app exists
-		exists, err := resource.Exists(ctx, b.WorkspaceClient(), app.Name)
+		exists, err := resource.Exists(ctx, b.WorkspaceClient(ctx), app.Name)
 		if err != nil {
 			return fmt.Errorf("failed to verify app exists: %w", err)
 		}

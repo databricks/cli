@@ -229,7 +229,7 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 
 	appApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "active_deployment_id", mock.Anything, mock.Anything).Return(nil, nil)
 
-	// Second one should succeeed
+	// Second one should succeed
 	appApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
 		AppName: "my_app",
 		AppDeployment: apps.AppDeployment{

@@ -8,7 +8,7 @@ Databricks Workspace
   git-credentials                        Registers personal access token for Databricks to do operations on behalf of the user.
   repos                                  The Repos API allows users to manage their git repos.
   secrets                                The Secrets API allows you to manage secrets, secret scopes, and access permissions.
-  workspace                              The Workspace API allows you to list, import, export, and delete notebooks and folders.
+  workspace                              The Workspace API allows you to list, import, export, and delete workspace objects such as notebooks, files, folders, and dashboards.
 
 Compute
   cluster-policies                       You can use cluster policies to control users' ability to configure clusters based on a set of rules.

@@ -34,7 +34,7 @@ func setMap(ctx context.Context, m map[string]string) context.Context {
 	return context.WithValue(ctx, &envContextKey, m)
 }
 
-// Lookup key in the context or the the environment.
+// Lookup key in the context or the environment.
 // Context has precedence.
 func Lookup(ctx context.Context, key string) (string, bool) {
 	m := getMap(ctx)

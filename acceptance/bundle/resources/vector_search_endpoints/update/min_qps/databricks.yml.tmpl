@@ -1,0 +1,15 @@
+bundle:
+  name: update-vs-endpoint-min-qps-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  vector_search_endpoints:
+    my_endpoint:
+      name: vs-endpoint-$UNIQUE_NAME
+      endpoint_type: STANDARD
+      min_qps: 1
+      permissions:
+        - level: CAN_USE
+          group_name: admins

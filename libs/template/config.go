@@ -176,7 +176,7 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 	// Validate the partial config against skip_prompt_if schema
 	validationErr := p.Schema.SkipPromptIf.ValidateInstance(c.values)
 	if validationErr != nil {
-		return false, nil
+		return false, nil //nolint:nilerr // validation failure means skip condition not met
 	}
 
 	if p.Schema.Default == nil {

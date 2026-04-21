@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+resources:
+  vector_search_endpoints:
+    foo:
+      name: vs-permissions-endpoint
+      endpoint_type: STANDARD
+      permissions:
+        - level: CAN_USE
+          user_name: viewer@example.com
+        - level: CAN_MANAGE
+          group_name: data-team
+        - level: CAN_MANAGE
+          service_principal_name: f37d18cd-98a8-4db5-8112-12dd0a6bfe38
+        - level: CAN_MANAGE
+          user_name: tester@databricks.com

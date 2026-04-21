@@ -41,6 +41,7 @@ EnvMatrix.INPUT_CONFIG = [
     "model_with_permissions.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",
     "pipeline.yml.tmpl",
+    "pipeline_config_dots.yml.tmpl",
     "postgres_branch.yml.tmpl",
     "postgres_endpoint.yml.tmpl",
     "postgres_project.yml.tmpl",
@@ -51,7 +52,9 @@ EnvMatrix.INPUT_CONFIG = [
     "secret_scope.yml.tmpl",
     "secret_scope_default_backend_type.yml.tmpl",
     "secret_scope_with_permissions.yml.tmpl",
+    "sql_warehouse.yml.tmpl",
     "synced_database_table.yml.tmpl",
+    "vector_search_endpoint.yml.tmpl",
     "volume.yml.tmpl",
 ]
 

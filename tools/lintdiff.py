@@ -5,7 +5,7 @@
 """
 Drop in replacement for golangci-lint that runs it only on changed packages.
 
-Changes are calculated as diff against main by default, use --ref or -H/--head to change this.
+Changes are calculated as diff against the merge base with main by default, use --ref or -H/--head to change this.
 """
 
 import os
@@ -42,10 +42,13 @@ def main():
     if gitroot:
         os.chdir(gitroot[0])
 
-    # Get list of changed files relative to repo root.
-    # Note: Paths are always relative to repo root, even when running from subdirectories.
-    # Example: Running from tools/ returns 'tools/lintdiff.py' rather than just 'lintdiff.py'.
-    changed = parse_lines(["git", "diff", "--name-only", args.ref, "--", "."])
+    # Resolve the merge base between the ref and HEAD so that we only lint
+    # files changed on this branch, not files that changed on the ref since
+    # the branch point.
+    merge_base = parse_lines(["git", "merge-base", args.ref, "HEAD"])
+    base = merge_base[0] if merge_base else args.ref
+
+    changed = parse_lines(["git", "diff", "--name-only", base, "--", "."])
 
     cmd = args.args[:]
 

@@ -168,7 +168,7 @@ func (s *handleState) appendAttr(a slog.Attr) {
 		str := a.Value.String()
 		format := "%s"
 
-		// Quote values wih spaces, to make them easy to parse.
+		// Quote values with spaces, to make them easy to parse.
 		if strings.ContainsAny(str, " \t\n") {
 			format = "%q"
 		}

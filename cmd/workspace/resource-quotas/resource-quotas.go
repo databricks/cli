@@ -3,6 +3,8 @@
 package resource_quotas
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -92,6 +94,7 @@ func newGetQuota() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -120,9 +123,19 @@ func newListQuotas() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listQuotasReq catalog.ListQuotasRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listQuotasLimit int
 
 	cmd.Flags().IntVar(&listQuotasReq.MaxResults, "max-results", listQuotasReq.MaxResults, `The number of quotas to return.`)
-	cmd.Flags().StringVar(&listQuotasReq.PageToken, "page-token", listQuotasReq.PageToken, `Opaque token for the next page of results.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listQuotasLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listQuotasReq.PageToken, "page-token", listQuotasReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-quotas"
 	cmd.Short = `List all resource quotas under a metastore.`
@@ -150,6 +163,13 @@ func newListQuotas() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.ResourceQuotas.ListQuotas(ctx, listQuotasReq)
+		if listQuotasLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listQuotasLimit)
+		}
+		if listQuotasLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listQuotasLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 

@@ -1,22 +1,22 @@
 # NEXT CHANGELOG
 
-## Release v0.297.0
+## Release v0.298.0
 
 ### Notable Changes
 
 ### CLI
-* Auth commands now accept a profile name as a positional argument ([#4840](https://github.com/databricks/cli/pull/4840))
 
-* Add `auth logout` command for clearing cached OAuth tokens and optionally removing profiles ([#4613](https://github.com/databricks/cli/pull/4613), [#4616](https://github.com/databricks/cli/pull/4616), [#4647](https://github.com/databricks/cli/pull/4647))
+* Added `--limit` flag to all paginated list commands for client-side result capping ([#4984](https://github.com/databricks/cli/pull/4984)).
+* Accept `yes` in addition to `y` for confirmation prompts, and show `[y/N]` to indicate that no is the default.
 
 ### Bundles
+* Remove `experimental-jobs-as-code` template, superseded by `pydabs` ([#4999](https://github.com/databricks/cli/pull/4999)).
+* engine/direct: Added support for Vector Search Endpoints ([#4887](https://github.com/databricks/cli/pull/4887))
 * Fix `bundle generate` job to preserve nested notebook directory structure ([#4596](https://github.com/databricks/cli/pull/4596))
-* Added support for lifecycle.started option for apps ([#4672](https://github.com/databricks/cli/pull/4672))
-* engine/direct: Fix permissions for resources.models ([#4941](https://github.com/databricks/cli/pull/4941))
-* Fix resource references not correctly resolved in apps config section ([#4964](https://github.com/databricks/cli/pull/4964))
-* Allow run_as for dashboards with embed_credentials set to false ([#4961](https://github.com/databricks/cli/pull/4961))
-* direct: Pass changed fields into update mask for apps instead of wildcard ([#4963](https://github.com/databricks/cli/pull/4963))
 
 ### Dependency updates
+
+* Bump `github.com/databricks/databricks-sdk-go` from v0.126.0 to v0.128.0 ([#4984](https://github.com/databricks/cli/pull/4984), [#5031](https://github.com/databricks/cli/pull/5031)).
+* Bump Go toolchain to 1.25.9 ([#5004](https://github.com/databricks/cli/pull/5004))
 
 ### API Changes
