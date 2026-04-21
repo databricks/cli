@@ -12,7 +12,9 @@ import (
 
 type AppSpace struct {
 	BaseResource
-	apps.Space // nolint Space struct also defines Id field with the same json tag "id"
+	apps.Space //nolint:govet // Space struct also defines Id field with the same json tag "id"
+
+	Permissions []AppSpacePermission `json:"permissions,omitempty"`
 }
 
 func (s *AppSpace) UnmarshalJSON(b []byte) error {
@@ -41,12 +43,8 @@ func (*AppSpace) ResourceDescription() ResourceDescription {
 	}
 }
 
-func (s *AppSpace) InitializeURL(baseURL url.URL) {
-	if s.ModifiedStatus == "" || s.ModifiedStatus == ModifiedStatusCreated {
-		return
-	}
-	baseURL.Path = "apps/spaces/" + s.GetName()
-	s.URL = baseURL.String()
+func (s *AppSpace) InitializeURL(_ url.URL) {
+	// App spaces do not currently have a stable UI URL.
 }
 
 func (s *AppSpace) GetName() string {
