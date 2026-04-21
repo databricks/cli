@@ -45,15 +45,15 @@ Common invocations:
 			return fmt.Errorf("resolve deploy options: %w", err)
 		}
 
-		result := phases.Plan(ctx, u, opts)
+		outcome := phases.Plan(ctx, u, opts)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
-		if result == nil {
+		if outcome == nil {
 			return root.ErrAlreadyPrinted
 		}
 
-		plan := result.Plan
+		plan := outcome.Plan
 		if plan == nil {
 			plan = deployplan.NewPlanTerraform()
 		}

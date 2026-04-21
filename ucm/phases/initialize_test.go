@@ -23,20 +23,24 @@ func TestInitializeHappyPath(t *testing.T) {
 	assert.Equal(t, "default", setting.Source)
 }
 
-func TestInitializeDirectEngineIsStubbed(t *testing.T) {
+// TestInitializeDirectEngineSkipsPull asserts Initialize for the direct
+// engine resolves the engine but does NOT call deploy.Pull — direct state
+// is local-only, so pulling would error on a zero-valued Backend without
+// adding value.
+func TestInitializeDirectEngineSkipsPull(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Ucm.Engine = engine.EngineDirect
 
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 
-	setting := phases.Initialize(ctx, f.u, phases.Options{Backend: f.backend})
+	// Zero-valued Backend — direct mode must not call deploy.Pull, so this
+	// is not an error.
+	setting := phases.Initialize(ctx, f.u, phases.Options{})
 
-	assert.True(t, logdiag.HasError(ctx))
-	diags := logdiag.FlushCollected(ctx)
-	require.Len(t, diags, 1)
-	assert.Contains(t, diags[0].Summary, "direct engine is not yet implemented")
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
 	assert.Equal(t, engine.EngineDirect, setting.Type)
+	assert.Equal(t, "config", setting.Source)
 }
 
 func TestInitializeDirectEngineViaEnv(t *testing.T) {
@@ -47,7 +51,7 @@ func TestInitializeDirectEngineViaEnv(t *testing.T) {
 
 	setting := phases.Initialize(ctx, f.u, phases.Options{Backend: f.backend})
 
-	assert.True(t, logdiag.HasError(ctx))
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
 	assert.Equal(t, engine.EngineDirect, setting.Type)
 	assert.Equal(t, "env", setting.Source)
 }

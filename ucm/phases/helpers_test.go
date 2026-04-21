@@ -11,8 +11,11 @@ import (
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/deploy"
+	"github.com/databricks/cli/ucm/deploy/direct"
 	ucmfiler "github.com/databricks/cli/ucm/deploy/filer"
 	"github.com/databricks/cli/ucm/deploy/terraform"
+	"github.com/databricks/cli/ucm/phases"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/require"
 )
 
@@ -112,3 +115,48 @@ func newFixture(t *testing.T) *fixture {
 // errSentinel is a stable error identity for tests that assert the wrapped
 // cause propagates through logdiag-formatted diagnostics.
 var errSentinel = errors.New("sentinel")
+
+// fakeDirectClient is the phases-level stand-in for direct.Client. It lets
+// direct-engine tests exercise Plan/Deploy/Destroy without a real SDK. For
+// the zero-resource fixture tests where Apply has nothing to do, the fake is
+// never invoked — phases.Options.DirectClientFactory just needs to hand back
+// a non-nil Client to satisfy the factory signature.
+type fakeDirectClient struct{}
+
+func (*fakeDirectClient) GetCatalog(_ context.Context, _ string) (*catalog.CatalogInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) CreateCatalog(_ context.Context, _ catalog.CreateCatalog) (*catalog.CatalogInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) UpdateCatalog(_ context.Context, _ catalog.UpdateCatalog) (*catalog.CatalogInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) DeleteCatalog(_ context.Context, _ string) error { return nil }
+
+func (*fakeDirectClient) GetSchema(_ context.Context, _ string) (*catalog.SchemaInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) CreateSchema(_ context.Context, _ catalog.CreateSchema) (*catalog.SchemaInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) UpdateSchema(_ context.Context, _ catalog.UpdateSchema) (*catalog.SchemaInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) DeleteSchema(_ context.Context, _ string) error { return nil }
+
+func (*fakeDirectClient) UpdatePermissions(_ context.Context, _ catalog.UpdatePermissions) error {
+	return nil
+}
+
+func fakeDirectClientFactory() phases.DirectClientFactory {
+	return func(_ context.Context, _ *ucm.Ucm) (direct.Client, error) {
+		return &fakeDirectClient{}, nil
+	}
+}

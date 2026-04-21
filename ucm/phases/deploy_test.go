@@ -47,20 +47,24 @@ func TestDeployHappyPath(t *testing.T) {
 	assert.Equal(t, 1, readRemoteSeq(t, f))
 }
 
-func TestDeployShortCircuitsOnDirectEngine(t *testing.T) {
+// TestDeployDirectEngineSkipsTerraform asserts that when the direct engine
+// is selected Deploy routes through direct.Apply rather than the terraform
+// wrapper: the terraform fake's counters stay at zero, no remote state is
+// pushed, and no error is raised by the happy empty-config path.
+func TestDeployDirectEngineSkipsTerraform(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Ucm.Engine = engine.EngineDirect
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 
 	phases.Deploy(ctx, f.u, phases.Options{
-		Backend:          f.backend,
-		TerraformFactory: fakeTfFactory(f.tf),
+		TerraformFactory:    fakeTfFactory(f.tf),
+		DirectClientFactory: fakeDirectClientFactory(),
 	})
 
-	assert.True(t, logdiag.HasError(ctx))
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
 	assert.Equal(t, 0, f.tf.ApplyCalls)
-	assert.Equal(t, -1, readRemoteSeq(t, f), "remote state must not advance when apply is skipped")
+	assert.Equal(t, -1, readRemoteSeq(t, f), "direct engine must never touch remote state")
 }
 
 func TestDeployBailsOnApplyError(t *testing.T) {
