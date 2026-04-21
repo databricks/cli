@@ -1,0 +1,9 @@
+ucm:
+  name: plan-no-changes
+  engine: direct
+
+resources:
+  catalogs:
+    main:
+      name: main
+      comment: plan-no-changes catalog
