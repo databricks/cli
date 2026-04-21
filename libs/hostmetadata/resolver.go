@@ -28,14 +28,12 @@ const (
 // resolver to return (nil, nil) without running fetch or writing to positive.
 var errNegativeHit = errors.New("negative cache hit")
 
-// hostFingerprint is the cache key for a given host.
 type hostFingerprint struct {
 	Host string `json:"host"`
 }
 
-// negativeSentinel records a failed host-metadata fetch in the negative cache.
-// Only the presence of the entry matters; no details about the original error
-// are persisted to disk.
+// negativeSentinel marks a host whose last fetch failed. Only presence matters;
+// the original error text is deliberately not persisted to disk.
 type negativeSentinel struct {
 	Error bool `json:"error"`
 }
@@ -52,11 +50,7 @@ func init() {
 // so subsequent calls within negativeCacheTTL skip the network. The fetch
 // function is invoked on miss, typically cfg.DefaultHostMetadataResolver().
 func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver {
-	// cache.NewCache uses ctx only for env lookups and cleanup-walk debug
-	// logs; there is no cancellation signal to propagate. Using a background
-	// context keeps NewResolver callable from sites without a caller ctx
-	// in scope (e.g. the factory invoked from Config.EnsureResolved).
-	ctx := context.Background() //nolint:gocritic // no caller ctx and cache.NewCache does not use ctx for cancellation.
+	ctx := context.Background() //nolint:gocritic // no caller ctx; cache.NewCache uses ctx only for env lookups and cleanup-walk logs.
 	positive := cache.NewCache(ctx, positiveCacheComponent, positiveCacheTTL, nil)
 	negative := cache.NewCache(ctx, negativeCacheComponent, negativeCacheTTL, nil)
 

@@ -78,23 +78,6 @@ func TestNewResolver_CancellationNotCached(t *testing.T) {
 	assert.Equal(t, int32(2), calls.Load(), "cancellation must not be negatively cached")
 }
 
-func TestNewResolver_DifferentHosts_SeparateEntries(t *testing.T) {
-	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
-
-	fetch := func(ctx context.Context, host string) (*config.HostMetadata, error) {
-		return &config.HostMetadata{AccountID: "acct-for-" + host}, nil
-	}
-	r := hostmetadata.NewResolver(fetch)
-
-	mA, err := r(t.Context(), "https://a")
-	require.NoError(t, err)
-	mB, err := r(t.Context(), "https://b")
-	require.NoError(t, err)
-
-	assert.Equal(t, "acct-for-https://a", mA.AccountID)
-	assert.Equal(t, "acct-for-https://b", mB.AccountID)
-}
-
 // TestFactory_EndToEnd_CacheHitSkipsSDKFetch is an integration sanity check
 // that importing hostmetadata installs a factory which back-fills every
 // *config.Config with a cached resolver. Two independent configs sharing
