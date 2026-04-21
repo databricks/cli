@@ -1,6 +1,9 @@
 package dresources
 
 import (
+	"reflect"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/testserver"
@@ -119,4 +122,29 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 	assert.Equal(t, "test-app", name)
 	assert.Equal(t, 2, createCallCount, "expected Create to be called twice")
 	assert.Equal(t, 1, getCallCount, "expected Get to be called once to check app state")
+}
+
+var nonUpdatableFields = []string{
+	"id", "url", "updater", "create_time",
+	"update_time", "space", "service_principal_name", "service_principal_id",
+	"service_principal_client_id", "oauth2_app_client_id", "oauth2_app_integration_id", "pending_deployment",
+	"active_deployment", "app_status", "compute_status", "creator", "default_source_code_path",
+	"effective_budget_policy_id", "effective_usage_policy_id", "effective_user_api_scopes", "name",
+}
+
+func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
+	// iterate over all apps.App fields using reflection and ensure that UpdateMaskFields contains all of them.
+	app := apps.App{}
+	fields := reflect.TypeOf(app)
+	for i := 0; i < fields.NumField(); i++ {
+		field := fields.Field(i)
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "" || jsonTag == "-" {
+			continue
+		}
+		jsonTag = strings.TrimSuffix(jsonTag, ",omitempty")
+		if !slices.Contains(nonUpdatableFields, jsonTag) {
+			assert.Contains(t, UpdateMaskFields, jsonTag, "field %s is not in UpdateMaskFields and not marked as non-updatable", jsonTag)
+		}
+	}
 }
