@@ -1,0 +1,51 @@
+bundle:
+  name: genie-space-complex
+
+workspace:
+  resource_path: /foo/bar
+
+resources:
+  genie_spaces:
+    # Test with all features enabled
+    full_featured:
+      warehouse_id: "my-warehouse-1234"
+      title: "Full Featured Genie Space"
+      description: "A comprehensive test of all genie space features"
+      file_path: ./full_featured.genie.json
+
+    # Test with inline serialized_space (YAML syntax)
+    inline_yaml:
+      warehouse_id: "my-warehouse-1234"
+      title: "Inline YAML Genie Space"
+      serialized_space:
+        version: 1
+        data_sources:
+          tables:
+            - identifier: main.schema.table1
+              column_configs:
+                - column_name: id
+                  get_example_values: true
+                  build_value_dictionary: true
+                - column_name: name
+                  get_example_values: true
+        instructions:
+          text_instructions:
+            - id: inst-001
+              content:
+                - "This is a text instruction.\n"
+                - "It spans multiple lines."
+          example_question_sqls:
+            - id: eq-001
+              question:
+                - "How many records are there?"
+              sql:
+                - "SELECT COUNT(*) FROM main.schema.table1"
+
+    # Test with empty but valid structure
+    minimal_valid:
+      warehouse_id: "my-warehouse-1234"
+      title: "Minimal Valid"
+      serialized_space:
+        version: 1
+        data_sources:
+          tables: []

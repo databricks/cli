@@ -25,6 +25,7 @@ var requestObjectTypeToObjectType = map[string]string{
 	"sql/alerts":              "alert",
 	"sql/queries":             "query",
 	"dashboards":              "dashboard",
+	"genie/spaces":            "genie-space",
 	"experiments":             "mlflowExperiment",
 	"registered-models":       "registered-model",
 	"serving-endpoints":       "serving-endpoint",

@@ -1,0 +1,19 @@
+# Validate complex genie spaces and check the serialized_space structure is preserved
+$CLI bundle validate -o json | jq '{
+  full_featured: .resources.genie_spaces.full_featured | {
+    title,
+    warehouse_id,
+    serialized_space_is_string: (.serialized_space | type == "string")
+  },
+  inline_yaml: .resources.genie_spaces.inline_yaml | {
+    title,
+    serialized_space_type: (.serialized_space | type),
+    tables_count: (.serialized_space.data_sources.tables | length),
+    has_column_configs: ((.serialized_space.data_sources.tables[0].column_configs | length) > 0),
+    has_text_instructions: ((.serialized_space.instructions.text_instructions | length) > 0)
+  },
+  minimal_valid: .resources.genie_spaces.minimal_valid | {
+    title,
+    tables_count: (.serialized_space.data_sources.tables | length)
+  }
+}'

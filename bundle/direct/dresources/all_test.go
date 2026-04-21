@@ -495,6 +495,25 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"genie_spaces.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.Genie.CreateSpace(ctx, dashboards.GenieCreateSpaceRequest{
+			Title:           "genie-space-permissions",
+			WarehouseId:     "test-warehouse-id",
+			SerializedSpace: "{}",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/genie/spaces/" + resp.SpaceId,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
 	"model_serving_endpoints.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		waiter, err := client.ServingEndpoints.Create(ctx, serving.CreateServingEndpoint{
 			Name: "endpoint-permissions",

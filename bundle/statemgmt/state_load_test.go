@@ -39,6 +39,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.volumes.test_volume":                                 {ID: "1"},
 		"resources.clusters.test_cluster":                               {ID: "1"},
 		"resources.dashboards.test_dashboard":                           {ID: "1"},
+		"resources.genie_spaces.test_genie_space":                       {ID: "1"},
 		"resources.apps.test_app":                                       {ID: "app1"},
 		"resources.secret_scopes.test_secret_scope":                     {ID: "secret_scope1"},
 		"resources.sql_warehouses.test_sql_warehouse":                   {ID: "1"},
@@ -95,6 +96,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
 
 	assert.Equal(t, "app1", config.Resources.Apps["test_app"].ID)
 	assert.Empty(t, config.Resources.Apps["test_app"].Name)
@@ -225,6 +229,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_dashboard": {
 					DashboardConfig: resources.DashboardConfig{
 						DisplayName: "test_dashboard",
+					},
+				},
+			},
+			GenieSpaces: map[string]*resources.GenieSpace{
+				"test_genie_space": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space",
 					},
 				},
 			},
@@ -373,6 +384,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
 
 	assert.Empty(t, config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app"].ModifiedStatus)
@@ -568,6 +582,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_dashboard_new": {
 					DashboardConfig: resources.DashboardConfig{
 						DisplayName: "test_dashboard_new",
+					},
+				},
+			},
+			GenieSpaces: map[string]*resources.GenieSpace{
+				"test_genie_space": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space",
+					},
+				},
+				"test_genie_space_new": {
+					GenieSpaceConfig: resources.GenieSpaceConfig{
+						Title: "test_genie_space_new",
 					},
 				},
 			},
@@ -767,6 +793,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.clusters.test_cluster_old":                               {ID: "2"},
 		"resources.dashboards.test_dashboard":                               {ID: "1"},
 		"resources.dashboards.test_dashboard_old":                           {ID: "2"},
+		"resources.genie_spaces.test_genie_space":                           {ID: "1"},
+		"resources.genie_spaces.test_genie_space_old":                       {ID: "2"},
 		"resources.apps.test_app":                                           {ID: "test_app"},
 		"resources.apps.test_app_old":                                       {ID: "test_app_old"},
 		"resources.secret_scopes.test_secret_scope":                         {ID: "test_secret_scope"},
@@ -876,6 +904,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.Dashboards["test_dashboard_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.GenieSpaces["test_genie_space"].ID)
+	assert.Equal(t, "", config.Resources.GenieSpaces["test_genie_space"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.GenieSpaces["test_genie_space_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.GenieSpaces["test_genie_space_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.GenieSpaces["test_genie_space_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.GenieSpaces["test_genie_space_new"].ModifiedStatus)
 
 	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)
 	assert.Empty(t, config.Resources.Apps["test_app"].ModifiedStatus)

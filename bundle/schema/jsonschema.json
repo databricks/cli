@@ -760,6 +760,47 @@
                   }
                 ]
               },
+              "resources.GenieSpace": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "description": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "file_path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "parent_path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      },
+                      "serialized_space": {
+                        "$ref": "#/$defs/interface"
+                      },
+                      "space_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "title": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "warehouse_id": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Job": {
                 "oneOf": [
                   {
@@ -2654,6 +2695,9 @@
                     },
                     "external_locations": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
+                    },
+                    "genie_spaces": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace"
                     },
                     "jobs": {
                       "description": "The job definitions for the bundle, where each key is the name of the job.",
@@ -12198,6 +12242,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.GenieSpace": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.GenieSpace"
                       }
                     },
                     {

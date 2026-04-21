@@ -1,0 +1,3 @@
+# Genie spaces are only deployed via direct deployment engine
+[Env]
+DATABRICKS_BUNDLE_ENGINE = "direct"
