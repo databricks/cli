@@ -87,7 +87,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 
 		path := dyn.MustPathFromString("resources.dashboards." + dashboard.Name)
 		loc := b.Config.GetLocation(path.String())
-		actual, err := b.WorkspaceClient().Lakeview.GetByDashboardId(ctx, dashboard.ID)
+		actual, err := b.WorkspaceClient(ctx).Lakeview.GetByDashboardId(ctx, dashboard.ID)
 		if err != nil {
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,

@@ -1,0 +1,106 @@
+name: Bump Go toolchain
+
+on:
+  schedule:
+    # Run daily at 05:00 UTC.
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: >
+          Go toolchain version to use (e.g. "go1.25.9").
+          If empty, the latest patch release is detected automatically.
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump-go-toolchain:
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Determine current toolchain version
+        id: current
+        run: |
+          toolchain=$(grep '^toolchain' go.mod | awk '{print $2}')
+          minor=$(echo "$toolchain" | sed 's/^go//' | cut -d. -f1,2)
+          echo "toolchain=$toolchain" >> "$GITHUB_OUTPUT"
+          echo "minor=$minor" >> "$GITHUB_OUTPUT"
+
+      - name: Determine latest patch release
+        id: latest
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            if ! echo "$INPUT_VERSION" | grep -qE '^go[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "Invalid version format: $INPUT_VERSION"
+              exit 1
+            fi
+            toolchain="$INPUT_VERSION"
+          else
+            minor=${{ steps.current.outputs.minor }}
+            toolchain=$(
+              curl -fsSL 'https://go.dev/dl/?mode=json' |
+                jq -r --arg minor "go${minor}." '[.[] | select(.version | startswith($minor))][0].version // empty'
+            )
+            if [ -z "$toolchain" ]; then
+              echo "No release found for go${minor}.x"
+              exit 1
+            fi
+          fi
+          echo "toolchain=$toolchain" >> "$GITHUB_OUTPUT"
+
+      - name: Check if update is needed
+        id: check
+        run: |
+          if [ "${{ steps.current.outputs.toolchain }}" = "${{ steps.latest.outputs.toolchain }}" ]; then
+            echo "Up to date: ${{ steps.current.outputs.toolchain }}"
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Update available: ${{ steps.current.outputs.toolchain }} -> ${{ steps.latest.outputs.toolchain }}"
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Go
+        if: steps.check.outputs.needed == 'true'
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+
+      - name: Update go.mod files
+        if: steps.check.outputs.needed == 'true'
+        env:
+          TOOLCHAIN: ${{ steps.latest.outputs.toolchain }}
+        run: |
+          while IFS= read -r modfile; do
+            dir=$(dirname "$modfile")
+            if grep -q '^toolchain' "$modfile"; then
+              (cd "$dir" && go mod edit -toolchain="$TOOLCHAIN")
+            fi
+          done < <(git ls-files '**/go.mod' 'go.mod')
+
+      - name: Show diff
+        if: steps.check.outputs.needed == 'true'
+        run: git diff
+
+      - name: Create pull request
+        if: steps.check.outputs.needed == 'true' && inputs.version == ''
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+        with:
+          branch: auto/bump-go-toolchain
+          commit-message: "Bump Go toolchain to ${{ steps.latest.outputs.toolchain }}"
+          title: "Bump Go toolchain to ${{ steps.latest.outputs.toolchain }}"
+          body: |
+            Bump Go toolchain from `${{ steps.current.outputs.toolchain }}` to `${{ steps.latest.outputs.toolchain }}`.
+
+            Release notes: https://go.dev/doc/devel/release#${{ steps.latest.outputs.toolchain }}
+          reviewers: simonfaltum,andrewnester,anton-107,denik,janniklasrose,pietern,shreyas-goenka
+          labels: dependencies

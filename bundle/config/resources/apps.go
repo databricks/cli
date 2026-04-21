@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -94,8 +95,7 @@ func (a *App) InitializeURL(baseURL url.URL) {
 	if a.ModifiedStatus == "" || a.ModifiedStatus == ModifiedStatusCreated {
 		return
 	}
-	baseURL.Path = "apps/" + a.GetName()
-	a.URL = baseURL.String()
+	a.URL = workspaceurls.ResourceURL(baseURL, "apps", a.GetName())
 }
 
 func (a *App) GetName() string {

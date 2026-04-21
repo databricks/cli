@@ -22,10 +22,10 @@ func (m *acquire) Name() string {
 	return "lock:acquire"
 }
 
-func (m *acquire) init(b *bundle.Bundle) error {
+func (m *acquire) init(ctx context.Context, b *bundle.Bundle) error {
 	user := b.Config.Workspace.CurrentUser.UserName
 	dir := b.Config.Workspace.StatePath
-	l, err := locker.CreateLocker(user, dir, b.WorkspaceClient())
+	l, err := locker.CreateLocker(user, dir, b.WorkspaceClient(ctx))
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return nil
 	}
 
-	err := m.init(b)
+	err := m.init(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -190,6 +191,37 @@ func TestCompat_splitAtLastNewLine(t *testing.T) {
 			first, last := splitAtLastNewLine(tt.input)
 			assert.Equal(t, tt.wantFirst, first)
 			assert.Equal(t, tt.wantLast, last)
+		})
+	}
+}
+
+func TestCompat_AskYesOrNo(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{name: "y", input: "y\n", want: true},
+		{name: "yes", input: "yes\n", want: true},
+		{name: "Y", input: "Y\n", want: true},
+		{name: "YES", input: "YES\n", want: true},
+		{name: "Yes", input: "Yes\n", want: true},
+		{name: "y with surrounding whitespace", input: "  y  \n", want: true},
+		{name: "yes with CRLF", input: "yes\r\n", want: true},
+		{name: "empty", input: "\n", want: false},
+		{name: "n", input: "n\n", want: false},
+		{name: "no", input: "no\n", want: false},
+		{name: "yeah", input: "yeah\n", want: false},
+		{name: "gibberish", input: "foobar\n", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := t.Context()
+			ctx = InContext(ctx, NewIO(ctx, flags.OutputText, strings.NewReader(tt.input), io.Discard, io.Discard, "", ""))
+			got, err := AskYesOrNo(ctx, "Proceed?")
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

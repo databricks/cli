@@ -517,7 +517,7 @@ func isEmpty(rv reflect.Value) bool {
 		return rv.Len() == 0
 	}
 
-	// Certain structs come up set even if fully empty and and not set by client, e.g. email_notifications and webhook_notifications
+	// Certain structs come up set even if fully empty and not set by client, e.g. email_notifications and webhook_notifications
 	if isEmptyStruct(rv) {
 		return true
 	}

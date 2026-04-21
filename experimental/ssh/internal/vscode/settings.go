@@ -65,8 +65,12 @@ func logSkippingSettings(ctx context.Context, msg string) {
 	cmdio.LogString(ctx, msg+"\n\nWARNING: the connection might not work as expected\n")
 }
 
-func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) error {
-	if !cmdio.IsPromptSupported(ctx) {
+// CheckAndUpdateSettings verifies that the IDE settings file contains the
+// required entries for this SSH connection, and applies missing entries after
+// confirming with the user. When autoApprove is true, updates are applied
+// without prompting.
+func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string, autoApprove bool) error {
+	if !cmdio.IsPromptSupported(ctx) && !autoApprove {
 		logSkippingSettings(ctx, "Skipping IDE settings check: prompts not supported")
 		return nil
 	}
@@ -79,7 +83,7 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 	settings, err := loadSettings(settingsPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return handleMissingFile(ctx, ide, connectionName, settingsPath)
+			return handleMissingFile(ctx, ide, connectionName, settingsPath, autoApprove)
 		}
 		return fmt.Errorf("failed to load settings: %w", err)
 	}
@@ -90,13 +94,17 @@ func CheckAndUpdateSettings(ctx context.Context, ide, connectionName string) err
 		return nil
 	}
 
-	shouldUpdate, err := promptUserForUpdate(ctx, ide, connectionName, missing)
-	if err != nil {
-		return fmt.Errorf("failed to prompt user: %w", err)
-	}
-	if !shouldUpdate {
-		logSkippingSettings(ctx, "Skipping IDE settings update")
-		return nil
+	if !autoApprove {
+		shouldUpdate, err := promptUserForUpdate(ctx, ide, connectionName, missing)
+		if err != nil {
+			return fmt.Errorf("failed to prompt user: %w", err)
+		}
+		if !shouldUpdate {
+			logSkippingSettings(ctx, "Skipping IDE settings update")
+			return nil
+		}
+	} else {
+		cmdio.LogString(ctx, fmt.Sprintf("Applying %s settings for '%s' (--auto-approve)", getIDE(ide).Name, connectionName))
 	}
 
 	if data, err := os.ReadFile(settingsPath); err == nil {
@@ -249,20 +257,24 @@ func promptUserForUpdate(ctx context.Context, ide, connectionName string, missin
 	return strings.ToLower(ans) == "y", nil
 }
 
-func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath string) error {
+func handleMissingFile(ctx context.Context, ide, connectionName, settingsPath string, autoApprove bool) error {
 	missing := &missingSettings{
 		portRange:      true,
 		platform:       true,
 		listenOnSocket: true,
 		extensions:     []string{pythonExtension, jupyterExtension, databricksExtension},
 	}
-	shouldCreate, err := promptUserForUpdate(ctx, ide, connectionName, missing)
-	if err != nil {
-		return fmt.Errorf("failed to prompt user: %w", err)
-	}
-	if !shouldCreate {
-		logSkippingSettings(ctx, "Skipping IDE settings creation")
-		return nil
+	if !autoApprove {
+		shouldCreate, err := promptUserForUpdate(ctx, ide, connectionName, missing)
+		if err != nil {
+			return fmt.Errorf("failed to prompt user: %w", err)
+		}
+		if !shouldCreate {
+			logSkippingSettings(ctx, "Skipping IDE settings creation")
+			return nil
+		}
+	} else {
+		cmdio.LogString(ctx, fmt.Sprintf("Creating %s settings for '%s' (--auto-approve)", getIDE(ide).Name, connectionName))
 	}
 
 	settingsDir := filepath.Dir(settingsPath)

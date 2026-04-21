@@ -48,7 +48,7 @@ func wsfsDirEntriesFromObjectInfos(objects []workspace.ObjectInfo) []fs.DirEntry
 }
 
 // Type that implements fs.FileInfo for WSFS.
-type wsfsFileInfo struct {
+type wsfsFileInfo struct { //nolint:recvcheck // value receivers for fs.FileInfo interface, pointer for JSON marshaling
 	workspace.ObjectInfo
 
 	// The export format of a notebook. This is not exposed by the SDK.

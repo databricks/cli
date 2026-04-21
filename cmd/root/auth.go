@@ -272,9 +272,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		}
 
 		if b != nil {
-			ctx = cmdctx.SetConfigUsed(ctx, b.Config.Workspace.Config())
+			ctx = cmdctx.SetConfigUsed(ctx, b.Config.Workspace.Config(ctx))
 			cmd.SetContext(ctx)
-			client, err := b.WorkspaceClientE()
+			client, err := b.WorkspaceClientE(ctx)
 			if err != nil {
 				return err
 			}

@@ -2,10 +2,10 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -114,8 +114,7 @@ func (r *Dashboard) InitializeURL(baseURL url.URL) {
 		return
 	}
 
-	baseURL.Path = fmt.Sprintf("dashboardsv3/%s/published", r.ID)
-	r.URL = baseURL.String()
+	r.URL = workspaceurls.ResourceURL(baseURL, "dashboards", r.ID)
 }
 
 func (r *Dashboard) GetName() string {

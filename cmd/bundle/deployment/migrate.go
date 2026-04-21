@@ -250,7 +250,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return root.ErrAlreadyPrinted
 		}
 
-		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config)
+		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 		if err != nil {
 			return err
 		}
@@ -281,7 +281,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			}
 		}
 
-		deploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(true))
+		deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
 		if err := deploymentBundle.StateDB.Finalize(); err != nil {
 			logdiag.LogError(ctx, err)
 		}

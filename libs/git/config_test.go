@@ -13,6 +13,7 @@ import (
 
 func TestConfig(t *testing.T) {
 	// Taken from https://git-scm.com/docs/git-config#_example.
+	//nolint:dupword
 	raw := `
 # Core variables
 [core]

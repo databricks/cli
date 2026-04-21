@@ -78,28 +78,15 @@ checks: tidy ws links deadcode
 install-pythons:
 	uv python install 3.9 3.10 3.11 3.12 3.13
 
-# Run short unit and acceptance tests (testing.Short() is true).
 .PHONY: test
 test: test-unit test-acc
 
-# Run all unit and acceptance tests.
-.PHONY: test-slow
-test-slow: test-slow-unit test-slow-acc
-
 .PHONY: test-unit
 test-unit:
-	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT} -short
-
-.PHONY: test-slow-unit
-test-slow-unit:
 	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT}
 
 .PHONY: test-acc
 test-acc:
-	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -short -run ${ACCEPTANCE_TEST_FILTER}
-
-.PHONY: test-slow-acc
-test-slow-acc:
 	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
 
 # Updates acceptance test output (local tests)

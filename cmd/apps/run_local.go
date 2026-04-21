@@ -191,7 +191,7 @@ func newRunLocal() *cobra.Command {
 
 	  This command starts an app locally.`
 
-	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app app proxy")
+	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app proxy")
 	cmd.Flags().IntVar(&appPort, "app-port", runlocal.DEFAULT_PORT, "Port on which to run the app")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Enable debug mode")
 	cmd.Flags().BoolVar(&prepareEnvironment, "prepare-environment", false, "Prepares the environment for running the app. Requires 'uv' to be installed.")
