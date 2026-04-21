@@ -124,32 +124,29 @@ func TestAppDoCreate_RetriesWhenGetReturnsNotFound(t *testing.T) {
 	assert.Equal(t, 1, getCallCount, "expected Get to be called once to check app state")
 }
 
-var nonUpdatableFields = []string{
-	"id",
-	"url",
-	"updater",
-	"create_time",
-	"update_time",
-	"space",
-	"service_principal_name",
-	"service_principal_id",
-	"service_principal_client_id",
-	"oauth2_app_client_id",
-	"oauth2_app_integration_id",
-	"pending_deployment",
-	"active_deployment",
-	"app_status",
-	"compute_status",
-	"creator",
-	"default_source_code_path",
-	"effective_budget_policy_id",
-	"effective_usage_policy_id",
-	"effective_user_api_scopes",
-	"name",
-}
-
 func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 	// iterate over all apps.App fields using reflection and ensure that UpdateMaskFields contains all of them.
+	config := GetGeneratedResourceConfig("apps")
+	require.NotNil(t, config)
+	var nonUpdatableFields []string
+	for _, field := range config.IgnoreRemoteChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	for _, field := range config.RecreateOnChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	config = GetResourceConfig("apps")
+	require.NotNil(t, config)
+	for _, field := range config.IgnoreRemoteChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
+	for _, field := range config.RecreateOnChanges {
+		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
+	}
+
 	app := apps.App{}
 	fields := reflect.TypeOf(app)
 	var allFields []string

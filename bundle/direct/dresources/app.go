@@ -173,6 +173,8 @@ var UpdateMaskFields = []string{
 	"telemetry_export_destinations",
 }
 
+var updateMask = strings.Join(UpdateMaskFields, ",")
+
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Deploy-only fields (source_code_path, config,
 	// git_source, lifecycle) are not part of apps.App and thus excluded from the request body.
@@ -180,7 +182,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		request := apps.AsyncUpdateAppRequest{
 			App:        &config.App,
 			AppName:    id,
-			UpdateMask: strings.Join(UpdateMaskFields, ","),
+			UpdateMask: updateMask,
 		}
 		updateWaiter, err := r.client.Apps.CreateUpdate(ctx, request)
 		if err != nil {
