@@ -12,12 +12,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// status identifies a CheckResult's outcome. The string values are part of the
+// JSON wire contract emitted by --output json.
+type status string
+
+const (
+	statusPass status = "pass"
+	statusFail status = "fail"
+	statusWarn status = "warn"
+	statusInfo status = "info"
+	statusSkip status = "skip"
+)
+
 // CheckResult holds the outcome of a single diagnostic check.
 type CheckResult struct {
-	Name    string `json:"name"`
-	Status  string `json:"status"` // "pass", "fail", "warn", "info", "skip"
-	Message string `json:"message"`
-	Detail  string `json:"detail,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Status  status `json:"status,omitempty"`
+	Message string `json:"message,omitempty"`
+	Detail  any    `json:"detail,omitempty"`
+}
+
+// DoctorReport is the top-level JSON output shape. Wrapping the results in an
+// object leaves room to add fields (summary, version, durationMs, ...) without
+// breaking callers that already parse the response.
+type DoctorReport struct {
+	Results []CheckResult `json:"results"`
 }
 
 // NewDoctorCmd returns the doctor command.
@@ -59,7 +78,7 @@ func profileFromCommand(cmd *cobra.Command) (string, bool) {
 func render(w io.Writer, results []CheckResult, outputType flags.Output) error {
 	switch outputType {
 	case flags.OutputJSON:
-		buf, err := json.MarshalIndent(results, "", "  ")
+		buf, err := json.MarshalIndent(DoctorReport{Results: results}, "", "  ")
 		if err != nil {
 			return err
 		}
@@ -96,8 +115,8 @@ func renderText(w io.Writer, results []CheckResult) {
 			icon = yellow("[skip]")
 		}
 		msg := fmt.Sprintf("%s %s: %s", icon, bold(r.Name), r.Message)
-		if r.Detail != "" {
-			msg += fmt.Sprintf(" (%s)", r.Detail)
+		if r.Detail != nil {
+			msg += fmt.Sprintf(" (%v)", r.Detail)
 		}
 		fmt.Fprintln(w, msg)
 	}

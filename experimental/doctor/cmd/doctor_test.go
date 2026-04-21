@@ -87,7 +87,7 @@ func TestCheckConfigFile(t *testing.T) {
 	tests := []struct {
 		name       string
 		profiler   profile.Profiler
-		wantStatus string
+		wantStatus status
 		wantMsg    string
 	}{
 		{
@@ -190,7 +190,7 @@ func TestCheckAuth(t *testing.T) {
 	tests := []struct {
 		name        string
 		env         map[string]string
-		wantStatus  string
+		wantStatus  status
 		wantMsgPart string
 		wantAuthCfg bool
 	}{
@@ -322,7 +322,7 @@ func TestCheckIdentity(t *testing.T) {
 	tests := []struct {
 		name       string
 		cfg        *config.Config
-		wantStatus string
+		wantStatus status
 		wantMsg    string
 	}{
 		{
@@ -530,11 +530,11 @@ func TestRender(t *testing.T) {
 		require.NoError(t, render(&buf, results, flags.OutputJSON))
 		assert.Equal(t, byte('\n'), buf.Bytes()[buf.Len()-1])
 
-		var parsed []CheckResult
+		var parsed DoctorReport
 		require.NoError(t, json.Unmarshal(buf.Bytes(), &parsed))
-		assert.Len(t, parsed, 4)
-		assert.Equal(t, "Test", parsed[0].Name)
-		assert.Equal(t, "details here", parsed[1].Detail)
+		assert.Len(t, parsed.Results, 4)
+		assert.Equal(t, "Test", parsed.Results[0].Name)
+		assert.Equal(t, "details here", parsed.Results[1].Detail)
 	})
 
 	t.Run("json omits empty detail", func(t *testing.T) {
@@ -596,9 +596,9 @@ func TestNewCommandJSON(t *testing.T) {
 	require.ErrorContains(t, err, "one or more checks failed")
 	assert.Equal(t, byte('\n'), buf.Bytes()[buf.Len()-1])
 
-	var results []CheckResult
-	require.NoError(t, json.Unmarshal(buf.Bytes(), &results))
-	assert.GreaterOrEqual(t, len(results), 4)
-	assert.Equal(t, "CLI Version", results[0].Name)
-	assert.Equal(t, statusInfo, results[0].Status)
+	var report DoctorReport
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &report))
+	assert.GreaterOrEqual(t, len(report.Results), 4)
+	assert.Equal(t, "CLI Version", report.Results[0].Name)
+	assert.Equal(t, statusInfo, report.Results[0].Status)
 }

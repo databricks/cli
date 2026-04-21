@@ -20,12 +20,6 @@ import (
 )
 
 const (
-	statusPass = "pass"
-	statusFail = "fail"
-	statusWarn = "warn"
-	statusInfo = "info"
-	statusSkip = "skip"
-
 	networkTimeout = 10 * time.Second
 	checkTimeout   = 15 * time.Second
 )
@@ -61,27 +55,25 @@ func withCheckTimeout(ctx context.Context) (context.Context, context.CancelFunc)
 // runChecks runs all diagnostic checks and returns the results.
 func runChecks(ctx context.Context, profile string, profileFromFlag bool) []CheckResult {
 	cfg, err := resolveConfig(ctx, profile, profileFromFlag)
-
-	var results []CheckResult
-	results = append(results, checkCLIVersion())
-	results = append(results, checkUpdates(ctx, http.DefaultClient, updateCheckURL))
-	results = append(results, checkToolchain(ctx, realExec))
-	results = append(results, checkProxy(ctx))
-	results = append(results, checkLogFile(ctx))
-	results = append(results, checkConfigFile(ctx))
-	results = append(results, checkCurrentProfile(ctx, profile, profileFromFlag, cfg))
-
 	authResult, authCfg := checkAuth(ctx, cfg, err)
-	results = append(results, authResult)
 
+	identityResult := skip("Identity", "Skipped (authentication failed)")
 	if authCfg != nil {
-		results = append(results, checkIdentity(ctx, authCfg))
-	} else {
-		results = append(results, skip("Identity", "Skipped (authentication failed)"))
+		identityResult = checkIdentity(ctx, authCfg)
 	}
 
-	results = append(results, checkNetwork(ctx, cfg, err, authCfg))
-	return results
+	return []CheckResult{
+		checkCLIVersion(),
+		checkUpdates(ctx, http.DefaultClient, updateCheckURL),
+		checkToolchain(ctx, realExec),
+		checkProxy(ctx),
+		checkLogFile(ctx),
+		checkConfigFile(ctx),
+		checkCurrentProfile(ctx, profile, profileFromFlag, cfg),
+		authResult,
+		identityResult,
+		checkNetwork(ctx, cfg, err, authCfg),
+	}
 }
 
 func checkCLIVersion() CheckResult {
@@ -109,20 +101,17 @@ func checkConfigFile(ctx context.Context) CheckResult {
 }
 
 func checkCurrentProfile(ctx context.Context, profileName string, fromFlag bool, resolvedCfg *config.Config) CheckResult {
-	if fromFlag {
+	switch envProfile := env.Get(ctx, "DATABRICKS_CONFIG_PROFILE"); {
+	case fromFlag:
 		return info("Current Profile", profileName)
-	}
-
-	if envProfile := env.Get(ctx, "DATABRICKS_CONFIG_PROFILE"); envProfile != "" {
+	case envProfile != "":
 		return info("Current Profile", envProfile+" (from DATABRICKS_CONFIG_PROFILE)")
-	}
-
-	// Check if the SDK resolved a profile (e.g. DEFAULT section in .databrickscfg).
-	if resolvedCfg != nil && resolvedCfg.Profile != "" {
+	// The SDK resolves a profile when DEFAULT is in .databrickscfg.
+	case resolvedCfg != nil && resolvedCfg.Profile != "":
 		return info("Current Profile", resolvedCfg.Profile+" (resolved from config file)")
+	default:
+		return info("Current Profile", "none (using environment or defaults)")
 	}
-
-	return info("Current Profile", "none (using environment or defaults)")
 }
 
 func resolveConfig(ctx context.Context, profileName string, fromFlag bool) (*config.Config, error) {
