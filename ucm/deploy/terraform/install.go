@@ -25,10 +25,11 @@ type hcInstaller struct{}
 // Install downloads terraform via hashicorp/hc-install.
 func (hcInstaller) Install(ctx context.Context, dir string, v *version.Version) (string, error) {
 	installer := &releases.ExactVersion{
-		Product:    product.Terraform,
-		Version:    v,
-		InstallDir: dir,
-		Timeout:    1 * time.Minute,
+		Product:          product.Terraform,
+		Version:          v,
+		InstallDir:       dir,
+		Timeout:          1 * time.Minute,
+		ArmoredPublicKey: hashicorpPublicKey,
 	}
 	return installer.Install(ctx)
 }
