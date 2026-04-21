@@ -392,9 +392,19 @@ tasks:
 
   test-acc:
     desc: Run acceptance tests
+    # Sources mirror `build` (acceptance_test.go builds the CLI in-process via BuildCLI)
+    # plus acceptance/**. For test-acc the checked-in out.* files are golden inputs:
+    # changing them must re-run the test. test-update* excludes out.* because they
+    # are outputs there — see &ACC_SOURCES_UPDATE below.
     sources:
       - "**/*.go"
+      - exclude: "**/*_test.go"
+      - exclude: integration/**
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
       - acceptance/**
+      - go.mod
+      - go.sum
     cmds:
       - |
         {{.GO_TOOL}} gotestsum \
@@ -407,16 +417,30 @@ tasks:
 
   test-update:
     desc: Update acceptance test output (local)
+    # Excludes out.* because the task rewrites them; keeping them in sources would
+    # invalidate the checksum and force a re-run on every invocation.
+    sources: &ACC_SOURCES_UPDATE
+      - "**/*.go"
+      - exclude: "**/*_test.go"
+      - exclude: integration/**
+      - exclude: tools/**
+      - exclude: bundle/internal/tf/codegen/**
+      - acceptance/**
+      - exclude: acceptance/**/out.*
+      - go.mod
+      - go.sum
     cmds:
       - "go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-30m}"
 
   test-update-templates:
     desc: Update acceptance test template output
+    sources: *ACC_SOURCES_UPDATE
     cmds:
       - "go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-30m}"
 
   test-update-aws:
     desc: Update acceptance test output (integration, requires deco access)
+    sources: *ACC_SOURCES_UPDATE
     cmds:
       - "deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=1 go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
 
