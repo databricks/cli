@@ -6,10 +6,7 @@ toolchain go1.25.9
 
 require github.com/stretchr/testify v1.11.1
 
-require (
-	github.com/stretchr/testify v1.11.1
-	gopkg.in/yaml.v3 v3.0.1
-)
+require gopkg.in/yaml.v3 v3.0.1
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect
