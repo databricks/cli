@@ -116,7 +116,7 @@ func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.Persiste
 	if c.persistentAuthFn != nil {
 		return c.persistentAuthFn(ctx, opts...)
 	}
-	tc, err := storage.NewFileTokenCache()
+	tc, err := storage.NewFileTokenCache(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("opening token cache: %w", err)
 	}

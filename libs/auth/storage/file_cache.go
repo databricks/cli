@@ -1,12 +1,16 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
 
+	"github.com/databricks/cli/libs/env"
 	u2m_cache "github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"golang.org/x/oauth2"
 )
@@ -69,12 +73,12 @@ type fileTokenCache struct {
 // 0600 and the directory is created with owner permissions 0700. If the cache
 // file is corrupt or if its version does not match tokenCacheVersion, an error
 // is returned.
-func NewFileTokenCache(opts ...FileTokenCacheOption) (u2m_cache.TokenCache, error) {
+func NewFileTokenCache(ctx context.Context, opts ...FileTokenCacheOption) (u2m_cache.TokenCache, error) {
 	c := &fileTokenCache{}
 	for _, opt := range opts {
 		opt(c)
 	}
-	if err := c.init(); err != nil {
+	if err := c.init(ctx); err != nil {
 		return nil, err
 	}
 	// Fail fast if the cache is not working.
@@ -127,10 +131,10 @@ func (c *fileTokenCache) Lookup(key string) (*oauth2.Token, error) {
 
 // init initializes the token cache file. It creates the file and directory if
 // they do not already exist.
-func (c *fileTokenCache) init() error {
+func (c *fileTokenCache) init(ctx context.Context) error {
 	// set the default file location
 	if c.fileLocation == "" {
-		home, err := os.UserHomeDir()
+		home, err := env.UserHomeDir(ctx)
 		if err != nil {
 			return fmt.Errorf("failed loading home directory: %w", err)
 		}
@@ -138,7 +142,7 @@ func (c *fileTokenCache) init() error {
 	}
 	// Create the cache file if it does not exist.
 	if _, err := os.Stat(c.fileLocation); err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("stat file: %w", err)
 		}
 		// Create the parent directories if needed.

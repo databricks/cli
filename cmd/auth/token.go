@@ -275,7 +275,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	tc, err := storage.NewFileTokenCache()
+	tc, err := storage.NewFileTokenCache(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("opening token cache: %w", err)
 	}
@@ -466,7 +466,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 	if err != nil {
 		return "", nil, err
 	}
-	tc, err := storage.NewFileTokenCache()
+	tc, err := storage.NewFileTokenCache(ctx)
 	if err != nil {
 		return "", nil, fmt.Errorf("opening token cache: %w", err)
 	}

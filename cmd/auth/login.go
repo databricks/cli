@@ -228,7 +228,7 @@ a new profile is created.
 		if err != nil {
 			return err
 		}
-		tc, err := storage.NewFileTokenCache()
+		tc, err := storage.NewFileTokenCache(ctx)
 		if err != nil {
 			return fmt.Errorf("opening token cache: %w", err)
 		}
@@ -584,7 +584,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 		scopesList = splitScopes(existingProfile.Scopes)
 	}
 
-	tc, err := storage.NewFileTokenCache()
+	tc, err := storage.NewFileTokenCache(ctx)
 	if err != nil {
 		return discoveryErr("opening token cache", err)
 	}
