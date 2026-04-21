@@ -101,6 +101,8 @@ func collectReferences(preResolved, resolved dyn.Value, m map[any][]string, seen
 		switch resolvedV.Kind() {
 		case dyn.KindString, dyn.KindBool, dyn.KindInt:
 			m[resolvedV.AsAny()] = append(m[resolvedV.AsAny()], s)
+		case dyn.KindInvalid, dyn.KindMap, dyn.KindSequence, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
+			// Skip non-scalar and non-comparable types.
 		}
 
 		return nil
@@ -284,6 +286,8 @@ func subtreeHasVariableRef(v dyn.Value) bool {
 				return true
 			}
 		}
+	case dyn.KindInvalid, dyn.KindBool, dyn.KindInt, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
+		// Leaf types that cannot contain variable references.
 	}
 	return false
 }
