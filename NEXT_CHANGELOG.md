@@ -10,3 +10,5 @@
 ### Bundles
 
 ### Dependency updates
+
+* Added `github.com/zalando/go-keyring` as a new dependency (dormant until a later release enables experimental secure-storage for OAuth tokens).
