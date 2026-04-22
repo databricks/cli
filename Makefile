@@ -74,14 +74,6 @@ checks: tidy ws links
 install-pythons:
 	uv python install 3.9 3.10 3.11 3.12 3.13
 
-# Subset of Python versions needed for unit + acceptance tests in CI.
-# 3.13 is already provided by actions/setup-python; 3.10 is the default for
-# acceptance bundle tests (see acceptance/bundle/test.toml). Integration and
-# scheduled runs still use `install-pythons` to cover the full matrix.
-.PHONY: install-pythons-test
-install-pythons-test:
-	uv python install 3.10
-
 .PHONY: test
 test: test-unit test-acc
 
