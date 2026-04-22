@@ -1,0 +1,12 @@
+No databricks.yml found. Initializing a bare bundle skeleton.
+Welcome to the bare Databricks Asset Bundle template!
+
+This template creates the smallest bundle skeleton for importing or copying existing resources.
+You can add more files and targets later as needed.
+
+Your workspace at [DATABRICKS_URL] is used for initialization.
+
+✨ Your bare bundle has been created.
+
+Add generated resources under `resources/` and supporting code under `src/`.
+Generate bundle configuration for a catalog configuration successfully saved to resources/my_catalog.catalog.yml

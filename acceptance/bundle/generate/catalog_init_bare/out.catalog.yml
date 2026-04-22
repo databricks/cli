@@ -1,0 +1,6 @@
+resources:
+  catalogs:
+    my_catalog:
+      comment: Catalog used for integration testing
+      name: my_catalog
+      storage_root: s3://test-bucket/catalog

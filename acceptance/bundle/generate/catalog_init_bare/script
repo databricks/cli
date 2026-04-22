@@ -1,0 +1,11 @@
+$CLI bundle generate catalog --existing-catalog-name my_catalog --force --init-bare
+
+[ -f "databricks.yml" ] || exit 1
+[ -f "resources/my_catalog.catalog.yml" ] || exit 1
+
+mv resources/my_catalog.catalog.yml out.catalog.yml
+
+mv .gitignore out.gitignore
+rm README.md
+rm -r resources src
+rm -rf .databricks
