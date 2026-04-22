@@ -151,6 +151,20 @@ func (*fakeDirectClient) UpdateSchema(_ context.Context, _ catalog.UpdateSchema)
 
 func (*fakeDirectClient) DeleteSchema(_ context.Context, _ string) error { return nil }
 
+func (*fakeDirectClient) GetStorageCredential(_ context.Context, _ string) (*catalog.StorageCredentialInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) CreateStorageCredential(_ context.Context, _ catalog.CreateStorageCredential) (*catalog.StorageCredentialInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) UpdateStorageCredential(_ context.Context, _ catalog.UpdateStorageCredential) (*catalog.StorageCredentialInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) DeleteStorageCredential(_ context.Context, _ string) error { return nil }
+
 func (*fakeDirectClient) UpdatePermissions(_ context.Context, _ catalog.UpdatePermissions) error {
 	return nil
 }
