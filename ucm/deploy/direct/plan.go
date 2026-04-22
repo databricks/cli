@@ -31,6 +31,7 @@ func CalculatePlan(u *ucm.Ucm, state *State) *deployplan.Plan {
 	plan := deployplan.NewPlanTerraform()
 
 	planStorageCredentials(u, state, plan)
+	planExternalLocations(u, state, plan)
 	planCatalogs(u, state, plan)
 	planSchemas(u, state, plan)
 	planGrants(u, state, plan)
@@ -54,6 +55,29 @@ func planStorageCredentials(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
 		case !haveCfg && haveRec:
 			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Delete}
 		case storageCredentialStateFromConfig(cfg).equal(rec):
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Skip}
+		default:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Update}
+		}
+	}
+}
+
+func planExternalLocations(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
+	desired := u.Config.Resources.ExternalLocations
+	recorded := state.ExternalLocations
+
+	keys := mergedKeys(desired, recorded)
+	for _, key := range keys {
+		planKey := "resources.external_locations." + key
+
+		cfg, haveCfg := desired[key]
+		rec, haveRec := recorded[key]
+		switch {
+		case haveCfg && !haveRec:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Create}
+		case !haveCfg && haveRec:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Delete}
+		case externalLocationStateFromConfig(cfg).equal(rec):
 			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Skip}
 		default:
 			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Update}
@@ -171,6 +195,10 @@ func (s GrantState) equal(other *GrantState) bool {
 }
 
 func (s StorageCredentialState) equal(other *StorageCredentialState) bool {
+	return other != nil && reflect.DeepEqual(s, *other)
+}
+
+func (s ExternalLocationState) equal(other *ExternalLocationState) bool {
 	return other != nil && reflect.DeepEqual(s, *other)
 }
 

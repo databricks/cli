@@ -79,6 +79,21 @@ func storageCredentialStateFromConfig(c *resources.StorageCredential) StorageCre
 	return s
 }
 
+func externalLocationStateFromConfig(e *resources.ExternalLocation) ExternalLocationState {
+	if e == nil {
+		return ExternalLocationState{}
+	}
+	return ExternalLocationState{
+		Name:           e.Name,
+		Url:            e.Url,
+		CredentialName: e.CredentialName,
+		Comment:        e.Comment,
+		ReadOnly:       e.ReadOnly,
+		SkipValidation: e.SkipValidation,
+		Fallback:       e.Fallback,
+	}
+}
+
 func copyTags(tags map[string]string) map[string]string {
 	if len(tags) == 0 {
 		return nil
