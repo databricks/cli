@@ -17,6 +17,8 @@ var GroupToTerraformName = map[string]string{
 	"grants":              "databricks_grants",
 	"storage_credentials": "databricks_storage_credential",
 	"external_locations":  "databricks_external_location",
+	"volumes":             "databricks_volume",
+	"connections":         "databricks_connection",
 }
 
 // Interpolate rewrites ucm-path references in a TF JSON tree to terraform

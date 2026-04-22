@@ -23,6 +23,8 @@ type Resources struct {
 	Grants            map[string]dyn.Value
 	StorageCredential map[string]dyn.Value
 	ExternalLocation  map[string]dyn.Value
+	Volume            map[string]dyn.Value
+	Connection        map[string]dyn.Value
 }
 
 // NewResources returns an empty Resources ready for converters to fill.
@@ -33,6 +35,8 @@ func NewResources() *Resources {
 		Grants:            map[string]dyn.Value{},
 		StorageCredential: map[string]dyn.Value{},
 		ExternalLocation:  map[string]dyn.Value{},
+		Volume:            map[string]dyn.Value{},
+		Connection:        map[string]dyn.Value{},
 	}
 }
 
