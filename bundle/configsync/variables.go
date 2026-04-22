@@ -112,8 +112,8 @@ func collectReferences(preResolved, resolved dyn.Value, m map[any][]string, seen
 			return nil
 		}
 
-		resolvedV, err := dyn.GetByPath(resolved, resolvedPath)
-		if err != nil {
+		resolvedV, lookupErr := dyn.GetByPath(resolved, resolvedPath)
+		if lookupErr != nil {
 			return nil
 		}
 
