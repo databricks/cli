@@ -36,3 +36,11 @@ New = "pid=PID"
 [[Repls]]
 Old = "\\([0-9]+ more bytes\\)"
 New = "(N more bytes)"
+
+# Host metadata cache keys vary per-test because the mock server URL changes.
+# Normalize them so the golden output is stable across runs.
+# Order=1 so it runs before the parent's `\d{14,}` → `[NUMID]` replacement.
+[[Repls]]
+Old = '[a-f0-9]{64}'
+New = "[SHA256_HASH]"
+Order = 1

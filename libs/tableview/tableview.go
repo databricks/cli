@@ -142,7 +142,7 @@ func (m model) renderContent() string {
 	return strings.Join(result, "\n")
 }
 
-type model struct {
+type model struct { //nolint:recvcheck // value receivers for tea.Model interface, pointer for cursor mutation
 	viewport viewport.Model
 	lines    []string
 	ready    bool

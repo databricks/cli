@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -47,8 +48,7 @@ func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {
 	if sw.ID == "" {
 		return
 	}
-	baseURL.Path = "sql/warehouses/" + sw.ID
-	sw.URL = baseURL.String()
+	sw.URL = workspaceurls.ResourceURL(baseURL, "warehouses", sw.ID)
 }
 
 func (sw *SqlWarehouse) GetName() string {

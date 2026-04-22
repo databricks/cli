@@ -119,12 +119,10 @@ MISS	run.terraform	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-
 MISS	summary.direct	/api/2.0/preview/scim/v2/Me	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	summary.direct	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	summary.direct	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'
-OK  	summary.direct	/api/2.0/preview/scim/v2/Me	engine/direct
 MISS	summary.direct	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
 MISS	summary.terraform	/api/2.0/preview/scim/v2/Me	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	summary.terraform	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	summary.terraform	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat'
-OK  	summary.terraform	/api/2.0/preview/scim/v2/Me	engine/terraform
 MISS	summary.terraform	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
 MISS	validate.direct	/api/2.0/preview/scim/v2/Me	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_validate cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	validate.direct	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_validate cmd-exec-id/[UUID] interactive/none auth/pat'

@@ -336,7 +336,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
-	environ, err := b.AuthEnv()
+	environ, err := b.AuthEnv(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}

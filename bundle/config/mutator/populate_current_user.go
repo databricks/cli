@@ -27,7 +27,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	if b.Config.Workspace.CurrentUser != nil {
 		return nil
 	}
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 
 	fingerprint := b.GetUserFingerprint(ctx)
 	me, err := cache.GetOrCompute(ctx, b.Cache, fingerprint, func(ctx context.Context) (*iam.User, error) {

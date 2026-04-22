@@ -148,7 +148,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 		defer resp.Body.Close()
 		defer conn.Close()
 
-		vb := NewBridge(ctx, w, "test-app", 5173)
+		vb := NewBridge(ctx, w, "test-app", 5173, false)
 		vb.tunnelConn = conn
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
@@ -213,7 +213,7 @@ func TestBridgeHandleDirListRequest(t *testing.T) {
 		defer resp.Body.Close()
 		defer conn.Close()
 
-		vb := NewBridge(ctx, w, "test-app", 5173)
+		vb := NewBridge(ctx, w, "test-app", 5173, false)
 		vb.tunnelConn = conn
 
 		go func() { _ = vb.tunnelWriter(ctx) }()

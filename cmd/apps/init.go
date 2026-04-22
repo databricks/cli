@@ -3,6 +3,7 @@ package apps
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -37,7 +38,7 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
-	appkitDefaultVersion = "template-v0.23.0"
+	appkitDefaultVersion = "template-v0.24.0"
 	defaultProfile       = "DEFAULT"
 )
 
@@ -76,6 +77,7 @@ func newInitCmd() *cobra.Command {
 		deploy       bool
 		run          string
 		setValues    []string
+		autoApprove  bool
 	)
 
 	cmd := &cobra.Command{
@@ -160,6 +162,7 @@ Environment variables:
 				runChanged:     cmd.Flags().Changed("run"),
 				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
 				setValues:      setValues,
+				autoApprove:    autoApprove,
 			})
 		},
 	}
@@ -178,6 +181,7 @@ Environment variables:
 	_ = cmd.Flags().MarkHidden("plugins")
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
 
 	return cmd
 }
@@ -198,6 +202,7 @@ type createOptions struct {
 	runChanged     bool     // true if --run flag was explicitly set
 	pluginsChanged bool     // true if --plugins flag was explicitly set
 	setValues      []string // --set plugin.resourceKey.field=value pairs
+	autoApprove    bool
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -332,7 +337,7 @@ func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, erro
 
 // promptForPluginsAndDeps prompts for plugins and their resource dependencies using the manifest.
 // skipDeployRunPrompt indicates whether to skip prompting for deploy/run (because flags were provided).
-func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt bool) (*prompt.CreateProjectConfig, error) {
+func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt, autoApprove bool) (*prompt.CreateProjectConfig, error) {
 	config := &prompt.CreateProjectConfig{
 		Dependencies: make(map[string]string),
 		Features:     preSelectedPlugins, // Reuse Features field for plugin names
@@ -394,14 +399,18 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 		}
 	}
 
-	// Step 3: Prompt for optional plugin resource dependencies
-	for _, r := range optionalResources {
-		values, err := promptForResource(ctx, r, theme, false)
-		if err != nil {
-			return nil, err
-		}
-		for k, v := range values {
-			config.Dependencies[k] = v
+	// Step 3: Prompt for optional plugin resource dependencies.
+	// With --auto-approve, optional resources are skipped here; they're only
+	// configured when their values are supplied via --set (merged later).
+	if !autoApprove {
+		for _, r := range optionalResources {
+			values, err := promptForResource(ctx, r, theme, false)
+			if err != nil {
+				return nil, err
+			}
+			for k, v := range values {
+				config.Dependencies[k] = v
+			}
 		}
 	}
 
@@ -656,6 +665,14 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		return nil
 	}
 
+	// Copy any file: protocol dependencies (e.g., local .tgz tarballs) so npm ci can resolve them.
+	pkgData, err := os.ReadFile(filepath.Join(destDir, "package.json"))
+	if err != nil {
+		log.Warnf(ctx, "Failed to read package.json for file dep copy: %v", err)
+	} else {
+		copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
+	}
+
 	// Copy package-lock.json raw (never has template vars).
 	lockData, err := os.ReadFile(lockFile)
 	if err != nil {
@@ -678,6 +695,41 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 
 	log.Debugf(ctx, "Started background npm install in %s", destDir)
 	return ch
+}
+
+// copyFileDeps copies local file: protocol dependencies (e.g., .tgz tarballs)
+// from srcDir to destDir so that npm ci can resolve them.
+func copyFileDeps(ctx context.Context, pkgJSON []byte, srcDir, destDir string) {
+	var pkg struct {
+		Dependencies    map[string]string `json:"dependencies"`
+		DevDependencies map[string]string `json:"devDependencies"`
+	}
+	if err := json.Unmarshal(pkgJSON, &pkg); err != nil {
+		log.Debugf(ctx, "Failed to parse package.json for file dep copy: %v", err)
+		return
+	}
+	for _, deps := range []map[string]string{pkg.Dependencies, pkg.DevDependencies} {
+		for _, v := range deps {
+			if !strings.HasPrefix(v, "file:") {
+				continue
+			}
+			relPath := filepath.Clean(strings.TrimPrefix(v, "file:"))
+			src := filepath.Join(srcDir, relPath)
+			data, err := os.ReadFile(src)
+			if err != nil {
+				log.Debugf(ctx, "Skipping file dep %s: %v", relPath, err)
+				continue
+			}
+			dst := filepath.Join(destDir, relPath)
+			if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+				log.Debugf(ctx, "Failed to create dir for file dep %s: %v", relPath, err)
+				continue
+			}
+			if err := os.WriteFile(dst, data, 0o644); err != nil {
+				log.Debugf(ctx, "Failed to copy file dep %s: %v", relPath, err)
+			}
+		}
+	}
 }
 
 // awaitBackgroundNpmInstall waits for the background npm install to complete.
@@ -830,7 +882,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	if isInteractive && !opts.pluginsChanged && !flagsMode {
 		// Interactive mode without --plugins flag: prompt for plugins, dependencies, description
-		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt)
+		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt, opts.autoApprove)
 		if err != nil {
 			return err
 		}

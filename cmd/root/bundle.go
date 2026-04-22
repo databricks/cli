@@ -162,7 +162,7 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 	//
 	// Note that just initializing a workspace client and loading auth configuration
 	// is a fast operation. It does not perform network I/O or invoke processes (for example the Azure CLI).
-	client, err := b.WorkspaceClientE()
+	client, err := b.WorkspaceClientE(ctx)
 	if err != nil {
 		names, isMulti := databrickscfg.AsMultipleProfiles(err)
 		if !isMulti {
@@ -177,8 +177,8 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) {
 		}
 
 		b.Config.Workspace.Profile = selected
-		b.ClearWorkspaceClient()
-		client, err = b.WorkspaceClientE()
+		b.ClearWorkspaceClient(ctx)
+		client, err = b.WorkspaceClientE(ctx)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

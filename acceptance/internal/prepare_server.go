@@ -44,7 +44,7 @@ func StartDefaultServer(t *testing.T, logRequests bool) {
 	// This approach ensures test reliability across platforms.
 	//
 	// See debugging journey in https://github.com/databricks/cli/pull/3575.
-	homeDir, err := os.MkdirTemp("", "acceptance-home-dir")
+	homeDir, err := os.MkdirTemp("", "acceptance-home-dir") //nolint:usetesting // t.TempDir() fails on Windows; see PR #3575
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		err := os.RemoveAll(homeDir)
@@ -123,7 +123,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 	}
 
 	// For the purposes of replacements, use testUser for local runs.
-	// Note, users might have overriden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
+	// Note, users might have overridden /api/2.0/preview/scim/v2/Me but that should not affect the replacement:
 	return cfg, testUser
 }
 

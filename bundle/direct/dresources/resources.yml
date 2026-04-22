@@ -385,6 +385,9 @@ resources:
       # drift detection applies (e.g. detecting out-of-band stop).
       - field: lifecycle
       - field: lifecycle.started
+    ignore_remote_changes:
+      - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
+        reason: managed
 
   secret_scopes:
     backend_defaults:
@@ -473,6 +476,10 @@ resources:
       # common.CustomizeSchemaPath(m, "min_num_clusters").SetSuppressDiff()
       - field: min_num_clusters
         reason: managed
+
+      # creator_name is readonly, can't be updated via API
+      - field: creator_name
+        reason: output_only
 
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L69
