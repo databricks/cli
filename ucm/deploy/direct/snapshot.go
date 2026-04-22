@@ -94,6 +94,20 @@ func externalLocationStateFromConfig(e *resources.ExternalLocation) ExternalLoca
 	}
 }
 
+func volumeStateFromConfig(v *resources.Volume) VolumeState {
+	if v == nil {
+		return VolumeState{}
+	}
+	return VolumeState{
+		Name:            v.Name,
+		CatalogName:     v.CatalogName,
+		SchemaName:      v.SchemaName,
+		VolumeType:      v.VolumeType,
+		StorageLocation: v.StorageLocation,
+		Comment:         v.Comment,
+	}
+}
+
 func copyTags(tags map[string]string) map[string]string {
 	if len(tags) == 0 {
 		return nil

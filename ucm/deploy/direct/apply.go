@@ -43,7 +43,13 @@ func Apply(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan
 	if err := applySchemaCreates(ctx, u, client, plan, state); err != nil {
 		return err
 	}
+	if err := applyVolumeCreates(ctx, u, client, plan, state); err != nil {
+		return err
+	}
 	if err := applyGrantChanges(ctx, u, client, plan, state); err != nil {
+		return err
+	}
+	if err := applyVolumeDeletes(ctx, client, plan, state); err != nil {
 		return err
 	}
 	if err := applySchemaDeletes(ctx, client, plan, state); err != nil {
@@ -68,6 +74,9 @@ func Destroy(ctx context.Context, u *ucm.Ucm, client Client, state *State) (*dep
 	plan := deployplan.NewPlanTerraform()
 	for key := range state.Grants {
 		plan.Plan["resources.grants."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	}
+	for key := range state.Volumes {
+		plan.Plan["resources.volumes."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	}
 	for key := range state.Schemas {
 		plan.Plan["resources.schemas."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
@@ -223,6 +232,54 @@ func applySchemaCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *de
 			}
 			state.Schemas[name] = ptrSchema(schemaStateFromConfig(cfg))
 		}
+	}
+	return nil
+}
+
+func applyVolumeCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range sortedPlanKeysByGroup(plan, "volumes") {
+		entry := plan.Plan[key]
+		name := strings.TrimPrefix(key, "resources.volumes.")
+		cfg := u.Config.Resources.Volumes[name]
+		switch entry.Action {
+		case deployplan.Create:
+			log.Infof(ctx, "direct: creating volume %s.%s.%s", cfg.CatalogName, cfg.SchemaName, cfg.Name)
+			in, err := volumeCreateInput(cfg)
+			if err != nil {
+				return fmt.Errorf("create volume %s.%s.%s: %w", cfg.CatalogName, cfg.SchemaName, cfg.Name, err)
+			}
+			if _, err := client.CreateVolume(ctx, in); err != nil {
+				return fmt.Errorf("create volume %s.%s.%s: %w", cfg.CatalogName, cfg.SchemaName, cfg.Name, err)
+			}
+			state.Volumes[name] = ptrVolume(volumeStateFromConfig(cfg))
+		case deployplan.Update:
+			log.Infof(ctx, "direct: updating volume %s.%s.%s", cfg.CatalogName, cfg.SchemaName, cfg.Name)
+			if _, err := client.UpdateVolume(ctx, volumeUpdateInput(cfg)); err != nil {
+				return fmt.Errorf("update volume %s.%s.%s: %w", cfg.CatalogName, cfg.SchemaName, cfg.Name, err)
+			}
+			state.Volumes[name] = ptrVolume(volumeStateFromConfig(cfg))
+		}
+	}
+	return nil
+}
+
+func applyVolumeDeletes(ctx context.Context, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range reverseSortedPlanKeysByGroup(plan, "volumes") {
+		entry := plan.Plan[key]
+		if entry.Action != deployplan.Delete {
+			continue
+		}
+		name := strings.TrimPrefix(key, "resources.volumes.")
+		rec, ok := state.Volumes[name]
+		if !ok {
+			continue
+		}
+		fullName := rec.CatalogName + "." + rec.SchemaName + "." + rec.Name
+		log.Infof(ctx, "direct: deleting volume %s", fullName)
+		if err := client.DeleteVolume(ctx, fullName); err != nil {
+			return fmt.Errorf("delete volume %s: %w", fullName, err)
+		}
+		delete(state.Volumes, name)
 	}
 	return nil
 }
@@ -428,6 +485,40 @@ func storageCredentialUpdateInput(c *resources.StorageCredential) (catalog.Updat
 	return in, nil
 }
 
+// volumeCreateInput validates the MANAGED/EXTERNAL invariant and builds the
+// SDK Create payload. EXTERNAL volumes require storage_location; MANAGED ones
+// must not carry one.
+func volumeCreateInput(v *resources.Volume) (catalog.CreateVolumeRequestContent, error) {
+	vType := strings.ToUpper(v.VolumeType)
+	if vType != "MANAGED" && vType != "EXTERNAL" {
+		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: volume_type must be MANAGED or EXTERNAL, got %q", v.Name, v.VolumeType)
+	}
+	if vType == "EXTERNAL" && v.StorageLocation == "" {
+		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: storage_location is required for EXTERNAL volumes", v.Name)
+	}
+	if vType == "MANAGED" && v.StorageLocation != "" {
+		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: storage_location must not be set for MANAGED volumes", v.Name)
+	}
+	return catalog.CreateVolumeRequestContent{
+		Name:            v.Name,
+		CatalogName:     v.CatalogName,
+		SchemaName:      v.SchemaName,
+		VolumeType:      catalog.VolumeType(vType),
+		StorageLocation: v.StorageLocation,
+		Comment:         v.Comment,
+	}, nil
+}
+
+// volumeUpdateInput produces a comment-only update. The UC API only supports
+// renaming, changing the owner, or updating the comment on a volume — drift
+// on catalog/schema/volume_type/storage_location is effectively immutable.
+func volumeUpdateInput(v *resources.Volume) catalog.UpdateVolumeRequestContent {
+	return catalog.UpdateVolumeRequestContent{
+		Name:    v.CatalogName + "." + v.SchemaName + "." + v.Name,
+		Comment: v.Comment,
+	}
+}
+
 func externalLocationCreateInput(e *resources.ExternalLocation) catalog.CreateExternalLocation {
 	return catalog.CreateExternalLocation{
 		Name:           e.Name,
@@ -601,3 +692,5 @@ func ptrStorageCredential(s StorageCredentialState) *StorageCredentialState {
 }
 
 func ptrExternalLocation(s ExternalLocationState) *ExternalLocationState { return &s }
+
+func ptrVolume(s VolumeState) *VolumeState { return &s }

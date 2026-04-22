@@ -263,6 +263,81 @@ func TestCalculatePlan_ExternalLocationUpdateOnUrlDrift(t *testing.T) {
 	assert.Equal(t, deployplan.Update, plan.Plan["resources.external_locations.prod"].Action)
 }
 
+func TestCalculatePlan_VolumeCreate(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "MANAGED",
+		},
+	}
+	plan := direct.CalculatePlan(u, direct.NewState())
+	assert.Equal(t, deployplan.Create, plan.Plan["resources.volumes.raw"].Action)
+}
+
+func TestCalculatePlan_VolumeDelete(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	state := direct.NewState()
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:        "raw",
+		CatalogName: "main",
+		SchemaName:  "bronze",
+		VolumeType:  "MANAGED",
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Delete, plan.Plan["resources.volumes.raw"].Action)
+}
+
+func TestCalculatePlan_VolumeSkip(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:            "raw",
+			CatalogName:     "main",
+			SchemaName:      "bronze",
+			VolumeType:      "EXTERNAL",
+			StorageLocation: "s3://bucket/raw",
+			Comment:         "prod",
+		},
+	}
+	state := direct.NewState()
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:            "raw",
+		CatalogName:     "main",
+		SchemaName:      "bronze",
+		VolumeType:      "EXTERNAL",
+		StorageLocation: "s3://bucket/raw",
+		Comment:         "prod",
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Skip, plan.Plan["resources.volumes.raw"].Action)
+}
+
+func TestCalculatePlan_VolumeUpdateOnCommentDrift(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "MANAGED",
+			Comment:     "new",
+		},
+	}
+	state := direct.NewState()
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:        "raw",
+		CatalogName: "main",
+		SchemaName:  "bronze",
+		VolumeType:  "MANAGED",
+		Comment:     "old",
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Update, plan.Plan["resources.volumes.raw"].Action)
+}
+
 func ucmWith(catalogs map[string]*resources.Catalog, schemas map[string]*resources.Schema, grants map[string]*resources.Grant) *ucm.Ucm {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Catalogs = catalogs

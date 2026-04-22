@@ -34,6 +34,7 @@ func CalculatePlan(u *ucm.Ucm, state *State) *deployplan.Plan {
 	planExternalLocations(u, state, plan)
 	planCatalogs(u, state, plan)
 	planSchemas(u, state, plan)
+	planVolumes(u, state, plan)
 	planGrants(u, state, plan)
 
 	return plan
@@ -131,6 +132,29 @@ func planSchemas(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
 	}
 }
 
+func planVolumes(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
+	desired := u.Config.Resources.Volumes
+	recorded := state.Volumes
+
+	keys := mergedKeys(desired, recorded)
+	for _, key := range keys {
+		planKey := "resources.volumes." + key
+
+		cfg, haveCfg := desired[key]
+		rec, haveRec := recorded[key]
+		switch {
+		case haveCfg && !haveRec:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Create}
+		case !haveCfg && haveRec:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Delete}
+		case volumeStateFromConfig(cfg).equal(rec):
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Skip}
+		default:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Update}
+		}
+	}
+}
+
 func planGrants(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
 	desired := u.Config.Resources.Grants
 	recorded := state.Grants
@@ -199,6 +223,10 @@ func (s StorageCredentialState) equal(other *StorageCredentialState) bool {
 }
 
 func (s ExternalLocationState) equal(other *ExternalLocationState) bool {
+	return other != nil && reflect.DeepEqual(s, *other)
+}
+
+func (s VolumeState) equal(other *VolumeState) bool {
 	return other != nil && reflect.DeepEqual(s, *other)
 }
 

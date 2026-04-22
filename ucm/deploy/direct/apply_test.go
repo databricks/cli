@@ -483,6 +483,155 @@ func TestApply_ExternalLocationDestroyOrder(t *testing.T) {
 	assert.Empty(t, state.StorageCredentials)
 }
 
+func TestApply_VolumeCreateOrdersAfterSchema(t *testing.T) {
+	u := ucmWith(
+		map[string]*resources.Catalog{"main": {Name: "main"}},
+		map[string]*resources.Schema{"bronze": {Name: "bronze", Catalog: "main"}},
+		nil,
+	)
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "MANAGED",
+		},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{
+		"CreateCatalog:main",
+		"CreateSchema:main.bronze",
+		"CreateVolume:main.bronze.raw",
+	}, client.Calls)
+
+	require.NotNil(t, state.Volumes["raw"])
+	assert.Equal(t, "main", state.Volumes["raw"].CatalogName)
+	assert.Equal(t, "bronze", state.Volumes["raw"].SchemaName)
+	assert.Equal(t, "MANAGED", state.Volumes["raw"].VolumeType)
+}
+
+func TestApply_VolumeExternalCreatePreservesStorageLocation(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:            "raw",
+			CatalogName:     "main",
+			SchemaName:      "bronze",
+			VolumeType:      "EXTERNAL",
+			StorageLocation: "s3://bucket/raw",
+		},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	require.Len(t, client.CreatedVolumes, 1)
+	assert.Equal(t, "s3://bucket/raw", client.CreatedVolumes[0].StorageLocation)
+	assert.Equal(t, catalog.VolumeTypeExternal, client.CreatedVolumes[0].VolumeType)
+}
+
+func TestApply_VolumeUpdate(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "MANAGED",
+			Comment:     "new",
+		},
+	}
+	state := direct.NewState()
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:        "raw",
+		CatalogName: "main",
+		SchemaName:  "bronze",
+		VolumeType:  "MANAGED",
+		Comment:     "old",
+	}
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{"UpdateVolume:main.bronze.raw"}, client.Calls)
+	assert.Equal(t, "new", state.Volumes["raw"].Comment)
+}
+
+func TestApply_VolumeDestroyOrder(t *testing.T) {
+	u := &ucm.Ucm{}
+	state := direct.NewState()
+	state.Catalogs["main"] = &direct.CatalogState{Name: "main"}
+	state.Schemas["bronze"] = &direct.SchemaState{Name: "bronze", Catalog: "main"}
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:        "raw",
+		CatalogName: "main",
+		SchemaName:  "bronze",
+		VolumeType:  "MANAGED",
+	}
+
+	client := &recordingClient{}
+	plan, err := direct.Destroy(t.Context(), u, client, state)
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	assert.Equal(t, []string{
+		"DeleteVolume:main.bronze.raw",
+		"DeleteSchema:main.bronze",
+		"DeleteCatalog:main",
+	}, client.Calls)
+
+	assert.Empty(t, state.Catalogs)
+	assert.Empty(t, state.Schemas)
+	assert.Empty(t, state.Volumes)
+}
+
+func TestApply_VolumeRejectsInvalidType(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "BOGUS",
+		},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	err := direct.Apply(t.Context(), u, client, plan, state)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "volume_type must be MANAGED or EXTERNAL")
+	assert.Empty(t, client.Calls)
+}
+
+func TestApply_VolumeExternalRequiresStorageLocation(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "EXTERNAL",
+		},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	err := direct.Apply(t.Context(), u, client, plan, state)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "storage_location is required for EXTERNAL")
+}
+
 func TestApply_RevokesPrincipalsNotInConfig(t *testing.T) {
 	u := ucmWith(nil, nil, map[string]*resources.Grant{
 		"analysts": {
