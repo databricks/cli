@@ -180,7 +180,38 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		// Note, currently we're diffing static structs, not dynamic value.
+		// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
+		// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
+		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
+		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
+		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
+		sv, ok := b.StateCache.Load(resourceKey)
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
+			return false
+		}
+
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
+
+		// preReadRemote holds remote state already fetched during import so we
+		// don't call DoRead twice.
+		var preReadRemote any
+
+		if !hasEntry {
+			if id, remote, ok := tryImportGrants(ctx, resourceKey, adapter, sv.Value); ok {
+				stateJSON, marshalErr := json.Marshal(remote)
+				if marshalErr != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: marshalling imported state: %w", errorPrefix, marshalErr))
+					return false
+				}
+				dbentry = dstate.ResourceEntry{ID: id, State: stateJSON}
+				hasEntry = true
+				entry.ID = id
+				preReadRemote = remote
+			}
+		}
+
 		if !hasEntry {
 			entry.Action = deployplan.Create
 			return true
@@ -196,31 +227,24 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
 			return false
 		}
-
-		// Note, currently we're diffing static structs, not dynamic value.
-		// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
-		// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
-		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
-		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
-		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-		sv, ok := b.StateCache.Load(resourceKey)
-		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
-			return false
-		}
 		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
 		}
 
-		remoteState, err := adapter.DoRead(ctx, dbentry.ID)
-		if err != nil {
-			if isResourceGone(err) {
-				remoteState = nil
-			} else {
-				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
-				return false
+		var remoteState any
+		if preReadRemote != nil {
+			remoteState = preReadRemote
+		} else {
+			remoteState, err = adapter.DoRead(ctx, dbentry.ID)
+			if err != nil {
+				if isResourceGone(err) {
+					remoteState = nil
+				} else {
+					logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
+					return false
+				}
 			}
 		}
 
@@ -291,6 +315,38 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	}
 
 	return plan, nil
+}
+
+// tryImportGrants attempts a DoRead on first plan for grants resources: the id
+// (securable_type/full_name) is fully derivable from config, so we can check
+// whether the desired grants already exist remotely and produce an accurate
+// plan (skip/update) instead of always showing "create".
+func tryImportGrants(ctx context.Context, resourceKey string, adapter *dresources.Adapter, svValue any) (string, any, bool) {
+	if !strings.HasSuffix(resourceKey, ".grants") {
+		return "", nil, false
+	}
+	state, ok := svValue.(*dresources.GrantsState)
+	if !ok {
+		return "", nil, false
+	}
+	id := dresources.ComputeImportID(state)
+	if id == "" {
+		return "", nil, false
+	}
+	remote, err := adapter.DoRead(ctx, id)
+	if err != nil {
+		if isResourceGone(err) {
+			return "", nil, false
+		}
+		log.Debugf(ctx, "%s: import DoRead failed: %v", resourceKey, err)
+		return "", nil, false
+	}
+	remoteGrants, ok := remote.(*dresources.GrantsState)
+	if !ok || remoteGrants == nil || len(remoteGrants.EmbeddedSlice) == 0 {
+		// No grants remotely; let the normal create path handle it.
+		return "", nil, false
+	}
+	return id, remoteGrants, true
 }
 
 func getMaxAction(m map[string]*deployplan.ChangeDesc) deployplan.ActionType {

@@ -1,0 +1,31 @@
+SCHEMA_NAME=schema_grants_import_$UNIQUE_NAME
+SCHEMA_FULL_NAME=main.$SCHEMA_NAME
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt update.rendered.json databricks.yml
+}
+trap cleanup EXIT
+
+title "Phase 1: deploy bundle with schema only (no grants block)"
+envsubst < schema_only.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+
+title "Phase 2: add grants out-of-band, simulating a pre-existing grant"
+envsubst < update.json > update.rendered.json
+trace $CLI grants update schema "$SCHEMA_FULL_NAME" --json @update.rendered.json > /dev/null
+
+title "Phase 3: bundle picks up matching grants -> first plan imports and skips"
+envsubst < with_grants_match.yml.tmpl > databricks.yml
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"
+rm -f out.requests.txt
+
+title "Phase 4: deploy confirms no changes (skip action, no state write)"
+trace $CLI bundle deploy
+
+title "Phase 5: switch to differing grants -> plan shows update, not create"
+envsubst < with_grants_differ.yml.tmpl > databricks.yml
+trace $CLI bundle plan | contains.py "update schemas.grants_schema.grants"
+rm -f out.requests.txt
+
+trace $CLI bundle deploy

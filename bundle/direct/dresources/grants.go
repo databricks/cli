@@ -88,6 +88,20 @@ func (*ResourceGrants) KeyedSlices() map[string]any {
 	}
 }
 
+// ComputeImportID returns the grants id derivable from a state object, or "" if
+// the full_name reference hasn't been resolved yet. Grants are unusual in that
+// the identity (securable_type/full_name) comes entirely from config, so we can
+// call DoRead on first plan before any apply has persisted state.
+func ComputeImportID(state *GrantsState) string {
+	if state == nil || state.SecurableType == "" || state.FullName == "" {
+		return ""
+	}
+	if strings.Contains(state.FullName, "${") {
+		return ""
+	}
+	return state.SecurableType + "/" + state.FullName
+}
+
 func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, error) {
 	securableType, fullName, err := parseGrantsID(id)
 	if err != nil {

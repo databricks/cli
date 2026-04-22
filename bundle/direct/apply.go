@@ -30,6 +30,12 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 
 	oldID := db.GetResourceID(d.ResourceKey)
 	if oldID == "" {
+		// First-plan import (grants, today): the planner identified the resource
+		// from config and set planEntry.ID without writing state. Use that id;
+		// Update/Recreate will persist state on success.
+		oldID = planEntry.ID
+	}
+	if oldID == "" {
 		return errors.New("state entry not found")
 	}
 

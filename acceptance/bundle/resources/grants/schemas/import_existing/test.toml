@@ -1,0 +1,12 @@
+# Import-on-first-plan only applies to the direct engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Schema deploys are not idempotent on the cloud backend and this test has
+# phased bundle configs, so keep it local-only for deterministic output.
+Cloud = false
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+    "update.rendered.json",
+]

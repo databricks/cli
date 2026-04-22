@@ -1,0 +1,45 @@
+
+=== Phase 1: deploy bundle with schema only (no grants block)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/grants-import-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Phase 2: add grants out-of-band, simulating a pre-existing grant
+>>> [CLI] grants update schema main.schema_grants_import_[UNIQUE_NAME] --json @update.rendered.json
+
+=== Phase 3: bundle picks up matching grants -> first plan imports and skips
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Phase 4: deploy confirms no changes (skip action, no state write)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/grants-import-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Phase 5: switch to differing grants -> plan shows update, not create
+>>> [CLI] bundle plan
+update schemas.grants_schema.grants
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/grants-import-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> errcode [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.grants_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.grants_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/grants-import-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
