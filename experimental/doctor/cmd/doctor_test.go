@@ -229,8 +229,9 @@ func TestCheckAuth(t *testing.T) {
 			}
 
 			ctx := cmdio.MockDiscard(t.Context())
-			cfg, resolveErr := resolveConfig(ctx, "", false)
-			result, authCfg := checkAuth(ctx, cfg, resolveErr)
+			cfg, err := resolveConfig(ctx, "", false)
+			require.NoError(t, err)
+			result, authCfg := checkAuth(ctx, cfg)
 
 			assert.Equal(t, "Authentication", result.Name)
 			assert.Equal(t, tt.wantStatus, result.Status)

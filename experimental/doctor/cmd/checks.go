@@ -48,14 +48,19 @@ func fail(name, msg string, err error) CheckResult {
 	return r
 }
 
-func withCheckTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(ctx, checkTimeout)
-}
-
 // runChecks runs all diagnostic checks and returns the results.
 func runChecks(ctx context.Context, profile string, profileFromFlag bool) []CheckResult {
-	cfg, err := resolveConfig(ctx, profile, profileFromFlag)
-	authResult, authCfg := checkAuth(ctx, cfg, err)
+	cfg, resolveErr := resolveConfig(ctx, profile, profileFromFlag)
+
+	var (
+		authResult CheckResult
+		authCfg    *config.Config
+	)
+	if resolveErr != nil {
+		authResult = fail("Authentication", "Cannot resolve config", resolveErr)
+	} else {
+		authResult, authCfg = checkAuth(ctx, cfg)
+	}
 
 	identityResult := skip("Identity", "Skipped (authentication failed)")
 	if authCfg != nil {
@@ -72,7 +77,7 @@ func runChecks(ctx context.Context, profile string, profileFromFlag bool) []Chec
 		checkCurrentProfile(ctx, profile, profileFromFlag, cfg),
 		authResult,
 		identityResult,
-		checkNetwork(ctx, cfg, err, authCfg),
+		checkNetwork(ctx, cfg, resolveErr, authCfg),
 	}
 }
 
@@ -128,7 +133,7 @@ func resolveConfig(ctx context.Context, profileName string, fromFlag bool) (*con
 	return cfg, cfg.EnsureResolved()
 }
 
-// isAccountLevelConfig returns true if the resolved config targets account-level APIs.
+// isAccountLevelConfig returns true if the resolved config can target account-level APIs.
 // It uses auth.ResolveConfigType so SPOG / unified-host profiles, which the SDK's own
 // ConfigType() classifies as InvalidConfig, are still recognised as account-level.
 func isAccountLevelConfig(cfg *config.Config) bool {
@@ -137,13 +142,9 @@ func isAccountLevelConfig(cfg *config.Config) bool {
 
 // checkAuth uses the resolved config to authenticate.
 // On success it returns the authenticated config for use in subsequent checks.
-func checkAuth(ctx context.Context, cfg *config.Config, resolveErr error) (CheckResult, *config.Config) {
-	ctx, cancel := withCheckTimeout(ctx)
+func checkAuth(ctx context.Context, cfg *config.Config) (CheckResult, *config.Config) {
+	ctx, cancel := context.WithTimeout(ctx, checkTimeout)
 	defer cancel()
-
-	if resolveErr != nil {
-		return fail("Authentication", "Cannot resolve config", resolveErr), nil
-	}
 
 	// Detect account-level configs and use the appropriate client constructor
 	// so that account profiles are not incorrectly reported as broken.
@@ -179,7 +180,7 @@ func checkAuth(ctx context.Context, cfg *config.Config, resolveErr error) (Check
 }
 
 func checkIdentity(ctx context.Context, authCfg *config.Config) CheckResult {
-	ctx, cancel := withCheckTimeout(ctx)
+	ctx, cancel := context.WithTimeout(ctx, checkTimeout)
 	defer cancel()
 
 	if isAccountLevelConfig(authCfg) {
