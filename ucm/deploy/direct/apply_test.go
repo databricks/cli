@@ -231,6 +231,31 @@ func (r *recordingClient) UpdatePermissions(_ context.Context, in catalog.Update
 	return nil
 }
 
+// List* methods are unused by apply/destroy but required to satisfy direct.Client.
+func (*recordingClient) ListCatalogs(_ context.Context) ([]catalog.CatalogInfo, error) {
+	return nil, nil
+}
+
+func (*recordingClient) ListSchemas(_ context.Context, _ string) ([]catalog.SchemaInfo, error) {
+	return nil, nil
+}
+
+func (*recordingClient) ListStorageCredentials(_ context.Context) ([]catalog.StorageCredentialInfo, error) {
+	return nil, nil
+}
+
+func (*recordingClient) ListExternalLocations(_ context.Context) ([]catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+
+func (*recordingClient) ListVolumes(_ context.Context, _, _ string) ([]catalog.VolumeInfo, error) {
+	return nil, nil
+}
+
+func (*recordingClient) ListConnections(_ context.Context) ([]catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
 func TestApply_CreateHappyPath(t *testing.T) {
 	u := ucmWith(
 		map[string]*resources.Catalog{"main": {Name: "main", Comment: "prod"}},
