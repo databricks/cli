@@ -165,6 +165,20 @@ func (*fakeDirectClient) UpdateStorageCredential(_ context.Context, _ catalog.Up
 
 func (*fakeDirectClient) DeleteStorageCredential(_ context.Context, _ string) error { return nil }
 
+func (*fakeDirectClient) GetExternalLocation(_ context.Context, _ string) (*catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) CreateExternalLocation(_ context.Context, _ catalog.CreateExternalLocation) (*catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) UpdateExternalLocation(_ context.Context, _ catalog.UpdateExternalLocation) (*catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) DeleteExternalLocation(_ context.Context, _ string) error { return nil }
+
 func (*fakeDirectClient) UpdatePermissions(_ context.Context, _ catalog.UpdatePermissions) error {
 	return nil
 }
