@@ -19,7 +19,7 @@ func ConvertToString(value any) (string, error) {
 
 	// Use the same conversion logic as convertValue for consistency
 	valueVal := reflect.ValueOf(value)
-	stringType := reflect.TypeOf("")
+	stringType := reflect.TypeFor[string]()
 
 	convertedValue, err := convertValue(valueVal, stringType)
 	if err != nil {

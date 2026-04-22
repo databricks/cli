@@ -42,8 +42,8 @@ func (c *clusterSources) String() string {
 }
 
 func (c *clusterSources) Set(value string) error {
-	splits := strings.Split(value, ",")
-	for _, split := range splits {
+	splits := strings.SplitSeq(value, ",")
+	for split := range splits {
 		*c.source = append(*c.source, compute.ClusterSource(split))
 	}
 
@@ -68,8 +68,8 @@ func (c *clusterStates) String() string {
 }
 
 func (c *clusterStates) Set(value string) error {
-	splits := strings.Split(value, ",")
-	for _, split := range splits {
+	splits := strings.SplitSeq(value, ",")
+	for split := range splits {
 		*c.state = append(*c.state, compute.State(split))
 	}
 

@@ -109,7 +109,7 @@ func resolveAgentNames(ctx context.Context, names string) ([]*agents.Agent, erro
 
 	var result []*agents.Agent
 	seen := make(map[string]bool)
-	for _, name := range strings.Split(names, ",") {
+	for name := range strings.SplitSeq(names, ",") {
 		name = strings.TrimSpace(name)
 		if name == "" || seen[name] {
 			continue

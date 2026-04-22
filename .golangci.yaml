@@ -34,7 +34,14 @@ linters:
     - gocheckcompilerdirectives
     - asciicheck
     - reassign
+    - modernize
   settings:
+    modernize:
+      # omitzero changes JSON wire format for nested structs (unlike omitempty),
+      # so each site needs per-site review rather than a bulk rewrite.
+      disable:
+        - omitzero
+
     depguard:
       rules:
         no-experimental-imports:

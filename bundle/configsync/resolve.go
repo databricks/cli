@@ -159,10 +159,7 @@ func adjustArrayIndex(path *structpath.PatternNode, operations map[string][]stru
 		}
 	}
 
-	adjustedIndex := originalIndex + adjustment
-	if adjustedIndex < 0 {
-		adjustedIndex = 0
-	}
+	adjustedIndex := max(originalIndex+adjustment, 0)
 
 	return structpath.NewPatternIndex(parentPath, adjustedIndex)
 }

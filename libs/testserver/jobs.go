@@ -677,8 +677,8 @@ func (s *FakeWorkspace) preprocessNotebook(notebook string, params map[string]st
 	}
 	result = append(result, "")
 
-	lines := strings.Split(notebook, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(notebook, "\n")
+	for line := range lines {
 		trimmed := strings.TrimSpace(line)
 
 		// Skip %python magic commands
