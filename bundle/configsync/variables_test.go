@@ -124,6 +124,88 @@ func TestRestoreFromReverseMap_NestedMap(t *testing.T) {
 	assert.Equal(t, "us-west-2", m["region"])
 }
 
+func TestRestoreCompoundInterpolation_SuffixChanged(t *testing.T) {
+	preResolved := dyn.V("/mnt/${var.storage_account}/raw/landing")
+	resolved := dyn.V(map[string]dyn.Value{
+		"variables": dyn.V(map[string]dyn.Value{
+			"storage_account": dyn.V(map[string]dyn.Value{
+				"value": dyn.V("devstorageacct"),
+			}),
+		}),
+	})
+
+	result := restoreOriginalRefs("/mnt/devstorageacct/raw/landing_v2", preResolved, resolved)
+	assert.Equal(t, "/mnt/${var.storage_account}/raw/landing_v2", result)
+}
+
+func TestRestoreCompoundInterpolation_PrefixVariable(t *testing.T) {
+	preResolved := dyn.V("${bundle.name}_landing_to_raw")
+	resolved := dyn.V(map[string]dyn.Value{
+		"bundle": dyn.V(map[string]dyn.Value{
+			"name": dyn.V("analytics_pipeline"),
+		}),
+	})
+
+	result := restoreOriginalRefs("analytics_pipeline_landing_to_raw_v2", preResolved, resolved)
+	assert.Equal(t, "${bundle.name}_landing_to_raw_v2", result)
+}
+
+func TestRestoreCompoundInterpolation_MultipleVars(t *testing.T) {
+	preResolved := dyn.V("jdbc:sqlserver://${var.db_host}:${var.db_port};database=${var.db_name}")
+	resolved := dyn.V(map[string]dyn.Value{
+		"variables": dyn.V(map[string]dyn.Value{
+			"db_host": dyn.V(map[string]dyn.Value{"value": dyn.V("dev-sql.example.com")}),
+			"db_port": dyn.V(map[string]dyn.Value{"value": dyn.V("1433")}),
+			"db_name": dyn.V(map[string]dyn.Value{"value": dyn.V("analytics_dev")}),
+		}),
+	})
+
+	// Only port changed — host and db_name preserved.
+	result := restoreOriginalRefs(
+		"jdbc:sqlserver://dev-sql.example.com:5432;database=analytics_dev",
+		preResolved, resolved,
+	)
+	assert.Equal(t, "jdbc:sqlserver://${var.db_host}:5432;database=${var.db_name}", result)
+}
+
+func TestRestoreCompoundInterpolation_AllVarsMatch(t *testing.T) {
+	preResolved := dyn.V("${var.org}-${bundle.name}-job")
+	resolved := dyn.V(map[string]dyn.Value{
+		"variables": dyn.V(map[string]dyn.Value{
+			"org": dyn.V(map[string]dyn.Value{"value": dyn.V("acme")}),
+		}),
+		"bundle": dyn.V(map[string]dyn.Value{
+			"name": dyn.V("etl"),
+		}),
+	})
+
+	// Nothing changed — template restored as-is.
+	result := restoreOriginalRefs("acme-etl-job", preResolved, resolved)
+	assert.Equal(t, "${var.org}-${bundle.name}-job", result)
+}
+
+func TestRestoreCompoundInterpolation_NoVarsInOriginal(t *testing.T) {
+	preResolved := dyn.V("just_a_plain_string")
+	resolved := dyn.V(map[string]dyn.Value{})
+
+	result := restoreOriginalRefs("something_else", preResolved, resolved)
+	assert.Equal(t, "something_else", result)
+}
+
+func TestRestoreCompoundInterpolation_ValueCompletelyDifferent(t *testing.T) {
+	preResolved := dyn.V("${var.org_prefix}-phi-encryption-key")
+	resolved := dyn.V(map[string]dyn.Value{
+		"variables": dyn.V(map[string]dyn.Value{
+			"org_prefix": dyn.V(map[string]dyn.Value{"value": dyn.V("hc-dev")}),
+		}),
+	})
+
+	// New value has no relationship to the variable.
+	result := restoreOriginalRefs("master-encryption-key-v2", preResolved, resolved)
+	// Variable not found in remote string — can't align, falls back to hardcoded.
+	assert.Equal(t, "master-encryption-key-v2", result)
+}
+
 func TestStripBracketStars(t *testing.T) {
 	tests := []struct {
 		input string

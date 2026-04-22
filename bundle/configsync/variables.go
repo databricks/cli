@@ -18,9 +18,12 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // references (e.g., ${var.foo}) when the value can be traced back to a
 // variable in the original YAML.
 //
-// For Replace operations, restoration only happens when the pre-resolved YAML
-// at the exact field position was a pure variable reference whose resolved
-// value matches the incoming remote value. The reverse map is NOT used for
+// For Replace operations, restoration requires the pre-resolved YAML at the
+// exact field position. Pure variable references (e.g., ${var.catalog}) are
+// restored when their resolved value matches. Compound interpolation strings
+// (e.g., "/mnt/${var.account}/raw/landing") are reconstructed by preserving
+// variables whose resolved values still appear at their expected positions
+// and updating only the literal segments. The reverse map is NOT used for
 // Replace — this prevents false positives where a sibling's variable context
 // would incorrectly rewrite an unrelated hardcoded field.
 //
@@ -93,7 +96,8 @@ func buildVariableReverseMap(resolved dyn.Value, fileCache map[string]dyn.Value,
 // references (e.g., ${var.foo}, ${bundle.name}) and adds them to the reverse
 // map keyed by their resolved value.
 func collectReferences(preResolved, resolved dyn.Value, m map[any][]string, seen map[string]bool) {
-	dyn.WalkReadOnly(preResolved, func(_ dyn.Path, v dyn.Value) error { //nolint:errcheck
+	// The callback never returns an error, so WalkReadOnly always returns nil.
+	_ = dyn.WalkReadOnly(preResolved, func(_ dyn.Path, v dyn.Value) error {
 		if v.Kind() != dyn.KindString {
 			return nil
 		}
@@ -150,13 +154,19 @@ func resolveReferencePath(refStr string) (dyn.Path, bool) {
 }
 
 // restoreOriginalRefs recursively restores variable references for Replace
-// operations. Only restores a leaf when the pre-resolved config at the same
-// position was a pure variable reference whose resolved value matches.
+// operations. For pure variable references, restores when the resolved value
+// matches. For compound interpolation (e.g., "${var.X}_suffix"), preserves
+// variables whose resolved values still appear at their expected positions.
 func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 	switch v := value.(type) {
 	case string, bool, int64:
 		if ref, ok := matchOriginalRef(value, preResolved, resolved); ok {
 			return ref
+		}
+		if s, ok := value.(string); ok {
+			if restored, ok := restoreCompoundInterpolation(s, preResolved, resolved); ok {
+				return restored
+			}
 		}
 		return value
 
@@ -241,6 +251,189 @@ func matchOriginalRef(remoteValue any, preResolved, resolved dyn.Value) (string,
 		return s, true
 	}
 	return "", false
+}
+
+// restoreCompoundInterpolation handles strings with mixed variable references
+// and literal text, e.g., "/mnt/${var.account}/raw/landing". It checks whether
+// each variable's resolved value still appears at its expected position in the
+// remote string. Variables that match are preserved; changed literal segments
+// are updated. Falls back to false if the template can't be aligned.
+//
+// Known limitation: variable matching is prefix-greedy. If ${var.X}="foo" and
+// the remote starts with "footbar...", HasPrefix matches "foo" and the leftover
+// "tbar" becomes literal garbage. Adjacent variables without a literal separator
+// (e.g., "${var.A}${var.B}") cannot be reliably split if either value changes.
+func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.Value) (string, bool) {
+	if !preResolved.IsValid() {
+		return "", false
+	}
+	template, ok := preResolved.AsString()
+	if !ok || !dynvar.ContainsVariableReference(template) || dynvar.IsPureVariableReference(template) {
+		return "", false
+	}
+
+	// Parse the template into segments: alternating literal and variable parts.
+	segments := parseTemplateSegments(template, resolved)
+	if segments == nil {
+		return "", false
+	}
+
+	// Walk the remote string, aligning each segment against the template.
+	// For each segment we try an exact match first. On mismatch we search
+	// ahead for the next literal anchor to determine the boundary.
+	// The last segment always consumes all remaining text.
+	var result strings.Builder
+	pos := 0
+
+	for i, seg := range segments {
+		if pos > len(remoteValue) {
+			return "", false
+		}
+
+		remaining := remoteValue[pos:]
+		isLast := i == len(segments)-1
+
+		if seg.isVariable {
+			if seg.resolvedValue == "" {
+				return "", false
+			}
+			if isLast {
+				// Last segment: variable must match the entire remainder.
+				if remaining == seg.resolvedValue {
+					result.WriteString(seg.raw)
+				} else {
+					result.WriteString(remaining)
+				}
+				pos = len(remoteValue)
+			} else if strings.HasPrefix(remaining, seg.resolvedValue) {
+				result.WriteString(seg.raw)
+				pos += len(seg.resolvedValue)
+			} else {
+				end := findAnchorOffset(segments, i+1, remaining)
+				if end < 0 {
+					return "", false
+				}
+				result.WriteString(remaining[:end])
+				pos += end
+			}
+		} else {
+			if isLast {
+				// Last literal: take the entire remainder (may include suffix changes).
+				result.WriteString(remaining)
+				pos = len(remoteValue)
+			} else if strings.HasPrefix(remaining, seg.raw) {
+				result.WriteString(seg.raw)
+				pos += len(seg.raw)
+			} else {
+				end := findAnchorOffset(segments, i+1, remaining)
+				if end < 0 {
+					return "", false
+				}
+				result.WriteString(remaining[:end])
+				pos += end
+			}
+		}
+	}
+
+	restored := result.String()
+	if restored == template {
+		// Nothing changed — keep the original template as-is.
+		return template, true
+	}
+	if !dynvar.ContainsVariableReference(restored) {
+		// All variables were lost — no benefit over hardcoding.
+		return "", false
+	}
+	return restored, true
+}
+
+// templateSegment represents either a literal string or a variable reference
+// within a template string.
+type templateSegment struct {
+	raw           string // as it appears in the template (literal text or "${var.X}")
+	isVariable    bool
+	resolvedValue string // only set for variable segments
+}
+
+// parseTemplateSegments splits a template string like "/mnt/${var.X}/raw"
+// into alternating literal and variable segments, resolving each variable.
+// Returns nil if any variable can't be resolved.
+func parseTemplateSegments(template string, resolved dyn.Value) []templateSegment {
+	ref, ok := dynvar.NewRef(dyn.V(template))
+	if !ok {
+		return nil
+	}
+
+	// Build full match strings: each Matches[i][0] is the "${...}" text.
+	var segments []templateSegment
+	cursor := 0
+
+	for _, m := range ref.Matches {
+		fullMatch := m[0] // e.g., "${var.catalog}"
+
+		// Find this match in the template starting from cursor.
+		idx := strings.Index(template[cursor:], fullMatch)
+		if idx < 0 {
+			return nil
+		}
+
+		// Literal before this variable.
+		if idx > 0 {
+			segments = append(segments, templateSegment{
+				raw: template[cursor : cursor+idx],
+			})
+		}
+
+		resolvedPath, ok := resolveReferencePath(fullMatch)
+		if !ok {
+			return nil
+		}
+
+		resolvedV, err := dyn.GetByPath(resolved, resolvedPath)
+		if err != nil {
+			return nil
+		}
+
+		resolvedStr, ok := resolvedV.AsString()
+		if !ok {
+			return nil
+		}
+
+		segments = append(segments, templateSegment{
+			raw:           fullMatch,
+			isVariable:    true,
+			resolvedValue: resolvedStr,
+		})
+
+		cursor += idx + len(fullMatch)
+	}
+
+	// Trailing literal.
+	if cursor < len(template) {
+		segments = append(segments, templateSegment{
+			raw: template[cursor:],
+		})
+	}
+
+	return segments
+}
+
+// findAnchorOffset searches for the next literal segment's text in remaining
+// and returns the offset where it starts. This is used to determine boundaries
+// when a variable or literal segment doesn't match at the current position.
+// Returns len(remaining) if no subsequent literal exists (last segment case).
+// Returns -1 if a subsequent literal exists but can't be found.
+func findAnchorOffset(segments []templateSegment, from int, remaining string) int {
+	for i := from; i < len(segments); i++ {
+		if !segments[i].isVariable {
+			idx := strings.Index(remaining, segments[i].raw)
+			if idx < 0 {
+				return -1
+			}
+			return idx
+		}
+	}
+	return len(remaining)
 }
 
 // fieldVariableContext returns the pre-resolved dyn.Value at the field path

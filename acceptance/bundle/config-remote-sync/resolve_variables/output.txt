@@ -43,12 +43,13 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Replace variable-backed field remotely
+=== Replace variable-backed fields remotely
 === Detect and save Replace changes
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
   parameters[name='catalog'].default: replace
+  tasks[task_key='main'].notebook_task.base_parameters['source_path']: replace
 
 
 
@@ -64,6 +65,13 @@ Resource: resources.jobs.my_job
 +          default: staging_catalog
          - name: env
            default: ${var.target_env}
+@@ -55,5 +55,5 @@
+             base_parameters:
+               # Compound interpolation: variable embedded in a longer string.
+-              source_path: /mnt/${var.my_catalog}/raw/landing
++              source_path: /mnt/${var.my_catalog}/raw/landing_v2
+
+ targets:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

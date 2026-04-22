@@ -42,6 +42,9 @@ resources:
         - task_key: main
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
+            base_parameters:
+              # Compound interpolation: variable embedded in a longer string.
+              source_path: /mnt/${var.my_catalog}/raw/landing
 
 targets:
   default:
