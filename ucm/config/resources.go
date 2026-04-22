@@ -10,5 +10,6 @@ type Resources struct {
 	Schemas            map[string]*resources.Schema            `json:"schemas,omitempty"`
 	Grants             map[string]*resources.Grant             `json:"grants,omitempty"`
 	StorageCredentials map[string]*resources.StorageCredential `json:"storage_credentials,omitempty"`
+	ExternalLocations  map[string]*resources.ExternalLocation  `json:"external_locations,omitempty"`
 	TagValidationRules map[string]*resources.TagValidationRule `json:"tag_validation_rules,omitempty"`
 }
