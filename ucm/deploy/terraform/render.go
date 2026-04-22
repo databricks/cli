@@ -29,6 +29,11 @@ func (t *Terraform) Render(ctx context.Context, u *ucm.Ucm) error {
 		return fmt.Errorf("convert ucm to terraform: %w", err)
 	}
 
+	tree, err = Interpolate(tree)
+	if err != nil {
+		return fmt.Errorf("interpolate terraform refs: %w", err)
+	}
+
 	data, err := jsonsaver.MarshalIndent(tree, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal terraform json: %w", err)

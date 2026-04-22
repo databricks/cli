@@ -18,17 +18,19 @@ import (
 // ucm.yml. The wrapper in U5 combines these into a top-level `resource`
 // block.
 type Resources struct {
-	Catalog map[string]dyn.Value
-	Schema  map[string]dyn.Value
-	Grants  map[string]dyn.Value
+	Catalog           map[string]dyn.Value
+	Schema            map[string]dyn.Value
+	Grants            map[string]dyn.Value
+	StorageCredential map[string]dyn.Value
 }
 
 // NewResources returns an empty Resources ready for converters to fill.
 func NewResources() *Resources {
 	return &Resources{
-		Catalog: map[string]dyn.Value{},
-		Schema:  map[string]dyn.Value{},
-		Grants:  map[string]dyn.Value{},
+		Catalog:           map[string]dyn.Value{},
+		Schema:            map[string]dyn.Value{},
+		Grants:            map[string]dyn.Value{},
+		StorageCredential: map[string]dyn.Value{},
 	}
 }
 

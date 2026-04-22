@@ -26,6 +26,10 @@ type recordingClient struct {
 	UpdatedSchemas []catalog.UpdateSchema
 	DeletedSchemas []string
 
+	CreatedStorageCredentials []catalog.CreateStorageCredential
+	UpdatedStorageCredentials []catalog.UpdateStorageCredential
+	DeletedStorageCredentials []string
+
 	Permissions []catalog.UpdatePermissions
 
 	FailOn string
@@ -92,6 +96,34 @@ func (r *recordingClient) DeleteSchema(_ context.Context, fullName string) error
 		return err
 	}
 	r.DeletedSchemas = append(r.DeletedSchemas, fullName)
+	return nil
+}
+
+func (r *recordingClient) GetStorageCredential(_ context.Context, _ string) (*catalog.StorageCredentialInfo, error) {
+	return nil, nil
+}
+
+func (r *recordingClient) CreateStorageCredential(_ context.Context, in catalog.CreateStorageCredential) (*catalog.StorageCredentialInfo, error) {
+	if err := r.trip("CreateStorageCredential:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.CreatedStorageCredentials = append(r.CreatedStorageCredentials, in)
+	return &catalog.StorageCredentialInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) UpdateStorageCredential(_ context.Context, in catalog.UpdateStorageCredential) (*catalog.StorageCredentialInfo, error) {
+	if err := r.trip("UpdateStorageCredential:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.UpdatedStorageCredentials = append(r.UpdatedStorageCredentials, in)
+	return &catalog.StorageCredentialInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) DeleteStorageCredential(_ context.Context, name string) error {
+	if err := r.trip("DeleteStorageCredential:" + name); err != nil {
+		return err
+	}
+	r.DeletedStorageCredentials = append(r.DeletedStorageCredentials, name)
 	return nil
 }
 
@@ -205,6 +237,97 @@ func TestApply_PreservesStateOnMidApplyError(t *testing.T) {
 	// is kept so the next retry sees the partial progress.
 	assert.NotNil(t, state.Catalogs["main"])
 	assert.Nil(t, state.Schemas["raw"])
+}
+
+func TestApply_StorageCredentialCreateOrdersBeforeCatalog(t *testing.T) {
+	u := ucmWith(
+		map[string]*resources.Catalog{"main": {Name: "main"}},
+		nil,
+		nil,
+	)
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"prod": {
+			Name:       "prod",
+			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/uc"},
+		},
+	}
+
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{
+		"CreateStorageCredential:prod",
+		"CreateCatalog:main",
+	}, client.Calls)
+
+	require.NotNil(t, state.StorageCredentials["prod"])
+	assert.Equal(t, "arn:aws:iam::1:role/uc", state.StorageCredentials["prod"].AwsIamRole.RoleArn)
+}
+
+func TestApply_StorageCredentialUpdate(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"prod": {
+			Name:       "prod",
+			Comment:    "new",
+			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/new"},
+		},
+	}
+	state := direct.NewState()
+	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
+		Name:       "prod",
+		Comment:    "old",
+		AwsIamRole: &direct.AwsIamRoleState{RoleArn: "arn:aws:iam::1:role/old"},
+	}
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{"UpdateStorageCredential:prod"}, client.Calls)
+	assert.Equal(t, "new", state.StorageCredentials["prod"].Comment)
+	assert.Equal(t, "arn:aws:iam::1:role/new", state.StorageCredentials["prod"].AwsIamRole.RoleArn)
+}
+
+func TestApply_StorageCredentialDeleteOrdersAfterCatalog(t *testing.T) {
+	u := &ucm.Ucm{}
+	state := direct.NewState()
+	state.Catalogs["main"] = &direct.CatalogState{Name: "main"}
+	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
+		Name:       "prod",
+		AwsIamRole: &direct.AwsIamRoleState{RoleArn: "arn:aws:iam::1:role/uc"},
+	}
+
+	client := &recordingClient{}
+	plan, err := direct.Destroy(t.Context(), u, client, state)
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	assert.Equal(t, []string{
+		"DeleteCatalog:main",
+		"DeleteStorageCredential:prod",
+	}, client.Calls)
+
+	assert.Empty(t, state.Catalogs)
+	assert.Empty(t, state.StorageCredentials)
+}
+
+func TestApply_StorageCredentialRejectsMissingIdentity(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"bad": {Name: "bad"},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	err := direct.Apply(t.Context(), u, client, plan, state)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "exactly one identity field")
+	assert.Empty(t, client.Calls, "no API call must be made when validation fails")
 }
 
 func TestApply_RevokesPrincipalsNotInConfig(t *testing.T) {

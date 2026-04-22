@@ -20,8 +20,9 @@ import (
 //
 // Execution order is the natural UC dependency order:
 //
-//	catalogs creates+updates → schemas creates+updates → grants reconcile
-//	→ schema deletes → catalog deletes
+//	storage_credential creates+updates → catalog creates+updates
+//	→ schema creates+updates → grants reconcile → schema deletes
+//	→ catalog deletes → storage_credential deletes
 //
 // Grants are reconciled per securable in a single pass (Create, Update, and
 // Delete share the code path) because the UC API treats grants as a full
@@ -29,6 +30,9 @@ import (
 // per-grant-key plan shape still makes individual additions/removals
 // observable to users in the plan output.
 func Apply(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
+	if err := applyStorageCredentialCreates(ctx, u, client, plan, state); err != nil {
+		return err
+	}
 	if err := applyCatalogCreates(ctx, u, client, plan, state); err != nil {
 		return err
 	}
@@ -42,6 +46,9 @@ func Apply(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan
 		return err
 	}
 	if err := applyCatalogDeletes(ctx, client, plan, state); err != nil {
+		return err
+	}
+	if err := applyStorageCredentialDeletes(ctx, client, plan, state); err != nil {
 		return err
 	}
 	return nil
@@ -61,10 +68,64 @@ func Destroy(ctx context.Context, u *ucm.Ucm, client Client, state *State) (*dep
 	for key := range state.Catalogs {
 		plan.Plan["resources.catalogs."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	}
+	for key := range state.StorageCredentials {
+		plan.Plan["resources.storage_credentials."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	}
 	if err := Apply(ctx, u, client, plan, state); err != nil {
 		return plan, err
 	}
 	return plan, nil
+}
+
+func applyStorageCredentialCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range sortedPlanKeysByGroup(plan, "storage_credentials") {
+		entry := plan.Plan[key]
+		name := strings.TrimPrefix(key, "resources.storage_credentials.")
+		cfg := u.Config.Resources.StorageCredentials[name]
+		switch entry.Action {
+		case deployplan.Create:
+			log.Infof(ctx, "direct: creating storage_credential %s", name)
+			in, err := storageCredentialCreateInput(cfg)
+			if err != nil {
+				return fmt.Errorf("create storage_credential %s: %w", name, err)
+			}
+			if _, err := client.CreateStorageCredential(ctx, in); err != nil {
+				return fmt.Errorf("create storage_credential %s: %w", name, err)
+			}
+			state.StorageCredentials[name] = ptrStorageCredential(storageCredentialStateFromConfig(cfg))
+		case deployplan.Update:
+			log.Infof(ctx, "direct: updating storage_credential %s", name)
+			in, err := storageCredentialUpdateInput(cfg)
+			if err != nil {
+				return fmt.Errorf("update storage_credential %s: %w", name, err)
+			}
+			if _, err := client.UpdateStorageCredential(ctx, in); err != nil {
+				return fmt.Errorf("update storage_credential %s: %w", name, err)
+			}
+			state.StorageCredentials[name] = ptrStorageCredential(storageCredentialStateFromConfig(cfg))
+		}
+	}
+	return nil
+}
+
+func applyStorageCredentialDeletes(ctx context.Context, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range reverseSortedPlanKeysByGroup(plan, "storage_credentials") {
+		entry := plan.Plan[key]
+		if entry.Action != deployplan.Delete {
+			continue
+		}
+		name := strings.TrimPrefix(key, "resources.storage_credentials.")
+		rec, ok := state.StorageCredentials[name]
+		if !ok {
+			continue
+		}
+		log.Infof(ctx, "direct: deleting storage_credential %s", rec.Name)
+		if err := client.DeleteStorageCredential(ctx, rec.Name); err != nil {
+			return fmt.Errorf("delete storage_credential %s: %w", rec.Name, err)
+		}
+		delete(state.StorageCredentials, name)
+	}
+	return nil
 }
 
 func applyCatalogCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
@@ -228,6 +289,92 @@ func schemaUpdateInput(s *resources.Schema) catalog.UpdateSchema {
 	}
 }
 
+// storageCredentialIdentityCount counts which of the one-of identity fields
+// are set on the config struct. Matches the tfdyn converter's validation.
+func storageCredentialIdentityCount(c *resources.StorageCredential) int {
+	n := 0
+	if c.AwsIamRole != nil {
+		n++
+	}
+	if c.AzureManagedIdentity != nil {
+		n++
+	}
+	if c.AzureServicePrincipal != nil {
+		n++
+	}
+	if c.DatabricksGcpServiceAccount != nil {
+		n++
+	}
+	return n
+}
+
+func storageCredentialCreateInput(c *resources.StorageCredential) (catalog.CreateStorageCredential, error) {
+	if n := storageCredentialIdentityCount(c); n != 1 {
+		return catalog.CreateStorageCredential{}, fmt.Errorf("storage_credential %q: exactly one identity field required, got %d", c.Name, n)
+	}
+	in := catalog.CreateStorageCredential{
+		Name:           c.Name,
+		Comment:        c.Comment,
+		ReadOnly:       c.ReadOnly,
+		SkipValidation: c.SkipValidation,
+	}
+	if c.AwsIamRole != nil {
+		in.AwsIamRole = &catalog.AwsIamRoleRequest{RoleArn: c.AwsIamRole.RoleArn}
+	}
+	if c.AzureManagedIdentity != nil {
+		in.AzureManagedIdentity = &catalog.AzureManagedIdentityRequest{
+			AccessConnectorId: c.AzureManagedIdentity.AccessConnectorId,
+			ManagedIdentityId: c.AzureManagedIdentity.ManagedIdentityId,
+		}
+	}
+	if c.AzureServicePrincipal != nil {
+		in.AzureServicePrincipal = &catalog.AzureServicePrincipal{
+			DirectoryId:   c.AzureServicePrincipal.DirectoryId,
+			ApplicationId: c.AzureServicePrincipal.ApplicationId,
+			ClientSecret:  c.AzureServicePrincipal.ClientSecret,
+		}
+	}
+	if c.DatabricksGcpServiceAccount != nil {
+		in.DatabricksGcpServiceAccount = &catalog.DatabricksGcpServiceAccountRequest{}
+	}
+	return in, nil
+}
+
+// storageCredentialUpdateInput mirrors storageCredentialCreateInput except
+// Azure managed identity uses the SDK's *Response* type for updates — an
+// SDK quirk, not a bug on our side.
+func storageCredentialUpdateInput(c *resources.StorageCredential) (catalog.UpdateStorageCredential, error) {
+	if n := storageCredentialIdentityCount(c); n != 1 {
+		return catalog.UpdateStorageCredential{}, fmt.Errorf("storage_credential %q: exactly one identity field required, got %d", c.Name, n)
+	}
+	in := catalog.UpdateStorageCredential{
+		Name:           c.Name,
+		Comment:        c.Comment,
+		ReadOnly:       c.ReadOnly,
+		SkipValidation: c.SkipValidation,
+	}
+	if c.AwsIamRole != nil {
+		in.AwsIamRole = &catalog.AwsIamRoleRequest{RoleArn: c.AwsIamRole.RoleArn}
+	}
+	if c.AzureManagedIdentity != nil {
+		in.AzureManagedIdentity = &catalog.AzureManagedIdentityResponse{
+			AccessConnectorId: c.AzureManagedIdentity.AccessConnectorId,
+			ManagedIdentityId: c.AzureManagedIdentity.ManagedIdentityId,
+		}
+	}
+	if c.AzureServicePrincipal != nil {
+		in.AzureServicePrincipal = &catalog.AzureServicePrincipal{
+			DirectoryId:   c.AzureServicePrincipal.DirectoryId,
+			ApplicationId: c.AzureServicePrincipal.ApplicationId,
+			ClientSecret:  c.AzureServicePrincipal.ClientSecret,
+		}
+	}
+	if c.DatabricksGcpServiceAccount != nil {
+		in.DatabricksGcpServiceAccount = &catalog.DatabricksGcpServiceAccountRequest{}
+	}
+	return in, nil
+}
+
 func buildUpdatePermissions(sec securable, grants []*resources.Grant) catalog.UpdatePermissions {
 	changes := make([]catalog.PermissionsChange, 0, len(grants))
 	for _, g := range grants {
@@ -372,3 +519,6 @@ func sortSecurables(set map[securable]struct{}) []securable {
 func ptrCatalog(s CatalogState) *CatalogState { return &s }
 func ptrSchema(s SchemaState) *SchemaState    { return &s }
 func ptrGrant(s GrantState) *GrantState       { return &s }
+func ptrStorageCredential(s StorageCredentialState) *StorageCredentialState {
+	return &s
+}

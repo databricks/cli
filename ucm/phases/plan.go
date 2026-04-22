@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/deploy/direct"
 	"github.com/databricks/cli/ucm/deployplan"
 )
@@ -64,6 +65,11 @@ func planTerraform(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
 }
 
 func planDirect(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
+	ucm.ApplyContext(ctx, u, mutator.ResolveResourceReferences())
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
 	state, err := direct.LoadState(direct.StatePath(u))
 	if err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("load direct state: %w", err))

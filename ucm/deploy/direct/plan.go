@@ -30,11 +30,35 @@ import (
 func CalculatePlan(u *ucm.Ucm, state *State) *deployplan.Plan {
 	plan := deployplan.NewPlanTerraform()
 
+	planStorageCredentials(u, state, plan)
 	planCatalogs(u, state, plan)
 	planSchemas(u, state, plan)
 	planGrants(u, state, plan)
 
 	return plan
+}
+
+func planStorageCredentials(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
+	desired := u.Config.Resources.StorageCredentials
+	recorded := state.StorageCredentials
+
+	keys := mergedKeys(desired, recorded)
+	for _, key := range keys {
+		planKey := "resources.storage_credentials." + key
+
+		cfg, haveCfg := desired[key]
+		rec, haveRec := recorded[key]
+		switch {
+		case haveCfg && !haveRec:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Create}
+		case !haveCfg && haveRec:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Delete}
+		case storageCredentialStateFromConfig(cfg).equal(rec):
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Skip}
+		default:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Update}
+		}
+	}
 }
 
 func planCatalogs(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
@@ -144,6 +168,10 @@ func (s GrantState) equal(other *GrantState) bool {
 	left := normalizedGrant(s)
 	right := normalizedGrant(*other)
 	return reflect.DeepEqual(left, right)
+}
+
+func (s StorageCredentialState) equal(other *StorageCredentialState) bool {
+	return other != nil && reflect.DeepEqual(s, *other)
 }
 
 // normalizedGrant returns a copy of g with privileges sorted. The SDK sorts

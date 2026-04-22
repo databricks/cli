@@ -112,6 +112,37 @@ func TestRenderWritesExpectedMainTfJson(t *testing.T) {
 	assert.Equal(t, golden, string(body))
 }
 
+func TestRenderRewritesUcmPathRefsToTfPaths(t *testing.T) {
+	root := t.TempDir()
+	cfg, diags := config.LoadFromBytes(filepath.Join(root, "ucm.yml"), []byte(`
+ucm:
+  name: render-refs-test
+resources:
+  storage_credentials:
+    sales_cred:
+      name: sales_cred
+      aws_iam_role:
+        role_arn: "arn:aws:iam::1:role/uc"
+  catalogs:
+    sales:
+      name: sales_prod
+      storage_root: ${resources.storage_credentials.sales_cred.name}
+`))
+	require.False(t, diags.HasError(), "load: %v", diags)
+	cfg.Ucm.Target = "dev"
+
+	u := &ucm.Ucm{RootPath: root, Config: *cfg}
+	workingDir, err := WorkingDir(u)
+	require.NoError(t, err)
+	tf := &Terraform{WorkingDir: workingDir, runnerFactory: defaultRunnerFactory}
+
+	require.NoError(t, tf.Render(t.Context(), u))
+
+	body, err := os.ReadFile(filepath.Join(workingDir, MainConfigFileName))
+	require.NoError(t, err)
+	assert.Contains(t, string(body), `"storage_root": "${databricks_storage_credential.sales_cred.name}"`)
+}
+
 func TestRenderIsIdempotent(t *testing.T) {
 	u, _ := newRenderUcm(t)
 	workingDir, err := WorkingDir(u)
