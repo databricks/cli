@@ -19,6 +19,7 @@ func TestLoadState_MissingFileReturnsEmpty(t *testing.T) {
 	assert.Empty(t, s.Schemas)
 	assert.Empty(t, s.Grants)
 	assert.Empty(t, s.StorageCredentials)
+	assert.Empty(t, s.ExternalLocations)
 }
 
 func TestLoadState_RoundTrip(t *testing.T) {
@@ -38,6 +39,13 @@ func TestLoadState_RoundTrip(t *testing.T) {
 		AwsIamRole: &direct.AwsIamRoleState{RoleArn: "arn:aws:iam::1:role/uc"},
 		ReadOnly:   true,
 	}
+	in.ExternalLocations["prod"] = &direct.ExternalLocationState{
+		Name:           "prod",
+		Url:            "s3://bucket/prefix",
+		CredentialName: "prod",
+		Comment:        "prod location",
+		ReadOnly:       true,
+	}
 
 	require.NoError(t, direct.SaveState(path, in))
 
@@ -47,6 +55,7 @@ func TestLoadState_RoundTrip(t *testing.T) {
 	assert.Equal(t, in.Schemas, out.Schemas)
 	assert.Equal(t, in.Grants, out.Grants)
 	assert.Equal(t, in.StorageCredentials, out.StorageCredentials)
+	assert.Equal(t, in.ExternalLocations, out.ExternalLocations)
 }
 
 func TestLoadState_RejectsFutureVersion(t *testing.T) {

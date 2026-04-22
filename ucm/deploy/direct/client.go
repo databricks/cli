@@ -26,6 +26,11 @@ type Client interface {
 	UpdateStorageCredential(ctx context.Context, in catalog.UpdateStorageCredential) (*catalog.StorageCredentialInfo, error)
 	DeleteStorageCredential(ctx context.Context, name string) error
 
+	GetExternalLocation(ctx context.Context, name string) (*catalog.ExternalLocationInfo, error)
+	CreateExternalLocation(ctx context.Context, in catalog.CreateExternalLocation) (*catalog.ExternalLocationInfo, error)
+	UpdateExternalLocation(ctx context.Context, in catalog.UpdateExternalLocation) (*catalog.ExternalLocationInfo, error)
+	DeleteExternalLocation(ctx context.Context, name string) error
+
 	UpdatePermissions(ctx context.Context, in catalog.UpdatePermissions) error
 }
 
@@ -83,6 +88,22 @@ func (c *sdkClient) UpdateStorageCredential(ctx context.Context, in catalog.Upda
 
 func (c *sdkClient) DeleteStorageCredential(ctx context.Context, name string) error {
 	return c.w.StorageCredentials.DeleteByName(ctx, name)
+}
+
+func (c *sdkClient) GetExternalLocation(ctx context.Context, name string) (*catalog.ExternalLocationInfo, error) {
+	return c.w.ExternalLocations.GetByName(ctx, name)
+}
+
+func (c *sdkClient) CreateExternalLocation(ctx context.Context, in catalog.CreateExternalLocation) (*catalog.ExternalLocationInfo, error) {
+	return c.w.ExternalLocations.Create(ctx, in)
+}
+
+func (c *sdkClient) UpdateExternalLocation(ctx context.Context, in catalog.UpdateExternalLocation) (*catalog.ExternalLocationInfo, error) {
+	return c.w.ExternalLocations.Update(ctx, in)
+}
+
+func (c *sdkClient) DeleteExternalLocation(ctx context.Context, name string) error {
+	return c.w.ExternalLocations.DeleteByName(ctx, name)
 }
 
 func (c *sdkClient) UpdatePermissions(ctx context.Context, in catalog.UpdatePermissions) error {

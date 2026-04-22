@@ -30,6 +30,10 @@ type recordingClient struct {
 	UpdatedStorageCredentials []catalog.UpdateStorageCredential
 	DeletedStorageCredentials []string
 
+	CreatedExternalLocations []catalog.CreateExternalLocation
+	UpdatedExternalLocations []catalog.UpdateExternalLocation
+	DeletedExternalLocations []string
+
 	Permissions []catalog.UpdatePermissions
 
 	FailOn string
@@ -124,6 +128,34 @@ func (r *recordingClient) DeleteStorageCredential(_ context.Context, name string
 		return err
 	}
 	r.DeletedStorageCredentials = append(r.DeletedStorageCredentials, name)
+	return nil
+}
+
+func (r *recordingClient) GetExternalLocation(_ context.Context, _ string) (*catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+
+func (r *recordingClient) CreateExternalLocation(_ context.Context, in catalog.CreateExternalLocation) (*catalog.ExternalLocationInfo, error) {
+	if err := r.trip("CreateExternalLocation:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.CreatedExternalLocations = append(r.CreatedExternalLocations, in)
+	return &catalog.ExternalLocationInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) UpdateExternalLocation(_ context.Context, in catalog.UpdateExternalLocation) (*catalog.ExternalLocationInfo, error) {
+	if err := r.trip("UpdateExternalLocation:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.UpdatedExternalLocations = append(r.UpdatedExternalLocations, in)
+	return &catalog.ExternalLocationInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) DeleteExternalLocation(_ context.Context, name string) error {
+	if err := r.trip("DeleteExternalLocation:" + name); err != nil {
+		return err
+	}
+	r.DeletedExternalLocations = append(r.DeletedExternalLocations, name)
 	return nil
 }
 

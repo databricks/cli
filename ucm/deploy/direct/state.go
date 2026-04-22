@@ -29,6 +29,7 @@ type State struct {
 	Schemas            map[string]*SchemaState            `json:"schemas,omitempty"`
 	Grants             map[string]*GrantState             `json:"grants,omitempty"`
 	StorageCredentials map[string]*StorageCredentialState `json:"storage_credentials,omitempty"`
+	ExternalLocations  map[string]*ExternalLocationState  `json:"external_locations,omitempty"`
 }
 
 // CatalogState is what the direct engine records for a catalog after a
@@ -97,6 +98,19 @@ type AzureServicePrincipalState struct {
 // DatabricksGcpServiceAccountState mirrors resources.DatabricksGcpServiceAccount.
 type DatabricksGcpServiceAccountState struct{}
 
+// ExternalLocationState mirrors resources.ExternalLocation. All fields are
+// primitives so a reflect.DeepEqual on the struct suffices for drift detection.
+type ExternalLocationState struct {
+	Name           string `json:"name"`
+	Url            string `json:"url"`
+	CredentialName string `json:"credential_name"`
+
+	Comment        string `json:"comment,omitempty"`
+	ReadOnly       bool   `json:"read_only,omitempty"`
+	SkipValidation bool   `json:"skip_validation,omitempty"`
+	Fallback       bool   `json:"fallback,omitempty"`
+}
+
 // NewState returns an empty State ready to be populated by the planner.
 func NewState() *State {
 	return &State{
@@ -105,6 +119,7 @@ func NewState() *State {
 		Schemas:            make(map[string]*SchemaState),
 		Grants:             make(map[string]*GrantState),
 		StorageCredentials: make(map[string]*StorageCredentialState),
+		ExternalLocations:  make(map[string]*ExternalLocationState),
 	}
 }
 
@@ -137,6 +152,9 @@ func LoadState(path string) (*State, error) {
 	}
 	if s.StorageCredentials == nil {
 		s.StorageCredentials = make(map[string]*StorageCredentialState)
+	}
+	if s.ExternalLocations == nil {
+		s.ExternalLocations = make(map[string]*ExternalLocationState)
 	}
 	return &s, nil
 }
