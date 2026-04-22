@@ -11,17 +11,14 @@ import (
 // so unit tests can inject stubs without hitting the real OS keyring or
 // filesystem. Production code uses defaultCacheFactories().
 type cacheFactories struct {
-	newFile    func() (cache.TokenCache, error)
+	newFile    func(context.Context) (cache.TokenCache, error)
 	newKeyring func() cache.TokenCache
 }
 
 // defaultCacheFactories returns the production factory set.
-// newFile is wrapped in a closure because cache.NewFileTokenCache is variadic
-// (func(...FileTokenCacheOption)) and cannot satisfy the non-variadic field type
-// by direct reference. The closure calls it with no options (SDK defaults).
 func defaultCacheFactories() cacheFactories {
 	return cacheFactories{
-		newFile:    func() (cache.TokenCache, error) { return cache.NewFileTokenCache() },
+		newFile:    func(ctx context.Context) (cache.TokenCache, error) { return NewFileTokenCache(ctx) },
 		newKeyring: NewKeyringCache,
 	}
 }
@@ -53,7 +50,7 @@ func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactorie
 	case StorageModeLegacy, StorageModePlaintext:
 		// Plaintext currently maps to the file cache; a dedicated
 		// plaintext backend (no host-keyed dual-writes) is a follow-up.
-		c, err := f.newFile()
+		c, err := f.newFile(ctx)
 		if err != nil {
 			return nil, "", fmt.Errorf("open file token cache: %w", err)
 		}

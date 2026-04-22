@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"path/filepath"
 	"testing"
@@ -22,7 +23,7 @@ func (stubCache) Lookup(string) (*oauth2.Token, error) { return nil, cache.ErrNo
 func fakeFactories(t *testing.T) cacheFactories {
 	t.Helper()
 	return cacheFactories{
-		newFile:    func() (cache.TokenCache, error) { return stubCache{source: "file"}, nil },
+		newFile:    func(context.Context) (cache.TokenCache, error) { return stubCache{source: "file"}, nil },
 		newKeyring: func() cache.TokenCache { return stubCache{source: "keyring"} },
 	}
 }
@@ -104,7 +105,7 @@ func TestResolveCache_FileFactoryErrorPropagates(t *testing.T) {
 	ctx := t.Context()
 	boom := errors.New("disk full")
 	factories := cacheFactories{
-		newFile:    func() (cache.TokenCache, error) { return nil, boom },
+		newFile:    func(context.Context) (cache.TokenCache, error) { return nil, boom },
 		newKeyring: func() cache.TokenCache { return stubCache{source: "keyring"} },
 	}
 
