@@ -145,6 +145,14 @@ func TestPatchWheel(t *testing.T) {
 	for _, py := range pythonVersions {
 		t.Run(py, func(t *testing.T) {
 			t.Parallel()
+
+			// Skip if the interpreter is not available via uv. CI only installs
+			// a subset of versions to keep setup fast; the full matrix is
+			// exercised in integration and scheduled runs.
+			if err := exec.Command("uv", "python", "find", py).Run(); err != nil {
+				t.Skipf("%s not available: %v", py, err)
+			}
+
 			tempDir := t.TempDir()
 
 			projFiles := minimalPythonProject()
