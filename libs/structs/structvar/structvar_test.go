@@ -227,7 +227,7 @@ func TestToJSONAndBack(t *testing.T) {
 	assert.Equal(t, original.Refs, svJSON.Refs)
 
 	// Convert back to StructVar
-	restored, err := svJSON.ToStructVar(reflect.TypeOf(&TestObj{}))
+	restored, err := svJSON.ToStructVar(reflect.TypeFor[*TestObj]())
 	require.NoError(t, err)
 
 	// Verify the restored value matches
@@ -241,12 +241,12 @@ func TestToStructVarRequiresPointerType(t *testing.T) {
 	}
 
 	// Should fail with non-pointer type
-	_, err := svJSON.ToStructVar(reflect.TypeOf(TestObj{}))
+	_, err := svJSON.ToStructVar(reflect.TypeFor[TestObj]())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "expecting pointer")
 
 	// Should succeed with pointer type
-	sv, err := svJSON.ToStructVar(reflect.TypeOf(&TestObj{}))
+	sv, err := svJSON.ToStructVar(reflect.TypeFor[*TestObj]())
 	require.NoError(t, err)
 	assert.Equal(t, "test", sv.Value.(*TestObj).Name)
 }

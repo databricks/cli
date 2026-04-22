@@ -147,8 +147,7 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
 	}
 
-	app := apps.App{}
-	fields := reflect.TypeOf(app)
+	fields := reflect.TypeFor[apps.App]()
 	var allFields []string
 	for i := range fields.NumField() {
 		field := fields.Field(i)

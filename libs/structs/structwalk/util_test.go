@@ -8,7 +8,7 @@ type Types struct {
 	ValidField           string `json:"valid_field"`
 	ValidFieldNoTag      string
 	IgnoredField         string `json:"-"`
-	IgnoredFieldOdd      string `json:"-,omitempty"`
+	IgnoredFieldOdd      string `json:"-,omitempty"` //nolint:staticcheck // fixture for odd tag handling
 	EmptyTagField        string `json:""`
 	unexportedField      string `json:"unexported"` //nolint
 	unexportedFieldNoTag string //nolint

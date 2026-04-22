@@ -47,7 +47,7 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
 
-		for _, field := range strings.Split(updateReq.UpdateMask, ",") {
+		for field := range strings.SplitSeq(updateReq.UpdateMask, ",") {
 			if v, ok := updateMap[strings.TrimSpace(field)]; ok {
 				existingMap[strings.TrimSpace(field)] = v
 			}

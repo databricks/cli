@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -63,12 +64,7 @@ var nonExportableTypes = []workspace.ObjectType{
 
 // isNonExportable checks if an object type cannot be exported.
 func isNonExportable(objectType workspace.ObjectType) bool {
-	for _, t := range nonExportableTypes {
-		if objectType == t {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(nonExportableTypes, objectType)
 }
 
 // The callback function exports the file specified at relPath. This function is

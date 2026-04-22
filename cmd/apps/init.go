@@ -394,9 +394,7 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 		if err != nil {
 			return nil, err
 		}
-		for k, v := range values {
-			config.Dependencies[k] = v
-		}
+		maps.Copy(config.Dependencies, values)
 	}
 
 	// Step 3: Prompt for optional plugin resource dependencies.
@@ -408,9 +406,7 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 			if err != nil {
 				return nil, err
 			}
-			for k, v := range values {
-				config.Dependencies[k] = v
-			}
+			maps.Copy(config.Dependencies, values)
 		}
 	}
 
@@ -932,9 +928,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if resourceValues == nil {
 			resourceValues = make(map[string]string, len(setVals))
 		}
-		for k, v := range setVals {
-			resourceValues[k] = v
-		}
+		maps.Copy(resourceValues, setVals)
 	}
 
 	// Always include mandatory plugins regardless of user selection or flags.

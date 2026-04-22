@@ -662,3 +662,50 @@ func TestDeleteProfile_NotFound(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, `profile "not-found" not found`)
 }
+
+func TestGetConfiguredAuthStorage(t *testing.T) {
+	cases := []struct {
+		name     string
+		contents string
+		want     string
+	}{
+		{
+			name:     "missing settings section returns empty",
+			contents: "[my-ws]\nhost = https://example.cloud.databricks.com\n",
+			want:     "",
+		},
+		{
+			name:     "settings without auth_storage returns empty",
+			contents: "[__settings__]\ndefault_profile = my-ws\n",
+			want:     "",
+		},
+		{
+			name:     "explicit secure value",
+			contents: "[__settings__]\nauth_storage = secure\n",
+			want:     "secure",
+		},
+		{
+			name:     "explicit plaintext value",
+			contents: "[__settings__]\nauth_storage = plaintext\n",
+			want:     "plaintext",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), ".databrickscfg")
+			require.NoError(t, os.WriteFile(path, []byte(tc.contents), 0o600))
+
+			got, err := GetConfiguredAuthStorage(t.Context(), path)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestGetConfiguredAuthStorage_MissingFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "does-not-exist")
+	got, err := GetConfiguredAuthStorage(t.Context(), path)
+	require.NoError(t, err)
+	assert.Equal(t, "", got)
+}

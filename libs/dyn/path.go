@@ -138,7 +138,7 @@ func (p Path) String() string {
 		if c.key != "" {
 			buf.WriteString(c.key)
 		} else {
-			buf.WriteString(fmt.Sprintf("[%d]", c.index))
+			fmt.Fprintf(&buf, "[%d]", c.index)
 		}
 	}
 

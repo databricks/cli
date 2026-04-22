@@ -83,7 +83,7 @@ func getVersionTags() ([]string, error) {
 	}
 
 	var tags []string
-	for _, line := range strings.Split(string(output), "\n") {
+	for line := range strings.SplitSeq(string(output), "\n") {
 		tag := strings.TrimSpace(line)
 		if tag == "" {
 			continue
