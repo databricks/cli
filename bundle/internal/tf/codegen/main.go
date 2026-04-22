@@ -1,3 +1,4 @@
+// Command codegen generates Go types from the Databricks Terraform provider schema.
 package main
 
 import (

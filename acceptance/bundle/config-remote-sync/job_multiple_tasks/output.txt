@@ -8,7 +8,8 @@ Deployment complete!
 Detected changes in 2 resource(s):
 
 Resource: resources.jobs.my_job
-  tasks[task_key='c_task'].depends_on[0].task_key: replace
+  tasks[task_key='c_task'].depends_on[task_key='b_task']: add
+  tasks[task_key='c_task'].depends_on[task_key='d_task']: remove
   tasks[task_key='c_task'].new_cluster.num_workers: replace
   tasks[task_key='c_task'].timeout_seconds: add
   tasks[task_key='d_task']: remove
@@ -83,8 +84,10 @@ Resource: resources.jobs.rename_task_job
   tasks[task_key='a_task'].notebook_task.notebook_path: replace
   tasks[task_key='b_task']: remove
   tasks[task_key='b_task_renamed']: add
-  tasks[task_key='c_task'].depends_on[0].task_key: replace
-  tasks[task_key='d_task'].depends_on[0].task_key: replace
+  tasks[task_key='c_task'].depends_on[task_key='b_task']: remove
+  tasks[task_key='c_task'].depends_on[task_key='b_task_renamed']: add
+  tasks[task_key='d_task'].depends_on[task_key='b_task']: remove
+  tasks[task_key='d_task'].depends_on[task_key='b_task_renamed']: add
   tasks[task_key='synced_task']: add
 
 

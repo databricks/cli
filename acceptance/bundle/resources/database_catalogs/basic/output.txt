@@ -47,6 +47,10 @@ The following resources will be deleted:
   delete resources.database_catalogs.my_catalog
   delete resources.database_instances.my_instance
 
+This action will result in the deletion of the following Lakebase database instances.
+All data stored in them will be permanently lost:
+  delete resources.database_instances.my_instance
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
 
 Deleting files...

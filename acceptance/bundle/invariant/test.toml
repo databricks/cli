@@ -35,6 +35,7 @@ EnvMatrix.INPUT_CONFIG = [
     "job_pydabs_1000_tasks.yml.tmpl",
     "job_cross_resource_ref.yml.tmpl",
     "job_permission_ref.yml.tmpl",
+    "job_with_depends_on.yml.tmpl",
     "job_with_permissions.yml.tmpl",
     "job_with_task.yml.tmpl",
     "model.yml.tmpl",
