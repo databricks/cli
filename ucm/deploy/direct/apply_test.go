@@ -38,6 +38,10 @@ type recordingClient struct {
 	UpdatedVolumes []catalog.UpdateVolumeRequestContent
 	DeletedVolumes []string
 
+	CreatedConnections []catalog.CreateConnection
+	UpdatedConnections []catalog.UpdateConnection
+	DeletedConnections []string
+
 	Permissions []catalog.UpdatePermissions
 
 	FailOn string
@@ -188,6 +192,34 @@ func (r *recordingClient) DeleteVolume(_ context.Context, name string) error {
 		return err
 	}
 	r.DeletedVolumes = append(r.DeletedVolumes, name)
+	return nil
+}
+
+func (r *recordingClient) GetConnection(_ context.Context, _ string) (*catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
+func (r *recordingClient) CreateConnection(_ context.Context, in catalog.CreateConnection) (*catalog.ConnectionInfo, error) {
+	if err := r.trip("CreateConnection:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.CreatedConnections = append(r.CreatedConnections, in)
+	return &catalog.ConnectionInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) UpdateConnection(_ context.Context, in catalog.UpdateConnection) (*catalog.ConnectionInfo, error) {
+	if err := r.trip("UpdateConnection:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.UpdatedConnections = append(r.UpdatedConnections, in)
+	return &catalog.ConnectionInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) DeleteConnection(_ context.Context, name string) error {
+	if err := r.trip("DeleteConnection:" + name); err != nil {
+		return err
+	}
+	r.DeletedConnections = append(r.DeletedConnections, name)
 	return nil
 }
 

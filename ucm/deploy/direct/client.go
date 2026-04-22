@@ -36,6 +36,11 @@ type Client interface {
 	UpdateVolume(ctx context.Context, in catalog.UpdateVolumeRequestContent) (*catalog.VolumeInfo, error)
 	DeleteVolume(ctx context.Context, name string) error
 
+	GetConnection(ctx context.Context, name string) (*catalog.ConnectionInfo, error)
+	CreateConnection(ctx context.Context, in catalog.CreateConnection) (*catalog.ConnectionInfo, error)
+	UpdateConnection(ctx context.Context, in catalog.UpdateConnection) (*catalog.ConnectionInfo, error)
+	DeleteConnection(ctx context.Context, name string) error
+
 	UpdatePermissions(ctx context.Context, in catalog.UpdatePermissions) error
 }
 
@@ -125,6 +130,22 @@ func (c *sdkClient) UpdateVolume(ctx context.Context, in catalog.UpdateVolumeReq
 
 func (c *sdkClient) DeleteVolume(ctx context.Context, name string) error {
 	return c.w.Volumes.DeleteByName(ctx, name)
+}
+
+func (c *sdkClient) GetConnection(ctx context.Context, name string) (*catalog.ConnectionInfo, error) {
+	return c.w.Connections.GetByName(ctx, name)
+}
+
+func (c *sdkClient) CreateConnection(ctx context.Context, in catalog.CreateConnection) (*catalog.ConnectionInfo, error) {
+	return c.w.Connections.Create(ctx, in)
+}
+
+func (c *sdkClient) UpdateConnection(ctx context.Context, in catalog.UpdateConnection) (*catalog.ConnectionInfo, error) {
+	return c.w.Connections.Update(ctx, in)
+}
+
+func (c *sdkClient) DeleteConnection(ctx context.Context, name string) error {
+	return c.w.Connections.DeleteByName(ctx, name)
 }
 
 func (c *sdkClient) UpdatePermissions(ctx context.Context, in catalog.UpdatePermissions) error {

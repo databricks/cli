@@ -193,6 +193,20 @@ func (*fakeDirectClient) UpdateVolume(_ context.Context, _ catalog.UpdateVolumeR
 
 func (*fakeDirectClient) DeleteVolume(_ context.Context, _ string) error { return nil }
 
+func (*fakeDirectClient) GetConnection(_ context.Context, _ string) (*catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) CreateConnection(_ context.Context, _ catalog.CreateConnection) (*catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) UpdateConnection(_ context.Context, _ catalog.UpdateConnection) (*catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) DeleteConnection(_ context.Context, _ string) error { return nil }
+
 func (*fakeDirectClient) UpdatePermissions(_ context.Context, _ catalog.UpdatePermissions) error {
 	return nil
 }

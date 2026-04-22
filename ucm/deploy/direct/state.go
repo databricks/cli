@@ -31,6 +31,7 @@ type State struct {
 	StorageCredentials map[string]*StorageCredentialState `json:"storage_credentials,omitempty"`
 	ExternalLocations  map[string]*ExternalLocationState  `json:"external_locations,omitempty"`
 	Volumes            map[string]*VolumeState            `json:"volumes,omitempty"`
+	Connections        map[string]*ConnectionState        `json:"connections,omitempty"`
 }
 
 // CatalogState is what the direct engine records for a catalog after a
@@ -123,6 +124,16 @@ type VolumeState struct {
 	Comment         string `json:"comment,omitempty"`
 }
 
+// ConnectionState mirrors resources.Connection.
+type ConnectionState struct {
+	Name           string            `json:"name"`
+	ConnectionType string            `json:"connection_type"`
+	Options        map[string]string `json:"options"`
+	Comment        string            `json:"comment,omitempty"`
+	Properties     map[string]string `json:"properties,omitempty"`
+	ReadOnly       bool              `json:"read_only,omitempty"`
+}
+
 // NewState returns an empty State ready to be populated by the planner.
 func NewState() *State {
 	return &State{
@@ -133,6 +144,7 @@ func NewState() *State {
 		StorageCredentials: make(map[string]*StorageCredentialState),
 		ExternalLocations:  make(map[string]*ExternalLocationState),
 		Volumes:            make(map[string]*VolumeState),
+		Connections:        make(map[string]*ConnectionState),
 	}
 }
 
@@ -171,6 +183,9 @@ func LoadState(path string) (*State, error) {
 	}
 	if s.Volumes == nil {
 		s.Volumes = make(map[string]*VolumeState)
+	}
+	if s.Connections == nil {
+		s.Connections = make(map[string]*ConnectionState)
 	}
 	return &s, nil
 }
