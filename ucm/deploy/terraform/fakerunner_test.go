@@ -20,12 +20,17 @@ type fakeRunner struct {
 	ShowPlanFileCalls int
 	ApplyCalls        int
 	DestroyCalls      int
+	ImportCalls       int
 	SetEnvCalls       int
 
 	// LastEnv captures the map passed to the most recent SetEnv call.
 	LastEnv map[string]string
 	// LastApplyOpts captures the options passed to the most recent Apply call.
 	LastApplyOpts []tfexec.ApplyOption
+	// LastImportAddress and LastImportId capture the args passed to the most
+	// recent Import call.
+	LastImportAddress string
+	LastImportId      string
 
 	// PlanHasChanges is returned by Plan.
 	PlanHasChanges bool
@@ -33,18 +38,21 @@ type fakeRunner struct {
 	// (no resource changes) so callers don't need to set it for zero-diff
 	// tests.
 	ShowPlanResult *tfjson.Plan
-	// ApplyErr, InitErr, DestroyErr, PlanErr, ShowPlanFileErr make the next
-	// corresponding call return the given error.
-	InitErr          error
-	PlanErr          error
-	ShowPlanFileErr  error
-	ApplyErr         error
-	DestroyErr       error
+	// ApplyErr, InitErr, DestroyErr, PlanErr, ShowPlanFileErr, ImportErr make
+	// the next corresponding call return the given error.
+	InitErr         error
+	PlanErr         error
+	ShowPlanFileErr error
+	ApplyErr        error
+	DestroyErr      error
+	ImportErr       error
 
 	// ApplyHook is invoked synchronously inside Apply before returning. Used
 	// by the lock contention test to hold the lock while a second goroutine
 	// tries to acquire it.
 	ApplyHook func(ctx context.Context)
+	// ImportHook mirrors ApplyHook for the Import path.
+	ImportHook func(ctx context.Context)
 }
 
 func (f *fakeRunner) Init(_ context.Context, _ ...tfexec.InitOption) error {
@@ -94,6 +102,20 @@ func (f *fakeRunner) Destroy(_ context.Context, _ ...tfexec.DestroyOption) error
 	f.DestroyCalls++
 	err := f.DestroyErr
 	f.mu.Unlock()
+	return err
+}
+
+func (f *fakeRunner) Import(ctx context.Context, address, id string, _ ...tfexec.ImportOption) error {
+	f.mu.Lock()
+	f.ImportCalls++
+	f.LastImportAddress = address
+	f.LastImportId = id
+	hook := f.ImportHook
+	err := f.ImportErr
+	f.mu.Unlock()
+	if hook != nil {
+		hook(ctx)
+	}
 	return err
 }
 

@@ -30,12 +30,17 @@ type fakeTf struct {
 	PlanCalls    int
 	ApplyCalls   int
 	DestroyCalls int
+	ImportCalls  int
 
 	RenderErr  error
 	InitErr    error
 	PlanErr    error
 	ApplyErr   error
 	DestroyErr error
+	ImportErr  error
+
+	LastImportAddress string
+	LastImportId      string
 
 	PlanResult *terraform.PlanResult
 }
@@ -73,6 +78,15 @@ func (f *fakeTf) Destroy(_ context.Context, _ *ucm.Ucm) error {
 	defer f.mu.Unlock()
 	f.DestroyCalls++
 	return f.DestroyErr
+}
+
+func (f *fakeTf) Import(_ context.Context, _ *ucm.Ucm, address, id string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.ImportCalls++
+	f.LastImportAddress = address
+	f.LastImportId = id
+	return f.ImportErr
 }
 
 // fixture bundles the dependencies every phase test needs: a minimal Ucm with

@@ -19,6 +19,7 @@ type TerraformWrapper interface {
 	Plan(ctx context.Context, u *ucm.Ucm) (*terraform.PlanResult, error)
 	Apply(ctx context.Context, u *ucm.Ucm) error
 	Destroy(ctx context.Context, u *ucm.Ucm) error
+	Import(ctx context.Context, u *ucm.Ucm, address, id string) error
 }
 
 // TerraformFactory constructs a terraform-engine wrapper scoped to u.
