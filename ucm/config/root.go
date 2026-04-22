@@ -33,8 +33,23 @@ type Root struct {
 
 	Resources Resources `json:"resources,omitempty"`
 
+	// Include lists glob patterns of additional files to merge into the root
+	// configuration. Only honored in the root ucm.yml (included files cannot
+	// themselves declare an Include). Expanded by ProcessRootIncludes.
+	Include []string `json:"include,omitempty"`
+
 	// Targets is set to nil by SelectTarget once a target has been merged.
 	Targets map[string]*Target `json:"targets,omitempty"`
+}
+
+// GetLocations returns the source locations of the configuration value at the
+// given dotted path, or nil if the path is not set.
+func (r Root) GetLocations(path string) []dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return nil
+	}
+	return v.Locations()
 }
 
 // Load reads a ucm.yml file from disk.
