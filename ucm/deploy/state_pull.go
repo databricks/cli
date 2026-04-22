@@ -41,7 +41,7 @@ func Pull(ctx context.Context, u *ucm.Ucm, b Backend) error {
 	}
 
 	l := newLocker(b, ".")
-	if err := l.Acquire(ctx, false); err != nil {
+	if err := l.Acquire(ctx, b.ForceLock); err != nil {
 		return fmt.Errorf("ucm state: acquire lock: %w", err)
 	}
 	defer releaseBestEffort(ctx, l, lock.GoalDeploy)

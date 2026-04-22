@@ -101,6 +101,11 @@ type Backend struct {
 	// User is embedded into the lock record so contending clients can see
 	// who currently holds the lock. Empty strings are allowed for tests.
 	User string
+
+	// ForceLock tells Pull/Push to override an existing deploy lock instead
+	// of failing with ErrLockHeld. Set by the --force-lock flag on
+	// plan/deploy/destroy; mirrors bundle.Deployment.Lock.Force.
+	ForceLock bool
 }
 
 // loadState reads a State from r.

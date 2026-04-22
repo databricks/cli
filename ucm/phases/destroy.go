@@ -54,12 +54,14 @@ func destroyTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 		return
 	}
 
-	if err := tf.Destroy(ctx, u); err != nil {
+	if err := tf.Destroy(ctx, u, opts.ForceLock); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("terraform destroy: %w", err))
 		return
 	}
 
-	if err := deploy.Push(ctx, u, opts.Backend); err != nil {
+	pushBackend := opts.Backend
+	pushBackend.ForceLock = opts.ForceLock
+	if err := deploy.Push(ctx, u, pushBackend); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("push remote state: %w", err))
 		return
 	}
