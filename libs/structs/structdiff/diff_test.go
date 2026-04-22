@@ -558,10 +558,16 @@ func TestGetStructDiffEmbedTagWithKeyFunc(t *testing.T) {
 	}
 }
 
+type Dep struct {
+	TaskKey string `json:"task_key,omitempty"`
+	Outcome string `json:"outcome,omitempty"`
+}
+
 type Task struct {
 	TaskKey     string `json:"task_key,omitempty"`
 	Description string `json:"description,omitempty"`
 	Timeout     int    `json:"timeout,omitempty"`
+	DependsOn   []Dep  `json:"depends_on,omitempty"`
 }
 
 type Job struct {
@@ -571,6 +577,10 @@ type Job struct {
 
 func taskKeyFunc(task Task) (string, string) {
 	return "task_key", task.TaskKey
+}
+
+func depKeyFunc(dep Dep) (string, string) {
+	return "task_key", dep.TaskKey
 }
 
 func TestGetStructDiffSliceKeys(t *testing.T) {
@@ -630,6 +640,64 @@ func TestGetStructDiffSliceKeys(t *testing.T) {
 				{Field: "tasks[task_key='b']", Old: Task{TaskKey: "b", Description: "two"}, New: nil},
 				{Field: "tasks[task_key='c'].description", Old: "three", New: "changed"},
 			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, resolveChanges(got))
+		})
+	}
+}
+
+func TestGetStructDiffNestedDependsOn(t *testing.T) {
+	sliceKeys := map[string]KeyFunc{
+		"tasks":               taskKeyFunc,
+		"tasks[*].depends_on": depKeyFunc,
+	}
+
+	tests := []struct {
+		name string
+		a, b Job
+		want []ResolvedChange
+	}{
+		{
+			name: "depends_on reordered no diff",
+			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
+			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "b"}, {TaskKey: "a"}}}}},
+			want: nil,
+		},
+		{
+			name: "depends_on field change",
+			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a", Outcome: "success"}}}}},
+			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a", Outcome: "failed"}}}}},
+			want: []ResolvedChange{{Field: "tasks[task_key='c'].depends_on[task_key='a'].outcome", Old: "success", New: "failed"}},
+		},
+		{
+			name: "depends_on element added",
+			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}}}}},
+			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
+			want: []ResolvedChange{{Field: "tasks[task_key='c'].depends_on[task_key='b']", Old: nil, New: Dep{TaskKey: "b"}}},
+		},
+		{
+			name: "depends_on element removed",
+			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
+			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}}}}},
+			want: []ResolvedChange{{Field: "tasks[task_key='c'].depends_on[task_key='b']", Old: Dep{TaskKey: "b"}, New: nil}},
+		},
+		{
+			name: "tasks and depends_on both reordered no diff",
+			a: Job{Tasks: []Task{
+				{TaskKey: "x", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}},
+				{TaskKey: "y", DependsOn: []Dep{{TaskKey: "c"}}},
+			}},
+			b: Job{Tasks: []Task{
+				{TaskKey: "y", DependsOn: []Dep{{TaskKey: "c"}}},
+				{TaskKey: "x", DependsOn: []Dep{{TaskKey: "b"}, {TaskKey: "a"}}},
+			}},
+			want: nil,
 		},
 	}
 

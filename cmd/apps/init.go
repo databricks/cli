@@ -3,6 +3,7 @@ package apps
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -37,7 +38,7 @@ const (
 	appkitTemplateDir    = "template"
 	appkitDefaultBranch  = "main"
 	appkitTemplateTagPfx = "template-v"
-	appkitDefaultVersion = "template-v0.23.0"
+	appkitDefaultVersion = "template-v0.24.0"
 	defaultProfile       = "DEFAULT"
 )
 
@@ -664,6 +665,14 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		return nil
 	}
 
+	// Copy any file: protocol dependencies (e.g., local .tgz tarballs) so npm ci can resolve them.
+	pkgData, err := os.ReadFile(filepath.Join(destDir, "package.json"))
+	if err != nil {
+		log.Warnf(ctx, "Failed to read package.json for file dep copy: %v", err)
+	} else {
+		copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
+	}
+
 	// Copy package-lock.json raw (never has template vars).
 	lockData, err := os.ReadFile(lockFile)
 	if err != nil {
@@ -686,6 +695,41 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 
 	log.Debugf(ctx, "Started background npm install in %s", destDir)
 	return ch
+}
+
+// copyFileDeps copies local file: protocol dependencies (e.g., .tgz tarballs)
+// from srcDir to destDir so that npm ci can resolve them.
+func copyFileDeps(ctx context.Context, pkgJSON []byte, srcDir, destDir string) {
+	var pkg struct {
+		Dependencies    map[string]string `json:"dependencies"`
+		DevDependencies map[string]string `json:"devDependencies"`
+	}
+	if err := json.Unmarshal(pkgJSON, &pkg); err != nil {
+		log.Debugf(ctx, "Failed to parse package.json for file dep copy: %v", err)
+		return
+	}
+	for _, deps := range []map[string]string{pkg.Dependencies, pkg.DevDependencies} {
+		for _, v := range deps {
+			if !strings.HasPrefix(v, "file:") {
+				continue
+			}
+			relPath := filepath.Clean(strings.TrimPrefix(v, "file:"))
+			src := filepath.Join(srcDir, relPath)
+			data, err := os.ReadFile(src)
+			if err != nil {
+				log.Debugf(ctx, "Skipping file dep %s: %v", relPath, err)
+				continue
+			}
+			dst := filepath.Join(destDir, relPath)
+			if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+				log.Debugf(ctx, "Failed to create dir for file dep %s: %v", relPath, err)
+				continue
+			}
+			if err := os.WriteFile(dst, data, 0o644); err != nil {
+				log.Debugf(ctx, "Failed to copy file dep %s: %v", relPath, err)
+			}
+		}
+	}
 }
 
 // awaitBackgroundNpmInstall waits for the background npm install to complete.

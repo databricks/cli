@@ -385,6 +385,9 @@ resources:
       # drift detection applies (e.g. detecting out-of-band stop).
       - field: lifecycle
       - field: lifecycle.started
+    ignore_remote_changes:
+      - field: space # This field is not yet supported by Update APIs but exposed in the API spec. TODO: fix when update APIs supports it.
+        reason: managed
 
   secret_scopes:
     backend_defaults:

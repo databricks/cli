@@ -2,7 +2,9 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
@@ -143,6 +145,34 @@ func NewCache(ctx context.Context, component string, expiry time.Duration, metri
 	return &Cache{impl: fc}
 }
 
+func (fc *fileCache) putJSON(ctx context.Context, fingerprint any, data []byte) {
+	if !fc.cacheEnabled {
+		return
+	}
+	cacheKey, err := fingerprintToHash(fingerprint)
+	if err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to generate cache key for put: %v", err)
+		return
+	}
+	fc.mu.Lock()
+	defer fc.mu.Unlock()
+	fc.writeToCacheJSON(ctx, fc.getCachePath(cacheKey), data)
+}
+
+func (fc *fileCache) getJSON(ctx context.Context, fingerprint any) ([]byte, bool) {
+	if !fc.cacheEnabled {
+		return nil, false
+	}
+	cacheKey, err := fingerprintToHash(fingerprint)
+	if err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to generate cache key: %v", err)
+		return nil, false
+	}
+	fc.mu.Lock()
+	defer fc.mu.Unlock()
+	return fc.readFromCacheJSON(ctx, fc.getCachePath(cacheKey))
+}
+
 func (fc *fileCache) addTelemetryMetric(key string) {
 	if fc.metrics != nil {
 		fc.metrics.SetBoolValue(key, true)
@@ -217,7 +247,13 @@ func (fc *fileCache) readFromCacheJSON(ctx context.Context, cachePath string) ([
 	// Check file modification time for expiry
 	info, err := os.Stat(cachePath)
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to stat cache file: %v", err)
+		// ErrNotExist is the common miss case; logging it adds noise and
+		// diverges across OSes (Unix: "no such file or directory";
+		// Windows: "The system cannot find the file specified."). The
+		// follow-up "cache miss, computing" line already captures it.
+		if !errors.Is(err, fs.ErrNotExist) {
+			log.Debugf(ctx, "[Local Cache] failed to stat cache file: %v", err)
+		}
 		return nil, false
 	}
 
