@@ -11,11 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// writeTfstateForTarget seeds .databricks/ucm/<target>/terraform.tfstate
-// under fixtureDir with the resources slice.
+// writeTfstateForTarget seeds .databricks/ucm/<target>/terraform/terraform.tfstate
+// under fixtureDir — the nested path where terraform natively writes and where
+// ucm's state mirroring + summary agree to look.
 func writeTfstateForTarget(t *testing.T, fixtureDir, target string, resources []map[string]any) {
 	t.Helper()
-	dir := filepath.Join(fixtureDir, filepath.FromSlash(deploy.LocalCacheDir), target)
+	dir := filepath.Join(fixtureDir, filepath.FromSlash(deploy.LocalCacheDir), target, "terraform")
 	require.NoError(t, os.MkdirAll(dir, 0o755))
 	blob := map[string]any{
 		"version":   4,
