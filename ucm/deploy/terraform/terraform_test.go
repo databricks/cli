@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ func TestBuildEnvPassesAuthAndCloudVars(t *testing.T) {
 	ctx = env.Set(ctx, "AZURE_TENANT_ID", "azure-tenant")
 	ctx = env.Set(ctx, "GOOGLE_CREDENTIALS", `{"type":"service_account"}`)
 
-	got := buildEnv(ctx)
+	got := buildEnv(ctx, nil)
 
 	for _, key := range []string{
 		"DATABRICKS_HOST",
@@ -42,7 +43,7 @@ func TestBuildEnvPassesAuthAndCloudVars(t *testing.T) {
 
 func TestBuildEnvOmitsUnsetVars(t *testing.T) {
 	ctx := env.Set(t.Context(), "DATABRICKS_HOST", "https://example.cloud.databricks.com")
-	got := buildEnv(ctx)
+	got := buildEnv(ctx, nil)
 
 	_, ok := got["DATABRICKS_CLIENT_ID"]
 	assert.False(t, ok, "unset var should not leak into env map")
@@ -54,9 +55,33 @@ func TestBuildEnvMapsProxyVarsUppercase(t *testing.T) {
 	ctx := env.Set(t.Context(), "http_proxy", "http://proxy.example:3128")
 	ctx = env.Set(ctx, "HTTPS_PROXY", "http://proxy.example:3129")
 
-	got := buildEnv(ctx)
+	got := buildEnv(ctx, nil)
 	assert.Equal(t, "http://proxy.example:3128", got["HTTP_PROXY"])
 	assert.Equal(t, "http://proxy.example:3129", got["HTTPS_PROXY"])
+}
+
+// TestBuildEnvMaterializesResolvedAuth pins the behaviour that makes
+// `ucm plan`/`ucm deploy` work when auth comes from ~/.databrickscfg
+// instead of DATABRICKS_* env vars. The resolved SDK config must be
+// serialised into DATABRICKS_* so the terraform subprocess can auth.
+func TestBuildEnvMaterializesResolvedAuth(t *testing.T) {
+	authCfg := &config.Config{
+		Host:  "https://profile.cloud.databricks.com",
+		Token: "resolved-token",
+	}
+	got := buildEnv(t.Context(), authCfg)
+	assert.Equal(t, "https://profile.cloud.databricks.com", got["DATABRICKS_HOST"])
+	assert.Equal(t, "resolved-token", got["DATABRICKS_TOKEN"])
+}
+
+// TestBuildEnvResolvedAuthOverridesPassthrough pins the overlay ordering:
+// a resolved --profile host must win over a stale DATABRICKS_HOST that
+// happens to be set on the parent env.
+func TestBuildEnvResolvedAuthOverridesPassthrough(t *testing.T) {
+	ctx := env.Set(t.Context(), "DATABRICKS_HOST", "https://stale.cloud.databricks.com")
+	authCfg := &config.Config{Host: "https://profile.cloud.databricks.com"}
+	got := buildEnv(ctx, authCfg)
+	assert.Equal(t, "https://profile.cloud.databricks.com", got["DATABRICKS_HOST"])
 }
 
 func TestLockIdentityDerivesPathFromTarget(t *testing.T) {

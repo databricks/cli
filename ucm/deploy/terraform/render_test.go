@@ -16,6 +16,17 @@ import (
 // exactly — converters emit keys in insertion order and jsonsaver preserves
 // that order.
 const golden = `{
+  "terraform": {
+    "required_providers": {
+      "databricks": {
+        "source": "databricks/databricks",
+        "version": "1.112.0"
+      }
+    }
+  },
+  "provider": {
+    "databricks": {}
+  },
   "resource": {
     "databricks_catalog": {
       "sales": {

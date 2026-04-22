@@ -36,6 +36,17 @@ resources:
 	require.NoError(t, err)
 
 	want := map[string]any{
+		"terraform": map[string]any{
+			"required_providers": map[string]any{
+				"databricks": map[string]any{
+					"source":  "databricks/databricks",
+					"version": "1.112.0",
+				},
+			},
+		},
+		"provider": map[string]any{
+			"databricks": map[string]any{},
+		},
 		"resource": map[string]any{
 			"databricks_catalog": map[string]any{
 				"sales": map[string]any{
@@ -80,7 +91,20 @@ ucm:
 
 	got, err := Convert(t.Context(), u)
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"resource": map[string]any{}}, got.AsAny())
+	assert.Equal(t, map[string]any{
+		"terraform": map[string]any{
+			"required_providers": map[string]any{
+				"databricks": map[string]any{
+					"source":  "databricks/databricks",
+					"version": "1.112.0",
+				},
+			},
+		},
+		"provider": map[string]any{
+			"databricks": map[string]any{},
+		},
+		"resource": map[string]any{},
+	}, got.AsAny())
 }
 
 func TestConvert_PreservesLocations(t *testing.T) {
