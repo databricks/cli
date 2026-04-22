@@ -122,6 +122,45 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 }
 
+func TestFileCachePut(t *testing.T) {
+	ctx := t.Context()
+	cacheDir := t.TempDir()
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
+
+	cache := NewCache(ctx, "test-component", 60*time.Minute, nil)
+	fingerprint := struct {
+		Key string `json:"key"`
+	}{Key: "put-test"}
+
+	Put(ctx, cache, fingerprint, "first")
+	got, ok := Get[string](ctx, cache, fingerprint)
+	require.True(t, ok)
+	assert.Equal(t, "first", got)
+
+	// Put overwrites, unlike GetOrCompute which preserves existing entries.
+	Put(ctx, cache, fingerprint, "second")
+	got, ok = Get[string](ctx, cache, fingerprint)
+	require.True(t, ok)
+	assert.Equal(t, "second", got)
+}
+
+func TestFileCachePutDisabled(t *testing.T) {
+	ctx := t.Context()
+	cacheDir := t.TempDir()
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "false")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
+
+	cache := NewCache(ctx, "test-component", 60*time.Minute, nil)
+	fingerprint := struct {
+		Key string `json:"key"`
+	}{Key: "put-disabled"}
+
+	Put(ctx, cache, fingerprint, "value")
+	_, ok := Get[string](ctx, cache, fingerprint)
+	assert.False(t, ok, "disabled cache must not persist Put writes")
+}
+
 func TestFileCacheGetOrComputeError(t *testing.T) {
 	ctx := t.Context()
 	tempDir := t.TempDir()

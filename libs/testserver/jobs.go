@@ -106,6 +106,12 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 	for i := range jobSettings.Tasks {
 		task := &jobSettings.Tasks[i]
 
+		// Sort depends_on by task_key to simulate the real API which returns
+		// dependencies in a different order than submitted.
+		slices.SortFunc(task.DependsOn, func(a, b jobs.TaskDependency) int {
+			return cmp.Compare(a.TaskKey, b.TaskKey)
+		})
+
 		// Set task email notifications to empty struct if not set
 		if task.EmailNotifications == nil {
 			task.EmailNotifications = &jobs.TaskEmailNotifications{}
