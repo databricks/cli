@@ -9,27 +9,19 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # Mount a ReFS Dev Drive on Windows and redirect TEMP, TMP, and the Go
-    # cache dirs through a `C:\a\_fast` junction that physically lives on Z:.
+    # Mount a ReFS Dev Drive on Windows and route Go's cache dirs onto it.
     # The default C: drive on GH runners is ~4.3k IOPS; a Dev Drive is ~127k.
-    # Per-test `.terraform/` dirs (under TEMP via `t.TempDir()`) dominate
-    # `make test` wall-clock on Windows, so moving TEMP onto the fast volume
-    # is the key lever.
+    # Go build compilation is small-file-heavy and benefits most. The
+    # `-DevDrive` flag is Win11 22621+ / WS2025; older hosts fall back to plain
+    # ReFS which is still markedly faster than C:. Must run before setup-go so
+    # GOCACHE/GOMODCACHE save/restore lands on the drive.
     #
-    # We use a junction at `C:\a\_fast` -> `Z:\fast` (not a direct `Z:\tmp`)
-    # so that path strings keep the `C:\` prefix. That matters for older
-    # databricks-bundles (`bundle/python/*` tests with PYDAB_VERSION=0.266.0)
-    # which call `os.path.commonpath([cwd, uv_cache_path])`; mixing C: and Z:
-    # in those string paths raises `ValueError: Paths don't have the same
-    # drive`. The junction is transparent to path-inspecting code.
-    #
-    # The junction is placed outside the checkout (`C:\a\_fast`, sibling to
-    # `C:\a\cli\cli`) so it doesn't pollute `git status`, trip `git clean`
-    # after `actions/checkout`, or show up in repo-walking tools.
-    #
-    # The `-DevDrive` flag is Win11 22621+ / WS2025; older hosts fall through
-    # to plain ReFS which is still markedly faster than C:.
-    - name: Mount ReFS Dev Drive and redirect I/O-hot dirs (Windows)
+    # Note: TEMP/TMP are intentionally NOT redirected. Doing so puts
+    # `t.TempDir()` on Z: while the checkout and uv's Python package cache stay
+    # on C:, which triggers `ValueError: Paths don't have the same drive` in
+    # older databricks-bundles versions under `bundle/python/*` tests
+    # (`os.path.commonpath` can't span drives).
+    - name: Mount ReFS Dev Drive (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
@@ -45,17 +37,10 @@ runs:
           Format-Volume -DriveLetter Z -FileSystem ReFS `
             -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
         }
-
-        New-Item -ItemType Directory -Path Z:\fast | Out-Null
-        New-Item -ItemType Junction -Path C:\a\_fast -Target Z:\fast | Out-Null
-        New-Item -ItemType Directory -Path `
-          C:\a\_fast\tmp, C:\a\_fast\go-build, C:\a\_fast\go-mod, C:\a\_fast\go-tmp | Out-Null
-
-        "TEMP=C:\a\_fast\tmp"          | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-        "TMP=C:\a\_fast\tmp"           | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-        "GOCACHE=C:\a\_fast\go-build"  | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-        "GOMODCACHE=C:\a\_fast\go-mod" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-        "GOTMPDIR=C:\a\_fast\go-tmp"   | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        New-Item -ItemType Directory -Path Z:\go-build,Z:\go-mod,Z:\go-tmp | Out-Null
+        "GOCACHE=Z:\go-build"  | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        "GOMODCACHE=Z:\go-mod" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        "GOTMPDIR=Z:\go-tmp"   | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
 
     - name: Checkout repository and submodules
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
