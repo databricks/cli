@@ -69,9 +69,15 @@ func TestShouldSkipBackendDefault_SchemaManagedPropertiesOnly(t *testing.T) {
 			expected: false,
 		},
 		{
-			name:     "parent properties map is not skipped",
+			name:     "managed-only parent properties map is skipped",
 			path:     "properties",
 			remote:   map[string]string{"unity.catalog.managed.delta.defaults.delta.enableRowTracking": "true"},
+			expected: true,
+		},
+		{
+			name:     "mixed parent properties map is not skipped",
+			path:     "properties",
+			remote:   map[string]string{"unity.catalog.managed.delta.defaults.delta.enableRowTracking": "true", "custom.remote_only": "true"},
 			expected: false,
 		},
 	}
@@ -95,4 +101,24 @@ func TestShouldSkipBackendDefault_SchemaManagedPropertiesOnly(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Map drift handling synthesizes child paths to match against rules. structdiff
+// always emits map keys in bracket notation, so synthetic child paths must too;
+// otherwise rules wouldn't match for identifier-like keys.
+func TestShouldSkipBackendDefault_MapDriftUsesBracketKeys(t *testing.T) {
+	field, err := structpath.ParsePattern("properties['simple']")
+	require.NoError(t, err)
+	cfg := &dresources.ResourceLifecycleConfig{
+		BackendDefaults: []dresources.BackendDefaultRule{{Field: field}},
+	}
+
+	path, err := structpath.ParsePath("properties")
+	require.NoError(t, err)
+
+	reason, ok := shouldSkipBackendDefault(cfg, path, &deployplan.ChangeDesc{
+		Remote: map[string]string{"simple": "v"},
+	})
+	assert.True(t, ok)
+	assert.Equal(t, deployplan.ReasonBackendDefault, reason)
 }
