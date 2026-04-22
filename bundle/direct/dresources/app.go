@@ -172,6 +172,9 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState,
 		for i, fieldPath := range fieldPaths {
 			fieldPaths[i] = truncateAtIndex(fieldPath)
 		}
+		fieldPaths = slices.DeleteFunc(fieldPaths, func(p string) bool {
+			return deployOnlyFields[p]
+		})
 		updateMask := strings.Join(fieldPaths, ",")
 		request := apps.AsyncUpdateAppRequest{
 			App:        &config.App,

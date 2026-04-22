@@ -71,7 +71,11 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 				SerializedDashboard: string(dashboardPayload),
 			},
 		})
-		require.ErrorIs(t, err, apierr.ErrResourceAlreadyExists)
+		// Lakeview returns the generic gRPC error_code ALREADY_EXISTS, not
+		// Databricks' RESOURCE_ALREADY_EXISTS, so the SDK unwraps to
+		// ErrAlreadyExists rather than ErrResourceAlreadyExists. Assert the
+		// common 409 parent to stay resilient to either code.
+		require.ErrorIs(t, err, apierr.ErrResourceConflict)
 	}
 
 	// Retrieve the dashboard object and confirm that only select fields were updated by the import.
