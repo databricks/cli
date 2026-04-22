@@ -70,13 +70,17 @@ For each table, returns:
 				output = results[0]
 			} else {
 				divider := strings.Repeat("-", 70)
+				var sb strings.Builder
 				for i, result := range results {
 					if i > 0 {
-						output += "\n" + divider + "\n"
+						sb.WriteByte('\n')
+						sb.WriteString(divider)
+						sb.WriteByte('\n')
 					}
-					output += fmt.Sprintf("TABLE: %s\n%s\n", args[i], divider)
-					output += result
+					fmt.Fprintf(&sb, "TABLE: %s\n%s\n", args[i], divider)
+					sb.WriteString(result)
 				}
+				output = sb.String()
 			}
 
 			cmdio.LogString(ctx, output)
@@ -104,14 +108,14 @@ func discoverTable(ctx context.Context, w *databricks.WorkspaceClient, warehouse
 
 	sb.WriteString("COLUMNS:\n")
 	for i, col := range columns {
-		sb.WriteString(fmt.Sprintf("  %s: %s\n", col, types[i]))
+		fmt.Fprintf(&sb, "  %s: %s\n", col, types[i])
 	}
 
 	// 2. sample data (5 rows)
 	sampleSQL := fmt.Sprintf("SELECT * FROM %s LIMIT 5", table)
 	sampleResp, err := executeSQL(ctx, w, warehouseID, sampleSQL)
 	if err != nil {
-		sb.WriteString(fmt.Sprintf("\nSAMPLE DATA: Error - %v\n", err))
+		fmt.Fprintf(&sb, "\nSAMPLE DATA: Error - %v\n", err)
 	} else {
 		sb.WriteString("\nSAMPLE DATA:\n")
 		sb.WriteString(formatTableData(sampleResp))
@@ -127,7 +131,7 @@ func discoverTable(ctx context.Context, w *databricks.WorkspaceClient, warehouse
 
 	nullResp, err := executeSQL(ctx, w, warehouseID, nullSQL)
 	if err != nil {
-		sb.WriteString(fmt.Sprintf("\nNULL COUNTS: Error - %v\n", err))
+		fmt.Fprintf(&sb, "\nNULL COUNTS: Error - %v\n", err)
 	} else {
 		sb.WriteString("\nNULL COUNTS:\n")
 		sb.WriteString(formatNullCounts(nullResp, columns))
@@ -192,13 +196,13 @@ func formatTableData(resp *dbsql.StatementResponse) string {
 	}
 
 	for i, row := range resp.Result.DataArray {
-		sb.WriteString(fmt.Sprintf("  Row %d:\n", i+1))
+		fmt.Fprintf(&sb, "  Row %d:\n", i+1)
 		for j, val := range row {
 			colName := fmt.Sprintf("col%d", j)
 			if j < len(columns) {
 				colName = columns[j]
 			}
-			sb.WriteString(fmt.Sprintf("    %s: %v\n", colName, val))
+			fmt.Fprintf(&sb, "    %s: %v\n", colName, val)
 		}
 	}
 	return sb.String()
@@ -214,14 +218,14 @@ func formatNullCounts(resp *dbsql.StatementResponse, columns []string) string {
 
 	// first value is total_rows
 	if len(row) > 0 {
-		sb.WriteString(fmt.Sprintf("  total_rows: %v\n", row[0]))
+		fmt.Fprintf(&sb, "  total_rows: %v\n", row[0])
 	}
 
 	// remaining values are null counts per column
 	for i, col := range columns {
 		idx := i + 1
 		if idx < len(row) {
-			sb.WriteString(fmt.Sprintf("  %s_nulls: %v\n", col, row[idx]))
+			fmt.Fprintf(&sb, "  %s_nulls: %v\n", col, row[idx])
 		}
 	}
 

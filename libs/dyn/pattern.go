@@ -33,7 +33,7 @@ func (p Pattern) String() string {
 				}
 				buf.WriteString(c.Key())
 			} else {
-				buf.WriteString(fmt.Sprintf("[%d]", c.Index()))
+				fmt.Fprintf(&buf, "[%d]", c.Index())
 			}
 		default:
 			buf.WriteString("???")
