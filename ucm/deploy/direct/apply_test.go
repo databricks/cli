@@ -239,6 +239,97 @@ func TestApply_PreservesStateOnMidApplyError(t *testing.T) {
 	assert.Nil(t, state.Schemas["raw"])
 }
 
+func TestApply_StorageCredentialCreateOrdersBeforeCatalog(t *testing.T) {
+	u := ucmWith(
+		map[string]*resources.Catalog{"main": {Name: "main"}},
+		nil,
+		nil,
+	)
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"prod": {
+			Name:       "prod",
+			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/uc"},
+		},
+	}
+
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{
+		"CreateStorageCredential:prod",
+		"CreateCatalog:main",
+	}, client.Calls)
+
+	require.NotNil(t, state.StorageCredentials["prod"])
+	assert.Equal(t, "arn:aws:iam::1:role/uc", state.StorageCredentials["prod"].AwsIamRole.RoleArn)
+}
+
+func TestApply_StorageCredentialUpdate(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"prod": {
+			Name:       "prod",
+			Comment:    "new",
+			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/new"},
+		},
+	}
+	state := direct.NewState()
+	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
+		Name:       "prod",
+		Comment:    "old",
+		AwsIamRole: &direct.AwsIamRoleState{RoleArn: "arn:aws:iam::1:role/old"},
+	}
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{"UpdateStorageCredential:prod"}, client.Calls)
+	assert.Equal(t, "new", state.StorageCredentials["prod"].Comment)
+	assert.Equal(t, "arn:aws:iam::1:role/new", state.StorageCredentials["prod"].AwsIamRole.RoleArn)
+}
+
+func TestApply_StorageCredentialDeleteOrdersAfterCatalog(t *testing.T) {
+	u := &ucm.Ucm{}
+	state := direct.NewState()
+	state.Catalogs["main"] = &direct.CatalogState{Name: "main"}
+	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
+		Name:       "prod",
+		AwsIamRole: &direct.AwsIamRoleState{RoleArn: "arn:aws:iam::1:role/uc"},
+	}
+
+	client := &recordingClient{}
+	plan, err := direct.Destroy(t.Context(), u, client, state)
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	assert.Equal(t, []string{
+		"DeleteCatalog:main",
+		"DeleteStorageCredential:prod",
+	}, client.Calls)
+
+	assert.Empty(t, state.Catalogs)
+	assert.Empty(t, state.StorageCredentials)
+}
+
+func TestApply_StorageCredentialRejectsMissingIdentity(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"bad": {Name: "bad"},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	err := direct.Apply(t.Context(), u, client, plan, state)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "exactly one identity field")
+	assert.Empty(t, client.Calls, "no API call must be made when validation fails")
+}
+
 func TestApply_RevokesPrincipalsNotInConfig(t *testing.T) {
 	u := ucmWith(nil, nil, map[string]*resources.Grant{
 		"analysts": {
