@@ -29,10 +29,6 @@ func newGenerateCommand() *cobra.Command {
 	return stub("generate", "Scan an existing account+metastore+workspace and emit ucm.yml + seed state.")
 }
 
-func newBindCommand() *cobra.Command {
-	return stub("bind", "Attach an existing Databricks resource to a ucm.yml node without recreating it.")
-}
-
 func newDebugCommand() *cobra.Command {
 	return stub("debug", "Dump internal ucm state (config tree, mutator trace) for troubleshooting.")
 }
