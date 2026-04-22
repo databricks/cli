@@ -21,6 +21,11 @@ type Client interface {
 	UpdateSchema(ctx context.Context, in catalog.UpdateSchema) (*catalog.SchemaInfo, error)
 	DeleteSchema(ctx context.Context, fullName string) error
 
+	GetStorageCredential(ctx context.Context, name string) (*catalog.StorageCredentialInfo, error)
+	CreateStorageCredential(ctx context.Context, in catalog.CreateStorageCredential) (*catalog.StorageCredentialInfo, error)
+	UpdateStorageCredential(ctx context.Context, in catalog.UpdateStorageCredential) (*catalog.StorageCredentialInfo, error)
+	DeleteStorageCredential(ctx context.Context, name string) error
+
 	UpdatePermissions(ctx context.Context, in catalog.UpdatePermissions) error
 }
 
@@ -62,6 +67,22 @@ func (c *sdkClient) UpdateSchema(ctx context.Context, in catalog.UpdateSchema) (
 
 func (c *sdkClient) DeleteSchema(ctx context.Context, fullName string) error {
 	return c.w.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{FullName: fullName, Force: true})
+}
+
+func (c *sdkClient) GetStorageCredential(ctx context.Context, name string) (*catalog.StorageCredentialInfo, error) {
+	return c.w.StorageCredentials.GetByName(ctx, name)
+}
+
+func (c *sdkClient) CreateStorageCredential(ctx context.Context, in catalog.CreateStorageCredential) (*catalog.StorageCredentialInfo, error) {
+	return c.w.StorageCredentials.Create(ctx, in)
+}
+
+func (c *sdkClient) UpdateStorageCredential(ctx context.Context, in catalog.UpdateStorageCredential) (*catalog.StorageCredentialInfo, error) {
+	return c.w.StorageCredentials.Update(ctx, in)
+}
+
+func (c *sdkClient) DeleteStorageCredential(ctx context.Context, name string) error {
+	return c.w.StorageCredentials.DeleteByName(ctx, name)
 }
 
 func (c *sdkClient) UpdatePermissions(ctx context.Context, in catalog.UpdatePermissions) error {

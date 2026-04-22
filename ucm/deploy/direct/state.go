@@ -24,10 +24,11 @@ const StateFileName = "resources.json"
 // successfully applied. Keys match the plan's per-resource keys so the
 // next plan can diff desired vs recorded by a simple map lookup.
 type State struct {
-	Version  int                      `json:"version"`
-	Catalogs map[string]*CatalogState `json:"catalogs,omitempty"`
-	Schemas  map[string]*SchemaState  `json:"schemas,omitempty"`
-	Grants   map[string]*GrantState   `json:"grants,omitempty"`
+	Version            int                                `json:"version"`
+	Catalogs           map[string]*CatalogState           `json:"catalogs,omitempty"`
+	Schemas            map[string]*SchemaState            `json:"schemas,omitempty"`
+	Grants             map[string]*GrantState             `json:"grants,omitempty"`
+	StorageCredentials map[string]*StorageCredentialState `json:"storage_credentials,omitempty"`
 }
 
 // CatalogState is what the direct engine records for a catalog after a
@@ -58,13 +59,52 @@ type GrantState struct {
 	Privileges    []string `json:"privileges"`
 }
 
+// StorageCredentialState mirrors the config struct's shape for a UC storage
+// credential. Exactly one of the identity fields is set; ClientSecret is
+// persisted because the UC API does not echo it back and the user-supplied
+// value is the only source of truth for drift.
+type StorageCredentialState struct {
+	Name    string `json:"name"`
+	Comment string `json:"comment,omitempty"`
+
+	AwsIamRole                  *AwsIamRoleState                  `json:"aws_iam_role,omitempty"`
+	AzureManagedIdentity        *AzureManagedIdentityState        `json:"azure_managed_identity,omitempty"`
+	AzureServicePrincipal       *AzureServicePrincipalState       `json:"azure_service_principal,omitempty"`
+	DatabricksGcpServiceAccount *DatabricksGcpServiceAccountState `json:"databricks_gcp_service_account,omitempty"`
+
+	ReadOnly       bool `json:"read_only,omitempty"`
+	SkipValidation bool `json:"skip_validation,omitempty"`
+}
+
+// AwsIamRoleState mirrors resources.AwsIamRole for state serialization.
+type AwsIamRoleState struct {
+	RoleArn string `json:"role_arn"`
+}
+
+// AzureManagedIdentityState mirrors resources.AzureManagedIdentity.
+type AzureManagedIdentityState struct {
+	AccessConnectorId string `json:"access_connector_id"`
+	ManagedIdentityId string `json:"managed_identity_id,omitempty"`
+}
+
+// AzureServicePrincipalState mirrors resources.AzureServicePrincipal.
+type AzureServicePrincipalState struct {
+	DirectoryId   string `json:"directory_id"`
+	ApplicationId string `json:"application_id"`
+	ClientSecret  string `json:"client_secret"`
+}
+
+// DatabricksGcpServiceAccountState mirrors resources.DatabricksGcpServiceAccount.
+type DatabricksGcpServiceAccountState struct{}
+
 // NewState returns an empty State ready to be populated by the planner.
 func NewState() *State {
 	return &State{
-		Version:  StateVersion,
-		Catalogs: make(map[string]*CatalogState),
-		Schemas:  make(map[string]*SchemaState),
-		Grants:   make(map[string]*GrantState),
+		Version:            StateVersion,
+		Catalogs:           make(map[string]*CatalogState),
+		Schemas:            make(map[string]*SchemaState),
+		Grants:             make(map[string]*GrantState),
+		StorageCredentials: make(map[string]*StorageCredentialState),
 	}
 }
 
@@ -94,6 +134,9 @@ func LoadState(path string) (*State, error) {
 	}
 	if s.Grants == nil {
 		s.Grants = make(map[string]*GrantState)
+	}
+	if s.StorageCredentials == nil {
+		s.StorageCredentials = make(map[string]*StorageCredentialState)
 	}
 	return &s, nil
 }

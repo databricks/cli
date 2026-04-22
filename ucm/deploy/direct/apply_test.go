@@ -26,6 +26,10 @@ type recordingClient struct {
 	UpdatedSchemas []catalog.UpdateSchema
 	DeletedSchemas []string
 
+	CreatedStorageCredentials []catalog.CreateStorageCredential
+	UpdatedStorageCredentials []catalog.UpdateStorageCredential
+	DeletedStorageCredentials []string
+
 	Permissions []catalog.UpdatePermissions
 
 	FailOn string
@@ -92,6 +96,34 @@ func (r *recordingClient) DeleteSchema(_ context.Context, fullName string) error
 		return err
 	}
 	r.DeletedSchemas = append(r.DeletedSchemas, fullName)
+	return nil
+}
+
+func (r *recordingClient) GetStorageCredential(_ context.Context, _ string) (*catalog.StorageCredentialInfo, error) {
+	return nil, nil
+}
+
+func (r *recordingClient) CreateStorageCredential(_ context.Context, in catalog.CreateStorageCredential) (*catalog.StorageCredentialInfo, error) {
+	if err := r.trip("CreateStorageCredential:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.CreatedStorageCredentials = append(r.CreatedStorageCredentials, in)
+	return &catalog.StorageCredentialInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) UpdateStorageCredential(_ context.Context, in catalog.UpdateStorageCredential) (*catalog.StorageCredentialInfo, error) {
+	if err := r.trip("UpdateStorageCredential:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.UpdatedStorageCredentials = append(r.UpdatedStorageCredentials, in)
+	return &catalog.StorageCredentialInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) DeleteStorageCredential(_ context.Context, name string) error {
+	if err := r.trip("DeleteStorageCredential:" + name); err != nil {
+		return err
+	}
+	r.DeletedStorageCredentials = append(r.DeletedStorageCredentials, name)
 	return nil
 }
 
