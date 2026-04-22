@@ -34,7 +34,28 @@ linters:
     - gocheckcompilerdirectives
     - asciicheck
     - reassign
+    - modernize
   settings:
+    modernize:
+      # Sub-analyzers that currently produce findings are disabled so they
+      # can be enabled incrementally with the corresponding rewrites in
+      # follow-up changes. The remaining sub-analyzers are enabled as
+      # guardrails against regressions.
+      # The `atomic` sub-analyzer is registered upstream but not accepted
+      # by golangci-lint v2.11.4's config schema; it is excluded below via
+      # exclusions.rules.
+      disable:
+        - fmtappendf
+        - mapsloop
+        - minmax
+        - omitzero
+        - reflecttypefor
+        - slicescontains
+        - stringsbuilder
+        - stringscut
+        - stringscutprefix
+        - stringsseq
+
     depguard:
       rules:
         no-experimental-imports:
@@ -177,6 +198,12 @@ linters:
       - path: cmd/apps/init.go
         linters:
           - depguard
+      # The `atomic` modernize sub-analyzer is registered upstream but not
+      # accepted by golangci-lint v2.11.4's linters.settings.modernize.disable
+      # enum, so silence it here until it can be disabled properly.
+      - linters:
+          - modernize
+        text: "^atomic:"
 issues:
   max-issues-per-linter: 1000
   max-same-issues: 1000
