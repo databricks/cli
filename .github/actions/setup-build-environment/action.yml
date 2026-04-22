@@ -9,6 +9,35 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    # Mount a ReFS Dev Drive on Windows and point TEMP/TMP + Go's cache dirs at
+    # it. Small-file I/O (per-test `.terraform/providers/`, go build cache, etc.)
+    # is roughly ~30x faster than the default C: drive on GH runners. The
+    # `-DevDrive` flag is Win11 22621+ / WS2025; older hosts fall back to plain
+    # ReFS which is still markedly faster than C:. Must run before setup-go so
+    # GOCACHE/GOMODCACHE are rooted on the drive.
+    - name: Mount ReFS Dev Drive (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $vhdPath = "$env:RUNNER_TEMP\devdrive.vhdx"
+        New-VHD -Path $vhdPath -SizeBytes 20GB -Dynamic | Out-Null
+        $disk = Mount-VHD -Path $vhdPath -Passthru |
+          Initialize-Disk -PartitionStyle GPT -Passthru
+        New-Partition -DiskNumber $disk.Number -UseMaximumSize -DriveLetter Z | Out-Null
+        try {
+          Format-Volume -DriveLetter Z -FileSystem ReFS -DevDrive `
+            -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+        } catch {
+          Format-Volume -DriveLetter Z -FileSystem ReFS `
+            -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+        }
+        New-Item -ItemType Directory -Path Z:\tmp,Z:\go-build,Z:\go-mod,Z:\go-tmp | Out-Null
+        "TEMP=Z:\tmp"          | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        "TMP=Z:\tmp"           | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        "GOCACHE=Z:\go-build"  | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        "GOMODCACHE=Z:\go-mod" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        "GOTMPDIR=Z:\go-tmp"   | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
     - name: Checkout repository and submodules
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
