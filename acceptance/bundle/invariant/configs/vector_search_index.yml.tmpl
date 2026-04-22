@@ -2,10 +2,14 @@ bundle:
   name: test-bundle-$UNIQUE_NAME
 
 resources:
+  vector_search_endpoints:
+    bar:
+      name: test-endpoint-$UNIQUE_NAME
+      endpoint_type: STANDARD
   vector_search_indexes:
     foo:
       name: test-index-$UNIQUE_NAME
-      endpoint_name: test-endpoint-$UNIQUE_NAME
+      endpoint_name: ${resources.vector_search_endpoints.bar.name}
       primary_key: id
       index_type: DELTA_SYNC
       delta_sync_index_spec:

@@ -51,7 +51,7 @@ Resources:
   Vector Search Indexes:
     my_index:
       Name: vs-index-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/vector-search/indexes/vs-index-[UNIQUE_NAME]?o=[NUMID]
+      URL:  (not deployed)
 
 >>> print_requests.py //vector-search/indexes
 
