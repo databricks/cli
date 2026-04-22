@@ -664,6 +664,111 @@ func TestApply_VolumeExternalRequiresStorageLocation(t *testing.T) {
 	assert.Contains(t, err.Error(), "storage_location is required for EXTERNAL")
 }
 
+func TestApply_ConnectionCreateOrdersAfterVolume(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "MANAGED",
+		},
+	}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+			Options:        map[string]string{"host": "db.example.com"},
+		},
+	}
+
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{
+		"CreateVolume:main.bronze.raw",
+		"CreateConnection:mysql_prod",
+	}, client.Calls)
+
+	require.NotNil(t, state.Connections["mysql_prod"])
+	assert.Equal(t, "MYSQL", state.Connections["mysql_prod"].ConnectionType)
+	assert.Equal(t, "db.example.com", state.Connections["mysql_prod"].Options["host"])
+}
+
+func TestApply_ConnectionUpdate(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+			Options:        map[string]string{"host": "new.example.com"},
+		},
+	}
+	state := direct.NewState()
+	state.Connections["mysql_prod"] = &direct.ConnectionState{
+		Name:           "mysql_prod",
+		ConnectionType: "MYSQL",
+		Options:        map[string]string{"host": "old.example.com"},
+	}
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{"UpdateConnection:mysql_prod"}, client.Calls)
+	assert.Equal(t, "new.example.com", state.Connections["mysql_prod"].Options["host"])
+}
+
+func TestApply_ConnectionDestroyOrder(t *testing.T) {
+	u := &ucm.Ucm{}
+	state := direct.NewState()
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:        "raw",
+		CatalogName: "main",
+		SchemaName:  "bronze",
+		VolumeType:  "MANAGED",
+	}
+	state.Connections["mysql_prod"] = &direct.ConnectionState{
+		Name:           "mysql_prod",
+		ConnectionType: "MYSQL",
+		Options:        map[string]string{"host": "db.example.com"},
+	}
+
+	client := &recordingClient{}
+	plan, err := direct.Destroy(t.Context(), u, client, state)
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	assert.Equal(t, []string{
+		"DeleteConnection:mysql_prod",
+		"DeleteVolume:main.bronze.raw",
+	}, client.Calls)
+
+	assert.Empty(t, state.Volumes)
+	assert.Empty(t, state.Connections)
+}
+
+func TestApply_ConnectionRejectsMissingOptions(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+		},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	err := direct.Apply(t.Context(), u, client, plan, state)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "options is required")
+	assert.Empty(t, client.Calls)
+}
+
 func TestApply_RevokesPrincipalsNotInConfig(t *testing.T) {
 	u := ucmWith(nil, nil, map[string]*resources.Grant{
 		"analysts": {

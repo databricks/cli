@@ -108,6 +108,20 @@ func volumeStateFromConfig(v *resources.Volume) VolumeState {
 	}
 }
 
+func connectionStateFromConfig(c *resources.Connection) ConnectionState {
+	if c == nil {
+		return ConnectionState{}
+	}
+	return ConnectionState{
+		Name:           c.Name,
+		ConnectionType: c.ConnectionType,
+		Options:        copyTags(c.Options),
+		Comment:        c.Comment,
+		Properties:     copyTags(c.Properties),
+		ReadOnly:       c.ReadOnly,
+	}
+}
+
 func copyTags(tags map[string]string) map[string]string {
 	if len(tags) == 0 {
 		return nil

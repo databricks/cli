@@ -338,6 +338,73 @@ func TestCalculatePlan_VolumeUpdateOnCommentDrift(t *testing.T) {
 	assert.Equal(t, deployplan.Update, plan.Plan["resources.volumes.raw"].Action)
 }
 
+func TestCalculatePlan_ConnectionCreate(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+			Options:        map[string]string{"host": "db.example.com"},
+		},
+	}
+	plan := direct.CalculatePlan(u, direct.NewState())
+	assert.Equal(t, deployplan.Create, plan.Plan["resources.connections.mysql_prod"].Action)
+}
+
+func TestCalculatePlan_ConnectionDelete(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	state := direct.NewState()
+	state.Connections["mysql_prod"] = &direct.ConnectionState{
+		Name:           "mysql_prod",
+		ConnectionType: "MYSQL",
+		Options:        map[string]string{"host": "db.example.com"},
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Delete, plan.Plan["resources.connections.mysql_prod"].Action)
+}
+
+func TestCalculatePlan_ConnectionSkip(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+			Options:        map[string]string{"host": "db.example.com"},
+			Comment:        "prod",
+			ReadOnly:       true,
+		},
+	}
+	state := direct.NewState()
+	state.Connections["mysql_prod"] = &direct.ConnectionState{
+		Name:           "mysql_prod",
+		ConnectionType: "MYSQL",
+		Options:        map[string]string{"host": "db.example.com"},
+		Comment:        "prod",
+		ReadOnly:       true,
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Skip, plan.Plan["resources.connections.mysql_prod"].Action)
+}
+
+func TestCalculatePlan_ConnectionUpdateOnOptionsDrift(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+			Options:        map[string]string{"host": "new.example.com"},
+		},
+	}
+	state := direct.NewState()
+	state.Connections["mysql_prod"] = &direct.ConnectionState{
+		Name:           "mysql_prod",
+		ConnectionType: "MYSQL",
+		Options:        map[string]string{"host": "old.example.com"},
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Update, plan.Plan["resources.connections.mysql_prod"].Action)
+}
+
 func ucmWith(catalogs map[string]*resources.Catalog, schemas map[string]*resources.Schema, grants map[string]*resources.Grant) *ucm.Ucm {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Catalogs = catalogs

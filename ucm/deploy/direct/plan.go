@@ -35,6 +35,7 @@ func CalculatePlan(u *ucm.Ucm, state *State) *deployplan.Plan {
 	planCatalogs(u, state, plan)
 	planSchemas(u, state, plan)
 	planVolumes(u, state, plan)
+	planConnections(u, state, plan)
 	planGrants(u, state, plan)
 
 	return plan
@@ -155,6 +156,29 @@ func planVolumes(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
 	}
 }
 
+func planConnections(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
+	desired := u.Config.Resources.Connections
+	recorded := state.Connections
+
+	keys := mergedKeys(desired, recorded)
+	for _, key := range keys {
+		planKey := "resources.connections." + key
+
+		cfg, haveCfg := desired[key]
+		rec, haveRec := recorded[key]
+		switch {
+		case haveCfg && !haveRec:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Create}
+		case !haveCfg && haveRec:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Delete}
+		case connectionStateFromConfig(cfg).equal(rec):
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Skip}
+		default:
+			plan.Plan[planKey] = &deployplan.PlanEntry{Action: deployplan.Update}
+		}
+	}
+}
+
 func planGrants(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
 	desired := u.Config.Resources.Grants
 	recorded := state.Grants
@@ -227,6 +251,10 @@ func (s ExternalLocationState) equal(other *ExternalLocationState) bool {
 }
 
 func (s VolumeState) equal(other *VolumeState) bool {
+	return other != nil && reflect.DeepEqual(s, *other)
+}
+
+func (s ConnectionState) equal(other *ConnectionState) bool {
 	return other != nil && reflect.DeepEqual(s, *other)
 }
 

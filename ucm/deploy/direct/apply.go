@@ -46,7 +46,13 @@ func Apply(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan
 	if err := applyVolumeCreates(ctx, u, client, plan, state); err != nil {
 		return err
 	}
+	if err := applyConnectionCreates(ctx, u, client, plan, state); err != nil {
+		return err
+	}
 	if err := applyGrantChanges(ctx, u, client, plan, state); err != nil {
+		return err
+	}
+	if err := applyConnectionDeletes(ctx, client, plan, state); err != nil {
 		return err
 	}
 	if err := applyVolumeDeletes(ctx, client, plan, state); err != nil {
@@ -74,6 +80,9 @@ func Destroy(ctx context.Context, u *ucm.Ucm, client Client, state *State) (*dep
 	plan := deployplan.NewPlanTerraform()
 	for key := range state.Grants {
 		plan.Plan["resources.grants."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	}
+	for key := range state.Connections {
+		plan.Plan["resources.connections."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	}
 	for key := range state.Volumes {
 		plan.Plan["resources.volumes."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
@@ -280,6 +289,53 @@ func applyVolumeDeletes(ctx context.Context, client Client, plan *deployplan.Pla
 			return fmt.Errorf("delete volume %s: %w", fullName, err)
 		}
 		delete(state.Volumes, name)
+	}
+	return nil
+}
+
+func applyConnectionCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range sortedPlanKeysByGroup(plan, "connections") {
+		entry := plan.Plan[key]
+		name := strings.TrimPrefix(key, "resources.connections.")
+		cfg := u.Config.Resources.Connections[name]
+		switch entry.Action {
+		case deployplan.Create:
+			log.Infof(ctx, "direct: creating connection %s", cfg.Name)
+			in, err := connectionCreateInput(cfg)
+			if err != nil {
+				return fmt.Errorf("create connection %s: %w", cfg.Name, err)
+			}
+			if _, err := client.CreateConnection(ctx, in); err != nil {
+				return fmt.Errorf("create connection %s: %w", cfg.Name, err)
+			}
+			state.Connections[name] = ptrConnection(connectionStateFromConfig(cfg))
+		case deployplan.Update:
+			log.Infof(ctx, "direct: updating connection %s", cfg.Name)
+			if _, err := client.UpdateConnection(ctx, connectionUpdateInput(cfg)); err != nil {
+				return fmt.Errorf("update connection %s: %w", cfg.Name, err)
+			}
+			state.Connections[name] = ptrConnection(connectionStateFromConfig(cfg))
+		}
+	}
+	return nil
+}
+
+func applyConnectionDeletes(ctx context.Context, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range reverseSortedPlanKeysByGroup(plan, "connections") {
+		entry := plan.Plan[key]
+		if entry.Action != deployplan.Delete {
+			continue
+		}
+		name := strings.TrimPrefix(key, "resources.connections.")
+		rec, ok := state.Connections[name]
+		if !ok {
+			continue
+		}
+		log.Infof(ctx, "direct: deleting connection %s", rec.Name)
+		if err := client.DeleteConnection(ctx, rec.Name); err != nil {
+			return fmt.Errorf("delete connection %s: %w", rec.Name, err)
+		}
+		delete(state.Connections, name)
 	}
 	return nil
 }
@@ -519,6 +575,35 @@ func volumeUpdateInput(v *resources.Volume) catalog.UpdateVolumeRequestContent {
 	}
 }
 
+// connectionCreateInput validates options is non-empty and builds the SDK
+// Create payload. Per-connection-type key validation lives server-side.
+func connectionCreateInput(c *resources.Connection) (catalog.CreateConnection, error) {
+	if c.ConnectionType == "" {
+		return catalog.CreateConnection{}, fmt.Errorf("connection %q: connection_type is required", c.Name)
+	}
+	if len(c.Options) == 0 {
+		return catalog.CreateConnection{}, fmt.Errorf("connection %q: options is required and must be non-empty", c.Name)
+	}
+	return catalog.CreateConnection{
+		Name:           c.Name,
+		ConnectionType: catalog.ConnectionType(c.ConnectionType),
+		Options:        copyTags(c.Options),
+		Comment:        c.Comment,
+		Properties:     copyTags(c.Properties),
+		ReadOnly:       c.ReadOnly,
+	}, nil
+}
+
+// connectionUpdateInput produces an options-only update. The UC API allows
+// changing only name/owner/options on a connection — connection_type,
+// comment, properties, and read_only drift is effectively immutable.
+func connectionUpdateInput(c *resources.Connection) catalog.UpdateConnection {
+	return catalog.UpdateConnection{
+		Name:    c.Name,
+		Options: copyTags(c.Options),
+	}
+}
+
 func externalLocationCreateInput(e *resources.ExternalLocation) catalog.CreateExternalLocation {
 	return catalog.CreateExternalLocation{
 		Name:           e.Name,
@@ -694,3 +779,5 @@ func ptrStorageCredential(s StorageCredentialState) *StorageCredentialState {
 func ptrExternalLocation(s ExternalLocationState) *ExternalLocationState { return &s }
 
 func ptrVolume(s VolumeState) *VolumeState { return &s }
+
+func ptrConnection(s ConnectionState) *ConnectionState { return &s }
