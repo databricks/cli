@@ -47,6 +47,38 @@ func grantStateFromConfig(g *resources.Grant) GrantState {
 	}
 }
 
+func storageCredentialStateFromConfig(c *resources.StorageCredential) StorageCredentialState {
+	if c == nil {
+		return StorageCredentialState{}
+	}
+	s := StorageCredentialState{
+		Name:           c.Name,
+		Comment:        c.Comment,
+		ReadOnly:       c.ReadOnly,
+		SkipValidation: c.SkipValidation,
+	}
+	if c.AwsIamRole != nil {
+		s.AwsIamRole = &AwsIamRoleState{RoleArn: c.AwsIamRole.RoleArn}
+	}
+	if c.AzureManagedIdentity != nil {
+		s.AzureManagedIdentity = &AzureManagedIdentityState{
+			AccessConnectorId: c.AzureManagedIdentity.AccessConnectorId,
+			ManagedIdentityId: c.AzureManagedIdentity.ManagedIdentityId,
+		}
+	}
+	if c.AzureServicePrincipal != nil {
+		s.AzureServicePrincipal = &AzureServicePrincipalState{
+			DirectoryId:   c.AzureServicePrincipal.DirectoryId,
+			ApplicationId: c.AzureServicePrincipal.ApplicationId,
+			ClientSecret:  c.AzureServicePrincipal.ClientSecret,
+		}
+	}
+	if c.DatabricksGcpServiceAccount != nil {
+		s.DatabricksGcpServiceAccount = &DatabricksGcpServiceAccountState{}
+	}
+	return s
+}
+
 func copyTags(tags map[string]string) map[string]string {
 	if len(tags) == 0 {
 		return nil

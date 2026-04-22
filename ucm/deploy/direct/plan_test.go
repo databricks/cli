@@ -137,6 +137,65 @@ func TestCalculatePlan_PrivilegeReorderIsSkip(t *testing.T) {
 	assert.Equal(t, deployplan.Skip, plan.Plan["resources.grants.analysts"].Action)
 }
 
+func TestCalculatePlan_StorageCredentialCreate(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"prod": {
+			Name:       "prod",
+			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/uc"},
+		},
+	}
+	plan := direct.CalculatePlan(u, direct.NewState())
+	assert.Equal(t, deployplan.Create, plan.Plan["resources.storage_credentials.prod"].Action)
+}
+
+func TestCalculatePlan_StorageCredentialDelete(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	state := direct.NewState()
+	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
+		Name:       "prod",
+		AwsIamRole: &direct.AwsIamRoleState{RoleArn: "arn:aws:iam::1:role/uc"},
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Delete, plan.Plan["resources.storage_credentials.prod"].Action)
+}
+
+func TestCalculatePlan_StorageCredentialSkip(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"prod": {
+			Name:       "prod",
+			Comment:    "prod",
+			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/uc"},
+		},
+	}
+	state := direct.NewState()
+	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
+		Name:       "prod",
+		Comment:    "prod",
+		AwsIamRole: &direct.AwsIamRoleState{RoleArn: "arn:aws:iam::1:role/uc"},
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Skip, plan.Plan["resources.storage_credentials.prod"].Action)
+}
+
+func TestCalculatePlan_StorageCredentialUpdateOnIdentityDrift(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"prod": {
+			Name:       "prod",
+			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/new"},
+		},
+	}
+	state := direct.NewState()
+	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
+		Name:       "prod",
+		AwsIamRole: &direct.AwsIamRoleState{RoleArn: "arn:aws:iam::1:role/old"},
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Update, plan.Plan["resources.storage_credentials.prod"].Action)
+}
+
 func ucmWith(catalogs map[string]*resources.Catalog, schemas map[string]*resources.Schema, grants map[string]*resources.Grant) *ucm.Ucm {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Catalogs = catalogs
