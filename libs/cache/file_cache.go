@@ -145,6 +145,20 @@ func NewCache(ctx context.Context, component string, expiry time.Duration, metri
 	return &Cache{impl: fc}
 }
 
+func (fc *fileCache) putJSON(ctx context.Context, fingerprint any, data []byte) {
+	if !fc.cacheEnabled {
+		return
+	}
+	cacheKey, err := fingerprintToHash(fingerprint)
+	if err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to generate cache key for put: %v", err)
+		return
+	}
+	fc.mu.Lock()
+	defer fc.mu.Unlock()
+	fc.writeToCacheJSON(ctx, fc.getCachePath(cacheKey), data)
+}
+
 func (fc *fileCache) getJSON(ctx context.Context, fingerprint any) ([]byte, bool) {
 	if !fc.cacheEnabled {
 		return nil, false

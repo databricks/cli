@@ -11,3 +11,6 @@ func (c *noopFileCache) getOrComputeJSON(ctx context.Context, fingerprint any, c
 func (c *noopFileCache) getJSON(ctx context.Context, fingerprint any) ([]byte, bool) {
 	return nil, false
 }
+
+func (c *noopFileCache) putJSON(ctx context.Context, fingerprint any, data []byte) {
+}

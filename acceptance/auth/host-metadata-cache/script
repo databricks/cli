@@ -10,10 +10,10 @@ token = test-token
 EOF
 
 title "First invocation populates the cache\n"
-$CLI auth profiles --skip-validate --output json || true
+$CLI auth profiles --skip-validate --output json
 
 title "Second invocation should read from the cache\n"
-$CLI auth profiles --skip-validate --output json || true
+$CLI auth profiles --skip-validate --output json
 
 title "Only one /.well-known/databricks-config request recorded\n"
 print_requests.py //.well-known/databricks-config --get --sort

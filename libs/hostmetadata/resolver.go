@@ -50,7 +50,12 @@ func init() {
 // so subsequent calls within negativeCacheTTL skip the network. The fetch
 // function is invoked on miss, typically cfg.DefaultHostMetadataResolver().
 func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver {
-	ctx := context.Background() //nolint:gocritic // no caller ctx; cache.NewCache uses ctx only for env lookups and cleanup-walk logs.
+	// The SDK factory signature (func(cfg *config.Config) HostMetadataResolver)
+	// gives us no caller ctx at construction, so Background is the only option
+	// here. cache.NewCache uses ctx only for a one-time env lookup and
+	// cleanup-walk logging; per-call ctx still flows through the returned
+	// resolver below.
+	ctx := context.Background() //nolint:gocritic // forced by SDK factory signature; see comment above.
 	positive := cache.NewCache(ctx, positiveCacheComponent, positiveCacheTTL, nil)
 	negative := cache.NewCache(ctx, negativeCacheComponent, negativeCacheTTL, nil)
 
@@ -73,15 +78,12 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 			return nil, nil
 		}
 		// Transient errors (cancellation, deadline) say nothing about the
-		// host's long-term availability — don't cache them.
+		// host's long-term availability — don't write a negative sentinel.
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return nil, nil
 		}
-		log.Debugf(ctx, "[hostmetadata] fetch failed for %s, recording negative: %v", host, err)
-		// Best-effort write; ignore failures.
-		_, _ = cache.GetOrCompute[*negativeSentinel](ctx, negative, fp, func(ctx context.Context) (*negativeSentinel, error) {
-			return &negativeSentinel{Error: true}, nil
-		})
+		log.Warnf(ctx, "[hostmetadata] fetch failed for %s, recording negative: %v", host, err)
+		cache.Put(ctx, negative, fp, &negativeSentinel{Error: true})
 		return nil, nil
 	}
 }

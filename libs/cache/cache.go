@@ -17,6 +17,11 @@ type cacheImpl interface {
 	// getJSON returns cached JSON bytes for fingerprint, or (nil, false) on
 	// miss or when caching is disabled. Never computes, never writes.
 	getJSON(ctx context.Context, fingerprint any) ([]byte, bool)
+
+	// putJSON writes data to the cache under fingerprint, overwriting any
+	// existing entry. When caching is disabled it is a no-op. Failures are
+	// silent (logged at debug).
+	putJSON(ctx context.Context, fingerprint any, data []byte)
 }
 
 // Cache provides a concrete cache that works with any type through the generic GetOrCompute function.
@@ -78,4 +83,18 @@ func GetOrCompute[T any](ctx context.Context, c *Cache, fingerprint any, compute
 	}
 
 	return result, nil
+}
+
+// Put serializes value to JSON and writes it to the cache under fingerprint,
+// overwriting any existing entry. Failures are silent; when caching is
+// disabled it is a no-op. Use this when the caller wants an unconditional
+// write (e.g. recording a negative sentinel) rather than the read-then-write
+// semantics of GetOrCompute.
+func Put[T any](ctx context.Context, c *Cache, fingerprint any, value T) {
+	data, err := json.Marshal(value)
+	if err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to marshal value for cache write: %v", err)
+		return
+	}
+	c.impl.putJSON(ctx, fingerprint, data)
 }
