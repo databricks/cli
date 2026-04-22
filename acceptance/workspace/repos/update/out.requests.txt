@@ -12,10 +12,6 @@
   }
 }
 {
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
   "method": "PATCH",
   "path": "/api/2.0/repos/[NUMID]",
   "body": {
@@ -24,15 +20,7 @@
 }
 {
   "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/repos/[NUMID]"
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
 }
 {
   "method": "GET",
@@ -47,10 +35,6 @@
   "body": {
     "branch": "update-by-path"
   }
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
 }
 {
   "method": "GET",

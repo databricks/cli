@@ -57,6 +57,7 @@ linters:
             - "**"
             - "!**/bundle/docsgen/**"
             - "!**/bundle/internal/schema/**"
+            - "!**/bundle/internal/tf/codegen/**"
             - "!**/bundle/internal/validation/**"
           deny:
             - pkg: "log$"

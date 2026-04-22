@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConfigRuleMatches(t *testing.T) {
@@ -35,9 +36,9 @@ func TestConfigRuleMatches(t *testing.T) {
 		{"libs/ *", "libs/auth", "AnyTest", true},
 
 		// Path prefix edge cases
-		{"TestAccept/ TestAccept/", "TestAccept", "TestAccept", true},
-		{"TestAccept/ TestAccept/", "TestAccept/bundle", "TestAccept/deploy", true},
-		{"TestAccept/ TestAccept/", "TestAcceptSomething", "TestAcceptSomething", false},
+		{"TestAccept/ TestAccept/", "TestAccept", "TestAccept", true},                    //nolint:dupword
+		{"TestAccept/ TestAccept/", "TestAccept/bundle", "TestAccept/deploy", true},      //nolint:dupword
+		{"TestAccept/ TestAccept/", "TestAcceptSomething", "TestAcceptSomething", false}, //nolint:dupword
 
 		// Empty values cases
 		{"* TestDeploy", "", "TestDeploy", true},
@@ -59,7 +60,7 @@ func TestConfigRuleMatches(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.input+"_"+tt.packageName+"_"+tt.testcase, func(t *testing.T) {
 			rule, err := parseConfigRule(tt.input, tt.input)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			result := rule.matches(tt.packageName, tt.testcase)
 			assert.Equal(t, tt.match, result)
 		})
