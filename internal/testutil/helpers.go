@@ -18,12 +18,12 @@ func GetEnvOrSkipTest(t TestingT, name string) string {
 
 // RandomName gives random name with optional prefix. e.g. qa.RandomName("tf-")
 func RandomName(prefix ...string) string {
-	out := ""
+	var sb strings.Builder
 	for _, p := range prefix {
-		out += p
+		sb.WriteString(p)
 	}
-	out += strings.ReplaceAll(uuid.New().String(), "-", "")
-	return out
+	sb.WriteString(strings.ReplaceAll(uuid.New().String(), "-", ""))
+	return sb.String()
 }
 
 func ReplaceWindowsLineEndings(s string) string {

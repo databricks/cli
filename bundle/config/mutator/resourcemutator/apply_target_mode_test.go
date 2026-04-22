@@ -422,9 +422,9 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	// this list only contains the Volume, Catalog, and ExternalLocation resources since we have yet to remove
 	// prefixing support for UC schemas and registered models.
 	ucFields := []reflect.Type{
-		reflect.TypeOf(&resources.Catalog{}),
-		reflect.TypeOf(&resources.ExternalLocation{}),
-		reflect.TypeOf(&resources.Volume{}),
+		reflect.TypeFor[*resources.Catalog](),
+		reflect.TypeFor[*resources.ExternalLocation](),
+		reflect.TypeFor[*resources.Volume](),
 	}
 
 	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())

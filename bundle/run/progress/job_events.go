@@ -21,7 +21,7 @@ func NewTaskErrorEvent(taskKey, errorMessage, errorTrace string) *TaskErrorEvent
 
 func (event *TaskErrorEvent) String() string {
 	result := strings.Builder{}
-	result.WriteString(fmt.Sprintf("Task %s FAILED:\n", event.TaskKey))
+	fmt.Fprintf(&result, "Task %s FAILED:\n", event.TaskKey)
 	result.WriteString(event.Error + "\n")
 	result.WriteString(event.ErrorTrace + "\n")
 	return result.String()

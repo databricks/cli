@@ -3,9 +3,11 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
@@ -100,7 +102,7 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if err != nil {
 		return nil, err
 	}
-	ts, err := c.persistentAuth(ctx, u2m.WithOAuthArgument(oauthArg))
+	ts, err := c.persistentAuth(ctx, oauthArg)
 	if err != nil {
 		return nil, err
 	}
@@ -110,14 +112,22 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	return cp, nil
 }
 
-// persistentAuth returns a token source. It is a convenience function that
-// overrides the default implementation of the persistent auth client if
-// an alternative implementation is provided for testing.
-func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+// persistentAuth returns a token source. It wraps the file-backed token
+// cache with a dual-writing cache so every token write (Challenge, refresh,
+// discovery) mirrors to the legacy host key for cross-SDK compatibility.
+// The persistentAuthFn override is used in tests.
+func (c CLICredentials) persistentAuth(ctx context.Context, arg u2m.OAuthArgument) (auth.TokenSource, error) {
 	if c.persistentAuthFn != nil {
-		return c.persistentAuthFn(ctx, opts...)
+		return c.persistentAuthFn(ctx, u2m.WithOAuthArgument(arg))
 	}
-	ts, err := u2m.NewPersistentAuth(ctx, opts...)
+	tc, err := storage.NewFileTokenCache(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("opening token cache: %w", err)
+	}
+	ts, err := u2m.NewPersistentAuth(ctx,
+		u2m.WithTokenCache(storage.NewDualWritingTokenCache(tc, arg)),
+		u2m.WithOAuthArgument(arg),
+	)
 	if err != nil {
 		return nil, err
 	}
