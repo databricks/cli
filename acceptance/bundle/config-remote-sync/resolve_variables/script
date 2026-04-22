@@ -24,12 +24,38 @@ r["parameters"].append({"name": "deploy_env", "default": "production"})
 r["parameters"].append({"name": "file_sourced", "default": "from-overrides-file"})
 EOF
 
-title "Detect and save changes"
+title "Detect and save Add changes"
 echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
-title "Configuration changes"
+title "Add: configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Redeploy with updated config"
+echo
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Replace variable-backed field remotely"
+edit_resource.py jobs $job_id <<EOF
+# Change "catalog" param (originally \${var.my_catalog} = "main") to a different value.
+# Since "staging_catalog" does not match the variable's resolved value, it must stay hardcoded.
+# Other variable-backed fields (env, file_val, landing, curated) are not changed and
+# must remain as variable references (absent from the diff).
+for p in r["parameters"]:
+    if p["name"] == "catalog":
+        p["default"] = "staging_catalog"
+EOF
+
+title "Detect and save Replace changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Replace: configuration changes"
 echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
