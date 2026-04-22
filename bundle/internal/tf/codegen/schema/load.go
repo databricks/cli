@@ -9,7 +9,8 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-func (s *Schema) Load(ctx context.Context) (*tfjson.ProviderSchema, error) {
+// Load reads the provider schema JSON file and returns the Databricks provider schema.
+func (s *Schema) Load(_ context.Context) (*tfjson.ProviderSchema, error) {
 	buf, err := os.ReadFile(s.ProviderSchemaFile)
 	if err != nil {
 		return nil, err

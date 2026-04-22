@@ -9,11 +9,13 @@
 * Added `--limit` flag to all paginated list commands for client-side result capping ([#4984](https://github.com/databricks/cli/pull/4984)).
 * Accept `yes` in addition to `y` for confirmation prompts, and show `[y/N]` to indicate that no is the default.
 * Cache `/.well-known/databricks-config` lookups under `~/.cache/databricks/<version>/host-metadata/` so repeat CLI invocations against the same host skip the ~700ms discovery round trip.
+* Deprecated `auth env`. The command is hidden from help listings and prints a deprecation warning to stderr; it will be removed in a future release.
 
 ### Bundles
 * Remove `experimental-jobs-as-code` template, superseded by `pydabs` ([#4999](https://github.com/databricks/cli/pull/4999)).
 * engine/direct: Added support for Vector Search Endpoints ([#4887](https://github.com/databricks/cli/pull/4887))
 * engine/direct: Exclude deploy-only fields (e.g. `lifecycle`) from the Apps update mask so requests that change both `description` and `lifecycle.started` in the same deploy no longer fail with `INVALID_PARAMETER_VALUE`.
+* engine/direct: Fix phantom diffs from `depends_on` reordering in job tasks ([#4990](https://github.com/databricks/cli/pull/4990))
 
 ### Dependency updates
 
