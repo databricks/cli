@@ -323,6 +323,12 @@ resources:
         reason: immutable
       - field: storage_root
         reason: immutable
+    backend_defaults:
+      # UC auto-populates system-managed keys like
+      # `unity.catalog.managed.delta.defaults.delta.enableRowTracking` after create.
+      # Without this, every subsequent plan produces an Update whose payload is empty,
+      # and UC rejects it with "UpdateSchema Nothing to update".
+      - field: properties
 
   external_locations:
     recreate_on_changes:

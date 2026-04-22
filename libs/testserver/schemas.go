@@ -39,6 +39,13 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 	schema.MetastoreId = TestMetastore.MetastoreId
 	schema.Owner = s.CurrentUser().UserName
 	schema.SchemaId = nextUUID()
+	if schema.Properties == nil {
+		// Mirror UC behavior: managed system defaults are populated when the user
+		// doesn't specify any properties. Required to cover backend-default drift.
+		schema.Properties = map[string]string{
+			"unity.catalog.managed.delta.defaults.delta.enableRowTracking": "true",
+		}
+	}
 	s.Schemas[schema.FullName] = schema
 
 	return Response{
