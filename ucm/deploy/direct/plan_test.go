@@ -196,6 +196,215 @@ func TestCalculatePlan_StorageCredentialUpdateOnIdentityDrift(t *testing.T) {
 	assert.Equal(t, deployplan.Update, plan.Plan["resources.storage_credentials.prod"].Action)
 }
 
+func TestCalculatePlan_ExternalLocationCreate(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
+		"prod": {
+			Name:           "prod",
+			Url:            "s3://bucket/prefix",
+			CredentialName: "prod",
+		},
+	}
+	plan := direct.CalculatePlan(u, direct.NewState())
+	assert.Equal(t, deployplan.Create, plan.Plan["resources.external_locations.prod"].Action)
+}
+
+func TestCalculatePlan_ExternalLocationDelete(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	state := direct.NewState()
+	state.ExternalLocations["prod"] = &direct.ExternalLocationState{
+		Name:           "prod",
+		Url:            "s3://bucket/prefix",
+		CredentialName: "prod",
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Delete, plan.Plan["resources.external_locations.prod"].Action)
+}
+
+func TestCalculatePlan_ExternalLocationSkip(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
+		"prod": {
+			Name:           "prod",
+			Url:            "s3://bucket/prefix",
+			CredentialName: "prod",
+			Comment:        "prod",
+			ReadOnly:       true,
+		},
+	}
+	state := direct.NewState()
+	state.ExternalLocations["prod"] = &direct.ExternalLocationState{
+		Name:           "prod",
+		Url:            "s3://bucket/prefix",
+		CredentialName: "prod",
+		Comment:        "prod",
+		ReadOnly:       true,
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Skip, plan.Plan["resources.external_locations.prod"].Action)
+}
+
+func TestCalculatePlan_ExternalLocationUpdateOnUrlDrift(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
+		"prod": {
+			Name:           "prod",
+			Url:            "s3://bucket/new",
+			CredentialName: "prod",
+		},
+	}
+	state := direct.NewState()
+	state.ExternalLocations["prod"] = &direct.ExternalLocationState{
+		Name:           "prod",
+		Url:            "s3://bucket/old",
+		CredentialName: "prod",
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Update, plan.Plan["resources.external_locations.prod"].Action)
+}
+
+func TestCalculatePlan_VolumeCreate(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "MANAGED",
+		},
+	}
+	plan := direct.CalculatePlan(u, direct.NewState())
+	assert.Equal(t, deployplan.Create, plan.Plan["resources.volumes.raw"].Action)
+}
+
+func TestCalculatePlan_VolumeDelete(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	state := direct.NewState()
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:        "raw",
+		CatalogName: "main",
+		SchemaName:  "bronze",
+		VolumeType:  "MANAGED",
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Delete, plan.Plan["resources.volumes.raw"].Action)
+}
+
+func TestCalculatePlan_VolumeSkip(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:            "raw",
+			CatalogName:     "main",
+			SchemaName:      "bronze",
+			VolumeType:      "EXTERNAL",
+			StorageLocation: "s3://bucket/raw",
+			Comment:         "prod",
+		},
+	}
+	state := direct.NewState()
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:            "raw",
+		CatalogName:     "main",
+		SchemaName:      "bronze",
+		VolumeType:      "EXTERNAL",
+		StorageLocation: "s3://bucket/raw",
+		Comment:         "prod",
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Skip, plan.Plan["resources.volumes.raw"].Action)
+}
+
+func TestCalculatePlan_VolumeUpdateOnCommentDrift(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "MANAGED",
+			Comment:     "new",
+		},
+	}
+	state := direct.NewState()
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:        "raw",
+		CatalogName: "main",
+		SchemaName:  "bronze",
+		VolumeType:  "MANAGED",
+		Comment:     "old",
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Update, plan.Plan["resources.volumes.raw"].Action)
+}
+
+func TestCalculatePlan_ConnectionCreate(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+			Options:        map[string]string{"host": "db.example.com"},
+		},
+	}
+	plan := direct.CalculatePlan(u, direct.NewState())
+	assert.Equal(t, deployplan.Create, plan.Plan["resources.connections.mysql_prod"].Action)
+}
+
+func TestCalculatePlan_ConnectionDelete(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	state := direct.NewState()
+	state.Connections["mysql_prod"] = &direct.ConnectionState{
+		Name:           "mysql_prod",
+		ConnectionType: "MYSQL",
+		Options:        map[string]string{"host": "db.example.com"},
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Delete, plan.Plan["resources.connections.mysql_prod"].Action)
+}
+
+func TestCalculatePlan_ConnectionSkip(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+			Options:        map[string]string{"host": "db.example.com"},
+			Comment:        "prod",
+			ReadOnly:       true,
+		},
+	}
+	state := direct.NewState()
+	state.Connections["mysql_prod"] = &direct.ConnectionState{
+		Name:           "mysql_prod",
+		ConnectionType: "MYSQL",
+		Options:        map[string]string{"host": "db.example.com"},
+		Comment:        "prod",
+		ReadOnly:       true,
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Skip, plan.Plan["resources.connections.mysql_prod"].Action)
+}
+
+func TestCalculatePlan_ConnectionUpdateOnOptionsDrift(t *testing.T) {
+	u := &ucm.Ucm{Config: config.Root{}}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+			Options:        map[string]string{"host": "new.example.com"},
+		},
+	}
+	state := direct.NewState()
+	state.Connections["mysql_prod"] = &direct.ConnectionState{
+		Name:           "mysql_prod",
+		ConnectionType: "MYSQL",
+		Options:        map[string]string{"host": "old.example.com"},
+	}
+	plan := direct.CalculatePlan(u, state)
+	assert.Equal(t, deployplan.Update, plan.Plan["resources.connections.mysql_prod"].Action)
+}
+
 func ucmWith(catalogs map[string]*resources.Catalog, schemas map[string]*resources.Schema, grants map[string]*resources.Grant) *ucm.Ucm {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Catalogs = catalogs

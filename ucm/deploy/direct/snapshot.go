@@ -79,6 +79,49 @@ func storageCredentialStateFromConfig(c *resources.StorageCredential) StorageCre
 	return s
 }
 
+func externalLocationStateFromConfig(e *resources.ExternalLocation) ExternalLocationState {
+	if e == nil {
+		return ExternalLocationState{}
+	}
+	return ExternalLocationState{
+		Name:           e.Name,
+		Url:            e.Url,
+		CredentialName: e.CredentialName,
+		Comment:        e.Comment,
+		ReadOnly:       e.ReadOnly,
+		SkipValidation: e.SkipValidation,
+		Fallback:       e.Fallback,
+	}
+}
+
+func volumeStateFromConfig(v *resources.Volume) VolumeState {
+	if v == nil {
+		return VolumeState{}
+	}
+	return VolumeState{
+		Name:            v.Name,
+		CatalogName:     v.CatalogName,
+		SchemaName:      v.SchemaName,
+		VolumeType:      v.VolumeType,
+		StorageLocation: v.StorageLocation,
+		Comment:         v.Comment,
+	}
+}
+
+func connectionStateFromConfig(c *resources.Connection) ConnectionState {
+	if c == nil {
+		return ConnectionState{}
+	}
+	return ConnectionState{
+		Name:           c.Name,
+		ConnectionType: c.ConnectionType,
+		Options:        copyTags(c.Options),
+		Comment:        c.Comment,
+		Properties:     copyTags(c.Properties),
+		ReadOnly:       c.ReadOnly,
+	}
+}
+
 func copyTags(tags map[string]string) map[string]string {
 	if len(tags) == 0 {
 		return nil

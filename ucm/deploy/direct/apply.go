@@ -20,9 +20,10 @@ import (
 //
 // Execution order is the natural UC dependency order:
 //
-//	storage_credential creates+updates → catalog creates+updates
-//	→ schema creates+updates → grants reconcile → schema deletes
-//	→ catalog deletes → storage_credential deletes
+//	storage_credential creates+updates → external_location creates+updates
+//	→ catalog creates+updates → schema creates+updates → grants reconcile
+//	→ schema deletes → catalog deletes → external_location deletes
+//	→ storage_credential deletes
 //
 // Grants are reconciled per securable in a single pass (Create, Update, and
 // Delete share the code path) because the UC API treats grants as a full
@@ -33,19 +34,37 @@ func Apply(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan
 	if err := applyStorageCredentialCreates(ctx, u, client, plan, state); err != nil {
 		return err
 	}
+	if err := applyExternalLocationCreates(ctx, u, client, plan, state); err != nil {
+		return err
+	}
 	if err := applyCatalogCreates(ctx, u, client, plan, state); err != nil {
 		return err
 	}
 	if err := applySchemaCreates(ctx, u, client, plan, state); err != nil {
 		return err
 	}
+	if err := applyVolumeCreates(ctx, u, client, plan, state); err != nil {
+		return err
+	}
+	if err := applyConnectionCreates(ctx, u, client, plan, state); err != nil {
+		return err
+	}
 	if err := applyGrantChanges(ctx, u, client, plan, state); err != nil {
+		return err
+	}
+	if err := applyConnectionDeletes(ctx, client, plan, state); err != nil {
+		return err
+	}
+	if err := applyVolumeDeletes(ctx, client, plan, state); err != nil {
 		return err
 	}
 	if err := applySchemaDeletes(ctx, client, plan, state); err != nil {
 		return err
 	}
 	if err := applyCatalogDeletes(ctx, client, plan, state); err != nil {
+		return err
+	}
+	if err := applyExternalLocationDeletes(ctx, client, plan, state); err != nil {
 		return err
 	}
 	if err := applyStorageCredentialDeletes(ctx, client, plan, state); err != nil {
@@ -62,11 +81,20 @@ func Destroy(ctx context.Context, u *ucm.Ucm, client Client, state *State) (*dep
 	for key := range state.Grants {
 		plan.Plan["resources.grants."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	}
+	for key := range state.Connections {
+		plan.Plan["resources.connections."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	}
+	for key := range state.Volumes {
+		plan.Plan["resources.volumes."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	}
 	for key := range state.Schemas {
 		plan.Plan["resources.schemas."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	}
 	for key := range state.Catalogs {
 		plan.Plan["resources.catalogs."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	}
+	for key := range state.ExternalLocations {
+		plan.Plan["resources.external_locations."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	}
 	for key := range state.StorageCredentials {
 		plan.Plan["resources.storage_credentials."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
@@ -128,6 +156,49 @@ func applyStorageCredentialDeletes(ctx context.Context, client Client, plan *dep
 	return nil
 }
 
+func applyExternalLocationCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range sortedPlanKeysByGroup(plan, "external_locations") {
+		entry := plan.Plan[key]
+		name := strings.TrimPrefix(key, "resources.external_locations.")
+		cfg := u.Config.Resources.ExternalLocations[name]
+		switch entry.Action {
+		case deployplan.Create:
+			log.Infof(ctx, "direct: creating external_location %s", name)
+			if _, err := client.CreateExternalLocation(ctx, externalLocationCreateInput(cfg)); err != nil {
+				return fmt.Errorf("create external_location %s: %w", name, err)
+			}
+			state.ExternalLocations[name] = ptrExternalLocation(externalLocationStateFromConfig(cfg))
+		case deployplan.Update:
+			log.Infof(ctx, "direct: updating external_location %s", name)
+			if _, err := client.UpdateExternalLocation(ctx, externalLocationUpdateInput(cfg)); err != nil {
+				return fmt.Errorf("update external_location %s: %w", name, err)
+			}
+			state.ExternalLocations[name] = ptrExternalLocation(externalLocationStateFromConfig(cfg))
+		}
+	}
+	return nil
+}
+
+func applyExternalLocationDeletes(ctx context.Context, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range reverseSortedPlanKeysByGroup(plan, "external_locations") {
+		entry := plan.Plan[key]
+		if entry.Action != deployplan.Delete {
+			continue
+		}
+		name := strings.TrimPrefix(key, "resources.external_locations.")
+		rec, ok := state.ExternalLocations[name]
+		if !ok {
+			continue
+		}
+		log.Infof(ctx, "direct: deleting external_location %s", rec.Name)
+		if err := client.DeleteExternalLocation(ctx, rec.Name); err != nil {
+			return fmt.Errorf("delete external_location %s: %w", rec.Name, err)
+		}
+		delete(state.ExternalLocations, name)
+	}
+	return nil
+}
+
 func applyCatalogCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
 	for _, key := range sortedPlanKeysByGroup(plan, "catalogs") {
 		entry := plan.Plan[key]
@@ -170,6 +241,101 @@ func applySchemaCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *de
 			}
 			state.Schemas[name] = ptrSchema(schemaStateFromConfig(cfg))
 		}
+	}
+	return nil
+}
+
+func applyVolumeCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range sortedPlanKeysByGroup(plan, "volumes") {
+		entry := plan.Plan[key]
+		name := strings.TrimPrefix(key, "resources.volumes.")
+		cfg := u.Config.Resources.Volumes[name]
+		switch entry.Action {
+		case deployplan.Create:
+			log.Infof(ctx, "direct: creating volume %s.%s.%s", cfg.CatalogName, cfg.SchemaName, cfg.Name)
+			in, err := volumeCreateInput(cfg)
+			if err != nil {
+				return fmt.Errorf("create volume %s.%s.%s: %w", cfg.CatalogName, cfg.SchemaName, cfg.Name, err)
+			}
+			if _, err := client.CreateVolume(ctx, in); err != nil {
+				return fmt.Errorf("create volume %s.%s.%s: %w", cfg.CatalogName, cfg.SchemaName, cfg.Name, err)
+			}
+			state.Volumes[name] = ptrVolume(volumeStateFromConfig(cfg))
+		case deployplan.Update:
+			log.Infof(ctx, "direct: updating volume %s.%s.%s", cfg.CatalogName, cfg.SchemaName, cfg.Name)
+			if _, err := client.UpdateVolume(ctx, volumeUpdateInput(cfg)); err != nil {
+				return fmt.Errorf("update volume %s.%s.%s: %w", cfg.CatalogName, cfg.SchemaName, cfg.Name, err)
+			}
+			state.Volumes[name] = ptrVolume(volumeStateFromConfig(cfg))
+		}
+	}
+	return nil
+}
+
+func applyVolumeDeletes(ctx context.Context, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range reverseSortedPlanKeysByGroup(plan, "volumes") {
+		entry := plan.Plan[key]
+		if entry.Action != deployplan.Delete {
+			continue
+		}
+		name := strings.TrimPrefix(key, "resources.volumes.")
+		rec, ok := state.Volumes[name]
+		if !ok {
+			continue
+		}
+		fullName := rec.CatalogName + "." + rec.SchemaName + "." + rec.Name
+		log.Infof(ctx, "direct: deleting volume %s", fullName)
+		if err := client.DeleteVolume(ctx, fullName); err != nil {
+			return fmt.Errorf("delete volume %s: %w", fullName, err)
+		}
+		delete(state.Volumes, name)
+	}
+	return nil
+}
+
+func applyConnectionCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range sortedPlanKeysByGroup(plan, "connections") {
+		entry := plan.Plan[key]
+		name := strings.TrimPrefix(key, "resources.connections.")
+		cfg := u.Config.Resources.Connections[name]
+		switch entry.Action {
+		case deployplan.Create:
+			log.Infof(ctx, "direct: creating connection %s", cfg.Name)
+			in, err := connectionCreateInput(cfg)
+			if err != nil {
+				return fmt.Errorf("create connection %s: %w", cfg.Name, err)
+			}
+			if _, err := client.CreateConnection(ctx, in); err != nil {
+				return fmt.Errorf("create connection %s: %w", cfg.Name, err)
+			}
+			state.Connections[name] = ptrConnection(connectionStateFromConfig(cfg))
+		case deployplan.Update:
+			log.Infof(ctx, "direct: updating connection %s", cfg.Name)
+			if _, err := client.UpdateConnection(ctx, connectionUpdateInput(cfg)); err != nil {
+				return fmt.Errorf("update connection %s: %w", cfg.Name, err)
+			}
+			state.Connections[name] = ptrConnection(connectionStateFromConfig(cfg))
+		}
+	}
+	return nil
+}
+
+func applyConnectionDeletes(ctx context.Context, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range reverseSortedPlanKeysByGroup(plan, "connections") {
+		entry := plan.Plan[key]
+		if entry.Action != deployplan.Delete {
+			continue
+		}
+		name := strings.TrimPrefix(key, "resources.connections.")
+		rec, ok := state.Connections[name]
+		if !ok {
+			continue
+		}
+		log.Infof(ctx, "direct: deleting connection %s", rec.Name)
+		if err := client.DeleteConnection(ctx, rec.Name); err != nil {
+			return fmt.Errorf("delete connection %s: %w", rec.Name, err)
+		}
+		delete(state.Connections, name)
 	}
 	return nil
 }
@@ -375,6 +541,93 @@ func storageCredentialUpdateInput(c *resources.StorageCredential) (catalog.Updat
 	return in, nil
 }
 
+// volumeCreateInput validates the MANAGED/EXTERNAL invariant and builds the
+// SDK Create payload. EXTERNAL volumes require storage_location; MANAGED ones
+// must not carry one.
+func volumeCreateInput(v *resources.Volume) (catalog.CreateVolumeRequestContent, error) {
+	vType := strings.ToUpper(v.VolumeType)
+	if vType != "MANAGED" && vType != "EXTERNAL" {
+		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: volume_type must be MANAGED or EXTERNAL, got %q", v.Name, v.VolumeType)
+	}
+	if vType == "EXTERNAL" && v.StorageLocation == "" {
+		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: storage_location is required for EXTERNAL volumes", v.Name)
+	}
+	if vType == "MANAGED" && v.StorageLocation != "" {
+		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: storage_location must not be set for MANAGED volumes", v.Name)
+	}
+	return catalog.CreateVolumeRequestContent{
+		Name:            v.Name,
+		CatalogName:     v.CatalogName,
+		SchemaName:      v.SchemaName,
+		VolumeType:      catalog.VolumeType(vType),
+		StorageLocation: v.StorageLocation,
+		Comment:         v.Comment,
+	}, nil
+}
+
+// volumeUpdateInput produces a comment-only update. The UC API only supports
+// renaming, changing the owner, or updating the comment on a volume — drift
+// on catalog/schema/volume_type/storage_location is effectively immutable.
+func volumeUpdateInput(v *resources.Volume) catalog.UpdateVolumeRequestContent {
+	return catalog.UpdateVolumeRequestContent{
+		Name:    v.CatalogName + "." + v.SchemaName + "." + v.Name,
+		Comment: v.Comment,
+	}
+}
+
+// connectionCreateInput validates options is non-empty and builds the SDK
+// Create payload. Per-connection-type key validation lives server-side.
+func connectionCreateInput(c *resources.Connection) (catalog.CreateConnection, error) {
+	if c.ConnectionType == "" {
+		return catalog.CreateConnection{}, fmt.Errorf("connection %q: connection_type is required", c.Name)
+	}
+	if len(c.Options) == 0 {
+		return catalog.CreateConnection{}, fmt.Errorf("connection %q: options is required and must be non-empty", c.Name)
+	}
+	return catalog.CreateConnection{
+		Name:           c.Name,
+		ConnectionType: catalog.ConnectionType(c.ConnectionType),
+		Options:        copyTags(c.Options),
+		Comment:        c.Comment,
+		Properties:     copyTags(c.Properties),
+		ReadOnly:       c.ReadOnly,
+	}, nil
+}
+
+// connectionUpdateInput produces an options-only update. The UC API allows
+// changing only name/owner/options on a connection — connection_type,
+// comment, properties, and read_only drift is effectively immutable.
+func connectionUpdateInput(c *resources.Connection) catalog.UpdateConnection {
+	return catalog.UpdateConnection{
+		Name:    c.Name,
+		Options: copyTags(c.Options),
+	}
+}
+
+func externalLocationCreateInput(e *resources.ExternalLocation) catalog.CreateExternalLocation {
+	return catalog.CreateExternalLocation{
+		Name:           e.Name,
+		Url:            e.Url,
+		CredentialName: e.CredentialName,
+		Comment:        e.Comment,
+		ReadOnly:       e.ReadOnly,
+		SkipValidation: e.SkipValidation,
+		Fallback:       e.Fallback,
+	}
+}
+
+func externalLocationUpdateInput(e *resources.ExternalLocation) catalog.UpdateExternalLocation {
+	return catalog.UpdateExternalLocation{
+		Name:           e.Name,
+		Url:            e.Url,
+		CredentialName: e.CredentialName,
+		Comment:        e.Comment,
+		ReadOnly:       e.ReadOnly,
+		SkipValidation: e.SkipValidation,
+		Fallback:       e.Fallback,
+	}
+}
+
 func buildUpdatePermissions(sec securable, grants []*resources.Grant) catalog.UpdatePermissions {
 	changes := make([]catalog.PermissionsChange, 0, len(grants))
 	for _, g := range grants {
@@ -522,3 +775,9 @@ func ptrGrant(s GrantState) *GrantState       { return &s }
 func ptrStorageCredential(s StorageCredentialState) *StorageCredentialState {
 	return &s
 }
+
+func ptrExternalLocation(s ExternalLocationState) *ExternalLocationState { return &s }
+
+func ptrVolume(s VolumeState) *VolumeState { return &s }
+
+func ptrConnection(s ConnectionState) *ConnectionState { return &s }
