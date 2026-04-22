@@ -3,6 +3,7 @@ package env
 import (
 	"context"
 	"errors"
+	"maps"
 	"os"
 	"runtime"
 	"strconv"
@@ -13,9 +14,7 @@ var envContextKey int
 
 func copyMap(m map[string]string) map[string]string {
 	out := make(map[string]string, len(m))
-	for k, v := range m {
-		out[k] = v
-	}
+	maps.Copy(out, m)
 	return out
 }
 
@@ -34,7 +33,7 @@ func setMap(ctx context.Context, m map[string]string) context.Context {
 	return context.WithValue(ctx, &envContextKey, m)
 }
 
-// Lookup key in the context or the the environment.
+// Lookup key in the context or the environment.
 // Context has precedence.
 func Lookup(ctx context.Context, key string) (string, bool) {
 	m := getMap(ctx)
@@ -135,8 +134,6 @@ func All(ctx context.Context) map[string]string {
 		m[split[0]] = split[1]
 	}
 	// override existing environment variables with the ones we set
-	for k, v := range getMap(ctx) {
-		m[k] = v
-	}
+	maps.Copy(m, getMap(ctx))
 	return m
 }

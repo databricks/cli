@@ -2,8 +2,10 @@ package client
 
 import (
 	"context"
+	"crypto/md5"
 	_ "embed"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -97,6 +99,8 @@ type ClientOptions struct {
 	SkipSettingsCheck bool
 	// Environment version for serverless compute.
 	EnvironmentVersion int
+	// If true, skip confirmation prompts for IDE extension install and IDE settings updates.
+	AutoApprove bool
 }
 
 func (o *ClientOptions) Validate() error {
@@ -119,6 +123,20 @@ func (o *ClientOptions) Validate() error {
 		return fmt.Errorf("environment version must be >= %d, got %d", minEnvironmentVersion, o.EnvironmentVersion)
 	}
 	return nil
+}
+
+// GenerateDefaultConnectionName creates a deterministic connection name from
+// the workspace host and accelerator type. The name includes a hash of the
+// workspace host so that different workspaces produce different names,
+// avoiding SSH known_hosts conflicts.
+func GenerateDefaultConnectionName(host, accelerator string) string {
+	h := md5.Sum([]byte(host))
+	hashStr := hex.EncodeToString(h[:4])
+	if accelerator != "" {
+		acc := strings.ToLower(strings.ReplaceAll(accelerator, "_", "-"))
+		return fmt.Sprintf("databricks-%s-%s", acc, hashStr)
+	}
+	return "databricks-cpu-" + hashStr
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {
@@ -218,7 +236,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
 			return err
 		}
-		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE); err != nil {
+		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
 			return err
 		}
 	}
@@ -227,12 +245,15 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// desired server ports (or socket connection mode) for the connection to go through
 	// (as the majority of the localhost ports on the remote side are blocked by iptable rules).
 	// Plus the platform (always linux), and extensions (python and jupyter), to make the initial experience smoother.
-	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck && cmdio.IsPromptSupported(ctx) {
-		err := vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName)
+	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck {
+		err := vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName, opts.AutoApprove)
 		if err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("Failed to update IDE settings: %v", err))
 			cmdio.LogString(ctx, vscode.GetManualInstructions(opts.IDE, opts.ConnectionName))
 			cmdio.LogString(ctx, "Use --skip-settings-check to bypass IDE settings verification.")
+			if opts.AutoApprove {
+				return fmt.Errorf("aborted: IDE settings need to be updated manually: %w", err)
+			}
 			shouldProceed, promptErr := cmdio.AskYesOrNo(ctx, "Do you want to proceed with the connection?")
 			if promptErr != nil {
 				return fmt.Errorf("failed to prompt user: %w", promptErr)
@@ -423,7 +444,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
 	log.Debugf(ctx, "Metadata URL: %s", metadataURL)
-	req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, metadataURL, nil)
 	if err != nil {
 		return 0, "", "", err
 	}
@@ -460,7 +481,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
 
-	err = client.Workspace.MkdirsByPath(ctx, contentDir)
+	err = client.Workspace.MkdirsByPath(ctx, contentDir) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}

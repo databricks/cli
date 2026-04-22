@@ -105,6 +105,8 @@ type DataSourceAppsAppPendingDeployment struct {
 }
 
 type DataSourceAppsAppResourcesApp struct {
+	Name       string `json:"name,omitempty"`
+	Permission string `json:"permission,omitempty"`
 }
 
 type DataSourceAppsAppResourcesDatabase struct {

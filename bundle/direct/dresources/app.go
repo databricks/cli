@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -163,16 +162,23 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 	return app.Name, nil, nil
 }
 
+var UpdateMaskFields = []string{
+	"description",
+	"budget_policy_id",
+	"usage_policy_id",
+	"resources",
+	"user_api_scopes",
+	"compute_size",
+	"git_repository",
+	"telemetry_export_destinations",
+}
+
+var updateMask = strings.Join(UpdateMaskFields, ",")
+
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Deploy-only fields (source_code_path, config,
 	// git_source, lifecycle) are not part of apps.App and thus excluded from the request body.
 	if hasAppChanges(entry) {
-		fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "")
-		slices.Sort(fieldPaths)
-		for i, fieldPath := range fieldPaths {
-			fieldPaths[i] = truncateAtIndex(fieldPath)
-		}
-		updateMask := strings.Join(fieldPaths, ",")
 		request := apps.AsyncUpdateAppRequest{
 			App:        &config.App,
 			AppName:    id,

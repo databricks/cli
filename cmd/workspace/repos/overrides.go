@@ -167,7 +167,7 @@ func repoArgumentToRepoID(ctx context.Context, w *databricks.WorkspaceClient, ar
 	}
 
 	// If the argument cannot be parsed as a repo ID, try to look it up by name.
-	oi, err := w.Workspace.GetStatusByPath(ctx, arg)
+	oi, err := w.Workspace.GetStatusByPath(ctx, arg) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return 0, fmt.Errorf("failed to look up repo by path: %w", err)
 	}

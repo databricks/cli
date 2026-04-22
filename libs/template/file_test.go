@@ -14,9 +14,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testInMemoryFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
+func testInMemoryFile(t *testing.T, ctx context.Context, executable bool) {
 	tmpDir := t.TempDir()
 
+	perm := fs.FileMode(0o644)
+	if executable {
+		perm = 0o755
+	}
 	f := &inMemoryFile{
 		perm:    perm,
 		relPath: "a/b/c",
@@ -29,11 +33,16 @@ func testInMemoryFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
 	assert.NoError(t, err)
 
 	testutil.AssertFileContents(t, filepath.Join(tmpDir, "a/b/c"), "123")
-	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), perm)
+	testutil.AssertFileOwnerExec(t, filepath.Join(tmpDir, "a/b/c"), executable)
 }
 
-func testCopyFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
+func testCopyFile(t *testing.T, ctx context.Context, executable bool) {
 	tmpDir := t.TempDir()
+
+	perm := fs.FileMode(0o644)
+	if executable {
+		perm = 0o755
+	}
 	err := os.WriteFile(filepath.Join(tmpDir, "source"), []byte("qwerty"), perm)
 	require.NoError(t, err)
 
@@ -50,7 +59,7 @@ func testCopyFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
 	assert.NoError(t, err)
 
 	testutil.AssertFileContents(t, filepath.Join(tmpDir, "source"), "qwerty")
-	testutil.AssertFilePermissions(t, filepath.Join(tmpDir, "source"), perm)
+	testutil.AssertFileOwnerExec(t, filepath.Join(tmpDir, "source"), executable)
 }
 
 func TestTemplateInMemoryFilePersistToDisk(t *testing.T) {
@@ -58,7 +67,7 @@ func TestTemplateInMemoryFilePersistToDisk(t *testing.T) {
 		t.SkipNow()
 	}
 	ctx := t.Context()
-	testInMemoryFile(t, ctx, 0o755)
+	testInMemoryFile(t, ctx, true)
 }
 
 func TestTemplateInMemoryFilePersistToDiskForWindows(t *testing.T) {
@@ -68,7 +77,7 @@ func TestTemplateInMemoryFilePersistToDiskForWindows(t *testing.T) {
 	// we have separate tests for windows because of differences in valid
 	// fs.FileMode values we can use for different operating systems.
 	ctx := t.Context()
-	testInMemoryFile(t, ctx, 0o666)
+	testInMemoryFile(t, ctx, false)
 }
 
 func TestTemplateCopyFilePersistToDisk(t *testing.T) {
@@ -76,7 +85,7 @@ func TestTemplateCopyFilePersistToDisk(t *testing.T) {
 		t.SkipNow()
 	}
 	ctx := t.Context()
-	testCopyFile(t, ctx, 0o644)
+	testCopyFile(t, ctx, false)
 }
 
 func TestTemplateCopyFilePersistToDiskForWindows(t *testing.T) {
@@ -86,5 +95,5 @@ func TestTemplateCopyFilePersistToDiskForWindows(t *testing.T) {
 	// we have separate tests for windows because of differences in valid
 	// fs.FileMode values we can use for different operating systems.
 	ctx := t.Context()
-	testCopyFile(t, ctx, 0o666)
+	testCopyFile(t, ctx, false)
 }

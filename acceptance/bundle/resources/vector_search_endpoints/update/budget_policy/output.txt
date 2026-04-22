@@ -1,0 +1,35 @@
+
+=== Initial deployment (no budget policy)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-budget-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep //vector-search/endpoints
+
+=== Add budget_policy_id
+>>> update_file.py databricks.yml endpoint_type: STANDARD endpoint_type: STANDARD
+      budget_policy_id: test-policy-id
+
+>>> [CLI] bundle plan
+update vector_search_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-budget-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep //vector-search/endpoints
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint-budget-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

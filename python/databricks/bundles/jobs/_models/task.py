@@ -106,7 +106,8 @@ class Task:
 
     alert_task: VariableOrOptional[AlertTask] = None
     """
-    New alert v2 task
+    The task evaluates a Databricks alert and sends notifications to subscribers
+    when the `alert_task` field is present.
     """
 
     clean_rooms_notebook_task: VariableOrOptional[CleanRoomsNotebookTask] = None
@@ -318,7 +319,8 @@ class TaskDict(TypedDict, total=False):
 
     alert_task: VariableOrOptional[AlertTaskParam]
     """
-    New alert v2 task
+    The task evaluates a Databricks alert and sends notifications to subscribers
+    when the `alert_task` field is present.
     """
 
     clean_rooms_notebook_task: VariableOrOptional[CleanRoomsNotebookTaskParam]

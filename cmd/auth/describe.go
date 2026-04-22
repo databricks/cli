@@ -80,7 +80,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	cfg, isAccount, err := fn(cmd, args)
 	ctx := cmd.Context()
 	if err != nil {
-		return &authStatus{
+		return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
 			Status:  "error",
 			Error:   err,
 			Details: getAuthDetails(cmd, cfg, showSensitive),
@@ -93,7 +93,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		// Doing a simple API call to check if the auth is valid
 		_, err := a.Workspaces.List(ctx)
 		if err != nil {
-			return &authStatus{
+			return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
 				Status:  "error",
 				Error:   err,
 				Details: getAuthDetails(cmd, cfg, showSensitive),
@@ -113,7 +113,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	w := cmdctx.WorkspaceClient(ctx)
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {
-		return &authStatus{
+		return &authStatus{ //nolint:nilerr // error is returned in the authStatus struct
 			Status:  "error",
 			Error:   err,
 			Details: getAuthDetails(cmd, cfg, showSensitive),

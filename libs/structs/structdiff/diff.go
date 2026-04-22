@@ -308,7 +308,7 @@ func (ctx *diffContext) findKeyFunc(path *structpath.PathNode) KeyFunc {
 }
 
 // pathToPattern converts a PathNode to a pattern string for matching.
-// Slice indices are converted to [*] wildcard.
+// Slice indices and key-value pairs are converted to [*] wildcard.
 func pathToPattern(path *structpath.PathNode) string {
 	if path == nil {
 		return ""
@@ -318,17 +318,10 @@ func pathToPattern(path *structpath.PathNode) string {
 	var result strings.Builder
 
 	for i, node := range components {
-		if idx, ok := node.Index(); ok {
-			// Convert numeric index to wildcard
-			_ = idx
+		if _, ok := node.Index(); ok {
 			result.WriteString("[*]")
-		} else if key, value, ok := node.KeyValue(); ok {
-			// Key-value syntax
-			result.WriteString("[")
-			result.WriteString(key)
-			result.WriteString("=")
-			result.WriteString(structpath.EncodeMapKey(value))
-			result.WriteString("]")
+		} else if _, _, ok := node.KeyValue(); ok {
+			result.WriteString("[*]")
 		} else if key, ok := node.StringKey(); ok {
 			if i != 0 {
 				result.WriteString(".")

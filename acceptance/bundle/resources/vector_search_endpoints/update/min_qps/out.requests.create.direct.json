@@ -1,0 +1,25 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/vector-search/endpoints",
+  "body": {
+    "endpoint_type": "STANDARD",
+    "min_qps": 1,
+    "name": "vs-endpoint-[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/vector-search-endpoints/[UUID]",
+  "body": {
+    "access_control_list": [
+      {
+        "group_name": "admins",
+        "permission_level": "CAN_USE"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}

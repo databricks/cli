@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -267,7 +268,7 @@ Response.Body = '<response body here>'
 	s.Handle("GET", "/.well-known/databricks-config", func(_ Request) any {
 		return map[string]any{
 			"oidc_endpoint": server.URL + "/oidc",
-			"workspace_id":  "470123456789500",
+			"workspace_id":  "900800700600",
 		}
 	})
 
@@ -318,9 +319,7 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 			resp = normalizeResponse(s.t, respAny)
 		}
 
-		for k, v := range resp.Headers {
-			w.Header()[k] = v
-		}
+		maps.Copy(w.Header(), resp.Headers)
 
 		w.WriteHeader(resp.StatusCode)
 

@@ -82,8 +82,8 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
 }
 
 func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) string {
-	w := b.WorkspaceClient()
-	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath)
+	w := b.WorkspaceClient(ctx)
+	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		if apierr.IsMissing(err) {
 			logdiag.LogError(ctx, fmt.Errorf("dashboard %q not found", path.Base(d.existingPath)))
@@ -129,7 +129,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) strin
 }
 
 func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	obj, err := w.Lakeview.GetByDashboardId(ctx, d.existingID)
 	if err != nil {
 		if apierr.IsMissing(err) {
@@ -261,7 +261,7 @@ func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboar
 	}
 
 	for {
-		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
+		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -295,7 +295,7 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 	// Overwrite the dashboard at the path referenced from the resource.
 	dashboardPath := resource.FilePath
 
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 
 	// Start polling the underlying dashboard for changes.
 	var etag string
@@ -331,7 +331,7 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 }
 
 func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, dashboardID string) {
-	w := b.WorkspaceClient()
+	w := b.WorkspaceClient(ctx)
 	dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 	if err != nil {
 		logdiag.LogError(ctx, err)

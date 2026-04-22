@@ -4,25 +4,25 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	browserpkg "github.com/pkg/browser"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -191,13 +191,18 @@ a new profile is created.
 			return err
 		}
 
+		tokenCache, err := storage.NewFileTokenCache(ctx)
+		if err != nil {
+			return fmt.Errorf("opening token cache: %w", err)
+		}
+
 		// If no host is available from any source, use the discovery flow
 		// via login.databricks.com.
 		if shouldUseDiscovery(authArguments.Host, args, existingProfile) {
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
 			}
-			return discoveryLogin(ctx, &defaultDiscoveryClient{}, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
+			return discoveryLogin(ctx, &defaultDiscoveryClient{}, tokenCache, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
 		}
 
 		// Load unified host flag from the profile if not explicitly set via CLI flag.
@@ -230,6 +235,7 @@ a new profile is created.
 			return err
 		}
 		persistentAuthOpts := []u2m.PersistentAuthOption{
+			u2m.WithTokenCache(storage.NewDualWritingTokenCache(tokenCache, oauthArgument)),
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
 		}
@@ -417,7 +423,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 	}
 
-	switch cfg.HostType() {
+	switch cfg.HostType() { //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	case config.AccountHost:
 		// Account host: prompt for account ID if not provided
 		if authArguments.AccountID == "" {
@@ -449,7 +455,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		// Regular workspace host: no additional prompts needed.
 		// If discovery already populated account_id/workspace_id, those are kept.
 	default:
-		return fmt.Errorf("unknown host type: %v", cfg.HostType())
+		return fmt.Errorf("unknown host type: %v", cfg.HostType()) //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	}
 
 	return nil
@@ -561,26 +567,10 @@ func validateDiscoveryFlagCompatibility(cmd *cobra.Command) error {
 	return nil
 }
 
-// openURLSuppressingStderr opens a URL in the browser while suppressing stderr output.
-// This prevents xdg-open error messages from being displayed to the user.
-func openURLSuppressingStderr(url string) error {
-	// Save the original stderr from the browser package
-	originalStderr := browserpkg.Stderr
-	defer func() {
-		browserpkg.Stderr = originalStderr
-	}()
-
-	// Redirect stderr to discard to suppress xdg-open errors
-	browserpkg.Stderr = io.Discard
-
-	// Call the browser open function
-	return browserpkg.OpenURL(url)
-}
-
 // discoveryLogin runs the login.databricks.com discovery flow. The user
 // authenticates in the browser, selects a workspace, and the CLI receives
 // the workspace host from the OAuth callback's iss parameter.
-func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
+func discoveryLogin(ctx context.Context, dc discoveryClient, tokenCache cache.TokenCache, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
 	arg, err := dc.NewOAuthArgument(profileName)
 	if err != nil {
 		return discoveryErr("setting up login.databricks.com", err)
@@ -592,6 +582,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 	}
 
 	opts := []u2m.PersistentAuthOption{
+		u2m.WithTokenCache(storage.NewDualWritingTokenCache(tokenCache, arg)),
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(browserFunc),
 		u2m.WithDiscoveryLogin(),
@@ -691,7 +682,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 // splitScopes splits a comma-separated scopes string into a trimmed slice.
 func splitScopes(scopes string) []string {
 	var result []string
-	for _, s := range strings.Split(scopes, ",") {
+	for s := range strings.SplitSeq(scopes, ",") {
 		scope := strings.TrimSpace(s)
 		if scope == "" {
 			continue
@@ -785,37 +776,15 @@ func promptForWorkspaceID(ctx context.Context) (string, error) {
 	return strings.TrimSpace(result), nil
 }
 
-// getBrowserFunc returns a function that opens the given URL in the browser.
-// It respects the BROWSER environment variable:
-// - empty string: uses the default browser
-// - "none": prints the URL to stdout without opening a browser
-// - custom command: executes the specified command with the URL as argument
+// getBrowserFunc adapts libs/browser to the u2m.WithBrowser callback shape,
+// overriding the BROWSER=none message with auth-specific phrasing.
 func getBrowserFunc(cmd *cobra.Command) func(url string) error {
-	browser := env.Get(cmd.Context(), "BROWSER")
-	switch browser {
-	case "":
-		return openURLSuppressingStderr
-	case "none":
-		return func(url string) error {
-			cmdio.LogString(cmd.Context(), "Please complete authentication by opening this link in your browser:\n"+url)
+	return func(url string) error {
+		ctx := cmd.Context()
+		if browser.IsDisabled(ctx) {
+			cmdio.LogString(ctx, "Please complete authentication by opening this link in your browser:\n"+url)
 			return nil
 		}
-	default:
-		return func(url string) error {
-			// Run the browser command via a shell.
-			// It can be a script or a binary and scripts cannot be executed directly on Windows.
-			e, err := exec.NewCommandExecutor(".")
-			if err != nil {
-				return err
-			}
-
-			e.WithInheritOutput()
-			cmd, err := e.StartCommand(cmd.Context(), fmt.Sprintf("%q %q", browser, url))
-			if err != nil {
-				return err
-			}
-
-			return cmd.Wait()
-		}
+		return browser.Open(ctx, url)
 	}
 }

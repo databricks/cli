@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -38,6 +39,12 @@ const (
 	// staticTableThreshold is the maximum number of rows rendered as a static table.
 	// Beyond this, an interactive scrollable table is used.
 	staticTableThreshold = 30
+
+	// outputCSV is the csv output format, supported only by the query command.
+	outputCSV = "csv"
+
+	// envOutputFormat matches the env var name in cmd/root/io.go.
+	envOutputFormat = "DATABRICKS_OUTPUT_FORMAT"
 )
 
 type queryOutputMode int
@@ -69,6 +76,7 @@ func selectQueryOutputMode(outputType flags.Output, stdoutInteractive, promptSup
 func newQueryCmd() *cobra.Command {
 	var warehouseID string
 	var filePath string
+	var outputFormat string
 
 	cmd := &cobra.Command{
 		Use:   "query [SQL | file.sql]",
@@ -83,16 +91,39 @@ The command auto-detects an available warehouse unless --warehouse is set
 or the DATABRICKS_WAREHOUSE_ID environment variable is configured.
 
 Output is JSON in non-interactive contexts. In interactive terminals it renders
-tables, and large results open an interactive table browser.`,
+tables, and large results open an interactive table browser. Use --output csv
+to export results as CSV.`,
 		Example: `  databricks experimental aitools tools query "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --warehouse abc123 "SELECT 1"
   databricks experimental aitools tools query --file report.sql
   databricks experimental aitools tools query report.sql
+  databricks experimental aitools tools query --output csv "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   echo "SELECT 1" | databricks experimental aitools tools query`,
 		Args:    cobra.MaximumNArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			// Normalize case to match root --output behavior (flags.Output.Set lowercases).
+			outputFormat = strings.ToLower(outputFormat)
+
+			// If --output wasn't explicitly passed, check the env var.
+			// Invalid env values are silently ignored, matching cmd/root/io.go.
+			if !cmd.Flag("output").Changed {
+				if v, ok := env.Lookup(ctx, envOutputFormat); ok {
+					switch flags.Output(strings.ToLower(v)) {
+					case flags.OutputText, flags.OutputJSON, outputCSV:
+						outputFormat = strings.ToLower(v)
+					}
+				}
+			}
+
+			switch flags.Output(outputFormat) {
+			case flags.OutputText, flags.OutputJSON, outputCSV:
+			default:
+				return fmt.Errorf("unsupported output format %q, accepted values: text, json, csv", outputFormat)
+			}
+
 			w := cmdctx.WorkspaceClient(ctx)
 
 			sqlStatement, err := resolveSQL(ctx, cmd, args, filePath)
@@ -116,6 +147,14 @@ tables, and large results open an interactive table browser.`,
 				return err
 			}
 
+			// CSV bypasses the normal output mode selection.
+			if flags.Output(outputFormat) == outputCSV {
+				if len(columns) == 0 && len(rows) == 0 {
+					return nil
+				}
+				return renderCSV(cmd.OutOrStdout(), columns, rows)
+			}
+
 			if len(columns) == 0 && len(rows) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "Query executed successfully (no results)")
 				return nil
@@ -126,7 +165,7 @@ tables, and large results open an interactive table browser.`,
 			stdoutInteractive := cmdio.SupportsColor(ctx, cmd.OutOrStdout())
 			promptSupported := cmdio.IsPromptSupported(ctx)
 
-			switch selectQueryOutputMode(root.OutputType(cmd), stdoutInteractive, promptSupported, len(rows)) {
+			switch selectQueryOutputMode(flags.Output(outputFormat), stdoutInteractive, promptSupported, len(rows)) {
 			case queryOutputModeJSON:
 				return renderJSON(cmd.OutOrStdout(), columns, rows)
 			case queryOutputModeStaticTable:
@@ -139,6 +178,12 @@ tables, and large results open an interactive table browser.`,
 
 	cmd.Flags().StringVarP(&warehouseID, "warehouse", "w", "", "SQL warehouse ID to use for execution")
 	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to a SQL file to execute")
+	// Local --output flag shadows the root command's persistent --output flag,
+	// adding csv support for this command only.
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", string(flags.OutputText), "Output format: text, json, or csv")
+	cmd.RegisterFlagCompletionFunc("output", func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
+		return []string{string(flags.OutputText), string(flags.OutputJSON), string(outputCSV)}, cobra.ShellCompDirectiveNoFileComp
+	})
 
 	return cmd
 }
@@ -397,7 +442,7 @@ func cleanSQL(s string) string {
 	}
 
 	var lines []string
-	for _, line := range strings.Split(s, "\n") {
+	for line := range strings.SplitSeq(s, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "--") {
 			continue

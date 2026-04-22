@@ -56,7 +56,7 @@ func getPagedBytes(ctx context.Context, method, url string, body io.Reader) (*pa
 		url = strings.Replace(url, gitHubUserContent, uco, 1)
 	}
 	log.Tracef(ctx, "%s %s", method, url)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, body)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func getPagedBytes(ctx context.Context, method, url string, body io.Reader) (*pa
 	if err != nil {
 		return nil, err
 	}
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusNotFound {
 		return nil, ErrNotFound
 	}
 	if res.StatusCode >= 400 {
@@ -90,8 +90,8 @@ func parseNextLink(linkHeader string) string {
 	//   https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28#using-link-headers
 	// An example link header to handle:
 	//   link: <https://api.github.com/repositories/1300192/issues?page=2>; rel="prev", <https://api.github.com/repositories/1300192/issues?page=4>; rel="next", <https://api.github.com/repositories/1300192/issues?page=515>; rel="last", <https://api.github.com/repositories/1300192/issues?page=1>; rel="first"
-	links := strings.Split(linkHeader, ",")
-	for _, link := range links {
+	links := strings.SplitSeq(linkHeader, ",")
+	for link := range links {
 		parts := strings.Split(strings.TrimSpace(link), ";")
 		if len(parts) != 2 {
 			continue

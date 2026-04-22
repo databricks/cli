@@ -293,7 +293,7 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 // TestSupportedTypeTasksComplete verifies that supportedTypeTasks includes all task types with a Source field.
 func TestSupportedTypeTasksComplete(t *testing.T) {
 	// Use reflection to find all task types that have a Source field
-	taskType := reflect.TypeOf(jobs.Task{})
+	taskType := reflect.TypeFor[jobs.Task]()
 	var tasksWithSource []string
 
 	for i := range taskType.NumField() {

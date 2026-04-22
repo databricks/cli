@@ -1,7 +1,7 @@
 [project]
 name = "databricks-bundles"
 description = "Python support for Declarative Automation Bundles"
-version = "0.296.0"
+version = "0.298.0"
 
 authors = [
     { name = "Gleb Kanterov", email = "gleb.kanterov@databricks.com" },
@@ -22,7 +22,7 @@ build-backend = "flit_core.buildapi"
 dev = [
   "pyright==1.1.380",
   "pytest-cov==5.0.0",
-  "pytest==8.3.3",
+  "pytest==9.0.3",
   "ruff==0.9.1",
   "sphinx==8.0.2",
   "typing_extensions==4.12.2",

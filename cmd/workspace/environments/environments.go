@@ -107,7 +107,7 @@ func newCreateWorkspaceBaseEnvironment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'display_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'display_name' in your JSON input")
 			}
 			return nil
 		}
@@ -289,6 +289,7 @@ func newGetDefaultWorkspaceBaseEnvironment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -346,6 +347,7 @@ func newGetOperation() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -403,6 +405,7 @@ func newGetWorkspaceBaseEnvironment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -431,9 +434,19 @@ func newListWorkspaceBaseEnvironments() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listWorkspaceBaseEnvironmentsReq environments.ListWorkspaceBaseEnvironmentsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listWorkspaceBaseEnvironmentsLimit int
 
 	cmd.Flags().IntVar(&listWorkspaceBaseEnvironmentsReq.PageSize, "page-size", listWorkspaceBaseEnvironmentsReq.PageSize, `The maximum number of environments to return per page.`)
-	cmd.Flags().StringVar(&listWorkspaceBaseEnvironmentsReq.PageToken, "page-token", listWorkspaceBaseEnvironmentsReq.PageToken, `Page token for pagination.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listWorkspaceBaseEnvironmentsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listWorkspaceBaseEnvironmentsReq.PageToken, "page-token", listWorkspaceBaseEnvironmentsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-base-environments"
 	cmd.Short = `List workspace base environments.`
@@ -454,6 +467,13 @@ func newListWorkspaceBaseEnvironments() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		response := w.Environments.ListWorkspaceBaseEnvironments(ctx, listWorkspaceBaseEnvironmentsReq)
+		if listWorkspaceBaseEnvironmentsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listWorkspaceBaseEnvironmentsLimit)
+		}
+		if listWorkspaceBaseEnvironmentsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listWorkspaceBaseEnvironmentsLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -648,6 +668,7 @@ func newUpdateDefaultWorkspaceBaseEnvironment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

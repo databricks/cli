@@ -3,6 +3,8 @@
 package settings_v2
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -80,6 +82,7 @@ func newGetPublicAccountSetting() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -122,9 +125,6 @@ func newGetPublicAccountUserPreference() *cobra.Command {
     USER_ID: User ID of the user whose setting is being retrieved.
     NAME: User Setting name.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -144,6 +144,7 @@ func newGetPublicAccountUserPreference() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -172,9 +173,19 @@ func newListAccountSettingsMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listAccountSettingsMetadataReq settingsv2.ListAccountSettingsMetadataRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listAccountSettingsMetadataLimit int
 
 	cmd.Flags().IntVar(&listAccountSettingsMetadataReq.PageSize, "page-size", listAccountSettingsMetadataReq.PageSize, `The maximum number of settings to return.`)
-	cmd.Flags().StringVar(&listAccountSettingsMetadataReq.PageToken, "page-token", listAccountSettingsMetadataReq.PageToken, `A page token, received from a previous ListAccountSettingsMetadataRequest call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listAccountSettingsMetadataLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listAccountSettingsMetadataReq.PageToken, "page-token", listAccountSettingsMetadataReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-account-settings-metadata"
 	cmd.Short = `List valid setting keys and their metadata.`
@@ -197,6 +208,13 @@ func newListAccountSettingsMetadata() *cobra.Command {
 		a := cmdctx.AccountClient(ctx)
 
 		response := a.SettingsV2.ListAccountSettingsMetadata(ctx, listAccountSettingsMetadataReq)
+		if listAccountSettingsMetadataLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAccountSettingsMetadataLimit)
+		}
+		if listAccountSettingsMetadataLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listAccountSettingsMetadataLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -225,9 +243,19 @@ func newListAccountUserPreferencesMetadata() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listAccountUserPreferencesMetadataReq settingsv2.ListAccountUserPreferencesMetadataRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listAccountUserPreferencesMetadataLimit int
 
 	cmd.Flags().IntVar(&listAccountUserPreferencesMetadataReq.PageSize, "page-size", listAccountUserPreferencesMetadataReq.PageSize, `The maximum number of settings to return.`)
-	cmd.Flags().StringVar(&listAccountUserPreferencesMetadataReq.PageToken, "page-token", listAccountUserPreferencesMetadataReq.PageToken, `A page token, received from a previous ListAccountUserPreferencesMetadataRequest call.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listAccountUserPreferencesMetadataLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listAccountUserPreferencesMetadataReq.PageToken, "page-token", listAccountUserPreferencesMetadataReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-account-user-preferences-metadata USER_ID"
 	cmd.Short = `List user preferences and their metadata.`
@@ -241,9 +269,6 @@ func newListAccountUserPreferencesMetadata() *cobra.Command {
 
   Arguments:
     USER_ID: User ID of the user whose settings metadata is being retrieved.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -260,6 +285,13 @@ func newListAccountUserPreferencesMetadata() *cobra.Command {
 		listAccountUserPreferencesMetadataReq.UserId = args[0]
 
 		response := a.SettingsV2.ListAccountUserPreferencesMetadata(ctx, listAccountUserPreferencesMetadataReq)
+		if listAccountUserPreferencesMetadataLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listAccountUserPreferencesMetadataLimit)
+		}
+		if listAccountUserPreferencesMetadataLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listAccountUserPreferencesMetadataLimit)
+		}
+
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -353,6 +385,7 @@ func newPatchPublicAccountSetting() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -408,9 +441,6 @@ func newPatchPublicAccountUserPreference() *cobra.Command {
     USER_ID: User ID of the user whose setting is being updated.
     NAME: `
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -442,6 +472,7 @@ func newPatchPublicAccountUserPreference() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

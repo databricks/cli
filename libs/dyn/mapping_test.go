@@ -59,7 +59,7 @@ func TestMappingGet(t *testing.T) {
 	// Modify the value to make sure we're not getting a reference
 	p.Value = dyn.V("newvalue")
 
-	// Call GetPairByString with with non-existent key
+	// Call GetPairByString with non-existent key
 	p, ok = m.GetPairByString("enoexist")
 	assert.False(t, ok)
 	assert.Equal(t, dyn.InvalidValue, p.Key)
