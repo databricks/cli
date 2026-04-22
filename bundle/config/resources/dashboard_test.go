@@ -10,8 +10,8 @@ import (
 )
 
 func TestDashboardConfigIsSupersetOfSDKDashboard(t *testing.T) {
-	configType := reflect.TypeOf(DashboardConfig{})
-	sdkType := reflect.TypeOf(dashboards.Dashboard{})
+	configType := reflect.TypeFor[DashboardConfig]()
+	sdkType := reflect.TypeFor[dashboards.Dashboard]()
 
 	// Helper function to extract JSON tag name
 	getJSONTagName := func(tag string) string {

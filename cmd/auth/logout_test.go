@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -69,9 +70,7 @@ var logoutTestTokensCacheConfig = map[string]*oauth2.Token{
 
 func copyTokens(src map[string]*oauth2.Token) map[string]*oauth2.Token {
 	dst := make(map[string]*oauth2.Token, len(src))
-	for k, v := range src {
-		dst[k] = v
-	}
+	maps.Copy(dst, src)
 	return dst
 }
 
