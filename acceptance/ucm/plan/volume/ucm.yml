@@ -1,0 +1,28 @@
+ucm:
+  name: plan-volume
+  engine: direct
+
+resources:
+  catalogs:
+    sales:
+      name: sales_prod
+
+  schemas:
+    raw:
+      name: raw
+      catalog: sales
+
+  volumes:
+    landing:
+      name: landing
+      catalog_name: ${resources.catalogs.sales.name}
+      schema_name: ${resources.schemas.raw.name}
+      volume_type: MANAGED
+      comment: "managed landing volume"
+
+    archive:
+      name: archive
+      catalog_name: sales_prod
+      schema_name: raw
+      volume_type: EXTERNAL
+      storage_location: "s3://acme-archive/sales/raw"
