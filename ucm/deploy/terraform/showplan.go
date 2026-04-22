@@ -21,6 +21,7 @@ var terraformToGroupName = map[string]string{
 	"databricks_schema":             "schemas",
 	"databricks_grants":             "grants",
 	"databricks_storage_credential": "storage_credentials",
+	"databricks_external_location":  "external_locations",
 }
 
 // populatePlan fills `plan` from terraform resource changes using the
