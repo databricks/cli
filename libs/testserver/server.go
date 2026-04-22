@@ -16,7 +16,6 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/gorilla/mux"
 )
 
 const testPidKey = "test-pid"
@@ -38,9 +37,12 @@ func ExtractPidFromHeaders(headers http.Header) int {
 
 type Server struct {
 	*httptest.Server
-	Router *mux.Router
 
 	t testutil.TestingT
+
+	mux             *http.ServeMux
+	wildcardMethods map[string]bool                   // "METHOD /pattern" -> registered
+	exactRoutes     map[string]map[string]HandlerFunc // path -> method -> handler
 
 	fakeWorkspaces map[string]*FakeWorkspace
 	fakeOidc       *FakeOidc
@@ -83,7 +85,6 @@ func NewRequest(t testutil.TestingT, r *http.Request, fakeWorkspace *FakeWorkspa
 		URL:       r.URL,
 		Headers:   r.Header,
 		Body:      body,
-		Vars:      mux.Vars(r),
 		Workspace: fakeWorkspace,
 		Context:   r.Context(),
 	}
@@ -200,17 +201,43 @@ func getHeaders(value []byte) http.Header {
 }
 
 func New(t testutil.TestingT) *Server {
-	router := mux.NewRouter()
-	server := httptest.NewServer(router)
-	t.Cleanup(server.Close)
+	mux := http.NewServeMux()
 
 	s := &Server{
-		Server:         server,
-		Router:         router,
-		t:              t,
-		fakeWorkspaces: map[string]*FakeWorkspace{},
-		fakeOidc:       &FakeOidc{url: server.URL},
+		t:               t,
+		mux:             mux,
+		wildcardMethods: map[string]bool{},
+		exactRoutes:     map[string]map[string]HandlerFunc{},
+		fakeWorkspaces:  map[string]*FakeWorkspace{},
 	}
+
+	// Exact (non-wildcard) routes are kept out of ServeMux to avoid
+	// conflicts between method-specific exact paths and wildcard patterns
+	// (e.g., GET on an exact path vs HEAD on a wildcard that covers it).
+	//
+	// When an exact path is registered for one method but a request arrives
+	// for a different method, it intentionally falls through to ServeMux.
+	// This lets wildcard handlers serve methods not covered by the exact
+	// registration (e.g., a stub registers GET /exact, but HEAD /exact
+	// falls through to the wildcard HEAD handler).
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Clear RawPath so ServeMux matches decoded paths; without this,
+		// percent-encoded slashes (%2F) would not match literal slashes.
+		if r.URL.RawPath != "" {
+			r.URL.RawPath = ""
+		}
+		if methods, ok := s.exactRoutes[r.URL.Path]; ok {
+			if handler, ok := methods[r.Method]; ok {
+				s.serve(w, r, handler, nil)
+				return
+			}
+		}
+		mux.ServeHTTP(w, r)
+	}))
+	t.Cleanup(server.Close)
+
+	s.Server = server
+	s.fakeOidc = &FakeOidc{url: server.URL}
 
 	t.Cleanup(func() {
 		for _, ws := range s.fakeWorkspaces {
@@ -218,46 +245,8 @@ func New(t testutil.TestingT) *Server {
 		}
 	})
 
-	// Set up the not found handler as fallback
-	notFoundFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pattern := r.Method + " " + r.URL.Path
-		bodyBytes, err := io.ReadAll(r.Body)
-		var body string
-		if err != nil {
-			body = fmt.Sprintf("failed to read the body: %s", err)
-		} else {
-			body = fmt.Sprintf("[%d bytes] %s", len(bodyBytes), bodyBytes)
-		}
-
-		t.Errorf(`No handler for URL: %s
-Body: %s
-
-For acceptance tests, add this to test.toml:
-[[Server]]
-Pattern = %q
-Response.Body = '<response body here>'
-# Response.StatusCode = <response code if not 200>
-`, r.URL, body, pattern)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotImplemented)
-
-		resp := map[string]string{
-			"message": "No stub found for pattern: " + pattern,
-		}
-
-		respBytes, err := json.Marshal(resp)
-		if err != nil {
-			t.Errorf("JSON encoding error: %s", err)
-			respBytes = []byte("{\"message\": \"JSON encoding error\"}")
-		}
-
-		if _, err := w.Write(respBytes); err != nil {
-			t.Errorf("Response write error: %s", err)
-		}
-	})
-	router.NotFoundHandler = notFoundFunc
-	router.MethodNotAllowedHandler = notFoundFunc
+	// Register a catch-all handler as fallback for unmatched routes.
+	mux.HandleFunc("/", s.handleNotFound)
 
 	// Register a default handler for the SDK's host metadata discovery endpoint.
 	// The SDK resolves this during config initialization (as of v0.126.0) to
@@ -291,48 +280,136 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 
 type HandlerFunc func(req Request) any
 
+// Handle registers a handler for the given method and path pattern.
+// First registration wins: subsequent calls with the same method+path are
+// ignored. Exact paths are stored in a map checked before ServeMux;
+// wildcard paths are registered with ServeMux using method-specific patterns.
 func (s *Server) Handle(method, path string, handler HandlerFunc) {
-	s.Router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-		// Each test uses unique DATABRICKS_TOKEN, we simulate each token having
-		// it's own fake fakeWorkspace to avoid interference between tests.
-		fakeWorkspace := s.getWorkspaceForToken(getToken(r))
+	if !strings.Contains(path, "{") {
+		s.handleExact(method, path, handler)
+	} else {
+		s.handleWildcard(method, path, handler)
+	}
+}
 
-		request := NewRequest(s.t, r, fakeWorkspace)
+func (s *Server) handleExact(method, path string, handler HandlerFunc) {
+	if s.exactRoutes[path] == nil {
+		s.exactRoutes[path] = map[string]HandlerFunc{}
+	}
+	if _, exists := s.exactRoutes[path][method]; !exists {
+		s.exactRoutes[path][method] = handler
+	}
+}
 
-		if s.RequestCallback != nil {
-			s.RequestCallback(&request)
+func (s *Server) handleWildcard(method, path string, handler HandlerFunc) {
+	pattern := method + " " + path
+	if s.wildcardMethods[pattern] {
+		return
+	}
+	s.wildcardMethods[pattern] = true
+
+	names := wildcardNames(path)
+	s.mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+		vars := make(map[string]string, len(names))
+		for _, name := range names {
+			vars[name] = r.PathValue(name)
 		}
+		s.serve(w, r, handler, vars)
+	})
+}
 
-		var resp EncodedResponse
-
-		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
-			resp = EncodedResponse{
-				StatusCode: 500,
-				Body:       []byte("INJECTED"),
-			}
-		} else {
-			respAny := handler(request)
-			if respAny == nil && request.Context.Err() != nil {
-				return
-			}
-			resp = normalizeResponse(s.t, respAny)
+// wildcardNames extracts wildcard parameter names from a path pattern,
+// e.g. "/api/{id}/files/{path...}" returns ["id", "path"].
+func wildcardNames(path string) []string {
+	var names []string
+	for _, part := range strings.Split(path, "/") {
+		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
+			name := part[1 : len(part)-1]
+			name = strings.TrimSuffix(name, "...")
+			names = append(names, name)
 		}
+	}
+	return names
+}
 
-		for k, v := range resp.Headers {
-			w.Header()[k] = v
+// serve is the common request handling logic for both exact and wildcard routes.
+func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFunc, vars map[string]string) {
+	fakeWorkspace := s.getWorkspaceForToken(getToken(r))
+
+	request := NewRequest(s.t, r, fakeWorkspace)
+	request.Vars = vars
+
+	if s.RequestCallback != nil {
+		s.RequestCallback(&request)
+	}
+
+	var resp EncodedResponse
+
+	if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+		resp = EncodedResponse{
+			StatusCode: 500,
+			Body:       []byte("INJECTED"),
 		}
-
-		w.WriteHeader(resp.StatusCode)
-
-		if s.ResponseCallback != nil {
-			s.ResponseCallback(&request, &resp)
-		}
-
-		if _, err := w.Write(resp.Body); err != nil {
-			s.t.Errorf("Failed to write response: %s", err)
+	} else {
+		respAny := handler(request)
+		if respAny == nil && request.Context.Err() != nil {
 			return
 		}
-	}).Methods(method)
+		resp = normalizeResponse(s.t, respAny)
+	}
+
+	for k, v := range resp.Headers {
+		w.Header()[k] = v
+	}
+
+	w.WriteHeader(resp.StatusCode)
+
+	if s.ResponseCallback != nil {
+		s.ResponseCallback(&request, &resp)
+	}
+
+	if _, err := w.Write(resp.Body); err != nil {
+		s.t.Errorf("Failed to write response: %s", err)
+		return
+	}
+}
+
+func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
+	pattern := r.Method + " " + r.URL.Path
+	bodyBytes, err := io.ReadAll(r.Body)
+	var body string
+	if err != nil {
+		body = fmt.Sprintf("failed to read the body: %s", err)
+	} else {
+		body = fmt.Sprintf("[%d bytes] %s", len(bodyBytes), bodyBytes)
+	}
+
+	s.t.Errorf(`No handler for URL: %s
+Body: %s
+
+For acceptance tests, add this to test.toml:
+[[Server]]
+Pattern = %q
+Response.Body = '<response body here>'
+# Response.StatusCode = <response code if not 200>
+`, r.URL, body, pattern)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotImplemented)
+
+	resp := map[string]string{
+		"message": "No stub found for pattern: " + pattern,
+	}
+
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		s.t.Errorf("JSON encoding error: %s", err)
+		respBytes = []byte("{\"message\": \"JSON encoding error\"}")
+	}
+
+	if _, err := w.Write(respBytes); err != nil {
+		s.t.Errorf("Response write error: %s", err)
+	}
 }
 
 func getToken(r *http.Request) string {

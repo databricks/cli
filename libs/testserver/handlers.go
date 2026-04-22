@@ -109,7 +109,7 @@ func AddDefaultHandlers(server *Server) {
 		return ""
 	})
 
-	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path:.*}", func(req Request) any {
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
 		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
@@ -145,12 +145,12 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.WorkspaceFilesImportFile(request.Path, decoded, request.Overwrite)
 	})
 
-	server.Handle("GET", "/api/2.0/workspace-files/{path:.*}", func(req Request) any {
+	server.Handle("GET", "/api/2.0/workspace-files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		return req.Workspace.WorkspaceFilesExportFile(path)
 	})
 
-	server.Handle("HEAD", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
+	server.Handle("HEAD", "/api/2.0/fs/directories/{path...}", func(req Request) any {
 		dirPath := req.Vars["path"]
 		if !strings.HasPrefix(dirPath, "/") {
 			dirPath = "/" + dirPath
@@ -165,7 +165,7 @@ func AddDefaultHandlers(server *Server) {
 		return Response{StatusCode: 404}
 	})
 
-	server.Handle("HEAD", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+	server.Handle("HEAD", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		if req.Workspace.FileExists(path) {
 			return Response{StatusCode: 200}
@@ -173,7 +173,7 @@ func AddDefaultHandlers(server *Server) {
 		return Response{StatusCode: 404}
 	})
 
-	server.Handle("PUT", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
+	server.Handle("PUT", "/api/2.0/fs/directories/{path...}", func(req Request) any {
 		dirPath := req.Vars["path"]
 		if !strings.HasPrefix(dirPath, "/") {
 			dirPath = "/" + dirPath
@@ -194,13 +194,13 @@ func AddDefaultHandlers(server *Server) {
 		return Response{}
 	})
 
-	server.Handle("PUT", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+	server.Handle("PUT", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
 		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
 	})
 
-	server.Handle("GET", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+	server.Handle("GET", "/api/2.0/fs/files/{path...}", func(req Request) any {
 		path := req.Vars["path"]
 		data := req.Workspace.WorkspaceFilesExportFile(path)
 		if data == nil {

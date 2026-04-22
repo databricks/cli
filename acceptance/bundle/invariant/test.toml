@@ -77,5 +77,5 @@ Pattern = "POST /api/2.0/sql/statements/"
 Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
 
 [[Server]]
-Pattern = "DELETE /api/2.1/unity-catalog/tables/{name}"
+Pattern = "DELETE /api/2.1/unity-catalog/tables/{full_name}"
 Response.Body = '{"status": "OK"}'
