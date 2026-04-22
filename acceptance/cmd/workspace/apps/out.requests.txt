@@ -26,10 +26,6 @@
   "path": "/api/2.0/apps/test-name"
 }
 {
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
   "method": "PATCH",
   "path": "/api/2.0/apps/test-name",
   "body": {
