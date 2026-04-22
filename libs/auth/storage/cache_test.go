@@ -87,7 +87,7 @@ func TestResolveCache_InvalidOverrideReturnsError(t *testing.T) {
 	_, _, err := resolveCacheWith(ctx, StorageMode("bogus"), fakeFactories(t))
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `unknown storage mode "bogus"`)
+	assert.Contains(t, err.Error(), `unsupported storage mode "bogus"`)
 }
 
 func TestResolveCache_InvalidEnvReturnsError(t *testing.T) {
