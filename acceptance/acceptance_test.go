@@ -743,12 +743,6 @@ func runTest(t *testing.T,
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
-	// On timeout the script was killed mid-execution: outputs are unreliable and scratch
-	// files (e.g. out.requests.txt) were not cleaned up. Disable OverwriteMode for this
-	// test so comparisons still run (selftest/timeout verifies the captured error message)
-	// but reference files are not deleted or overwritten from the partial test run.
-	overwriteMode := testdiff.OverwriteMode && !errors.Is(err, errTestTimeout)
-
 	loadUserReplacements(t, &repls, tmpDir)
 
 	printedRepls := false
@@ -761,7 +755,7 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, overwriteMode)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -795,7 +789,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, overwriteMode)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
@@ -868,7 +862,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, overwriteMode bool) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -890,7 +884,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
 		t.Errorf("Missing output file: %s", relPath)
-		if overwriteMode {
+		if testdiff.OverwriteMode {
 			t.Logf("Removing output file: %s", relPath)
 			require.NoError(t, os.Remove(pathRef))
 		}
@@ -903,7 +897,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		if shouldShowDiff(pathNew, valueNew) {
 			testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
 		}
-		if overwriteMode {
+		if testdiff.OverwriteMode {
 			t.Logf("Writing output file: %s", relPath)
 			testutil.WriteFile(t, pathRef, valueNew)
 		}
@@ -912,7 +906,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Compare the reference and new values.
 	equal := testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
-	if !equal && overwriteMode {
+	if !equal && testdiff.OverwriteMode {
 		t.Logf("Overwriting existing output file: %s", relPath)
 		testutil.WriteFile(t, pathRef, valueNew)
 	}
@@ -1349,12 +1343,6 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-// errTestTimeout is returned by runWithLog when the test script is killed due to its timeout.
-// Capitalized because the string appears in acceptance output.txt files.
-//
-//nolint:staticcheck // ST1005
-var errTestTimeout = errors.New("Test script killed due to a timeout")
-
 func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout time.Duration) (string, error) {
 	r, w := io.Pipe()
 	cmd.Stdout = w
@@ -1362,7 +1350,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout ti
 	processErrCh := make(chan error, 1)
 
 	cmd.Cancel = func() error {
-		processErrCh <- fmt.Errorf("%w (%s)", errTestTimeout, timeout)
+		processErrCh <- fmt.Errorf("Test script killed due to a timeout (%s)", timeout)
 		_ = cmd.Process.Kill()
 		_ = w.Close()
 		return nil
