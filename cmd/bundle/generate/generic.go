@@ -54,7 +54,7 @@ func initGenerateContext(cmd *cobra.Command) context.Context {
 	return ctx
 }
 
-func ensureGenerateBundle(cmd *cobra.Command) (*generateEnvironment, error) {
+func ensureGenerateBundle(cmd *cobra.Command, requireExistingErr error) (*generateEnvironment, error) {
 	ctx := cmd.Context()
 	b := root.TryConfigureBundle(cmd)
 	if logdiag.HasError(ctx) {
@@ -63,6 +63,10 @@ func ensureGenerateBundle(cmd *cobra.Command) (*generateEnvironment, error) {
 
 	if b != nil {
 		return &generateEnvironment{hadExistingBundle: true}, nil
+	}
+
+	if requireExistingErr != nil {
+		return nil, requireExistingErr
 	}
 
 	initBare, err := cmd.Flags().GetBool("init-bare")
@@ -243,13 +247,13 @@ func newGenericGenerateCommand(spec genericGenerateSpec) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := initGenerateContext(cmd)
 
-			env, err := ensureGenerateBundle(cmd)
+			var requireExistingErr error
+			if bind {
+				requireExistingErr = errors.New("--bind requires an existing bundle. Re-run this command from a bundle directory or omit --bind")
+			}
+			_, err := ensureGenerateBundle(cmd, requireExistingErr)
 			if err != nil {
 				return err
-			}
-
-			if bind && !env.hadExistingBundle {
-				return errors.New("--bind requires an existing bundle. Re-run this command from a bundle directory or omit --bind")
 			}
 
 			b := root.MustConfigureBundle(cmd)

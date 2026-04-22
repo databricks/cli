@@ -70,7 +70,7 @@ After generation, you can deploy this alert to other targets using:
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := initGenerateContext(cmd)
 
-		_, err := ensureGenerateBundle(cmd)
+		_, err := ensureGenerateBundle(cmd, nil)
 		if err != nil {
 			return err
 		}

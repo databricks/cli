@@ -420,12 +420,13 @@ func (d *dashboard) runForExisting(ctx context.Context, b *bundle.Bundle) {
 func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 	ctx := initGenerateContext(cmd)
 
-	env, err := ensureGenerateBundle(cmd)
+	var requireExistingErr error
+	if d.bind || d.resource != "" || d.watch {
+		requireExistingErr = errors.New("--bind, --resource, and --watch require an existing bundle. Re-run this command from a bundle directory or omit those flags")
+	}
+	_, err := ensureGenerateBundle(cmd, requireExistingErr)
 	if err != nil {
 		return err
-	}
-	if !env.hadExistingBundle && (d.bind || d.resource != "" || d.watch) {
-		return errors.New("--bind, --resource, and --watch require an existing bundle. Re-run this command from a bundle directory or omit those flags")
 	}
 
 	b := root.MustConfigureBundle(cmd)

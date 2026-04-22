@@ -68,12 +68,13 @@ like catalogs, schemas, and compute configurations per target.`,
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := initGenerateContext(cmd)
 
-		env, err := ensureGenerateBundle(cmd)
+		var requireExistingErr error
+		if bind {
+			requireExistingErr = errors.New("--bind requires an existing bundle. Re-run this command from a bundle directory or omit --bind")
+		}
+		_, err := ensureGenerateBundle(cmd, requireExistingErr)
 		if err != nil {
 			return err
-		}
-		if bind && !env.hadExistingBundle {
-			return errors.New("--bind requires an existing bundle. Re-run this command from a bundle directory or omit --bind")
 		}
 
 		b := root.MustConfigureBundle(cmd)
