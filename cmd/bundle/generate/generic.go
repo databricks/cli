@@ -256,7 +256,7 @@ func newGenericGenerateCommand(spec genericGenerateSpec) *cobra.Command {
 				return root.ErrAlreadyPrinted
 			}
 
-			response, err := spec.fetch(ctx, b.WorkspaceClient(), lookup)
+			response, err := spec.fetch(ctx, b.WorkspaceClient(ctx), lookup)
 			if err != nil {
 				return err
 			}
