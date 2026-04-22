@@ -47,7 +47,12 @@ runs:
         }
 
         New-Item -ItemType Directory -Path Z:\fast | Out-Null
-        New-Item -ItemType Junction -Path C:\a\_fast -Target Z:\fast | Out-Null
+        # Use a directory symbolic link (not a junction). Go's
+        # `filepath.EvalSymlinks` handles dir symlinks correctly but returns
+        # "cannot find the path specified" on junctions rooted at a newly
+        # mounted VHDX (hits `bundle.TestRootLookup` in the unit test suite).
+        # Requires Developer Mode, which is enabled on GH Windows runners.
+        cmd /c "mklink /D C:\a\_fast Z:\fast" | Out-Null
         New-Item -ItemType Directory -Path `
           C:\a\_fast\tmp, C:\a\_fast\go-build, C:\a\_fast\go-mod, C:\a\_fast\go-tmp | Out-Null
 
