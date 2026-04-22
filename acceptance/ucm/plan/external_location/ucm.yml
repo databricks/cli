@@ -1,0 +1,22 @@
+ucm:
+  name: plan-external-location
+  engine: direct
+
+resources:
+  storage_credentials:
+    sales_cred:
+      name: sales_cred
+      aws_iam_role:
+        role_arn: "arn:aws:iam::111122223333:role/uc-sales"
+
+  external_locations:
+    sales_loc:
+      name: sales_loc
+      url: "s3://acme-sales/prod"
+      credential_name: ${resources.storage_credentials.sales_cred.name}
+
+    shared_loc:
+      name: shared_loc
+      url: "abfss://shared@acme.dfs.core.windows.net/common"
+      credential_name: preexisting_shared_cred
+      read_only: true
