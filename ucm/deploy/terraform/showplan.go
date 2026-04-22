@@ -17,9 +17,10 @@ import (
 // and pinning to a bundle map will drift as upstream adds resources ucm does
 // not model. See cmd/ucm/CLAUDE.md on fork isolation.
 var terraformToGroupName = map[string]string{
-	"databricks_catalog": "catalogs",
-	"databricks_schema":  "schemas",
-	"databricks_grants":  "grants",
+	"databricks_catalog":            "catalogs",
+	"databricks_schema":             "schemas",
+	"databricks_grants":             "grants",
+	"databricks_storage_credential": "storage_credentials",
 }
 
 // populatePlan fills `plan` from terraform resource changes using the
