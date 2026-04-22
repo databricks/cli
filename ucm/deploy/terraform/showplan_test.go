@@ -21,11 +21,13 @@ func TestPopulatePlan_MapsActionsAndKeys(t *testing.T) {
 		{Type: "databricks_catalog", Name: "main", Change: change(tfjson.Actions{tfjson.ActionCreate})},
 		{Type: "databricks_schema", Name: "sales_raw", Change: change(tfjson.Actions{tfjson.ActionUpdate})},
 		{Type: "databricks_grants", Name: "analysts", Change: change(tfjson.Actions{tfjson.ActionDelete})},
+		{Type: "databricks_storage_credential", Name: "sales_cred", Change: change(tfjson.Actions{tfjson.ActionCreate})},
 	})
 
 	assert.Equal(t, deployplan.Create, plan.Plan["resources.catalogs.main"].Action)
 	assert.Equal(t, deployplan.Update, plan.Plan["resources.schemas.sales_raw"].Action)
 	assert.Equal(t, deployplan.Delete, plan.Plan["resources.grants.analysts"].Action)
+	assert.Equal(t, deployplan.Create, plan.Plan["resources.storage_credentials.sales_cred"].Action)
 }
 
 func TestPopulatePlan_ReplaceBecomesRecreate(t *testing.T) {
