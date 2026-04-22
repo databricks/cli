@@ -10,9 +10,5 @@ Old='DATABRICKS_URL'
 New='DATABRICKS_TARGET'
 
 [[Repls]]
-Old='Warn: Failed to resolve host metadata: .*\. Falling back to user config\.'
-New='Warn: Failed to resolve host metadata: (redacted). Falling back to user config.'
-
-[[Repls]]
 Old='Get "https://non.existing.subdomain.databricks.com/api/2.0/preview/scim/v2/Me": .*'
 New='Get "https://non.existing.subdomain.databricks.com/api/2.0/preview/scim/v2/Me": (redacted)'

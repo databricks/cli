@@ -10,10 +10,6 @@
   }
 }
 {
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
   "method": "POST",
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
@@ -21,10 +17,6 @@
     "parent_path": "/Users/[USERNAME]",
     "warehouse_id": "test-warehouse"
   }
-}
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
 }
 {
   "method": "POST",

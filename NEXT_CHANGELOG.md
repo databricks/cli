@@ -5,6 +5,7 @@
 ### CLI
 * Added `--limit` flag to all paginated list commands for client-side result capping ([#4984](https://github.com/databricks/cli/pull/4984)). On `jobs list` and `jobs list-runs` the former API page-size flag was renamed to `--page-size` (hidden) to avoid collision.
 * Accept `yes` in addition to `y` for confirmation prompts, and show `[y/N]` to indicate that no is the default.
+* Cache `/.well-known/databricks-config` lookups under `~/.cache/databricks/<version>/host-metadata/` so repeat CLI invocations against the same host skip the ~700ms discovery round trip.
 * Deprecated `auth env`. The command is hidden from help listings and prints a deprecation warning to stderr; it will be removed in a future release.
 
 ### Bundles
