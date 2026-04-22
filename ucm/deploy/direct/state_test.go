@@ -20,6 +20,7 @@ func TestLoadState_MissingFileReturnsEmpty(t *testing.T) {
 	assert.Empty(t, s.Grants)
 	assert.Empty(t, s.StorageCredentials)
 	assert.Empty(t, s.ExternalLocations)
+	assert.Empty(t, s.Volumes)
 }
 
 func TestLoadState_RoundTrip(t *testing.T) {

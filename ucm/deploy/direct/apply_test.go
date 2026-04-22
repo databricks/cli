@@ -34,6 +34,10 @@ type recordingClient struct {
 	UpdatedExternalLocations []catalog.UpdateExternalLocation
 	DeletedExternalLocations []string
 
+	CreatedVolumes []catalog.CreateVolumeRequestContent
+	UpdatedVolumes []catalog.UpdateVolumeRequestContent
+	DeletedVolumes []string
+
 	Permissions []catalog.UpdatePermissions
 
 	FailOn string
@@ -156,6 +160,34 @@ func (r *recordingClient) DeleteExternalLocation(_ context.Context, name string)
 		return err
 	}
 	r.DeletedExternalLocations = append(r.DeletedExternalLocations, name)
+	return nil
+}
+
+func (r *recordingClient) GetVolume(_ context.Context, _ string) (*catalog.VolumeInfo, error) {
+	return nil, nil
+}
+
+func (r *recordingClient) CreateVolume(_ context.Context, in catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+	if err := r.trip("CreateVolume:" + in.CatalogName + "." + in.SchemaName + "." + in.Name); err != nil {
+		return nil, err
+	}
+	r.CreatedVolumes = append(r.CreatedVolumes, in)
+	return &catalog.VolumeInfo{Name: in.Name, CatalogName: in.CatalogName, SchemaName: in.SchemaName}, nil
+}
+
+func (r *recordingClient) UpdateVolume(_ context.Context, in catalog.UpdateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+	if err := r.trip("UpdateVolume:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.UpdatedVolumes = append(r.UpdatedVolumes, in)
+	return &catalog.VolumeInfo{FullName: in.Name}, nil
+}
+
+func (r *recordingClient) DeleteVolume(_ context.Context, name string) error {
+	if err := r.trip("DeleteVolume:" + name); err != nil {
+		return err
+	}
+	r.DeletedVolumes = append(r.DeletedVolumes, name)
 	return nil
 }
 

@@ -31,6 +31,11 @@ type Client interface {
 	UpdateExternalLocation(ctx context.Context, in catalog.UpdateExternalLocation) (*catalog.ExternalLocationInfo, error)
 	DeleteExternalLocation(ctx context.Context, name string) error
 
+	GetVolume(ctx context.Context, name string) (*catalog.VolumeInfo, error)
+	CreateVolume(ctx context.Context, in catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error)
+	UpdateVolume(ctx context.Context, in catalog.UpdateVolumeRequestContent) (*catalog.VolumeInfo, error)
+	DeleteVolume(ctx context.Context, name string) error
+
 	UpdatePermissions(ctx context.Context, in catalog.UpdatePermissions) error
 }
 
@@ -104,6 +109,22 @@ func (c *sdkClient) UpdateExternalLocation(ctx context.Context, in catalog.Updat
 
 func (c *sdkClient) DeleteExternalLocation(ctx context.Context, name string) error {
 	return c.w.ExternalLocations.DeleteByName(ctx, name)
+}
+
+func (c *sdkClient) GetVolume(ctx context.Context, name string) (*catalog.VolumeInfo, error) {
+	return c.w.Volumes.ReadByName(ctx, name)
+}
+
+func (c *sdkClient) CreateVolume(ctx context.Context, in catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+	return c.w.Volumes.Create(ctx, in)
+}
+
+func (c *sdkClient) UpdateVolume(ctx context.Context, in catalog.UpdateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+	return c.w.Volumes.Update(ctx, in)
+}
+
+func (c *sdkClient) DeleteVolume(ctx context.Context, name string) error {
+	return c.w.Volumes.DeleteByName(ctx, name)
 }
 
 func (c *sdkClient) UpdatePermissions(ctx context.Context, in catalog.UpdatePermissions) error {

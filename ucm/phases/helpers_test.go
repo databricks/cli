@@ -179,6 +179,20 @@ func (*fakeDirectClient) UpdateExternalLocation(_ context.Context, _ catalog.Upd
 
 func (*fakeDirectClient) DeleteExternalLocation(_ context.Context, _ string) error { return nil }
 
+func (*fakeDirectClient) GetVolume(_ context.Context, _ string) (*catalog.VolumeInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) CreateVolume(_ context.Context, _ catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) UpdateVolume(_ context.Context, _ catalog.UpdateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) DeleteVolume(_ context.Context, _ string) error { return nil }
+
 func (*fakeDirectClient) UpdatePermissions(_ context.Context, _ catalog.UpdatePermissions) error {
 	return nil
 }

@@ -30,6 +30,7 @@ type State struct {
 	Grants             map[string]*GrantState             `json:"grants,omitempty"`
 	StorageCredentials map[string]*StorageCredentialState `json:"storage_credentials,omitempty"`
 	ExternalLocations  map[string]*ExternalLocationState  `json:"external_locations,omitempty"`
+	Volumes            map[string]*VolumeState            `json:"volumes,omitempty"`
 }
 
 // CatalogState is what the direct engine records for a catalog after a
@@ -111,6 +112,17 @@ type ExternalLocationState struct {
 	Fallback       bool   `json:"fallback,omitempty"`
 }
 
+// VolumeState mirrors resources.Volume for drift detection. All fields are
+// primitives so reflect.DeepEqual suffices.
+type VolumeState struct {
+	Name            string `json:"name"`
+	CatalogName     string `json:"catalog_name"`
+	SchemaName      string `json:"schema_name"`
+	VolumeType      string `json:"volume_type"`
+	StorageLocation string `json:"storage_location,omitempty"`
+	Comment         string `json:"comment,omitempty"`
+}
+
 // NewState returns an empty State ready to be populated by the planner.
 func NewState() *State {
 	return &State{
@@ -120,6 +132,7 @@ func NewState() *State {
 		Grants:             make(map[string]*GrantState),
 		StorageCredentials: make(map[string]*StorageCredentialState),
 		ExternalLocations:  make(map[string]*ExternalLocationState),
+		Volumes:            make(map[string]*VolumeState),
 	}
 }
 
@@ -155,6 +168,9 @@ func LoadState(path string) (*State, error) {
 	}
 	if s.ExternalLocations == nil {
 		s.ExternalLocations = make(map[string]*ExternalLocationState)
+	}
+	if s.Volumes == nil {
+		s.Volumes = make(map[string]*VolumeState)
 	}
 	return &s, nil
 }
