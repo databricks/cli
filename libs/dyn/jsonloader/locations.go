@@ -32,13 +32,9 @@ func BuildLineOffsets(data []byte) Offset {
 // GetPosition maps a byte offset to its corresponding line and column numbers.
 func (o Offset) GetPosition(offset int64) dyn.Location {
 	// Binary search to find the line
-	idx := sort.Search(len(o.offsets), func(i int) bool {
+	idx := max(sort.Search(len(o.offsets), func(i int) bool {
 		return o.offsets[i].Start > offset
-	}) - 1
-
-	if idx < 0 {
-		idx = 0
-	}
+	})-1, 0)
 
 	lineOffset := o.offsets[idx]
 	return dyn.Location{

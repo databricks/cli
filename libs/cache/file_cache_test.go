@@ -101,25 +101,25 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 	expectedValue := "computed-value"
 
 	// First call should compute the value
-	var computeCalls int32
+	var computeCalls atomic.Int32
 	result, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
-		atomic.AddInt32(&computeCalls, 1)
+		computeCalls.Add(1)
 		return expectedValue, nil
 	})
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedValue, result)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
+	assert.Equal(t, int32(1), computeCalls.Load())
 
 	// Second call should return cached value without computing
 	result2, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
-		atomic.AddInt32(&computeCalls, 1)
+		computeCalls.Add(1)
 		return "should-not-be-called", nil
 	})
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedValue, result2)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
+	assert.Equal(t, int32(1), computeCalls.Load())
 }
 
 func TestFileCachePut(t *testing.T) {
@@ -201,7 +201,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 		Key: "concurrent-key",
 	}
 	expectedValue := "concurrent-value"
-	var computeCalls int32
+	var computeCalls atomic.Int32
 
 	// Start multiple goroutines that try to compute the same key
 	numGoroutines := 10
@@ -211,7 +211,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 	for range numGoroutines {
 		go func() {
 			result, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
-				atomic.AddInt32(&computeCalls, 1)
+				computeCalls.Add(1)
 				time.Sleep(10 * time.Millisecond) // Simulate work
 				return expectedValue, nil
 			})
@@ -230,7 +230,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 
 	// With locking, writes are serialized but compute may be called multiple times
 	// since goroutines check cache before acquiring lock
-	calls := atomic.LoadInt32(&computeCalls)
+	calls := computeCalls.Load()
 	assert.GreaterOrEqual(t, calls, int32(1), "compute should be called at least once")
 	assert.LessOrEqual(t, calls, int32(numGoroutines), "compute should not be called more than number of goroutines")
 }
@@ -298,15 +298,15 @@ func TestFileCacheInvalidJSON(t *testing.T) {
 	require.NoError(t, err)
 
 	// GetOrCompute should fail open and recompute when cache contains invalid JSON
-	var computeCalls int32
+	var computeCalls atomic.Int32
 	result, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
-		atomic.AddInt32(&computeCalls, 1)
+		computeCalls.Add(1)
 		return "recomputed-value", nil
 	})
 
 	require.NoError(t, err)
 	assert.Equal(t, "recomputed-value", result)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls), "Should recompute when cache has invalid JSON")
+	assert.Equal(t, int32(1), computeCalls.Load(), "Should recompute when cache has invalid JSON")
 }
 
 func TestFileCacheCorruptedData(t *testing.T) {
@@ -334,15 +334,15 @@ func TestFileCacheCorruptedData(t *testing.T) {
 	require.NoError(t, err)
 
 	// GetOrCompute should fail open and recompute when cache type doesn't match
-	var computeCalls int32
+	var computeCalls atomic.Int32
 	result, err := GetOrCompute[int](ctx, cache, fingerprint, func(ctx context.Context) (int, error) {
-		atomic.AddInt32(&computeCalls, 1)
+		computeCalls.Add(1)
 		return 42, nil
 	})
 
 	require.NoError(t, err)
 	assert.Equal(t, 42, result)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls), "Should recompute when cache type is wrong")
+	assert.Equal(t, int32(1), computeCalls.Load(), "Should recompute when cache type is wrong")
 }
 
 func TestFileCacheEmptyFingerprint(t *testing.T) {
@@ -359,9 +359,9 @@ func TestFileCacheEmptyFingerprint(t *testing.T) {
 	// Empty struct fingerprint is valid
 	fingerprint := struct{}{}
 
-	var computeCalls int32
+	var computeCalls atomic.Int32
 	result, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
-		atomic.AddInt32(&computeCalls, 1)
+		computeCalls.Add(1)
 		return "value", nil
 	})
 	require.NoError(t, err)
@@ -369,12 +369,12 @@ func TestFileCacheEmptyFingerprint(t *testing.T) {
 
 	// Second call should use cache
 	result2, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
-		atomic.AddInt32(&computeCalls, 1)
+		computeCalls.Add(1)
 		return "should-not-be-called", nil
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "value", result2)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls), "Empty fingerprint should work with cache")
+	assert.Equal(t, int32(1), computeCalls.Load(), "Empty fingerprint should work with cache")
 }
 
 func TestFileCacheMeasurementMode(t *testing.T) {
@@ -395,23 +395,23 @@ func TestFileCacheMeasurementMode(t *testing.T) {
 	}
 
 	// First call
-	var computeCalls int32
+	var computeCalls atomic.Int32
 	result, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
-		atomic.AddInt32(&computeCalls, 1)
+		computeCalls.Add(1)
 		return "computed-value", nil
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "computed-value", result)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
+	assert.Equal(t, int32(1), computeCalls.Load())
 
 	// Second call - in measurement mode, should always recompute
 	result2, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
-		atomic.AddInt32(&computeCalls, 1)
+		computeCalls.Add(1)
 		return "recomputed-value", nil
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "recomputed-value", result2)
-	assert.Equal(t, int32(2), atomic.LoadInt32(&computeCalls), "Measurement mode should always recompute")
+	assert.Equal(t, int32(2), computeCalls.Load(), "Measurement mode should always recompute")
 
 	// But cache file should still exist
 	cacheFiles, err := filepath.Glob(filepath.Join(tempDir, "*.json"))
@@ -461,13 +461,13 @@ func TestFileCacheReadPermissionError(t *testing.T) {
 	defer func() { _ = os.Chmod(cacheFiles[0], 0o600) }()
 
 	// GetOrCompute should fail open and recompute when file is unreadable
-	var computeCalls int32
+	var computeCalls atomic.Int32
 	result2, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
-		atomic.AddInt32(&computeCalls, 1)
+		computeCalls.Add(1)
 		return "recomputed-value", nil
 	})
 
 	require.NoError(t, err)
 	assert.Equal(t, "recomputed-value", result2)
-	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls), "Should recompute when cache file is unreadable")
+	assert.Equal(t, int32(1), computeCalls.Load(), "Should recompute when cache file is unreadable")
 }

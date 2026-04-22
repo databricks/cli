@@ -112,8 +112,8 @@ func DetectInterpreters(ctx context.Context) (allInterpreters, error) {
 }
 
 func pythonicExecutablesFromPathEnvironment(ctx context.Context) (out []string, err error) {
-	paths := strings.Split(env.Get(ctx, "PATH"), string(os.PathListSeparator))
-	for _, prefix := range paths {
+	paths := strings.SplitSeq(env.Get(ctx, "PATH"), string(os.PathListSeparator))
+	for prefix := range paths {
 		info, err := os.Stat(prefix)
 		if errors.Is(err, fs.ErrNotExist) {
 			// some directories in $PATH may not exist

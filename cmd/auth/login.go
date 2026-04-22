@@ -682,7 +682,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, tokenCache cache.To
 // splitScopes splits a comma-separated scopes string into a trimmed slice.
 func splitScopes(scopes string) []string {
 	var result []string
-	for _, s := range strings.Split(scopes, ",") {
+	for s := range strings.SplitSeq(scopes, ",") {
 		scope := strings.TrimSpace(s)
 		if scope == "" {
 			continue

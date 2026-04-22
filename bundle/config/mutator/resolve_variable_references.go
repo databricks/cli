@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/libs/dyn/merge"
 
@@ -227,12 +228,10 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 				}
 
 				// Perform resolution only if the path starts with one of the specified prefixes.
-				for _, prefix := range prefixes {
-					if path.HasPrefix(prefix) {
-						value, err := m.lookupFn(normalized, path, b)
-						hasUpdates = hasUpdates || (err == nil && value.IsValid())
-						return value, err
-					}
+				if slices.ContainsFunc(prefixes, path.HasPrefix) {
+					value, err := m.lookupFn(normalized, path, b)
+					hasUpdates = hasUpdates || (err == nil && value.IsValid())
+					return value, err
 				}
 
 				return dyn.InvalidValue, dynvar.ErrSkipResolution

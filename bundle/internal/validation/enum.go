@@ -203,7 +203,7 @@ func sortGroupedPatternsEnum(groupedPatterns map[string][]EnumPatternInfo) [][]E
 
 // enumFields returns grouped enum field patterns for validation
 func enumFields() ([][]EnumPatternInfo, error) {
-	patterns, err := extractEnumFields(reflect.TypeOf(config.Root{}))
+	patterns, err := extractEnumFields(reflect.TypeFor[config.Root]())
 	if err != nil {
 		return nil, err
 	}
