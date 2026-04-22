@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -553,6 +554,20 @@ func genericGenerateSpecs() []genericGenerateSpec {
 			},
 			convert: func(response any) (dyn.Value, error) {
 				return bundlegenerate.ConvertResponseToValue[bundleconfigresources.PostgresEndpoint](response, nil, nil)
+			},
+		},
+		{
+			commandName:       "vector-search-endpoint",
+			resourceGroup:     "vector_search_endpoints",
+			fileExtension:     "vector_search_endpoint",
+			lookupFlag:        "existing-vector-search-endpoint-name",
+			lookupDescription: `vector search endpoint name to generate config for`,
+			shortDescription:  "Generate bundle configuration for a vector search endpoint",
+			fetch: func(ctx context.Context, w *databricks.WorkspaceClient, lookup string) (any, error) {
+				return w.VectorSearchEndpoints.GetEndpoint(ctx, vectorsearch.GetEndpointRequest{EndpointName: lookup})
+			},
+			convert: func(response any) (dyn.Value, error) {
+				return bundlegenerate.ConvertResponseToValue[bundleconfigresources.VectorSearchEndpoint](response, nil, nil)
 			},
 		},
 	}

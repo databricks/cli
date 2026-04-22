@@ -52,6 +52,7 @@ Available Commands:
   secret-scope           Generate bundle configuration for a secret scope
   sql-warehouse          Generate bundle configuration for a SQL warehouse
   synced-database-table  Generate bundle configuration for a synced database table
+  vector-search-endpoint Generate bundle configuration for a vector search endpoint
   volume                 Generate bundle configuration for a volume
 
 Flags:
