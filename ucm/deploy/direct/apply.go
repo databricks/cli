@@ -20,9 +20,10 @@ import (
 //
 // Execution order is the natural UC dependency order:
 //
-//	storage_credential creates+updates → catalog creates+updates
-//	→ schema creates+updates → grants reconcile → schema deletes
-//	→ catalog deletes → storage_credential deletes
+//	storage_credential creates+updates → external_location creates+updates
+//	→ catalog creates+updates → schema creates+updates → grants reconcile
+//	→ schema deletes → catalog deletes → external_location deletes
+//	→ storage_credential deletes
 //
 // Grants are reconciled per securable in a single pass (Create, Update, and
 // Delete share the code path) because the UC API treats grants as a full
@@ -31,6 +32,9 @@ import (
 // observable to users in the plan output.
 func Apply(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
 	if err := applyStorageCredentialCreates(ctx, u, client, plan, state); err != nil {
+		return err
+	}
+	if err := applyExternalLocationCreates(ctx, u, client, plan, state); err != nil {
 		return err
 	}
 	if err := applyCatalogCreates(ctx, u, client, plan, state); err != nil {
@@ -46,6 +50,9 @@ func Apply(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan
 		return err
 	}
 	if err := applyCatalogDeletes(ctx, client, plan, state); err != nil {
+		return err
+	}
+	if err := applyExternalLocationDeletes(ctx, client, plan, state); err != nil {
 		return err
 	}
 	if err := applyStorageCredentialDeletes(ctx, client, plan, state); err != nil {
@@ -67,6 +74,9 @@ func Destroy(ctx context.Context, u *ucm.Ucm, client Client, state *State) (*dep
 	}
 	for key := range state.Catalogs {
 		plan.Plan["resources.catalogs."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
+	}
+	for key := range state.ExternalLocations {
+		plan.Plan["resources.external_locations."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
 	}
 	for key := range state.StorageCredentials {
 		plan.Plan["resources.storage_credentials."+key] = &deployplan.PlanEntry{Action: deployplan.Delete}
@@ -124,6 +134,49 @@ func applyStorageCredentialDeletes(ctx context.Context, client Client, plan *dep
 			return fmt.Errorf("delete storage_credential %s: %w", rec.Name, err)
 		}
 		delete(state.StorageCredentials, name)
+	}
+	return nil
+}
+
+func applyExternalLocationCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range sortedPlanKeysByGroup(plan, "external_locations") {
+		entry := plan.Plan[key]
+		name := strings.TrimPrefix(key, "resources.external_locations.")
+		cfg := u.Config.Resources.ExternalLocations[name]
+		switch entry.Action {
+		case deployplan.Create:
+			log.Infof(ctx, "direct: creating external_location %s", name)
+			if _, err := client.CreateExternalLocation(ctx, externalLocationCreateInput(cfg)); err != nil {
+				return fmt.Errorf("create external_location %s: %w", name, err)
+			}
+			state.ExternalLocations[name] = ptrExternalLocation(externalLocationStateFromConfig(cfg))
+		case deployplan.Update:
+			log.Infof(ctx, "direct: updating external_location %s", name)
+			if _, err := client.UpdateExternalLocation(ctx, externalLocationUpdateInput(cfg)); err != nil {
+				return fmt.Errorf("update external_location %s: %w", name, err)
+			}
+			state.ExternalLocations[name] = ptrExternalLocation(externalLocationStateFromConfig(cfg))
+		}
+	}
+	return nil
+}
+
+func applyExternalLocationDeletes(ctx context.Context, client Client, plan *deployplan.Plan, state *State) error {
+	for _, key := range reverseSortedPlanKeysByGroup(plan, "external_locations") {
+		entry := plan.Plan[key]
+		if entry.Action != deployplan.Delete {
+			continue
+		}
+		name := strings.TrimPrefix(key, "resources.external_locations.")
+		rec, ok := state.ExternalLocations[name]
+		if !ok {
+			continue
+		}
+		log.Infof(ctx, "direct: deleting external_location %s", rec.Name)
+		if err := client.DeleteExternalLocation(ctx, rec.Name); err != nil {
+			return fmt.Errorf("delete external_location %s: %w", rec.Name, err)
+		}
+		delete(state.ExternalLocations, name)
 	}
 	return nil
 }
@@ -375,6 +428,30 @@ func storageCredentialUpdateInput(c *resources.StorageCredential) (catalog.Updat
 	return in, nil
 }
 
+func externalLocationCreateInput(e *resources.ExternalLocation) catalog.CreateExternalLocation {
+	return catalog.CreateExternalLocation{
+		Name:           e.Name,
+		Url:            e.Url,
+		CredentialName: e.CredentialName,
+		Comment:        e.Comment,
+		ReadOnly:       e.ReadOnly,
+		SkipValidation: e.SkipValidation,
+		Fallback:       e.Fallback,
+	}
+}
+
+func externalLocationUpdateInput(e *resources.ExternalLocation) catalog.UpdateExternalLocation {
+	return catalog.UpdateExternalLocation{
+		Name:           e.Name,
+		Url:            e.Url,
+		CredentialName: e.CredentialName,
+		Comment:        e.Comment,
+		ReadOnly:       e.ReadOnly,
+		SkipValidation: e.SkipValidation,
+		Fallback:       e.Fallback,
+	}
+}
+
 func buildUpdatePermissions(sec securable, grants []*resources.Grant) catalog.UpdatePermissions {
 	changes := make([]catalog.PermissionsChange, 0, len(grants))
 	for _, g := range grants {
@@ -522,3 +599,5 @@ func ptrGrant(s GrantState) *GrantState       { return &s }
 func ptrStorageCredential(s StorageCredentialState) *StorageCredentialState {
 	return &s
 }
+
+func ptrExternalLocation(s ExternalLocationState) *ExternalLocationState { return &s }

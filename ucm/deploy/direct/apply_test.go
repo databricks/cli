@@ -362,6 +362,95 @@ func TestApply_StorageCredentialRejectsMissingIdentity(t *testing.T) {
 	assert.Empty(t, client.Calls, "no API call must be made when validation fails")
 }
 
+func TestApply_ExternalLocationCreateOrdersAfterStorageCredential(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"prod": {
+			Name:       "prod",
+			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/uc"},
+		},
+	}
+	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
+		"data": {
+			Name:           "data",
+			Url:            "s3://bucket/prefix",
+			CredentialName: "prod",
+		},
+	}
+
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{
+		"CreateStorageCredential:prod",
+		"CreateExternalLocation:data",
+	}, client.Calls)
+
+	require.NotNil(t, state.ExternalLocations["data"])
+	assert.Equal(t, "s3://bucket/prefix", state.ExternalLocations["data"].Url)
+	assert.Equal(t, "prod", state.ExternalLocations["data"].CredentialName)
+}
+
+func TestApply_ExternalLocationUpdate(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
+		"data": {
+			Name:           "data",
+			Url:            "s3://bucket/new",
+			CredentialName: "prod",
+			Comment:        "new",
+		},
+	}
+	state := direct.NewState()
+	state.ExternalLocations["data"] = &direct.ExternalLocationState{
+		Name:           "data",
+		Url:            "s3://bucket/old",
+		CredentialName: "prod",
+		Comment:        "old",
+	}
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{"UpdateExternalLocation:data"}, client.Calls)
+	assert.Equal(t, "s3://bucket/new", state.ExternalLocations["data"].Url)
+	assert.Equal(t, "new", state.ExternalLocations["data"].Comment)
+}
+
+func TestApply_ExternalLocationDestroyOrder(t *testing.T) {
+	u := &ucm.Ucm{}
+	state := direct.NewState()
+	state.Catalogs["main"] = &direct.CatalogState{Name: "main"}
+	state.ExternalLocations["data"] = &direct.ExternalLocationState{
+		Name:           "data",
+		Url:            "s3://bucket/prefix",
+		CredentialName: "prod",
+	}
+	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
+		Name:       "prod",
+		AwsIamRole: &direct.AwsIamRoleState{RoleArn: "arn:aws:iam::1:role/uc"},
+	}
+
+	client := &recordingClient{}
+	plan, err := direct.Destroy(t.Context(), u, client, state)
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	assert.Equal(t, []string{
+		"DeleteCatalog:main",
+		"DeleteExternalLocation:data",
+		"DeleteStorageCredential:prod",
+	}, client.Calls)
+
+	assert.Empty(t, state.Catalogs)
+	assert.Empty(t, state.ExternalLocations)
+	assert.Empty(t, state.StorageCredentials)
+}
+
 func TestApply_RevokesPrincipalsNotInConfig(t *testing.T) {
 	u := ucmWith(nil, nil, map[string]*resources.Grant{
 		"analysts": {
