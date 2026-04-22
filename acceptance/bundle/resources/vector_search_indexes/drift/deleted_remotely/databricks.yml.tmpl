@@ -1,0 +1,16 @@
+bundle:
+  name: drift-vs-index-deleted-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  vector_search_indexes:
+    my_index:
+      name: vs-index-$UNIQUE_NAME
+      endpoint_name: vs-endpoint-$UNIQUE_NAME
+      primary_key: id
+      index_type: DELTA_SYNC
+      delta_sync_index_spec:
+        source_table: main.default.source_$UNIQUE_NAME
+        pipeline_type: TRIGGERED
