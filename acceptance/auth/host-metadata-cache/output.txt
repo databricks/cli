@@ -1,0 +1,32 @@
+
+=== First invocation populates the cache
+{
+  "profiles": [
+    {
+      "name":"cached",
+      "host":"[DATABRICKS_URL]",
+      "cloud":"aws",
+      "auth_type":"",
+      "valid":false
+    }
+  ]
+}
+
+=== Second invocation should read from the cache
+{
+  "profiles": [
+    {
+      "name":"cached",
+      "host":"[DATABRICKS_URL]",
+      "cloud":"aws",
+      "auth_type":"",
+      "valid":false
+    }
+  ]
+}
+
+=== Only one /.well-known/databricks-config request recorded
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}

@@ -12,8 +12,8 @@
 /acceptance/pipelines/      @jefferycheng1 @kanterov @lennartkats-db
 
 # Labs
-/cmd/labs/                  @alexott @nfx
-/acceptance/labs/           @alexott @nfx
+/cmd/labs/                  @alexott @asnare
+/acceptance/labs/           @alexott @asnare
 
 # Apps
 /cmd/apps/                  team:eng-apps-devex
