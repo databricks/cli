@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/first/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -9,7 +9,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> [CLI] apps get a-[UNIQUE_NAME] --output json
+>>> [CLI] apps get [UNIQUE_NAME] --output json
 
 === Simulate out-of-band deployment with changed command and env
 === Plan should detect config drift
@@ -20,7 +20,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 === Redeploy to fix drift
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/first/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -29,33 +29,11 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> [CLI] bundle deploy -t second
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/second/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
-=== Simulate out-of-band deployment with git_source added
-=== Plan should detect git_source drift
->>> [CLI] bundle plan -t second
-update apps.myapp
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.apps.myapp
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/first
-
-Deleting files...
-Destroy complete!
-
->>> [CLI] bundle destroy --auto-approve -t second
-The following resources will be deleted:
-  delete resources.apps.myapp
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/second
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!

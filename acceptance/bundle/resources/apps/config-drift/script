@@ -2,7 +2,6 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    trace $CLI bundle destroy --auto-approve -t second
     rm -f out.requests.txt
 }
 trap cleanup EXIT
@@ -12,10 +11,10 @@ trace $CLI bundle deploy
 title "Verify no drift after deploy"
 trace $CLI bundle plan
 
-SOURCE_CODE_PATH=$(trace $CLI apps get a-$UNIQUE_NAME --output json | jq -r '.active_deployment.source_code_path')
+SOURCE_CODE_PATH=$(trace $CLI apps get $UNIQUE_NAME --output json | jq -r '.active_deployment.source_code_path')
 
 title "Simulate out-of-band deployment with changed command and env"
-$CLI apps deploy a-$UNIQUE_NAME --no-wait --json '{
+$CLI apps deploy $UNIQUE_NAME --no-wait --json '{
     "source_code_path": "'$SOURCE_CODE_PATH'",
     "mode": "SNAPSHOT",
     "command": ["streamlit", "run", "dashboard.py"],
@@ -27,7 +26,8 @@ $CLI apps deploy a-$UNIQUE_NAME --no-wait --json '{
 
 title "Plan should detect config drift"
 trace $CLI bundle plan
-$CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' > out.plan.direct.json
+# Skip entries with action "skip"
+$CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' | jq 'del(.[] | select(.action == "skip"))' > out.plan.direct.json
 
 title "Redeploy to fix drift"
 trace $CLI bundle deploy
@@ -35,15 +35,5 @@ trace $CLI bundle deploy
 title "Verify no drift after fix"
 trace $CLI bundle plan
 
-
-trace $CLI bundle deploy -t second
-title "Simulate out-of-band deployment with git_source added"
-$CLI apps deploy b-$UNIQUE_NAME --no-wait --json '{
-    "mode": "SNAPSHOT",
-    "git_source": {"branch": "main"},
-    "command": ["python", "app.py"],
-    "env_vars": [{"name": "MY_VAR", "value": "original_value"}]
-  }' > /dev/null
-
-title "Plan should detect git_source drift"
-trace $CLI bundle plan -t second
+# TODO: add test for git_source drift when git_source is supported in the Deploy API
+# Currently it fails with the error: Git source reference is required

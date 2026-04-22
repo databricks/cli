@@ -235,7 +235,6 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 
 		app.ActiveDeployment = &deployment
 		app.DefaultSourceCodePath = deployment.SourceCodePath
-		s.Apps[name] = app
 	}
 
 	app.Url = name + "-123.cloud.databricksapps.com"

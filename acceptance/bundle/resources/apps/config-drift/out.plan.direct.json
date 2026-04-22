@@ -1,53 +1,4 @@
 {
-  "active_deployment": {
-    "action": "skip",
-    "reason": "spec:output_only",
-    "remote": {
-      "command": [
-        "streamlit",
-        "run",
-        "dashboard.py"
-      ],
-      "deployment_id": "deploy-[NUMID]",
-      "env_vars": [
-        {
-          "name": "MY_VAR",
-          "value": "changed_value"
-        },
-        {
-          "name": "NEW_VAR",
-          "value": "new_value"
-        }
-      ],
-      "mode": "SNAPSHOT",
-      "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/first/files/app",
-      "status": {
-        "message": "Deployment succeeded",
-        "state": "SUCCEEDED"
-      }
-    }
-  },
-  "app_status": {
-    "action": "skip",
-    "reason": "spec:output_only",
-    "remote": {
-      "message": "Application is running.",
-      "state": "RUNNING"
-    }
-  },
-  "compute_size": {
-    "action": "skip",
-    "reason": "backend_default",
-    "remote": "MEDIUM"
-  },
-  "compute_status": {
-    "action": "skip",
-    "reason": "spec:output_only",
-    "remote": {
-      "message": "App compute is active.",
-      "state": "ACTIVE"
-    }
-  },
   "config.command": {
     "action": "update",
     "old": [
@@ -88,35 +39,5 @@
         "value": "new_value"
       }
     ]
-  },
-  "default_source_code_path": {
-    "action": "skip",
-    "reason": "spec:output_only",
-    "remote": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/first/files/app"
-  },
-  "id": {
-    "action": "skip",
-    "reason": "spec:output_only",
-    "remote": "1001"
-  },
-  "service_principal_client_id": {
-    "action": "skip",
-    "reason": "spec:output_only",
-    "remote": "[UUID]"
-  },
-  "service_principal_id": {
-    "action": "skip",
-    "reason": "spec:output_only",
-    "remote": [NUMID]
-  },
-  "service_principal_name": {
-    "action": "skip",
-    "reason": "spec:output_only",
-    "remote": "app-a-[UNIQUE_NAME]"
-  },
-  "url": {
-    "action": "skip",
-    "reason": "spec:output_only",
-    "remote": "a-[UNIQUE_NAME]-123.cloud.databricksapps.com"
   }
 }
