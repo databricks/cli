@@ -62,6 +62,45 @@ Select with `ucm.engine: direct` in config, `DATABRICKS_UCM_ENGINE=direct`, or l
 
 ---
 
+## CLI verbs
+
+The surface today. Flags mirror `databricks bundle` where the semantics transfer; UC-inapplicable DAB flags (`--cluster-id`, `--fail-on-active-runs`, `--verbose`, Git-branch `--force`) are intentionally dropped.
+
+| Verb | Summary | Key flags |
+|---|---|---|
+| `ucm validate` | Load config, run mutators, emit diagnostics. | `--output text\|json` (default `text`), `--target <name>`, `--include-locations` (hidden) |
+| `ucm plan` | Preview changes without mutating state. | `-o text\|json` (`json` emits the structured plan), `--target`, `--force-lock` |
+| `ucm deploy` | Apply the plan. | `--target`, `--auto-approve`, `--force-lock` |
+| `ucm destroy` | Tear down the target's resources. | `--target`, `--auto-approve`, `--force-lock` |
+| `ucm summary` | Print deployed resources with workspace URLs. DAB-style header + per-resource-group sections. | `--target`, `-o text\|json`, `--force-pull` (no-op today), `--include-locations`/`--show-full-config` (hidden, no-op) |
+| `ucm schema` | Print the JSON schema for `ucm.yml`. | — |
+| `ucm policy-check` | Run validation mutators only (cheap pre-commit target). | `--target` |
+
+Stub verbs (placeholder, not yet implemented): `ucm init`, `ucm generate`, `ucm bind`, `ucm debug`, `ucm diff`, `ucm drift`, `ucm import`.
+
+### --output json
+
+`ucm plan -o json` emits the structured plan:
+
+```json
+{
+  "plan": {
+    "resources.catalogs.sales": { "action": "create" },
+    "resources.schemas.raw":    { "action": "update" }
+  }
+}
+```
+
+`ucm validate -o json` emits the full config tree as indented JSON. Useful for IDE integration and programmatic validation.
+
+`ucm summary -o json` emits the config tree too; the text form is DAB-styled for human reading.
+
+### --force-lock
+
+Override an in-progress deploy lock when you know the holder is gone (CI died, SIGKILL'd laptop, etc.). Available on `plan`, `deploy`, and `destroy`. Without it, a second client contending for the same target receives `lock.ErrLockHeld` and the acquisition fails.
+
+---
+
 ## Cross-resource references
 
 Every string field accepts two forms:
@@ -331,9 +370,147 @@ resources:
 
 ### Using as a securable for grants
 
-Not yet supported. Grants on storage_credentials land with PR #2 alongside
-`external_location`. Today you can manage the credential itself through ucm
-but must grant access to it out-of-band.
+Not yet supported. Today ucm grants only accept `catalog` and `schema`
+securable types; grants on storage_credentials / external_locations /
+volumes / connections land in a follow-up. You can still manage the
+credential itself through ucm and grant access out-of-band.
+
+---
+
+## external_locations
+
+A UC external location. Binds a cloud storage URL to a storage credential
+so UC can vend access to tables, volumes, and catalogs placed underneath.
+
+### Fields
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `name` | string | yes | External location name in UC. |
+| `url` | string | yes | Cloud URL (e.g. `s3://…`, `abfss://…`, `gs://…`). |
+| `credential_name` | string | yes | Storage credential name. Literal or `${resources.storage_credentials.<key>.name}`. |
+| `comment` | string | no | |
+| `read_only` | bool | no | Location is usable only for read operations. |
+| `skip_validation` | bool | no | Skip server-side validation on create. |
+| `fallback` | bool | no | When enabled, fall back to cluster credentials if UC credentials are insufficient. |
+
+Deferred for a follow-up: `encryption_details`, `enable_file_events` / `file_event_queue`.
+
+### Example
+
+```yaml
+resources:
+  storage_credentials:
+    sales_cred:
+      name: sales_cred
+      aws_iam_role:
+        role_arn: arn:aws:iam::111122223333:role/uc-sales
+  external_locations:
+    sales_loc:
+      name: sales_loc
+      url: s3://acme-sales/prod
+      credential_name: ${resources.storage_credentials.sales_cred.name}
+```
+
+### Engines
+
+- **terraform** → `databricks_external_location.<key>`. Emitted after storage_credentials and before catalogs.
+- **direct** → `w.ExternalLocations.Create` / `.Update` / `.Delete`. Runs after storage_credentials and before catalogs; reverse on delete.
+
+---
+
+## volumes
+
+A UC volume. Managed (UC provisions storage) or external (user-supplied URL under an external location).
+
+### Fields
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `name` | string | yes | Volume name within its schema. |
+| `catalog_name` | string | yes | Parent catalog. Literal or `${resources.catalogs.<key>.name}`. |
+| `schema_name` | string | yes | Parent schema. Literal or `${resources.schemas.<key>.name}`. |
+| `volume_type` | string | yes | `MANAGED` or `EXTERNAL` (case-insensitive on input; normalised to upper). |
+| `storage_location` | string | cond. | Required for `EXTERNAL`, rejected for `MANAGED`. |
+| `comment` | string | no | |
+
+### Example (managed)
+
+```yaml
+resources:
+  volumes:
+    landing:
+      name: landing
+      catalog_name: sales_prod
+      schema_name: raw
+      volume_type: MANAGED
+      comment: "landing zone"
+```
+
+### Example (external)
+
+```yaml
+resources:
+  volumes:
+    archive:
+      name: archive
+      catalog_name: ${resources.catalogs.sales.name}
+      schema_name: ${resources.schemas.raw.name}
+      volume_type: EXTERNAL
+      storage_location: s3://acme-archive/sales/raw
+```
+
+### Engines
+
+- **terraform** → `databricks_volume.<key>`. Registered between schemas and connections.
+- **direct** → `w.Volumes.Create` / `.Update` / `.ReadByName` / `.DeleteByName`.
+
+### Known limitation
+
+`UpdateVolumeRequestContent` only accepts `comment`, `new_name`, `owner`. Drift on other fields (`storage_location`, `volume_type`, etc.) is silently dropped by the SDK — the planner currently marks as Update and the wire call is a no-op on those fields. Tracked in issue #62 for a fail-fast or force-recreate follow-up.
+
+---
+
+## connections
+
+A UC foreign-catalog connection — the federation link that lets a foreign catalog reference MySQL / PostgreSQL / Snowflake / etc.
+
+### Fields
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `name` | string | yes | Connection name in UC. |
+| `connection_type` | string | yes | e.g. `MYSQL`, `POSTGRESQL`, `SNOWFLAKE`, `REDSHIFT`, `BIGQUERY`. |
+| `options` | map[string]string | yes | Connection-specific keys (host, port, user, password, ...). Must be non-empty. Per-type key validation is done by the UC API / terraform provider — ucm just shapes the block. |
+| `comment` | string | no | |
+| `properties` | map[string]string | no | Arbitrary key/value metadata. |
+| `read_only` | bool | no | Connection is read-only. |
+
+### Example
+
+```yaml
+resources:
+  connections:
+    sales_mysql:
+      name: sales_mysql
+      connection_type: MYSQL
+      comment: "foreign sales db"
+      options:
+        host: mysql.acme.internal
+        port: "3306"
+        user: uc-reader
+      properties:
+        purpose: analytics
+```
+
+### Engines
+
+- **terraform** → `databricks_connection.<key>`. Registered after volumes.
+- **direct** → `w.Connections.Create` / `.Update` / `.GetByName` / `.DeleteByName`.
+
+### Known limitation
+
+`UpdateConnection` only accepts `name`, `new_name`, `options`, `owner`. Drift on `connection_type` / `comment` / `properties` / `read_only` is silently dropped by the SDK. Same follow-up as #62.
 
 ---
 
@@ -388,16 +565,12 @@ invoke them, but knowing the order explains some of the rules above:
 
 ## Not yet supported
 
-In progress on the Phase A epic (#48):
-
-- `external_locations` — PR #2
-- `volumes` — PR #3
-- `connections` — PR #4
-
 Deferred:
 
-- `catalog_workspace_binding` (Phase B)
-- Account-scoped resources: `metastore`, `metastore_assignment`, `metastore_data_access` (Phase C)
-- Cloud underlay: S3/ADLS/GCS buckets, IAM, KMS (Phase D)
+- Grants on storage_credentials / external_locations / volumes / connections. Today `grants.securable.type` accepts only `catalog` or `schema`.
+- `catalog_workspace_binding` (Phase B).
+- Account-scoped resources: `metastore`, `metastore_assignment`, `metastore_data_access` (Phase C — requires AccountClient wiring).
+- Cloud underlay: S3/ADLS/GCS buckets, IAM, KMS (Phase D).
+- Config-level features: `variables:` block + `${var.x}` interpolation (issue #37), `include:` directive (issue #38), expanded validator pack (issues #39, #40).
 
-Check issue #48 for up-to-date status.
+Check issue #48 (Phase A epic) and #36 (M2 umbrella) for up-to-date status.
