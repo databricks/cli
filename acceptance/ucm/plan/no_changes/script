@@ -1,0 +1,17 @@
+# Seed the direct-engine state file so the upcoming plan sees the catalog as
+# already-applied. The target matches the default that phases.LoadDefaultTarget
+# picks when ucm.yml has no targets section.
+mkdir -p .databricks/ucm/default
+cat > .databricks/ucm/default/resources.json <<'EOF'
+{
+  "version": 1,
+  "catalogs": {
+    "main": {
+      "name": "main",
+      "comment": "plan-no-changes catalog"
+    }
+  }
+}
+EOF
+
+trace $CLI ucm plan

@@ -30,18 +30,21 @@ func TestDestroyHappyPath(t *testing.T) {
 	assert.Equal(t, 1, readRemoteSeq(t, f))
 }
 
-func TestDestroyShortCircuitsOnDirectEngine(t *testing.T) {
+// TestDestroyDirectEngineSkipsTerraform asserts Destroy with engine=direct
+// uses direct.Destroy instead of the terraform wrapper. Empty state means
+// zero SDK calls fire on the fake client.
+func TestDestroyDirectEngineSkipsTerraform(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Ucm.Engine = engine.EngineDirect
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 
 	phases.Destroy(ctx, f.u, phases.Options{
-		Backend:          f.backend,
-		TerraformFactory: fakeTfFactory(f.tf),
+		TerraformFactory:    fakeTfFactory(f.tf),
+		DirectClientFactory: fakeDirectClientFactory(),
 	})
 
-	require.True(t, logdiag.HasError(ctx))
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
 	assert.Equal(t, 0, f.tf.DestroyCalls)
 }
 

@@ -9,6 +9,14 @@ import (
 	"github.com/databricks/cli/ucm"
 )
 
+// providerSource and providerVersion mirror the constants in the parent
+// terraform package. Duplicated (rather than imported) to keep this
+// subpackage import-cycle-free — the parent package imports tfdyn.
+const (
+	providerSource  = "databricks/databricks"
+	providerVersion = "1.112.0"
+)
+
 // convertOrder controls the order in which resource kinds are walked. The
 // ordering matters because downstream converters inspect earlier ones
 // (schemas look at Resources.Catalog to decide whether to emit depends_on;
@@ -68,8 +76,11 @@ func Convert(ctx context.Context, u *ucm.Ucm) (dyn.Value, error) {
 	return buildResourceTree(out), nil
 }
 
-// buildResourceTree assembles the `{resource: {<tf_type>: {<key>: ...}}}`
-// dyn.Value from the per-kind maps produced by the converters.
+// buildResourceTree assembles the top-level Terraform JSON tree. The output
+// shape mirrors what bundle/deploy/terraform writes so `terraform init`
+// resolves the databricks provider out of the databricks/databricks
+// namespace instead of defaulting to hashicorp/databricks (which does not
+// exist in the registry).
 func buildResourceTree(out *Resources) dyn.Value {
 	blocks := []struct {
 		tfType string
@@ -104,10 +115,38 @@ func buildResourceTree(out *Resources) dyn.Value {
 		})
 	}
 
-	return dyn.V(dyn.NewMappingFromPairs([]dyn.Pair{
+	rootPairs := []dyn.Pair{
+		{Key: dyn.V("terraform"), Value: buildTerraformBlock()},
+		{Key: dyn.V("provider"), Value: buildProviderBlock()},
 		{
 			Key:   dyn.V("resource"),
 			Value: dyn.V(dyn.NewMappingFromPairs(resourcePairs)),
 		},
+	}
+	return dyn.V(dyn.NewMappingFromPairs(rootPairs))
+}
+
+// buildTerraformBlock returns the `terraform.required_providers.databricks`
+// value that pins the provider source and version.
+func buildTerraformBlock() dyn.Value {
+	databricks := dyn.V(dyn.NewMappingFromPairs([]dyn.Pair{
+		{Key: dyn.V("source"), Value: dyn.V(providerSource)},
+		{Key: dyn.V("version"), Value: dyn.V(providerVersion)},
+	}))
+	required := dyn.V(dyn.NewMappingFromPairs([]dyn.Pair{
+		{Key: dyn.V("databricks"), Value: databricks},
+	}))
+	return dyn.V(dyn.NewMappingFromPairs([]dyn.Pair{
+		{Key: dyn.V("required_providers"), Value: required},
+	}))
+}
+
+// buildProviderBlock returns an empty `provider.databricks` block. The
+// databricks terraform provider picks up its auth from the DATABRICKS_*
+// env vars that buildEnv passes through to terraform-exec, so no fields
+// need to be set here — the block's presence is what matters.
+func buildProviderBlock() dyn.Value {
+	return dyn.V(dyn.NewMappingFromPairs([]dyn.Pair{
+		{Key: dyn.V("databricks"), Value: dyn.V(dyn.NewMapping())},
 	}))
 }

@@ -25,6 +25,23 @@ const MainConfigFileName = "main.tf.json"
 // have one fewer divergence to remember.
 const PlanFileName = "plan"
 
+// ProviderSource is the fully-qualified source address of the databricks
+// terraform provider. Written into the `terraform.required_providers` block
+// so `terraform init` resolves the provider out of the databricks namespace
+// rather than the default hashicorp namespace (which has no databricks
+// provider). Kept in lockstep with bundle/internal/tf/schema.ProviderSource
+// but duplicated here to honour the ucm fork-divergence rule (no imports
+// from bundle/**).
+const ProviderSource = "databricks/databricks"
+
+// ProviderVersion pins the databricks terraform provider version ucm
+// renders into main.tf.json. Temporarily held one minor behind the DABs
+// pin (1.113.0) because the internal terraform-proxy.dev.databricks.com
+// mirror tops out at 1.112.0 at the time of writing. Bump back to match
+// bundle/internal/tf/schema.ProviderVersion once the internal mirror
+// catches up.
+const ProviderVersion = "1.112.0"
+
 // Terraform CLI override env vars. Same wire names as bundle/deploy/terraform
 // so a user's DATABRICKS_TF_EXEC_PATH works for both subcommands.
 const (

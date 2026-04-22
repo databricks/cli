@@ -1,0 +1,20 @@
+ucm:
+  name: plan-happy
+  engine: direct
+
+resources:
+  catalogs:
+    main:
+      name: main
+      comment: plan-happy catalog
+
+  schemas:
+    raw:
+      name: raw
+      catalog: main
+
+  grants:
+    analysts:
+      securable: { type: schema, name: main.raw }
+      principal: analysts
+      privileges: [USE_SCHEMA, SELECT]

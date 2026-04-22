@@ -1,0 +1,8 @@
+ucm:
+  name: plan-json
+  engine: direct
+
+resources:
+  catalogs:
+    main:
+      name: main

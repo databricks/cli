@@ -43,19 +43,26 @@ func TestPlanBailsOnInitializeError(t *testing.T) {
 	assert.Equal(t, 0, f.tf.RenderCalls, "Build must not run when Initialize failed")
 }
 
-func TestPlanShortCircuitsOnDirectEngine(t *testing.T) {
+// TestPlanDirectEngineReturnsEmptyOutcome covers the direct-engine path when
+// no resources are declared: CalculatePlan returns a plan with zero entries,
+// HasChanges is false, and none of the terraform wrapper's hooks run. The
+// direct client factory is exercised only so the code path is end-to-end; a
+// fake client suffices because the empty plan never issues SDK calls.
+func TestPlanDirectEngineReturnsEmptyOutcome(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Ucm.Engine = engine.EngineDirect
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 
 	result := phases.Plan(ctx, f.u, phases.Options{
-		Backend:          f.backend,
-		TerraformFactory: fakeTfFactory(f.tf),
+		TerraformFactory:    fakeTfFactory(f.tf),
+		DirectClientFactory: fakeDirectClientFactory(),
 	})
 
-	assert.Nil(t, result)
-	assert.True(t, logdiag.HasError(ctx))
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
+	require.NotNil(t, result)
+	assert.False(t, result.HasChanges)
+	assert.Empty(t, result.Plan.Plan)
 	assert.Equal(t, 0, f.tf.RenderCalls)
 	assert.Equal(t, 0, f.tf.InitCalls)
 	assert.Equal(t, 0, f.tf.PlanCalls)

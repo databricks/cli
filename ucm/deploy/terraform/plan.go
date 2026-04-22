@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/deployplan"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -18,9 +19,13 @@ type PlanResult struct {
 	PlanPath string
 	// HasChanges is true when terraform plan detected at least one change.
 	HasChanges bool
-	// Summary is a one-line human-readable summary ("plan: N change(s)" or
-	// "no changes").
+	// Summary is a one-line human-readable summary ("plan has changes" /
+	// "no changes"). Retained for callers/tests that only care about the
+	// legacy one-liner.
 	Summary string
+	// Plan is the DAB-parity structured plan, populated by translating the
+	// saved plan file. Empty when there are no changes.
+	Plan *deployplan.Plan
 }
 
 // Plan runs `terraform plan -out=<planfile>` in the working directory after
@@ -45,10 +50,16 @@ func (t *Terraform) Plan(ctx context.Context, u *ucm.Ucm) (*PlanResult, error) {
 	t.lastPlanPath = planPath
 	t.lastPlanExists = true
 
+	tfPlan, err := t.runner.ShowPlanFile(ctx, planPath)
+	if err != nil {
+		return nil, fmt.Errorf("terraform show plan: %w", err)
+	}
+
 	result := &PlanResult{
 		PlanPath:   planPath,
 		HasChanges: hasChanges,
 		Summary:    planSummary(hasChanges),
+		Plan:       translatePlan(ctx, tfPlan),
 	}
 	log.Infof(ctx, "terraform plan: %s (at %s)", result.Summary, filepath.ToSlash(planPath))
 	return result, nil

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/hashicorp/terraform-exec/tfexec"
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 // fakeRunner is a stand-in for *tfexec.Terraform used by the init/plan/apply
@@ -14,11 +15,12 @@ import (
 type fakeRunner struct {
 	mu sync.Mutex
 
-	InitCalls    int
-	PlanCalls    int
-	ApplyCalls   int
-	DestroyCalls int
-	SetEnvCalls  int
+	InitCalls         int
+	PlanCalls         int
+	ShowPlanFileCalls int
+	ApplyCalls        int
+	DestroyCalls      int
+	SetEnvCalls       int
 
 	// LastEnv captures the map passed to the most recent SetEnv call.
 	LastEnv map[string]string
@@ -27,12 +29,17 @@ type fakeRunner struct {
 
 	// PlanHasChanges is returned by Plan.
 	PlanHasChanges bool
-	// ApplyErr, InitErr, DestroyErr, PlanErr make the next corresponding
-	// call return the given error.
-	InitErr    error
-	PlanErr    error
-	ApplyErr   error
-	DestroyErr error
+	// ShowPlanResult is returned by ShowPlanFile. nil yields an empty plan
+	// (no resource changes) so callers don't need to set it for zero-diff
+	// tests.
+	ShowPlanResult *tfjson.Plan
+	// ApplyErr, InitErr, DestroyErr, PlanErr, ShowPlanFileErr make the next
+	// corresponding call return the given error.
+	InitErr          error
+	PlanErr          error
+	ShowPlanFileErr  error
+	ApplyErr         error
+	DestroyErr       error
 
 	// ApplyHook is invoked synchronously inside Apply before returning. Used
 	// by the lock contention test to hold the lock while a second goroutine
@@ -55,6 +62,18 @@ func (f *fakeRunner) Plan(_ context.Context, _ ...tfexec.PlanOption) (bool, erro
 	changes := f.PlanHasChanges
 	f.mu.Unlock()
 	return changes, err
+}
+
+func (f *fakeRunner) ShowPlanFile(_ context.Context, _ string, _ ...tfexec.ShowOption) (*tfjson.Plan, error) {
+	f.mu.Lock()
+	f.ShowPlanFileCalls++
+	err := f.ShowPlanFileErr
+	plan := f.ShowPlanResult
+	f.mu.Unlock()
+	if plan == nil {
+		plan = &tfjson.Plan{}
+	}
+	return plan, err
 }
 
 func (f *fakeRunner) Apply(ctx context.Context, opts ...tfexec.ApplyOption) error {

@@ -10,12 +10,15 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/deploy/lock"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/terraform-exec/tfexec"
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 // tfRunner is the minimal terraform-exec surface used by the wrapper.
@@ -24,6 +27,7 @@ import (
 type tfRunner interface {
 	Init(ctx context.Context, opts ...tfexec.InitOption) error
 	Plan(ctx context.Context, opts ...tfexec.PlanOption) (bool, error)
+	ShowPlanFile(ctx context.Context, planPath string, opts ...tfexec.ShowOption) (*tfjson.Plan, error)
 	Apply(ctx context.Context, opts ...tfexec.ApplyOption) error
 	Destroy(ctx context.Context, opts ...tfexec.DestroyOption) error
 	SetEnv(env map[string]string) error
@@ -84,7 +88,11 @@ func New(ctx context.Context, u *ucm.Ucm) (*Terraform, error) {
 		return nil, err
 	}
 
-	envMap := buildEnv(ctx)
+	authCfg, err := resolveAuthConfig(u)
+	if err != nil {
+		return nil, err
+	}
+	envMap := buildEnv(ctx, authCfg)
 
 	user, lockDir := lockIdentity(ctx, u)
 
@@ -140,16 +148,36 @@ func resolveExecPath(ctx context.Context, workingDir string, installer Installer
 	return path, nil
 }
 
+// resolveAuthConfig resolves the workspace client for u and returns its SDK
+// config. The resolved config is the canonical snapshot of which auth method
+// fired (profile vs env vs OAuth cache) — buildEnv materializes it into
+// DATABRICKS_* env vars so the terraform subprocess inherits the same auth
+// regardless of how the parent CLI got there. Mirrors bundle.AuthEnv (see
+// bundle/bundle.go).
+func resolveAuthConfig(u *ucm.Ucm) (*config.Config, error) {
+	if u == nil {
+		return nil, nil
+	}
+	w, err := u.WorkspaceClientE()
+	if err != nil {
+		return nil, fmt.Errorf("resolve ucm auth for terraform: %w", err)
+	}
+	return w.Config, nil
+}
+
 // buildEnv assembles the env map passed to terraform-exec.
 //
-// It starts with the auth variables the databricks terraform provider reads
-// natively (DATABRICKS_HOST / DATABRICKS_CLIENT_ID / DATABRICKS_CLIENT_SECRET
-// / DATABRICKS_TOKEN / DATABRICKS_CONFIG_PROFILE), then layers on the cloud
-// credentials that the underlay resources will eventually need (AWS, Azure,
-// GCP), then PATH/HOME/TMPDIR/proxy variables so the subprocess inherits a
-// sane environment. Everything flows from the current process env — there is
-// no `--profile` resolution here; that is the CLI layer's job.
-func buildEnv(ctx context.Context) map[string]string {
+// It starts with the resolved SDK auth config (so `--profile` selections and
+// OAuth-cache resolutions are visible to the subprocess), then falls back to
+// passthrough of auth env vars set on the parent process. Cloud credentials
+// (AWS, Azure, GCP) flow through unchanged — the underlay resources will
+// need them once they land. PATH/HOME/TMPDIR/proxy are inherited so the
+// subprocess runs in a sane environment.
+//
+// Ordering matters: auth.Env wins over the passthrough fallback so a
+// --profile override materialised through the SDK cannot be clobbered by a
+// stale DATABRICKS_CONFIG_PROFILE lingering in the parent env.
+func buildEnv(ctx context.Context, authCfg *config.Config) map[string]string {
 	out := map[string]string{}
 
 	passthroughKeys := []string{
@@ -232,6 +260,15 @@ func buildEnv(ctx context.Context) map[string]string {
 		}
 	} else if v, ok := env.Lookup(ctx, "TMPDIR"); ok {
 		out["TMPDIR"] = v
+	}
+
+	// Overlay the resolved SDK auth on top so `--profile` or OAuth-cache
+	// selections survive into the subprocess even when the parent env has
+	// no DATABRICKS_* set.
+	if authCfg != nil {
+		for k, v := range auth.Env(authCfg) {
+			out[k] = v
+		}
 	}
 
 	return out

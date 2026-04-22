@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
@@ -77,13 +76,9 @@ func Initialize(ctx context.Context, u *ucm.Ucm, opts Options) engine.EngineSett
 	log.Debugf(ctx, "initialize: engine=%s source=%s", setting.Type, setting.Source)
 
 	if setting.Type.IsDirect() {
-		// Direct engine landed as a design goal but has no M1 implementation.
-		// Report via logdiag and bail — downstream phases will skip on
-		// logdiag.HasError.
-		logdiag.LogDiag(ctx, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "ucm direct engine is not yet implemented; set ucm.engine to terraform or unset DATABRICKS_UCM_ENGINE",
-		})
+		// Direct engine state is a local-only artefact; there is no remote
+		// tfstate to pull. Initialize is therefore a no-op beyond resolving
+		// the engine so downstream phases can branch on setting.Type.
 		return setting
 	}
 
