@@ -1,0 +1,5 @@
+
+>>> [CLI] auth token --profile nonexistent
+Error: DATABRICKS_AUTH_STORAGE: unknown storage mode "bogus" (want legacy, secure, or plaintext)
+
+Exit code: 1
