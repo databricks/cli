@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/direct"
 )
@@ -65,6 +66,11 @@ func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 }
 
 func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
+	ucm.ApplyContext(ctx, u, mutator.ResolveResourceReferences())
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	factory := opts.directClientFactoryOrDefault()
 	client, err := factory(ctx, u)
 	if err != nil {
