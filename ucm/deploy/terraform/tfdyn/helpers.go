@@ -35,6 +35,20 @@ func appendStringIfSet(pairs *[]dyn.Pair, vin dyn.Value, key string) {
 	})
 }
 
+// appendBoolIfSet emits key=vin[key] when vin[key] is a bool true. A false
+// value (the zero) is skipped so the Terraform JSON stays clean.
+func appendBoolIfSet(pairs *[]dyn.Pair, vin dyn.Value, key string) {
+	v := vin.Get(key)
+	b, ok := v.AsBool()
+	if !ok || !b {
+		return
+	}
+	*pairs = append(*pairs, dyn.Pair{
+		Key:   dyn.NewValue(key, v.Locations()),
+		Value: v,
+	})
+}
+
 // mapFromValue returns v as a map-typed dyn.Value when it holds at least
 // one key; otherwise the second return is false so callers can skip
 // emitting an empty map.

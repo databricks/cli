@@ -21,7 +21,7 @@ const (
 // ordering matters because downstream converters inspect earlier ones
 // (schemas look at Resources.Catalog to decide whether to emit depends_on;
 // grants look at Resources.Catalog and Resources.Schema).
-var convertOrder = []string{"catalogs", "schemas", "grants"}
+var convertOrder = []string{"storage_credentials", "catalogs", "schemas", "grants"}
 
 // Convert walks a ucm configuration and produces the Terraform JSON
 // resource tree suitable for writing as a .tf.json file. The returned
@@ -86,6 +86,7 @@ func buildResourceTree(out *Resources) dyn.Value {
 		tfType string
 		values map[string]dyn.Value
 	}{
+		{"databricks_storage_credential", out.StorageCredential},
 		{"databricks_catalog", out.Catalog},
 		{"databricks_schema", out.Schema},
 		{"databricks_grants", out.Grants},
