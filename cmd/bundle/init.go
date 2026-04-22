@@ -35,34 +35,17 @@ After initialization:
 See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, template.HelpDescriptions()),
 	}
 
-	var configFile string
-	var outputDir string
-	var templateDir string
-	var tag string
-	var branch string
-	cmd.Flags().StringVar(&configFile, "config-file", "", "JSON file containing key value pairs of input parameters required for template initialization.")
-	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory path within a Git repository containing the template.")
-	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
-	cmd.Flags().StringVar(&tag, "tag", "", "Git tag to use for template initialization")
-	cmd.Flags().StringVar(&branch, "branch", "", "Git branch to use for template initialization")
+	cmd.Flags().String("config-file", "", "JSON file containing key value pairs of input parameters required for template initialization.")
+	cmd.Flags().String("template-dir", "", "Directory path within a Git repository containing the template.")
+	cmd.Flags().String("output-dir", "", "Directory to write the initialized template to.")
+	cmd.Flags().String("tag", "", "Git tag to use for template initialization")
+	cmd.Flags().String("branch", "", "Git branch to use for template initialization")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if tag != "" && branch != "" {
-			return errors.New("only one of --tag or --branch can be specified")
-		}
-
-		var templatePathOrUrl string
-		if len(args) > 0 {
-			templatePathOrUrl = args[0]
-		}
-		r := template.Resolver{
-			TemplatePathOrUrl: templatePathOrUrl,
-			ConfigFile:        configFile,
-			OutputDir:         outputDir,
-			TemplateDir:       templateDir,
-			Tag:               tag,
-			Branch:            branch,
+		r, err := resolverFromInitFlags(cmd, args)
+		if err != nil {
+			return err
 		}
 
 		ctx := cmd.Context()
@@ -85,4 +68,29 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		return nil
 	}
 	return cmd
+}
+
+func resolverFromInitFlags(cmd *cobra.Command, args []string) (template.Resolver, error) {
+	tag, _ := cmd.Flags().GetString("tag")
+	branch, _ := cmd.Flags().GetString("branch")
+	if tag != "" && branch != "" {
+		return template.Resolver{}, errors.New("only one of --tag or --branch can be specified")
+	}
+
+	configFile, _ := cmd.Flags().GetString("config-file")
+	outputDir, _ := cmd.Flags().GetString("output-dir")
+	templateDir, _ := cmd.Flags().GetString("template-dir")
+
+	var templatePathOrUrl string
+	if len(args) > 0 {
+		templatePathOrUrl = args[0]
+	}
+	return template.Resolver{
+		TemplatePathOrUrl: templatePathOrUrl,
+		ConfigFile:        configFile,
+		OutputDir:         outputDir,
+		TemplateDir:       templateDir,
+		Tag:               tag,
+		Branch:            branch,
+	}, nil
 }
