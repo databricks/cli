@@ -107,7 +107,7 @@ func convertWorkspaceObjectPermissionLevel(level workspace.WorkspaceObjectPermis
 func toString(p []resources.Permission) string {
 	var sb strings.Builder
 	for _, perm := range p {
-		sb.WriteString(fmt.Sprintf("- %s\n", perm.String()))
+		fmt.Fprintf(&sb, "- %s\n", perm.String())
 	}
 	return sb.String()
 }

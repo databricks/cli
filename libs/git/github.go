@@ -10,9 +10,9 @@ func ParseGitHubURL(url string) (repoURL, subdir, branch string) {
 	url = strings.TrimSuffix(url, "/")
 
 	// Check for /tree/branch/path pattern
-	if idx := strings.Index(url, "/tree/"); idx != -1 {
-		repoURL = url[:idx]
-		rest := url[idx+6:] // Skip "/tree/"
+	if before, after, ok := strings.Cut(url, "/tree/"); ok {
+		repoURL = before
+		rest := after // Skip "/tree/"
 
 		// Split into branch and path
 		parts := strings.SplitN(rest, "/", 2)

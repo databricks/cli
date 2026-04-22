@@ -100,7 +100,7 @@ func TestNoDetachedAnnotations(t *testing.T) {
 		}
 	}
 
-	_, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+	_, err := jsonschema.FromType(reflect.TypeFor[config.Root](), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 			delete(types, getPath(typ))
 			return s

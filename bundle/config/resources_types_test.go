@@ -14,9 +14,9 @@ func TestResourcesTypesMap(t *testing.T) {
 
 	typ, ok := ResourcesTypes["jobs"]
 	assert.True(t, ok, "resources type for 'jobs' not found in ResourcesTypes map")
-	assert.Equal(t, reflect.TypeOf(resources.Job{}), typ, "resources type for 'jobs' mismatch")
+	assert.Equal(t, reflect.TypeFor[resources.Job](), typ, "resources type for 'jobs' mismatch")
 
 	typ, ok = ResourcesTypes["jobs.permissions"]
 	assert.True(t, ok, "resources type for 'jobs.permissions' not found in ResourcesTypes map")
-	assert.Equal(t, reflect.TypeOf([]resources.JobPermission{}), typ, "resources type for 'jobs.permissions' mismatch")
+	assert.Equal(t, reflect.TypeFor[[]resources.JobPermission](), typ, "resources type for 'jobs.permissions' mismatch")
 }

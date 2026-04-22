@@ -15,7 +15,7 @@ import (
 func TestNoTestingImport(t *testing.T) {
 	// Parse the package
 	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, ".", nil, parser.AllErrors)
+	pkgs, err := parser.ParseDir(fset, ".", nil, parser.AllErrors) //nolint:staticcheck // SA1019: adequate for this import-only scan
 	require.NoError(t, err)
 
 	// Iterate through the files in the package
