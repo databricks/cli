@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
@@ -279,7 +278,8 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening token cache: %w", err)
 	}
-	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenCache(tc)}, args.persistentAuthOpts...)
+	wrappedCache := storage.NewDualWritingTokenCache(tc, oauthArgument)
+	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenCache(wrappedCache)}, args.persistentAuthOpts...)
 	allArgs = append(allArgs, u2m.WithOAuthArgument(oauthArgument))
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
@@ -471,7 +471,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 		return "", nil, fmt.Errorf("opening token cache: %w", err)
 	}
 	persistentAuthOpts := []u2m.PersistentAuthOption{
-		u2m.WithTokenCache(tc),
+		u2m.WithTokenCache(storage.NewDualWritingTokenCache(tc, oauthArgument)),
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
 	}
@@ -489,11 +489,6 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler) (string, *pr
 
 	if err = persistentAuth.Challenge(); err != nil {
 		return "", nil, err
-	}
-	if t, lookupErr := tc.Lookup(oauthArgument.GetCacheKey()); lookupErr == nil && t != nil {
-		if err := storage.DualWrite(tc, oauthArgument, t); err != nil {
-			log.Debugf(ctx, "token cache dual-write failed: %v", err)
-		}
 	}
 
 	clearKeys := oauthLoginClearKeys()

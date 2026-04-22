@@ -233,7 +233,7 @@ a new profile is created.
 			return fmt.Errorf("opening token cache: %w", err)
 		}
 		persistentAuthOpts := []u2m.PersistentAuthOption{
-			u2m.WithTokenCache(tc),
+			u2m.WithTokenCache(storage.NewDualWritingTokenCache(tc, oauthArgument)),
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
 		}
@@ -251,11 +251,6 @@ a new profile is created.
 
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
-		}
-		if t, lookupErr := tc.Lookup(oauthArgument.GetCacheKey()); lookupErr == nil && t != nil {
-			if err := storage.DualWrite(tc, oauthArgument, t); err != nil {
-				log.Debugf(ctx, "token cache dual-write failed: %v", err)
-			}
 		}
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
@@ -589,7 +584,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 		return discoveryErr("opening token cache", err)
 	}
 	opts := []u2m.PersistentAuthOption{
-		u2m.WithTokenCache(tc),
+		u2m.WithTokenCache(storage.NewDualWritingTokenCache(tc, arg)),
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(browserFunc),
 		u2m.WithDiscoveryLogin(),
@@ -611,11 +606,6 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 	cmdio.LogString(ctx, "Opening login.databricks.com in your browser...")
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
-	}
-	if t, lookupErr := tc.Lookup(arg.GetCacheKey()); lookupErr == nil && t != nil {
-		if err := storage.DualWrite(tc, arg, t); err != nil {
-			log.Debugf(ctx, "token cache dual-write failed: %v", err)
-		}
 	}
 
 	discoveredHost := arg.GetDiscoveredHost()
