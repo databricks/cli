@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -181,9 +182,39 @@ func bestEffortResourceName(response any, fallback string) string {
 	return fallback
 }
 
-func classifySecretScopePrincipal(principal string, permission workspace.AclPermission) bundleconfigresources.SecretScopePermission {
+// classifySecretScopePrincipal resolves principal into one of user / group /
+// service-principal by querying SCIM. Secret-scope ACLs don't carry a type
+// tag on the principal, and any of the three kinds can legitimately contain
+// `@`, numeric IDs, or UUIDs, so plain string heuristics misclassify
+// legitimate inputs. If SCIM lookups fail or find nothing, fall back to a
+// best-effort heuristic.
+func classifySecretScopePrincipal(ctx context.Context, w *databricks.WorkspaceClient, principal string, permission workspace.AclPermission) bundleconfigresources.SecretScopePermission {
 	entry := bundleconfigresources.SecretScopePermission{
 		Level: bundleconfigresources.SecretScopePermissionLevel(strings.ToUpper(permission.String())),
+	}
+
+	sps, err := w.ServicePrincipals.ListAll(ctx, iam.ListServicePrincipalsRequest{
+		Filter: fmt.Sprintf(`applicationId eq "%s"`, principal),
+	})
+	if err == nil && len(sps) > 0 {
+		entry.ServicePrincipalName = principal
+		return entry
+	}
+
+	users, err := w.Users.ListAll(ctx, iam.ListUsersRequest{
+		Filter: fmt.Sprintf(`userName eq "%s"`, principal),
+	})
+	if err == nil && len(users) > 0 {
+		entry.UserName = principal
+		return entry
+	}
+
+	groups, err := w.Groups.ListAll(ctx, iam.ListGroupsRequest{
+		Filter: fmt.Sprintf(`displayName eq "%s"`, principal),
+	})
+	if err == nil && len(groups) > 0 {
+		entry.GroupName = principal
+		return entry
 	}
 
 	switch {
@@ -194,7 +225,6 @@ func classifySecretScopePrincipal(principal string, permission workspace.AclPerm
 	default:
 		entry.GroupName = principal
 	}
-
 	return entry
 }
 
@@ -225,7 +255,7 @@ func fetchSecretScope(ctx context.Context, w *databricks.WorkspaceClient, name s
 			if err != nil {
 				return nil, err
 			}
-			resource.Permissions = append(resource.Permissions, classifySecretScopePrincipal(acl.Principal, acl.Permission))
+			resource.Permissions = append(resource.Permissions, classifySecretScopePrincipal(ctx, w, acl.Principal, acl.Permission))
 		}
 
 		return resource, nil
