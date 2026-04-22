@@ -21,6 +21,7 @@ const defaultComment = "The profile defined in the DEFAULT section is to be used
 const (
 	databricksSettingsSection = "__settings__"
 	defaultProfileKey         = "default_profile"
+	authStorageKey            = "auth_storage"
 )
 
 // GetConfiguredDefaultProfile returns the explicitly configured default profile
@@ -46,6 +47,27 @@ func GetConfiguredDefaultProfileFrom(configFile *config.File) string {
 		return ""
 	}
 	return v
+}
+
+// GetConfiguredAuthStorage returns the explicitly configured auth_storage
+// value from [__settings__].auth_storage, or "" if not set. Loads the config
+// file at configFilePath. Returns "" (not an error) when the file does not
+// exist.
+func GetConfiguredAuthStorage(ctx context.Context, configFilePath string) (string, error) {
+	configFile, err := loadConfigFile(ctx, configFilePath)
+	if err != nil {
+		return "", err
+	}
+	if configFile == nil {
+		return "", nil
+	}
+	return GetConfiguredAuthStorageFrom(configFile), nil
+}
+
+// GetConfiguredAuthStorageFrom returns [__settings__].auth_storage from an
+// already-loaded config file, or "" when not set.
+func GetConfiguredAuthStorageFrom(configFile *config.File) string {
+	return configFile.Section(databricksSettingsSection).Key(authStorageKey).String()
 }
 
 // GetDefaultProfile returns the name of the default profile by loading the
