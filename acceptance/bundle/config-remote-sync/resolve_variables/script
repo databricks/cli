@@ -10,58 +10,40 @@ trap cleanup EXIT
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
-title "Add parameters remotely"
+title "Add and replace parameters remotely"
 edit_resource.py jobs $job_id <<EOF
-# "main" matches exactly one variable (my_catalog) -> should be restored to \${var.my_catalog}
+# --- Add operations (reverse map) ---
+# "main" matches exactly one variable (my_catalog) -> restored to \${var.my_catalog}
 r["parameters"].append({"name": "data_catalog", "default": "main"})
 # "raw_data" matches two variables (landing_schema, curated_schema) -> ambiguous, stays hardcoded
 r["parameters"].append({"name": "some_schema", "default": "raw_data"})
 # "us-west-2" matches no variable -> stays hardcoded
 r["parameters"].append({"name": "region", "default": "us-west-2"})
-# "production" matches target_env (set in target, not default) -> should be restored to \${var.target_env}
+# "production" matches target_env (set in target, not default) -> restored to \${var.target_env}
 r["parameters"].append({"name": "deploy_env", "default": "production"})
-# "from-overrides-file" matches file_override_var (set via variable-overrides.json) -> should be restored
+# "from-overrides-file" matches file_override_var (set via variable-overrides.json) -> restored
 r["parameters"].append({"name": "file_sourced", "default": "from-overrides-file"})
-EOF
 
-title "Detect and save Add changes"
-echo
-cp databricks.yml databricks.yml.backup
-$CLI bundle config-remote-sync --save
-
-title "Add: configuration changes"
-echo
-trace diff.py databricks.yml.backup databricks.yml
-rm databricks.yml.backup
-
-title "Redeploy with updated config"
-echo
-$CLI bundle deploy
-job_id="$(read_id.py my_job)"
-
-title "Replace variable-backed fields remotely"
-edit_resource.py jobs $job_id <<EOF
-# Change "catalog" param (originally \${var.my_catalog} = "main") to a different value.
-# Since "staging_catalog" does not match the variable's resolved value, it must stay hardcoded.
+# --- Replace operations (original ref) ---
+# Change "catalog" param (originally \${var.my_catalog} = "main") to unrelated value -> hardcoded
 for p in r["parameters"]:
     if p["name"] == "catalog":
         p["default"] = "staging_catalog"
 
 # Compound interpolation: change only the suffix of source_path.
-# The variable part (\${var.my_catalog} = "main") is unchanged, only the literal suffix changes.
-# Expected: /mnt/\${var.my_catalog}/raw/landing_v2
+# The variable part (\${var.my_catalog} = "main") is unchanged -> preserved as \${var.my_catalog}
 for t in r["tasks"]:
     bp = t.get("notebook_task", {}).get("base_parameters", {})
     if "source_path" in bp:
         bp["source_path"] = "/mnt/main/raw/landing_v2"
 EOF
 
-title "Detect and save Replace changes"
+title "Detect and save changes"
 echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
-title "Replace: configuration changes"
+title "Configuration changes"
 echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup

@@ -3,24 +3,33 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Add parameters remotely
-=== Detect and save Add changes
+=== Add and replace parameters remotely
+=== Detect and save changes
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
+  parameters[name='catalog'].default: replace
   parameters[name='data_catalog']: add
   parameters[name='deploy_env']: add
   parameters[name='file_sourced']: add
   parameters[name='region']: add
   parameters[name='some_schema']: add
+  tasks[task_key='main'].notebook_task.base_parameters['source_path']: replace
 
 
 
-=== Add: configuration changes
+=== Configuration changes
 
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
+@@ -28,5 +28,5 @@
+       parameters:
+         - name: catalog
+-          default: ${var.my_catalog}
++          default: staging_catalog
+         - name: env
+           default: ${var.target_env}
 @@ -39,4 +39,14 @@
          - name: curated
            default: ${var.curated_schema}
@@ -36,36 +45,7 @@ Resource: resources.jobs.my_job
 +          name: some_schema
        tasks:
          - task_key: main
-
-=== Redeploy with updated config
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
-=== Replace variable-backed fields remotely
-=== Detect and save Replace changes
-Detected changes in 1 resource(s):
-
-Resource: resources.jobs.my_job
-  parameters[name='catalog'].default: replace
-  tasks[task_key='main'].notebook_task.base_parameters['source_path']: replace
-
-
-
-=== Replace: configuration changes
-
->>> diff.py databricks.yml.backup databricks.yml
---- databricks.yml.backup
-+++ databricks.yml
-@@ -28,5 +28,5 @@
-       parameters:
-         - name: catalog
--          default: ${var.my_catalog}
-+          default: staging_catalog
-         - name: env
-           default: ${var.target_env}
-@@ -55,5 +55,5 @@
+@@ -45,5 +55,5 @@
              base_parameters:
                # Compound interpolation: variable embedded in a longer string.
 -              source_path: /mnt/${var.my_catalog}/raw/landing
