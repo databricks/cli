@@ -17,5 +17,6 @@ func newDebugCommand() *cobra.Command {
 	cmd.AddCommand(debug.NewRefSchemaCommand())
 	cmd.AddCommand(debug.NewStatesCommand())
 	cmd.AddCommand(debug.NewRenderTemplateSchemaCommand())
+	cmd.AddCommand(debug.NewListTargetsCommand())
 	return cmd
 }

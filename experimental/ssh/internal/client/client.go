@@ -99,6 +99,8 @@ type ClientOptions struct {
 	SkipSettingsCheck bool
 	// Environment version for serverless compute.
 	EnvironmentVersion int
+	// If true, skip confirmation prompts for IDE extension install and IDE settings updates.
+	AutoApprove bool
 }
 
 func (o *ClientOptions) Validate() error {
@@ -234,7 +236,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		if err := vscode.CheckIDECommand(opts.IDE); err != nil {
 			return err
 		}
-		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE); err != nil {
+		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
 			return err
 		}
 	}
@@ -243,12 +245,15 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	// desired server ports (or socket connection mode) for the connection to go through
 	// (as the majority of the localhost ports on the remote side are blocked by iptable rules).
 	// Plus the platform (always linux), and extensions (python and jupyter), to make the initial experience smoother.
-	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck && cmdio.IsPromptSupported(ctx) {
-		err := vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName)
+	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck {
+		err := vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName, opts.AutoApprove)
 		if err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("Failed to update IDE settings: %v", err))
 			cmdio.LogString(ctx, vscode.GetManualInstructions(opts.IDE, opts.ConnectionName))
 			cmdio.LogString(ctx, "Use --skip-settings-check to bypass IDE settings verification.")
+			if opts.AutoApprove {
+				return fmt.Errorf("aborted: IDE settings need to be updated manually: %w", err)
+			}
 			shouldProceed, promptErr := cmdio.AskYesOrNo(ctx, "Do you want to proceed with the connection?")
 			if promptErr != nil {
 				return fmt.Errorf("failed to prompt user: %w", promptErr)
@@ -476,7 +481,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 		return fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
 
-	err = client.Workspace.MkdirsByPath(ctx, contentDir)
+	err = client.Workspace.MkdirsByPath(ctx, contentDir) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 	if err != nil {
 		return fmt.Errorf("failed to create directory in the remote workspace: %w", err)
 	}

@@ -179,25 +179,27 @@ func TestBundleGetResourceConfigJobsPointer(t *testing.T) {
 }
 
 func TestClearWorkspaceClient(t *testing.T) {
+	ctx := t.Context()
+
 	// First attempt: profile "profile-A" doesn't exist → error mentions "profile-A".
 	b := &Bundle{}
 	b.Config.Workspace.Host = "https://nonexistent.example.com"
 	b.Config.Workspace.Profile = "profile-A"
 
-	_, err1 := b.WorkspaceClientE()
+	_, err1 := b.WorkspaceClientE(ctx)
 	require.Error(t, err1)
 	assert.Contains(t, err1.Error(), "profile-A")
 
 	// Without retry, second call returns the same cached error (same object).
-	_, err1b := b.WorkspaceClientE()
+	_, err1b := b.WorkspaceClientE(ctx)
 	assert.Same(t, err1, err1b, "expected same cached error without retry")
 
 	// After retry, change the profile to "profile-B" and call again.
 	// If retry didn't re-execute, the error would still mention "profile-A".
-	b.ClearWorkspaceClient()
+	b.ClearWorkspaceClient(ctx)
 	b.Config.Workspace.Profile = "profile-B"
 
-	_, err2 := b.WorkspaceClientE()
+	_, err2 := b.WorkspaceClientE(ctx)
 	require.Error(t, err2)
 	assert.Contains(t, err2.Error(), "profile-B", "expected re-execution to pick up new profile")
 	assert.NotContains(t, err2.Error(), "profile-A", "stale cached error should not appear")

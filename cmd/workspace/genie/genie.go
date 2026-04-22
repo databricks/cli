@@ -33,6 +33,7 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreateMessage())
+	cmd.AddCommand(newCreateMessageComment())
 	cmd.AddCommand(newCreateSpace())
 	cmd.AddCommand(newDeleteConversation())
 	cmd.AddCommand(newDeleteConversationMessage())
@@ -50,8 +51,10 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetMessageQueryResult())
 	cmd.AddCommand(newGetMessageQueryResultByAttachment())
 	cmd.AddCommand(newGetSpace())
+	cmd.AddCommand(newListConversationComments())
 	cmd.AddCommand(newListConversationMessages())
 	cmd.AddCommand(newListConversations())
+	cmd.AddCommand(newListMessageComments())
 	cmd.AddCommand(newListSpaces())
 	cmd.AddCommand(newSendMessageFeedback())
 	cmd.AddCommand(newStartConversation())
@@ -171,6 +174,93 @@ func newCreateMessage() *cobra.Command {
 	return cmd
 }
 
+// start create-message-comment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createMessageCommentOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieCreateMessageCommentRequest,
+)
+
+func newCreateMessageComment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createMessageCommentReq dashboards.GenieCreateMessageCommentRequest
+	var createMessageCommentJson flags.JsonFlag
+
+	cmd.Flags().Var(&createMessageCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "create-message-comment SPACE_ID CONVERSATION_ID MESSAGE_ID CONTENT"
+	cmd.Short = `Create message comment.`
+	cmd.Long = `Create message comment.
+
+  Create a comment on a conversation message.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space.
+    CONVERSATION_ID: The ID associated with the conversation.
+    MESSAGE_ID: The ID associated with the message.
+    CONTENT: Comment text content.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(3)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only SPACE_ID, CONVERSATION_ID, MESSAGE_ID as positional arguments. Provide 'content' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createMessageCommentJson.Unmarshal(&createMessageCommentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createMessageCommentReq.SpaceId = args[0]
+		createMessageCommentReq.ConversationId = args[1]
+		createMessageCommentReq.MessageId = args[2]
+		if !cmd.Flags().Changed("json") {
+			createMessageCommentReq.Content = args[3]
+		}
+
+		response, err := w.Genie.CreateMessageComment(ctx, createMessageCommentReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createMessageCommentOverrides {
+		fn(cmd, &createMessageCommentReq)
+	}
+
+	return cmd
+}
+
 // start create-space command
 
 // Slice with functions to override default command behavior.
@@ -212,7 +302,7 @@ func newCreateSpace() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'warehouse_id', 'serialized_space' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'warehouse_id', 'serialized_space' in your JSON input")
 			}
 			return nil
 		}
@@ -248,6 +338,7 @@ func newCreateSpace() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -429,6 +520,7 @@ func newExecuteMessageAttachmentQuery() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -493,6 +585,7 @@ func newExecuteMessageQuery() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -577,6 +670,7 @@ func newGenerateDownloadFullQueryResult() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -651,6 +745,7 @@ func newGenieCreateEvalRun() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -712,6 +807,7 @@ func newGenieGetEvalResultDetails() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -771,6 +867,7 @@ func newGenieGetEvalRun() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -833,6 +930,7 @@ func newGenieListEvalResults() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -893,6 +991,7 @@ func newGenieListEvalRuns() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -983,6 +1082,7 @@ func newGetDownloadFullQueryResult() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1045,6 +1145,7 @@ func newGetMessage() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1109,6 +1210,7 @@ func newGetMessageAttachmentQueryResult() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1173,6 +1275,7 @@ func newGetMessageQueryResult() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1239,6 +1342,7 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1297,6 +1401,7 @@ func newGetSpace() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1307,6 +1412,68 @@ func newGetSpace() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getSpaceOverrides {
 		fn(cmd, &getSpaceReq)
+	}
+
+	return cmd
+}
+
+// start list-conversation-comments command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listConversationCommentsOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieListConversationCommentsRequest,
+)
+
+func newListConversationComments() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listConversationCommentsReq dashboards.GenieListConversationCommentsRequest
+
+	cmd.Flags().IntVar(&listConversationCommentsReq.PageSize, "page-size", listConversationCommentsReq.PageSize, `Maximum number of comments to return per page.`)
+	cmd.Flags().StringVar(&listConversationCommentsReq.PageToken, "page-token", listConversationCommentsReq.PageToken, `Pagination token for getting the next page of results.`)
+
+	cmd.Use = "list-conversation-comments SPACE_ID CONVERSATION_ID"
+	cmd.Short = `List conversation comments.`
+	cmd.Long = `List conversation comments.
+
+  List all comments across all messages in a conversation.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space.
+    CONVERSATION_ID: The ID associated with the conversation.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listConversationCommentsReq.SpaceId = args[0]
+		listConversationCommentsReq.ConversationId = args[1]
+
+		response, err := w.Genie.ListConversationComments(ctx, listConversationCommentsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listConversationCommentsOverrides {
+		fn(cmd, &listConversationCommentsReq)
 	}
 
 	return cmd
@@ -1358,6 +1525,7 @@ func newListConversationMessages() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1418,6 +1586,7 @@ func newListConversations() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1428,6 +1597,70 @@ func newListConversations() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listConversationsOverrides {
 		fn(cmd, &listConversationsReq)
+	}
+
+	return cmd
+}
+
+// start list-message-comments command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listMessageCommentsOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieListMessageCommentsRequest,
+)
+
+func newListMessageComments() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listMessageCommentsReq dashboards.GenieListMessageCommentsRequest
+
+	cmd.Flags().IntVar(&listMessageCommentsReq.PageSize, "page-size", listMessageCommentsReq.PageSize, `Maximum number of comments to return per page.`)
+	cmd.Flags().StringVar(&listMessageCommentsReq.PageToken, "page-token", listMessageCommentsReq.PageToken, `Pagination token for getting the next page of results.`)
+
+	cmd.Use = "list-message-comments SPACE_ID CONVERSATION_ID MESSAGE_ID"
+	cmd.Short = `List message comments.`
+	cmd.Long = `List message comments.
+
+  List comments on a specific conversation message.
+
+  Arguments:
+    SPACE_ID: The ID associated with the Genie space.
+    CONVERSATION_ID: The ID associated with the conversation.
+    MESSAGE_ID: The ID associated with the message.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listMessageCommentsReq.SpaceId = args[0]
+		listMessageCommentsReq.ConversationId = args[1]
+		listMessageCommentsReq.MessageId = args[2]
+
+		response, err := w.Genie.ListMessageComments(ctx, listMessageCommentsReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listMessageCommentsOverrides {
+		fn(cmd, &listMessageCommentsReq)
 	}
 
 	return cmd
@@ -1472,6 +1705,7 @@ func newListSpaces() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1503,6 +1737,8 @@ func newSendMessageFeedback() *cobra.Command {
 	var sendMessageFeedbackJson flags.JsonFlag
 
 	cmd.Flags().Var(&sendMessageFeedbackJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&sendMessageFeedbackReq.Comment, "comment", sendMessageFeedbackReq.Comment, `Optional text feedback that will be stored as a comment.`)
 
 	cmd.Use = "send-message-feedback SPACE_ID CONVERSATION_ID MESSAGE_ID RATING"
 	cmd.Short = `Send message feedback.`
@@ -1797,6 +2033,7 @@ func newUpdateSpace() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.Render(ctx, response)
 	}
 

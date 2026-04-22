@@ -95,7 +95,8 @@ func isExtensionVersionAtLeast(version, minVersion string) bool {
 
 // CheckIDESSHExtension verifies that the required Remote SSH extension is installed
 // with a compatible version, and offers to install/update it if not.
-func CheckIDESSHExtension(ctx context.Context, option string) error {
+// When autoApprove is true, the extension is installed without asking.
+func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) error {
 	ide := getIDE(option)
 
 	out, err := exec.CommandContext(ctx, ide.Command, "--list-extensions", "--show-versions").Output()
@@ -116,18 +117,22 @@ func CheckIDESSHExtension(ctx context.Context, option string) error {
 			ide.SSHExtensionName, version, ide.MinSSHExtensionVersion)
 	}
 
-	if !cmdio.IsPromptSupported(ctx) {
-		return fmt.Errorf("%s Install it with: %s --install-extension %s",
-			msg, ide.Command, ide.SSHExtensionID)
-	}
+	if !autoApprove {
+		if !cmdio.IsPromptSupported(ctx) {
+			return fmt.Errorf("%s Install it with: %s --install-extension %s, or pass --auto-approve",
+				msg, ide.Command, ide.SSHExtensionID)
+		}
 
-	shouldInstall, err := cmdio.AskYesOrNo(ctx, msg+" Would you like to install it?")
-	if err != nil {
-		return fmt.Errorf("failed to prompt user: %w", err)
-	}
-	if !shouldInstall {
-		return fmt.Errorf("%s Install it with: %s --install-extension %s",
-			msg, ide.Command, ide.SSHExtensionID)
+		shouldInstall, err := cmdio.AskYesOrNo(ctx, msg+" Would you like to install it?")
+		if err != nil {
+			return fmt.Errorf("failed to prompt user: %w", err)
+		}
+		if !shouldInstall {
+			return fmt.Errorf("%s Install it with: %s --install-extension %s",
+				msg, ide.Command, ide.SSHExtensionID)
+		}
+	} else {
+		cmdio.LogString(ctx, msg+" Installing automatically (--auto-approve).")
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Installing %q...", ide.SSHExtensionName))

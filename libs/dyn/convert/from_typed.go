@@ -29,7 +29,7 @@ const (
 // It uses the reference value both for location information and to determine if the typed
 // value was changed or not. For example, if a struct-by-value field is nil in the reference
 // it will be zero-valued in the typed configuration. If it remains zero-valued, this
-// this function will still emit a nil value in the dynamic representation.
+// function will still emit a nil value in the dynamic representation.
 func FromTyped(src any, ref dyn.Value) (dyn.Value, error) {
 	return fromTyped(src, ref)
 }

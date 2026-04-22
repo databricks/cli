@@ -25,12 +25,12 @@ func (m *initializeURLs) Name() string {
 }
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	workspaceId, err := b.WorkspaceClient().CurrentWorkspaceID(ctx)
+	workspaceId, err := b.WorkspaceClient(ctx).CurrentWorkspaceID(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	orgId := strconv.FormatInt(workspaceId, 10)
-	host := b.WorkspaceClient().Config.CanonicalHostName()
+	host := b.WorkspaceClient(ctx).Config.CanonicalHostName()
 	err = initializeForWorkspace(b, orgId, host)
 	if err != nil {
 		return diag.FromErr(err)

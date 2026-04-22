@@ -31,7 +31,7 @@ func (m *resolveLookupVariables) Apply(ctx context.Context, b *bundle.Bundle) di
 		}
 
 		errs.Go(func() error {
-			id, err := v.Lookup.Resolve(errCtx, b.WorkspaceClient())
+			id, err := v.Lookup.Resolve(errCtx, b.WorkspaceClient(errCtx))
 			if err != nil {
 				return fmt.Errorf("failed to resolve %s, err: %w", v.Lookup, err)
 			}

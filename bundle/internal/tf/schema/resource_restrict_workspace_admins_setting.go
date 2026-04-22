@@ -7,7 +7,8 @@ type ResourceRestrictWorkspaceAdminsSettingProviderConfig struct {
 }
 
 type ResourceRestrictWorkspaceAdminsSettingRestrictWorkspaceAdmins struct {
-	Status string `json:"status"`
+	DisableGovTagCreation bool   `json:"disable_gov_tag_creation,omitempty"`
+	Status                string `json:"status"`
 }
 
 type ResourceRestrictWorkspaceAdminsSetting struct {

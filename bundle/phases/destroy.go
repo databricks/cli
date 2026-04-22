@@ -20,8 +20,8 @@ import (
 )
 
 func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	w := b.WorkspaceClient()
-	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath)
+	w := b.WorkspaceClient(ctx)
+	_, err := w.Workspace.GetStatusByPath(ctx, b.Config.Workspace.RootPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
 
 	var aerr *apierr.APIError
 	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
@@ -52,8 +52,12 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	}
 
 	schemaActions := filterGroup(deleteActions, "schemas", deployplan.Delete)
-	dltActions := filterGroup(deleteActions, "pipelines", deployplan.Delete)
+	pipelineActions := filterGroup(deleteActions, "pipelines", deployplan.Delete)
 	volumeActions := filterGroup(deleteActions, "volumes", deployplan.Delete)
+	databaseInstanceActions := filterGroup(deleteActions, "database_instances", deployplan.Delete)
+	syncedDatabaseTableActions := filterGroup(deleteActions, "synced_database_tables", deployplan.Delete)
+	postgresProjectActions := filterGroup(deleteActions, "postgres_projects", deployplan.Delete)
+	postgresBranchActions := filterGroup(deleteActions, "postgres_branches", deployplan.Delete)
 
 	if len(schemaActions) > 0 {
 		cmdio.LogString(ctx, deleteSchemaMessage)
@@ -63,9 +67,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		cmdio.LogString(ctx, "")
 	}
 
-	if len(dltActions) > 0 {
+	if len(pipelineActions) > 0 {
 		cmdio.LogString(ctx, deletePipelineMessage)
-		for _, a := range dltActions {
+		for _, a := range pipelineActions {
 			cmdio.Log(ctx, a)
 		}
 		cmdio.LogString(ctx, "")
@@ -74,6 +78,38 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	if len(volumeActions) > 0 {
 		cmdio.LogString(ctx, deleteVolumeMessage)
 		for _, a := range volumeActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(databaseInstanceActions) > 0 {
+		cmdio.LogString(ctx, deleteDatabaseInstanceMessage)
+		for _, a := range databaseInstanceActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(syncedDatabaseTableActions) > 0 {
+		cmdio.LogString(ctx, deleteSyncedDatabaseTableMessage)
+		for _, a := range syncedDatabaseTableActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(postgresProjectActions) > 0 {
+		cmdio.LogString(ctx, deletePostgresProjectMessage)
+		for _, a := range postgresProjectActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if len(postgresBranchActions) > 0 {
+		cmdio.LogString(ctx, deletePostgresBranchMessage)
+		for _, a := range postgresBranchActions {
 			cmdio.Log(ctx, a)
 		}
 		cmdio.LogString(ctx, "")
@@ -96,7 +132,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), plan, direct.MigrateMode(false))
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
 		// Skip Finalize for empty plans to avoid creating a state file when nothing was destroyed.
 		if len(plan.Plan) > 0 {
 			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
@@ -163,7 +199,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	var plan *deployplan.Plan
 	if engine.IsDirect() {
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil)
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

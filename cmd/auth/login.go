@@ -4,25 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -417,7 +415,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 	}
 
-	switch cfg.HostType() {
+	switch cfg.HostType() { //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	case config.AccountHost:
 		// Account host: prompt for account ID if not provided
 		if authArguments.AccountID == "" {
@@ -449,7 +447,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		// Regular workspace host: no additional prompts needed.
 		// If discovery already populated account_id/workspace_id, those are kept.
 	default:
-		return fmt.Errorf("unknown host type: %v", cfg.HostType())
+		return fmt.Errorf("unknown host type: %v", cfg.HostType()) //nolint:staticcheck // HostType() deprecated in SDK v0.127.0; SDK moving to host-agnostic behavior.
 	}
 
 	return nil
@@ -559,22 +557,6 @@ func validateDiscoveryFlagCompatibility(cmd *cobra.Command) error {
 		}
 	}
 	return nil
-}
-
-// openURLSuppressingStderr opens a URL in the browser while suppressing stderr output.
-// This prevents xdg-open error messages from being displayed to the user.
-func openURLSuppressingStderr(url string) error {
-	// Save the original stderr from the browser package
-	originalStderr := browserpkg.Stderr
-	defer func() {
-		browserpkg.Stderr = originalStderr
-	}()
-
-	// Redirect stderr to discard to suppress xdg-open errors
-	browserpkg.Stderr = io.Discard
-
-	// Call the browser open function
-	return browserpkg.OpenURL(url)
 }
 
 // discoveryLogin runs the login.databricks.com discovery flow. The user
@@ -785,37 +767,15 @@ func promptForWorkspaceID(ctx context.Context) (string, error) {
 	return strings.TrimSpace(result), nil
 }
 
-// getBrowserFunc returns a function that opens the given URL in the browser.
-// It respects the BROWSER environment variable:
-// - empty string: uses the default browser
-// - "none": prints the URL to stdout without opening a browser
-// - custom command: executes the specified command with the URL as argument
+// getBrowserFunc adapts libs/browser to the u2m.WithBrowser callback shape,
+// overriding the BROWSER=none message with auth-specific phrasing.
 func getBrowserFunc(cmd *cobra.Command) func(url string) error {
-	browser := env.Get(cmd.Context(), "BROWSER")
-	switch browser {
-	case "":
-		return openURLSuppressingStderr
-	case "none":
-		return func(url string) error {
-			cmdio.LogString(cmd.Context(), "Please complete authentication by opening this link in your browser:\n"+url)
+	return func(url string) error {
+		ctx := cmd.Context()
+		if browser.IsDisabled(ctx) {
+			cmdio.LogString(ctx, "Please complete authentication by opening this link in your browser:\n"+url)
 			return nil
 		}
-	default:
-		return func(url string) error {
-			// Run the browser command via a shell.
-			// It can be a script or a binary and scripts cannot be executed directly on Windows.
-			e, err := exec.NewCommandExecutor(".")
-			if err != nil {
-				return err
-			}
-
-			e.WithInheritOutput()
-			cmd, err := e.StartCommand(cmd.Context(), fmt.Sprintf("%q %q", browser, url))
-			if err != nil {
-				return err
-			}
-
-			return cmd.Wait()
-		}
+		return browser.Open(ctx, url)
 	}
 }

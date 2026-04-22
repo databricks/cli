@@ -75,7 +75,7 @@ After generation, you can deploy this alert to other targets using:
 			return root.ErrAlreadyPrinted
 		}
 
-		w := b.WorkspaceClient()
+		w := b.WorkspaceClient(ctx)
 
 		// Get alert from Databricks
 		alert, err := w.AlertsV2.GetAlert(ctx, sql.GetAlertV2Request{Id: alertID})

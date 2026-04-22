@@ -16,13 +16,26 @@ import (
 )
 
 // FilerFactory is a function that returns a filer.Filer.
-type FilerFactory func(b *bundle.Bundle) (filer.Filer, error)
+type FilerFactory func(ctx context.Context, b *bundle.Bundle) (filer.Filer, error)
 
 type stateFiler struct {
 	filer filer.Filer
 
 	apiClient *client.DatabricksClient
 	root      filer.WorkspaceRootPath
+}
+
+// orgIDHeaders returns headers with X-Databricks-Org-Id set if a workspace ID
+// is configured. SPOG hosts require this header to route requests to the
+// correct workspace.
+func (s stateFiler) orgIDHeaders() map[string]string {
+	wsID := s.apiClient.Config.WorkspaceID
+	if wsID == "" {
+		return nil
+	}
+	return map[string]string{
+		"X-Databricks-Org-Id": wsID,
+	}
 }
 
 func (s stateFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
@@ -50,7 +63,7 @@ func (s stateFiler) Read(ctx context.Context, path string) (io.ReadCloser, error
 
 	var buf bytes.Buffer
 	urlPath := "/api/2.0/workspace-files/" + url.PathEscape(strings.TrimLeft(absPath, "/"))
-	err = s.apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, nil, &buf)
+	err = s.apiClient.Do(ctx, http.MethodGet, urlPath, s.orgIDHeaders(), nil, nil, &buf)
 	if err != nil {
 		return nil, err
 	}
@@ -75,13 +88,13 @@ func (s stateFiler) Write(ctx context.Context, path string, reader io.Reader, mo
 // This API has a higher than 10 MB limits and allows to export large state files.
 // We don't use the same API for read because it doesn't correct get the file content for notebooks and returns
 // "File Not Found" error instead.
-func StateFiler(b *bundle.Bundle) (filer.Filer, error) {
-	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.StatePath)
+func StateFiler(ctx context.Context, b *bundle.Bundle) (filer.Filer, error) {
+	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
 		return nil, err
 	}
 
-	apiClient, err := client.New(b.WorkspaceClient().Config)
+	apiClient, err := client.New(b.WorkspaceClient(ctx).Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}

@@ -240,7 +240,7 @@ func TestCheckIDESSHExtension_UpToDate(t *testing.T) {
 	extensionOutput := "ms-python.python@2024.1.1\nms-vscode-remote.remote-ssh@0.123.0\n"
 	createFakeIDEExecutable(t, tmpDir, "code", extensionOutput)
 
-	err := CheckIDESSHExtension(ctx, VSCodeOption)
+	err := CheckIDESSHExtension(ctx, VSCodeOption, false)
 	assert.NoError(t, err)
 }
 
@@ -252,7 +252,7 @@ func TestCheckIDESSHExtension_ExactMinVersion(t *testing.T) {
 	extensionOutput := "ms-vscode-remote.remote-ssh@0.120.0\n"
 	createFakeIDEExecutable(t, tmpDir, "code", extensionOutput)
 
-	err := CheckIDESSHExtension(ctx, VSCodeOption)
+	err := CheckIDESSHExtension(ctx, VSCodeOption, false)
 	assert.NoError(t, err)
 }
 
@@ -264,7 +264,7 @@ func TestCheckIDESSHExtension_Missing(t *testing.T) {
 	extensionOutput := "ms-python.python@2024.1.1\n"
 	createFakeIDEExecutable(t, tmpDir, "code", extensionOutput)
 
-	err := CheckIDESSHExtension(ctx, VSCodeOption)
+	err := CheckIDESSHExtension(ctx, VSCodeOption, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `"Remote - SSH"`)
 	assert.Contains(t, err.Error(), "not installed")
@@ -278,7 +278,7 @@ func TestCheckIDESSHExtension_Outdated(t *testing.T) {
 	extensionOutput := "ms-vscode-remote.remote-ssh@0.100.0\n"
 	createFakeIDEExecutable(t, tmpDir, "code", extensionOutput)
 
-	err := CheckIDESSHExtension(ctx, VSCodeOption)
+	err := CheckIDESSHExtension(ctx, VSCodeOption, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "0.100.0")
 	assert.Contains(t, err.Error(), ">= 0.120.0")
@@ -292,6 +292,31 @@ func TestCheckIDESSHExtension_Cursor(t *testing.T) {
 	extensionOutput := "anysphere.remote-ssh@1.0.32\n"
 	createFakeIDEExecutable(t, tmpDir, "cursor", extensionOutput)
 
-	err := CheckIDESSHExtension(ctx, CursorOption)
+	err := CheckIDESSHExtension(ctx, CursorOption, false)
 	assert.NoError(t, err)
+}
+
+func TestCheckIDESSHExtension_AutoApproveMissing_Installs(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("PATH", tmpDir)
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+
+	// Fake `code` returns no extensions for --list-extensions, but succeeds for --install-extension.
+	createFakeIDEExecutable(t, tmpDir, "code", "")
+
+	err := CheckIDESSHExtension(ctx, VSCodeOption, true)
+	assert.NoError(t, err)
+}
+
+func TestCheckIDESSHExtension_NoPrompt_WithoutAutoApprove_Errors(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("PATH", tmpDir)
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+
+	extensionOutput := "ms-python.python@2024.1.1\n"
+	createFakeIDEExecutable(t, tmpDir, "code", extensionOutput)
+
+	err := CheckIDESSHExtension(ctx, VSCodeOption, false)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--install-extension")
 }
