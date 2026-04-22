@@ -1,0 +1,26 @@
+ucm:
+  name: plan-storage-credential
+  engine: direct
+
+resources:
+  storage_credentials:
+    sales_cred:
+      name: sales_cred
+      aws_iam_role:
+        role_arn: "arn:aws:iam::111122223333:role/uc-sales"
+
+    shared_cred:
+      name: shared_cred
+      azure_managed_identity:
+        access_connector_id: "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Databricks/accessConnectors/uc"
+
+  catalogs:
+    sales:
+      name: sales_prod
+      comment: sales catalog on ucm-managed cred
+      storage_root: ${resources.storage_credentials.sales_cred.name}
+
+    partner:
+      name: partner_prod
+      comment: partner catalog on bring-your-own cred
+      storage_root: preexisting_partner_cred
