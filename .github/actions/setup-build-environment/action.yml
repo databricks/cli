@@ -9,12 +9,18 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    # Mount a ReFS Dev Drive on Windows and point TEMP/TMP + Go's cache dirs at
-    # it. Small-file I/O (per-test `.terraform/providers/`, go build cache, etc.)
-    # is roughly ~30x faster than the default C: drive on GH runners. The
+    # Mount a ReFS Dev Drive on Windows and route Go's cache dirs onto it.
+    # The default C: drive on GH runners is ~4.3k IOPS; a Dev Drive is ~127k.
+    # Go build compilation is small-file-heavy and benefits most. The
     # `-DevDrive` flag is Win11 22621+ / WS2025; older hosts fall back to plain
     # ReFS which is still markedly faster than C:. Must run before setup-go so
-    # GOCACHE/GOMODCACHE are rooted on the drive.
+    # GOCACHE/GOMODCACHE save/restore lands on the drive.
+    #
+    # Note: TEMP/TMP are intentionally NOT redirected. Doing so puts
+    # `t.TempDir()` on Z: while the checkout and uv's Python package cache stay
+    # on C:, which triggers `ValueError: Paths don't have the same drive` in
+    # older databricks-bundles versions under `bundle/python/*` tests
+    # (`os.path.commonpath` can't span drives).
     - name: Mount ReFS Dev Drive (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
@@ -31,9 +37,7 @@ runs:
           Format-Volume -DriveLetter Z -FileSystem ReFS `
             -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
         }
-        New-Item -ItemType Directory -Path Z:\tmp,Z:\go-build,Z:\go-mod,Z:\go-tmp | Out-Null
-        "TEMP=Z:\tmp"          | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
-        "TMP=Z:\tmp"           | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        New-Item -ItemType Directory -Path Z:\go-build,Z:\go-mod,Z:\go-tmp | Out-Null
         "GOCACHE=Z:\go-build"  | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
         "GOMODCACHE=Z:\go-mod" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
         "GOTMPDIR=Z:\go-tmp"   | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
