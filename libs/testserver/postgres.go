@@ -613,7 +613,7 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 	op := postgres.Operation{
 		Name:     operationName,
 		Done:     true,
-		Metadata: []byte(fmt.Sprintf(`{"@type":"type.googleapis.com/databricks.postgres.v1.%sOperationMetadata"}`, resourceType)),
+		Metadata: fmt.Appendf(nil, `{"@type":"type.googleapis.com/databricks.postgres.v1.%sOperationMetadata"}`, resourceType),
 	}
 	if response != nil {
 		data, _ := json.Marshal(response)

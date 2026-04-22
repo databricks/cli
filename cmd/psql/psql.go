@@ -309,12 +309,12 @@ func showSelectionAndConnect(ctx context.Context, retryConfig libpsql.RetryConfi
 		return err
 	}
 
-	if strings.HasPrefix(selected, "provisioned:") {
-		instanceName := strings.TrimPrefix(selected, "provisioned:")
+	if after, ok := strings.CutPrefix(selected, "provisioned:"); ok {
+		instanceName := after
 		return connectProvisioned(ctx, instanceName, retryConfig, extraArgs)
 	}
-	if strings.HasPrefix(selected, "autoscaling:") {
-		projectName := strings.TrimPrefix(selected, "autoscaling:")
+	if after, ok := strings.CutPrefix(selected, "autoscaling:"); ok {
+		projectName := after
 		projectID := extractIDFromName(projectName, "projects")
 		return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
 	}

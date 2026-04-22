@@ -23,7 +23,7 @@ import (
 // Heredoc is the equivalent of compute.TrimLeadingWhitespace
 // (command-execution API helper from SDK), except it's more
 // friendly to non-printable characters.
-func Heredoc(tmpl string) (trimmed string) {
+func Heredoc(tmpl string) string {
 	lines := strings.Split(tmpl, "\n")
 	leadingWhitespace := 1<<31 - 1
 	for _, line := range lines {
@@ -39,17 +39,19 @@ func Heredoc(tmpl string) (trimmed string) {
 			break
 		}
 	}
+	var sb strings.Builder
 	for i := range lines {
 		if lines[i] == "" || strings.TrimSpace(lines[i]) == "" {
 			continue
 		}
 		if len(lines[i]) < leadingWhitespace {
-			trimmed += lines[i] + "\n" // or not..
+			sb.WriteString(lines[i])
 		} else {
-			trimmed += lines[i][leadingWhitespace:] + "\n"
+			sb.WriteString(lines[i][leadingWhitespace:])
 		}
+		sb.WriteByte('\n')
 	}
-	return strings.TrimSpace(trimmed)
+	return strings.TrimSpace(sb.String())
 }
 
 // writeFlusher represents a buffered writer that can be flushed. This is useful when

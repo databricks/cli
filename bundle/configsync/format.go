@@ -16,19 +16,19 @@ func FormatTextOutput(changes Changes) string {
 		return output.String()
 	}
 
-	output.WriteString(fmt.Sprintf("Detected changes in %d resource(s):\n\n", len(changes)))
+	fmt.Fprintf(&output, "Detected changes in %d resource(s):\n\n", len(changes))
 
 	resourceKeys := slices.Sorted(maps.Keys(changes))
 
 	for _, resourceKey := range resourceKeys {
 		resourceChanges := changes[resourceKey]
-		output.WriteString(fmt.Sprintf("Resource: %s\n", resourceKey))
+		fmt.Fprintf(&output, "Resource: %s\n", resourceKey)
 
 		paths := slices.Sorted(maps.Keys(resourceChanges))
 
 		for _, path := range paths {
 			configChange := resourceChanges[path]
-			output.WriteString(fmt.Sprintf("  %s: %s\n", path, configChange.Operation))
+			fmt.Fprintf(&output, "  %s: %s\n", path, configChange.Operation)
 		}
 
 		output.WriteString("\n")
