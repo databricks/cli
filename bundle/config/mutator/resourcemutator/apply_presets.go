@@ -299,11 +299,17 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Vector Search Indexes: Prefix
+	// The name is a 3-part UC identifier (catalog.schema.index); prefix only
+	// the last component since catalog and schema are external references.
 	for _, e := range r.VectorSearchIndexes {
 		if e == nil {
 			continue
 		}
-		e.Name = normalizePrefix(prefix) + e.Name
+		if i := strings.LastIndex(e.Name, "."); i >= 0 {
+			e.Name = e.Name[:i+1] + normalizePrefix(prefix) + e.Name[i+1:]
+		} else {
+			e.Name = normalizePrefix(prefix) + e.Name
+		}
 	}
 
 	return diags

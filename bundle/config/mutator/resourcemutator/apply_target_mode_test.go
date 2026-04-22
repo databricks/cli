@@ -258,7 +258,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
 					"vs_index1": {
 						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-							Name:         "vs_index1",
+							Name:         "main.default.vs_index1",
 							EndpointName: "vs_endpoint1",
 							PrimaryKey:   "id",
 							IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
@@ -315,6 +315,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Vector search endpoint 1
 	assert.Equal(t, "dev_lennart_vs_endpoint1", b.Config.Resources.VectorSearchEndpoints["vs_endpoint1"].Name)
+
+	// Vector search index 1: only the leaf name is prefixed, since catalog and schema are external
+	assert.Equal(t, "main.default.dev_lennart_vs_index1", b.Config.Resources.VectorSearchIndexes["vs_index1"].Name)
 
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
