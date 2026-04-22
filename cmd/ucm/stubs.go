@@ -41,10 +41,6 @@ func newDiffCommand() *cobra.Command {
 	return stub("diff", "Detect which ucm stacks changed since a base git ref. Intended for CI matrices.")
 }
 
-func newDriftCommand() *cobra.Command {
-	return stub("drift", "Compare live UC state to persisted terraform state; alert on out-of-band changes.")
-}
-
 func newImportCommand() *cobra.Command {
 	return stub("import <type> <name>", "Import a single existing UC or cloud resource into ucm state.")
 }
