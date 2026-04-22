@@ -4,9 +4,8 @@ bundle:
 resources:
   apps:
     myapp:
-      name: $UNIQUE_NAME
+      name: a-$UNIQUE_NAME
       description: my_app
-      source_code_path: ./app
       config:
         command:
           - python
@@ -16,3 +15,21 @@ resources:
             value: original_value
       lifecycle:
         started: true
+
+targets:
+  first:
+    default: true
+    resources:
+      apps:
+        myapp:
+          source_code_path: ./app
+  second:
+    resources:
+      apps:
+        myapp:
+          name: b-$UNIQUE_NAME
+          git_source:
+            git_repository:
+              url: https://github.com/databricks/databricks-cli.git
+              provider: gitHub
+            branch: main

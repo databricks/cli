@@ -20,7 +20,7 @@
         }
       ],
       "mode": "SNAPSHOT",
-      "source_code_path": "./app",
+      "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/first/files/app",
       "status": {
         "message": "Deployment succeeded",
         "state": "SUCCEEDED"
@@ -92,12 +92,12 @@
   "default_source_code_path": {
     "action": "skip",
     "reason": "spec:output_only",
-    "remote": "./app"
+    "remote": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/first/files/app"
   },
   "id": {
     "action": "skip",
     "reason": "spec:output_only",
-    "remote": "1000"
+    "remote": "1001"
   },
   "service_principal_client_id": {
     "action": "skip",
@@ -112,17 +112,11 @@
   "service_principal_name": {
     "action": "skip",
     "reason": "spec:output_only",
-    "remote": "app-[UNIQUE_NAME]"
-  },
-  "source_code_path": {
-    "action": "update",
-    "old": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files/app",
-    "new": "/Workspace/Users/[USERNAME]/.bundle/config-drift-[UNIQUE_NAME]/default/files/app",
-    "remote": "./app"
+    "remote": "app-a-[UNIQUE_NAME]"
   },
   "url": {
     "action": "skip",
     "reason": "spec:output_only",
-    "remote": "[UNIQUE_NAME]-123.cloud.databricksapps.com"
+    "remote": "a-[UNIQUE_NAME]-123.cloud.databricksapps.com"
   }
 }
