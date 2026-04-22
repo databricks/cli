@@ -1,2 +1,5 @@
+default:
+	./task
+
 .DEFAULT:
 	@./task "$@"
