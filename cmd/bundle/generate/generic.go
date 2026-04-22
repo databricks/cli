@@ -336,7 +336,9 @@ func newGenericGenerateCommand(spec genericGenerateSpec) *cobra.Command {
 	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `directory to write the configuration to`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `force overwrite existing files in the output directory`)
 	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated resource to the existing resource`)
-	cmd.Flags().MarkHidden("bind")
+	if err := cmd.Flags().MarkHidden("bind"); err != nil {
+		panic(err)
+	}
 	return cmd
 }
 
