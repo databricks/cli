@@ -110,9 +110,7 @@ def resolve_taskvars(pat: str, vars_dict: dict, root: Path) -> str:
                 lambda m: builtins.get(m.group(1), vars_dict.get(m.group(1), m.group(0))),
                 v["sh"],
             )
-            return subprocess.check_output(
-                sh_cmd, shell=True, cwd=root, encoding="utf-8"
-            ).strip()
+            return subprocess.check_output(sh_cmd, shell=True, cwd=root, encoding="utf-8").strip()
         return str(v)
 
     def sub(m):
@@ -222,9 +220,7 @@ def main():
 
     name = os.environ.get("TASK_NAME")
     if not name:
-        sys.exit(
-            "sandboxed_run: $TASK_NAME is unset; add `env: TASK_NAME: '{{.TASK}}'` at Taskfile top level"
-        )
+        sys.exit("sandboxed_run: $TASK_NAME is unset; add `env: TASK_NAME: '{{.TASK}}'` at Taskfile top level")
 
     root = find_repo_root()
     data = yaml.safe_load((root / "Taskfile.yml").read_text())
@@ -303,23 +299,17 @@ def main():
         rc = subprocess.call(argv, cwd=sandbox_cwd)
 
         after = snapshot_mtimes(tmp)
-        touched = sorted(
-            str(p.relative_to(tmp)) for p, mt in after.items() if before.get(p) != mt
-        )
+        touched = sorted(str(p.relative_to(tmp)) for p, mt in after.items() if before.get(p) != mt)
         # Filter out git worktree metadata (`.git` file, index, logs, etc.).
         touched = [t for t in touched if t != ".git" and not t.startswith(".git/")]
         # Drop gitignored touched files (caches, .venv, build outputs) so tasks
         # don't need to enumerate them as excludes. Declared `generates:` outputs
         # are preserved even if gitignored (e.g. python/docs/_output).
         declared = [t for t in touched if any(r.fullmatch(t) for r in generates_res)]
-        touched = declared + filter_gitignored(
-            [t for t in touched if t not in set(declared)], root
-        )
+        touched = declared + filter_gitignored([t for t in touched if t not in set(declared)], root)
 
         if enforce:
-            unexpected = [
-                t for t in touched if not any(r.fullmatch(t) for r in generates_res)
-            ]
+            unexpected = [t for t in touched if not any(r.fullmatch(t) for r in generates_res)]
             if unexpected:
                 print(
                     f"[sandbox {name}] ERROR: touched files not declared in `generates:`:",
