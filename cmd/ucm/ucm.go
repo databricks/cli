@@ -36,6 +36,7 @@ Online documentation: https://docs.databricks.com/en/dev-tools/ucm/index.html`,
 	}
 
 	cmd.PersistentFlags().StringP("target", "t", "", "ucm target to use (if applicable)")
+	cmd.PersistentFlags().StringSlice("var", nil, `set values for variables defined in ucm config. Example: --var="foo=bar"`)
 
 	cmd.AddCommand(newValidateCommand())
 	cmd.AddCommand(newSchemaCommand())
