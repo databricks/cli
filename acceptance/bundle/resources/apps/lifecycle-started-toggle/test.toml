@@ -4,5 +4,11 @@ RecordRequests = true
 
 Ignore = [".databricks", "databricks.yml"]
 
+# App deployment progress messages are non-deterministic on cloud (different status messages
+# per poll), so filter them out entirely.
+[[Repls]]
+Old = '(?m)^✓ [^\n]*\n'
+New = ""
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["direct"]
