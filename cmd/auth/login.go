@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -21,6 +22,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -189,13 +191,18 @@ a new profile is created.
 			return err
 		}
 
+		tokenCache, err := storage.NewFileTokenCache(ctx)
+		if err != nil {
+			return fmt.Errorf("opening token cache: %w", err)
+		}
+
 		// If no host is available from any source, use the discovery flow
 		// via login.databricks.com.
 		if shouldUseDiscovery(authArguments.Host, args, existingProfile) {
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
 			}
-			return discoveryLogin(ctx, &defaultDiscoveryClient{}, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
+			return discoveryLogin(ctx, &defaultDiscoveryClient{}, tokenCache, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
 		}
 
 		// Load unified host flag from the profile if not explicitly set via CLI flag.
@@ -228,6 +235,7 @@ a new profile is created.
 			return err
 		}
 		persistentAuthOpts := []u2m.PersistentAuthOption{
+			u2m.WithTokenCache(storage.NewDualWritingTokenCache(tokenCache, oauthArgument)),
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
 		}
@@ -562,7 +570,7 @@ func validateDiscoveryFlagCompatibility(cmd *cobra.Command) error {
 // discoveryLogin runs the login.databricks.com discovery flow. The user
 // authenticates in the browser, selects a workspace, and the CLI receives
 // the workspace host from the OAuth callback's iss parameter.
-func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
+func discoveryLogin(ctx context.Context, dc discoveryClient, tokenCache cache.TokenCache, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
 	arg, err := dc.NewOAuthArgument(profileName)
 	if err != nil {
 		return discoveryErr("setting up login.databricks.com", err)
@@ -574,6 +582,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 	}
 
 	opts := []u2m.PersistentAuthOption{
+		u2m.WithTokenCache(storage.NewDualWritingTokenCache(tokenCache, arg)),
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(browserFunc),
 		u2m.WithDiscoveryLogin(),
