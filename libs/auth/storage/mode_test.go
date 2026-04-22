@@ -9,38 +9,62 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestResolveStorageMode covers the precedence rules of the pure core
-// resolveStorageMode. No env, no files; inputs are plain strings.
+func TestParseMode(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+		want StorageMode
+	}{
+		{name: "empty returns unknown", raw: "", want: StorageModeUnknown},
+		{name: "whitespace returns unknown", raw: "   ", want: StorageModeUnknown},
+		{name: "legacy lowercase", raw: "legacy", want: StorageModeLegacy},
+		{name: "secure lowercase", raw: "secure", want: StorageModeSecure},
+		{name: "plaintext lowercase", raw: "plaintext", want: StorageModePlaintext},
+		{name: "case and whitespace normalized", raw: "  SECURE  ", want: StorageModeSecure},
+		{name: "unknown value returns unknown", raw: "bogus", want: StorageModeUnknown},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, ParseMode(tc.raw))
+		})
+	}
+}
+
 func TestResolveStorageMode(t *testing.T) {
 	cases := []struct {
-		name        string
-		override    StorageMode
-		envValue    string
-		configValue string
-		want        StorageMode
-		wantErrSub  string
+		name       string
+		override   StorageMode
+		envValue   string
+		configBody string
+		want       StorageMode
+		wantErrSub string
 	}{
 		{
 			name: "default when nothing is set",
 			want: StorageModeLegacy,
 		},
 		{
-			name:        "override wins over env and config",
-			override:    StorageModeSecure,
-			envValue:    "plaintext",
-			configValue: "legacy",
-			want:        StorageModeSecure,
+			name:       "override wins over env and config",
+			override:   StorageModeSecure,
+			envValue:   "plaintext",
+			configBody: "[__settings__]\nauth_storage = legacy\n",
+			want:       StorageModeSecure,
 		},
 		{
-			name:        "env wins over config",
-			envValue:    "secure",
-			configValue: "plaintext",
-			want:        StorageModeSecure,
+			name:     "override is trusted (not validated)",
+			override: StorageMode("bogus"),
+			want:     StorageMode("bogus"),
 		},
 		{
-			name:        "config sets mode when env and override unset",
-			configValue: "secure",
-			want:        StorageModeSecure,
+			name:       "env wins over config",
+			envValue:   "secure",
+			configBody: "[__settings__]\nauth_storage = plaintext\n",
+			want:       StorageModeSecure,
+		},
+		{
+			name:       "config sets mode when env and override unset",
+			configBody: "[__settings__]\nauth_storage = secure\n",
+			want:       StorageModeSecure,
 		},
 		{
 			name:     "env value is case-insensitive and trimmed",
@@ -48,25 +72,27 @@ func TestResolveStorageMode(t *testing.T) {
 			want:     StorageModeSecure,
 		},
 		{
-			name:       "invalid override is rejected",
-			override:   StorageMode("bogus"),
-			wantErrSub: `unknown storage mode "bogus"`,
-		},
-		{
 			name:       "invalid env is rejected",
 			envValue:   "bogus",
 			wantErrSub: "DATABRICKS_AUTH_STORAGE",
 		},
 		{
-			name:        "invalid config value is rejected",
-			configValue: "bogus",
-			wantErrSub:  "auth_storage",
+			name:       "invalid config value is rejected",
+			configBody: "[__settings__]\nauth_storage = bogus\n",
+			wantErrSub: "auth_storage",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := resolveStorageMode(tc.override, tc.envValue, tc.configValue)
+			cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
+			if tc.configBody != "" {
+				require.NoError(t, os.WriteFile(cfgPath, []byte(tc.configBody), 0o600))
+			}
+			t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+			t.Setenv(EnvVar, tc.envValue)
+
+			got, err := ResolveStorageMode(t.Context(), tc.override)
 			if tc.wantErrSub != "" {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.wantErrSub)
@@ -78,39 +104,27 @@ func TestResolveStorageMode(t *testing.T) {
 	}
 }
 
-// TestResolveStorageMode_ReadsEnvAndConfig exercises the I/O wrapper. The
-// precedence rules are covered by TestResolveStorageMode above; these
-// cases verify that the wrapper actually reads from the env and from
-// [__settings__].auth_storage.
-func TestResolveStorageMode_ReadsEnvAndConfig(t *testing.T) {
-	t.Run("env value is picked up", func(t *testing.T) {
-		cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
-		require.NoError(t, os.WriteFile(cfgPath, []byte("[__settings__]\nauth_storage = legacy\n"), 0o600))
-		t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+// TestResolveStorageMode_SkipsConfigReadWhenOverrideOrEnvSet verifies that
+// ResolveStorageMode short-circuits before reading .databrickscfg when an
+// earlier source already decided the mode. A deliberately broken config path
+// would produce an error if the read happened.
+func TestResolveStorageMode_SkipsConfigReadWhenOverrideOrEnvSet(t *testing.T) {
+	// Point DATABRICKS_CONFIG_FILE at a path that is not a regular file so
+	// any attempted read surfaces as an error.
+	unreadableDir := t.TempDir()
+	t.Setenv("DATABRICKS_CONFIG_FILE", unreadableDir)
+
+	t.Run("override short-circuits", func(t *testing.T) {
+		t.Setenv(EnvVar, "")
+		got, err := ResolveStorageMode(t.Context(), StorageModeSecure)
+		require.NoError(t, err)
+		assert.Equal(t, StorageModeSecure, got)
+	})
+
+	t.Run("env short-circuits", func(t *testing.T) {
 		t.Setenv(EnvVar, "secure")
-
-		got, err := ResolveStorageMode(t.Context(), "")
+		got, err := ResolveStorageMode(t.Context(), StorageModeUnknown)
 		require.NoError(t, err)
 		assert.Equal(t, StorageModeSecure, got)
-	})
-
-	t.Run("config value is picked up when env unset", func(t *testing.T) {
-		cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
-		require.NoError(t, os.WriteFile(cfgPath, []byte("[__settings__]\nauth_storage = secure\n"), 0o600))
-		t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
-		t.Setenv(EnvVar, "")
-
-		got, err := ResolveStorageMode(t.Context(), "")
-		require.NoError(t, err)
-		assert.Equal(t, StorageModeSecure, got)
-	})
-
-	t.Run("defaults to legacy when both unset", func(t *testing.T) {
-		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "does-not-exist"))
-		t.Setenv(EnvVar, "")
-
-		got, err := ResolveStorageMode(t.Context(), "")
-		require.NoError(t, err)
-		assert.Equal(t, StorageModeLegacy, got)
 	})
 }
