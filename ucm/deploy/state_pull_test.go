@@ -55,6 +55,16 @@ func newFixture(t *testing.T) *fixture {
 	}
 }
 
+// writeLocalTf drops a terraform.tfstate at the canonical local nested path
+// (<LocalStateDir>/terraform/terraform.tfstate). Creates the parent directory
+// if needed so tests can lean on it the same way a real terraform apply does.
+func writeLocalTf(t *testing.T, f *fixture, data []byte) {
+	t.Helper()
+	path := deploy.LocalTfStatePath(f.u)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, data, 0o600))
+}
+
 // readLocalUcmStateBytes reads the on-disk ucm-state.json from the local
 // cache directory. Tests use this instead of exposing readLocalState from
 // the production package.
@@ -93,7 +103,7 @@ func TestPullFirstRunInitializesFreshLocal(t *testing.T) {
 
 	// tfstate must NOT be mirrored locally: the signal to downstream
 	// phases that this is a first-run.
-	_, err := os.Stat(filepath.Join(f.localDir, deploy.TfStateFileName))
+	_, err := os.Stat(deploy.LocalTfStatePath(f.u))
 	assert.True(t, os.IsNotExist(err), "unexpected local tfstate on first-run: %v", err)
 }
 
@@ -110,7 +120,7 @@ func TestPullMirrorsRemoteStateAndTfstate(t *testing.T) {
 	got := decodeState(t, readLocalUcmStateBytes(t, f.localDir))
 	assert.Equal(t, 4, got.Seq)
 
-	tfData, err := os.ReadFile(filepath.Join(f.localDir, deploy.TfStateFileName))
+	tfData, err := os.ReadFile(deploy.LocalTfStatePath(f.u))
 	require.NoError(t, err)
 	assert.Equal(t, `{"terraform":"blob"}`, string(tfData))
 }

@@ -46,7 +46,7 @@ prints a table of resource type + count. Run ` + "`ucm deploy`" + ` (or at least
 			return root.ErrAlreadyPrinted
 		}
 
-		statePath := filepath.Join(deploy.LocalStateDir(u), deploy.TfStateFileName)
+		statePath := deploy.LocalTfStatePath(u)
 		counts, err := readTfstateCounts(statePath)
 		if err != nil {
 			return fmt.Errorf("read local state %s: %w", filepath.ToSlash(statePath), err)

@@ -40,7 +40,7 @@ func TestPushFirstWriteAfterPull(t *testing.T) {
 	require.NoError(t, deploy.Pull(ctx, f.u, f.backend))
 
 	// Drop a tfstate blob locally so Push has something to upload.
-	require.NoError(t, os.WriteFile(filepath.Join(f.localDir, deploy.TfStateFileName), []byte(`{"tf":"v1"}`), 0o600))
+	writeLocalTf(t, f, []byte(`{"tf":"v1"}`))
 
 	require.NoError(t, deploy.Push(ctx, f.u, f.backend))
 
@@ -62,7 +62,7 @@ func TestPushPullRoundTripIsIdentical(t *testing.T) {
 
 	require.NoError(t, deploy.Pull(ctx, f.u, f.backend))
 	tfBlob := []byte(`{"tf":"roundtrip"}`)
-	require.NoError(t, os.WriteFile(filepath.Join(f.localDir, deploy.TfStateFileName), tfBlob, 0o600))
+	writeLocalTf(t, f, tfBlob)
 	require.NoError(t, deploy.Push(ctx, f.u, f.backend))
 
 	// Simulate a second clone of the project: wipe the local cache and
@@ -70,7 +70,7 @@ func TestPushPullRoundTripIsIdentical(t *testing.T) {
 	require.NoError(t, os.RemoveAll(f.localDir))
 	require.NoError(t, deploy.Pull(ctx, f.u, f.backend))
 
-	got, err := os.ReadFile(filepath.Join(f.localDir, deploy.TfStateFileName))
+	got, err := os.ReadFile(deploy.LocalTfStatePath(f.u))
 	require.NoError(t, err)
 	assert.Equal(t, tfBlob, got)
 
@@ -180,7 +180,7 @@ func TestPushMirrorsTfstateBytesExactly(t *testing.T) {
 
 	require.NoError(t, deploy.Pull(ctx, f.u, f.backend))
 	tfBlob := bytes.Repeat([]byte{0xAB}, 2048)
-	require.NoError(t, os.WriteFile(filepath.Join(f.localDir, deploy.TfStateFileName), tfBlob, 0o600))
+	writeLocalTf(t, f, tfBlob)
 
 	require.NoError(t, deploy.Push(ctx, f.u, f.backend))
 

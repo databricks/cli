@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/databricks/cli/libs/log"
@@ -61,7 +60,7 @@ func Push(ctx context.Context, u *ucm.Ucm, b Backend) error {
 	}
 	next.Timestamp = time.Now().UTC()
 
-	if err := writeRemote(ctx, b.StateFiler, localDir, &next); err != nil {
+	if err := writeRemote(ctx, b.StateFiler, LocalTfStatePath(u), &next); err != nil {
 		return err
 	}
 
@@ -95,9 +94,13 @@ func assertRemoteNotAhead(ctx context.Context, f filer.StateFiler, local *State)
 // ucm-state.json. ucm-state.json is written last so a crash between the two
 // leaves the remote in a shape the next Pull can still interpret as
 // "remote ahead of us, need to advance" rather than "blank slate".
-func writeRemote(ctx context.Context, f filer.StateFiler, localDir string, next *State) error {
-	tfPath := filepath.Join(localDir, TfStateFileName)
-	if data, err := os.ReadFile(tfPath); err == nil {
+//
+// tfStatePath is the absolute local path that terraform wrote its state to
+// (canonically LocalTfStatePath(u)). A missing file there is treated as a
+// benign "nothing to upload" — the first Push before any terraform apply
+// runs hits this path.
+func writeRemote(ctx context.Context, f filer.StateFiler, tfStatePath string, next *State) error {
+	if data, err := os.ReadFile(tfStatePath); err == nil {
 		if err := f.Write(ctx, TfStateFileName, bytes.NewReader(data), filer.WriteModeOverwrite|filer.WriteModeCreateParents); err != nil {
 			return fmt.Errorf("ucm state: write remote %s: %w", TfStateFileName, err)
 		}
