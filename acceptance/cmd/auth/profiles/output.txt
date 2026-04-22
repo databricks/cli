@@ -1,5 +1,6 @@
 
 === Profiles with workspace_id (JSON output)
+Warn: [hostmetadata] failed to fetch host metadata for https://test.cloud.databricks.com, will skip for 1m0s
 {
   "profiles": [
     {

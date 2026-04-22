@@ -82,7 +82,11 @@ func NewResolver(fetch config.HostMetadataResolver) config.HostMetadataResolver 
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return nil, nil
 		}
-		log.Warnf(ctx, "[hostmetadata] fetch failed for %s, recording negative: %v", host, err)
+		// The raw error is env-dependent (DNS vs TLS vs HTTP) and would make
+		// acceptance goldens brittle, so keep it at Debug; the Warn text is
+		// stable (host only) for user visibility.
+		log.Warnf(ctx, "[hostmetadata] failed to fetch host metadata for %s, will skip for %s", host, negativeCacheTTL)
+		log.Debugf(ctx, "[hostmetadata] fetch error for %s: %v", host, err)
 		cache.Put(ctx, negative, fp, &negativeSentinel{Error: true})
 		return nil, nil
 	}
