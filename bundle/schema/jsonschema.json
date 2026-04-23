@@ -2743,7 +2743,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "experimental_is_unified_host": {
-                      "description": "Experimental feature flag to indicate if the host is a unified host",
+                      "description": "Deprecated: no-op. Unified hosts are now detected automatically from /.well-known/databricks-config. Retained for schema compatibility with existing databricks.yml files.",
                       "$ref": "#/$defs/bool"
                     },
                     "file_path": {

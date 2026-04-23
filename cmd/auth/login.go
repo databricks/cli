@@ -205,13 +205,6 @@ a new profile is created.
 			return discoveryLogin(ctx, &defaultDiscoveryClient{}, tokenCache, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
 		}
 
-		// Load unified host flag from the profile if not explicitly set via CLI flag.
-		// WorkspaceID is NOT loaded here; it is deferred to setHostAndAccountId()
-		// so that URL query params (?o=...) can override stale profile values.
-		if !cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
-			authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
-		}
-
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
 		if err != nil {
 			return err
@@ -262,8 +255,7 @@ a new profile is created.
 
 		// If discovery gave us an account_id but we still have no workspace_id,
 		// prompt the user to select a workspace. This applies to any host where
-		// .well-known/databricks-config returned an account_id, regardless of
-		// whether IsUnifiedHost is set.
+		// .well-known/databricks-config returned an account_id.
 		shouldPromptWorkspace := authArguments.AccountID != "" &&
 			authArguments.WorkspaceID == "" &&
 			!skipWorkspace
@@ -412,7 +404,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	// are logged as warnings and never block login.
 	runHostDiscovery(ctx, authArguments)
 
-	if needsAccountIDPrompt(authArguments.Host, authArguments.IsUnifiedHost, authArguments.DiscoveryURL) && authArguments.AccountID == "" {
+	if needsAccountIDPrompt(authArguments.Host, authArguments.DiscoveryURL) && authArguments.AccountID == "" {
 		if existingProfile != nil && existingProfile.AccountID != "" {
 			authArguments.AccountID = existingProfile.AccountID
 		} else {
@@ -429,14 +421,14 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 
 // needsAccountIDPrompt reports whether the target host requires an account ID
 // for OAuth URL construction. True for classic account hosts (accounts.*) and
-// for unified hosts (either legacy flag or account-scoped DiscoveryURL).
-func needsAccountIDPrompt(host string, isUnifiedHost bool, discoveryURL string) bool {
+// for unified hosts detected via account-scoped DiscoveryURL.
+func needsAccountIDPrompt(host, discoveryURL string) bool {
 	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
 	if strings.HasPrefix(canonicalHost, "https://accounts.") ||
 		strings.HasPrefix(canonicalHost, "https://accounts-dod.") {
 		return true
 	}
-	return auth.HasUnifiedHostSignal(discoveryURL, isUnifiedHost)
+	return auth.HasUnifiedHostSignal(discoveryURL)
 }
 
 // runHostDiscovery calls EnsureResolved() with a temporary config to fetch
@@ -528,7 +520,6 @@ func shouldUseDiscovery(hostFlag string, args []string, existingProfile *profile
 var discoveryIncompatibleFlags = []string{
 	"account-id",
 	"workspace-id",
-	"experimental-is-unified-host",
 	"configure-cluster",
 	"configure-serverless",
 }

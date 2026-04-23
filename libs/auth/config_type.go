@@ -7,18 +7,11 @@ import (
 )
 
 // HasUnifiedHostSignal reports whether a host has been identified as unified,
-// either by a resolved DiscoveryURL pointing at an account-scoped OIDC endpoint
-// or by the caller-provided legacy fallback. Extracted so callers that don't
-// (yet) have an account ID can check the signal without tripping IsSPOG's guard.
-//
-// fallback replaces a former read of cfg.Experimental_IsUnifiedHost. Callers
-// thread the CLI-side signal in (e.g. AuthArguments.IsUnifiedHost,
-// Profile.IsUnifiedHost) because the SDK field is being removed.
-func HasUnifiedHostSignal(discoveryURL string, fallback bool) bool {
-	if discoveryURL != "" && strings.Contains(discoveryURL, "/oidc/accounts/") {
-		return true
-	}
-	return fallback
+// based on a resolved DiscoveryURL pointing at an account-scoped OIDC endpoint.
+// Extracted so callers that don't (yet) have an account ID can check the signal
+// without tripping IsSPOG's guard.
+func HasUnifiedHostSignal(discoveryURL string) bool {
+	return discoveryURL != "" && strings.Contains(discoveryURL, "/oidc/accounts/")
 }
 
 // IsSPOG returns true if the config represents a SPOG (Single Pane of Glass)
@@ -30,11 +23,11 @@ func HasUnifiedHostSignal(discoveryURL string, fallback bool) bool {
 // control the source: ResolveConfigType passes cfg.AccountID (from config file),
 // while ToOAuthArgument passes the caller-provided value to avoid env var
 // contamination (DATABRICKS_ACCOUNT_ID or .well-known back-fill).
-func IsSPOG(cfg *config.Config, accountID string, unifiedHostFallback bool) bool {
+func IsSPOG(cfg *config.Config, accountID string) bool {
 	if accountID == "" {
 		return false
 	}
-	return HasUnifiedHostSignal(cfg.DiscoveryURL, unifiedHostFallback)
+	return HasUnifiedHostSignal(cfg.DiscoveryURL)
 }
 
 // ResolveConfigType determines the effective ConfigType for a resolved config.
@@ -43,20 +36,16 @@ func IsSPOG(cfg *config.Config, accountID string, unifiedHostFallback bool) bool
 // function additionally uses IsSPOG to detect SPOG hosts.
 //
 // The cfg must already be resolved (via EnsureResolved) before calling this.
-// unifiedHostFallback is threaded through to IsSPOG; see its docstring.
-func ResolveConfigType(cfg *config.Config, unifiedHostFallback bool) config.ConfigType {
+func ResolveConfigType(cfg *config.Config) config.ConfigType {
 	configType := cfg.ConfigType()
 	if configType == config.AccountConfig {
 		return configType
 	}
 
-	if !IsSPOG(cfg, cfg.AccountID, unifiedHostFallback) {
+	if !IsSPOG(cfg, cfg.AccountID) {
 		return configType
 	}
 
-	// The WorkspaceConfig return is a no-op when configType is already
-	// WorkspaceConfig, but is needed for InvalidConfig (legacy unified-host
-	// profiles where the SDK dropped the UnifiedHost case in v0.126.0).
 	if cfg.WorkspaceID != "" && cfg.WorkspaceID != WorkspaceIDNone {
 		return config.WorkspaceConfig
 	}

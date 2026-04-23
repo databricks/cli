@@ -124,11 +124,10 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 			return
 		}
 		oauthArg, argErr := AuthArguments{
-			Host:          cfg.Host,
-			AccountID:     cfg.AccountID,
-			WorkspaceID:   cfg.WorkspaceID,
-			DiscoveryURL:  cfg.DiscoveryURL,
-			IsUnifiedHost: legacyUnifiedHostFromProfile(ctx, cfg),
+			Host:         cfg.Host,
+			AccountID:    cfg.AccountID,
+			WorkspaceID:  cfg.WorkspaceID,
+			DiscoveryURL: cfg.DiscoveryURL,
 		}.ToOAuthArgument()
 		if argErr != nil {
 			fmt.Fprint(b, "\n  - Re-authenticate: databricks auth login")

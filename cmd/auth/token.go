@@ -41,19 +41,6 @@ const (
 	createNewSelected                               // User chose "Create a new profile"
 )
 
-// applyUnifiedHostFlags copies unified host fields from the profile to the
-// auth arguments when they are not already set. WorkspaceID is NOT copied
-// here; it is deferred to setHostAndAccountId() so that URL query params
-// (?o=...) can override stale profile values.
-func applyUnifiedHostFlags(p *profile.Profile, args *auth.AuthArguments) {
-	if p == nil {
-		return
-	}
-	if !args.IsUnifiedHost && p.IsUnifiedHost {
-		args.IsUnifiedHost = p.IsUnifiedHost
-	}
-}
-
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [PROFILE]",
@@ -189,8 +176,6 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	applyUnifiedHostFlags(existingProfile, args.authArguments)
-
 	// When no explicit profile, host, or positional args are provided, attempt to
 	// resolve the target through environment variables or interactive profile selection.
 	if args.profileName == "" && args.authArguments.Host == "" && len(args.args) == 0 {
@@ -200,7 +185,6 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			return nil, err
 		}
 		args.profileName = resolvedProfile
-		applyUnifiedHostFlags(existingProfile, args.authArguments)
 	}
 
 	err = setHostAndAccountId(ctx, existingProfile, args.authArguments, args.args)
@@ -449,7 +433,6 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	}
 
 	loginArgs := &auth.AuthArguments{}
-	applyUnifiedHostFlags(existingProfile, loginArgs)
 
 	err = setHostAndAccountId(ctx, existingProfile, loginArgs, nil)
 	if err != nil {
