@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -47,13 +48,14 @@ func (m *referenceClosure) Apply(_ context.Context, u *ucm.Ucm) diag.Diagnostics
 				continue
 			}
 			if !resourceExists(root, targetPath) {
+				// Clone p: WalkReadOnly reuses the backing slice across siblings.
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary: fmt.Sprintf(
 						"unresolved reference ${%s} at %s: target resource is not declared in config",
 						target, p.String(),
 					),
-					Paths:     []dyn.Path{p},
+					Paths:     []dyn.Path{slices.Clone(p)},
 					Locations: locsOf(v),
 				})
 			}
