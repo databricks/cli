@@ -5,6 +5,13 @@ workspace:
   host: https://example.cloud.databricks.com
 
 resources:
+
+  storage_credentials:
+    michele-test:
+      name: michele-test
+      comment: "Managed identity credential managed by UCM"
+      azure_managed_identity:
+        access_connector_id: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/example-rg/providers/Microsoft.Databricks/accessConnectors/example-connector
   catalogs:
     team_alpha:
       name: team_alpha

@@ -9,18 +9,43 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/databricks/cli/libs/cmdio"
 	libsfiler "github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/logdiag"
 	ucmpkg "github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/direct"
 	ucmfiler "github.com/databricks/cli/ucm/deploy/filer"
 	"github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/phases"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
+
+// init pre-seeds Workspace.CurrentUser on every loaded Ucm so the
+// network-backed PopulateCurrentUser mutator short-circuits in unit tests.
+// DefineDefaultWorkspaceRoot + ExpandWorkspaceRoot then produce a
+// deterministic RootPath ("/Workspace/Users/test-user@example.com/...")
+// without touching a real workspace. Both `package ucm` and `package
+// ucm_test` share this test binary, so one init() covers both.
+func init() {
+	utils.PreMutateHook = seedFakeWorkspaceContext
+}
+
+func seedFakeWorkspaceContext(_ context.Context, u *ucmpkg.Ucm) {
+	if u == nil {
+		return
+	}
+	if u.CurrentUser == nil {
+		u.CurrentUser = &config.User{
+			ShortName: "test-user",
+			User:      &iam.User{UserName: "test-user@example.com"},
+		}
+	}
+}
 
 // fakeTf satisfies phases.TerraformWrapper for verb smoke tests. Mirrors the
 // shape of ucm/phases/helpers_test.go's fakeTf but lives in this package so

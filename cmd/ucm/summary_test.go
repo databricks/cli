@@ -169,7 +169,7 @@ resources:
 	require.False(t, logdiag.HasError(ctx))
 
 	var buf bytes.Buffer
-	renderSummaryText(&buf, &u.Config)
+	renderSummaryText(&buf, u)
 
 	out := buf.String()
 	assert.Contains(t, out, "Catalogs:")

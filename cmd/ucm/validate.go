@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -56,6 +57,9 @@ Common invocations:
 				return err
 			}
 		} else {
+			if u != nil {
+				renderSummaryHeader(out, u)
+			}
 			writeValidateTrailer(ctx, out)
 		}
 
@@ -108,17 +112,17 @@ func writeValidateTrailer(ctx context.Context, out io.Writer) {
 	info := logdiag.Copy(ctx)
 	var parts []string
 	if info.Errors > 0 {
-		parts = append(parts, pluralize(info.Errors, "error", "errors"))
+		parts = append(parts, color.RedString(pluralize(info.Errors, "error", "errors")))
 	}
 	if info.Warnings > 0 {
-		parts = append(parts, pluralize(info.Warnings, "warning", "warnings"))
+		parts = append(parts, color.YellowString(pluralize(info.Warnings, "warning", "warnings")))
 	}
 	if info.Recommendations > 0 {
-		parts = append(parts, pluralize(info.Recommendations, "recommendation", "recommendations"))
+		parts = append(parts, color.BlueString(pluralize(info.Recommendations, "recommendation", "recommendations")))
 	}
 	switch len(parts) {
 	case 0:
-		fmt.Fprintln(out, "Validation OK!")
+		fmt.Fprint(out, color.GreenString("Validation OK!\n"))
 	case 1:
 		fmt.Fprintf(out, "Found %s\n", parts[0])
 	case 2:

@@ -36,6 +36,12 @@ type Ucm struct {
 	// nil until a target has been selected.
 	Target *config.Target
 
+	// CurrentUser is populated by the PopulateCurrentUser mutator from the
+	// workspace client's CurrentUser.Me(). Lives on Ucm (not Config) so the
+	// dyn-tree round-trip in MarkMutatorEntry/Exit doesn't zero it between
+	// mutator applies.
+	CurrentUser *config.User
+
 	// getClient memoizes the workspace client built from Config.Workspace.
 	// Initialized lazily by WorkspaceClientE via initClientOnce.
 	getClient func() (*databricks.WorkspaceClient, error)
