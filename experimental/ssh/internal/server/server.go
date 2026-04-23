@@ -72,6 +72,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		return fmt.Errorf("failed to save metadata to the workspace: %w", err)
 	}
 
+	ensureBashLoginShell(ctx)
+
 	sshdConfigPath, err := prepareSSHDConfig(ctx, client, opts)
 	if err != nil {
 		return fmt.Errorf("failed to setup SSH configuration: %w", err)
