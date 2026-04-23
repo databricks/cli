@@ -67,7 +67,11 @@ func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath str
 		return diag.FromErr(err)
 	}
 
-	p := permissions.ObjectAclToResourcePermissions(folderPath, objPermissions.AccessControlList)
+	var currentUser string
+	if b.Config.Workspace.CurrentUser != nil {
+		currentUser = b.Config.Workspace.CurrentUser.UserName
+	}
+	p := permissions.ObjectAclToResourcePermissions(folderPath, objPermissions.AccessControlList, currentUser)
 	return p.Compare(b.Config.Permissions)
 }
 
