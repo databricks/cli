@@ -1,31 +1,14 @@
-package mutator_test
+package validate_test
 
 import (
 	"testing"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/ucm"
-	"github.com/databricks/cli/ucm/config"
-	"github.com/databricks/cli/ucm/config/mutator"
+	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// loadUcm parses raw YAML and returns a fresh Ucm backed by it.
-func loadUcm(t *testing.T, yaml string) *ucm.Ucm {
-	t.Helper()
-	cfg, diags := config.LoadFromBytes("/test/ucm.yml", []byte(yaml))
-	require.NoError(t, diags.Error())
-	return &ucm.Ucm{Config: *cfg}
-}
-
-func summaries(ds diag.Diagnostics) []string {
-	out := make([]string, 0, len(ds))
-	for _, d := range ds {
-		out = append(out, d.Summary)
-	}
-	return out
-}
 
 func TestValidateTags_AllTagsPresent(t *testing.T) {
 	u := loadUcm(t, `
@@ -46,7 +29,7 @@ resources:
       allowed_values:
         classification: [public, internal, confidential]
 `)
-	diags := ucm.Apply(t.Context(), u, mutator.ValidateTags())
+	diags := ucm.Apply(t.Context(), u, validate.ValidateTags())
 	require.NoError(t, diags.Error())
 	assert.Empty(t, diags)
 }
@@ -66,7 +49,7 @@ resources:
       securable_types: [catalog]
       required: [cost_center, data_owner, classification]
 `)
-	diags := ucm.Apply(t.Context(), u, mutator.ValidateTags())
+	diags := ucm.Apply(t.Context(), u, validate.ValidateTags())
 	require.Error(t, diags.Error())
 	assert.Len(t, diags, 2) // data_owner + classification
 	for _, d := range diags {
@@ -95,7 +78,7 @@ resources:
       allowed_values:
         classification: [public, internal, confidential]
 `)
-	diags := ucm.Apply(t.Context(), u, mutator.ValidateTags())
+	diags := ucm.Apply(t.Context(), u, validate.ValidateTags())
 	require.Error(t, diags.Error())
 	require.Len(t, diags, 1)
 	assert.Contains(t, diags[0].Summary, "not in allowed values")
@@ -116,7 +99,7 @@ resources:
       securable_types: [schema]
       required: [data_owner]
 `)
-	diags := ucm.Apply(t.Context(), u, mutator.ValidateTags())
+	diags := ucm.Apply(t.Context(), u, validate.ValidateTags())
 	require.Len(t, diags, 1)
 	assert.Contains(t, diags[0].Summary, `schema "s1"`)
 }
@@ -136,7 +119,7 @@ resources:
       securable_types: [schema]
       required: [data_owner]
 `)
-	diags := ucm.Apply(t.Context(), u, mutator.ValidateTags())
+	diags := ucm.Apply(t.Context(), u, validate.ValidateTags())
 	assert.Empty(t, diags)
 }
 
@@ -149,7 +132,7 @@ resources:
     c1:
       name: c1
 `)
-	diags := ucm.Apply(t.Context(), u, mutator.ValidateTags())
+	diags := ucm.Apply(t.Context(), u, validate.ValidateTags())
 	assert.Empty(t, diags)
 }
 
@@ -170,7 +153,7 @@ resources:
       securable_types: [catalog]
       required: [data_owner]
 `)
-	diags := ucm.Apply(t.Context(), u, mutator.ValidateTags())
+	diags := ucm.Apply(t.Context(), u, validate.ValidateTags())
 	require.Len(t, diags, 1)
 	require.NotEmpty(t, diags[0].Locations)
 	assert.Equal(t, "/test/ucm.yml", diags[0].Locations[0].File)
