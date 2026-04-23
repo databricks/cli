@@ -20,6 +20,7 @@ type TerraformWrapper interface {
 	Apply(ctx context.Context, u *ucm.Ucm, forceLock bool) error
 	Destroy(ctx context.Context, u *ucm.Ucm, forceLock bool) error
 	Import(ctx context.Context, u *ucm.Ucm, address, id string) error
+	StateRm(ctx context.Context, u *ucm.Ucm, address string) error
 }
 
 // TerraformFactory constructs a terraform-engine wrapper scoped to u.

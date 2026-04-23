@@ -62,6 +62,7 @@ type fakeTf struct {
 	ApplyCalls   int
 	DestroyCalls int
 	ImportCalls  int
+	StateRmCalls int
 
 	RenderErr  error
 	InitErr    error
@@ -69,9 +70,11 @@ type fakeTf struct {
 	ApplyErr   error
 	DestroyErr error
 	ImportErr  error
+	StateRmErr error
 
-	LastImportAddress string
-	LastImportId      string
+	LastImportAddress  string
+	LastImportId       string
+	LastStateRmAddress string
 
 	PlanResult *terraform.PlanResult
 }
@@ -118,6 +121,14 @@ func (f *fakeTf) Import(_ context.Context, _ *ucmpkg.Ucm, address, id string) er
 	f.LastImportAddress = address
 	f.LastImportId = id
 	return f.ImportErr
+}
+
+func (f *fakeTf) StateRm(_ context.Context, _ *ucmpkg.Ucm, address string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.StateRmCalls++
+	f.LastStateRmAddress = address
+	return f.StateRmErr
 }
 
 // verbHarness bundles the fake terraform wrapper, the remote-state filer

@@ -21,6 +21,7 @@ type fakeRunner struct {
 	ApplyCalls        int
 	DestroyCalls      int
 	ImportCalls       int
+	StateRmCalls      int
 	SetEnvCalls       int
 
 	// LastEnv captures the map passed to the most recent SetEnv call.
@@ -31,6 +32,9 @@ type fakeRunner struct {
 	// recent Import call.
 	LastImportAddress string
 	LastImportId      string
+	// LastStateRmAddress captures the address passed to the most recent
+	// StateRm call.
+	LastStateRmAddress string
 
 	// PlanHasChanges is returned by Plan.
 	PlanHasChanges bool
@@ -38,14 +42,15 @@ type fakeRunner struct {
 	// (no resource changes) so callers don't need to set it for zero-diff
 	// tests.
 	ShowPlanResult *tfjson.Plan
-	// ApplyErr, InitErr, DestroyErr, PlanErr, ShowPlanFileErr, ImportErr make
-	// the next corresponding call return the given error.
+	// ApplyErr, InitErr, DestroyErr, PlanErr, ShowPlanFileErr, ImportErr,
+	// StateRmErr make the next corresponding call return the given error.
 	InitErr         error
 	PlanErr         error
 	ShowPlanFileErr error
 	ApplyErr        error
 	DestroyErr      error
 	ImportErr       error
+	StateRmErr      error
 
 	// ApplyHook is invoked synchronously inside Apply before returning. Used
 	// by the lock contention test to hold the lock while a second goroutine
@@ -53,6 +58,8 @@ type fakeRunner struct {
 	ApplyHook func(ctx context.Context)
 	// ImportHook mirrors ApplyHook for the Import path.
 	ImportHook func(ctx context.Context)
+	// StateRmHook mirrors ApplyHook for the StateRm path.
+	StateRmHook func(ctx context.Context)
 }
 
 func (f *fakeRunner) Init(_ context.Context, _ ...tfexec.InitOption) error {
@@ -112,6 +119,19 @@ func (f *fakeRunner) Import(ctx context.Context, address, id string, _ ...tfexec
 	f.LastImportId = id
 	hook := f.ImportHook
 	err := f.ImportErr
+	f.mu.Unlock()
+	if hook != nil {
+		hook(ctx)
+	}
+	return err
+}
+
+func (f *fakeRunner) StateRm(ctx context.Context, address string, _ ...tfexec.StateRmCmdOption) error {
+	f.mu.Lock()
+	f.StateRmCalls++
+	f.LastStateRmAddress = address
+	hook := f.StateRmHook
+	err := f.StateRmErr
 	f.mu.Unlock()
 	if hook != nil {
 		hook(ctx)
