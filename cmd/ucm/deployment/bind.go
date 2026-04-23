@@ -75,6 +75,10 @@ made outside ucm may be overwritten on the next deploy.`,
 			return err
 		}
 
+		if err := validateBindName(kind, ucName); err != nil {
+			return err
+		}
+
 		if !autoApprove {
 			if !cmdio.IsPromptSupported(ctx) {
 				return errNeedsAutoApprove

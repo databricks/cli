@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/phases"
@@ -41,4 +42,32 @@ func resolveBindable(u *ucm.Ucm, key string) (phases.ImportKind, error) {
 	default:
 		return "", fmt.Errorf("ambiguous key %q: matches %v", key, matches)
 	}
+}
+
+// validateBindName asserts the UC_NAME argument matches the shape the UC
+// surface expects for the given kind. Catching shape mismatches here turns a
+// late state-write error into a clear upfront message.
+func validateBindName(kind phases.ImportKind, name string) error {
+	if name == "" {
+		return fmt.Errorf("empty UC_NAME")
+	}
+	dots := strings.Count(name, ".")
+	switch kind {
+	case phases.ImportCatalog,
+		phases.ImportStorageCredential,
+		phases.ImportExternalLocation,
+		phases.ImportConnection:
+		if dots != 0 {
+			return fmt.Errorf("%s name %q must be a single identifier with no dots", kind, name)
+		}
+	case phases.ImportSchema:
+		if dots != 1 {
+			return fmt.Errorf("schema name %q must be `<catalog>.<schema>`", name)
+		}
+	case phases.ImportVolume:
+		if dots != 2 {
+			return fmt.Errorf("volume name %q must be `<catalog>.<schema>.<volume>`", name)
+		}
+	}
+	return nil
 }
