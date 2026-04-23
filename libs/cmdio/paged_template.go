@@ -106,6 +106,7 @@ func renderIteratorPagedTemplateCore[T any](
 		ctx:      ctx,
 		iter:     iter,
 		pager:    pager,
+		spinner:  newPagerSpinner(),
 		pageSize: pageSize,
 		limit:    limitFromContext(ctx),
 	}

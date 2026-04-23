@@ -3,8 +3,11 @@ package cmdio
 import (
 	"context"
 	"strings"
+	"time"
 
+	bubblespinner "github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/databricks-sdk-go/listing"
 )
 
@@ -14,6 +17,9 @@ const pagerPageSize = 50
 // pagerPromptText is shown between pages.
 const pagerPromptText = "[space] more  [enter] all  [q|esc] quit"
 
+// pagerLoadingText is appended to the spinner while a fetch is in flight.
+const pagerLoadingText = "loading…"
+
 // pagerModel is the tea.Model that drives the paged render loop: one
 // fetchCmd produces a batchMsg, Update prints it via tea.Println, and
 // View shows the prompt between pages.
@@ -21,6 +27,7 @@ type pagerModel[T any] struct {
 	ctx      context.Context
 	iter     listing.Iterator[T]
 	pager    *templatePager
+	spinner  bubblespinner.Model
 	pageSize int
 	limit    int
 	total    int
@@ -36,6 +43,18 @@ type pagerModel[T any] struct {
 	err        error
 }
 
+// newPagerSpinner builds a spinner matching the one the cmdio package's
+// NewSpinner uses, so interactive feedback looks the same everywhere.
+func newPagerSpinner() bubblespinner.Model {
+	s := bubblespinner.New()
+	s.Spinner = bubblespinner.Spinner{
+		Frames: []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"},
+		FPS:    time.Second / 5,
+	}
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
+	return s
+}
+
 // batchMsg carries the rendered lines from one fetchCmd. done is true
 // when the iterator is exhausted or the limit is reached.
 type batchMsg struct {
@@ -46,7 +65,7 @@ type batchMsg struct {
 
 func (m *pagerModel[T]) Init() tea.Cmd {
 	m.fetching = true
-	return m.fetchCmd()
+	return tea.Batch(m.fetchCmd(), m.spinner.Tick)
 }
 
 // fetchCmd runs off the update loop so a slow network fetch doesn't
@@ -81,6 +100,11 @@ func (m *pagerModel[T]) fetchCmd() tea.Cmd {
 
 func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case bubblespinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+
 	case batchMsg:
 		m.fetching = false
 		if msg.err != nil {
@@ -156,8 +180,14 @@ func (m *pagerModel[T]) startDrain() tea.Cmd {
 }
 
 func (m *pagerModel[T]) View() string {
-	if m.iterDone || m.drainAll || m.err != nil || !m.hasPrinted {
+	switch {
+	case m.iterDone || m.err != nil:
 		return ""
+	case m.fetching:
+		return m.spinner.View() + " " + pagerLoadingText
+	case m.drainAll || !m.hasPrinted:
+		return ""
+	default:
+		return pagerPromptText
 	}
-	return pagerPromptText
 }

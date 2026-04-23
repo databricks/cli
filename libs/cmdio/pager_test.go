@@ -25,6 +25,7 @@ func newTestPager(t *testing.T, iter listing.Iterator[int], pageSize int) *pager
 			headerT: headerT,
 			rowT:    rowT,
 		},
+		spinner:  newPagerSpinner(),
 		pageSize: pageSize,
 	}
 }
@@ -71,10 +72,17 @@ func printedText(t *testing.T, msg tea.Msg) string {
 
 func TestPagerModelInitFetchesFirstBatch(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 3}, 10)
-	b, ok := runCmd(t, m.Init()).(batchMsg)
-	require.True(t, ok, "init should produce a batchMsg")
+	// Init returns a tea.Batch(fetchCmd, spinner.Tick); find the fetch.
+	var b batchMsg
+	for _, c := range unwrapCmds(t, runCmd(t, m.Init())) {
+		if msg, ok := c().(batchMsg); ok {
+			b = msg
+			break
+		}
+	}
 	assert.True(t, b.done, "small iterator is drained in one batch")
 	assert.Len(t, b.lines, 3)
+	assert.True(t, m.fetching, "Init must mark the model as fetching")
 }
 
 func TestPagerModelBatchPrintsAndQuitsWhenDone(t *testing.T) {
@@ -150,7 +158,7 @@ func TestPagerModelEnterSetsDrainAll(t *testing.T) {
 	m.hasPrinted = true
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	assert.True(t, m.drainAll)
-	assert.Empty(t, m.View(), "no prompt while draining")
+	assert.NotContains(t, m.View(), pagerPromptText, "no prompt while draining")
 	_, ok := runCmd(t, cmd).(batchMsg)
 	assert.True(t, ok, "enter should fire a fetch")
 }
@@ -228,4 +236,11 @@ func TestPagerModelIgnoresKeysAfterDone(t *testing.T) {
 func TestPagerModelViewHiddenUntilFirstBatch(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 10}, 5)
 	assert.Empty(t, m.View(), "prompt must not flash before any output is rendered")
+}
+
+func TestPagerModelViewShowsSpinnerWhileFetching(t *testing.T) {
+	m := newTestPager(t, &numberIterator{n: 100}, 5)
+	m.fetching = true
+	assert.Contains(t, m.View(), pagerLoadingText)
+	assert.NotContains(t, m.View(), pagerPromptText)
 }
