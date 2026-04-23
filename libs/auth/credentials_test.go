@@ -4,14 +4,27 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
+
+// hermeticAuthStorage isolates the test from the caller's real env vars and
+// .databrickscfg so storage.ResolveCache sees a clean default.
+func hermeticAuthStorage(t *testing.T) {
+	t.Helper()
+	t.Setenv(storage.EnvVar, "")
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "databrickscfg"))
+}
 
 // TestCredentialChainOrder purely exists as an extra measure to catch
 // accidental change in the ordering.
@@ -163,6 +176,7 @@ func TestCLICredentialsConfigure(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			hermeticAuthStorage(t)
 			ctx := t.Context()
 			c := CLICredentials{persistentAuthFn: tt.persistentAuthFn}
 
@@ -189,4 +203,87 @@ func TestCLICredentialsConfigure(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestCLICredentialsConfigure_ThreadsResolvedTokenCache guards against a
+// regression where Configure forgot to pass u2m.WithTokenCache. Without it,
+// the SDK's NewPersistentAuth silently defaulted to the file cache, so users
+// who opted into secure storage saw "cache: token not found" on every command
+// other than auth login/token/logout.
+func TestCLICredentialsConfigure_ThreadsResolvedTokenCache(t *testing.T) {
+	hermeticAuthStorage(t)
+
+	var receivedOpts []u2m.PersistentAuthOption
+	c := CLICredentials{
+		persistentAuthFn: func(_ context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+			receivedOpts = opts
+			return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
+				return &oauth2.Token{AccessToken: "tok"}, nil
+			}), nil
+		},
+	}
+
+	_, err := c.Configure(t.Context(), &config.Config{Host: "https://x.cloud.databricks.com"})
+	require.NoError(t, err)
+
+	// Two opts expected: WithOAuthArgument and WithTokenCache. The length
+	// check is the most resilient way to assert both were passed without
+	// poking at u2m's unexported state.
+	assert.Len(t, receivedOpts, 2)
+}
+
+// TestCLICredentialsConfigure_PropagatesStorageResolutionError confirms
+// Configure surfaces invalid DATABRICKS_AUTH_STORAGE values instead of
+// silently falling back to the file cache. If Configure ever stops calling
+// storage.ResolveCache, this test will catch it.
+func TestCLICredentialsConfigure_PropagatesStorageResolutionError(t *testing.T) {
+	hermeticAuthStorage(t)
+	t.Setenv(storage.EnvVar, "bogus")
+
+	c := CLICredentials{
+		persistentAuthFn: func(_ context.Context, _ ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+			t.Fatal("persistentAuthFn must not be called when cache resolution fails")
+			return nil, nil
+		},
+	}
+
+	_, err := c.Configure(t.Context(), &config.Config{Host: "https://x.cloud.databricks.com"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "DATABRICKS_AUTH_STORAGE")
+}
+
+// Writing a throwaway config file is verbose enough that future tests may
+// want it too. Keeping the helper scoped here so it stays close to use.
+func writeAuthStorageConfig(t *testing.T, mode string) {
+	t.Helper()
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "databrickscfg")
+	body := "[__settings__]\nauth_storage = " + mode + "\n"
+	require.NoError(t, os.WriteFile(configPath, []byte(body), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+	t.Setenv(storage.EnvVar, "")
+}
+
+// TestCLICredentialsConfigure_HonorsConfigFileSecureMode proves that
+// Configure picks up auth_storage = secure from .databrickscfg, not just
+// from DATABRICKS_AUTH_STORAGE. Both sources flow through the same resolver,
+// but the PR's user-facing docs promise both work and nothing was asserting
+// that for this call site.
+func TestCLICredentialsConfigure_HonorsConfigFileSecureMode(t *testing.T) {
+	writeAuthStorageConfig(t, "secure")
+
+	c := CLICredentials{
+		persistentAuthFn: func(_ context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+			// The presence of the second opt is verified by the sibling
+			// test; here we just need Configure to succeed end-to-end when
+			// the config file selects secure storage.
+			assert.Len(t, opts, 2)
+			return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
+				return &oauth2.Token{AccessToken: "tok"}, nil
+			}), nil
+		},
+	}
+
+	_, err := c.Configure(t.Context(), &config.Config{Host: "https://x.cloud.databricks.com"})
+	require.NoError(t, err)
 }

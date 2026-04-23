@@ -467,20 +467,6 @@ func promptForPagedResource(ctx context.Context, r manifest.Resource, required b
 	return singleValueResult(r, value), nil
 }
 
-// PromptForWarehouse shows a picker to select a SQL warehouse.
-func PromptForWarehouse(ctx context.Context) (string, error) {
-	var items []ListItem
-	err := RunWithSpinnerCtx(ctx, "Fetching SQL warehouses...", func() error {
-		var fetchErr error
-		items, fetchErr = ListSQLWarehousesItems(ctx)
-		return fetchErr
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch SQL warehouses: %w", err)
-	}
-	return PromptFromList(ctx, "Select SQL Warehouse", "no SQL warehouses found. Create one in your workspace first", items, true)
-}
-
 // resourceTitle returns a prompt title for a resource, including the plugin name
 // for context when available (e.g. "Select SQL Warehouse for Analytics").
 func resourceTitle(fallback string, r manifest.Resource) string {

@@ -30,13 +30,6 @@ func Upload(libs map[string][]LocationToUpdate) bundle.Mutator {
 	}
 }
 
-func UploadWithClient(libs map[string][]LocationToUpdate, client filer.Filer) bundle.Mutator {
-	return &upload{
-		libs:   libs,
-		client: client,
-	}
-}
-
 type upload struct {
 	client filer.Filer
 	libs   map[string][]LocationToUpdate
