@@ -15,31 +15,37 @@ type Client interface {
 	CreateCatalog(ctx context.Context, in catalog.CreateCatalog) (*catalog.CatalogInfo, error)
 	UpdateCatalog(ctx context.Context, in catalog.UpdateCatalog) (*catalog.CatalogInfo, error)
 	DeleteCatalog(ctx context.Context, name string) error
+	ListCatalogs(ctx context.Context) ([]catalog.CatalogInfo, error)
 
 	GetSchema(ctx context.Context, fullName string) (*catalog.SchemaInfo, error)
 	CreateSchema(ctx context.Context, in catalog.CreateSchema) (*catalog.SchemaInfo, error)
 	UpdateSchema(ctx context.Context, in catalog.UpdateSchema) (*catalog.SchemaInfo, error)
 	DeleteSchema(ctx context.Context, fullName string) error
+	ListSchemas(ctx context.Context, catalogName string) ([]catalog.SchemaInfo, error)
 
 	GetStorageCredential(ctx context.Context, name string) (*catalog.StorageCredentialInfo, error)
 	CreateStorageCredential(ctx context.Context, in catalog.CreateStorageCredential) (*catalog.StorageCredentialInfo, error)
 	UpdateStorageCredential(ctx context.Context, in catalog.UpdateStorageCredential) (*catalog.StorageCredentialInfo, error)
 	DeleteStorageCredential(ctx context.Context, name string) error
+	ListStorageCredentials(ctx context.Context) ([]catalog.StorageCredentialInfo, error)
 
 	GetExternalLocation(ctx context.Context, name string) (*catalog.ExternalLocationInfo, error)
 	CreateExternalLocation(ctx context.Context, in catalog.CreateExternalLocation) (*catalog.ExternalLocationInfo, error)
 	UpdateExternalLocation(ctx context.Context, in catalog.UpdateExternalLocation) (*catalog.ExternalLocationInfo, error)
 	DeleteExternalLocation(ctx context.Context, name string) error
+	ListExternalLocations(ctx context.Context) ([]catalog.ExternalLocationInfo, error)
 
 	GetVolume(ctx context.Context, name string) (*catalog.VolumeInfo, error)
 	CreateVolume(ctx context.Context, in catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error)
 	UpdateVolume(ctx context.Context, in catalog.UpdateVolumeRequestContent) (*catalog.VolumeInfo, error)
 	DeleteVolume(ctx context.Context, name string) error
+	ListVolumes(ctx context.Context, catalogName, schemaName string) ([]catalog.VolumeInfo, error)
 
 	GetConnection(ctx context.Context, name string) (*catalog.ConnectionInfo, error)
 	CreateConnection(ctx context.Context, in catalog.CreateConnection) (*catalog.ConnectionInfo, error)
 	UpdateConnection(ctx context.Context, in catalog.UpdateConnection) (*catalog.ConnectionInfo, error)
 	DeleteConnection(ctx context.Context, name string) error
+	ListConnections(ctx context.Context) ([]catalog.ConnectionInfo, error)
 
 	UpdatePermissions(ctx context.Context, in catalog.UpdatePermissions) error
 }
@@ -151,4 +157,28 @@ func (c *sdkClient) DeleteConnection(ctx context.Context, name string) error {
 func (c *sdkClient) UpdatePermissions(ctx context.Context, in catalog.UpdatePermissions) error {
 	_, err := c.w.Grants.Update(ctx, in)
 	return err
+}
+
+func (c *sdkClient) ListCatalogs(ctx context.Context) ([]catalog.CatalogInfo, error) {
+	return c.w.Catalogs.ListAll(ctx, catalog.ListCatalogsRequest{})
+}
+
+func (c *sdkClient) ListSchemas(ctx context.Context, catalogName string) ([]catalog.SchemaInfo, error) {
+	return c.w.Schemas.ListAll(ctx, catalog.ListSchemasRequest{CatalogName: catalogName})
+}
+
+func (c *sdkClient) ListStorageCredentials(ctx context.Context) ([]catalog.StorageCredentialInfo, error) {
+	return c.w.StorageCredentials.ListAll(ctx, catalog.ListStorageCredentialsRequest{})
+}
+
+func (c *sdkClient) ListExternalLocations(ctx context.Context) ([]catalog.ExternalLocationInfo, error) {
+	return c.w.ExternalLocations.ListAll(ctx, catalog.ListExternalLocationsRequest{})
+}
+
+func (c *sdkClient) ListVolumes(ctx context.Context, catalogName, schemaName string) ([]catalog.VolumeInfo, error) {
+	return c.w.Volumes.ListAll(ctx, catalog.ListVolumesRequest{CatalogName: catalogName, SchemaName: schemaName})
+}
+
+func (c *sdkClient) ListConnections(ctx context.Context) ([]catalog.ConnectionInfo, error) {
+	return c.w.Connections.ListAll(ctx, catalog.ListConnectionsRequest{})
 }

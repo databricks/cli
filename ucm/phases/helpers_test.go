@@ -225,6 +225,30 @@ func (*fakeDirectClient) UpdatePermissions(_ context.Context, _ catalog.UpdatePe
 	return nil
 }
 
+func (*fakeDirectClient) ListCatalogs(_ context.Context) ([]catalog.CatalogInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) ListSchemas(_ context.Context, _ string) ([]catalog.SchemaInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) ListStorageCredentials(_ context.Context) ([]catalog.StorageCredentialInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) ListExternalLocations(_ context.Context) ([]catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) ListVolumes(_ context.Context, _, _ string) ([]catalog.VolumeInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) ListConnections(_ context.Context) ([]catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
 func fakeDirectClientFactory() phases.DirectClientFactory {
 	return func(_ context.Context, _ *ucm.Ucm) (direct.Client, error) {
 		return &fakeDirectClient{}, nil
