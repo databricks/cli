@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config/validate"
 )
@@ -11,6 +12,7 @@ import (
 // Ucm: the raw-config validator pack (required fields, naming, duplicate
 // keys, tag-rule enforcement).
 func Validate(ctx context.Context, u *ucm.Ucm) {
+	log.Info(ctx, "Phase: validate")
 	validate.All(ctx, u)
 }
 
@@ -18,5 +20,6 @@ func Validate(ctx context.Context, u *ucm.Ucm) {
 // cheap enough to run from a pre-commit hook. Currently identical to
 // Validate; will diverge once non-validation mutators join the chain.
 func PolicyCheck(ctx context.Context, u *ucm.Ucm) {
+	log.Info(ctx, "Phase: policy-check")
 	validate.All(ctx, u)
 }

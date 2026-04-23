@@ -85,6 +85,7 @@ type GenerateOptions struct {
 // the UC dependency graph (credentials → locations → catalogs → schemas →
 // volumes → connections) so we never have to re-walk anything.
 func Generate(ctx context.Context, client direct.Client, opts GenerateOptions) (*GenerateResult, error) {
+	log.Info(ctx, "Phase: generate")
 	kinds, err := normalizeKinds(opts.Kinds)
 	if err != nil {
 		return nil, err
