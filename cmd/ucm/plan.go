@@ -35,6 +35,10 @@ Common invocations:
 	var forceLock bool
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
+	var force bool
+	cmd.Flags().BoolVar(&force, "force", false, "Force override of Git branch validation (no-op for UCM; accepted for DAB parity).")
+	_ = cmd.Flags().MarkHidden("force")
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx := cmd.Context()

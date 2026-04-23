@@ -93,6 +93,18 @@ func TestCmd_Plan_SkipCountsUnchanged(t *testing.T) {
 	assert.NotContains(t, stdout, "skip catalogs.main")
 }
 
+// TestCmd_Plan_ForceFlagIsRegisteredAndHidden verifies the DAB-parity hidden
+// --force flag is registered on the plan verb. It is a documented no-op; we
+// only assert the flag is wired and marked hidden so users migrating from
+// `bundle plan --force` don't hit an unknown-flag error.
+func TestCmd_Plan_ForceFlagIsRegisteredAndHidden(t *testing.T) {
+	cmd := newPlanCommand()
+	f := cmd.Flags().Lookup("force")
+	require.NotNil(t, f, "--force flag should be registered on ucm plan")
+	assert.True(t, f.Hidden, "--force flag should be hidden")
+	assert.Equal(t, "false", f.DefValue)
+}
+
 // TestCmd_Plan_RoundTripsThroughJSONStructure verifies the structured plan
 // survives the Plan→json.Marshal→json.Unmarshal trip with the same resource
 // keys and action values — the contract tooling consumers depend on.
