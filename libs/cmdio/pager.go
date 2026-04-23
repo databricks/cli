@@ -20,8 +20,8 @@ const pagerFallbackPageSize = 50
 const pagerMinPageSize = 5
 
 // pagerViewOverhead is the number of lines we keep below the printed
-// rows so the prompt (or spinner) doesn't force the top row off-screen.
-const pagerViewOverhead = 2
+// rows for the prompt (or spinner).
+const pagerViewOverhead = 1
 
 // pagerPromptText is shown between pages.
 const pagerPromptText = "[space] more  [enter] all  [q|esc] quit"
