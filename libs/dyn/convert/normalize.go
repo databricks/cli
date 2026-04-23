@@ -41,6 +41,11 @@ func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []
 		typ = typ.Elem()
 	}
 
+	// If the source is a pure variable reference, return it verbatim.
+	if src.Kind() == dyn.KindString && dynvar.IsPureVariableReference(src.MustString()) {
+		return src, nil
+	}
+
 	switch typ.Kind() {
 	case reflect.Struct:
 		// Handle SDK native types as strings since they use custom JSON marshaling.
@@ -189,12 +194,6 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
-
-	case dyn.KindString:
-		// Return verbatim if it's a pure variable reference.
-		if dynvar.IsPureVariableReference(src.MustString()) {
-			return src, nil
-		}
 	default:
 		// Fall through to the error case.
 	}
@@ -229,12 +228,6 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
-
-	case dyn.KindString:
-		// Return verbatim if it's a pure variable reference.
-		if dynvar.IsPureVariableReference(src.MustString()) {
-			return src, nil
-		}
 	default:
 		// Fall through to the error case.
 	}
@@ -266,12 +259,6 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
-
-	case dyn.KindString:
-		// Return verbatim if it's a pure variable reference.
-		if dynvar.IsPureVariableReference(src.MustString()) {
-			return src, nil
-		}
 	default:
 		// Fall through to the error case.
 	}
@@ -317,14 +304,6 @@ func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dy
 			return dyn.NewValue(true, src.Locations()), nil
 		case "false", "n", "N", "no", "No", "NO", "off", "Off", "OFF":
 			return dyn.NewValue(false, src.Locations()), nil
-		default:
-			// Return verbatim if it's a pure variable reference.
-			if dynvar.IsPureVariableReference(src.MustString()) {
-				return src, nil
-			}
-
-			// Cannot interpret as a boolean.
-			return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src, path))
 		}
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
@@ -354,22 +333,17 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 		}
 		return dyn.NewValue(out, src.Locations()), nil
 	case dyn.KindString:
-		var err error
 		out, err := strconv.ParseInt(src.MustString(), 10, 64)
-		if err != nil {
-			// Return verbatim if it's a pure variable reference.
-			if dynvar.IsPureVariableReference(src.MustString()) {
-				return src, nil
-			}
-
-			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
-				Severity:  diag.Warning,
-				Summary:   fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
-				Locations: []dyn.Location{src.Location()},
-				Paths:     []dyn.Path{path},
-			})
+		if err == nil {
+			return dyn.NewValue(out, src.Locations()), nil
 		}
-		return dyn.NewValue(out, src.Locations()), nil
+		// Cannot parse as integer.
+		return dyn.InvalidValue, diags.Append(diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
+			Locations: []dyn.Location{src.Location()},
+			Paths:     []dyn.Path{path},
+		})
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
 		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindInt, src, path))
@@ -398,22 +372,17 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 		}
 		return dyn.NewValue(out, src.Locations()), nil
 	case dyn.KindString:
-		var err error
 		out, err := strconv.ParseFloat(src.MustString(), 64)
-		if err != nil {
-			// Return verbatim if it's a pure variable reference.
-			if dynvar.IsPureVariableReference(src.MustString()) {
-				return src, nil
-			}
-
-			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
-				Severity:  diag.Warning,
-				Summary:   fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),
-				Locations: []dyn.Location{src.Location()},
-				Paths:     []dyn.Path{path},
-			})
+		if err == nil {
+			return dyn.NewValue(out, src.Locations()), nil
 		}
-		return dyn.NewValue(out, src.Locations()), nil
+		// Cannot parse as floating point number.
+		return dyn.InvalidValue, diags.Append(diag.Diagnostic{
+			Severity:  diag.Warning,
+			Summary:   fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),
+			Locations: []dyn.Location{src.Location()},
+			Paths:     []dyn.Path{path},
+		})
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
 		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindFloat, src, path))

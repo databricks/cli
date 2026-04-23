@@ -55,6 +55,15 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		}
 	}
 
+	// If the reference is a pure variable reference, return it verbatim.
+	// String is excluded because it can hold the reference as a literal value.
+	// Invalid is excluded because it should return NilValue, not preserve the reference.
+	if srcv.Kind() != reflect.String && srcv.Kind() != reflect.Invalid {
+		if ref.Kind() == dyn.KindString && dynvar.IsPureVariableReference(ref.MustString()) {
+			return ref, nil
+		}
+	}
+
 	var v dyn.Value
 	var err error
 	switch srcv.Kind() {
@@ -94,11 +103,6 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
 	// Check that the reference value is compatible or nil.
 	switch ref.Kind() {
-	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
-			return ref, nil
-		}
 	case dyn.KindMap, dyn.KindNil:
 	default:
 		return dyn.InvalidValue, fmt.Errorf("cannot convert struct field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
@@ -172,11 +176,6 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	// Check that the reference value is compatible or nil.
 	switch ref.Kind() {
-	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
-			return ref, nil
-		}
 	case dyn.KindMap, dyn.KindNil:
 	default:
 		return dyn.InvalidValue, fmt.Errorf("cannot convert map field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
@@ -220,11 +219,6 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	// Check that the reference value is compatible or nil.
 	switch ref.Kind() {
-	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
-			return ref, nil
-		}
 	case dyn.KindSequence, dyn.KindNil:
 	default:
 		return dyn.InvalidValue, fmt.Errorf("cannot convert slice field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
@@ -295,11 +289,6 @@ func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.Bool()), nil
-	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
-			return ref, nil
-		}
 	default:
 		// Fall through to the error case.
 	}
@@ -322,11 +311,6 @@ func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions)
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.Int()), nil
-	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
-			return ref, nil
-		}
 	default:
 		// Fall through to the error case.
 	}
@@ -349,11 +333,6 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.Float()), nil
-	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
-			return ref, nil
-		}
 	default:
 		// Fall through to the error case.
 	}
