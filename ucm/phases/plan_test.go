@@ -78,6 +78,22 @@ func TestPreDeployChecksNoResourcesNoDiags(t *testing.T) {
 	assert.False(t, logdiag.HasError(ctx))
 }
 
+// TestPreDeployChecksTerraformInvokesRemoteDriftScaffold guards the wiring in
+// PreDeployChecks that calls terraform.CheckResourcesModifiedRemotely on the
+// terraform path. The scaffold is a no-op today (empty kinds), so the test
+// asserts clean diagnostics — it exists to catch regressions if the wiring is
+// accidentally dropped.
+func TestPreDeployChecksTerraformInvokesRemoteDriftScaffold(t *testing.T) {
+	f := newFixture(t)
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	phases.PreDeployChecks(ctx, f.u, engine.EngineTerraform)
+
+	require.False(t, logdiag.HasError(ctx))
+	assert.Empty(t, logdiag.FlushCollected(ctx))
+}
+
 func TestPreDeployChecksDirectEngineNoDiags(t *testing.T) {
 	f := newFixture(t)
 	ctx := logdiag.InitContext(t.Context())

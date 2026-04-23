@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/databricks/cli/ucm/deploy/direct"
+	"github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/deployplan"
 )
 
@@ -20,6 +21,15 @@ func PreDeployChecks(ctx context.Context, u *ucm.Ucm, e engine.EngineType) {
 	ucm.ApplySeqContext(ctx, u,
 		mutator.ValidateDirectOnlyResources(e),
 	)
+	if logdiag.HasError(ctx) {
+		return
+	}
+	// Remote-drift detection is terraform-only; the direct engine has its own
+	// drift phase (ucm/phases/drift.go). Empty kinds today keeps this a no-op
+	// scaffold — concrete UC resource kinds get wired here in later tasks.
+	if !e.IsDirect() {
+		ucm.ApplyContext(ctx, u, terraform.CheckResourcesModifiedRemotely(nil))
+	}
 }
 
 // Plan runs the initialize → build → engine-specific plan sequence and
