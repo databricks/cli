@@ -44,6 +44,11 @@ type Root struct {
 
 	// Targets is set to nil by SelectTarget once a target has been merged.
 	Targets map[string]*Target `json:"targets,omitempty"`
+
+	// Scripts binds user-defined shell commands to phase hooks. Keys are
+	// ScriptHook values (pre_init, post_init, pre_deploy, post_deploy,
+	// pre_destroy, post_destroy). Mirrors bundle.config.Root.Scripts.
+	Scripts map[string]Script `json:"scripts,omitempty"`
 }
 
 // GetLocations returns the source locations of the configuration value at the

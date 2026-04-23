@@ -10,10 +10,12 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/direct"
 	"github.com/databricks/cli/ucm/deployplan"
+	"github.com/databricks/cli/ucm/scripts"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
@@ -194,11 +196,21 @@ func Destroy(ctx context.Context, u *ucm.Ucm, opts Options) {
 		return
 	}
 
-	if setting.Type.IsDirect() {
-		destroyDirect(ctx, u, opts)
+	ucm.ApplyContext(ctx, u, scripts.Execute(config.ScriptPreDestroy))
+	if logdiag.HasError(ctx) {
 		return
 	}
-	destroyTerraform(ctx, u, opts)
+
+	if setting.Type.IsDirect() {
+		destroyDirect(ctx, u, opts)
+	} else {
+		destroyTerraform(ctx, u, opts)
+	}
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	ucm.ApplyContext(ctx, u, scripts.Execute(config.ScriptPostDestroy))
 }
 
 func destroyTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {

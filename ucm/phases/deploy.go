@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/databricks/cli/ucm/deploy"
@@ -16,6 +17,7 @@ import (
 	"github.com/databricks/cli/ucm/deployplan"
 	"github.com/databricks/cli/ucm/metadata"
 	"github.com/databricks/cli/ucm/permissions"
+	"github.com/databricks/cli/ucm/scripts"
 )
 
 func approvalForDeploy(ctx context.Context, _ *ucm.Ucm, plan *deployplan.Plan, opts Options) (bool, error) {
@@ -104,11 +106,21 @@ func Deploy(ctx context.Context, u *ucm.Ucm, opts Options) {
 		return
 	}
 
-	if setting.Type.IsDirect() {
-		deployDirect(ctx, u, opts)
+	ucm.ApplyContext(ctx, u, scripts.Execute(config.ScriptPreDeploy))
+	if logdiag.HasError(ctx) {
 		return
 	}
-	deployTerraform(ctx, u, opts)
+
+	if setting.Type.IsDirect() {
+		deployDirect(ctx, u, opts)
+	} else {
+		deployTerraform(ctx, u, opts)
+	}
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	ucm.ApplyContext(ctx, u, scripts.Execute(config.ScriptPostDeploy))
 }
 
 func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {

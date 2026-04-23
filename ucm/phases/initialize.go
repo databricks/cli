@@ -7,9 +7,11 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/config/engine"
 	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/deploy"
+	"github.com/databricks/cli/ucm/scripts"
 )
 
 // Engine-resolution source labels. Kept private and parallel to the labels
@@ -76,6 +78,11 @@ func resolveEngine(ctx context.Context, u *ucm.Ucm) (engine.EngineSetting, error
 func Initialize(ctx context.Context, u *ucm.Ucm, opts Options) engine.EngineSetting {
 	log.Info(ctx, "Phase: initialize")
 
+	ucm.ApplyContext(ctx, u, scripts.Execute(config.ScriptPreInit))
+	if logdiag.HasError(ctx) {
+		return engine.EngineSetting{}
+	}
+
 	ucm.ApplySeqContext(ctx, u,
 		mutator.DefineDefaultWorkspacePaths(),
 		mutator.InitializeURLs(),
@@ -93,8 +100,10 @@ func Initialize(ctx context.Context, u *ucm.Ucm, opts Options) engine.EngineSett
 
 	if setting.Type.IsDirect() {
 		// Direct engine state is a local-only artefact; there is no remote
-		// tfstate to pull. Initialize is therefore a no-op beyond resolving
-		// the engine so downstream phases can branch on setting.Type.
+		// tfstate to pull. Initialize's remaining work collapses to the
+		// post_init script hook so downstream phases can still branch on
+		// setting.Type.
+		ucm.ApplyContext(ctx, u, scripts.Execute(config.ScriptPostInit))
 		return setting
 	}
 
@@ -104,5 +113,7 @@ func Initialize(ctx context.Context, u *ucm.Ucm, opts Options) engine.EngineSett
 		logdiag.LogError(ctx, fmt.Errorf("pull remote state: %w", err))
 		return setting
 	}
+
+	ucm.ApplyContext(ctx, u, scripts.Execute(config.ScriptPostInit))
 	return setting
 }
