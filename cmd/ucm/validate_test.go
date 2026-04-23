@@ -19,7 +19,7 @@ import (
 // runValidate invokes the cobra ucm-subtree in a temp cwd set to fixtureDir
 // and returns stdout, diag-stream output (cmdio stderr), and whatever the
 // Execute call returned.
-func runValidate(t *testing.T, fixtureDir string) (string, string, error) {
+func runValidate(t *testing.T, fixtureDir string, extraArgs ...string) (string, string, error) {
 	t.Helper()
 
 	prev, err := os.Getwd()
@@ -31,7 +31,7 @@ func runValidate(t *testing.T, fixtureDir string) (string, string, error) {
 	var out, errOut bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&errOut)
-	cmd.SetArgs([]string{"validate"})
+	cmd.SetArgs(append([]string{"validate"}, extraArgs...))
 
 	ctx, diagOut := cmdio.NewTestContextWithStderr(context.Background())
 	ctx = logdiag.InitContext(ctx)
@@ -51,8 +51,31 @@ func TestCmd_Validate_ValidFixturePasses(t *testing.T) {
 }
 
 func TestCmd_Validate_MissingTagFixtureFails(t *testing.T) {
-	_, _, err := runValidate(t, filepath.Join("testdata", "missing_tag"))
+	stdout, stderr, err := runValidate(t, filepath.Join("testdata", "missing_tag"))
 	require.Error(t, err)
+	// Trailer summarises the count; per-diagnostic lines are streamed to stderr.
+	assert.Contains(t, stdout, "Found ")
+	assert.Contains(t, stdout, "error")
+	assert.Contains(t, stderr, "requires tag")
+}
+
+func TestCmd_Validate_JSONModeProducesValidJSON(t *testing.T) {
+	stdout, _, err := runValidate(t, filepath.Join("testdata", "valid"), "--output", "json")
+	require.NoError(t, err)
+
+	var tree map[string]any
+	require.NoError(t, json.Unmarshal([]byte(stdout), &tree))
+	_, ok := tree["resources"]
+	assert.True(t, ok, "JSON output should contain resources subtree")
+	assert.NotContains(t, stdout, "Validation OK!")
+}
+
+func TestCmd_Validate_JSONModeOnErrorFixture(t *testing.T) {
+	stdout, _, err := runValidate(t, filepath.Join("testdata", "missing_tag"), "--output", "json")
+	require.Error(t, err)
+	// Cobra may append nothing else with SilenceUsage, so stdout is pure JSON.
+	assert.Contains(t, stdout, `"resources"`)
+	assert.Contains(t, stdout, `"catalogs"`)
 }
 
 func TestCmd_Validate_NestedFixturePasses(t *testing.T) {

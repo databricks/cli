@@ -50,10 +50,10 @@ func TestApplyRunsUnderLock(t *testing.T) {
 	factory, _ := sharedLockerFactory(t, "alice")
 	tf := newApplyTerraform(t, u, runner, factory, "alice")
 
-	require.NoError(t, tf.Apply(t.Context(), u))
+	require.NoError(t, tf.Apply(t.Context(), u, false))
 	assert.Equal(t, 1, runner.ApplyCalls)
 	// Lock is released on defer — next Apply should succeed too.
-	require.NoError(t, tf.Apply(t.Context(), u))
+	require.NoError(t, tf.Apply(t.Context(), u, false))
 	assert.Equal(t, 2, runner.ApplyCalls)
 }
 
@@ -75,7 +75,7 @@ func TestApplyLockContentionReturnsErrLockHeld(t *testing.T) {
 
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- firstTf.Apply(t.Context(), u)
+		errCh <- firstTf.Apply(t.Context(), u, false)
 	}()
 
 	// Wait until the first Apply is holding the lock.
@@ -84,7 +84,7 @@ func TestApplyLockContentionReturnsErrLockHeld(t *testing.T) {
 	secondRunner := &fakeRunner{}
 	secondTf := newApplyTerraform(t, u, secondRunner, factory, "bob")
 
-	err := secondTf.Apply(t.Context(), u)
+	err := secondTf.Apply(t.Context(), u, false)
 	require.Error(t, err)
 	var held *lock.ErrLockHeld
 	require.True(t, errors.As(err, &held), "expected ErrLockHeld, got %T: %v", err, err)
@@ -107,7 +107,7 @@ func TestApplyUsesPlanPathWhenAvailable(t *testing.T) {
 	require.NotNil(t, planResult)
 	assert.True(t, planResult.HasChanges)
 
-	require.NoError(t, tf.Apply(t.Context(), u))
+	require.NoError(t, tf.Apply(t.Context(), u, false))
 	require.Len(t, runner.LastApplyOpts, 1, "Apply should have received the plan-path option")
 
 	// The plan path should be the one returned by Plan.

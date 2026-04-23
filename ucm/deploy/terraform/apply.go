@@ -19,7 +19,7 @@ import (
 // whether Apply succeeded. Contention on the lock surfaces as a
 // *lock.ErrLockHeld so callers can errors.As on it and present a helpful
 // "--force-lock to override" message to the user.
-func (t *Terraform) Apply(ctx context.Context, u *ucm.Ucm) error {
+func (t *Terraform) Apply(ctx context.Context, u *ucm.Ucm, forceLock bool) error {
 	if t == nil {
 		return fmt.Errorf("terraform: nil wrapper")
 	}
@@ -36,7 +36,7 @@ func (t *Terraform) Apply(ctx context.Context, u *ucm.Ucm) error {
 	if err != nil {
 		return fmt.Errorf("create deployment locker: %w", err)
 	}
-	if err := locker.Acquire(ctx, false); err != nil {
+	if err := locker.Acquire(ctx, forceLock); err != nil {
 		return err
 	}
 	defer func() {

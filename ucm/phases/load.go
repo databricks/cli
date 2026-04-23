@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config/loader"
 	"github.com/databricks/cli/ucm/config/mutator"
 )
 
@@ -14,6 +15,7 @@ import (
 // phase (via u.Config.InitializeVariables) and BEFORE Variables().
 func LoadDefaultTarget(ctx context.Context, u *ucm.Ucm) {
 	ucm.ApplySeqContext(ctx, u,
+		loader.ProcessRootIncludes(),
 		mutator.FlattenNestedResources(),
 		mutator.InheritCatalogTags(),
 		mutator.DefineDefaultTarget(),
@@ -27,6 +29,7 @@ func LoadDefaultTarget(ctx context.Context, u *ucm.Ucm) {
 // (via u.Config.InitializeVariables) and BEFORE Variables().
 func LoadNamedTarget(ctx context.Context, u *ucm.Ucm, name string) {
 	ucm.ApplySeqContext(ctx, u,
+		loader.ProcessRootIncludes(),
 		mutator.FlattenNestedResources(),
 		mutator.InheritCatalogTags(),
 		mutator.DefineDefaultTarget(),

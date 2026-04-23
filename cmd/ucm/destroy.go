@@ -30,7 +30,9 @@ Common invocations:
 	}
 
 	var autoApprove bool
+	var forceLock bool
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting resources.")
+	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -48,6 +50,7 @@ Common invocations:
 		if err != nil {
 			return fmt.Errorf("resolve deploy options: %w", err)
 		}
+		opts.ForceLock = forceLock
 
 		phases.Destroy(ctx, u, opts)
 		if logdiag.HasError(ctx) {

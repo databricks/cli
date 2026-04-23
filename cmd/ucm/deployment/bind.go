@@ -1,0 +1,109 @@
+package deployment
+
+import (
+	"errors"
+
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/cmd/ucm/utils"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/logdiag"
+	"github.com/spf13/cobra"
+)
+
+// errBindAborted is the sentinel returned when the user answers "no" to the
+// bind confirmation prompt.
+var errBindAborted = errors.New("bind aborted")
+
+// errNeedsAutoApprove is returned when the terminal cannot prompt and
+// --auto-approve was not supplied.
+var errNeedsAutoApprove = errors.New("this operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+
+// newBindCommand returns `databricks ucm deployment bind KEY UC_NAME`.
+// Records a state entry so subsequent deploys update — rather than recreate —
+// the existing UC object. The ucm.yml config is never modified.
+func newBindCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "bind KEY UC_NAME",
+		Short: "Bind a ucm-declared resource to an existing Unity Catalog object",
+		Long: `Bind a ucm-declared resource to an existing Unity Catalog object.
+
+After binding, subsequent deploys reconcile (update) the UC object rather
+than attempt to create a new one.
+
+Arguments:
+  KEY     - The resource key declared in ucm.yml (e.g. team_alpha)
+  UC_NAME - The name/full-name of the existing Unity Catalog object
+
+Examples:
+  # Bind a catalog declaration to an existing UC catalog
+  databricks ucm deployment bind team_alpha team_alpha
+
+  # Bind a schema (UC_NAME must be the schema's full name)
+  databricks ucm deployment bind bronze team_alpha.bronze
+
+  # Bind with automatic approval (CI/CD)
+  databricks ucm deployment bind my_vol team_alpha.bronze.landing --auto-approve
+
+Supported kinds: catalogs, schemas, storage_credentials, external_locations,
+volumes, connections. Grants are not bindable (they reconcile per securable).
+
+WARNING: After binding, the UC object will be managed by ucm. Manual changes
+made outside ucm may be overwritten on the next deploy.`,
+		Args:    root.ExactArgs(2),
+		PreRunE: utils.MustWorkspaceClient,
+	}
+
+	var autoApprove bool
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Automatically approve the binding.")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		key, ucName := args[0], args[1]
+		ctx := cmd.Context()
+
+		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		if u == nil || logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		es, err := utils.ResolveEngineSetting(ctx, &u.Config.Ucm)
+		if err != nil {
+			return err
+		}
+		if !es.Type.IsDirect() {
+			return notSupportedForEngine(es.Type)
+		}
+
+		kind, err := resolveBindable(u, key)
+		if err != nil {
+			return err
+		}
+
+		if !autoApprove {
+			if !cmdio.IsPromptSupported(ctx) {
+				return errNeedsAutoApprove
+			}
+			ok, err := cmdio.AskYesOrNo(ctx, "Bind "+string(kind)+"."+key+" -> "+ucName+"?")
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return errBindAborted
+			}
+		}
+
+		client, err := buildDirectClient(ctx, u)
+		if err != nil {
+			return err
+		}
+
+		if err := bindResourceDirect(ctx, u, client, kind, key, ucName); err != nil {
+			return err
+		}
+
+		cmdio.LogString(ctx, "Successfully bound "+string(kind)+"."+key+" to "+ucName)
+		cmdio.LogString(ctx, "Run 'databricks ucm deploy' to reconcile the bound resource.")
+		return nil
+	}
+
+	return cmd
+}
