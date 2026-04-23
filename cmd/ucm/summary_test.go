@@ -147,6 +147,28 @@ resources:
 	assert.Contains(t, catalogs, "sales")
 }
 
+func TestCmd_Summary_IncludeLocationsOffOmitsLocationsKey(t *testing.T) {
+	stdout, _, err := runVerb(t, validFixtureDir(t), "summary", "--output", "json")
+	require.NoError(t, err)
+
+	var tree map[string]any
+	require.NoError(t, json.Unmarshal([]byte(stdout), &tree))
+	_, ok := tree["__locations"]
+	assert.False(t, ok, "default summary JSON should not contain __locations")
+}
+
+func TestCmd_Summary_IncludeLocationsOnAddsLocationsKey(t *testing.T) {
+	stdout, _, err := runVerb(t, validFixtureDir(t), "summary", "--output", "json", "--include-locations")
+	require.NoError(t, err)
+
+	var tree map[string]any
+	require.NoError(t, json.Unmarshal([]byte(stdout), &tree))
+	locs, ok := tree["__locations"].(map[string]any)
+	require.True(t, ok, "expected __locations in JSON output: %s", stdout)
+	assert.Contains(t, locs, "files")
+	assert.Contains(t, locs, "locations")
+}
+
 // TestRenderSummaryText_EmitsOnlyNonEmptyGroups covers the shape contract:
 // groups with no entries do not emit a header.
 func TestRenderSummaryText_EmitsOnlyNonEmptyGroups(t *testing.T) {

@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config"
+	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -37,9 +38,8 @@ Common invocations:
 		PreRunE: utils.MustWorkspaceClient,
 	}
 
-	// forcePull and includeLocations are accepted for DAB parity but are no-ops
-	// today: summary reads the in-memory config, not cached remote state, and
-	// ucm has no location-populating mutator yet.
+	// forcePull is accepted for DAB parity but is a no-op today: summary reads
+	// the in-memory config, not cached remote state.
 	var forcePull bool
 	var includeLocations bool
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace (no-op today)")
@@ -51,6 +51,13 @@ Common invocations:
 		ctx := cmd.Context()
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
+		}
+
+		if includeLocations {
+			ucm.ApplyContext(ctx, u, mutator.PopulateLocations())
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
 		}
 
 		out := cmd.OutOrStdout()

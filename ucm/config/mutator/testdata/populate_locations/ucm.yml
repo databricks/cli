@@ -1,0 +1,11 @@
+ucm:
+  name: populate-locations-fixture
+
+workspace:
+  host: https://example.cloud.databricks.com
+
+resources:
+  catalogs:
+    team_alpha:
+      name: team_alpha
+      comment: alpha catalog

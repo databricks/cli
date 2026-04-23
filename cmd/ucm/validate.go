@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -38,14 +39,16 @@ Common invocations:
 	var strict bool
 	var includeLocations bool
 	cmd.Flags().BoolVar(&strict, "strict", false, "Treat warnings as errors")
-	// include-locations is accepted for DAB parity; wiring the locations
-	// mutator into the JSON output is tracked as a follow-up.
 	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
 	_ = cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		u := utils.ProcessUcm(cmd, utils.ProcessOptions{Validate: true})
 		ctx := cmd.Context()
+
+		if includeLocations && u != nil && !logdiag.HasError(ctx) {
+			ucm.ApplyContext(ctx, u, mutator.PopulateLocations())
+		}
 
 		out := cmd.OutOrStdout()
 		output := validateOutputType(cmd)

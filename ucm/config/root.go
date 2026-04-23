@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/dynloc"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
@@ -49,6 +50,11 @@ type Root struct {
 	// ScriptHook values (pre_init, post_init, pre_deploy, post_deploy,
 	// pre_destroy, post_destroy). Mirrors bundle.config.Root.Scripts.
 	Scripts map[string]Script `json:"scripts,omitempty"`
+
+	// Locations is an output-only field that holds configuration location
+	// information for every path in the configuration tree. Populated by the
+	// PopulateLocations mutator when `--include-locations` is set.
+	Locations *dynloc.Locations `json:"__locations,omitempty" ucm:"internal"`
 }
 
 // GetLocations returns the source locations of the configuration value at the
