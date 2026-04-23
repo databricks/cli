@@ -5,46 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
 const maxSuggestionDistance = 2
-
-// levenshteinDistance computes the edit distance between two strings.
-func levenshteinDistance(a, b string) int {
-	if len(a) == 0 {
-		return len(b)
-	}
-	if len(b) == 0 {
-		return len(a)
-	}
-
-	// Use a single row for the DP table.
-	prev := make([]int, len(b)+1)
-	for j := range len(b) + 1 {
-		prev[j] = j
-	}
-
-	for i := range len(a) {
-		curr := make([]int, len(b)+1)
-		curr[0] = i + 1
-		for j := range len(b) {
-			cost := 1
-			if a[i] == b[j] {
-				cost = 0
-			}
-			curr[j+1] = min(
-				curr[j]+1,    // insertion
-				prev[j+1]+1,  // deletion
-				prev[j]+cost, // substitution
-			)
-		}
-		prev = curr
-	}
-
-	return prev[len(b)]
-}
 
 // suggestFlagFromError inspects the error from Cobra for unknown-flag errors.
 // If a close match is found among the command's flags, it returns an enhanced error
@@ -110,7 +76,7 @@ func findClosestFlag(cmd *cobra.Command, name string) (string, int) {
 		}
 		seen[f.Name] = true
 
-		d := levenshteinDistance(name, f.Name)
+		d := textutil.LevenshteinDistance(name, f.Name)
 		if d < bestDist {
 			bestDist = d
 			best = f.Name
