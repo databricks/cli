@@ -38,6 +38,7 @@ Online documentation: https://docs.databricks.com/en/dev-tools/ucm/index.html`,
 	}
 
 	cmd.PersistentFlags().StringP("target", "t", "", "ucm target to use (if applicable)")
+	cmd.PersistentFlags().StringSlice("var", nil, `set values for variables defined in ucm config. Example: --var="foo=bar"`)
 	// Register a local --output fallback so that `cmdUcm.New()` works in
 	// standalone unit tests. Under `databricks ucm ...` the root-level
 	// persistent flag takes precedence (cobra walks up the parent chain).
