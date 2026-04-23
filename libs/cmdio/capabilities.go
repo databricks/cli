@@ -48,13 +48,12 @@ func (c Capabilities) SupportsColor(w io.Writer) bool {
 	return isTTY(w) && c.color
 }
 
-// SupportsPager returns true when all three std streams are TTYs. The
-// pager reads keys from stdin and drives both content and prompt through
-// bubbletea on stdout; stderr must also be a TTY so diagnostics or
-// spinners that fire mid-drain don't interleave into a redirected log.
-// Git Bash is excluded because its raw-mode stdin is unreliable.
+// SupportsPager returns true when we can drive an interactive pager.
+// It builds on SupportsPrompt (stderr+stdin TTY, not Git Bash) and
+// additionally requires stdout to be a TTY so rendered rows land on
+// the terminal rather than a redirected file.
 func (c Capabilities) SupportsPager() bool {
-	return c.stdinIsTTY && c.stdoutIsTTY && c.stderrIsTTY && !c.isGitBash
+	return c.SupportsPrompt() && c.stdoutIsTTY
 }
 
 // detectGitBash returns true if running in Git Bash on Windows (has broken promptui support).

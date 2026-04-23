@@ -18,16 +18,10 @@ func newTestPager(t *testing.T, iter listing.Iterator[int], pageSize int) *pager
 	require.NoError(t, err)
 	headerT, err := template.New("header").Funcs(renderFuncMap).Parse("")
 	require.NoError(t, err)
-	return &pagerModel[int]{
-		ctx:  t.Context(),
-		iter: iter,
-		pager: &templatePager{
-			headerT: headerT,
-			rowT:    rowT,
-		},
-		spinner:  newPagerSpinner(),
-		pageSize: pageSize,
-	}
+	return newPagerModel(t.Context(), iter, &templatePager{
+		headerT: headerT,
+		rowT:    rowT,
+	}, pageSize, 0)
 }
 
 func runCmd(t *testing.T, cmd tea.Cmd) tea.Msg {
@@ -72,7 +66,7 @@ func printedText(t *testing.T, msg tea.Msg) string {
 
 func TestPagerModelInitFetchesFirstBatch(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 3}, 10)
-	// Init returns a tea.Batch(fetchCmd, spinner.Tick); find the fetch.
+	// Init returns a tea.Batch(m.fetch, spinner.Tick); find the fetch.
 	var b batchMsg
 	for _, c := range unwrapCmds(t, runCmd(t, m.Init())) {
 		if msg, ok := c().(batchMsg); ok {
@@ -243,4 +237,17 @@ func TestPagerModelViewShowsSpinnerWhileFetching(t *testing.T) {
 	m.fetching = true
 	assert.Contains(t, m.View(), pagerLoadingText)
 	assert.NotContains(t, m.View(), pagerPromptText)
+}
+
+func TestPagerModelWindowSizeResizesPage(t *testing.T) {
+	m := newTestPager(t, &numberIterator{n: 100}, 50)
+	_, cmd := m.Update(tea.WindowSizeMsg{Height: 30, Width: 120})
+	assert.Nil(t, cmd, "resize should not itself dispatch a command")
+	assert.Equal(t, 30-pagerViewOverhead, m.pageSize)
+}
+
+func TestPagerModelWindowSizeFloorsAtMin(t *testing.T) {
+	m := newTestPager(t, &numberIterator{n: 100}, 50)
+	_, _ = m.Update(tea.WindowSizeMsg{Height: 3, Width: 80})
+	assert.Equal(t, pagerMinPageSize, m.pageSize)
 }

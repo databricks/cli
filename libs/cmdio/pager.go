@@ -11,29 +11,41 @@ import (
 	"github.com/databricks/databricks-sdk-go/listing"
 )
 
-// pagerPageSize is the number of items rendered between prompts.
-const pagerPageSize = 50
+// pagerFallbackPageSize is used before the first WindowSizeMsg arrives,
+// and when the terminal height is too small to size a page by itself.
+const pagerFallbackPageSize = 50
+
+// pagerMinPageSize is the floor: one line of header plus a few rows so
+// the prompt still has something to sit under.
+const pagerMinPageSize = 5
+
+// pagerViewOverhead is the number of lines we keep below the printed
+// rows so the prompt (or spinner) doesn't force the top row off-screen.
+const pagerViewOverhead = 2
 
 // pagerPromptText is shown between pages.
 const pagerPromptText = "[space] more  [enter] all  [q|esc] quit"
 
 // pagerLoadingText is appended to the spinner while a fetch is in flight.
-const pagerLoadingText = "loading…"
+const pagerLoadingText = "loading..."
 
 // pagerModel is the tea.Model that drives the paged render loop: one
-// fetchCmd produces a batchMsg, Update prints it via tea.Println, and
+// fetch produces a batchMsg, Update prints it via tea.Println, and
 // View shows the prompt between pages.
 type pagerModel[T any] struct {
-	ctx      context.Context
-	iter     listing.Iterator[T]
-	pager    *templatePager
-	spinner  bubblespinner.Model
+	iter    listing.Iterator[T]
+	pager   *templatePager
+	spinner bubblespinner.Model
+	// fetch is bound at construction with the caller's context captured
+	// so we don't have to stash ctx on the struct (tea.Cmd has no ctx
+	// parameter of its own).
+	fetch    func() tea.Msg
 	pageSize int
 	limit    int
 	total    int
 
-	// Keep only one fetchCmd in flight at a time: the iterator is not
-	// safe to read from two goroutines. If SPACE or ENTER arrives while
+	// Keep only one fetch in flight at a time: the iterator is not safe
+	// to read from two goroutines. If SPACE or ENTER arrives while
 	// fetching, drainAll is recorded and the pending batchMsg chains
 	// the next fetch.
 	fetching   bool
@@ -41,6 +53,25 @@ type pagerModel[T any] struct {
 	hasPrinted bool
 	iterDone   bool
 	err        error
+}
+
+// newPagerModel wires ctx into the fetch closure so nothing on the
+// struct has to hold onto a context.
+func newPagerModel[T any](
+	ctx context.Context,
+	iter listing.Iterator[T],
+	pager *templatePager,
+	pageSize, limit int,
+) *pagerModel[T] {
+	m := &pagerModel[T]{
+		iter:     iter,
+		pager:    pager,
+		spinner:  newPagerSpinner(),
+		pageSize: pageSize,
+		limit:    limit,
+	}
+	m.fetch = func() tea.Msg { return m.doFetch(ctx) }
+	return m
 }
 
 // newPagerSpinner builds a spinner matching the one the cmdio package's
@@ -55,8 +86,8 @@ func newPagerSpinner() bubblespinner.Model {
 	return s
 }
 
-// batchMsg carries the rendered lines from one fetchCmd. done is true
-// when the iterator is exhausted or the limit is reached.
+// batchMsg carries the rendered lines from one fetch. done is true when
+// the iterator is exhausted or the limit is reached.
 type batchMsg struct {
 	lines []string
 	done  bool
@@ -65,41 +96,44 @@ type batchMsg struct {
 
 func (m *pagerModel[T]) Init() tea.Cmd {
 	m.fetching = true
-	return tea.Batch(m.fetchCmd(), m.spinner.Tick)
+	return tea.Batch(m.fetch, m.spinner.Tick)
 }
 
-// fetchCmd runs off the update loop so a slow network fetch doesn't
-// stall key handling.
-func (m *pagerModel[T]) fetchCmd() tea.Cmd {
-	return func() tea.Msg {
-		buf := make([]any, 0, m.pageSize)
-		done := false
-		for len(buf) < m.pageSize {
-			if m.limit > 0 && m.total+len(buf) >= m.limit {
-				done = true
-				break
-			}
-			if !m.iter.HasNext(m.ctx) {
-				done = true
-				break
-			}
-			n, err := m.iter.Next(m.ctx)
-			if err != nil {
-				return batchMsg{err: err}
-			}
-			buf = append(buf, n)
+// doFetch reads one page from the iterator and renders it into lines.
+// It runs off the update loop so a slow network fetch doesn't stall
+// key handling.
+func (m *pagerModel[T]) doFetch(ctx context.Context) tea.Msg {
+	buf := make([]any, 0, m.pageSize)
+	done := false
+	for len(buf) < m.pageSize {
+		if m.limit > 0 && m.total+len(buf) >= m.limit {
+			done = true
+			break
 		}
-		lines, err := m.pager.flushLines(buf)
+		if !m.iter.HasNext(ctx) {
+			done = true
+			break
+		}
+		n, err := m.iter.Next(ctx)
 		if err != nil {
 			return batchMsg{err: err}
 		}
-		m.total += len(buf)
-		return batchMsg{lines: lines, done: done}
+		buf = append(buf, n)
 	}
+	lines, err := m.pager.flushLines(buf)
+	if err != nil {
+		return batchMsg{err: err}
+	}
+	m.total += len(buf)
+	return batchMsg{lines: lines, done: done}
 }
 
 func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.pageSize = max(msg.Height-pagerViewOverhead, pagerMinPageSize)
+		return m, nil
+
 	case bubblespinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -124,7 +158,7 @@ func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Sequence(printCmd, tea.Quit)
 		case m.drainAll:
 			m.fetching = true
-			return m, tea.Sequence(printCmd, m.fetchCmd())
+			return m, tea.Sequence(printCmd, m.fetch)
 		default:
 			return m, printCmd
 		}
@@ -162,7 +196,7 @@ func (m *pagerModel[T]) startAdvance() tea.Cmd {
 		return nil
 	}
 	m.fetching = true
-	return m.fetchCmd()
+	return m.fetch
 }
 
 func (m *pagerModel[T]) startDrain() tea.Cmd {
@@ -176,7 +210,7 @@ func (m *pagerModel[T]) startDrain() tea.Cmd {
 		return nil
 	}
 	m.fetching = true
-	return m.fetchCmd()
+	return m.fetch
 }
 
 func (m *pagerModel[T]) View() string {

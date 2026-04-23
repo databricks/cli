@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"os"
 	"regexp"
 	"strings"
 	"text/template"
@@ -25,10 +24,11 @@ var ansiCSIPattern = regexp.MustCompile("\x1b\\[[0-9;]*m")
 func renderIteratorPagedTemplate[T any](
 	ctx context.Context,
 	iter listing.Iterator[T],
+	in io.Reader,
 	out io.Writer,
 	headerTemplate, tmpl string,
 ) error {
-	return renderIteratorPagedTemplateCore(ctx, iter, os.Stdin, out, headerTemplate, tmpl, pagerPageSize)
+	return renderIteratorPagedTemplateCore(ctx, iter, in, out, headerTemplate, tmpl, pagerFallbackPageSize)
 }
 
 // templatePager renders accumulated rows, locking column widths from the
@@ -102,14 +102,7 @@ func renderIteratorPagedTemplateCore[T any](
 		rowT:      rowT,
 		headerStr: headerTemplate,
 	}
-	m := &pagerModel[T]{
-		ctx:      ctx,
-		iter:     iter,
-		pager:    pager,
-		spinner:  newPagerSpinner(),
-		pageSize: pageSize,
-		limit:    limitFromContext(ctx),
-	}
+	m := newPagerModel(ctx, iter, pager, pageSize, limitFromContext(ctx))
 	p := tea.NewProgram(
 		m,
 		tea.WithInput(in),
@@ -118,6 +111,10 @@ func renderIteratorPagedTemplateCore[T any](
 		// so Ctrl+C also interrupts a stalled iterator fetch.
 		tea.WithoutSignalHandler(),
 	)
+	// Unlike cmdio.NewSpinner, the pager doesn't need to acquire/release
+	// through cmdIO: p.Run is blocking and tea restores the terminal on
+	// its own before returning, so there's no other tea.Program that could
+	// race with ours.
 	if _, err := p.Run(); err != nil {
 		return err
 	}

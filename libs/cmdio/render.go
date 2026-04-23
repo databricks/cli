@@ -282,7 +282,7 @@ func Render(ctx context.Context, v any) error {
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
 	if c.capabilities.SupportsPager() && c.outputFormat == flags.OutputText && c.template != "" {
-		return renderIteratorPagedTemplate(ctx, i, c.out, c.headerTemplate, c.template)
+		return renderIteratorPagedTemplate(ctx, i, c.in, c.out, c.headerTemplate, c.template)
 	}
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
