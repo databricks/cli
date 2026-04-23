@@ -3,9 +3,12 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/jsonloader"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config/variable"
@@ -19,14 +22,23 @@ const ucmVarPrefix = "DATABRICKS_UCM_VAR_"
 type setVariables struct{}
 
 // SetVariables walks Config.Variables and assigns each one a value based on
-// the DAB-parity resolution order: existing .Value > env var > lookup (deferred) > default.
+// the DAB-parity resolution order: existing .Value > env var > lookup
+// (deferred) > override file > default.
 func SetVariables() ucm.Mutator {
 	return &setVariables{}
 }
 
 func (m *setVariables) Name() string { return "SetVariables" }
 
+func getDefaultVariableFilePath(target string) string {
+	return ".databricks/ucm/" + target + "/variable-overrides.json"
+}
+
 func (m *setVariables) Apply(ctx context.Context, u *ucm.Ucm) diag.Diagnostics {
+	defaults, diags := readVariablesFromFile(u)
+	if diags.HasError() {
+		return diags
+	}
 	err := u.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.Map(v, "variables", dyn.Foreach(func(p dyn.Path, raw dyn.Value) (dyn.Value, error) {
 			name := p[1].Key()
@@ -34,15 +46,16 @@ func (m *setVariables) Apply(ctx context.Context, u *ucm.Ucm) diag.Diagnostics {
 			if !ok {
 				return dyn.InvalidValue, fmt.Errorf(`variable "%s" is not defined`, name)
 			}
-			return setVariable(ctx, raw, defn, name)
+			fileDefault, _ := dyn.Get(defaults, name)
+			return setVariable(ctx, raw, defn, name, fileDefault)
 		}))
 	})
-	return diag.FromErr(err)
+	return diags.Extend(diag.FromErr(err))
 }
 
 // setVariable applies the priority ladder to a single variable. Must be kept
 // consistent with variable.Variable.Value docstring.
-func setVariable(ctx context.Context, v dyn.Value, defn *variable.Variable, name string) (dyn.Value, error) {
+func setVariable(ctx context.Context, v dyn.Value, defn *variable.Variable, name string, fileDefault dyn.Value) (dyn.Value, error) {
 	// Already assigned — e.g. by --var before the mutator chain ran.
 	if defn.HasValue() {
 		return v, nil
@@ -61,9 +74,29 @@ func setVariable(ctx context.Context, v dyn.Value, defn *variable.Variable, name
 	}
 
 	// Lookup is resolved later by a separate mutator once a WorkspaceClient
-	// is available. Leave the dyn value alone here.
+	// is available. Leave the dyn value alone here. This short-circuit runs
+	// before the file-override branch so a lookup variable is not clobbered
+	// by a matching entry in variable-overrides.json.
 	if defn.Lookup != nil {
 		return v, nil
+	}
+
+	if fileDefault.Kind() != dyn.KindInvalid && fileDefault.Kind() != dyn.KindNil {
+		hasComplexType := defn.IsComplex()
+		hasComplexValue := fileDefault.Kind() == dyn.KindMap || fileDefault.Kind() == dyn.KindSequence
+
+		if hasComplexType && !hasComplexValue {
+			return dyn.InvalidValue, fmt.Errorf(`variable %s is of type complex, but the value in the variable file is not a complex type`, name)
+		}
+		if !hasComplexType && hasComplexValue {
+			return dyn.InvalidValue, fmt.Errorf(`variable %s is not of type complex, but the value in the variable file is a complex type`, name)
+		}
+
+		nv, err := dyn.Set(v, "value", fileDefault)
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf(`failed to assign default value from variable file to variable %s with error: %v`, name, err)
+		}
+		return nv, nil
 	}
 
 	if defn.HasDefault() {
@@ -78,5 +111,34 @@ func setVariable(ctx context.Context, v dyn.Value, defn *variable.Variable, name
 		return nv, nil
 	}
 
-	return dyn.InvalidValue, fmt.Errorf(`no value assigned to required variable %s. Assign a default in ucm.yml or override via "--var %s=..." or the %s environment variable`, name, name, envVarName)
+	return dyn.InvalidValue, fmt.Errorf(`no value assigned to required variable %s. Variables are usually assigned in ucm.yml, and they can be overridden using "--var", the %s environment variable, or %s`, name, envVarName, getDefaultVariableFilePath("<target>"))
+}
+
+func readVariablesFromFile(u *ucm.Ucm) (dyn.Value, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	filePath := filepath.Join(u.RootPath, getDefaultVariableFilePath(u.Config.Ucm.Target))
+	if _, err := os.Stat(filePath); err != nil {
+		return dyn.InvalidValue, nil
+	}
+
+	f, err := os.ReadFile(filePath)
+	if err != nil {
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to read variables file: %w", err))
+	}
+
+	val, err := jsonloader.LoadJSON(f, filePath)
+	if err != nil {
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse variables file %s: %w", filePath, err))
+	}
+
+	if val.Kind() != dyn.KindMap {
+		return dyn.InvalidValue, diags.Append(diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("failed to parse variables file %s: invalid format", filePath),
+			Detail:   "Variables file must be a JSON object with the following format:\n{\"var1\": \"value1\", \"var2\": \"value2\"}",
+		})
+	}
+
+	return val, nil
 }
