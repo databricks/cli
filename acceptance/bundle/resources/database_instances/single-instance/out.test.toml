@@ -3,6 +3,10 @@ Cloud = true
 CloudSlow = true
 RequiresUnityCatalog = true
 
+[GOOS]
+  darwin = false
+  windows = false
+
 [CloudEnvs]
   gcp = false
 

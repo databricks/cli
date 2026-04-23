@@ -1,0 +1,4 @@
+# run_as tests exercise server-side identity impersonation through bundle
+# deploy; CLI behavior under test is OS-agnostic.
+GOOS.windows = false
+GOOS.darwin = false

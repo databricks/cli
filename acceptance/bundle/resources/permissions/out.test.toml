@@ -3,6 +3,7 @@ Cloud = false
 Phase = 1
 
 [GOOS]
+  darwin = false
   windows = false
 
 [EnvMatrix]

@@ -3,6 +3,7 @@ Cloud = true
 RunsOnDbr = false
 
 [GOOS]
+  darwin = false
   windows = false
 
 [CloudEnvs]

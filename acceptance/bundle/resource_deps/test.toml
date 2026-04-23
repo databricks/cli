@@ -4,3 +4,8 @@ Ignore = [
     ".databricks",
     ".gitignore",
 ]
+
+# Resource dependency tests exercise server-side resolution via bundle deploy;
+# the CLI behavior under test is OS-agnostic. Linux coverage is sufficient.
+GOOS.windows = false
+GOOS.darwin = false

@@ -1,0 +1,3 @@
+# Unbind exercises server-side state binding via bundle deploy cycles; OS-agnostic.
+GOOS.windows = false
+GOOS.darwin = false

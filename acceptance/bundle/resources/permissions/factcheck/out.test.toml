@@ -4,6 +4,7 @@ CloudSlow = true
 RunsOnDbr = true
 
 [GOOS]
+  darwin = false
   windows = false
 
 [CloudEnvs]

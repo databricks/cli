@@ -3,6 +3,7 @@ Cloud = true
 RequiresWarehouse = true
 
 [GOOS]
+  darwin = false
   windows = false
 
 [CloudEnvs]

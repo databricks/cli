@@ -2,6 +2,7 @@ Local = true
 Cloud = false
 
 [GOOS]
+  darwin = false
   windows = false
 
 [EnvMatrix]
