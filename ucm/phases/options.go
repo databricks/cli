@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/ucm/deploy/terraform"
 )
 
-// TerraformWrapper is the slice of *terraform.Terraform that phases depend on.
+// TerraformWrapper is the subset of *terraform.Terraform that phases depend on.
 // Keeping the surface minimal lets tests inject a fake without standing up a
 // real terraform binary. *terraform.Terraform satisfies this interface so the
 // production factory does not need an adapter.
@@ -59,10 +59,9 @@ func DefaultDirectClientFactory(_ context.Context, u *ucm.Ucm) (direct.Client, e
 }
 
 // Options bundles the externally-supplied dependencies a phase needs at
-// runtime. Zero-valued Options is never meaningful in production — the CLI
-// layer (U7) will always populate Backend + TerraformFactory before invoking
-// plan/deploy/destroy. Tests may omit Backend when exercising the
-// engine-direct stub or the no-op initialize error paths.
+// runtime. The CLI layer populates Backend and the engine factory before
+// invoking plan/deploy/destroy; tests may omit Backend when exercising the
+// direct engine or the no-op initialize error paths.
 type Options struct {
 	// Backend is the pull/push state-storage pair used by Initialize and
 	// the post-apply/destroy Push. Required for Plan/Deploy/Destroy in the
