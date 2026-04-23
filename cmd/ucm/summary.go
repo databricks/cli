@@ -51,12 +51,6 @@ Common invocations:
 			return root.ErrAlreadyPrinted
 		}
 
-		statePath := deploy.LocalTfStatePath(u)
-		counts, err := readTfstateCounts(statePath)
-		if err != nil {
-			return fmt.Errorf("read local state %s: %w", filepath.ToSlash(statePath), err)
-		}
-
 		out := cmd.OutOrStdout()
 		switch summaryOutputType(cmd) {
 		case flags.OutputJSON:

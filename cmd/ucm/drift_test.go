@@ -110,6 +110,25 @@ func (*driftFakeClient) UpdatePermissions(context.Context, catalog.UpdatePermiss
 	panic("unexpected write")
 }
 
+func (*driftFakeClient) ListCatalogs(context.Context) ([]catalog.CatalogInfo, error) {
+	return nil, nil
+}
+func (*driftFakeClient) ListSchemas(context.Context, string) ([]catalog.SchemaInfo, error) {
+	return nil, nil
+}
+func (*driftFakeClient) ListStorageCredentials(context.Context) ([]catalog.StorageCredentialInfo, error) {
+	return nil, nil
+}
+func (*driftFakeClient) ListExternalLocations(context.Context) ([]catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+func (*driftFakeClient) ListVolumes(context.Context, string, string) ([]catalog.VolumeInfo, error) {
+	return nil, nil
+}
+func (*driftFakeClient) ListConnections(context.Context) ([]catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
 // seedDirectState writes a direct.State file under workDir/.databricks/ucm/<target>/
 // so the drift command's direct.LoadState picks it up. The valid fixture
 // selects the default target; tests that need a non-default target should

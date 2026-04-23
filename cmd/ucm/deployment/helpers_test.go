@@ -155,6 +155,25 @@ func (f *fakeDirectClient) UpdatePermissions(context.Context, catalog.UpdatePerm
 	panic("bind/unbind should not call UpdatePermissions")
 }
 
+func (*fakeDirectClient) ListCatalogs(context.Context) ([]catalog.CatalogInfo, error) {
+	return nil, nil
+}
+func (*fakeDirectClient) ListSchemas(context.Context, string) ([]catalog.SchemaInfo, error) {
+	return nil, nil
+}
+func (*fakeDirectClient) ListStorageCredentials(context.Context) ([]catalog.StorageCredentialInfo, error) {
+	return nil, nil
+}
+func (*fakeDirectClient) ListExternalLocations(context.Context) ([]catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+func (*fakeDirectClient) ListVolumes(context.Context, string, string) ([]catalog.VolumeInfo, error) {
+	return nil, nil
+}
+func (*fakeDirectClient) ListConnections(context.Context) ([]catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
 var _ direct.Client = (*fakeDirectClient)(nil)
 
 // setupUcmFixture writes a ucm.yml with every supported resource kind into a
