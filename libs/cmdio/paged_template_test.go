@@ -35,20 +35,17 @@ func (it *numberIterator) Next(_ context.Context) (int, error) {
 	return it.pos, nil
 }
 
-// ansiStripPattern removes CSI sequences so we can assert on plain content
-// ignoring tea's cursor movement, line-clearing, and DEC-private escapes
-// like bracketed-paste toggles (CSI ? 2004 l).
+// ansiStripPattern is broader than ansiCSIPattern: tea emits non-SGR
+// sequences (cursor moves, erase-line, bracketed-paste toggles) that
+// the production width calculation doesn't need to strip.
 var ansiStripPattern = regexp.MustCompile("\x1b\\[[?]?[0-9;]*[A-Za-z]")
 
 func stripANSI(s string) string {
 	return ansiStripPattern.ReplaceAllString(s, "")
 }
 
-// pagedOutput drives a full paged render with tea.Program, returning the
-// plain-text output after stripping ANSI escape sequences. It feeds the
-// enter key via a pre-loaded reader, so drainAll is set either on the
-// first KeyMsg or on the first batchMsg (whichever arrives first at the
-// tea event loop); in both orderings the final output contains every row.
+// pagedOutput runs a full paged render, feeding ENTER to auto-drain,
+// and returns the ANSI-stripped output.
 func pagedOutput(
 	t *testing.T,
 	ctx context.Context,
@@ -124,8 +121,6 @@ func TestPagedTemplateRendersHeaderAndRows(t *testing.T) {
 }
 
 func TestPagedTemplateEmptyIteratorStillFlushesHeader(t *testing.T) {
-	// Use a blocking reader: empty iterator finishes on the first fetch, so
-	// the pager quits before it ever needs a keystroke.
 	pr, pw := io.Pipe()
 	defer pw.Close()
 	var out bytes.Buffer
@@ -144,14 +139,10 @@ func TestPagedTemplateEmptyIteratorStillFlushesHeader(t *testing.T) {
 }
 
 func TestPagedTemplateColumnsStableAcrossBatches(t *testing.T) {
-	// First batch of rows is narrow; second batch contains a wider row.
-	// Widths are locked from the first page, so the wider row in batch 2
-	// overflows its column instead of re-flowing prior batches.
 	it := &numberIterator{n: 6}
 	tmpl := "{{range .}}col-{{.}}\tval\n{{end}}"
 	out := pagedOutput(t, t.Context(), it, "", tmpl, 3)
 	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
-	// Find rows that contain "col-" (not the prompt)
 	var dataRows []string
 	for _, l := range lines {
 		if strings.Contains(l, "col-") {
@@ -159,8 +150,7 @@ func TestPagedTemplateColumnsStableAcrossBatches(t *testing.T) {
 		}
 	}
 	require.Len(t, dataRows, 6)
-	// All rows start with "col-<n>" followed by two spaces and then "val".
-	// The gap before "val" must be >= 2 spaces (tabwriter's minpad).
+	// Gap before "val" is the locked column width plus tabwriter minpad.
 	for _, row := range dataRows {
 		idx := strings.Index(row, "val")
 		require.Positive(t, idx)
@@ -168,10 +158,9 @@ func TestPagedTemplateColumnsStableAcrossBatches(t *testing.T) {
 	}
 }
 
-// TestPagedTemplateMatchesNonPagedForSmallList asserts that single-batch
-// rendered content (after stripping tea's cursor-control escapes) carries
-// the same rows and columns as the non-paged template renderer, so users
-// who never see a second page see the same content they used to.
+// TestPagedTemplateMatchesNonPagedForSmallList pins parity with the
+// non-paged path so users who never see a second page see the same
+// content they used to.
 func TestPagedTemplateMatchesNonPagedForSmallList(t *testing.T) {
 	const rows = 5
 	tmpl := "{{range .}}{{green \"%d\" .}}\t{{.}}\n{{end}}"
@@ -197,10 +186,6 @@ func TestPagedTemplateMatchesNonPagedForSmallList(t *testing.T) {
 	assertSameContentLines(t, expected.String(), stripANSI(actual.String()))
 }
 
-// assertSameContentLines compares two renderings for semantic equivalence:
-// same set of non-empty trimmed lines. tabwriter and the manual padder in
-// templatePager produce matching column alignment for a single batch, but
-// trailing whitespace and newline counts can differ slightly.
 func assertSameContentLines(t *testing.T, want, got string) {
 	t.Helper()
 	wantLines := nonEmptyLines(want)

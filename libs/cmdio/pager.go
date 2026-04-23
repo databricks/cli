@@ -14,12 +14,9 @@ const pagerPageSize = 50
 // pagerPromptText is shown between pages.
 const pagerPromptText = "[space] more  [enter] all  [q|esc] quit"
 
-// pagerModel drives the paged render loop through bubbletea. It owns the
-// iterator, fetches one batch at a time via a tea.Cmd, emits rendered
-// lines above the view with tea.Println, and shows the prompt while it
-// waits for a key. Using bubbletea lets us skip manual raw-mode setup
-// (tea enters/restores raw mode on its own), so we don't need a parallel
-// CRLF translator for output written during raw mode.
+// pagerModel is the tea.Model that drives the paged render loop: one
+// fetchCmd produces a batchMsg, Update prints it via tea.Println, and
+// View shows the prompt between pages.
 type pagerModel[T any] struct {
 	ctx      context.Context
 	iter     listing.Iterator[T]
@@ -28,11 +25,10 @@ type pagerModel[T any] struct {
 	limit    int
 	total    int
 
-	// fetching tracks whether a fetchCmd is in flight. We only ever keep
-	// one in flight at a time so the iterator isn't read from two
-	// goroutines; if the user hits SPACE or ENTER while one is running,
-	// we record the intent in drainAll and let the in-flight fetch
-	// continue in drain mode when its batchMsg lands.
+	// Keep only one fetchCmd in flight at a time: the iterator is not
+	// safe to read from two goroutines. If SPACE or ENTER arrives while
+	// fetching, drainAll is recorded and the pending batchMsg chains
+	// the next fetch.
 	fetching   bool
 	drainAll   bool
 	firstBatch bool
@@ -40,9 +36,8 @@ type pagerModel[T any] struct {
 	err        error
 }
 
-// batchMsg is delivered to Update when a fetched batch has been rendered
-// into printable lines. done signals the iterator is exhausted (or the
-// limit is reached); err surfaces iteration errors.
+// batchMsg carries the rendered lines from one fetchCmd. done is true
+// when the iterator is exhausted or the limit is reached.
 type batchMsg struct {
 	lines []string
 	done  bool
@@ -54,9 +49,8 @@ func (m *pagerModel[T]) Init() tea.Cmd {
 	return m.fetchCmd()
 }
 
-// fetchCmd returns a tea.Cmd that reads one page from the iterator and
-// renders it into lines. The command runs off the update loop so slow
-// network fetches don't stall key handling.
+// fetchCmd runs off the update loop so a slow network fetch doesn't
+// stall key handling.
 func (m *pagerModel[T]) fetchCmd() tea.Cmd {
 	return func() tea.Msg {
 		buf := make([]any, 0, m.pageSize)
@@ -94,8 +88,8 @@ func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 		m.firstBatch = true
-		// Collapse the batch into a single Println so ordering is trivial:
-		// tea.Println splits on \n internally, so one Cmd emits all rows.
+		// One Println cmd (not N) keeps the batch ordered even though
+		// tea.Sequence dispatches each cmd on its own goroutine.
 		var printCmd tea.Cmd
 		if len(msg.lines) > 0 {
 			printCmd = tea.Println(strings.Join(msg.lines, "\n"))
@@ -120,9 +114,6 @@ func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleKey routes a keystroke to the right state transition. Keys we
-// don't care about are ignored so the user can mash the keyboard without
-// affecting the pager.
 func (m *pagerModel[T]) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.Type { //nolint:exhaustive // the pager only cares about a few keys
 	case tea.KeyEnter:
@@ -142,8 +133,6 @@ func (m *pagerModel[T]) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// startAdvance handles SPACE: fetch one more page unless we're already
-// fetching or draining. If a fetch is in flight we drop the keystroke.
 func (m *pagerModel[T]) startAdvance() tea.Cmd {
 	if m.drainAll || m.fetching {
 		return nil
@@ -152,14 +141,13 @@ func (m *pagerModel[T]) startAdvance() tea.Cmd {
 	return m.fetchCmd()
 }
 
-// startDrain handles ENTER: flip into drain-all mode. If a fetch is
-// already in flight the batchMsg handler will see drainAll and continue
-// fetching; otherwise we kick off the next fetch here.
 func (m *pagerModel[T]) startDrain() tea.Cmd {
 	if m.drainAll {
 		return nil
 	}
 	m.drainAll = true
+	// If a fetch is already in flight, its batchMsg will see drainAll
+	// and chain the next fetch. Otherwise kick one off here.
 	if m.fetching {
 		return nil
 	}

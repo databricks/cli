@@ -29,17 +29,15 @@ func newTestPager(t *testing.T, iter listing.Iterator[int], pageSize int) *pager
 	}
 }
 
-// runCmd invokes a tea.Cmd and returns the message it produced. Fails the
-// test if the cmd is nil.
 func runCmd(t *testing.T, cmd tea.Cmd) tea.Msg {
 	t.Helper()
 	require.NotNil(t, cmd)
 	return cmd()
 }
 
-// unwrapCmds returns the component cmds of a tea.Batch or tea.Sequence
-// result. sequenceMsg is private to bubbletea; we identify it by the
-// underlying []tea.Cmd slice kind and extract via reflect.
+// unwrapCmds pulls the cmds out of a tea.Batch/tea.Sequence result.
+// sequenceMsg is unexported, so we fall back to reflect on the []tea.Cmd
+// underlying type — update if bubbletea renames it.
 func unwrapCmds(t *testing.T, msg tea.Msg) []tea.Cmd {
 	t.Helper()
 	if bm, ok := msg.(tea.BatchMsg); ok {
@@ -56,8 +54,8 @@ func unwrapCmds(t *testing.T, msg tea.Msg) []tea.Cmd {
 	return cmds
 }
 
-// printedText returns the body of a tea.Println message. printLineMessage
-// is private to bubbletea, so we pull the first string field via reflect.
+// printedText pulls the body out of a tea.Println result.
+// printLineMessage is unexported, so reflect on its only string field.
 func printedText(t *testing.T, msg tea.Msg) string {
 	t.Helper()
 	rv := reflect.ValueOf(msg)
