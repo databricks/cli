@@ -42,9 +42,12 @@ Common invocations:
 	// the in-memory config, not cached remote state.
 	var forcePull bool
 	var includeLocations bool
+	var showFullConfig bool
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace (no-op today)")
 	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
 	_ = cmd.Flags().MarkHidden("include-locations")
+	cmd.Flags().BoolVar(&showFullConfig, "show-full-config", false, "Load and output the full ucm config")
+	_ = cmd.Flags().MarkHidden("show-full-config")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
@@ -61,6 +64,14 @@ Common invocations:
 		}
 
 		out := cmd.OutOrStdout()
+		if showFullConfig {
+			buf, err := json.MarshalIndent(u.Config, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(out, string(buf))
+			return nil
+		}
 		switch summaryOutputType(cmd) {
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(u.Config, "", "  ")

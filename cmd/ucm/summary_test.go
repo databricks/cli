@@ -169,6 +169,44 @@ func TestCmd_Summary_IncludeLocationsOnAddsLocationsKey(t *testing.T) {
 	assert.Contains(t, locs, "locations")
 }
 
+// TestCmd_Summary_ShowFullConfigDumpsResolvedConfig exercises the
+// --show-full-config branch: output is valid JSON and reflects the
+// post-mutator-chain config (expanded workspace root, resolved resources).
+func TestCmd_Summary_ShowFullConfigDumpsResolvedConfig(t *testing.T) {
+	stdout, _, err := runVerb(t, validFixtureDir(t), "summary", "--show-full-config")
+	require.NoError(t, err)
+
+	var tree map[string]any
+	require.NoError(t, json.Unmarshal([]byte(stdout), &tree))
+
+	workspace, ok := tree["workspace"].(map[string]any)
+	require.True(t, ok, "expected workspace block in JSON output: %s", stdout)
+	// DefineDefaultWorkspaceRoot + ExpandWorkspaceRoot have run.
+	rootPath, _ := workspace["root_path"].(string)
+	assert.Contains(t, rootPath, "/Workspace/Users/test-user@example.com", "expected expanded workspace root: %q", rootPath)
+
+	resources, ok := tree["resources"].(map[string]any)
+	require.True(t, ok, "expected resources block in JSON output")
+	catalogs, ok := resources["catalogs"].(map[string]any)
+	require.True(t, ok, "expected catalogs in JSON output")
+	alpha, ok := catalogs["team_alpha"].(map[string]any)
+	require.True(t, ok, "expected team_alpha catalog in JSON output")
+	assert.Equal(t, "team_alpha", alpha["name"])
+}
+
+// TestCmd_Summary_ShowFullConfigBypassesGroupedText ensures the flag diverts
+// away from the grouped text renderer even when --output is not json.
+func TestCmd_Summary_ShowFullConfigBypassesGroupedText(t *testing.T) {
+	stdout, _, err := runVerb(t, validFixtureDir(t), "summary", "--show-full-config")
+	require.NoError(t, err)
+
+	assert.NotContains(t, stdout, "Catalogs:\n")
+	assert.NotContains(t, stdout, "Schemas:\n")
+	// Valid JSON document, not the text header.
+	var tree map[string]any
+	require.NoError(t, json.Unmarshal([]byte(stdout), &tree))
+}
+
 // TestRenderSummaryText_EmitsOnlyNonEmptyGroups covers the shape contract:
 // groups with no entries do not emit a header.
 func TestRenderSummaryText_EmitsOnlyNonEmptyGroups(t *testing.T) {
