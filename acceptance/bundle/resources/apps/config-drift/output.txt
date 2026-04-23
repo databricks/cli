@@ -6,8 +6,7 @@ Updating deployment state...
 Deployment complete!
 
 === Verify no drift after deploy
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] apps get [UNIQUE_NAME] --output json
 
@@ -26,8 +25,7 @@ Updating deployment state...
 Deployment complete!
 
 === Verify no drift after fix
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

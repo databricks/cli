@@ -9,7 +9,7 @@ trap cleanup EXIT
 trace $CLI bundle deploy
 
 title "Verify no drift after deploy"
-trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' | jq 'del(.[] | select(.action == "skip"))' > out.plan.direct.json
 
 SOURCE_CODE_PATH=$(trace $CLI apps get $UNIQUE_NAME --output json | jq -r '.active_deployment.source_code_path')
 
@@ -27,13 +27,13 @@ $CLI apps deploy $UNIQUE_NAME --no-wait --json '{
 title "Plan should detect config drift"
 trace $CLI bundle plan
 # Skip entries with action "skip"
-$CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' | jq 'del(.[] | select(.action == "skip"))' > out.plan.direct.json
+$CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' | jq 'del(.[] | select(.action == "skip"))' >> out.plan.direct.json
 
 title "Redeploy to fix drift"
 trace $CLI bundle deploy
 
 title "Verify no drift after fix"
-trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' | jq 'del(.[] | select(.action == "skip"))' >> out.plan.direct.json
 
 # TODO: add test for git_source drift when git_source is supported in the Deploy API
 # Currently it fails with the error: Git source reference is required
