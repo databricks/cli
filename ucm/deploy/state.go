@@ -10,9 +10,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"time"
 
 	libsfiler "github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/deploy/filer"
 	"github.com/databricks/cli/ucm/deploy/lock"
 	"github.com/google/uuid"
@@ -142,6 +144,16 @@ func validateCompatibility(s *State) error {
 		return fmt.Errorf("ucm state: remote version %d > supported %d; upgrade the CLI", s.Version, StateVersion)
 	}
 	return nil
+}
+
+// LocalTfStatePath returns the canonical local path for the terraform state
+// blob: <LocalStateDir>/terraform/terraform.tfstate. This is where terraform
+// natively writes its state (its working directory), so treating the nested
+// path as canonical means Pull/Push/summary all observe the file terraform
+// actually produces. Matches bundle.Bundle.StateFilenameTerraform's local-path
+// return — ucm and DAB deliberately share the convention.
+func LocalTfStatePath(u *ucm.Ucm) string {
+	return filepath.Join(LocalStateDir(u), "terraform", TfStateFileName)
 }
 
 // newLocker constructs a Locker bound to the backend's LockFiler. Kept

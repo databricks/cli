@@ -70,7 +70,11 @@ func Pull(ctx context.Context, u *ucm.Ucm, b Backend) error {
 		return fmt.Errorf("ucm state: write local %s: %w", UcmStateFileName, err)
 	}
 
-	if err := copyRemoteToLocal(ctx, b.StateFiler, TfStateFileName, filepath.Join(localDir, TfStateFileName)); err != nil {
+	localTfPath := LocalTfStatePath(u)
+	if err := os.MkdirAll(filepath.Dir(localTfPath), 0o755); err != nil {
+		return fmt.Errorf("ucm state: create terraform working dir: %w", err)
+	}
+	if err := copyRemoteToLocal(ctx, b.StateFiler, TfStateFileName, localTfPath); err != nil {
 		if errors.Is(err, filer.ErrNotFound) {
 			// A ucm-state.json without a sibling terraform.tfstate is a
 			// recoverable first-run shape (ucm pulled once but never

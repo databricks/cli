@@ -1,0 +1,24 @@
+ucm:
+  name: plan-connection
+  engine: direct
+
+resources:
+  connections:
+    sales_mysql:
+      name: sales_mysql
+      connection_type: MYSQL
+      comment: "foreign sales db"
+      options:
+        host: mysql.acme.internal
+        port: "3306"
+        user: uc-reader
+      properties:
+        purpose: analytics
+
+    warehouse_pg:
+      name: warehouse_pg
+      connection_type: POSTGRESQL
+      read_only: true
+      options:
+        host: pg.acme.internal
+        user: uc-reader

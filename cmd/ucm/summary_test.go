@@ -15,14 +15,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// writeUcmYml clones the canonical valid fixture into a temp dir and
-// overwrites ucm.yml with body. Returns the workDir so the caller can chain
-// runVerbInDir or load it into a *Ucm directly.
-func writeUcmYml(t *testing.T, body string) string {
+// writeTfstateForTarget seeds .databricks/ucm/<target>/terraform/terraform.tfstate
+// under fixtureDir — the nested path where terraform natively writes and where
+// ucm's state mirroring + summary agree to look.
+func writeTfstateForTarget(t *testing.T, fixtureDir, target string, resources []map[string]any) {
 	t.Helper()
-	work := cloneFixture(t, validFixtureDir(t))
-	require.NoError(t, os.WriteFile(filepath.Join(work, "ucm.yml"), []byte(body), 0o644))
-	return work
+	dir := filepath.Join(fixtureDir, filepath.FromSlash(deploy.LocalCacheDir), target, "terraform")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	blob := map[string]any{
+		"version":   4,
+		"resources": resources,
+	}
+	data, err := json.Marshal(blob)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, deploy.TfStateFileName), data, 0o600))
 }
 
 func TestCmd_Summary_HeaderRendersNameAndWorkspace(t *testing.T) {

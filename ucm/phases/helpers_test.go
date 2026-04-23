@@ -165,6 +165,48 @@ func (*fakeDirectClient) UpdateStorageCredential(_ context.Context, _ catalog.Up
 
 func (*fakeDirectClient) DeleteStorageCredential(_ context.Context, _ string) error { return nil }
 
+func (*fakeDirectClient) GetExternalLocation(_ context.Context, _ string) (*catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) CreateExternalLocation(_ context.Context, _ catalog.CreateExternalLocation) (*catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) UpdateExternalLocation(_ context.Context, _ catalog.UpdateExternalLocation) (*catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) DeleteExternalLocation(_ context.Context, _ string) error { return nil }
+
+func (*fakeDirectClient) GetVolume(_ context.Context, _ string) (*catalog.VolumeInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) CreateVolume(_ context.Context, _ catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) UpdateVolume(_ context.Context, _ catalog.UpdateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) DeleteVolume(_ context.Context, _ string) error { return nil }
+
+func (*fakeDirectClient) GetConnection(_ context.Context, _ string) (*catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) CreateConnection(_ context.Context, _ catalog.CreateConnection) (*catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) UpdateConnection(_ context.Context, _ catalog.UpdateConnection) (*catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
+func (*fakeDirectClient) DeleteConnection(_ context.Context, _ string) error { return nil }
+
 func (*fakeDirectClient) UpdatePermissions(_ context.Context, _ catalog.UpdatePermissions) error {
 	return nil
 }

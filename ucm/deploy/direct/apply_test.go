@@ -30,6 +30,18 @@ type recordingClient struct {
 	UpdatedStorageCredentials []catalog.UpdateStorageCredential
 	DeletedStorageCredentials []string
 
+	CreatedExternalLocations []catalog.CreateExternalLocation
+	UpdatedExternalLocations []catalog.UpdateExternalLocation
+	DeletedExternalLocations []string
+
+	CreatedVolumes []catalog.CreateVolumeRequestContent
+	UpdatedVolumes []catalog.UpdateVolumeRequestContent
+	DeletedVolumes []string
+
+	CreatedConnections []catalog.CreateConnection
+	UpdatedConnections []catalog.UpdateConnection
+	DeletedConnections []string
+
 	Permissions []catalog.UpdatePermissions
 
 	FailOn string
@@ -124,6 +136,90 @@ func (r *recordingClient) DeleteStorageCredential(_ context.Context, name string
 		return err
 	}
 	r.DeletedStorageCredentials = append(r.DeletedStorageCredentials, name)
+	return nil
+}
+
+func (r *recordingClient) GetExternalLocation(_ context.Context, _ string) (*catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+
+func (r *recordingClient) CreateExternalLocation(_ context.Context, in catalog.CreateExternalLocation) (*catalog.ExternalLocationInfo, error) {
+	if err := r.trip("CreateExternalLocation:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.CreatedExternalLocations = append(r.CreatedExternalLocations, in)
+	return &catalog.ExternalLocationInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) UpdateExternalLocation(_ context.Context, in catalog.UpdateExternalLocation) (*catalog.ExternalLocationInfo, error) {
+	if err := r.trip("UpdateExternalLocation:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.UpdatedExternalLocations = append(r.UpdatedExternalLocations, in)
+	return &catalog.ExternalLocationInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) DeleteExternalLocation(_ context.Context, name string) error {
+	if err := r.trip("DeleteExternalLocation:" + name); err != nil {
+		return err
+	}
+	r.DeletedExternalLocations = append(r.DeletedExternalLocations, name)
+	return nil
+}
+
+func (r *recordingClient) GetVolume(_ context.Context, _ string) (*catalog.VolumeInfo, error) {
+	return nil, nil
+}
+
+func (r *recordingClient) CreateVolume(_ context.Context, in catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+	if err := r.trip("CreateVolume:" + in.CatalogName + "." + in.SchemaName + "." + in.Name); err != nil {
+		return nil, err
+	}
+	r.CreatedVolumes = append(r.CreatedVolumes, in)
+	return &catalog.VolumeInfo{Name: in.Name, CatalogName: in.CatalogName, SchemaName: in.SchemaName}, nil
+}
+
+func (r *recordingClient) UpdateVolume(_ context.Context, in catalog.UpdateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+	if err := r.trip("UpdateVolume:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.UpdatedVolumes = append(r.UpdatedVolumes, in)
+	return &catalog.VolumeInfo{FullName: in.Name}, nil
+}
+
+func (r *recordingClient) DeleteVolume(_ context.Context, name string) error {
+	if err := r.trip("DeleteVolume:" + name); err != nil {
+		return err
+	}
+	r.DeletedVolumes = append(r.DeletedVolumes, name)
+	return nil
+}
+
+func (r *recordingClient) GetConnection(_ context.Context, _ string) (*catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
+func (r *recordingClient) CreateConnection(_ context.Context, in catalog.CreateConnection) (*catalog.ConnectionInfo, error) {
+	if err := r.trip("CreateConnection:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.CreatedConnections = append(r.CreatedConnections, in)
+	return &catalog.ConnectionInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) UpdateConnection(_ context.Context, in catalog.UpdateConnection) (*catalog.ConnectionInfo, error) {
+	if err := r.trip("UpdateConnection:" + in.Name); err != nil {
+		return nil, err
+	}
+	r.UpdatedConnections = append(r.UpdatedConnections, in)
+	return &catalog.ConnectionInfo{Name: in.Name}, nil
+}
+
+func (r *recordingClient) DeleteConnection(_ context.Context, name string) error {
+	if err := r.trip("DeleteConnection:" + name); err != nil {
+		return err
+	}
+	r.DeletedConnections = append(r.DeletedConnections, name)
 	return nil
 }
 
@@ -328,6 +424,349 @@ func TestApply_StorageCredentialRejectsMissingIdentity(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "exactly one identity field")
 	assert.Empty(t, client.Calls, "no API call must be made when validation fails")
+}
+
+func TestApply_ExternalLocationCreateOrdersAfterStorageCredential(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
+		"prod": {
+			Name:       "prod",
+			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/uc"},
+		},
+	}
+	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
+		"data": {
+			Name:           "data",
+			Url:            "s3://bucket/prefix",
+			CredentialName: "prod",
+		},
+	}
+
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{
+		"CreateStorageCredential:prod",
+		"CreateExternalLocation:data",
+	}, client.Calls)
+
+	require.NotNil(t, state.ExternalLocations["data"])
+	assert.Equal(t, "s3://bucket/prefix", state.ExternalLocations["data"].Url)
+	assert.Equal(t, "prod", state.ExternalLocations["data"].CredentialName)
+}
+
+func TestApply_ExternalLocationUpdate(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
+		"data": {
+			Name:           "data",
+			Url:            "s3://bucket/new",
+			CredentialName: "prod",
+			Comment:        "new",
+		},
+	}
+	state := direct.NewState()
+	state.ExternalLocations["data"] = &direct.ExternalLocationState{
+		Name:           "data",
+		Url:            "s3://bucket/old",
+		CredentialName: "prod",
+		Comment:        "old",
+	}
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{"UpdateExternalLocation:data"}, client.Calls)
+	assert.Equal(t, "s3://bucket/new", state.ExternalLocations["data"].Url)
+	assert.Equal(t, "new", state.ExternalLocations["data"].Comment)
+}
+
+func TestApply_ExternalLocationDestroyOrder(t *testing.T) {
+	u := &ucm.Ucm{}
+	state := direct.NewState()
+	state.Catalogs["main"] = &direct.CatalogState{Name: "main"}
+	state.ExternalLocations["data"] = &direct.ExternalLocationState{
+		Name:           "data",
+		Url:            "s3://bucket/prefix",
+		CredentialName: "prod",
+	}
+	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
+		Name:       "prod",
+		AwsIamRole: &direct.AwsIamRoleState{RoleArn: "arn:aws:iam::1:role/uc"},
+	}
+
+	client := &recordingClient{}
+	plan, err := direct.Destroy(t.Context(), u, client, state)
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	assert.Equal(t, []string{
+		"DeleteCatalog:main",
+		"DeleteExternalLocation:data",
+		"DeleteStorageCredential:prod",
+	}, client.Calls)
+
+	assert.Empty(t, state.Catalogs)
+	assert.Empty(t, state.ExternalLocations)
+	assert.Empty(t, state.StorageCredentials)
+}
+
+func TestApply_VolumeCreateOrdersAfterSchema(t *testing.T) {
+	u := ucmWith(
+		map[string]*resources.Catalog{"main": {Name: "main"}},
+		map[string]*resources.Schema{"bronze": {Name: "bronze", Catalog: "main"}},
+		nil,
+	)
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "MANAGED",
+		},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{
+		"CreateCatalog:main",
+		"CreateSchema:main.bronze",
+		"CreateVolume:main.bronze.raw",
+	}, client.Calls)
+
+	require.NotNil(t, state.Volumes["raw"])
+	assert.Equal(t, "main", state.Volumes["raw"].CatalogName)
+	assert.Equal(t, "bronze", state.Volumes["raw"].SchemaName)
+	assert.Equal(t, "MANAGED", state.Volumes["raw"].VolumeType)
+}
+
+func TestApply_VolumeExternalCreatePreservesStorageLocation(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:            "raw",
+			CatalogName:     "main",
+			SchemaName:      "bronze",
+			VolumeType:      "EXTERNAL",
+			StorageLocation: "s3://bucket/raw",
+		},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	require.Len(t, client.CreatedVolumes, 1)
+	assert.Equal(t, "s3://bucket/raw", client.CreatedVolumes[0].StorageLocation)
+	assert.Equal(t, catalog.VolumeTypeExternal, client.CreatedVolumes[0].VolumeType)
+}
+
+func TestApply_VolumeUpdate(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "MANAGED",
+			Comment:     "new",
+		},
+	}
+	state := direct.NewState()
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:        "raw",
+		CatalogName: "main",
+		SchemaName:  "bronze",
+		VolumeType:  "MANAGED",
+		Comment:     "old",
+	}
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{"UpdateVolume:main.bronze.raw"}, client.Calls)
+	assert.Equal(t, "new", state.Volumes["raw"].Comment)
+}
+
+func TestApply_VolumeDestroyOrder(t *testing.T) {
+	u := &ucm.Ucm{}
+	state := direct.NewState()
+	state.Catalogs["main"] = &direct.CatalogState{Name: "main"}
+	state.Schemas["bronze"] = &direct.SchemaState{Name: "bronze", Catalog: "main"}
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:        "raw",
+		CatalogName: "main",
+		SchemaName:  "bronze",
+		VolumeType:  "MANAGED",
+	}
+
+	client := &recordingClient{}
+	plan, err := direct.Destroy(t.Context(), u, client, state)
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	assert.Equal(t, []string{
+		"DeleteVolume:main.bronze.raw",
+		"DeleteSchema:main.bronze",
+		"DeleteCatalog:main",
+	}, client.Calls)
+
+	assert.Empty(t, state.Catalogs)
+	assert.Empty(t, state.Schemas)
+	assert.Empty(t, state.Volumes)
+}
+
+func TestApply_VolumeRejectsInvalidType(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "BOGUS",
+		},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	err := direct.Apply(t.Context(), u, client, plan, state)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "volume_type must be MANAGED or EXTERNAL")
+	assert.Empty(t, client.Calls)
+}
+
+func TestApply_VolumeExternalRequiresStorageLocation(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "EXTERNAL",
+		},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	err := direct.Apply(t.Context(), u, client, plan, state)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "storage_location is required for EXTERNAL")
+}
+
+func TestApply_ConnectionCreateOrdersAfterVolume(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Volumes = map[string]*resources.Volume{
+		"raw": {
+			Name:        "raw",
+			CatalogName: "main",
+			SchemaName:  "bronze",
+			VolumeType:  "MANAGED",
+		},
+	}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+			Options:        map[string]string{"host": "db.example.com"},
+		},
+	}
+
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{
+		"CreateVolume:main.bronze.raw",
+		"CreateConnection:mysql_prod",
+	}, client.Calls)
+
+	require.NotNil(t, state.Connections["mysql_prod"])
+	assert.Equal(t, "MYSQL", state.Connections["mysql_prod"].ConnectionType)
+	assert.Equal(t, "db.example.com", state.Connections["mysql_prod"].Options["host"])
+}
+
+func TestApply_ConnectionUpdate(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+			Options:        map[string]string{"host": "new.example.com"},
+		},
+	}
+	state := direct.NewState()
+	state.Connections["mysql_prod"] = &direct.ConnectionState{
+		Name:           "mysql_prod",
+		ConnectionType: "MYSQL",
+		Options:        map[string]string{"host": "old.example.com"},
+	}
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	require.NoError(t, direct.Apply(t.Context(), u, client, plan, state))
+
+	assert.Equal(t, []string{"UpdateConnection:mysql_prod"}, client.Calls)
+	assert.Equal(t, "new.example.com", state.Connections["mysql_prod"].Options["host"])
+}
+
+func TestApply_ConnectionDestroyOrder(t *testing.T) {
+	u := &ucm.Ucm{}
+	state := direct.NewState()
+	state.Volumes["raw"] = &direct.VolumeState{
+		Name:        "raw",
+		CatalogName: "main",
+		SchemaName:  "bronze",
+		VolumeType:  "MANAGED",
+	}
+	state.Connections["mysql_prod"] = &direct.ConnectionState{
+		Name:           "mysql_prod",
+		ConnectionType: "MYSQL",
+		Options:        map[string]string{"host": "db.example.com"},
+	}
+
+	client := &recordingClient{}
+	plan, err := direct.Destroy(t.Context(), u, client, state)
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	assert.Equal(t, []string{
+		"DeleteConnection:mysql_prod",
+		"DeleteVolume:main.bronze.raw",
+	}, client.Calls)
+
+	assert.Empty(t, state.Volumes)
+	assert.Empty(t, state.Connections)
+}
+
+func TestApply_ConnectionRejectsMissingOptions(t *testing.T) {
+	u := &ucm.Ucm{}
+	u.Config.Resources.Connections = map[string]*resources.Connection{
+		"mysql_prod": {
+			Name:           "mysql_prod",
+			ConnectionType: "MYSQL",
+		},
+	}
+	state := direct.NewState()
+	plan := direct.CalculatePlan(u, state)
+
+	client := &recordingClient{}
+	err := direct.Apply(t.Context(), u, client, plan, state)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "options is required")
+	assert.Empty(t, client.Calls)
 }
 
 func TestApply_RevokesPrincipalsNotInConfig(t *testing.T) {

@@ -29,6 +29,9 @@ type State struct {
 	Schemas            map[string]*SchemaState            `json:"schemas,omitempty"`
 	Grants             map[string]*GrantState             `json:"grants,omitempty"`
 	StorageCredentials map[string]*StorageCredentialState `json:"storage_credentials,omitempty"`
+	ExternalLocations  map[string]*ExternalLocationState  `json:"external_locations,omitempty"`
+	Volumes            map[string]*VolumeState            `json:"volumes,omitempty"`
+	Connections        map[string]*ConnectionState        `json:"connections,omitempty"`
 }
 
 // CatalogState is what the direct engine records for a catalog after a
@@ -97,6 +100,40 @@ type AzureServicePrincipalState struct {
 // DatabricksGcpServiceAccountState mirrors resources.DatabricksGcpServiceAccount.
 type DatabricksGcpServiceAccountState struct{}
 
+// ExternalLocationState mirrors resources.ExternalLocation. All fields are
+// primitives so a reflect.DeepEqual on the struct suffices for drift detection.
+type ExternalLocationState struct {
+	Name           string `json:"name"`
+	Url            string `json:"url"`
+	CredentialName string `json:"credential_name"`
+
+	Comment        string `json:"comment,omitempty"`
+	ReadOnly       bool   `json:"read_only,omitempty"`
+	SkipValidation bool   `json:"skip_validation,omitempty"`
+	Fallback       bool   `json:"fallback,omitempty"`
+}
+
+// VolumeState mirrors resources.Volume for drift detection. All fields are
+// primitives so reflect.DeepEqual suffices.
+type VolumeState struct {
+	Name            string `json:"name"`
+	CatalogName     string `json:"catalog_name"`
+	SchemaName      string `json:"schema_name"`
+	VolumeType      string `json:"volume_type"`
+	StorageLocation string `json:"storage_location,omitempty"`
+	Comment         string `json:"comment,omitempty"`
+}
+
+// ConnectionState mirrors resources.Connection.
+type ConnectionState struct {
+	Name           string            `json:"name"`
+	ConnectionType string            `json:"connection_type"`
+	Options        map[string]string `json:"options"`
+	Comment        string            `json:"comment,omitempty"`
+	Properties     map[string]string `json:"properties,omitempty"`
+	ReadOnly       bool              `json:"read_only,omitempty"`
+}
+
 // NewState returns an empty State ready to be populated by the planner.
 func NewState() *State {
 	return &State{
@@ -105,6 +142,9 @@ func NewState() *State {
 		Schemas:            make(map[string]*SchemaState),
 		Grants:             make(map[string]*GrantState),
 		StorageCredentials: make(map[string]*StorageCredentialState),
+		ExternalLocations:  make(map[string]*ExternalLocationState),
+		Volumes:            make(map[string]*VolumeState),
+		Connections:        make(map[string]*ConnectionState),
 	}
 }
 
@@ -137,6 +177,15 @@ func LoadState(path string) (*State, error) {
 	}
 	if s.StorageCredentials == nil {
 		s.StorageCredentials = make(map[string]*StorageCredentialState)
+	}
+	if s.ExternalLocations == nil {
+		s.ExternalLocations = make(map[string]*ExternalLocationState)
+	}
+	if s.Volumes == nil {
+		s.Volumes = make(map[string]*VolumeState)
+	}
+	if s.Connections == nil {
+		s.Connections = make(map[string]*ConnectionState)
 	}
 	return &s, nil
 }
