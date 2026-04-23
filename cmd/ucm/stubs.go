@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/cmd/ucm/debug"
 	"github.com/spf13/cobra"
 )
 
@@ -29,8 +30,14 @@ func newGenerateCommand() *cobra.Command {
 	return stub("generate", "Scan an existing account+metastore+workspace and emit ucm.yml + seed state.")
 }
 
+func newBindCommand() *cobra.Command {
+	return stub("bind", "Attach an existing Databricks resource to a ucm.yml node without recreating it.")
+}
+
+// newDebugCommand returns the `ucm debug` group. Delegates to the
+// cmd/ucm/debug subpackage so the stub file keeps its "bare wiring" role.
 func newDebugCommand() *cobra.Command {
-	return stub("debug", "Dump internal ucm state (config tree, mutator trace) for troubleshooting.")
+	return debug.New()
 }
 
 func newDiffCommand() *cobra.Command {
