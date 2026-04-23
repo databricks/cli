@@ -50,11 +50,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 				b.AutoApprove = autoApprove
 
-				if cmd.Flag("compute-id").Changed {
-					b.Config.Bundle.ClusterId = clusterId
-				}
-
-				if cmd.Flag("cluster-id").Changed {
+				if cmd.Flag("compute-id").Changed || cmd.Flag("cluster-id").Changed {
 					b.Config.Bundle.ClusterId = clusterId
 				}
 				if cmd.Flag("fail-on-active-runs").Changed {

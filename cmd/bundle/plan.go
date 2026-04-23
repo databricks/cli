@@ -41,18 +41,11 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			PreDeployChecks: true,
 		}
 
-		// Only add InitFunc if we need to set force or cluster ID
-		if force || cmd.Flag("compute-id").Changed || cmd.Flag("cluster-id").Changed {
-			opts.InitFunc = func(b *bundle.Bundle) {
-				b.Config.Bundle.Force = force
+		opts.InitFunc = func(b *bundle.Bundle) {
+			b.Config.Bundle.Force = force
 
-				if cmd.Flag("compute-id").Changed {
-					b.Config.Bundle.ClusterId = clusterId
-				}
-
-				if cmd.Flag("cluster-id").Changed {
-					b.Config.Bundle.ClusterId = clusterId
-				}
+			if cmd.Flag("compute-id").Changed || cmd.Flag("cluster-id").Changed {
+				b.Config.Bundle.ClusterId = clusterId
 			}
 		}
 
