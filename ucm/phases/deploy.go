@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/direct"
 	"github.com/databricks/cli/ucm/deployplan"
+	"github.com/databricks/cli/ucm/metadata"
 )
 
 func approvalForDeploy(ctx context.Context, _ *ucm.Ucm, plan *deployplan.Plan, opts Options) (bool, error) {
@@ -147,6 +148,24 @@ func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 		logdiag.LogError(ctx, fmt.Errorf("push remote state: %w", err))
 		return
 	}
+
+	uploadMetadataBestEffort(ctx, u, opts.Backend)
+}
+
+// uploadMetadataBestEffort uploads provenance after a successful deploy. It
+// mirrors DAB's post-apply provenance write. The deploy has already succeeded
+// by the time this runs, so post-success failures degrade to a warning
+// instead of being surfaced via logdiag — masking the success with a metadata
+// glitch is the wrong tradeoff. Callers without a StateFiler (e.g. a
+// direct-engine deploy that never configures a remote backend) get no-op
+// semantics; this keeps both deploy paths able to call the helper unguarded.
+func uploadMetadataBestEffort(ctx context.Context, u *ucm.Ucm, b deploy.Backend) {
+	if b.StateFiler == nil {
+		return
+	}
+	if err := metadata.Upload(ctx, u, b, metadata.Compute(ctx, u)); err != nil {
+		log.Warnf(ctx, "ucm metadata: upload failed: %v", err)
+	}
 }
 
 func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
@@ -195,5 +214,8 @@ func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
 	}
 	if applyErr != nil {
 		logdiag.LogError(ctx, fmt.Errorf("direct apply: %w", applyErr))
+		return
 	}
+
+	uploadMetadataBestEffort(ctx, u, opts.Backend)
 }

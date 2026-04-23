@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/ucm/deploy"
 	ucmterraform "github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/deployplan"
+	"github.com/databricks/cli/ucm/metadata"
 	"github.com/databricks/cli/ucm/phases"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -60,6 +61,22 @@ func readRemoteSeq(t *testing.T, f *fixture) int {
 	return s.Seq
 }
 
+// readRemoteMetadata returns the parsed ucm-metadata.json from the fixture's
+// remote state dir, or nil when it has not been written.
+func readRemoteMetadata(t *testing.T, f *fixture) *metadata.Metadata {
+	t.Helper()
+	rc, err := f.remote.Read(t.Context(), metadata.MetadataFileName)
+	if err != nil {
+		return nil
+	}
+	defer rc.Close()
+	data, err := io.ReadAll(rc)
+	require.NoError(t, err)
+	var md metadata.Metadata
+	require.NoError(t, json.Unmarshal(data, &md))
+	return &md
+}
+
 func TestDeployHappyPath(t *testing.T) {
 	f := newFixture(t)
 	ctx := logdiag.InitContext(t.Context())
@@ -76,6 +93,14 @@ func TestDeployHappyPath(t *testing.T) {
 	assert.Equal(t, 1, f.tf.ApplyCalls)
 	// Post-apply Push must advance the remote Seq from 0 to 1.
 	assert.Equal(t, 1, readRemoteSeq(t, f))
+	// Metadata upload follows Push: ucm-metadata.json must be present and
+	// identify this deployment by name + target.
+	md := readRemoteMetadata(t, f)
+	require.NotNil(t, md)
+	assert.Equal(t, metadata.Version, md.Version)
+	assert.Equal(t, "test", md.Ucm.Name)
+	assert.Equal(t, "dev", md.Ucm.Target)
+	assert.False(t, md.Timestamp.IsZero())
 }
 
 // TestDeployDirectEngineSkipsTerraform asserts that when the direct engine

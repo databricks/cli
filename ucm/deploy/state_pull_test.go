@@ -195,3 +195,45 @@ func TestPullNilUcm(t *testing.T) {
 	err := deploy.Pull(ctx, nil, deploy.Backend{})
 	require.Error(t, err)
 }
+
+func TestLoadLocalStateReturnsAbsentWhenFileMissing(t *testing.T) {
+	f := newFixture(t)
+
+	state, ok, err := deploy.LoadLocalState(t.Context(), f.u)
+	require.NoError(t, err)
+	assert.False(t, ok)
+	assert.Nil(t, state)
+}
+
+func TestLoadLocalStateReturnsDecodedStateWhenPresent(t *testing.T) {
+	f := newFixture(t)
+	require.NoError(t, os.MkdirAll(f.localDir, 0o755))
+	seeded := deploy.State{Version: deploy.StateVersion, Seq: 7}
+	blob, err := json.Marshal(seeded)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(f.localDir, deploy.UcmStateFileName), blob, 0o600))
+
+	state, ok, err := deploy.LoadLocalState(t.Context(), f.u)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.NotNil(t, state)
+	assert.Equal(t, 7, state.Seq)
+}
+
+func TestLoadLocalStateReturnsErrorOnMalformedState(t *testing.T) {
+	f := newFixture(t)
+	require.NoError(t, os.MkdirAll(f.localDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(f.localDir, deploy.UcmStateFileName), []byte("not-json"), 0o600))
+
+	state, ok, err := deploy.LoadLocalState(t.Context(), f.u)
+	require.Error(t, err)
+	assert.False(t, ok)
+	assert.Nil(t, state)
+}
+
+func TestLoadLocalStateRejectsNilUcm(t *testing.T) {
+	state, ok, err := deploy.LoadLocalState(t.Context(), nil)
+	require.Error(t, err)
+	assert.False(t, ok)
+	assert.Nil(t, state)
+}
