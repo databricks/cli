@@ -146,8 +146,17 @@ jobs:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
         run: make cover
 
-      - name: Analyze slow tests
-        run: make slowest
+      - name: Upload gotestsum JSON output
+        # Always upload so we can inspect timing even if tests fail.
+        if: ${{ always() }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: test-output-${{ matrix.os.name }}-${{ matrix.deployment }}
+          path: |
+            test-output-unit.json
+            test-output-acc.json
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Check out.test.toml files are up to date
         shell: bash

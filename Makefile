@@ -9,7 +9,7 @@ ACCEPTANCE_TEST_FILTER = ""
 
 GO_TOOL ?= go tool -modfile=tools/go.mod
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
-GOTESTSUM_CMD ?= ${GO_TOOL} gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --jsonfile test-output.json --rerun-fails
+GOTESTSUM_CMD ?= ${GO_TOOL} gotestsum --format ${GOTESTSUM_FORMAT} --no-summary=skipped --rerun-fails
 LOCAL_TIMEOUT ?= 30m
 
 
@@ -79,11 +79,11 @@ test: test-unit test-acc
 
 .PHONY: test-unit
 test-unit:
-	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT}
+	${GOTESTSUM_CMD} --jsonfile=test-output-unit.json --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT}
 
 .PHONY: test-acc
 test-acc:
-	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
+	${GOTESTSUM_CMD} --jsonfile=test-output-acc.json --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
 
 # Updates acceptance test output (local tests)
 .PHONY: test-update
@@ -108,15 +108,11 @@ test-update-aws:
 .PHONY: test-update-all
 test-update-all: test-update test-update-aws
 
-.PHONY: slowest
-slowest:
-	${GO_TOOL} gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
-
 .PHONY: cover
 cover:
 	rm -fr ./acceptance/build/cover/
-	VERBOSE_TEST=1 ${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT}
-	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
+	VERBOSE_TEST=1 ${GOTESTSUM_CMD} --jsonfile=test-output-unit.json --packages "${TEST_PACKAGES}" -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT}
+	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} --jsonfile=test-output-acc.json --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
