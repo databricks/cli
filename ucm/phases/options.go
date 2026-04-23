@@ -17,8 +17,8 @@ type TerraformWrapper interface {
 	Render(ctx context.Context, u *ucm.Ucm) error
 	Init(ctx context.Context, u *ucm.Ucm) error
 	Plan(ctx context.Context, u *ucm.Ucm) (*terraform.PlanResult, error)
-	Apply(ctx context.Context, u *ucm.Ucm) error
-	Destroy(ctx context.Context, u *ucm.Ucm) error
+	Apply(ctx context.Context, u *ucm.Ucm, forceLock bool) error
+	Destroy(ctx context.Context, u *ucm.Ucm, forceLock bool) error
 }
 
 // TerraformFactory constructs a terraform-engine wrapper scoped to u.
@@ -75,6 +75,11 @@ type Options struct {
 	// DirectClientFactory produces the direct-engine SDK client bound to u.
 	// When nil, phases fall back to DefaultDirectClientFactory.
 	DirectClientFactory DirectClientFactory
+
+	// ForceLock mirrors the --force-lock flag: when true, Pull/Push and
+	// terraform Apply/Destroy override an existing deploy lock instead of
+	// failing with ErrLockHeld.
+	ForceLock bool
 }
 
 // terraformFactoryOrDefault returns o.TerraformFactory or the production

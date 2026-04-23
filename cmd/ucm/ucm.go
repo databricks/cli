@@ -7,6 +7,7 @@
 package ucm
 
 import (
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -36,6 +37,13 @@ Online documentation: https://docs.databricks.com/en/dev-tools/ucm/index.html`,
 	}
 
 	cmd.PersistentFlags().StringP("target", "t", "", "ucm target to use (if applicable)")
+	// Register a local --output fallback so that `cmdUcm.New()` works in
+	// standalone unit tests. Under `databricks ucm ...` the root-level
+	// persistent flag takes precedence (cobra walks up the parent chain).
+	if cmd.Flag("output") == nil {
+		out := flags.OutputText
+		cmd.PersistentFlags().VarP(&out, "output", "o", "output type: text or json")
+	}
 
 	cmd.AddCommand(newValidateCommand())
 	cmd.AddCommand(newSchemaCommand())
