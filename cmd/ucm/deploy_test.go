@@ -30,3 +30,11 @@ func TestCmd_Deploy_PropagatesApplyError(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, 1, h.tf.ApplyCalls)
 }
+
+func TestCmd_Deploy_DeclaresAutoApproveAndForceLockFlags(t *testing.T) {
+	cmd := newDeployCommand()
+	for _, name := range []string{"auto-approve", "force-lock"} {
+		flag := cmd.Flags().Lookup(name)
+		assert.NotNil(t, flag, "deploy missing --%s flag", name)
+	}
+}
