@@ -6,8 +6,8 @@
 //     duplicate resource-key detection. Composed by [All] and wired into
 //     phases.Validate / phases.PolicyCheck.
 //   - Post-interpolation: reference-closure checks that run after
-//     ResolveResourceReferences (and later, variable resolution) so the
-//     validator sees concrete values.
+//     ResolveVariableReferencesOnlyResources (and later, variable resolution)
+//     so the validator sees concrete values.
 package validate
 
 import (

@@ -71,7 +71,7 @@ func planTerraform(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
 }
 
 func planDirect(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
-	ucm.ApplyContext(ctx, u, mutator.ResolveResourceReferences())
+	ucm.ApplyContext(ctx, u, mutator.ResolveVariableReferencesOnlyResources("resources"))
 	if logdiag.HasError(ctx) {
 		return nil
 	}

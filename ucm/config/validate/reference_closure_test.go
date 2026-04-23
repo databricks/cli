@@ -101,7 +101,7 @@ resources:
 		t.Run(tc.name, func(t *testing.T) {
 			u := loadUcm(t, tc.yaml)
 			if tc.resolveFirst {
-				diags := ucm.Apply(t.Context(), u, mutator.ResolveResourceReferences())
+				diags := ucm.Apply(t.Context(), u, mutator.ResolveVariableReferencesOnlyResources("resources"))
 				require.NoError(t, diags.Error())
 			}
 			diags := ucm.Apply(t.Context(), u, validate.ReferenceClosure())
@@ -125,9 +125,9 @@ resources:
   schemas:
     s1: {name: s1, catalog: "${resources.catalogs.missing.name}"}
 `)
-	// ResolveResourceReferences will leave the token in place because the
-	// target does not exist; the closure check then errors on it.
-	_ = ucm.Apply(t.Context(), u, mutator.ResolveResourceReferences())
+	// Resolution will leave the token in place because the target does not
+	// exist; the closure check then errors on it.
+	_ = ucm.Apply(t.Context(), u, mutator.ResolveVariableReferencesOnlyResources("resources"))
 	diags := ucm.Apply(t.Context(), u, validate.ReferenceClosure())
 	require.NotEmpty(t, diags)
 	assert.True(t, hasSummary(diags, "missing"))

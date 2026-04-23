@@ -44,6 +44,7 @@ func LoadNamedTarget(ctx context.Context, u *ucm.Ucm, name string) {
 func Variables(ctx context.Context, u *ucm.Ucm) {
 	ucm.ApplySeqContext(ctx, u,
 		mutator.SetVariables(),
-		mutator.ResolveVariableReferences(),
+		mutator.ResolveVariableReferencesWithoutResources("variables"),
+		mutator.ResolveVariableReferencesOnlyResources("variables"),
 	)
 }

@@ -74,7 +74,7 @@ func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 }
 
 func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
-	ucm.ApplyContext(ctx, u, mutator.ResolveResourceReferences())
+	ucm.ApplyContext(ctx, u, mutator.ResolveVariableReferencesOnlyResources("resources"))
 	if logdiag.HasError(ctx) {
 		return
 	}
