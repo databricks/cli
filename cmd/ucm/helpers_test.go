@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	ucmpkg "github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/deploy"
+	"github.com/databricks/cli/ucm/deploy/direct"
 	ucmfiler "github.com/databricks/cli/ucm/deploy/filer"
 	"github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/phases"
@@ -94,9 +95,20 @@ func (f *fakeTf) Import(_ context.Context, _ *ucmpkg.Ucm, address, id string) er
 // verbHarness bundles the fake terraform wrapper, the remote-state filer
 // backing Pull/Push, and an override of buildPhaseOptions so the verb under
 // test runs against the fake instead of reaching for a real workspace client.
+// directClient is optional — set it via WithDirectClient before runVerb to
+// route the direct-engine verbs (drift, and the direct branches of
+// plan/deploy/destroy) through an in-memory fake.
 type verbHarness struct {
-	tf     *fakeTf
-	remote libsfiler.Filer
+	tf           *fakeTf
+	remote       libsfiler.Filer
+	directClient direct.Client
+}
+
+// WithDirectClient configures the harness to hand the given client back from
+// DirectClientFactory. Returns the harness for fluent setup.
+func (h *verbHarness) WithDirectClient(c direct.Client) *verbHarness {
+	h.directClient = c
+	return h
 }
 
 // newVerbHarness builds a harness keyed to a temp-dir "remote" filer and
@@ -117,7 +129,7 @@ func newVerbHarness(t *testing.T) *verbHarness {
 
 	prev := buildPhaseOptions
 	buildPhaseOptions = func(_ context.Context, _ *ucmpkg.Ucm) (phases.Options, error) {
-		return phases.Options{
+		opts := phases.Options{
 			Backend: deploy.Backend{
 				StateFiler: ucmfiler.NewStateFilerFromFiler(remote),
 				LockFiler:  remote,
@@ -126,7 +138,13 @@ func newVerbHarness(t *testing.T) *verbHarness {
 			TerraformFactory: func(_ context.Context, _ *ucmpkg.Ucm) (phases.TerraformWrapper, error) {
 				return h.tf, nil
 			},
-		}, nil
+		}
+		if h.directClient != nil {
+			opts.DirectClientFactory = func(_ context.Context, _ *ucmpkg.Ucm) (direct.Client, error) {
+				return h.directClient, nil
+			}
+		}
+		return opts, nil
 	}
 	t.Cleanup(func() { buildPhaseOptions = prev })
 
