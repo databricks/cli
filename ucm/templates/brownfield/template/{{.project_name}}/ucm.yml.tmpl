@@ -1,0 +1,15 @@
+ucm:
+  name: {{.project_name}}
+
+# This file is a stub. Run 'databricks ucm generate{{if .metastore_name}}
+# --metastore-name {{.metastore_name}}{{end}}' to scan the account and populate
+# catalogs, schemas, external locations, storage credentials, grants, tags, and
+# connections from the live Unity Catalog state.
+
+resources:
+  tag_validation_rules:
+    enforce_ownership:
+      securable_types: [catalog, schema]
+      required: [cost_center, data_owner, classification]
+      allowed_values:
+        classification: [public, internal, confidential, restricted]

@@ -22,10 +22,6 @@ func stub(use, short string) *cobra.Command {
 	return cmd
 }
 
-func newInitCommand() *cobra.Command {
-	return stub("init [template]", "Scaffold a new ucm.yml project from a starter template.")
-}
-
 func newGenerateCommand() *cobra.Command {
 	return stub("generate", "Scan an existing account+metastore+workspace and emit ucm.yml + seed state.")
 }

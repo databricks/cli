@@ -1,0 +1,20 @@
+{
+    "welcome_message": "\nWelcome to the brownfield ucm template.\n\nThis template emits a stub ucm.yml and tells you how to run 'ucm generate' to back-fill it with the resources already present in your account and metastore.",
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$",
+            "pattern_match_failure_message": "Name must consist of letters, numbers, dashes, and underscores.",
+            "default": "my_ucm_project",
+            "description": "\nUnique name for this ucm project.\nproject_name",
+            "order": 1
+        },
+        "metastore_name": {
+            "type": "string",
+            "default": "",
+            "description": "\nMetastore to scan when you run 'ucm generate' (leave blank to discover).\nmetastore_name",
+            "order": 2
+        }
+    },
+    "success_message": "\nYour new brownfield ucm project has been created in the '{{.project_name}}' directory.\n\nNext steps:\n  cd {{.project_name}}\n  databricks ucm generate{{if .metastore_name}} --metastore-name {{.metastore_name}}{{end}}\n  databricks ucm validate"
+}
