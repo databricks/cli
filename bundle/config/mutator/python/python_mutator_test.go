@@ -239,6 +239,55 @@ resources:
 	assert.Equal(t, int64(1), b.Metrics.PythonUpdatedResourcesCount)
 }
 
+func TestPythonMutator_propagatesAuthEnv(t *testing.T) {
+	withFakeVEnv(t, ".venv")
+
+	// Minimal databrickscfg so that b.AuthEnv() can resolve a profile.
+	// Use the .invalid TLD (RFC 2606) so SDK host metadata resolution fails
+	// fast via DNS instead of hanging on a TCP connect.
+	cfgPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(cfgPath, []byte("[my-profile]\nhost = https://bundle-test.invalid\ntoken = dapi-test\n"), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
+
+	b := loadYaml("databricks.yml", `
+experimental:
+  python:
+    venv_path: .venv
+    resources: ["resources:load_resources"]
+workspace:
+  profile: my-profile`)
+
+	// Set up process stub directly so we can inspect the subprocess env.
+	ctx, stub := process.WithStub(t.Context())
+	t.Setenv(env.TempDirVariable, t.TempDir())
+	cacheDir, err := createCacheDir(ctx)
+	require.NoError(t, err)
+
+	outputJSON := `{
+		"experimental": {
+			"python": {
+				"venv_path": ".venv",
+				"resources": ["resources:load_resources"]
+			}
+		},
+		"workspace": {
+			"profile": "my-profile"
+		}
+	}`
+
+	stub.WithCallback(func(cmd *exec.Cmd) error {
+		require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "output.json"), []byte(outputJSON), 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "diagnostics.json"), []byte(""), 0o600))
+		return nil
+	})
+
+	diags := bundle.Apply(ctx, b, PythonMutator(PythonMutatorPhaseLoadResources))
+	assert.NoError(t, diags.Error())
+
+	assert.Equal(t, "my-profile", stub.LookupEnv("DATABRICKS_CONFIG_PROFILE"))
+}
+
 func TestPythonMutator_badOutput(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 	b := loadYaml("databricks.yml", `
