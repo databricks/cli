@@ -88,5 +88,5 @@ func TestApplyContextRecordsExecutionTime(t *testing.T) {
 
 	require.Len(t, u.Metrics.ExecutionTimes, 1)
 	assert.Equal(t, "ucm.(slowMutator)", u.Metrics.ExecutionTimes[0].Key)
-	assert.Greater(t, u.Metrics.ExecutionTimes[0].Value, int64(0))
+	assert.Positive(t, u.Metrics.ExecutionTimes[0].Value)
 }

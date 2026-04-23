@@ -205,7 +205,7 @@ func planGrants(u *ucm.Ucm, state *State, plan *deployplan.Plan) {
 // mergedKeys returns a sorted list of keys present in either map. Sorting
 // keeps plan output stable across runs and matches the deployplan.GetActions
 // discipline of emitting actions in lexical order.
-func mergedKeys[V any, W any](a map[string]V, b map[string]W) []string {
+func mergedKeys[V, W any](a map[string]V, b map[string]W) []string {
 	seen := make(map[string]struct{}, len(a)+len(b))
 	for k := range a {
 		seen[k] = struct{}{}

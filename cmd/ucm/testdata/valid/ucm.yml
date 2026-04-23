@@ -32,7 +32,7 @@ resources:
 
   grants:
     alpha_read:
-      securable: { type: catalog, name: team_alpha }
+      securable: {type: catalog, name: team_alpha}
       principal: alpha-readers
       privileges: [USE_CATALOG, SELECT]
 

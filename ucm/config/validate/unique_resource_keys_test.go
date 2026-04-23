@@ -11,10 +11,10 @@ import (
 
 func TestUniqueResourceKeys(t *testing.T) {
 	tests := []struct {
-		name         string
-		yaml         string
-		wantSummary  string
-		wantEmpty    bool
+		name        string
+		yaml        string
+		wantSummary string
+		wantEmpty   bool
 	}{
 		{
 			name: "distinct kinds with distinct keys",

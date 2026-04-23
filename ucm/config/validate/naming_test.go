@@ -11,10 +11,10 @@ import (
 
 func TestNaming(t *testing.T) {
 	tests := []struct {
-		name         string
-		yaml         string
-		wantSummary  string
-		wantEmpty    bool
+		name        string
+		yaml        string
+		wantSummary string
+		wantEmpty   bool
 	}{
 		{
 			name: "valid key and name",
