@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -13,7 +14,21 @@ import (
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/direct"
 	"github.com/databricks/cli/ucm/deployplan"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
+
+func assertRootPathExists(ctx context.Context, u *ucm.Ucm) (bool, error) {
+	w := u.WorkspaceClient()
+	_, err := w.Workspace.GetStatusByPath(ctx, u.Config.Workspace.RootPath) //nolint:staticcheck // Deprecated in SDK v0.127.0. Migration to WorkspaceHierarchyService tracked separately.
+
+	var aerr *apierr.APIError
+	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
+		log.Infof(ctx, "Root path does not exist: %s", u.Config.Workspace.RootPath)
+		return false, nil
+	}
+
+	return true, err
+}
 
 func approvalForDestroy(ctx context.Context, _ *ucm.Ucm, plan *deployplan.Plan, opts Options) (bool, error) {
 	if plan == nil {
@@ -163,6 +178,16 @@ func destroyPlanFromState(state *direct.State) *deployplan.Plan {
 // survived the run.
 func Destroy(ctx context.Context, u *ucm.Ucm, opts Options) {
 	log.Info(ctx, "Phase: destroy")
+
+	ok, err := assertRootPathExists(ctx, u)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if !ok {
+		cmdio.LogString(ctx, "No active deployment found to destroy!")
+		return
+	}
 
 	setting := Initialize(ctx, u, opts)
 	if logdiag.HasError(ctx) {

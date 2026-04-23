@@ -2,6 +2,7 @@ package phases_test
 
 import (
 	"io"
+	"net/http"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -9,7 +10,10 @@ import (
 	"github.com/databricks/cli/ucm/config/engine"
 	"github.com/databricks/cli/ucm/config/resources"
 	"github.com/databricks/cli/ucm/phases"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -182,6 +186,34 @@ func TestDestroyPromptsAndAccepts(t *testing.T) {
 
 	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
 	assert.Equal(t, 1, f.tf.DestroyCalls)
+}
+
+// TestDestroyNoActiveDeploymentWhenWorkspaceRootMissing asserts a 404 from
+// GetStatusByPath on the workspace root is treated as an informational "no
+// deployment" signal — matching bundle's behavior — rather than a diag error.
+// No terraform calls must fire and the "No active deployment found" message is
+// logged to stderr.
+func TestDestroyNoActiveDeploymentWhenWorkspaceRootMissing(t *testing.T) {
+	f := newFixture(t)
+	mockWS := mocks.NewMockWorkspaceClient(t)
+	mockWS.GetMockWorkspaceAPI().EXPECT().
+		GetStatusByPath(mock.Anything, f.u.Config.Workspace.RootPath).
+		Return(nil, &apierr.APIError{StatusCode: http.StatusNotFound, ErrorCode: "RESOURCE_DOES_NOT_EXIST"})
+	f.u.SetWorkspaceClient(mockWS.WorkspaceClient)
+
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+	ctx, stderr := cmdio.NewTestContextWithStderr(ctx)
+
+	phases.Destroy(ctx, f.u, phases.Options{
+		Backend:          f.backend,
+		TerraformFactory: fakeTfFactory(f.tf),
+	})
+
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
+	assert.Contains(t, stderr.String(), "No active deployment found to destroy!")
+	assert.Equal(t, 0, f.tf.InitCalls)
+	assert.Equal(t, 0, f.tf.DestroyCalls)
 }
 
 // TestDestroyAbortsWhenPromptDeclined drives the same interactive path with

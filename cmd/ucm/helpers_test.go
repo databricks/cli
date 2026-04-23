@@ -20,8 +20,11 @@ import (
 	ucmfiler "github.com/databricks/cli/ucm/deploy/filer"
 	"github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/phases"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -151,6 +154,25 @@ func newVerbHarness(t *testing.T) *verbHarness {
 		tf:     &fakeTf{},
 		remote: remote,
 	}
+
+	// Stub the workspace client on every Ucm loaded during this test so
+	// Destroy's assertRootPathExists precondition (and any other verb
+	// reaching for the live client) succeeds without ~/.databrickscfg.
+	prevHook := utils.PreMutateHook
+	utils.PreMutateHook = func(ctx context.Context, u *ucmpkg.Ucm) {
+		if prevHook != nil {
+			prevHook(ctx, u)
+		}
+		if u == nil {
+			return
+		}
+		m := mocks.NewMockWorkspaceClient(t)
+		m.GetMockWorkspaceAPI().EXPECT().
+			GetStatusByPath(mock.Anything, mock.Anything).
+			Return(&workspace.ObjectInfo{}, nil).Maybe()
+		u.SetWorkspaceClient(m.WorkspaceClient)
+	}
+	t.Cleanup(func() { utils.PreMutateHook = prevHook })
 
 	prev := buildPhaseOptions
 	buildPhaseOptions = func(_ context.Context, _ *ucmpkg.Ucm) (phases.Options, error) {
