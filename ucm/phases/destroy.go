@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/direct"
 )
@@ -42,6 +43,11 @@ func Destroy(ctx context.Context, u *ucm.Ucm, opts Options) {
 }
 
 func destroyTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
+	ucm.ApplyContext(ctx, u, validate.ReferenceClosure())
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	factory := opts.terraformFactoryOrDefault()
 	tf, err := factory(ctx, u)
 	if err != nil {

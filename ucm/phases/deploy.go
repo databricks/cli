@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config/mutator"
+	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/direct"
 )
@@ -44,6 +45,11 @@ func Deploy(ctx context.Context, u *ucm.Ucm, opts Options) {
 }
 
 func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
+	ucm.ApplyContext(ctx, u, validate.ReferenceClosure())
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	tf := Build(ctx, u, opts)
 	if tf == nil || logdiag.HasError(ctx) {
 		return
@@ -69,6 +75,10 @@ func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 
 func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
 	ucm.ApplyContext(ctx, u, mutator.ResolveResourceReferences())
+	if logdiag.HasError(ctx) {
+		return
+	}
+	ucm.ApplyContext(ctx, u, validate.ReferenceClosure())
 	if logdiag.HasError(ctx) {
 		return
 	}
