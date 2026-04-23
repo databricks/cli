@@ -45,6 +45,8 @@ type Ucm struct {
 	// getClient memoizes the workspace client built from Config.Workspace.
 	// Initialized lazily by WorkspaceClientE via initClientOnce.
 	getClient func() (*databricks.WorkspaceClient, error)
+
+	Metrics Metrics
 }
 
 // Load builds a Ucm for the given root path, reading the ucm.yml file
