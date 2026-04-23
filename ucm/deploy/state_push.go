@@ -7,13 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/deploy/filer"
 	"github.com/databricks/cli/ucm/deploy/lock"
-	"github.com/google/uuid"
 )
 
 // Push mirrors the local state cache into the remote StateFiler. It bumps
@@ -52,21 +50,15 @@ func Push(ctx context.Context, u *ucm.Ucm, b Backend) error {
 	// intent of this Push. A crash after writeRemote but before the
 	// bookkeeping below leaves the remote ahead of local; the next Pull
 	// catches up.
-	next := *local
-	next.Version = StateVersion
-	next.Seq = local.Seq + 1
-	if next.ID == uuid.Nil {
-		next.ID = uuid.New()
-	}
-	next.Timestamp = time.Now().UTC()
+	next := StateUpdate(local)
 
-	if err := writeRemote(ctx, b.StateFiler, LocalTfStatePath(u), &next); err != nil {
+	if err := writeRemote(ctx, b.StateFiler, LocalTfStatePath(u), next); err != nil {
 		return err
 	}
 
 	// Mirror the bumped Seq into the local cache so the next Push starts
 	// from an accurate baseline without requiring an intervening Pull.
-	if err := writeLocalState(localDir, &next); err != nil {
+	if err := writeLocalState(localDir, next); err != nil {
 		return fmt.Errorf("ucm state: refresh local %s: %w", UcmStateFileName, err)
 	}
 	log.Infof(ctx, "ucm state: pushed state (seq %d -> %d) for target %s", local.Seq, next.Seq, u.Config.Ucm.Target)
