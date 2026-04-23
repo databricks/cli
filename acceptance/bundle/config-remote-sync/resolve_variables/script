@@ -30,6 +30,11 @@ for p in r["parameters"]:
     if p["name"] == "catalog":
         p["default"] = "staging_catalog"
 
+# --- Non-sequence Add (false-positive prevention) ---
+# Add tags to the job. Tags is a map (not a sequence), so Add restoration is
+# skipped entirely: "main" stays hardcoded even though it matches \${var.my_catalog}.
+r["tags"] = {"deployment": "main"}
+
 # Compound interpolation: change only the suffix of source_path.
 # The variable part (\${var.my_catalog} = "main") is unchanged -> preserved as \${var.my_catalog}
 for t in r["tasks"]:

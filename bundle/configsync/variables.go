@@ -3,6 +3,7 @@ package configsync
 import (
 	"bytes"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -23,43 +24,37 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // restored when their resolved value matches. Compound interpolation strings
 // (e.g., "/mnt/${var.account}/raw/landing") are reconstructed by preserving
 // variables whose resolved values still appear at their expected positions
-// and updating only the literal segments. The reverse map is NOT used for
-// Replace — this prevents false positives where a sibling's variable context
-// would incorrectly rewrite an unrelated hardcoded field.
+// and updating only the literal segments.
 //
-// For Add operations (new fields), the reverse map is used: if the parent
-// subtree uses variables and the new value matches exactly one variable, the
-// variable reference is substituted.
+// For Add operations, restoration is limited to new sequence elements (e.g.,
+// a new task appended to the tasks array). Within the new element, a leaf is
+// restored only when a sibling element in the same sequence has a pure
+// variable reference at the exact same relative path whose resolved value
+// matches the leaf value. Non-sequence Adds (new map fields) are left
+// untouched.
 func RestoreVariableReferences(b *bundle.Bundle, fieldChanges []FieldChange) {
 	fileCache := map[string]dyn.Value{}
 	resolved := b.Config.Value()
 
-	reverseMap := buildVariableReverseMap(resolved, fileCache, fieldChanges)
-	if len(reverseMap) == 0 {
-		return
-	}
-
 	for i := range fieldChanges {
 		fc := &fieldChanges[i]
-		if fc.Change.Operation != OperationReplace && fc.Change.Operation != OperationAdd {
-			continue
-		}
-
-		preResolved, hasContext := fieldVariableContext(fileCache, fc.FilePath, fc.FieldCandidates)
 
 		var newValue any
-		if fc.Change.Operation == OperationReplace {
-			// Replace: only restore if the original field itself was a variable.
-			if !preResolved.IsValid() {
+		switch fc.Change.Operation {
+		case OperationReplace:
+			preResolved, ok := preResolvedValueAt(fileCache, fc.FilePath, fc.FieldCandidates)
+			if !ok {
 				continue
 			}
 			newValue = restoreOriginalRefs(fc.Change.Value, preResolved, resolved)
-		} else {
-			// Add: use reverse map when parent context has variables.
-			if !hasContext {
+		case OperationAdd:
+			siblings, ok := sequenceSiblings(fileCache, fc.FilePath, fc.FieldCandidates)
+			if !ok {
 				continue
 			}
-			newValue = restoreFromReverseMap(fc.Change.Value, reverseMap)
+			newValue = restoreFromSiblings(fc.Change.Value, siblings, resolved)
+		case OperationUnknown, OperationRemove, OperationSkip:
+			continue
 		}
 
 		fc.Change = &ConfigChangeDesc{
@@ -67,65 +62,6 @@ func RestoreVariableReferences(b *bundle.Bundle, fieldChanges []FieldChange) {
 			Value:     newValue,
 		}
 	}
-}
-
-// buildVariableReverseMap discovers all pure variable references in the
-// pre-resolved YAML files and pairs each with its resolved value from the
-// bundle config. Returns a map from resolved value → reference strings.
-func buildVariableReverseMap(resolved dyn.Value, fileCache map[string]dyn.Value, fieldChanges []FieldChange) map[any][]string {
-	m := map[any][]string{}
-	seen := map[string]bool{}
-
-	files := map[string]bool{}
-	for _, fc := range fieldChanges {
-		files[fc.FilePath] = true
-	}
-
-	for filePath := range files {
-		preResolved := loadCachedYAML(fileCache, filePath)
-		if !preResolved.IsValid() {
-			continue
-		}
-		collectReferences(preResolved, resolved, m, seen)
-	}
-
-	return m
-}
-
-// collectReferences walks a pre-resolved dyn.Value to find pure variable
-// references (e.g., ${var.foo}, ${bundle.name}) and adds them to the reverse
-// map keyed by their resolved value.
-func collectReferences(preResolved, resolved dyn.Value, m map[any][]string, seen map[string]bool) {
-	// The callback never returns an error, so WalkReadOnly always returns nil.
-	_ = dyn.WalkReadOnly(preResolved, func(_ dyn.Path, v dyn.Value) error {
-		if v.Kind() != dyn.KindString {
-			return nil
-		}
-		s := v.MustString()
-		if !dynvar.IsPureVariableReference(s) || seen[s] {
-			return nil
-		}
-		seen[s] = true
-
-		resolvedPath, ok := resolveReferencePath(s)
-		if !ok {
-			return nil
-		}
-
-		resolvedV, lookupErr := dyn.GetByPath(resolved, resolvedPath)
-		if lookupErr != nil {
-			return nil
-		}
-
-		switch resolvedV.Kind() {
-		case dyn.KindString, dyn.KindBool, dyn.KindInt:
-			m[resolvedV.AsAny()] = append(m[resolvedV.AsAny()], s)
-		case dyn.KindInvalid, dyn.KindMap, dyn.KindSequence, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
-			// Skip non-scalar and non-comparable types.
-		}
-
-		return nil
-	})
 }
 
 // resolveReferencePath converts a variable reference string to the dyn.Path
@@ -199,25 +135,56 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 	}
 }
 
-// restoreFromReverseMap recursively replaces leaf values with variable
-// references for Add operations. Requires exactly one matching variable.
-func restoreFromReverseMap(value any, reverseMap map[any][]string) any {
+// restoreFromSiblings recursively restores variable references for new
+// sequence elements. For each leaf, it consults sibling elements at the same
+// relative path: if exactly one unique pure variable reference across siblings
+// resolves to the leaf value, that reference is substituted. Multiple
+// different matching references are treated as ambiguous and skipped.
+func restoreFromSiblings(value any, siblings []dyn.Value, resolved dyn.Value) any {
+	return restoreFromSiblingsAt(value, siblings, resolved, dyn.EmptyPath)
+}
+
+func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, relPath dyn.Path) any {
 	switch v := value.(type) {
 	case string, bool, int64:
-		if refs := reverseMap[value]; len(refs) == 1 {
-			return refs[0]
+		refs := map[string]struct{}{}
+		for _, sib := range siblings {
+			sv, err := dyn.GetByPath(sib, relPath)
+			if err != nil {
+				continue
+			}
+			s, ok := sv.AsString()
+			if !ok || !dynvar.IsPureVariableReference(s) {
+				continue
+			}
+			rp, ok := resolveReferencePath(s)
+			if !ok {
+				continue
+			}
+			rv, getErr := dyn.GetByPath(resolved, rp)
+			if getErr != nil {
+				continue
+			}
+			if rv.AsAny() == value {
+				refs[s] = struct{}{}
+			}
+		}
+		if len(refs) == 1 {
+			for ref := range refs {
+				return ref
+			}
 		}
 		return value
 
 	case map[string]any:
 		for key, val := range v {
-			v[key] = restoreFromReverseMap(val, reverseMap)
+			v[key] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Key(key)))
 		}
 		return v
 
 	case []any:
 		for i, val := range v {
-			v[i] = restoreFromReverseMap(val, reverseMap)
+			v[i] = restoreFromSiblingsAt(val, siblings, resolved, relPath.Append(dyn.Index(i)))
 		}
 		return v
 
@@ -272,7 +239,6 @@ func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.
 		return "", false
 	}
 
-	// Parse the template into segments: alternating literal and variable parts.
 	segments := parseTemplateSegments(template, resolved)
 	if segments == nil {
 		return "", false
@@ -298,7 +264,6 @@ func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.
 				return "", false
 			}
 			if isLast {
-				// Last segment: variable must match the entire remainder.
 				if remaining == seg.resolvedValue {
 					result.WriteString(seg.raw)
 				} else {
@@ -318,7 +283,6 @@ func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.
 			}
 		} else {
 			if isLast {
-				// Last literal: take the entire remainder (may include suffix changes).
 				result.WriteString(remaining)
 				pos = len(remoteValue)
 			} else if strings.HasPrefix(remaining, seg.raw) {
@@ -337,11 +301,9 @@ func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.
 
 	restored := result.String()
 	if restored == template {
-		// Nothing changed — keep the original template as-is.
 		return template, true
 	}
 	if !dynvar.ContainsVariableReference(restored) {
-		// All variables were lost — no benefit over hardcoding.
 		return "", false
 	}
 	return restored, true
@@ -364,20 +326,17 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 		return nil
 	}
 
-	// Build full match strings: each Matches[i][0] is the "${...}" text.
 	var segments []templateSegment
 	cursor := 0
 
 	for _, m := range ref.Matches {
-		fullMatch := m[0] // e.g., "${var.catalog}"
+		fullMatch := m[0]
 
-		// Find this match in the template starting from cursor.
 		idx := strings.Index(template[cursor:], fullMatch)
 		if idx < 0 {
 			return nil
 		}
 
-		// Literal before this variable.
 		if idx > 0 {
 			segments = append(segments, templateSegment{
 				raw: template[cursor : cursor+idx],
@@ -408,7 +367,6 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 		cursor += idx + len(fullMatch)
 	}
 
-	// Trailing literal.
 	if cursor < len(template) {
 		segments = append(segments, templateSegment{
 			raw: template[cursor:],
@@ -419,10 +377,9 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 }
 
 // findAnchorOffset searches for the next literal segment's text in remaining
-// and returns the offset where it starts. This is used to determine boundaries
-// when a variable or literal segment doesn't match at the current position.
-// Returns len(remaining) if no subsequent literal exists (last segment case).
-// Returns -1 if a subsequent literal exists but can't be found.
+// and returns the offset where it starts. Returns len(remaining) if no
+// subsequent literal exists. Returns -1 if a subsequent literal exists but
+// can't be found.
 func findAnchorOffset(segments []templateSegment, from int, remaining string) int {
 	for i := from; i < len(segments); i++ {
 		if !segments[i].isVariable {
@@ -436,12 +393,9 @@ func findAnchorOffset(segments []templateSegment, from int, remaining string) in
 	return len(remaining)
 }
 
-// fieldVariableContext returns the pre-resolved dyn.Value at the field path
-// and whether the field's parent subtree contains any variable reference.
-// The returned dyn.Value is valid only when the field itself was found in the
-// pre-resolved YAML (used for Replace). The bool is true when any ancestor
-// uses variables (used for Add).
-func fieldVariableContext(cache map[string]dyn.Value, filePath string, candidates []string) (dyn.Value, bool) {
+// preResolvedValueAt returns the pre-resolved dyn.Value at the field path, if
+// the field exists in the original YAML.
+func preResolvedValueAt(cache map[string]dyn.Value, filePath string, candidates []string) (dyn.Value, bool) {
 	configValue := loadCachedYAML(cache, filePath)
 	if !configValue.IsValid() {
 		return dyn.InvalidValue, false
@@ -449,28 +403,74 @@ func fieldVariableContext(cache map[string]dyn.Value, filePath string, candidate
 
 	for _, candidate := range candidates {
 		candidate = stripBracketStars(candidate)
-
 		p, err := dyn.NewPathFromString(candidate)
 		if err != nil {
 			continue
 		}
-
 		v, err := dyn.GetByPath(configValue, p)
 		if err == nil {
-			if subtreeHasVariableRef(v) {
-				return v, true
-			}
-		}
-
-		if len(p) > 0 {
-			parent, err := dyn.GetByPath(configValue, p[:len(p)-1])
-			if err == nil && subtreeHasVariableRef(parent) {
-				return dyn.InvalidValue, true
-			}
+			return v, true
 		}
 	}
 
 	return dyn.InvalidValue, false
+}
+
+// sequenceSiblings returns the sibling elements of the parent sequence when
+// the field change represents adding a new element to a sequence. The path's
+// last component must be an index ([*] or [N]) and the parent must resolve to
+// a sequence in the pre-resolved YAML. Returns false for non-sequence Adds
+// (e.g., new map fields).
+func sequenceSiblings(cache map[string]dyn.Value, filePath string, candidates []string) ([]dyn.Value, bool) {
+	configValue := loadCachedYAML(cache, filePath)
+	if !configValue.IsValid() {
+		return nil, false
+	}
+
+	for _, candidate := range candidates {
+		parent, ok := extractSequenceParent(candidate)
+		if !ok {
+			continue
+		}
+		p, err := dyn.NewPathFromString(parent)
+		if err != nil {
+			continue
+		}
+		parentValue, err := dyn.GetByPath(configValue, p)
+		if err != nil {
+			continue
+		}
+		if parentValue.Kind() != dyn.KindSequence {
+			continue
+		}
+		seq, ok := parentValue.AsSequence()
+		if !ok {
+			continue
+		}
+		return seq, true
+	}
+
+	return nil, false
+}
+
+// extractSequenceParent returns the parent path if the candidate ends in an
+// index (either [*] or [N]).
+func extractSequenceParent(candidate string) (string, bool) {
+	if strings.HasSuffix(candidate, "[*]") {
+		return strings.TrimSuffix(candidate, "[*]"), true
+	}
+	if !strings.HasSuffix(candidate, "]") {
+		return "", false
+	}
+	idx := strings.LastIndex(candidate, "[")
+	if idx < 0 {
+		return "", false
+	}
+	inner := candidate[idx+1 : len(candidate)-1]
+	if _, err := strconv.Atoi(inner); err != nil {
+		return "", false
+	}
+	return candidate[:idx], true
 }
 
 // stripBracketStars removes all [*] segments from a structpath string.
@@ -501,30 +501,4 @@ func loadCachedYAML(cache map[string]dyn.Value, filePath string) dyn.Value {
 
 	cache[filePath] = v
 	return v
-}
-
-// subtreeHasVariableRef recursively checks whether any string leaf in the
-// dyn.Value subtree contains a variable reference. Short-circuits on first find.
-func subtreeHasVariableRef(v dyn.Value) bool {
-	switch v.Kind() {
-	case dyn.KindString:
-		return dynvar.ContainsVariableReference(v.MustString())
-	case dyn.KindMap:
-		m, _ := v.AsMap()
-		for _, p := range m.Pairs() {
-			if subtreeHasVariableRef(p.Value) {
-				return true
-			}
-		}
-	case dyn.KindSequence:
-		s, _ := v.AsSequence()
-		for _, elem := range s {
-			if subtreeHasVariableRef(elem) {
-				return true
-			}
-		}
-	case dyn.KindInvalid, dyn.KindBool, dyn.KindInt, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
-		// Leaf types that cannot contain variable references.
-	}
-	return false
 }

@@ -14,6 +14,8 @@ Resource: resources.jobs.my_job
   parameters[name='file_sourced']: add
   parameters[name='region']: add
   parameters[name='some_schema']: add
+  tags['deployment']: add
+  tags['dev']: remove
   tasks[task_key='main'].notebook_task.base_parameters['source_path']: replace
 
 
@@ -45,11 +47,13 @@ Resource: resources.jobs.my_job
 +          name: some_schema
        tasks:
          - task_key: main
-@@ -45,5 +55,5 @@
+@@ -45,5 +55,7 @@
              base_parameters:
                # Compound interpolation: variable embedded in a longer string.
 -              source_path: /mnt/${var.my_catalog}/raw/landing
 +              source_path: /mnt/${var.my_catalog}/raw/landing_v2
++      tags:
++        deployment: main
 
  targets:
 
