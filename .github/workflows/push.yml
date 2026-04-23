@@ -376,25 +376,50 @@ jobs:
             exit 1
           fi
 
-  # Skip integration tests (temporarily disabled).
-  # Creates a passing check for PRs and auto-approves for merge groups.
+  # Trigger integration tests in a separate repository.
+  # Writes the same-org "Integration Tests" check run for skip/auto-approve
+  # paths on deco runners. The cross-org `gh workflow run` dispatch is split
+  # into the sibling `trigger-tests` job so it can run on emu-access runners
+  # that are allowlisted in the databricks-eng org.
   integration-trigger:
+    needs:
+      - testmask
+
     if: >-
       (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]') ||
       (github.event_name == 'merge_group')
 
     runs-on:
-      group: databricks-protected-runner-group-large
-      labels: linux-ubuntu-latest-large
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     permissions:
       checks: write
+      contents: read
+
+    environment: "test-trigger-is"
 
     steps:
+      - name: Generate GitHub App Token (check runs)
+        if: >-
+          (github.event_name == 'merge_group') ||
+          (github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh'))
+        id: generate-check-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        with:
+          app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
+          private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
+          # DECO_TEST_APPROVAL is installed on the databricks org (not databricks-eng).
+          owner: databricks
+          repositories: cli
+
+      # Skip integration tests if the primary "test" target is not triggered by this change.
+      # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
       - name: Skip integration tests (pull request)
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') && !contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
+          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -405,14 +430,16 @@ jobs:
               conclusion: 'success',
               output: {
                 title: 'Integration Tests',
-                summary: '⏭️ Skipped (integration test trigger is temporarily disabled)'
+                summary: '⏭️ Skipped (changes do not require integration tests)'
               }
             });
 
+      # Auto-approve for merge group since tests already passed on the PR.
       - name: Auto-approve for merge group
         if: ${{ github.event_name == 'merge_group' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
+          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -423,9 +450,58 @@ jobs:
               conclusion: 'success',
               output: {
                 title: 'Integration Tests',
-                summary: '⏭️ Skipped (integration test trigger is temporarily disabled)'
+                summary: '⏭️ Auto-approved for merge queue (tests already passed on PR)'
               }
             });
+
+  # Cross-org dispatch to databricks-eng/eng-dev-ecosystem. Must run on an
+  # emu-access runner because the databricks-eng org IP-allowlists only the
+  # release runner group, not deco. See databricks/databricks-sdk-go#1638.
+  trigger-tests:
+    needs:
+      - testmask
+
+    if: >-
+      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]' && (contains(fromJSON(needs.testmask.outputs.targets), 'test') || contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh'))) ||
+      (github.event_name == 'push')
+
+    runs-on:
+      group: databricks-release-runner-group-emu-access
+      labels: linux-ubuntu-latest-emu-access
+
+    permissions:
+      contents: read
+
+    environment: "test-trigger-is"
+
+    steps:
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: ${{ secrets.ORG_NAME }}
+          repositories: ${{ secrets.REPO_NAME }}
+
+      - name: Trigger integration tests (pull request)
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          gh workflow run cli-isolated-pr.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
+            --ref main \
+            -f pull_request_number=${{ github.event.pull_request.number }} \
+            -f commit_sha=${{ github.event.pull_request.head.sha }}
+
+      - name: Trigger integration tests (push to main)
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          gh workflow run cli-isolated-nightly.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
+            --ref main \
+            -f commit_sha=${{ github.event.after }}
 
   # Skip integration tests for dependabot PRs.
   # Dependabot has no access to the "test-trigger-is" environment secrets,
