@@ -5,8 +5,8 @@ package phases
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
-	"github.com/databricks/cli/ucm/config/loader"
 	"github.com/databricks/cli/ucm/config/mutator"
 )
 
@@ -14,11 +14,11 @@ import (
 // the user did not pass --target. CLI --var values must be applied AFTER this
 // phase (via u.Config.InitializeVariables) and BEFORE Variables().
 func LoadDefaultTarget(ctx context.Context, u *ucm.Ucm) {
+	mutator.DefaultMutators(ctx, u)
+	if logdiag.HasError(ctx) {
+		return
+	}
 	ucm.ApplySeqContext(ctx, u,
-		loader.ProcessRootIncludes(),
-		mutator.FlattenNestedResources(),
-		mutator.InheritCatalogTags(),
-		mutator.DefineDefaultTarget(),
 		mutator.SelectDefaultTarget(),
 		mutator.InitializeVariables(),
 	)
@@ -28,11 +28,11 @@ func LoadDefaultTarget(ctx context.Context, u *ucm.Ucm) {
 // --target <name>. CLI --var values must be applied AFTER this phase
 // (via u.Config.InitializeVariables) and BEFORE Variables().
 func LoadNamedTarget(ctx context.Context, u *ucm.Ucm, name string) {
+	mutator.DefaultMutators(ctx, u)
+	if logdiag.HasError(ctx) {
+		return
+	}
 	ucm.ApplySeqContext(ctx, u,
-		loader.ProcessRootIncludes(),
-		mutator.FlattenNestedResources(),
-		mutator.InheritCatalogTags(),
-		mutator.DefineDefaultTarget(),
 		mutator.SelectTarget(name),
 		mutator.InitializeVariables(),
 	)
