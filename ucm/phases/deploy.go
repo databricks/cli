@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/ucm/deploy/direct"
 	"github.com/databricks/cli/ucm/deployplan"
 	"github.com/databricks/cli/ucm/metadata"
+	"github.com/databricks/cli/ucm/permissions"
 )
 
 func approvalForDeploy(ctx context.Context, _ *ucm.Ucm, plan *deployplan.Plan, opts Options) (bool, error) {
@@ -89,6 +90,16 @@ func Deploy(ctx context.Context, u *ucm.Ucm, opts Options) {
 	log.Info(ctx, "Phase: deploy")
 
 	setting := Initialize(ctx, u, opts)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// Precheck UC privileges before we attempt any mutating deploy work. Plan
+	// is read-only and skips this; Deploy must bail here so users see a clean
+	// permissions diagnostic instead of a mid-apply API error.
+	for _, d := range permissions.PermissionDiagnostics(ctx, u) {
+		logdiag.LogDiag(ctx, d)
+	}
 	if logdiag.HasError(ctx) {
 		return
 	}

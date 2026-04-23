@@ -8,13 +8,18 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/config/engine"
+	"github.com/databricks/cli/ucm/config/resources"
 	"github.com/databricks/cli/ucm/deploy"
 	ucmterraform "github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/deployplan"
 	"github.com/databricks/cli/ucm/metadata"
 	"github.com/databricks/cli/ucm/phases"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -250,6 +255,39 @@ func TestDeployPromptsAndAccepts(t *testing.T) {
 
 	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
 	assert.Equal(t, 1, f.tf.ApplyCalls)
+}
+
+// TestDeployAbortsWhenUserLacksManage asserts that when the permission
+// precheck finds the deploy principal lacks MANAGE on a declared catalog,
+// Deploy emits a diagnostic and short-circuits before Build/Apply.
+func TestDeployAbortsWhenUserLacksManage(t *testing.T) {
+	f := newFixture(t)
+	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
+		"main": {Name: "main"},
+	}
+	f.u.CurrentUser = &config.User{User: &iam.User{UserName: "alice@example.com"}}
+	f.mockWS.GetMockGrantsAPI().EXPECT().
+		GetEffective(mock.Anything, mock.Anything).
+		Return(&catalog.EffectivePermissionsList{
+			PrivilegeAssignments: []catalog.EffectivePrivilegeAssignment{{
+				Principal:  "alice@example.com",
+				Privileges: []catalog.EffectivePrivilege{{Privilege: catalog.PrivilegeUseCatalog}},
+			}},
+		}, nil)
+
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	phases.Deploy(ctx, f.u, phases.Options{
+		Backend:          f.backend,
+		TerraformFactory: fakeTfFactory(f.tf),
+	})
+
+	require.True(t, logdiag.HasError(ctx))
+	diags := logdiag.FlushCollected(ctx)
+	require.NotEmpty(t, diags)
+	assert.Contains(t, diags[0].Summary, "MANAGE")
+	assert.Equal(t, 0, f.tf.ApplyCalls)
 }
 
 // TestDeployAbortsWhenPromptDeclined drives the same interactive path with

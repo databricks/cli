@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/phases"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
@@ -181,6 +182,17 @@ func newVerbHarness(t *testing.T) *verbHarness {
 		m.GetMockWorkspaceAPI().EXPECT().
 			GetStatusByPath(mock.Anything, mock.Anything).
 			Return(&workspace.ObjectInfo{}, nil).Maybe()
+		// Deploy's permission precheck calls Grants.GetEffective per catalog +
+		// schema. Default to granting MANAGE so the pre-existing happy-path
+		// tests still succeed; per-test cases can override the expectation.
+		m.GetMockGrantsAPI().EXPECT().
+			GetEffective(mock.Anything, mock.Anything).
+			Return(&catalog.EffectivePermissionsList{
+				PrivilegeAssignments: []catalog.EffectivePrivilegeAssignment{{
+					Principal:  "test-user@example.com",
+					Privileges: []catalog.EffectivePrivilege{{Privilege: catalog.PrivilegeManage}},
+				}},
+			}, nil).Maybe()
 		u.SetWorkspaceClient(m.WorkspaceClient)
 	}
 	t.Cleanup(func() { utils.PreMutateHook = prevHook })
