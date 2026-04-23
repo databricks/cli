@@ -474,7 +474,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	}
 
 	clearKeys := oauthLoginClearKeys()
-	clearKeys = append(clearKeys, "experimental_is_unified_host")
+	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
 
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     profileName,

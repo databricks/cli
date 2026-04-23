@@ -283,7 +283,7 @@ a new profile is created.
 		// the deprecated experimental_is_unified_host key (routing now comes
 		// from .well-known discovery, so stale values would be misleading).
 		clearKeys := oauthLoginClearKeys()
-		clearKeys = append(clearKeys, "experimental_is_unified_host")
+		clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
 
 		switch {
 		case configureCluster:
@@ -424,8 +424,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 // for unified hosts detected via account-scoped DiscoveryURL.
 func needsAccountIDPrompt(host, discoveryURL string) bool {
 	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
-	if strings.HasPrefix(canonicalHost, "https://accounts.") ||
-		strings.HasPrefix(canonicalHost, "https://accounts-dod.") {
+	if auth.IsClassicAccountHost(canonicalHost) {
 		return true
 	}
 	return auth.HasUnifiedHostSignal(discoveryURL)
@@ -624,7 +623,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, tokenCache cache.To
 	clearKeys = append(clearKeys,
 		"account_id",
 		"workspace_id",
-		"experimental_is_unified_host",
+		databrickscfg.ExperimentalIsUnifiedHostKey,
 		"cluster_id",
 		"serverless_compute_id",
 	)

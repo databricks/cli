@@ -6,6 +6,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
+// IsClassicAccountHost reports whether a host is a classic accounts.* host
+// (account-level API access). Must be called with a canonicalized host; see
+// config.Config.CanonicalHostName.
+func IsClassicAccountHost(canonicalHost string) bool {
+	return strings.HasPrefix(canonicalHost, "https://accounts.") ||
+		strings.HasPrefix(canonicalHost, "https://accounts-dod.")
+}
+
 // HasUnifiedHostSignal reports whether a host has been identified as unified,
 // based on a resolved DiscoveryURL pointing at an account-scoped OIDC endpoint.
 // Extracted so callers that don't (yet) have an account ID can check the signal

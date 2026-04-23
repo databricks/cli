@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
@@ -147,14 +146,12 @@ func TestToOAuthArgument(t *testing.T) {
 
 			// Check if we got the right type of argument and verify the hostname
 			isUnified := tt.args.AccountID != "" && HasUnifiedHostSignal(tt.args.DiscoveryURL)
-			isClassicAccount := strings.HasPrefix(tt.wantHost, "https://accounts.") ||
-				strings.HasPrefix(tt.wantHost, "https://accounts-dod.")
 			switch {
 			case isUnified:
 				arg, ok := got.(u2m.UnifiedOAuthArgument)
 				assert.True(t, ok, "expected UnifiedOAuthArgument for unified host")
 				assert.Equal(t, tt.wantHost, arg.GetHost())
-			case isClassicAccount:
+			case IsClassicAccountHost(tt.wantHost):
 				arg, ok := got.(u2m.AccountOAuthArgument)
 				assert.True(t, ok, "expected AccountOAuthArgument for account host")
 				assert.Equal(t, tt.wantHost, arg.GetAccountHost())

@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"strings"
-
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
@@ -57,7 +55,7 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	host := cfg.CanonicalHostName()
 
 	// Classic accounts.* hosts always use account OAuth.
-	if strings.HasPrefix(host, "https://accounts.") || strings.HasPrefix(host, "https://accounts-dod.") {
+	if IsClassicAccountHost(host) {
 		return u2m.NewProfileAccountOAuthArgument(host, cfg.AccountID, a.Profile)
 	}
 
