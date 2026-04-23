@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/ucm/config"
+	"github.com/databricks/cli/ucm/config/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -99,4 +100,77 @@ targets:
 
 	require.NoError(t, cfg.MergeTargetOverrides("prod"))
 	assert.Equal(t, "https://prod.example.com", cfg.Workspace.Host)
+}
+
+func TestMergeTargetOverrides_VariablesDefault(t *testing.T) {
+	cfg, diags := config.LoadFromBytes("/test/ucm.yml", []byte(`
+ucm:
+  name: acme
+variables:
+  catalog_name:
+    description: UC catalog root
+    default: team_alpha
+targets:
+  prod:
+    variables:
+      catalog_name:
+        default: team_prod
+`))
+	require.NoError(t, diags.Error())
+
+	require.NoError(t, cfg.MergeTargetOverrides("prod"))
+	require.Contains(t, cfg.Variables, "catalog_name")
+	assert.Equal(t, "team_prod", cfg.Variables["catalog_name"].Default)
+}
+
+func TestInitializeVariables_AssignsValues(t *testing.T) {
+	cfg, diags := config.LoadFromBytes("/test/ucm.yml", []byte(`
+ucm:
+  name: acme
+variables:
+  foo:
+    default: d
+  bar:
+    default: d2
+`))
+	require.NoError(t, diags.Error())
+
+	require.NoError(t, cfg.InitializeVariables([]string{"foo=123", "bar=456"}))
+	assert.Equal(t, "123", cfg.Variables["foo"].Value)
+	assert.Equal(t, "456", cfg.Variables["bar"].Value)
+}
+
+func TestInitializeVariables_EqualSignInValue(t *testing.T) {
+	cfg, diags := config.LoadFromBytes("/test/ucm.yml", []byte(`
+ucm:
+  name: acme
+variables:
+  foo: {}
+`))
+	require.NoError(t, diags.Error())
+
+	require.NoError(t, cfg.InitializeVariables([]string{"foo=123=567"}))
+	assert.Equal(t, "123=567", cfg.Variables["foo"].Value)
+}
+
+func TestInitializeVariables_InvalidFormat(t *testing.T) {
+	cfg := &config.Root{Variables: map[string]*variable.Variable{"foo": {}}}
+	err := cfg.InitializeVariables([]string{"foo"})
+	assert.ErrorContains(t, err, "unexpected flag value")
+}
+
+func TestInitializeVariables_Undefined(t *testing.T) {
+	cfg := &config.Root{Variables: map[string]*variable.Variable{"foo": {}}}
+	err := cfg.InitializeVariables([]string{"bar=567"})
+	assert.ErrorContains(t, err, "variable bar has not been defined")
+}
+
+func TestInitializeVariables_ComplexRejected(t *testing.T) {
+	cfg := &config.Root{
+		Variables: map[string]*variable.Variable{
+			"foo": {Type: variable.VariableTypeComplex},
+		},
+	}
+	err := cfg.InitializeVariables([]string{"foo=bar"})
+	assert.ErrorContains(t, err, "setting variables of complex type via --var flag is not supported")
 }

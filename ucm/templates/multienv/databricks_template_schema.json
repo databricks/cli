@@ -1,0 +1,28 @@
+{
+    "welcome_message": "\nWelcome to the multi-environment ucm template.\n\nThis template scaffolds a ucm.yml with dev, staging and prod targets that share a common resource definition via an include file.",
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$",
+            "pattern_match_failure_message": "Name must consist of letters, numbers, dashes, and underscores.",
+            "default": "my_ucm_project",
+            "description": "\nUnique name for this ucm project.\nproject_name",
+            "order": 1
+        },
+        "catalog_prefix": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+            "pattern_match_failure_message": "Invalid catalog prefix.",
+            "default": "team_alpha",
+            "description": "\nCatalog prefix. Each target gets '<prefix>_<target>' (e.g. team_alpha_prod).\ncatalog_prefix",
+            "order": 2
+        },
+        "principal": {
+            "type": "string",
+            "default": "alpha-readers",
+            "description": "\nGroup or service principal receiving read access in every target.\nprincipal",
+            "order": 3
+        }
+    },
+    "success_message": "\nYour new multi-environment ucm project has been created in the '{{.project_name}}' directory.\n\nNext steps:\n  cd {{.project_name}}\n  databricks ucm validate --target dev\n  databricks ucm plan --target staging\n  databricks ucm deploy --target prod"
+}

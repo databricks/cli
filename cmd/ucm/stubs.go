@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/cmd/ucm/debug"
 	"github.com/spf13/cobra"
 )
 
@@ -23,24 +24,22 @@ func stub(use, short string) *cobra.Command {
 
 func newInitCommand() *cobra.Command {
 	return stub("init [template]", "Scaffold a new ucm.yml project from a starter template.")
+func newGenerateCommand() *cobra.Command {
+	return stub("generate", "Scan an existing account+metastore+workspace and emit ucm.yml + seed state.")
 }
 
 func newBindCommand() *cobra.Command {
 	return stub("bind", "Attach an existing Databricks resource to a ucm.yml node without recreating it.")
 }
 
+// newDebugCommand returns the `ucm debug` group. Delegates to the
+// cmd/ucm/debug subpackage so the stub file keeps its "bare wiring" role.
 func newDebugCommand() *cobra.Command {
-	return stub("debug", "Dump internal ucm state (config tree, mutator trace) for troubleshooting.")
-}
-
-func newDiffCommand() *cobra.Command {
-	return stub("diff", "Detect which ucm stacks changed since a base git ref. Intended for CI matrices.")
-}
-
-func newDriftCommand() *cobra.Command {
-	return stub("drift", "Compare live UC state to persisted terraform state; alert on out-of-band changes.")
+	return debug.New()
 }
 
 func newImportCommand() *cobra.Command {
 	return stub("import <type> <name>", "Import a single existing UC or cloud resource into ucm state.")
+func newDriftCommand() *cobra.Command {
+	return stub("drift", "Compare live UC state to persisted terraform state; alert on out-of-band changes.")
 }

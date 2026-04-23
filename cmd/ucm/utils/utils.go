@@ -7,6 +7,7 @@ package utils
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config"
@@ -31,7 +32,8 @@ type ProcessOptions struct {
 
 // ProcessUcm loads the ucm.yml rooted at the working directory (or
 // DATABRICKS_UCM_ROOT), selects the target indicated by --target (or the
-// default target), and — if opts.Validate — runs the validation phase.
+// default target), applies any --var overrides, resolves variables, and — if
+// opts.Validate — runs the validation phase.
 //
 // Errors are reported via logdiag. The caller should check
 // logdiag.HasError(cmd.Context()) and render diagnostics before returning.
@@ -56,10 +58,48 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) *ucm.Ucm {
 		return u
 	}
 
+	// Apply --var before SetVariables so CLI values win over defaults/env.
+	configureVariables(ctx, u, varsFromCmd(cmd))
+	if logdiag.HasError(ctx) {
+		return u
+	}
+
+	phases.Variables(ctx, u)
+	if logdiag.HasError(ctx) {
+		return u
+	}
+
 	if opts.Validate {
 		phases.Validate(ctx, u)
 	}
 	return u
+}
+
+// varsFromCmd reads the `--var` StringSlice flag if it is wired on cmd.
+// Returns nil if the flag is absent (e.g. tests that build cmds without it).
+func varsFromCmd(cmd *cobra.Command) []string {
+	f := cmd.Flag("var")
+	if f == nil {
+		return nil
+	}
+	vals, err := cmd.Flags().GetStringSlice("var")
+	if err != nil {
+		return nil
+	}
+	return vals
+}
+
+// configureVariables assigns .Value on each named variable via
+// Config.InitializeVariables. Errors are surfaced as diagnostics.
+func configureVariables(ctx context.Context, u *ucm.Ucm, vars []string) {
+	if len(vars) == 0 {
+		return
+	}
+	ucm.ApplyFuncContext(ctx, u, func(ctx context.Context, u *ucm.Ucm) {
+		if err := u.Config.InitializeVariables(vars); err != nil {
+			logdiag.LogDiag(ctx, diag.FromErr(err)[0])
+		}
+	})
 }
 
 // ResolveEngineSetting determines the effective engine for a ucm project.

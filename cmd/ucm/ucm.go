@@ -7,6 +7,8 @@
 package ucm
 
 import (
+	"github.com/databricks/cli/cmd/ucm/deployment"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -36,6 +38,14 @@ Online documentation: https://docs.databricks.com/en/dev-tools/ucm/index.html`,
 	}
 
 	cmd.PersistentFlags().StringP("target", "t", "", "ucm target to use (if applicable)")
+	cmd.PersistentFlags().StringSlice("var", nil, `set values for variables defined in ucm config. Example: --var="foo=bar"`)
+	// Register a local --output fallback so that `cmdUcm.New()` works in
+	// standalone unit tests. Under `databricks ucm ...` the root-level
+	// persistent flag takes precedence (cobra walks up the parent chain).
+	if cmd.Flag("output") == nil {
+		out := flags.OutputText
+		cmd.PersistentFlags().VarP(&out, "output", "o", "output type: text or json")
+	}
 
 	cmd.AddCommand(newValidateCommand())
 	cmd.AddCommand(newSchemaCommand())
@@ -45,7 +55,7 @@ Online documentation: https://docs.databricks.com/en/dev-tools/ucm/index.html`,
 	cmd.AddCommand(newSummaryCommand())
 	cmd.AddCommand(newInitCommand())
 	cmd.AddCommand(newGenerateCommand())
-	cmd.AddCommand(newBindCommand())
+	cmd.AddCommand(deployment.New())
 	cmd.AddCommand(newDebugCommand())
 	cmd.AddCommand(newDiffCommand())
 	cmd.AddCommand(newDriftCommand())

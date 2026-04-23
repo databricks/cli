@@ -1,0 +1,34 @@
+ucm:
+  name: {{.project_name}}
+
+resources:
+  catalogs:
+    {{.catalog_name}}:
+      name: {{.catalog_name}}
+      comment: Initial catalog for {{.project_name}}.
+      tags:
+        cost_center: "0000"
+        data_owner: {{.project_name}}
+        classification: internal
+
+  schemas:
+    {{.schema_name}}:
+      catalog: {{.catalog_name}}
+      name: {{.schema_name}}
+      tags:
+        cost_center: "0000"
+        data_owner: {{.project_name}}
+        classification: internal
+
+  grants:
+    {{.principal}}_read:
+      securable: { type: catalog, name: {{.catalog_name}} }
+      principal: {{.principal}}
+      privileges: [USE_CATALOG, SELECT]
+
+  tag_validation_rules:
+    enforce_ownership:
+      securable_types: [catalog, schema]
+      required: [cost_center, data_owner, classification]
+      allowed_values:
+        classification: [public, internal, confidential, restricted]
