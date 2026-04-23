@@ -2,6 +2,14 @@
 === Apps create with correct input
 >>> [CLI] apps create --json @input.json
 {
+  "active_deployment": {
+    "deployment_id":"deploy-[NUMID]",
+    "source_code_path":"/Workspace/Users/[USERNAME]/test-name",
+    "status": {
+      "message":"Deployment succeeded",
+      "state":"SUCCEEDED"
+    }
+  },
   "app_status": {
     "message":"Application is running.",
     "state":"RUNNING"
@@ -11,6 +19,7 @@
     "message":"App compute is active.",
     "state":"ACTIVE"
   },
+  "default_source_code_path":"/Workspace/Users/[USERNAME]/test-name",
   "description":"My app description.",
   "id":"1000",
   "name":"test-name",
@@ -34,6 +43,14 @@
 === Apps update with correct input
 >>> [CLI] apps update test-name --json @input.json
 {
+  "active_deployment": {
+    "deployment_id":"deploy-[NUMID]",
+    "source_code_path":"/Workspace/Users/[USERNAME]/test-name",
+    "status": {
+      "message":"Deployment succeeded",
+      "state":"SUCCEEDED"
+    }
+  },
   "app_status": {
     "message":"Application is running.",
     "state":"RUNNING"
@@ -43,6 +60,7 @@
     "message":"App compute is active.",
     "state":"ACTIVE"
   },
+  "default_source_code_path":"/Workspace/Users/[USERNAME]/test-name",
   "description":"My app description.",
   "id":"1001",
   "name":"test-name",
