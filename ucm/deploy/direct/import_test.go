@@ -105,6 +105,25 @@ func (*importFakeClient) UpdatePermissions(_ context.Context, _ catalog.UpdatePe
 	return nil
 }
 
+func (*importFakeClient) ListCatalogs(context.Context) ([]catalog.CatalogInfo, error) {
+	return nil, nil
+}
+func (*importFakeClient) ListSchemas(context.Context, string) ([]catalog.SchemaInfo, error) {
+	return nil, nil
+}
+func (*importFakeClient) ListStorageCredentials(context.Context) ([]catalog.StorageCredentialInfo, error) {
+	return nil, nil
+}
+func (*importFakeClient) ListExternalLocations(context.Context) ([]catalog.ExternalLocationInfo, error) {
+	return nil, nil
+}
+func (*importFakeClient) ListVolumes(context.Context, string, string) ([]catalog.VolumeInfo, error) {
+	return nil, nil
+}
+func (*importFakeClient) ListConnections(context.Context) ([]catalog.ConnectionInfo, error) {
+	return nil, nil
+}
+
 func TestImportResource_CatalogSeedsStateFromSDK(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Catalogs = map[string]*resources.Catalog{

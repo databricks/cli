@@ -17,8 +17,8 @@ type TerraformWrapper interface {
 	Render(ctx context.Context, u *ucm.Ucm) error
 	Init(ctx context.Context, u *ucm.Ucm) error
 	Plan(ctx context.Context, u *ucm.Ucm) (*terraform.PlanResult, error)
-	Apply(ctx context.Context, u *ucm.Ucm) error
-	Destroy(ctx context.Context, u *ucm.Ucm) error
+	Apply(ctx context.Context, u *ucm.Ucm, forceLock bool) error
+	Destroy(ctx context.Context, u *ucm.Ucm, forceLock bool) error
 	Import(ctx context.Context, u *ucm.Ucm, address, id string) error
 }
 
