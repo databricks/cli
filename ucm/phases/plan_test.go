@@ -68,6 +68,26 @@ func TestPlanDirectEngineReturnsEmptyOutcome(t *testing.T) {
 	assert.Equal(t, 0, f.tf.PlanCalls)
 }
 
+func TestPreDeployChecksNoResourcesNoDiags(t *testing.T) {
+	f := newFixture(t)
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	phases.PreDeployChecks(ctx, f.u, engine.EngineTerraform)
+
+	assert.False(t, logdiag.HasError(ctx))
+}
+
+func TestPreDeployChecksDirectEngineNoDiags(t *testing.T) {
+	f := newFixture(t)
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	phases.PreDeployChecks(ctx, f.u, engine.EngineDirect)
+
+	assert.False(t, logdiag.HasError(ctx))
+}
+
 func TestPlanBailsOnInitError(t *testing.T) {
 	f := newFixture(t)
 	f.tf.InitErr = errSentinel
