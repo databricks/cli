@@ -65,9 +65,13 @@ wsfix:
 links:
 	./tools/update_github_links.py
 
+.PHONY: deadcode
+deadcode:
+	./tools/check_deadcode.py
+
 # Checks other than 'fmt' and 'lint'; these are fast, so can be run first
 .PHONY: checks
-checks: tidy ws links
+checks: tidy ws links deadcode
 
 
 .PHONY: install-pythons

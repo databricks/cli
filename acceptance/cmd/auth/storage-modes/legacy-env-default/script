@@ -1,0 +1,29 @@
+export DATABRICKS_AUTH_STORAGE=legacy
+
+cat > "./home/.databrickscfg" <<ENDCFG
+[dev]
+host = https://accounts.cloud.databricks.com
+account_id = account-id
+auth_type  = databricks-cli
+ENDCFG
+
+mkdir -p "./home/.databricks"
+cat > "./home/.databricks/token-cache.json" <<ENDCACHE
+{
+  "version": 1,
+  "tokens": {
+    "dev": {
+      "access_token": "dev-cached-token",
+      "token_type": "Bearer"
+    }
+  }
+}
+ENDCACHE
+
+title "Token cache keys before logout\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
+
+trace $CLI auth logout --profile dev --auto-approve
+
+title "Token cache keys after logout (should be empty)\n"
+jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
