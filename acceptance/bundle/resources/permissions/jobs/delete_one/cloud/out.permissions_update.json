@@ -28,6 +28,7 @@
           "permission_level": "CAN_VIEW"
         }
       ],
+      "display_name": "test-dabs-2@databricks.com",
       "user_name": "test-dabs-2@databricks.com"
     },
     {

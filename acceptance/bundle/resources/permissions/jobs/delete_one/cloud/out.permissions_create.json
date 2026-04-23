@@ -28,6 +28,7 @@
           "permission_level": "CAN_MANAGE_RUN"
         }
       ],
+      "display_name": "test-dabs-1@databricks.com",
       "user_name": "test-dabs-1@databricks.com"
     },
     {
@@ -37,6 +38,7 @@
           "permission_level": "CAN_VIEW"
         }
       ],
+      "display_name": "test-dabs-2@databricks.com",
       "user_name": "test-dabs-2@databricks.com"
     },
     {
