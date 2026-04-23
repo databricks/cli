@@ -1,6 +1,12 @@
 Cloud = true
 Timeout = '1m'
 
+# 5 Python versions x ~1m each. Linux runs cover all 5 versions; on
+# windows/macos the classic-template path is smoke-tested by
+# `templates/default-python/classic`.
+GOOS.windows = false
+GOOS.darwin = false
+
 Ignore = [
     '.venv',
 ]

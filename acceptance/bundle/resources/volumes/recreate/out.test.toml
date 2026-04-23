@@ -3,5 +3,9 @@ Cloud = true
 RequiresUnityCatalog = true
 RunsOnDbr = true
 
+[GOOS]
+  darwin = false
+  windows = false
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

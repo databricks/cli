@@ -1,6 +1,10 @@
 Local = true
 Cloud = true
 
+[GOOS]
+  darwin = false
+  windows = false
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
   DLT = ["yes", "no"]

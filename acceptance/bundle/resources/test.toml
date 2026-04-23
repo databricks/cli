@@ -1,1 +1,8 @@
 RecordRequests = true
+
+# Resource tests exercise server-side behavior through bundle deploy/update
+# cycles; the CLI behavior under test is OS-agnostic. Linux runs cover it
+# fully, so the windows and macos matrix entries don't add signal and
+# dominate per-OS wall-clock (~2.3x linux time per test on windows).
+GOOS.windows = false
+GOOS.darwin = false

@@ -1,6 +1,10 @@
 Local = true
 Cloud = true
 
+[GOOS]
+  darwin = false
+  windows = false
+
 [CloudEnvs]
   gcp = false
 

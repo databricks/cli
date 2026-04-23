@@ -2,5 +2,9 @@ Local = false
 Cloud = true
 RequiresUnityCatalog = true
 
+[GOOS]
+  darwin = false
+  windows = false
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

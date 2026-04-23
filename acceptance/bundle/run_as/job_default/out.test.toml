@@ -1,5 +1,9 @@
 Local = false
 Cloud = true
 
+[GOOS]
+  darwin = false
+  windows = false
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["direct"]
