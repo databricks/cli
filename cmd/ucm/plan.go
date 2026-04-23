@@ -33,6 +33,9 @@ Common invocations:
 		PreRunE: utils.MustWorkspaceClient,
 	}
 
+	var forceLock bool
+	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx := cmd.Context()
@@ -44,6 +47,7 @@ Common invocations:
 		if err != nil {
 			return fmt.Errorf("resolve deploy options: %w", err)
 		}
+		opts.ForceLock = forceLock
 
 		outcome := phases.Plan(ctx, u, opts)
 		if logdiag.HasError(ctx) {

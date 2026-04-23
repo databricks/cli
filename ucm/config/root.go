@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -14,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/ucm/config/variable"
 )
 
 // Root is the root of the ucm.yml configuration tree.
@@ -33,8 +35,25 @@ type Root struct {
 
 	Resources Resources `json:"resources,omitempty"`
 
+	// Variables declared under the top-level `variables:` block.
+	Variables map[string]*variable.Variable `json:"variables,omitempty"`
+	// Include lists glob patterns of additional files to merge into the root
+	// configuration. Only honored in the root ucm.yml (included files cannot
+	// themselves declare an Include). Expanded by ProcessRootIncludes.
+	Include []string `json:"include,omitempty"`
+
 	// Targets is set to nil by SelectTarget once a target has been merged.
 	Targets map[string]*Target `json:"targets,omitempty"`
+}
+
+// GetLocations returns the source locations of the configuration value at the
+// given dotted path, or nil if the path is not set.
+func (r Root) GetLocations(path string) []dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return nil
+	}
+	return v.Locations()
 }
 
 // Load reads a ucm.yml file from disk.
@@ -197,5 +216,61 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 	}
 
+	// Merge `variables`. Per-variable: target override replaces default or
+	// lookup on the root definition (never deep-merged) so SetVariables sees
+	// a consistent view.
+	if v := target.Get("variables"); v.Kind() != dyn.KindInvalid {
+		_, err = dyn.Map(v, ".", dyn.Foreach(func(p dyn.Path, tv dyn.Value) (dyn.Value, error) {
+			varPath := dyn.MustPathFromString("variables").Append(p...)
+
+			if d := tv.Get("default"); d.Kind() != dyn.KindInvalid {
+				if root, err = dyn.SetByPath(root, varPath.Append(dyn.Key("default")), d); err != nil {
+					return root, err
+				}
+				// Clear any root-level lookup when target pins a default.
+				if root, err = dyn.SetByPath(root, varPath.Append(dyn.Key("lookup")), dyn.NilValue); err != nil {
+					return root, err
+				}
+			}
+
+			if l := tv.Get("lookup"); l.Kind() != dyn.KindInvalid {
+				if root, err = dyn.SetByPath(root, varPath.Append(dyn.Key("lookup")), l); err != nil {
+					return root, err
+				}
+				if root, err = dyn.SetByPath(root, varPath.Append(dyn.Key("default")), dyn.NilValue); err != nil {
+					return root, err
+				}
+			}
+			return root, nil
+		}))
+		if err != nil {
+			return fmt.Errorf("failed to merge target=%s variables: %w", name, err)
+		}
+	}
+
 	return r.updateWithDynamicValue(root)
+}
+
+// InitializeVariables assigns variable values from CLI-flag pairs of the form
+// "key=value". Mirrors bundle.config.Root.InitializeVariables: called from the
+// CLI layer after the target merge so --var always wins over defaults.
+func (r *Root) InitializeVariables(vars []string) error {
+	for _, v := range vars {
+		parts := strings.SplitN(v, "=", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("unexpected flag value for variable assignment: %s", v)
+		}
+		name, val := parts[0], parts[1]
+
+		if _, ok := r.Variables[name]; !ok {
+			return fmt.Errorf("variable %s has not been defined", name)
+		}
+		if r.Variables[name].IsComplex() {
+			return fmt.Errorf("setting variables of complex type via --var flag is not supported: %s", name)
+		}
+		if err := r.Variables[name].Set(val); err != nil {
+			return fmt.Errorf("failed to assign %s to %s: %s", val, name, err)
+		}
+	}
+	return nil
 }

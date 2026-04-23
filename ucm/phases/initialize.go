@@ -82,7 +82,9 @@ func Initialize(ctx context.Context, u *ucm.Ucm, opts Options) engine.EngineSett
 		return setting
 	}
 
-	if err := deploy.Pull(ctx, u, opts.Backend); err != nil {
+	pullBackend := opts.Backend
+	pullBackend.ForceLock = opts.ForceLock
+	if err := deploy.Pull(ctx, u, pullBackend); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("pull remote state: %w", err))
 		return setting
 	}

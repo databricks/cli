@@ -1,0 +1,52 @@
+ucm:
+  name: {{.project_name}}
+
+resources:
+  catalogs:
+    primary:
+      name: {{.catalog_prefix}}_dev
+      comment: "{{.project_name}} primary catalog (target overrides the name)."
+      tags:
+        cost_center: "0000"
+        data_owner: {{.project_name}}
+        classification: internal
+      schemas:
+        bronze:
+          name: bronze
+          grants:
+            reader:
+              principal: {{.principal}}
+              privileges: [USE_SCHEMA, SELECT]
+
+  tag_validation_rules:
+    enforce_ownership:
+      securable_types: [catalog, schema]
+      required: [cost_center, data_owner, classification]
+      allowed_values:
+        classification: [public, internal, confidential, restricted]
+
+targets:
+  dev:
+    default: true
+    resources:
+      catalogs:
+        primary:
+          name: {{.catalog_prefix}}_dev
+          tags:
+            classification: internal
+
+  staging:
+    resources:
+      catalogs:
+        primary:
+          name: {{.catalog_prefix}}_staging
+          tags:
+            classification: internal
+
+  prod:
+    resources:
+      catalogs:
+        primary:
+          name: {{.catalog_prefix}}_prod
+          tags:
+            classification: confidential

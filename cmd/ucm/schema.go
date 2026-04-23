@@ -24,10 +24,7 @@ Pipe into a file and point your editor at it for autocomplete and validation:
 		if err != nil {
 			return err
 		}
-		if _, err := cmd.OutOrStdout().Write(out); err != nil {
-			return err
-		}
-		_, err = cmd.OutOrStdout().Write([]byte{'\n'})
+		_, err = cmd.OutOrStdout().Write(out)
 		return err
 	}
 
