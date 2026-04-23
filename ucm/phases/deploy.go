@@ -2,8 +2,10 @@ package phases
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
@@ -11,7 +13,60 @@ import (
 	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/direct"
+	"github.com/databricks/cli/ucm/deployplan"
 )
+
+func approvalForDeploy(ctx context.Context, _ *ucm.Ucm, plan *deployplan.Plan, opts Options) (bool, error) {
+	if plan == nil {
+		return true, nil
+	}
+
+	actions := plan.GetActions()
+	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
+	catalogActions := filterGroup(actions, "catalogs", types...)
+	schemaActions := filterGroup(actions, "schemas", types...)
+	volumeActions := filterGroup(actions, "volumes", types...)
+
+	if len(catalogActions) == 0 && len(schemaActions) == 0 && len(volumeActions) == 0 {
+		return true, nil
+	}
+
+	if len(catalogActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateCatalogMessage)
+		for _, a := range catalogActions {
+			cmdio.Log(ctx, a)
+		}
+	}
+
+	if len(schemaActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateSchemaMessage)
+		for _, a := range schemaActions {
+			cmdio.Log(ctx, a)
+		}
+	}
+
+	if len(volumeActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateVolumeMessage)
+		for _, a := range volumeActions {
+			cmdio.Log(ctx, a)
+		}
+	}
+
+	if opts.AutoApprove {
+		return true, nil
+	}
+
+	if !cmdio.IsPromptSupported(ctx) {
+		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+	}
+
+	cmdio.LogString(ctx, "")
+	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
+	if err != nil {
+		return false, err
+	}
+	return approved, nil
+}
 
 // Deploy runs the initialize → build → terraform-init → terraform-apply →
 // state-push sequence for the terraform engine, or the direct-apply path for
@@ -60,6 +115,27 @@ func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 		return
 	}
 
+	// Plan before Apply so approvalForDeploy can inspect the diff. Apply
+	// consumes the saved plan artefact via tf.lastPlanPath and avoids
+	// re-planning inline.
+	var plan *deployplan.Plan
+	if result, err := tf.Plan(ctx, u); err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("terraform plan: %w", err))
+		return
+	} else if result != nil {
+		plan = result.Plan
+	}
+
+	approved, err := approvalForDeploy(ctx, u, plan, opts)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if !approved {
+		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
+	}
+
 	if err := tf.Apply(ctx, u, opts.ForceLock); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("terraform apply: %w", err))
 		return
@@ -98,6 +174,15 @@ func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
 	}
 
 	plan := direct.CalculatePlan(u, state)
+	approved, err := approvalForDeploy(ctx, u, plan, opts)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if !approved {
+		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
+	}
 	applyErr := direct.Apply(ctx, u, client, plan, state)
 	// Always persist state — Apply mutates it as it goes, so partial progress
 	// from a mid-apply error must survive the process exit.

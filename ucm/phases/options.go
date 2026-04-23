@@ -81,6 +81,11 @@ type Options struct {
 	// terraform Apply/Destroy override an existing deploy lock instead of
 	// failing with ErrLockHeld.
 	ForceLock bool
+
+	// AutoApprove mirrors the --auto-approve flag: when true, Deploy and
+	// Destroy skip the destructive-action prompt. Non-destructive plans
+	// never prompt regardless of this value.
+	AutoApprove bool
 }
 
 // terraformFactoryOrDefault returns o.TerraformFactory or the production

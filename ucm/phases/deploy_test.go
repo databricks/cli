@@ -3,15 +3,46 @@ package phases_test
 import (
 	"encoding/json"
 	"io"
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm/config/engine"
 	"github.com/databricks/cli/ucm/deploy"
+	ucmterraform "github.com/databricks/cli/ucm/deploy/terraform"
+	"github.com/databricks/cli/ucm/deployplan"
 	"github.com/databricks/cli/ucm/phases"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// destructiveCatalogPlan returns a PlanResult whose plan recreates a single
+// catalog — enough to drive approvalForDeploy down its "destructive actions
+// present" branch.
+func destructiveCatalogPlan() *ucmterraform.PlanResult {
+	return &ucmterraform.PlanResult{
+		HasChanges: true,
+		Plan: &deployplan.Plan{
+			Plan: map[string]*deployplan.PlanEntry{
+				"resources.catalogs.main": {Action: deployplan.Recreate},
+			},
+		},
+	}
+}
+
+// nonDestructivePlan returns a PlanResult whose plan only creates resources —
+// approvalForDeploy must treat this as "nothing to confirm" and proceed.
+func nonDestructivePlan() *ucmterraform.PlanResult {
+	return &ucmterraform.PlanResult{
+		HasChanges: true,
+		Plan: &deployplan.Plan{
+			Plan: map[string]*deployplan.PlanEntry{
+				"resources.catalogs.main": {Action: deployplan.Create},
+			},
+		},
+	}
+}
 
 // readRemoteSeq returns the Seq of the remote ucm-state.json, or -1 when the
 // file has not been written yet. Used to assert Push advanced the remote.
@@ -108,5 +139,116 @@ func TestDeployBailsOnBuildError(t *testing.T) {
 	})
 
 	require.True(t, logdiag.HasError(ctx))
+	assert.Equal(t, 0, f.tf.ApplyCalls)
+}
+
+// TestDeploySkipsPromptWhenNoDestructiveActions asserts that a plan with only
+// creates never blocks on approval: Apply must run and remote state must
+// advance, regardless of whether a prompt would have been available.
+func TestDeploySkipsPromptWhenNoDestructiveActions(t *testing.T) {
+	f := newFixture(t)
+	f.tf.PlanResult = nonDestructivePlan()
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	phases.Deploy(ctx, f.u, phases.Options{
+		Backend:          f.backend,
+		TerraformFactory: fakeTfFactory(f.tf),
+	})
+
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
+	assert.Equal(t, 1, f.tf.ApplyCalls)
+}
+
+// TestDeploySkipsPromptWhenAutoApprove asserts --auto-approve bypasses the
+// prompt even when the plan contains destructive catalog actions.
+func TestDeploySkipsPromptWhenAutoApprove(t *testing.T) {
+	f := newFixture(t)
+	f.tf.PlanResult = destructiveCatalogPlan()
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+	ctx, _ = cmdio.NewTestContextWithStderr(ctx)
+
+	phases.Deploy(ctx, f.u, phases.Options{
+		Backend:          f.backend,
+		TerraformFactory: fakeTfFactory(f.tf),
+		AutoApprove:      true,
+	})
+
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
+	assert.Equal(t, 1, f.tf.ApplyCalls)
+}
+
+// TestDeployErrorsWhenPromptingNotSupported asserts Deploy returns an error
+// asking for --auto-approve when stdin is not a TTY and the plan is
+// destructive. Apply must not fire.
+func TestDeployErrorsWhenPromptingNotSupported(t *testing.T) {
+	f := newFixture(t)
+	f.tf.PlanResult = destructiveCatalogPlan()
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+	ctx, _ = cmdio.NewTestContextWithStderr(ctx)
+
+	phases.Deploy(ctx, f.u, phases.Options{
+		Backend:          f.backend,
+		TerraformFactory: fakeTfFactory(f.tf),
+	})
+
+	require.True(t, logdiag.HasError(ctx))
+	diags := logdiag.FlushCollected(ctx)
+	require.NotEmpty(t, diags)
+	assert.Contains(t, diags[0].Summary, "--auto-approve")
+	assert.Equal(t, 0, f.tf.ApplyCalls)
+}
+
+// TestDeployPromptsAndAccepts drives the interactive prompt path: with a
+// destructive plan and a TTY-shaped cmdio context fed "y\n" on stdin, Deploy
+// must call Apply and push state.
+func TestDeployPromptsAndAccepts(t *testing.T) {
+	f := newFixture(t)
+	f.tf.PlanResult = destructiveCatalogPlan()
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+	ctx, tio := cmdio.SetupTest(ctx, cmdio.TestOptions{PromptSupported: true})
+	defer tio.Done()
+	go func() {
+		_, _ = tio.Stdin.WriteString("y\n")
+		_ = tio.Stdin.Flush()
+	}()
+	// Drain prompt output so the cmdio writer never blocks on a full pipe.
+	go func() { _, _ = io.Copy(io.Discard, tio.Stderr) }()
+
+	phases.Deploy(ctx, f.u, phases.Options{
+		Backend:          f.backend,
+		TerraformFactory: fakeTfFactory(f.tf),
+	})
+
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
+	assert.Equal(t, 1, f.tf.ApplyCalls)
+}
+
+// TestDeployAbortsWhenPromptDeclined drives the same interactive path with
+// "n\n" on stdin and asserts Apply is never called and no error surfaces —
+// the cancel is a clean exit, not a failure.
+func TestDeployAbortsWhenPromptDeclined(t *testing.T) {
+	f := newFixture(t)
+	f.tf.PlanResult = destructiveCatalogPlan()
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+	ctx, tio := cmdio.SetupTest(ctx, cmdio.TestOptions{PromptSupported: true})
+	defer tio.Done()
+	var stderr strings.Builder
+	go func() {
+		_, _ = tio.Stdin.WriteString("n\n")
+		_ = tio.Stdin.Flush()
+	}()
+	go func() { _, _ = io.Copy(&stderr, tio.Stderr) }()
+
+	phases.Deploy(ctx, f.u, phases.Options{
+		Backend:          f.backend,
+		TerraformFactory: fakeTfFactory(f.tf),
+	})
+
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
 	assert.Equal(t, 0, f.tf.ApplyCalls)
 }
