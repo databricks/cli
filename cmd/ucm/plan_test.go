@@ -93,41 +93,6 @@ func TestCmd_Plan_SkipCountsUnchanged(t *testing.T) {
 	assert.NotContains(t, stdout, "skip catalogs.main")
 }
 
-func TestRenderPlanText_BucketsAllActionKinds(t *testing.T) {
-	cases := []struct {
-		name    string
-		actions map[string]deployplan.ActionType
-		want    string
-	}{
-		{
-			"update_with_id counts as change",
-			map[string]deployplan.ActionType{"resources.catalogs.a": deployplan.UpdateWithID},
-			"Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged",
-		},
-		{
-			"resize counts as change",
-			map[string]deployplan.ActionType{"resources.catalogs.a": deployplan.Resize},
-			"Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged",
-		},
-		{
-			"delete only",
-			map[string]deployplan.ActionType{"resources.catalogs.a": deployplan.Delete},
-			"Plan: 0 to add, 0 to change, 1 to delete, 0 unchanged",
-		},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			plan := deployplan.NewPlanTerraform()
-			for k, a := range c.actions {
-				plan.Plan[k] = &deployplan.PlanEntry{Action: a}
-			}
-			var buf stringBuf
-			renderPlanText(&buf, plan)
-			assert.Contains(t, buf.String(), c.want)
-		})
-	}
-}
-
 // TestCmd_Plan_RoundTripsThroughJSONStructure verifies the structured plan
 // survives the Plan→json.Marshal→json.Unmarshal trip with the same resource
 // keys and action values — the contract tooling consumers depend on.
@@ -144,10 +109,3 @@ func TestCmd_Plan_RoundTripsThroughJSONStructure(t *testing.T) {
 	require.NoError(t, json.Unmarshal(buf, &round))
 	assert.Equal(t, deployplan.Create, round.Plan["resources.catalogs.main"].Action)
 }
-
-// stringBuf is a tiny io.Writer sink used by renderPlanText tests — avoids
-// pulling in bytes.Buffer just for a string accumulator.
-type stringBuf struct{ b []byte }
-
-func (s *stringBuf) Write(p []byte) (int, error) { s.b = append(s.b, p...); return len(p), nil }
-func (s *stringBuf) String() string               { return string(s.b) }

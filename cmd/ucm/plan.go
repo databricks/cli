@@ -3,8 +3,6 @@ package ucm
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/ucm/utils"
@@ -12,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm/deployplan"
 	"github.com/databricks/cli/ucm/phases"
+	"github.com/databricks/cli/ucm/render"
 	"github.com/spf13/cobra"
 )
 
@@ -72,8 +71,7 @@ Common invocations:
 			fmt.Fprintln(out, string(buf))
 			return nil
 		default:
-			renderPlanText(out, plan)
-			return nil
+			return render.RenderPlan(out, plan)
 		}
 	}
 
@@ -88,39 +86,4 @@ func planOutputType(cmd *cobra.Command) flags.Output {
 		return flags.OutputText
 	}
 	return root.OutputType(cmd)
-}
-
-// renderPlanText prints the DAB-style per-resource action list followed by
-// the `Plan: N to add, ...` tally. Mirrors cmd/bundle/plan.go so ucm plan
-// output is byte-identical to bundle plan for the resources ucm models.
-func renderPlanText(out io.Writer, plan *deployplan.Plan) {
-	createCount, updateCount, deleteCount, unchangedCount := 0, 0, 0, 0
-	for _, change := range plan.GetActions() {
-		switch change.ActionType {
-		case deployplan.Create:
-			createCount++
-		case deployplan.Update, deployplan.UpdateWithID, deployplan.Resize:
-			updateCount++
-		case deployplan.Delete:
-			deleteCount++
-		case deployplan.Recreate:
-			deleteCount++
-			createCount++
-		case deployplan.Skip, deployplan.Undefined:
-			unchangedCount++
-		}
-	}
-
-	totalChanges := createCount + updateCount + deleteCount
-	if totalChanges > 0 {
-		for _, action := range plan.GetActions() {
-			if action.ActionType == deployplan.Skip {
-				continue
-			}
-			key := strings.TrimPrefix(action.ResourceKey, "resources.")
-			fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
-		}
-		fmt.Fprintln(out)
-	}
-	fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchangedCount)
 }
