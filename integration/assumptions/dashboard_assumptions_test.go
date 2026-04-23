@@ -111,15 +111,10 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// etag and update_time always change after workspace import. serialized_dashboard
-		// may also appear depending on the Lakeview server version (observed on AWS staging
-		// but not on GCP production).
-		assert.Contains(t, updatedFieldPaths, "etag")
-		assert.Contains(t, updatedFieldPaths, "update_time")
+		// etag and update_time always change after workspace import. serialized_dashboard and
+		// warehouse_id vary by Lakeview server version: observed on AWS staging but not GCP prod.
+		assert.Subset(t, updatedFieldPaths, []string{"etag", "update_time"})
 		assert.Subset(t, []string{"etag", "update_time", "serialized_dashboard"}, updatedFieldPaths)
-
-		// warehouse_id may be cleared depending on the Lakeview server version (observed on
-		// AWS staging but not on GCP production).
 		assert.Subset(t, []string{"warehouse_id"}, deletedFieldPaths)
 	}
 }
