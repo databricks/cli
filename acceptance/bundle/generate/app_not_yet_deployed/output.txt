@@ -1,5 +1,5 @@
 
->>> [CLI] apps create my-app
+>>> [CLI] apps create my-app --no-compute --no-wait
 {
   "app_status": {
     "message":"Application is running.",
@@ -7,8 +7,8 @@
   },
   "compute_size":"MEDIUM",
   "compute_status": {
-    "message":"App compute is active.",
-    "state":"ACTIVE"
+    "message":"App compute is stopped.",
+    "state":"STOPPED"
   },
   "id":"1000",
   "name":"my-app",

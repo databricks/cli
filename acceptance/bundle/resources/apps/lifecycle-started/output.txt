@@ -15,6 +15,14 @@ Deployment complete!
     "name": "[UNIQUE_NAME]"
   }
 }
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
+  "body": {
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
+  }
+}
 
 >>> errcode [CLI] apps get [UNIQUE_NAME]
 "ACTIVE"
