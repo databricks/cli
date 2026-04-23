@@ -3,7 +3,6 @@ package cmdio
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"regexp"
@@ -11,6 +10,7 @@ import (
 	"text/template"
 	"unicode/utf8"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/databricks/databricks-sdk-go/listing"
 )
 
@@ -28,28 +28,13 @@ func renderIteratorPagedTemplate[T any](
 	out io.Writer,
 	headerTemplate, tmpl string,
 ) error {
-	keys, restore, err := startRawStdinKeyReader(ctx)
-	if err != nil {
-		return err
-	}
-	defer restore()
-	return renderIteratorPagedTemplateCore(
-		ctx,
-		iter,
-		crlfWriter{w: out},
-		crlfWriter{w: os.Stderr},
-		keys,
-		headerTemplate,
-		tmpl,
-		pagerPageSize,
-	)
+	return renderIteratorPagedTemplateCore(ctx, iter, os.Stdin, out, headerTemplate, tmpl, pagerPageSize)
 }
 
-// templatePager renders accumulated rows to out, locking column widths
-// from the first page so layout stays stable across batches. We do not
-// use text/tabwriter because it recomputes widths on every Flush.
+// templatePager renders accumulated rows, locking column widths from the
+// first page so layout stays stable across batches. We do not use
+// text/tabwriter because it recomputes widths on every Flush.
 type templatePager struct {
-	out        io.Writer
 	headerT    *template.Template
 	rowT       *template.Template
 	headerStr  string
@@ -57,46 +42,47 @@ type templatePager struct {
 	headerDone bool
 }
 
-func (p *templatePager) flush(buf []any) error {
+// flushLines renders the header (on the first call) plus any buffered
+// rows, then pads each cell to the widths recorded on the first page so
+// columns line up across batches.
+func (p *templatePager) flushLines(buf []any) ([]string, error) {
 	if p.headerDone && len(buf) == 0 {
-		return nil
+		return nil, nil
 	}
 	var rendered bytes.Buffer
 	if !p.headerDone && p.headerStr != "" {
 		if err := p.headerT.Execute(&rendered, nil); err != nil {
-			return err
+			return nil, err
 		}
 		rendered.WriteByte('\n')
 	}
 	if len(buf) > 0 {
 		if err := p.rowT.Execute(&rendered, buf); err != nil {
-			return err
+			return nil, err
 		}
 	}
 	p.headerDone = true
 
 	text := strings.TrimRight(rendered.String(), "\n")
 	if text == "" {
-		return nil
+		return nil, nil
 	}
 	rows := strings.Split(text, "\n")
 	if p.widths == nil {
 		p.widths = computeWidths(rows)
 	}
-	for _, row := range rows {
-		if _, err := io.WriteString(p.out, padRow(strings.Split(row, "\t"), p.widths)+"\n"); err != nil {
-			return err
-		}
+	lines := make([]string, len(rows))
+	for i, row := range rows {
+		lines[i] = padRow(strings.Split(row, "\t"), p.widths)
 	}
-	return nil
+	return lines, nil
 }
 
 func renderIteratorPagedTemplateCore[T any](
 	ctx context.Context,
 	iter listing.Iterator[T],
+	in io.Reader,
 	out io.Writer,
-	prompts io.Writer,
-	keys <-chan byte,
 	headerTemplate, tmpl string,
 	pageSize int,
 ) error {
@@ -112,56 +98,29 @@ func renderIteratorPagedTemplateCore[T any](
 		return err
 	}
 	pager := &templatePager{
-		out:       out,
 		headerT:   headerT,
 		rowT:      rowT,
 		headerStr: headerTemplate,
 	}
-
-	limit := limitFromContext(ctx)
-	drainAll := false
-	buf := make([]any, 0, pageSize)
-	total := 0
-
-	for iter.HasNext(ctx) {
-		if limit > 0 && total >= limit {
-			break
-		}
-		n, err := iter.Next(ctx)
-		if err != nil {
-			return err
-		}
-		buf = append(buf, n)
-		total++
-
-		if len(buf) < pageSize {
-			continue
-		}
-		if err := pager.flush(buf); err != nil {
-			return err
-		}
-		buf = buf[:0]
-		if drainAll {
-			if pagerShouldQuit(keys) {
-				return nil
-			}
-			continue
-		}
-		fmt.Fprint(prompts, pagerPromptText)
-		k, ok := pagerNextKey(ctx, keys)
-		fmt.Fprint(prompts, pagerClearLine)
-		if !ok {
-			return nil
-		}
-		switch k {
-		case ' ':
-		case '\r', '\n':
-			drainAll = true
-		case 'q', 'Q', pagerKeyEscape, pagerKeyCtrlC:
-			return nil
-		}
+	m := &pagerModel[T]{
+		ctx:      ctx,
+		iter:     iter,
+		pager:    pager,
+		pageSize: pageSize,
+		limit:    limitFromContext(ctx),
 	}
-	return pager.flush(buf)
+	p := tea.NewProgram(
+		m,
+		tea.WithInput(in),
+		tea.WithOutput(out),
+		// Match spinner: let SIGINT reach the process rather than the TUI
+		// so Ctrl+C also interrupts a stalled iterator fetch.
+		tea.WithoutSignalHandler(),
+	)
+	if _, err := p.Run(); err != nil {
+		return err
+	}
+	return m.err
 }
 
 // visualWidth counts runes ignoring ANSI SGR escape sequences.

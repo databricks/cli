@@ -2,119 +2,174 @@ package cmdio
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"os"
+	"strings"
 
-	"golang.org/x/term"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/databricks/databricks-sdk-go/listing"
 )
 
 // pagerPageSize is the number of items rendered between prompts.
 const pagerPageSize = 50
 
-// pagerPromptText is shown on stderr between pages.
+// pagerPromptText is shown between pages.
 const pagerPromptText = "[space] more  [enter] all  [q|esc] quit"
 
-// pagerClearLine is the ANSI sequence to return to column 0 and erase the
-// current line. Used to remove the prompt before writing the next page.
-const pagerClearLine = "\r\x1b[K"
+// pagerModel drives the paged render loop through bubbletea. It owns the
+// iterator, fetches one batch at a time via a tea.Cmd, emits rendered
+// lines above the view with tea.Println, and shows the prompt while it
+// waits for a key. Using bubbletea lets us skip manual raw-mode setup
+// (tea enters/restores raw mode on its own), so we don't need a parallel
+// CRLF translator for output written during raw mode.
+type pagerModel[T any] struct {
+	ctx      context.Context
+	iter     listing.Iterator[T]
+	pager    *templatePager
+	pageSize int
+	limit    int
+	total    int
 
-// Key codes we care about when reading single bytes from stdin in raw mode.
-const (
-	pagerKeyEscape = 0x1b
-	pagerKeyCtrlC  = 0x03
-)
+	// fetching tracks whether a fetchCmd is in flight. We only ever keep
+	// one in flight at a time so the iterator isn't read from two
+	// goroutines; if the user hits SPACE or ENTER while one is running,
+	// we record the intent in drainAll and let the in-flight fetch
+	// continue in drain mode when its batchMsg lands.
+	fetching   bool
+	drainAll   bool
+	firstBatch bool
+	iterDone   bool
+	err        error
+}
 
-// startRawStdinKeyReader puts stdin into raw mode and streams keystrokes
-// onto the returned channel. Callers must defer restore. Raw mode also
-// clears OPOST on Unix, so output written while active needs crlfWriter
-// to avoid staircase newlines.
-func startRawStdinKeyReader(ctx context.Context) (<-chan byte, func(), error) {
-	fd := int(os.Stdin.Fd())
-	oldState, err := term.MakeRaw(fd)
-	if err != nil {
-		return nil, func() {}, fmt.Errorf("failed to enter raw mode on stdin: %w", err)
-	}
-	restore := func() { _ = term.Restore(fd, oldState) }
+// batchMsg is delivered to Update when a fetched batch has been rendered
+// into printable lines. done signals the iterator is exhausted (or the
+// limit is reached); err surfaces iteration errors.
+type batchMsg struct {
+	lines []string
+	done  bool
+	err   error
+}
 
-	ch := make(chan byte, 16)
-	go func() {
-		defer close(ch)
-		buf := make([]byte, 1)
-		for {
-			n, err := os.Stdin.Read(buf)
-			if err != nil || n == 0 {
-				return
+func (m *pagerModel[T]) Init() tea.Cmd {
+	m.fetching = true
+	return m.fetchCmd()
+}
+
+// fetchCmd returns a tea.Cmd that reads one page from the iterator and
+// renders it into lines. The command runs off the update loop so slow
+// network fetches don't stall key handling.
+func (m *pagerModel[T]) fetchCmd() tea.Cmd {
+	return func() tea.Msg {
+		buf := make([]any, 0, m.pageSize)
+		done := false
+		for len(buf) < m.pageSize {
+			if m.limit > 0 && m.total+len(buf) >= m.limit {
+				done = true
+				break
 			}
-			select {
-			case ch <- buf[0]:
-			case <-ctx.Done():
-				return
+			if !m.iter.HasNext(m.ctx) {
+				done = true
+				break
 			}
+			n, err := m.iter.Next(m.ctx)
+			if err != nil {
+				return batchMsg{err: err}
+			}
+			buf = append(buf, n)
 		}
-	}()
-	return ch, restore, nil
-}
-
-// pagerNextKey blocks until a key arrives, the key channel closes, or the
-// context is cancelled. Returns ok=false on close or cancellation.
-func pagerNextKey(ctx context.Context, keys <-chan byte) (byte, bool) {
-	select {
-	case k, ok := <-keys:
-		return k, ok
-	case <-ctx.Done():
-		return 0, false
+		lines, err := m.pager.flushLines(buf)
+		if err != nil {
+			return batchMsg{err: err}
+		}
+		m.total += len(buf)
+		return batchMsg{lines: lines, done: done}
 	}
 }
 
-// pagerShouldQuit drains any buffered keys non-blockingly and returns true
-// if q/Q/esc/Ctrl+C was pressed. A closed channel (stdin EOF) is not a
-// quit signal.
-func pagerShouldQuit(keys <-chan byte) bool {
-	for {
-		select {
-		case k, ok := <-keys:
-			if !ok {
-				return false
-			}
-			if k == 'q' || k == 'Q' || k == pagerKeyEscape || k == pagerKeyCtrlC {
-				return true
-			}
+func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case batchMsg:
+		m.fetching = false
+		if msg.err != nil {
+			m.err = msg.err
+			return m, tea.Quit
+		}
+		m.firstBatch = true
+		// Collapse the batch into a single Println so ordering is trivial:
+		// tea.Println splits on \n internally, so one Cmd emits all rows.
+		var printCmd tea.Cmd
+		if len(msg.lines) > 0 {
+			printCmd = tea.Println(strings.Join(msg.lines, "\n"))
+		}
+		switch {
+		case msg.done:
+			m.iterDone = true
+			return m, tea.Sequence(printCmd, tea.Quit)
+		case m.drainAll:
+			m.fetching = true
+			return m, tea.Sequence(printCmd, m.fetchCmd())
 		default:
-			return false
+			return m, printCmd
 		}
+
+	case tea.KeyMsg:
+		if m.iterDone {
+			return m, nil
+		}
+		return m.handleKey(msg)
 	}
+	return m, nil
 }
 
-// crlfWriter translates outbound '\n' bytes into '\r\n' so output written
-// while the TTY is in raw mode (OPOST cleared) still starts at column 0.
-// io.Writer semantics are preserved: the returned byte count is the
-// number of bytes from p that were consumed, not the (possibly larger)
-// number of bytes written to the underlying writer.
-type crlfWriter struct {
-	w io.Writer
+// handleKey routes a keystroke to the right state transition. Keys we
+// don't care about are ignored so the user can mash the keyboard without
+// affecting the pager.
+func (m *pagerModel[T]) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.Type { //nolint:exhaustive // the pager only cares about a few keys
+	case tea.KeyEnter:
+		return m, m.startDrain()
+	case tea.KeyEsc, tea.KeyCtrlC:
+		return m, tea.Quit
+	case tea.KeySpace:
+		return m, m.startAdvance()
+	case tea.KeyRunes:
+		switch msg.String() {
+		case " ":
+			return m, m.startAdvance()
+		case "q", "Q":
+			return m, tea.Quit
+		}
+	}
+	return m, nil
 }
 
-func (c crlfWriter) Write(p []byte) (int, error) {
-	start := 0
-	for i, b := range p {
-		if b != '\n' {
-			continue
-		}
-		if i > start {
-			if _, err := c.w.Write(p[start:i]); err != nil {
-				return start, err
-			}
-		}
-		if _, err := c.w.Write([]byte{'\r', '\n'}); err != nil {
-			return i, err
-		}
-		start = i + 1
+// startAdvance handles SPACE: fetch one more page unless we're already
+// fetching or draining. If a fetch is in flight we drop the keystroke.
+func (m *pagerModel[T]) startAdvance() tea.Cmd {
+	if m.drainAll || m.fetching {
+		return nil
 	}
-	if start < len(p) {
-		if _, err := c.w.Write(p[start:]); err != nil {
-			return start, err
-		}
+	m.fetching = true
+	return m.fetchCmd()
+}
+
+// startDrain handles ENTER: flip into drain-all mode. If a fetch is
+// already in flight the batchMsg handler will see drainAll and continue
+// fetching; otherwise we kick off the next fetch here.
+func (m *pagerModel[T]) startDrain() tea.Cmd {
+	if m.drainAll {
+		return nil
 	}
-	return len(p), nil
+	m.drainAll = true
+	if m.fetching {
+		return nil
+	}
+	m.fetching = true
+	return m.fetchCmd()
+}
+
+func (m *pagerModel[T]) View() string {
+	if m.iterDone || m.drainAll || m.err != nil || !m.firstBatch {
+		return ""
+	}
+	return pagerPromptText
 }
