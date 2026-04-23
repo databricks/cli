@@ -2,6 +2,9 @@ Local = false
 Cloud = true
 RequiresWarehouse = true
 
+[GOOS]
+  windows = false
+
 [CloudEnvs]
   gcp = false
 

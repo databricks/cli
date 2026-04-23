@@ -1,5 +1,11 @@
 Cloud = true
 
+# Skip on Windows -- 18 matrix variants at ~1m7s each cost ~20m of cumulative
+# Windows test time. Linux/macOS runs cover the full matrix; seeing the
+# single `templates/default-python/classic` test succeed on Windows is enough
+# signal that the template machinery works there.
+GOOS.windows = false
+
 Ignore = ["input.json"]
 
 EnvMatrix.READPLAN = ["", "1"]

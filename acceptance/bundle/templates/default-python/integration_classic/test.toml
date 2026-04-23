@@ -1,6 +1,11 @@
 Cloud = true
 Timeout = '1m'
 
+# Skip on Windows -- 5 Python versions x ~1m each = ~5m of cumulative Windows
+# test time. Linux/macOS runs already cover all 5 versions; the classic-template
+# path is smoke-tested on Windows by `templates/default-python/classic`.
+GOOS.windows = false
+
 Ignore = [
     '.venv',
 ]

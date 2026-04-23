@@ -1,1 +1,5 @@
 RecordRequests = true
+
+# Skip on Windows -- serverless-template coverage on Linux/macOS is sufficient;
+# the Windows smoke for template machinery is covered by `classic/`.
+GOOS.windows = false

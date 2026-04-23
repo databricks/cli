@@ -1,6 +1,9 @@
 Local = true
 Cloud = true
 
+[GOOS]
+  windows = false
+
 [CloudEnvs]
   gcp = false
 
