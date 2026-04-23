@@ -111,6 +111,12 @@ func newFixture(t *testing.T) *fixture {
 
 	u := &ucm.Ucm{RootPath: projDir}
 	u.Config.Ucm = config.Ucm{Name: "test", Target: "dev"}
+	// Seed Workspace.{Host,RootPath} so Initialize's DefineDefaultWorkspacePaths
+	// + InitializeURLs mutators can run offline — production wires these via
+	// cmd/ucm/utils.ProcessUcm → DefineDefaultWorkspaceRoot + ExpandWorkspaceRoot,
+	// which phase tests bypass by calling phases.* directly.
+	u.Config.Workspace.Host = "https://example.databricks.com"
+	u.Config.Workspace.RootPath = "/Workspace/Users/alice@example.com/databricks/ucm/test/dev"
 
 	return &fixture{
 		t:  t,
