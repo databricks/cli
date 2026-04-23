@@ -21,6 +21,9 @@ required fields). No network I/O.`,
 		Args: root.NoArgs,
 	}
 
+	var strict bool
+	cmd.Flags().BoolVar(&strict, "strict", false, "Treat warnings as errors")
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx := cmd.Context()
@@ -31,6 +34,15 @@ required fields). No network I/O.`,
 		phases.PolicyCheck(ctx, u)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
+		}
+
+		numWarnings := logdiag.NumWarnings(ctx)
+		if strict && numWarnings > 0 {
+			noun := "warning"
+			if numWarnings != 1 {
+				noun = "warnings"
+			}
+			return fmt.Errorf("%d %s found. Warnings are not allowed in strict mode", numWarnings, noun)
 		}
 
 		fmt.Fprintln(cmd.OutOrStdout(), "Policy check OK!")
