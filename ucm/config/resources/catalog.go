@@ -1,5 +1,7 @@
 package resources
 
+import "net/url"
+
 // Catalog is a UC catalog. M0 scope: name, comment, storage_root, tags.
 // Additional fields (owner, properties, isolation_mode, etc.) will land in M1.
 type Catalog struct {
@@ -21,4 +23,15 @@ type Catalog struct {
 	// references) before any other mutator runs. Always nil after load.
 	Schemas map[string]*Schema `json:"schemas,omitempty"`
 	Grants  map[string]*Grant  `json:"grants,omitempty"`
+
+	// URL is populated by the initialize_urls mutator.
+	URL string `json:"url,omitempty" ucm:"readonly"`
+}
+
+func (c *Catalog) InitializeURL(baseURL url.URL) {
+	if c.Name == "" {
+		return
+	}
+	baseURL.Path = "explore/data/" + c.Name
+	c.URL = baseURL.String()
 }

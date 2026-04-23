@@ -1,5 +1,7 @@
 package resources
 
+import "net/url"
+
 // Schema is a UC schema (a.k.a. database) nested inside a catalog.
 type Schema struct {
 	// Name of the schema. Required.
@@ -25,4 +27,15 @@ type Schema struct {
 	// Root.Resources.Grants with securable={type:schema, name:<this>} injected.
 	// Always nil after load.
 	Grants map[string]*Grant `json:"grants,omitempty"`
+
+	// URL is populated by the initialize_urls mutator.
+	URL string `json:"url,omitempty" ucm:"readonly"`
+}
+
+func (s *Schema) InitializeURL(baseURL url.URL) {
+	if s.Catalog == "" || s.Name == "" {
+		return
+	}
+	baseURL.Path = "explore/data/" + s.Catalog + "/" + s.Name
+	s.URL = baseURL.String()
 }

@@ -1,5 +1,7 @@
 package resources
 
+import "net/url"
+
 // ExternalLocation is a UC external location. URL + storage credential
 // together grant UC access to a specific cloud-storage prefix. Field names
 // mirror databricks-sdk-go's catalog.CreateExternalLocation so the direct-
@@ -7,6 +9,10 @@ package resources
 //
 // M0 scope: name, url, credential_name, comment, read_only, skip_validation,
 // fallback. Encryption details and file-event queue support land later.
+//
+// Url (lowercase) is the cloud storage path (s3://..., abfss://..., gs://...);
+// URL (uppercase) is the workspace console URL populated by the
+// initialize_urls mutator. The two are distinct.
 type ExternalLocation struct {
 	Name           string `json:"name"`
 	Url            string `json:"url"`
@@ -16,4 +22,15 @@ type ExternalLocation struct {
 	ReadOnly       bool   `json:"read_only,omitempty"`
 	SkipValidation bool   `json:"skip_validation,omitempty"`
 	Fallback       bool   `json:"fallback,omitempty"`
+
+	// URL is populated by the initialize_urls mutator.
+	URL string `json:"workspace_url,omitempty" ucm:"readonly"`
+}
+
+func (e *ExternalLocation) InitializeURL(baseURL url.URL) {
+	if e.Name == "" {
+		return
+	}
+	baseURL.Path = "explore/external-locations/" + e.Name
+	e.URL = baseURL.String()
 }
