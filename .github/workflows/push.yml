@@ -376,6 +376,31 @@ jobs:
             exit 1
           fi
 
+  validate-generate-direct:
+    needs: cleanups
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    steps:
+      - name: Print runner IP address
+        run: curl -s https://checkip.amazonaws.com
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.13'
+
+      - name: Verify that generate-direct output is up to date
+        run: |
+          if ! ( make generate-direct && git diff --exit-code ); then
+            echo "The generate-direct output is not up to date. Please run 'make generate-direct' and commit the changes."
+            exit 1
+          fi
+
   # Trigger integration tests in a separate repository.
   # Writes the same-org "Integration Tests" check run for skip/auto-approve
   # paths on deco runners. The cross-org `gh workflow run` dispatch is split
