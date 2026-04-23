@@ -17,7 +17,7 @@ import (
 // The lock is released on defer with GoalDestroy, which tolerates a
 // missing lock file (destroy may have wiped the state dir before Release
 // runs — see ucm/deploy/lock.Release).
-func (t *Terraform) Destroy(ctx context.Context, u *ucm.Ucm) error {
+func (t *Terraform) Destroy(ctx context.Context, u *ucm.Ucm, forceLock bool) error {
 	if t == nil {
 		return fmt.Errorf("terraform: nil wrapper")
 	}
@@ -34,7 +34,7 @@ func (t *Terraform) Destroy(ctx context.Context, u *ucm.Ucm) error {
 	if err != nil {
 		return fmt.Errorf("create deployment locker: %w", err)
 	}
-	if err := locker.Acquire(ctx, false); err != nil {
+	if err := locker.Acquire(ctx, forceLock); err != nil {
 		return err
 	}
 	defer func() {

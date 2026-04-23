@@ -68,14 +68,14 @@ func (f *fakeTf) Plan(_ context.Context, _ *ucmpkg.Ucm) (*terraform.PlanResult, 
 	return f.PlanResult, f.PlanErr
 }
 
-func (f *fakeTf) Apply(_ context.Context, _ *ucmpkg.Ucm) error {
+func (f *fakeTf) Apply(_ context.Context, _ *ucmpkg.Ucm, _ bool) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.ApplyCalls++
 	return f.ApplyErr
 }
 
-func (f *fakeTf) Destroy(_ context.Context, _ *ucmpkg.Ucm) error {
+func (f *fakeTf) Destroy(_ context.Context, _ *ucmpkg.Ucm, _ bool) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.DestroyCalls++
