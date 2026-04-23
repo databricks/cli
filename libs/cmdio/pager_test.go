@@ -81,7 +81,7 @@ func TestPagerModelBatchPrintsAndQuitsWhenDone(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 3}, 10)
 	_, cmd := m.Update(batchMsg{lines: []string{"1", "2", "3"}, done: true})
 	assert.True(t, m.iterDone)
-	assert.True(t, m.firstBatch)
+	assert.True(t, m.hasPrinted)
 	cmds := unwrapCmds(t, runCmd(t, cmd))
 	require.Len(t, cmds, 2)
 	assert.Contains(t, printedText(t, runCmd(t, cmds[0])), "1\n2\n3")
@@ -101,7 +101,7 @@ func TestPagerModelBatchPromptsWhenMore(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 100}, 5)
 	_, cmd := m.Update(batchMsg{lines: []string{"1", "2"}, done: false})
 	assert.False(t, m.iterDone)
-	assert.True(t, m.firstBatch)
+	assert.True(t, m.hasPrinted)
 	assert.False(t, m.drainAll)
 	assert.Equal(t, pagerPromptText, m.View())
 	assert.Contains(t, printedText(t, runCmd(t, cmd)), "1\n2")
@@ -137,7 +137,7 @@ func TestPagerModelSpaceFetchesNext(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			m := newTestPager(t, &numberIterator{n: 100}, 5)
-			m.firstBatch = true
+			m.hasPrinted = true
 			_, cmd := m.Update(tc.key)
 			_, ok := runCmd(t, cmd).(batchMsg)
 			assert.True(t, ok, "space should fire a fetch")
@@ -147,7 +147,7 @@ func TestPagerModelSpaceFetchesNext(t *testing.T) {
 
 func TestPagerModelEnterSetsDrainAll(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 100}, 5)
-	m.firstBatch = true
+	m.hasPrinted = true
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	assert.True(t, m.drainAll)
 	assert.Empty(t, m.View(), "no prompt while draining")
@@ -157,7 +157,7 @@ func TestPagerModelEnterSetsDrainAll(t *testing.T) {
 
 func TestPagerModelEnterIsNoOpWhileAlreadyDraining(t *testing.T) {
 	m := newTestPager(t, &numberIterator{n: 100}, 5)
-	m.firstBatch = true
+	m.hasPrinted = true
 	m.drainAll = true
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	assert.Nil(t, cmd, "re-entering drain shouldn't stack another fetch")
@@ -195,7 +195,7 @@ func TestPagerModelQuitKeys(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			m := newTestPager(t, &numberIterator{n: 100}, 5)
-			m.firstBatch = true
+			m.hasPrinted = true
 			_, cmd := m.Update(tc.key)
 			_, ok := runCmd(t, cmd).(tea.QuitMsg)
 			assert.True(t, ok)
@@ -210,7 +210,7 @@ func TestPagerModelQuitKeysInterruptDrain(t *testing.T) {
 		{Type: tea.KeyCtrlC},
 	} {
 		m := newTestPager(t, &numberIterator{n: 100}, 5)
-		m.firstBatch = true
+		m.hasPrinted = true
 		m.drainAll = true
 		_, cmd := m.Update(key)
 		_, ok := runCmd(t, cmd).(tea.QuitMsg)

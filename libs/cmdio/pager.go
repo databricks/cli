@@ -31,7 +31,7 @@ type pagerModel[T any] struct {
 	// the next fetch.
 	fetching   bool
 	drainAll   bool
-	firstBatch bool
+	hasPrinted bool
 	iterDone   bool
 	err        error
 }
@@ -87,7 +87,7 @@ func (m *pagerModel[T]) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = msg.err
 			return m, tea.Quit
 		}
-		m.firstBatch = true
+		m.hasPrinted = true
 		// One Println cmd (not N) keeps the batch ordered even though
 		// tea.Sequence dispatches each cmd on its own goroutine.
 		var printCmd tea.Cmd
@@ -156,7 +156,7 @@ func (m *pagerModel[T]) startDrain() tea.Cmd {
 }
 
 func (m *pagerModel[T]) View() string {
-	if m.iterDone || m.drainAll || m.err != nil || !m.firstBatch {
+	if m.iterDone || m.drainAll || m.err != nil || !m.hasPrinted {
 		return ""
 	}
 	return pagerPromptText
