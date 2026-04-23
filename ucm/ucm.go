@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -87,9 +88,9 @@ func MustLoad(ctx context.Context) *Ucm {
 	return u
 }
 
-func getRootEnv() (string, error) {
-	path := os.Getenv(RootEnv)
-	if path == "" {
+func getRootEnv(ctx context.Context) (string, error) {
+	path, ok := env.Lookup(ctx, RootEnv)
+	if !ok {
 		return "", nil
 	}
 	stat, err := os.Stat(path)
@@ -115,8 +116,9 @@ func getRootWithTraversal() (string, error) {
 	return "", fmt.Errorf("unable to locate ucm root: %s not found", config.FileNames[0])
 }
 
-func mustGetRoot(_ context.Context) (string, error) {
-	if path, err := getRootEnv(); path != "" || err != nil {
+func mustGetRoot(ctx context.Context) (string, error) {
+	path, err := getRootEnv(ctx)
+	if path != "" || err != nil {
 		return path, err
 	}
 	return getRootWithTraversal()
