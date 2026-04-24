@@ -221,6 +221,20 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 			State:   "ACTIVE",
 			Message: "App compute is active.",
 		}
+
+		// Simulate the apps platform side effect: when an app is created, it is deployed with the default source code path.
+		deployment := apps.AppDeployment{
+			SourceCodePath: "/Workspace/Users/tester@databricks.com/" + name,
+		}
+
+		deployment.DeploymentId = fmt.Sprintf("deploy-%d", nextID())
+		deployment.Status = &apps.AppDeploymentStatus{
+			State:   apps.AppDeploymentStateSucceeded,
+			Message: "Deployment succeeded",
+		}
+
+		app.ActiveDeployment = &deployment
+		app.DefaultSourceCodePath = deployment.SourceCodePath
 	}
 
 	app.Url = name + "-123.cloud.databricksapps.com"
