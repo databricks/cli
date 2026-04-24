@@ -16,13 +16,14 @@ import (
 // accidentally share state.
 const cacheDirName = ".databricks/ucm"
 
-// WorkingDir returns the absolute path of the terraform working directory
-// for the currently selected target: `<root>/.databricks/ucm/<target>/terraform`.
-// The directory is created on demand with 0o700 permissions.
+// localStateDir returns `<root>/.databricks/ucm/<target>/<sub>`, creating
+// the directory on demand with 0o700 permissions. Mirrors
+// bundle.Bundle.LocalStateDir.
 //
-// Errors if no target has been selected — the caller should have run
-// SelectTarget (or SelectDefaultTarget) before reaching here.
-func WorkingDir(u *ucm.Ucm) (string, error) {
+// Errors when u is nil, when no target has been selected, or when mkdir
+// fails. Callers are expected to have run SelectTarget (or
+// SelectDefaultTarget) before reaching here.
+func localStateDir(u *ucm.Ucm, sub string) (string, error) {
 	if u == nil {
 		return "", errors.New("ucm is nil")
 	}
@@ -30,9 +31,19 @@ func WorkingDir(u *ucm.Ucm) (string, error) {
 	if target == "" {
 		return "", errors.New("target not set; run SelectTarget before terraform operations")
 	}
-	dir := filepath.Join(u.RootPath, filepath.FromSlash(cacheDirName), target, "terraform")
+	dir := filepath.Join(u.RootPath, filepath.FromSlash(cacheDirName), target, sub)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", fmt.Errorf("create terraform working directory %s: %w", dir, err)
+		return "", fmt.Errorf("create %s: %w", dir, err)
 	}
 	return dir, nil
+}
+
+// WorkingDir returns the absolute path of the terraform working directory
+// for the currently selected target: `<root>/.databricks/ucm/<target>/terraform`.
+// The directory is created on demand with 0o700 permissions.
+//
+// Errors if no target has been selected — the caller should have run
+// SelectTarget (or SelectDefaultTarget) before reaching here.
+func WorkingDir(u *ucm.Ucm) (string, error) {
+	return localStateDir(u, "terraform")
 }
