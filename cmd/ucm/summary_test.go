@@ -15,6 +15,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// seedTfstate drops a fake terraform.tfstate at the path deploy.LocalTfStatePath
+// will resolve to for workDir + target. Keeps the summary tests self-contained
+// without plumbing test helpers into production code.
+func seedTfstate(t *testing.T, workDir, target, body string) {
+	t.Helper()
+	dir := filepath.Join(workDir, ".databricks", "ucm", target, "terraform")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "terraform.tfstate"), []byte(body), 0o600))
+}
+
 // writeUcmYml drops a ucm.yml file in a fresh temp dir and returns the dir so
 // the summary tests can drive runVerbInDir against an in-line fixture without
 // cloning the valid/ testdata tree.
@@ -56,18 +66,43 @@ workspace:
 	assert.NotContains(t, stdout, "Storage credentials:")
 }
 
-func TestCmd_Summary_ListsCatalogsAndSchemasWithURLs(t *testing.T) {
-	stdout, _, err := runVerb(t, validFixtureDir(t), "summary")
+func TestCmd_Summary_ListsCatalogsAndSchemasWhenDeployed(t *testing.T) {
+	work := cloneFixture(t, validFixtureDir(t))
+	seedTfstate(t, work, "default", `{
+  "version": 4,
+  "resources": [
+    {"type": "databricks_catalog", "name": "team_alpha", "mode": "managed", "instances": [{"attributes": {"id": "team_alpha"}}]},
+    {"type": "databricks_schema",  "name": "bronze",     "mode": "managed", "instances": [{"attributes": {"id": "team_alpha.bronze"}}]}
+  ]
+}`)
+
+	stdout, _, err := runVerbInDir(t, work, "summary")
 
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "Catalogs:")
 	assert.Contains(t, stdout, "team_alpha:")
 	assert.Contains(t, stdout, "Name: team_alpha")
-	assert.Contains(t, stdout, "URL:  https://example.cloud.databricks.com/explore/data/team_alpha")
+	assert.Contains(t, stdout, "explore/data/team_alpha")
 	assert.Contains(t, stdout, "Schemas:")
 	assert.Contains(t, stdout, "bronze:")
 	assert.Contains(t, stdout, "Name: team_alpha.bronze")
-	assert.Contains(t, stdout, "URL:  https://example.cloud.databricks.com/explore/data/team_alpha/bronze")
+	assert.Contains(t, stdout, "explore/data/team_alpha/bronze")
+}
+
+// TestCmd_Summary_ListsCatalogsAndSchemasWhenNotDeployed is the DAB-parity
+// case that prompted this fix: no local tfstate exists, so every URL-bearing
+// resource must render "(not deployed)" instead of a URL that 404s.
+func TestCmd_Summary_ListsCatalogsAndSchemasWhenNotDeployed(t *testing.T) {
+	stdout, _, err := runVerb(t, validFixtureDir(t), "summary")
+
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "Catalogs:")
+	assert.Contains(t, stdout, "team_alpha:")
+	assert.Contains(t, stdout, "URL:  (not deployed)")
+	assert.Contains(t, stdout, "Schemas:")
+	assert.Contains(t, stdout, "bronze:")
+	// No workspace-console URL should appear anywhere in the output.
+	assert.NotContains(t, stdout, "explore/data/team_alpha")
 }
 
 func TestCmd_Summary_ListsGrantsWithoutURL(t *testing.T) {
@@ -81,7 +116,37 @@ func TestCmd_Summary_ListsGrantsWithoutURL(t *testing.T) {
 	assert.NotContains(t, stdout, "URL:  https://example.cloud.databricks.com/explore/grants")
 }
 
-func TestCmd_Summary_ListsStorageCredentials(t *testing.T) {
+func TestCmd_Summary_ListsStorageCredentialsWhenDeployed(t *testing.T) {
+	work := writeUcmYml(t, `ucm:
+  name: creds-only
+
+workspace:
+  host: https://workspace.cloud.databricks.com
+
+resources:
+  storage_credentials:
+    sales_cred:
+      name: sales_cred
+      aws_iam_role:
+        role_arn: arn:aws:iam::123:role/sales
+`)
+	seedTfstate(t, work, "default", `{
+  "version": 4,
+  "resources": [
+    {"type": "databricks_storage_credential", "name": "sales_cred", "mode": "managed", "instances": [{"attributes": {"id": "sales_cred"}}]}
+  ]
+}`)
+
+	stdout, _, err := runVerbInDir(t, work, "summary")
+
+	require.NoError(t, err)
+	assert.Contains(t, stdout, "Storage credentials:")
+	assert.Contains(t, stdout, "sales_cred:")
+	assert.Contains(t, stdout, "Name: sales_cred")
+	assert.Contains(t, stdout, "explore/storage-credentials/sales_cred")
+}
+
+func TestCmd_Summary_ListsStorageCredentialsWhenNotDeployed(t *testing.T) {
 	work := writeUcmYml(t, `ucm:
   name: creds-only
 
@@ -101,8 +166,8 @@ resources:
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "Storage credentials:")
 	assert.Contains(t, stdout, "sales_cred:")
-	assert.Contains(t, stdout, "Name: sales_cred")
-	assert.Contains(t, stdout, "URL:  https://workspace.cloud.databricks.com/explore/storage-credentials/sales_cred")
+	assert.Contains(t, stdout, "URL:  (not deployed)")
+	assert.NotContains(t, stdout, "explore/storage-credentials/sales_cred")
 }
 
 // TestCmd_Summary_OutputJSONEmitsConfig exercises the JSON branch. Cobra's

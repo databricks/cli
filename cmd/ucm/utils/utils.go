@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/ucm/config/engine"
 	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/phases"
+	"github.com/databricks/cli/ucm/statemgmt"
 	"github.com/spf13/cobra"
 )
 
@@ -39,6 +40,12 @@ type ProcessOptions struct {
 	// Validate runs phases.Validate after loading the target. Set this when
 	// implementing the `validate` or `policy-check` verbs.
 	Validate bool
+
+	// InitIDs hydrates resource.ID from the local terraform.tfstate and runs
+	// the InitializeURLs mutator. Set this for read-only consumers (e.g.
+	// `ucm summary`) that need URLs to reflect deployed-vs-not-deployed
+	// state. Mirrors cmd/bundle/utils.ProcessOptions.InitIDs.
+	InitIDs bool
 }
 
 // ProcessUcm loads the ucm.yml rooted at the working directory (or
@@ -97,6 +104,25 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) *ucm.Ucm {
 	)
 	if logdiag.HasError(ctx) {
 		return u
+	}
+
+	// Hydrate resource.ID from the local tfstate and populate URL fields.
+	// Missing tfstate is treated as "first run" and leaves IDs unset, so
+	// InitializeURLs will leave URL empty and summary can render
+	// "(not deployed)". Mirrors cmd/bundle/utils.ProcessBundle's InitIDs path.
+	if opts.InitIDs {
+		ucm.ApplyFuncContext(ctx, u, func(ctx context.Context, u *ucm.Ucm) {
+			for _, d := range statemgmt.Load(ctx, u) {
+				logdiag.LogDiag(ctx, d)
+			}
+		})
+		if logdiag.HasError(ctx) {
+			return u
+		}
+		ucm.ApplyContext(ctx, u, mutator.InitializeURLs())
+		if logdiag.HasError(ctx) {
+			return u
+		}
 	}
 
 	if opts.Validate {

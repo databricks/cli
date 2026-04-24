@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/ucm/utils"
@@ -19,6 +18,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// notDeployedURL is the literal rendered when a URL-bearing resource has no
+// ID in the local tfstate. Matches the DAB wording at
+// bundle/render/render_text_output.go so users reading both tools' output
+// get a consistent signal.
+const notDeployedURL = "(not deployed)"
+
 func newSummaryCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "summary",
@@ -26,9 +31,11 @@ func newSummaryCommand() *cobra.Command {
 		Long: `Summarize the resources declared by this ucm deployment, grouped by kind,
 with workspace URLs when a Workspace.Host is configured.
 
-Mirrors ` + "`databricks bundle summary`" + `: reads the post-load, post-mutator
-config tree (not the tfstate), so the output reflects ucm.yml intent. Run
-` + "`ucm deploy`" + ` to realize those intents.
+Mirrors ` + "`databricks bundle summary`" + `: loads the per-target
+terraform.tfstate from the local cache to determine which resources have
+actually been deployed. URL lines show the workspace console link for
+resources present in state and ` + "`" + notDeployedURL + "`" + ` for resources declared in
+ucm.yml but not yet applied. Run ` + "`ucm deploy`" + ` to realize declared intents.
 
 Common invocations:
   databricks ucm summary                   # Text summary of the default target
@@ -39,7 +46,8 @@ Common invocations:
 	}
 
 	// forcePull is accepted for DAB parity but is a no-op today: summary reads
-	// the in-memory config, not cached remote state.
+	// the local tfstate, not the remote workspace. Wiring a real state pull
+	// belongs in a separate change.
 	var forcePull bool
 	var includeLocations bool
 	var showFullConfig bool
@@ -50,7 +58,7 @@ Common invocations:
 	_ = cmd.Flags().MarkHidden("show-full-config")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u := utils.ProcessUcm(cmd, utils.ProcessOptions{InitIDs: true})
 		ctx := cmd.Context()
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
@@ -107,9 +115,13 @@ type resourceRow struct {
 }
 
 // resourceGroup is a titled collection of resourceRows (e.g. "Catalogs").
+// HasURL distinguishes kinds that carry a workspace URL (so an empty URL
+// renders as "(not deployed)") from kinds that never do (Grants,
+// TagValidationRules) — those stay URL-less regardless of deploy state.
 type resourceGroup struct {
-	Title string
-	Rows  []resourceRow
+	Title  string
+	Rows   []resourceRow
+	HasURL bool
 }
 
 // renderSummaryText writes the bundle-summary-shaped text output: header
@@ -119,13 +131,19 @@ func renderSummaryText(out io.Writer, u *ucm.Ucm) {
 	renderSummaryHeader(out, u)
 
 	groups := collectResourceGroups(&u.Config)
+	cyan := color.New(color.FgCyan).SprintFunc()
 	for _, g := range groups {
 		fmt.Fprintf(out, "%s:\n", g.Title)
 		for _, r := range g.Rows {
 			fmt.Fprintf(out, "  %s:\n", r.Key)
 			fmt.Fprintf(out, "    Name: %s\n", r.Name)
-			if r.URL != "" {
-				fmt.Fprintf(out, "    URL:  %s\n", r.URL)
+			if !g.HasURL {
+				continue
+			}
+			if r.URL == "" {
+				fmt.Fprintf(out, "    URL:  %s\n", notDeployedURL)
+			} else {
+				fmt.Fprintf(out, "    URL:  %s\n", cyan(r.URL))
 			}
 		}
 	}
@@ -164,8 +182,11 @@ func renderSummaryHeader(out io.Writer, u *ucm.Ucm) {
 // collectResourceGroups gathers the declared resources into titled groups
 // sorted by title, each group's rows sorted by key. Groups with no entries
 // are omitted so the output only shows sections that exist.
+//
+// URL values are read from the config fields populated by
+// mutator.InitializeURLs — an empty URL means the resource is declared but
+// not yet deployed, and is rendered as "(not deployed)" by renderSummaryText.
 func collectResourceGroups(cfg *config.Root) []resourceGroup {
-	host := strings.TrimRight(cfg.Workspace.Host, "/")
 	var groups []resourceGroup
 
 	if len(cfg.Resources.Catalogs) > 0 {
@@ -174,24 +195,34 @@ func collectResourceGroups(cfg *config.Root) []resourceGroup {
 			rows = append(rows, resourceRow{
 				Key:  key,
 				Name: c.Name,
-				URL:  joinURL(host, "/explore/data/"+c.Name),
+				URL:  c.URL,
 			})
 		}
-		groups = append(groups, resourceGroup{Title: "Catalogs", Rows: rows})
+		groups = append(groups, resourceGroup{Title: "Catalogs", Rows: rows, HasURL: true})
 	}
 
 	if len(cfg.Resources.Schemas) > 0 {
 		rows := make([]resourceRow, 0, len(cfg.Resources.Schemas))
 		for key, s := range cfg.Resources.Schemas {
 			full := s.Name
-			var url string
 			if s.Catalog != "" {
 				full = s.Catalog + "." + s.Name
-				url = joinURL(host, "/explore/data/"+s.Catalog+"/"+s.Name)
 			}
-			rows = append(rows, resourceRow{Key: key, Name: full, URL: url})
+			rows = append(rows, resourceRow{Key: key, Name: full, URL: s.URL})
 		}
-		groups = append(groups, resourceGroup{Title: "Schemas", Rows: rows})
+		groups = append(groups, resourceGroup{Title: "Schemas", Rows: rows, HasURL: true})
+	}
+
+	if len(cfg.Resources.Volumes) > 0 {
+		rows := make([]resourceRow, 0, len(cfg.Resources.Volumes))
+		for key, v := range cfg.Resources.Volumes {
+			full := v.Name
+			if v.CatalogName != "" && v.SchemaName != "" {
+				full = v.CatalogName + "." + v.SchemaName + "." + v.Name
+			}
+			rows = append(rows, resourceRow{Key: key, Name: full, URL: v.URL})
+		}
+		groups = append(groups, resourceGroup{Title: "Volumes", Rows: rows, HasURL: true})
 	}
 
 	if len(cfg.Resources.StorageCredentials) > 0 {
@@ -200,10 +231,34 @@ func collectResourceGroups(cfg *config.Root) []resourceGroup {
 			rows = append(rows, resourceRow{
 				Key:  key,
 				Name: sc.Name,
-				URL:  joinURL(host, "/explore/storage-credentials/"+sc.Name),
+				URL:  sc.URL,
 			})
 		}
-		groups = append(groups, resourceGroup{Title: "Storage credentials", Rows: rows})
+		groups = append(groups, resourceGroup{Title: "Storage credentials", Rows: rows, HasURL: true})
+	}
+
+	if len(cfg.Resources.ExternalLocations) > 0 {
+		rows := make([]resourceRow, 0, len(cfg.Resources.ExternalLocations))
+		for key, el := range cfg.Resources.ExternalLocations {
+			rows = append(rows, resourceRow{
+				Key:  key,
+				Name: el.Name,
+				URL:  el.URL,
+			})
+		}
+		groups = append(groups, resourceGroup{Title: "External locations", Rows: rows, HasURL: true})
+	}
+
+	if len(cfg.Resources.Connections) > 0 {
+		rows := make([]resourceRow, 0, len(cfg.Resources.Connections))
+		for key, conn := range cfg.Resources.Connections {
+			rows = append(rows, resourceRow{
+				Key:  key,
+				Name: conn.Name,
+				URL:  conn.URL,
+			})
+		}
+		groups = append(groups, resourceGroup{Title: "Connections", Rows: rows, HasURL: true})
 	}
 
 	if len(cfg.Resources.Grants) > 0 {
@@ -229,13 +284,4 @@ func collectResourceGroups(cfg *config.Root) []resourceGroup {
 		slices.SortFunc(groups[i].Rows, func(a, b resourceRow) int { return cmp.Compare(a.Key, b.Key) })
 	}
 	return groups
-}
-
-// joinURL returns host+path, or "" when host is empty. Keeps the caller from
-// sprinkling if-host checks everywhere.
-func joinURL(host, path string) string {
-	if host == "" {
-		return ""
-	}
-	return host + path
 }
