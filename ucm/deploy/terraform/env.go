@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -138,6 +139,22 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		environ["TF_CLI_CONFIG_FILE"] = configFile
 	}
 
+	return nil
+}
+
+// setProxyEnvVars inherits HTTP_PROXY, HTTPS_PROXY, NO_PROXY from the
+// parent process onto environ. The case of these vars is notoriously
+// inconsistent on Unix tools; we read both upper and lower case forms
+// and emit only the upper-case form to terraform. Mirrors
+// bundle/deploy/terraform/init.go's setProxyEnvVars.
+func setProxyEnvVars(ctx context.Context, environ map[string]string) error {
+	for _, v := range []string{"http_proxy", "https_proxy", "no_proxy"} {
+		for _, key := range []string{strings.ToUpper(v), strings.ToLower(v)} {
+			if val, ok := env.Lookup(ctx, key); ok {
+				environ[strings.ToUpper(v)] = val
+			}
+		}
+	}
 	return nil
 }
 

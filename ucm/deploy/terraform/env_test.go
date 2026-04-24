@@ -215,3 +215,39 @@ func TestSetTempDirEnvVarsWindowsFallsBackToLocalStateDir(t *testing.T) {
 	want := filepath.Join(root, ".databricks", "ucm", "dev", "tmp")
 	assert.Equal(t, want, out["TMP"])
 }
+
+func TestSetProxyEnvVarsUpperCase(t *testing.T) {
+	ctx := env.Set(t.Context(), "HTTP_PROXY", "http://up:3128")
+	ctx = env.Set(ctx, "HTTPS_PROXY", "http://up:3129")
+	ctx = env.Set(ctx, "NO_PROXY", "localhost")
+
+	out := map[string]string{}
+	require.NoError(t, setProxyEnvVars(ctx, out))
+
+	assert.Equal(t, "http://up:3128", out["HTTP_PROXY"])
+	assert.Equal(t, "http://up:3129", out["HTTPS_PROXY"])
+	assert.Equal(t, "localhost", out["NO_PROXY"])
+}
+
+func TestSetProxyEnvVarsLowerCaseNormalizedToUpper(t *testing.T) {
+	ctx := env.Set(t.Context(), "http_proxy", "http://low:3128")
+	ctx = env.Set(ctx, "https_proxy", "http://low:3129")
+	ctx = env.Set(ctx, "no_proxy", "127.0.0.1")
+
+	out := map[string]string{}
+	require.NoError(t, setProxyEnvVars(ctx, out))
+
+	assert.Equal(t, "http://low:3128", out["HTTP_PROXY"])
+	assert.Equal(t, "http://low:3129", out["HTTPS_PROXY"])
+	assert.Equal(t, "127.0.0.1", out["NO_PROXY"])
+}
+
+func TestSetProxyEnvVarsOmitsUnset(t *testing.T) {
+	out := map[string]string{}
+	require.NoError(t, setProxyEnvVars(t.Context(), out))
+
+	for _, k := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"} {
+		_, ok := out[k]
+		assert.False(t, ok, "%s should not be set when neither case is on env", k)
+	}
+}
