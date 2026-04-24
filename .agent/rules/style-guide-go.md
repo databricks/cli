@@ -52,7 +52,7 @@ type myKeyType int
 
 ### Lazy initialization
 
-**RULE: Use `sync.OnceValue` or `sync.OnceValues` for cached computations, not `sync.Once` with package variables.** The `sync.OnceValue[T]` family (Go 1.21+) removes the boilerplate and makes the cached result a first-class return value.
+**RULE: Use `sync.OnceValue`, `sync.OnceValues`, or `sync.OnceFunc` for one-time initialization, not `sync.Once` with package variables.** The `sync.OnceValue[T]` family (Go 1.21+) removes the boilerplate and makes the cached result a first-class return value. Use `sync.OnceFunc` when the initialization has side effects and no return value (the CLI already uses it in places like `libs/cmdio/spinner.go`).
 
 GOOD:
 
@@ -87,9 +87,7 @@ Caveats that apply to both: results are cached forever (including errors), and a
 
 ### Constructors
 
-**RULE: When a constructor has 4 or more parameters, group them into a struct.** Readability wins fast as the parameter list grows, and adding a field later does not ripple through every call site.
-
-GOOD:
+When a constructor's parameter list is long enough that callers forget the order or misread positional arguments, consider grouping dependencies into a struct. This is a judgment call. The CLI has many ordinary constructors with 4+ parameters, and that's fine when the arguments are obvious at the call site. The signal for switching is readability, not parameter count.
 
 ```go
 type ServiceDeps struct {
@@ -101,12 +99,6 @@ type ServiceDeps struct {
 }
 
 func NewService(deps ServiceDeps) *Service { ... }
-```
-
-BAD:
-
-```go
-func NewService(client HTTPClient, logger Logger, config Config, validator Validator, metrics MetricsCollector) *Service { ... }
 ```
 
 ### Configuration patterns

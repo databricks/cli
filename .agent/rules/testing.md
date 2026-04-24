@@ -36,7 +36,7 @@ func TestApplySomeChangeFixesThings(t *testing.T) {
 
 **RULE: Use table-driven tests for multiple similar cases.** Reviewers prefer this pattern over repeating near-identical test functions when the inputs differ but the logic is the same.
 
-**RULE: Extract values used in 2 or more tests into package-level `const` or `var` at the top of the test file.** Applies to URIs, IDs, names, error messages, expected results, and any complex test fixtures. Avoids drift when the value changes and makes the intent of each test clearer.
+**RULE: If a value is shared across tests and they must change together, extract it to a package-level `const` or `var`.** Think shared fixtures, identifiers that must stay in sync across tests, and expected error messages that the tests verify as a set. Repeated literals that happen to be the same (e.g. a header name like `"Authorization"` appearing inline in many tests) are fine to leave inline; forcing extraction there hurts readability without buying anything.
 
 When writing tests, don't include an explanation in each test case in your responses. Only the tests are needed.
 

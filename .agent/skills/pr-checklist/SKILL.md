@@ -29,9 +29,15 @@ make test-exp-ssh       # only if ssh code changed
 
 ## Final cleanup scan
 
-After the commands above pass, scrub the diff before pushing:
+After the commands above pass, scrub the diff before pushing. The quick version: run `git diff @{u}` and read through what you added. Specifically:
 
-- **Debug prints**: search for `fmt.Println`, `fmt.Printf`, and `log.Printf` calls that were added for debugging. Remove them. `rg 'fmt\.(Print|Printf|Println)' $(git diff --name-only origin/main -- '*.go')` is a starting point.
+- **Debug prints**: look for newly added `fmt.Print`, `fmt.Printf`, `fmt.Println`, `log.Print`, `log.Printf`, `log.Println`, or bare `println(...)` calls. A regex that scans only added lines against your upstream branch:
+
+  ```bash
+  git diff @{u} -- '*.go' | rg '^\+.*\b(fmt|log)\.(Print|Printf|Println)\b|^\+.*\bprintln\('
+  ```
+
+  If you have no upstream yet, substitute the intended base (e.g. `origin/main`) for `@{u}`.
 - **Commented-out code**: delete it. If it's needed for reference, it lives in git history.
 - **TODOs without a ticket**: either add a ticket reference (e.g. `// TODO(DECO-1234): ...`) or remove the TODO. Un-tracked TODOs rot.
 - **Unintended files**: review `git status` and `git diff --stat` to confirm only the files you meant to change are staged.
