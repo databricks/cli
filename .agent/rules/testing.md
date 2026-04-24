@@ -10,6 +10,14 @@ description: Rules for the testing strategy of this repo
 - **Integration tests**: `integration/` directory, requires live Databricks workspace
 - **Acceptance tests**: `acceptance/` directory, uses mock HTTP server
 
+## Choosing a test level
+
+**RULE: For user-visible CLI output and mutator pipeline behavior, reach for acceptance tests first.** They exercise the full pipeline and capture the exact output the user sees. `cmd/...` commands and changes to `bundle/config/mutator/...` are the strongest candidates. Before adding a new acceptance test file, see if an existing nearby test can be extended.
+
+**Unit tests are still the right tool** for pure functions, utility code, parsing/formatting helpers, and anything you can meaningfully test without mocking the whole world. Don't force a unit into an acceptance test just because the code lives under `cmd/`, and don't add a mutator unit test that only duplicates what an acceptance test already covers.
+
+When in doubt: would the test fail in a useful way if a mutator earlier in the pipeline changed? If yes, the test wants to be an acceptance test.
+
 ## Unit tests
 
 **RULE: Each source file should have a corresponding test file.** If you add new functionality to a file, extend the test file to cover it.
@@ -54,6 +62,31 @@ Exception: mass string replacement when the change is predictable and much cheap
 
 **RULE: Add test artifacts (e.g. `.databricks`) to `Ignore` in `test.toml`.**
 
+**RULE: Commit static test inputs into the acceptance test directory; do not create them in `script` at test time.** If a file's content is dynamic, generating it in `script` is fine. For everything else, check it in and let the test read it directly; you won't need an `Ignore` entry because there's nothing to clean up.
+
+GOOD:
+
+```
+acceptance/cmd/fs/cp/file-to-dir/
+  script        # $CLI fs cp local.txt dbfs:/path/
+  test.toml
+  local.txt     # committed input
+  output.txt
+```
+
+BAD:
+
+```
+acceptance/cmd/fs/cp/file-to-dir/
+  script        # echo "contents" > local.txt; $CLI fs cp local.txt dbfs:/path/; rm local.txt
+  test.toml     # Ignore = ["local.txt"]
+  output.txt
+```
+
+**RULE: When output genuinely diverges between engines (terraform vs direct), split only the diverging file into per-engine variants.** Keep the rest of the output unified. Files named `output.$DATABRICKS_BUNDLE_ENGINE.txt` or `out.requests.$DATABRICKS_BUNDLE_ENGINE.json` are the allowed per-engine form.
+
+If the only reason for divergence is a server-side default that one engine sets and the other doesn't, set the field explicitly in `databricks.yml` so both engines produce identical output. Don't paper over it with per-engine files.
+
 ### Reference
 
 - Tests live in `acceptance/` with a nested directory structure.
@@ -67,6 +100,22 @@ Exception: mass string replacement when the change is predictable and much cheap
 - `script.prepare` files from parent directories are concatenated into the test script. Use them for shared bash helpers.
 
 ### Helper scripts
+
+**RULE: Use the `acceptance/bin/` helpers before reaching for inline `jq` or `grep` pipelines.** When a test needs to filter recorded requests, assert a substring is or isn't present, or register a dynamic replacement, the helpers handle sorting, URL query normalization, redaction hooks, and cross-platform path issues. Inline `jq` in an acceptance script is brittle and hard to read.
+
+GOOD:
+
+```bash
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to delete, 1 to update"
+trace print_requests.py //api/2.0/apps
+echo "$deployment_id:DEPLOYMENT_ID" >> ACC_REPLS
+```
+
+BAD:
+
+```bash
+{ trace jq 'select(.method == "POST" and .path == "/api/2.0/apps")' out.requests.txt; } || true
+```
 
 Available on `PATH` during test execution (from `acceptance/bin/`):
 

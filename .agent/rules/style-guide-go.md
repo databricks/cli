@@ -46,9 +46,101 @@ BAD:
 type myKeyType int
 ```
 
-**RULE: Define magic strings as named constants at the top of the file.**
+**RULE: Define magic strings as named constants at the top of the file.** When a value is used in more than one place, define a package-level constant even if the literal is short. If a related value already has a constant in the same package, follow the existing pattern instead of introducing a parallel literal.
 
 **RULE: When integrating external tools or detecting environment variables, include source reference URLs as comments.** This lets future readers trace where the behavior came from.
+
+### Control flow
+
+**RULE: For mutually exclusive, terminal branches, use `switch` instead of `if / else if`.** The branches read as clearly exclusive and Go flags a missing default when it matters.
+
+GOOD:
+
+```go
+switch {
+case override != "":
+	return override, nil
+case envValue != "":
+	return parseMode(envValue)
+default:
+	return loadFromFile()
+}
+```
+
+BAD:
+
+```go
+if override != "" {
+	return override, nil
+}
+if envValue != "" {
+	return parseMode(envValue)
+}
+return loadFromFile()
+```
+
+**RULE: Collapse `if err != nil { return err }; return nil` to just `return err`.** The pattern is never doing anything useful in the intermediate step.
+
+GOOD:
+
+```go
+return someCall()
+```
+
+BAD:
+
+```go
+if err := someCall(); err != nil {
+	return err
+}
+return nil
+```
+
+### Determinism
+
+**RULE: When you build a slice by iterating over a map and the slice influences an API payload, update mask, log line, or anything a human might diff, sort it before returning.** Go maps have randomized iteration order, so the same input produces different outputs across runs. Non-deterministic update masks hit the wire with varying field order and non-deterministic test output creates flaky comparisons.
+
+GOOD:
+
+```go
+fieldPaths := make([]string, 0, len(changes))
+for p := range changes {
+	fieldPaths = append(fieldPaths, p)
+}
+slices.Sort(fieldPaths)
+return fieldPaths
+```
+
+BAD:
+
+```go
+fieldPaths := make([]string, 0, len(changes))
+for p := range changes {
+	fieldPaths = append(fieldPaths, p)
+}
+return fieldPaths
+```
+
+### Environment variables
+
+**RULE: Use `github.com/databricks/cli/libs/env` for reading environment variables, not `os.Getenv`.** `env.Get(ctx, name)` and `env.Lookup(ctx, name)` can be overridden per-context in tests, so you don't have to mutate process-wide state to exercise a code path.
+
+GOOD:
+
+```go
+import "github.com/databricks/cli/libs/env"
+
+token := env.Get(ctx, "DATABRICKS_TOKEN")
+if path, ok := env.Lookup(ctx, "DATABRICKS_CLI_PATH"); ok {
+	// use path
+}
+```
+
+BAD:
+
+```go
+token := os.Getenv("DATABRICKS_TOKEN")
+```
 
 ### Lazy initialization
 
@@ -137,3 +229,25 @@ cmdio.LogString(ctx, "...")
 ```
 
 **RULE: Always output file paths with forward slashes, even on Windows.** Use `filepath.ToSlash` so acceptance test output is stable between OSes.
+
+**RULE: Pick log levels deliberately.** Warn for things the user should know about and might act on. Debug for diagnostic signal a developer wants but a user shouldn't see by default. Error for actual failures that also surface as a returned error. A message that's warn-by-default but isn't user-actionable belongs at debug.
+
+GOOD:
+
+```go
+if err := w.Config.Authenticate(); err != nil {
+	// user can check their profile; worth warning
+	log.Warnf(ctx, "could not authenticate: %v", err)
+}
+
+if err := cleanupExpiredCacheEntries(ctx); err != nil {
+	// internal-only, user can't act on this
+	log.Debugf(ctx, "cache cleanup failed: %v", err)
+}
+```
+
+BAD:
+
+```go
+log.Warnf(ctx, "cache cleanup failed: %v", err) // noisy, not actionable
+```
