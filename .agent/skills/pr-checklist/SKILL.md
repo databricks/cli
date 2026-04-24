@@ -26,3 +26,12 @@ cd python && make codegen && make test && make lint && make docs
 make test-exp-aitools   # only if aitools code changed
 make test-exp-ssh       # only if ssh code changed
 ```
+
+## Final cleanup scan
+
+After the commands above pass, scrub the diff before pushing:
+
+- **Debug prints**: search for `fmt.Println`, `fmt.Printf`, and `log.Printf` calls that were added for debugging. Remove them. `rg 'fmt\.(Print|Printf|Println)' $(git diff --name-only origin/main -- '*.go')` is a starting point.
+- **Commented-out code**: delete it. If it's needed for reference, it lives in git history.
+- **TODOs without a ticket**: either add a ticket reference (e.g. `// TODO(DECO-1234): ...`) or remove the TODO. Un-tracked TODOs rot.
+- **Unintended files**: review `git status` and `git diff --stat` to confirm only the files you meant to change are staged.

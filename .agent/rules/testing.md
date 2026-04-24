@@ -36,6 +36,8 @@ func TestApplySomeChangeFixesThings(t *testing.T) {
 
 **RULE: Use table-driven tests for multiple similar cases.** Reviewers prefer this pattern over repeating near-identical test functions when the inputs differ but the logic is the same.
 
+**RULE: Extract values used in 2 or more tests into package-level `const` or `var` at the top of the test file.** Applies to URIs, IDs, names, error messages, expected results, and any complex test fixtures. Avoids drift when the value changes and makes the intent of each test clearer.
+
 When writing tests, don't include an explanation in each test case in your responses. Only the tests are needed.
 
 ## Acceptance Tests

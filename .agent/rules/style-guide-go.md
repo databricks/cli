@@ -50,6 +50,65 @@ type myKeyType int
 
 **RULE: When integrating external tools or detecting environment variables, include source reference URLs as comments.** This lets future readers trace where the behavior came from.
 
+### Lazy initialization
+
+**RULE: Use `sync.OnceValue` or `sync.OnceValues` for cached computations, not `sync.Once` with package variables.** The `sync.OnceValue[T]` family (Go 1.21+) removes the boilerplate and makes the cached result a first-class return value.
+
+GOOD:
+
+```go
+var loadConfig = sync.OnceValues(func() (*Config, error) {
+	return parseConfigFile("config.yml")
+})
+
+func GetConfig() (*Config, error) {
+	return loadConfig()
+}
+```
+
+BAD:
+
+```go
+var (
+	config     *Config
+	configErr  error
+	configOnce sync.Once
+)
+
+func GetConfig() (*Config, error) {
+	configOnce.Do(func() {
+		config, configErr = parseConfigFile("config.yml")
+	})
+	return config, configErr
+}
+```
+
+Caveats that apply to both: results are cached forever (including errors), and a panic is rethrown on every subsequent call. Create a new instance if you need retry semantics.
+
+### Constructors
+
+**RULE: When a constructor has 4 or more parameters, group them into a struct.** Readability wins fast as the parameter list grows, and adding a field later does not ripple through every call site.
+
+GOOD:
+
+```go
+type ServiceDeps struct {
+	Client    HTTPClient
+	Logger    Logger
+	Config    Config
+	Validator Validator
+	Metrics   MetricsCollector
+}
+
+func NewService(deps ServiceDeps) *Service { ... }
+```
+
+BAD:
+
+```go
+func NewService(client HTTPClient, logger Logger, config Config, validator Validator, metrics MetricsCollector) *Service { ... }
+```
+
 ### Configuration patterns
 
 - Bundle config uses `dyn.Value` for dynamic typing

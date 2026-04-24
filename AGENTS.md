@@ -8,6 +8,8 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 **RULE: When moving code from one place to another, don't unnecessarily change or omit parts.** Keep refactors separate from content changes so reviewers can tell them apart.
 
+**RULE: Do not modify or remove existing comments in code you didn't write.** Comments often encode non-obvious context (a bug reference, a workaround, a reason the code is shaped a certain way) that is lost if rewritten. Leave them alone unless the user explicitly asks for a change.
+
 # Development Commands
 
 ### Building and Testing
