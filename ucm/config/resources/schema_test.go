@@ -12,17 +12,18 @@ func TestSchemaInitializeURL(t *testing.T) {
 	base, err := url.Parse("https://mycompany.databricks.com")
 	require.NoError(t, err)
 
-	s := &Schema{Name: "my_schema", Catalog: "my_catalog"}
+	s := &Schema{Name: "my_schema", Catalog: "my_catalog", ID: "my_catalog.my_schema"}
 	s.InitializeURL(*base)
 
 	assert.Equal(t, "https://mycompany.databricks.com/explore/data/my_catalog/my_schema", s.URL)
 }
 
-func TestSchemaInitializeURLSkipsWhenCatalogEmpty(t *testing.T) {
+func TestSchemaInitializeURLSkipsWhenIDEmpty(t *testing.T) {
 	base, err := url.Parse("https://mycompany.databricks.com")
 	require.NoError(t, err)
 
-	s := &Schema{Name: "my_schema"}
+	// Declared but not deployed: URL must not be set.
+	s := &Schema{Name: "my_schema", Catalog: "my_catalog"}
 	s.InitializeURL(*base)
 
 	assert.Empty(t, s.URL)

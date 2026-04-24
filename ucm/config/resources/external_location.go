@@ -23,12 +23,18 @@ type ExternalLocation struct {
 	SkipValidation bool   `json:"skip_validation,omitempty"`
 	Fallback       bool   `json:"fallback,omitempty"`
 
+	// ID is the deployed resource's terraform-state ID. Populated by
+	// statemgmt.Load from the local tfstate; never written from ucm.yml.
+	ID string `json:"id,omitempty" ucm:"readonly"`
+
 	// URL is populated by the initialize_urls mutator.
 	URL string `json:"workspace_url,omitempty" ucm:"readonly"`
 }
 
+// InitializeURL sets e.URL iff the external location has been deployed
+// (ID is non-empty).
 func (e *ExternalLocation) InitializeURL(baseURL url.URL) {
-	if e.Name == "" {
+	if e.ID == "" {
 		return
 	}
 	baseURL.Path = "explore/external-locations/" + e.Name
