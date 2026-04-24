@@ -1,5 +1,7 @@
 This file provides guidance to AI assistants when working with code in this repository.
 
+Rules prefixed `**RULE:**` are mandatory. `GOOD:` and `BAD:` labels on code snippets mark patterns to follow and patterns to avoid. This convention is a common best practice for AI-assistant rule files and is used consistently across `AGENTS.md` and `.agent/rules/*.md`.
+
 # Project Overview
 
 This is the Databricks CLI, a command-line interface for interacting with Databricks workspaces and managing Declarative Automation Bundles (DABs), formerly known as Databricks Asset Bundles. The project is written in Go and follows a modular architecture.
