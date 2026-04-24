@@ -7,8 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
-	"strings"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
@@ -60,8 +58,9 @@ type Terraform struct {
 	// WorkingDir is where main.tf.json, the plan artefact, and the state
 	// backend config live.
 	WorkingDir string
-	// Env is the environment map passed to terraform-exec. Populated by New;
-	// includes DATABRICKS_HOST/CLIENT_ID/CLIENT_SECRET + cloud-cred passthrough.
+	// Env is the environment map passed to terraform-exec. Populated by New
+	// from buildEnv — auth.Env(authCfg) + inheritEnvVars + temp/proxy
+	// passthrough + DATABRICKS_CLI_PATH absolute-ization.
 	Env map[string]string
 
 	runner         tfRunner
@@ -77,8 +76,8 @@ type Terraform struct {
 
 // New wires up a Terraform for the given ucm. It resolves (and if necessary
 // downloads via hc-install) the terraform binary, computes the working
-// directory, and assembles the env-var map used for auth and cloud-cred
-// passthrough. The caller is expected to have run SelectTarget first.
+// directory, and assembles the env-var map used for auth and process
+// plumbing. The caller is expected to have run SelectTarget first.
 func New(ctx context.Context, u *ucm.Ucm) (*Terraform, error) {
 	workingDir, err := WorkingDir(u)
 	if err != nil {
@@ -94,7 +93,10 @@ func New(ctx context.Context, u *ucm.Ucm) (*Terraform, error) {
 	if err != nil {
 		return nil, err
 	}
-	envMap := buildEnv(ctx, authCfg)
+	envMap, err := buildEnv(ctx, u, authCfg)
+	if err != nil {
+		return nil, err
+	}
 
 	user, lockDir := lockIdentity(ctx, u)
 
@@ -167,113 +169,52 @@ func resolveAuthConfig(u *ucm.Ucm) (*config.Config, error) {
 	return w.Config, nil
 }
 
-// buildEnv assembles the env map passed to terraform-exec.
+// buildEnv assembles the env map passed to terraform-exec. Mirrors the
+// order DAB's bundle/deploy/terraform/init.go uses:
 //
-// It starts with the resolved SDK auth config (so `--profile` selections and
-// OAuth-cache resolutions are visible to the subprocess), then falls back to
-// passthrough of auth env vars set on the parent process. Cloud credentials
-// (AWS, Azure, GCP) flow through unchanged — the underlay resources will
-// need them once they land. PATH/HOME/TMPDIR/proxy are inherited so the
-// subprocess runs in a sane environment.
+//  1. auth.Env(authCfg) seeds DATABRICKS_* from the resolved SDK config
+//     so --profile and OAuth-cache selections win over parent-env state.
+//  2. inheritEnvVars copies envCopy, OIDC tokens, Azure DevOps SYSTEM_*,
+//     and DATABRICKS_TF_CLI_CONFIG_FILE (version-gated → TF_CLI_CONFIG_FILE).
+//  3. setTempDirEnvVars sets TMP/TEMP/TMPDIR, falling back to
+//     localStateDir("tmp") on Windows to dodge MAX_PATH.
+//  4. setProxyEnvVars forwards HTTP_PROXY / HTTPS_PROXY / NO_PROXY.
+//  5. resolveDatabricksCliPath absolute-izes DATABRICKS_CLI_PATH so the
+//     terraform subprocess can find the parent CLI from .databricks/ucm/...
 //
-// Ordering matters: auth.Env wins over the passthrough fallback so a
-// --profile override materialised through the SDK cannot be clobbered by a
-// stale DATABRICKS_CONFIG_PROFILE lingering in the parent env.
-func buildEnv(ctx context.Context, authCfg *config.Config) map[string]string {
+// Cloud-cred env vars (AWS/Azure/GCP) are intentionally NOT forwarded
+// — UCM strictly mirrors DAB here. Revisit when UCM gains resources
+// that need them.
+func buildEnv(ctx context.Context, u *ucm.Ucm, authCfg *config.Config) (map[string]string, error) {
 	out := map[string]string{}
 
-	passthroughKeys := []string{
-		// Databricks auth — consumed by the terraform-provider-databricks.
-		// See https://registry.terraform.io/providers/databricks/databricks/latest/docs
-		"DATABRICKS_HOST",
-		"DATABRICKS_CLIENT_ID",
-		"DATABRICKS_CLIENT_SECRET",
-		"DATABRICKS_TOKEN",
-		"DATABRICKS_CONFIG_PROFILE",
-		"DATABRICKS_CONFIG_FILE",
-		"DATABRICKS_ACCOUNT_ID",
-		"DATABRICKS_AUTH_TYPE",
-		"DATABRICKS_METADATA_SERVICE_URL",
-
-		// AWS cloud-underlay credentials. Out-of-scope for M1, but passing
-		// them through now keeps the wrapper from re-shaping once AWS
-		// resources land.
-		"AWS_ACCESS_KEY_ID",
-		"AWS_SECRET_ACCESS_KEY",
-		"AWS_SESSION_TOKEN",
-		"AWS_REGION",
-		"AWS_DEFAULT_REGION",
-		"AWS_PROFILE",
-		"AWS_WEB_IDENTITY_TOKEN_FILE",
-		"AWS_ROLE_ARN",
-		"AWS_ROLE_SESSION_NAME",
-
-		// Azure cloud-underlay credentials.
-		"AZURE_TENANT_ID",
-		"AZURE_CLIENT_ID",
-		"AZURE_CLIENT_SECRET",
-		"AZURE_SUBSCRIPTION_ID",
-		"AZURE_FEDERATED_TOKEN_FILE",
-
-		// GCP cloud-underlay credentials.
-		"GOOGLE_CREDENTIALS",
-		"GOOGLE_APPLICATION_CREDENTIALS",
-		"GOOGLE_PROJECT",
-		"GOOGLE_REGION",
-
-		// Process plumbing.
-		"HOME",
-		"USERPROFILE",
-		"PATH",
-		"TF_CLI_CONFIG_FILE",
-	}
-	for _, k := range passthroughKeys {
-		if v, ok := env.Lookup(ctx, k); ok {
-			out[k] = v
-		}
-	}
-
-	// $DATABRICKS_TF_CLI_CONFIG_FILE maps to $TF_CLI_CONFIG_FILE so the
-	// VSCode extension's filesystem-mirror config is picked up when it lines
-	// up with the provider version we actually use.
-	if v, ok := env.Lookup(ctx, CliConfigPathEnv); ok && v != "" {
-		if _, err := os.Stat(v); err == nil {
-			out["TF_CLI_CONFIG_FILE"] = v
-		}
-	}
-
-	// Proxy variables — both upper and lower case; terraform-exec is fine
-	// with either, but downstream tools on macOS/Linux commonly read the
-	// uppercase form.
-	for _, v := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"} {
-		for _, key := range []string{v, strings.ToLower(v)} {
-			if val, ok := env.Lookup(ctx, key); ok {
-				out[strings.ToUpper(v)] = val
-			}
-		}
-	}
-
-	// TMPDIR / TMP — let terraform create temp files in a place it can write.
-	if runtime.GOOS == "windows" {
-		for _, k := range []string{"TMP", "TEMP"} {
-			if v, ok := env.Lookup(ctx, k); ok {
-				out[k] = v
-			}
-		}
-	} else if v, ok := env.Lookup(ctx, "TMPDIR"); ok {
-		out["TMPDIR"] = v
-	}
-
-	// Overlay the resolved SDK auth on top so `--profile` or OAuth-cache
-	// selections survive into the subprocess even when the parent env has
-	// no DATABRICKS_* set.
 	if authCfg != nil {
 		for k, v := range auth.Env(authCfg) {
 			out[k] = v
 		}
 	}
 
-	return out
+	if err := inheritEnvVars(ctx, out); err != nil {
+		return nil, err
+	}
+	if err := setTempDirEnvVars(ctx, out, u); err != nil {
+		return nil, err
+	}
+	if err := setProxyEnvVars(ctx, out); err != nil {
+		return nil, err
+	}
+
+	// Pre-seed DATABRICKS_CLI_PATH from the parent env so
+	// resolveDatabricksCliPath has something to absolute-ize when
+	// authCfg is nil. inheritEnvVars's envCopy allow-list
+	// intentionally omits this key — it needs to be processed (made
+	// absolute), not forwarded verbatim.
+	if v, ok := env.Lookup(ctx, "DATABRICKS_CLI_PATH"); ok && v != "" {
+		out["DATABRICKS_CLI_PATH"] = v
+	}
+	resolveDatabricksCliPath(out)
+
+	return out, nil
 }
 
 // lockIdentity returns the (user, lockTargetDir) pair used to construct a

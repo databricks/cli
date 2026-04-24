@@ -1,6 +1,7 @@
 package terraform
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -9,79 +10,102 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestBuildEnvPassesAuthAndCloudVars pins the wire-level auth and cloud-cred
-// env variables we expect to forward to the terraform subprocess. The test
-// uses libs/env's context-backed environment so it doesn't pollute the
-// process-wide os.Environ.
-func TestBuildEnvPassesAuthAndCloudVars(t *testing.T) {
-	ctx := env.Set(t.Context(), "DATABRICKS_HOST", "https://example.cloud.databricks.com")
-	ctx = env.Set(ctx, "DATABRICKS_CLIENT_ID", "sp-client-id")
-	ctx = env.Set(ctx, "DATABRICKS_CLIENT_SECRET", "sp-client-secret")
-	ctx = env.Set(ctx, "AWS_ACCESS_KEY_ID", "AKIA...")
-	ctx = env.Set(ctx, "AWS_SECRET_ACCESS_KEY", "secret")
+// TestBuildEnvForwardsAuthFromAuthConfig pins the wire-level DATABRICKS_*
+// env vars we expect to forward to terraform — they reach the subprocess
+// via the resolved SDK auth config (auth.Env), NOT via parent-env
+// passthrough. Mirrors DAB ordering.
+func TestBuildEnvForwardsAuthFromAuthConfig(t *testing.T) {
+	u, _ := newRenderUcm(t)
+	authCfg := &config.Config{
+		Host:  "https://example.cloud.databricks.com",
+		Token: "resolved-token",
+	}
+
+	got, err := buildEnv(t.Context(), u, authCfg)
+	require.NoError(t, err)
+
+	assert.Equal(t, "https://example.cloud.databricks.com", got["DATABRICKS_HOST"])
+	assert.Equal(t, "resolved-token", got["DATABRICKS_TOKEN"])
+}
+
+// TestBuildEnvDropsCloudCreds pins the strict-DAB-alignment decision:
+// AWS/Azure/GCP cloud-underlay credentials are NOT forwarded to terraform.
+// Revisit when UCM gains resources that actually need them (tracked
+// issue).
+func TestBuildEnvDropsCloudCreds(t *testing.T) {
+	u, _ := newRenderUcm(t)
+	ctx := env.Set(t.Context(), "AWS_ACCESS_KEY_ID", "AKIA...")
 	ctx = env.Set(ctx, "AZURE_TENANT_ID", "azure-tenant")
 	ctx = env.Set(ctx, "GOOGLE_CREDENTIALS", `{"type":"service_account"}`)
 
-	got := buildEnv(ctx, nil)
+	got, err := buildEnv(ctx, u, nil)
+	require.NoError(t, err)
 
-	for _, key := range []string{
-		"DATABRICKS_HOST",
-		"DATABRICKS_CLIENT_ID",
-		"DATABRICKS_CLIENT_SECRET",
+	for _, k := range []string{
 		"AWS_ACCESS_KEY_ID",
-		"AWS_SECRET_ACCESS_KEY",
 		"AZURE_TENANT_ID",
 		"GOOGLE_CREDENTIALS",
 	} {
-		_, ok := got[key]
-		assert.Truef(t, ok, "expected %s to be passed through", key)
+		_, ok := got[k]
+		assert.Falsef(t, ok, "%s must not be forwarded (strict DAB alignment)", k)
 	}
-
-	assert.Equal(t, "https://example.cloud.databricks.com", got["DATABRICKS_HOST"])
-	assert.Equal(t, "sp-client-id", got["DATABRICKS_CLIENT_ID"])
 }
 
-func TestBuildEnvOmitsUnsetVars(t *testing.T) {
-	ctx := env.Set(t.Context(), "DATABRICKS_HOST", "https://example.cloud.databricks.com")
-	got := buildEnv(ctx, nil)
+// TestBuildEnvWithoutAuthConfigDropsDatabricksHost pins that parent-env
+// DATABRICKS_HOST reaches terraform only via SDK config → auth.Env. UCM
+// no longer passes DATABRICKS_HOST through from the parent env directly;
+// the SDK's config resolution does that on our behalf.
+func TestBuildEnvWithoutAuthConfigDropsDatabricksHost(t *testing.T) {
+	u, _ := newRenderUcm(t)
+	ctx := env.Set(t.Context(), "DATABRICKS_HOST", "https://parent.cloud.databricks.com")
 
-	_, ok := got["DATABRICKS_CLIENT_ID"]
-	assert.False(t, ok, "unset var should not leak into env map")
-	_, ok = got["AWS_ACCESS_KEY_ID"]
-	assert.False(t, ok)
+	got, err := buildEnv(ctx, u, nil)
+	require.NoError(t, err)
+
+	_, ok := got["DATABRICKS_HOST"]
+	assert.False(t, ok,
+		"DATABRICKS_HOST reaches terraform only via auth.Env; parent-env passthrough was dropped for DAB alignment")
 }
 
+// TestBuildEnvMapsProxyVarsUppercase verifies setProxyEnvVars is wired
+// into buildEnv.
 func TestBuildEnvMapsProxyVarsUppercase(t *testing.T) {
+	u, _ := newRenderUcm(t)
 	ctx := env.Set(t.Context(), "http_proxy", "http://proxy.example:3128")
 	ctx = env.Set(ctx, "HTTPS_PROXY", "http://proxy.example:3129")
 
-	got := buildEnv(ctx, nil)
+	got, err := buildEnv(ctx, u, nil)
+	require.NoError(t, err)
+
 	assert.Equal(t, "http://proxy.example:3128", got["HTTP_PROXY"])
 	assert.Equal(t, "http://proxy.example:3129", got["HTTPS_PROXY"])
 }
 
-// TestBuildEnvMaterializesResolvedAuth pins the behaviour that makes
-// `ucm plan`/`ucm deploy` work when auth comes from ~/.databrickscfg
-// instead of DATABRICKS_* env vars. The resolved SDK config must be
-// serialised into DATABRICKS_* so the terraform subprocess can auth.
-func TestBuildEnvMaterializesResolvedAuth(t *testing.T) {
-	authCfg := &config.Config{
-		Host:  "https://profile.cloud.databricks.com",
-		Token: "resolved-token",
-	}
-	got := buildEnv(t.Context(), authCfg)
-	assert.Equal(t, "https://profile.cloud.databricks.com", got["DATABRICKS_HOST"])
-	assert.Equal(t, "resolved-token", got["DATABRICKS_TOKEN"])
-}
-
-// TestBuildEnvResolvedAuthOverridesPassthrough pins the overlay ordering:
-// a resolved --profile host must win over a stale DATABRICKS_HOST that
-// happens to be set on the parent env.
+// TestBuildEnvResolvedAuthOverridesPassthrough pins the DAB ordering:
+// auth.Env seeds the map first; inheritEnvVars / other passthrough
+// cannot override DATABRICKS_* already set by auth resolution.
 func TestBuildEnvResolvedAuthOverridesPassthrough(t *testing.T) {
+	u, _ := newRenderUcm(t)
 	ctx := env.Set(t.Context(), "DATABRICKS_HOST", "https://stale.cloud.databricks.com")
 	authCfg := &config.Config{Host: "https://profile.cloud.databricks.com"}
-	got := buildEnv(ctx, authCfg)
+	got, err := buildEnv(ctx, u, authCfg)
+	require.NoError(t, err)
+
 	assert.Equal(t, "https://profile.cloud.databricks.com", got["DATABRICKS_HOST"])
+}
+
+// TestBuildEnvAbsolutizesRelativeDatabricksCliPath pins the UCM-local
+// fix for the shared DAB bug where DATABRICKS_CLI_PATH can be a
+// relative path that fails to resolve from terraform's working dir.
+func TestBuildEnvAbsolutizesRelativeDatabricksCliPath(t *testing.T) {
+	u, _ := newRenderUcm(t)
+	ctx := env.Set(t.Context(), "DATABRICKS_CLI_PATH", "../cli/cli")
+
+	got, err := buildEnv(ctx, u, nil)
+	require.NoError(t, err)
+
+	assert.True(t, filepath.IsAbs(got["DATABRICKS_CLI_PATH"]),
+		"expected absolute path, got %q", got["DATABRICKS_CLI_PATH"])
 }
 
 func TestLockIdentityDerivesPathFromTarget(t *testing.T) {

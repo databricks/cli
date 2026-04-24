@@ -1,0 +1,209 @@
+package terraform
+
+import (
+	"context"
+	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/ucm"
+)
+
+// getEnvVarWithMatchingVersion returns envVarName's value only when the
+// path it points to exists and, if versionVarName is set, its value
+// matches currentVersion. Mirrors bundle/deploy/terraform/init.go. The
+// VSCode extension sets DATABRICKS_TF_CLI_CONFIG_FILE + the corresponding
+// DATABRICKS_TF_PROVIDER_VERSION so that a cached provider mirror is only
+// honoured when it was built against the provider version we actually
+// use; using a mismatched mirror would make terraform init fail.
+func getEnvVarWithMatchingVersion(ctx context.Context, envVarName, versionVarName, currentVersion string) (string, error) {
+	envValue := env.Get(ctx, envVarName)
+	versionValue := env.Get(ctx, versionVarName)
+
+	if envValue == "" {
+		log.Debugf(ctx, "%s is not defined", envVarName)
+		return "", nil
+	}
+
+	if _, err := os.Stat(envValue); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			log.Debugf(ctx, "%s at %s does not exist", envVarName, envValue)
+			return "", nil
+		}
+		return "", err
+	}
+
+	if versionValue == "" {
+		return envValue, nil
+	}
+
+	if versionValue != currentVersion {
+		log.Debugf(ctx, "%s as %s does not match the current version %s, ignoring %s", versionVarName, versionValue, currentVersion, envVarName)
+		return "", nil
+	}
+	return envValue, nil
+}
+
+// envCopy enumerates environment variables that are passed through to the
+// terraform subprocess verbatim. Mirrors bundle/deploy/terraform/init.go.
+var envCopy = []string{
+	// $HOME — terraform and the databricks provider read ~/.databrickscfg,
+	// ~/.databricks/token-cache, etc. from HOME.
+	"HOME",
+
+	// $USERPROFILE — Windows equivalent of HOME; used by Azure CLI to
+	// locate stored credentials and metadata.
+	"USERPROFILE",
+
+	// $PATH — so the databricks provider can invoke auxiliary tools
+	// (`az`, `gcloud`) that live on PATH.
+	"PATH",
+
+	// $AZURE_CONFIG_DIR — set by Azure DevOps' AzureCLI@2 task so
+	// downstream az invocations share the same config dir.
+	"AZURE_CONFIG_DIR",
+
+	// $TF_CLI_CONFIG_FILE — override terraform provider source in
+	// development. See
+	// https://developer.hashicorp.com/terraform/cli/config/config-file
+	"TF_CLI_CONFIG_FILE",
+
+	// $USE_SDK_V2_RESOURCES / $USE_SDK_V2_DATA_SOURCES — escape hatch for
+	// the databricks provider's plugin-framework ↔ SDKv2 migration.
+	// See https://registry.terraform.io/providers/databricks/databricks/latest/docs/guides/troubleshooting#plugin-framework-migration-problems
+	"USE_SDK_V2_RESOURCES",
+	"USE_SDK_V2_DATA_SOURCES",
+}
+
+// azureDevOpsSystemVars enumerates Azure DevOps SYSTEM_* variables the
+// databricks SDK reads during OIDC authentication on Azure DevOps
+// pipelines. Passed through so terraform-spawned SDK calls can use the
+// same OIDC token exchange the parent CLI would.
+var azureDevOpsSystemVars = []string{
+	"SYSTEM_ACCESSTOKEN",
+	"SYSTEM_COLLECTIONID",
+	"SYSTEM_COLLECTIONURI",
+	"SYSTEM_DEFINITIONID",
+	"SYSTEM_HOSTTYPE",
+	"SYSTEM_JOBID",
+	"SYSTEM_OIDCREQUESTURI",
+	"SYSTEM_PLANID",
+	"SYSTEM_TEAMFOUNDATIONCOLLECTIONURI",
+	"SYSTEM_TEAMPROJECT",
+	"SYSTEM_TEAMPROJECTID",
+}
+
+// inheritEnvVars populates environ with env vars that should cross into
+// the terraform subprocess: the envCopy allow-list, OIDC token (direct or
+// indirect via DATABRICKS_OIDC_TOKEN_ENV), Azure DevOps SYSTEM_* vars,
+// and a version-gated DATABRICKS_TF_CLI_CONFIG_FILE → TF_CLI_CONFIG_FILE
+// mapping. Mirrors bundle/deploy/terraform/init.go's inheritEnvVars.
+func inheritEnvVars(ctx context.Context, environ map[string]string) error {
+	for _, key := range envCopy {
+		if v, ok := env.Lookup(ctx, key); ok {
+			environ[key] = v
+		}
+	}
+
+	// DATABRICKS_OIDC_TOKEN_ENV points at another env var that holds the
+	// actual token. When unset we fall back to DATABRICKS_OIDC_TOKEN.
+	oidcTokenEnv, ok := env.Lookup(ctx, "DATABRICKS_OIDC_TOKEN_ENV")
+	if ok {
+		environ["DATABRICKS_OIDC_TOKEN_ENV"] = oidcTokenEnv
+	} else {
+		oidcTokenEnv = "DATABRICKS_OIDC_TOKEN"
+	}
+	if token, ok := env.Lookup(ctx, oidcTokenEnv); ok {
+		environ[oidcTokenEnv] = token
+	}
+
+	for _, k := range azureDevOpsSystemVars {
+		if v, ok := env.Lookup(ctx, k); ok {
+			environ[k] = v
+		}
+	}
+
+	// Map DATABRICKS_TF_CLI_CONFIG_FILE → TF_CLI_CONFIG_FILE only when the
+	// mirror matches the provider version we actually use; otherwise
+	// terraform init would fail to download the right version.
+	configFile, err := getEnvVarWithMatchingVersion(ctx, CliConfigPathEnv, ProviderVersionEnv, ProviderVersion)
+	if err != nil {
+		return err
+	}
+	if configFile != "" {
+		log.Debugf(ctx, "Using Terraform CLI config from %s at %s", CliConfigPathEnv, configFile)
+		environ["TF_CLI_CONFIG_FILE"] = configFile
+	}
+
+	return nil
+}
+
+// setProxyEnvVars inherits HTTP_PROXY, HTTPS_PROXY, NO_PROXY from the
+// parent process onto environ. The case of these vars is notoriously
+// inconsistent on Unix tools; we read both upper and lower case forms
+// and emit only the upper-case form to terraform. Mirrors
+// bundle/deploy/terraform/init.go's setProxyEnvVars.
+func setProxyEnvVars(ctx context.Context, environ map[string]string) error {
+	for _, v := range []string{"http_proxy", "https_proxy", "no_proxy"} {
+		for _, key := range []string{strings.ToUpper(v), strings.ToLower(v)} {
+			if val, ok := env.Lookup(ctx, key); ok {
+				environ[strings.ToUpper(v)] = val
+			}
+		}
+	}
+	return nil
+}
+
+// resolveDatabricksCliPath rewrites a relative DATABRICKS_CLI_PATH on
+// environ into its absolute form so the terraform subprocess — which
+// runs from .databricks/ucm/<target>/terraform — can still invoke the
+// parent CLI. Basename-only values are left as-is (the SDK will look
+// them up on $PATH). Values that are already absolute are left as-is.
+//
+// DAB carries the same bug in bundle/config/workspace.go's init() but
+// the fork rules forbid UCM PRs from editing bundle/**; until a
+// separate upstream fix lands, UCM absolute-izes locally.
+func resolveDatabricksCliPath(environ map[string]string) {
+	v, ok := environ["DATABRICKS_CLI_PATH"]
+	if !ok || v == "" {
+		return
+	}
+	if v == filepath.Base(v) {
+		return
+	}
+	if abs, err := filepath.Abs(v); err == nil {
+		environ["DATABRICKS_CLI_PATH"] = abs
+	}
+}
+
+// setTempDirEnvVars sets TMP/TEMP (Windows) or TMPDIR (Unix) on environ.
+// On Windows, if none of TMP/TEMP are set on the parent process, it
+// falls back to `<root>/.databricks/ucm/<target>/tmp` to avoid MAX_PATH
+// blow-ups for deeply nested state dirs. Mirrors
+// bundle/deploy/terraform/init.go's setTempDirEnvVars.
+func setTempDirEnvVars(ctx context.Context, environ map[string]string, u *ucm.Ucm) error {
+	switch runtime.GOOS {
+	case "windows":
+		if v, ok := env.Lookup(ctx, "TMP"); ok {
+			environ["TMP"] = v
+		} else if v, ok := env.Lookup(ctx, "TEMP"); ok {
+			environ["TEMP"] = v
+		} else {
+			tmpDir, err := localStateDir(u, "tmp")
+			if err != nil {
+				return err
+			}
+			environ["TMP"] = tmpDir
+		}
+	default:
+		if v, ok := env.Lookup(ctx, "TMPDIR"); ok {
+			environ["TMPDIR"] = v
+		}
+	}
+	return nil
+}
