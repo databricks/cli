@@ -25,7 +25,3 @@ func RandomName(prefix ...string) string {
 	sb.WriteString(strings.ReplaceAll(uuid.New().String(), "-", ""))
 	return sb.String()
 }
-
-func ReplaceWindowsLineEndings(s string) string {
-	return strings.ReplaceAll(s, "\r\n", "\n")
-}

@@ -637,15 +637,6 @@ func MustParsePath(s string) *PathNode {
 	return path
 }
 
-// MustParsePattern parses a pattern string and panics on error. Wildcards are allowed.
-func MustParsePattern(s string) *PatternNode {
-	pattern, err := ParsePattern(s)
-	if err != nil {
-		panic(err)
-	}
-	return pattern
-}
-
 // isReservedFieldChar checks if character is reserved and cannot be used in field names
 func isReservedFieldChar(ch byte) bool {
 	switch ch {
