@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -156,6 +157,28 @@ func setProxyEnvVars(ctx context.Context, environ map[string]string) error {
 		}
 	}
 	return nil
+}
+
+// resolveDatabricksCliPath rewrites a relative DATABRICKS_CLI_PATH on
+// environ into its absolute form so the terraform subprocess — which
+// runs from .databricks/ucm/<target>/terraform — can still invoke the
+// parent CLI. Basename-only values are left as-is (the SDK will look
+// them up on $PATH). Values that are already absolute are left as-is.
+//
+// DAB carries the same bug in bundle/config/workspace.go's init() but
+// the fork rules forbid UCM PRs from editing bundle/**; until a
+// separate upstream fix lands, UCM absolute-izes locally.
+func resolveDatabricksCliPath(environ map[string]string) {
+	v, ok := environ["DATABRICKS_CLI_PATH"]
+	if !ok || v == "" {
+		return
+	}
+	if v == filepath.Base(v) {
+		return
+	}
+	if abs, err := filepath.Abs(v); err == nil {
+		environ["DATABRICKS_CLI_PATH"] = abs
+	}
 }
 
 // setTempDirEnvVars sets TMP/TEMP (Windows) or TMPDIR (Unix) on environ.

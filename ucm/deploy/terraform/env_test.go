@@ -251,3 +251,38 @@ func TestSetProxyEnvVarsOmitsUnset(t *testing.T) {
 		assert.False(t, ok, "%s should not be set when neither case is on env", k)
 	}
 }
+
+func TestResolveDatabricksCliPathLeavesAbsoluteUnchanged(t *testing.T) {
+	abs := filepath.Join(t.TempDir(), "cli")
+	environ := map[string]string{"DATABRICKS_CLI_PATH": abs}
+
+	resolveDatabricksCliPath(environ)
+
+	assert.Equal(t, abs, environ["DATABRICKS_CLI_PATH"])
+}
+
+func TestResolveDatabricksCliPathLeavesBasenameUnchanged(t *testing.T) {
+	environ := map[string]string{"DATABRICKS_CLI_PATH": "databricks"}
+
+	resolveDatabricksCliPath(environ)
+
+	// Basename-only means "use PATH resolution in the child"; we don't
+	// want to rewrite it to an absolute cwd-relative path.
+	assert.Equal(t, "databricks", environ["DATABRICKS_CLI_PATH"])
+}
+
+func TestResolveDatabricksCliPathResolvesRelative(t *testing.T) {
+	environ := map[string]string{"DATABRICKS_CLI_PATH": "../cli/cli"}
+
+	resolveDatabricksCliPath(environ)
+
+	assert.True(t, filepath.IsAbs(environ["DATABRICKS_CLI_PATH"]),
+		"expected absolute path, got %q", environ["DATABRICKS_CLI_PATH"])
+}
+
+func TestResolveDatabricksCliPathNoop(t *testing.T) {
+	environ := map[string]string{}
+	resolveDatabricksCliPath(environ)
+	_, ok := environ["DATABRICKS_CLI_PATH"]
+	assert.False(t, ok)
+}
