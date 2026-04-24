@@ -281,19 +281,9 @@ func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
 	c := fromContext(ctx)
 	if _, ok := v.(listingInterface); ok {
-		panic("use RenderIteratorWithTemplate instead")
+		panic("listings must use RenderIterator, not RenderWithTemplate")
 	}
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, headerTemplate, template)
-}
-
-func RenderIteratorWithTemplate[T any](ctx context.Context, i listing.Iterator[T], headerTemplate, template string) error {
-	c := fromContext(ctx)
-	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, headerTemplate, template)
-}
-
-func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error {
-	c := fromContext(ctx)
-	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 var renderFuncMap = template.FuncMap{

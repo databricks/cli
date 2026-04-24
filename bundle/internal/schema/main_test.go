@@ -125,6 +125,7 @@ func getAnnotations(path string) (annotation.File, error) {
 	return data, err
 }
 
+//deadcode:allow disabled pending annotation system overhaul; preserved intentionally
 func DisabledTestNoDuplicatedAnnotations(t *testing.T) {
 	// Check for duplicated annotations in annotation files
 	files := []string{

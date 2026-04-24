@@ -53,11 +53,6 @@ func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, er
 	}
 }
 
-func IsInteractive(ctx context.Context) bool {
-	c := fromContext(ctx)
-	return c.capabilities.SupportsInteractive()
-}
-
 func IsPromptSupported(ctx context.Context) bool {
 	c := fromContext(ctx)
 	return c.capabilities.SupportsPrompt()

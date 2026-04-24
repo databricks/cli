@@ -6,18 +6,16 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "First deploy: creates app"
-trace $CLI bundle deploy
-
-title "Second deploy: pushes code with config"
 trace $CLI bundle deploy
 
 title "Verify no drift after deploy"
-trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' | jq 'del(.[] | select(.action == "skip"))' > out.plan.direct.json
+
+SOURCE_CODE_PATH=$(trace $CLI apps get $UNIQUE_NAME --output json | jq -r '.active_deployment.source_code_path')
 
 title "Simulate out-of-band deployment with changed command and env"
 $CLI apps deploy $UNIQUE_NAME --no-wait --json '{
-    "source_code_path": "./app",
+    "source_code_path": "'$SOURCE_CODE_PATH'",
     "mode": "SNAPSHOT",
     "command": ["streamlit", "run", "dashboard.py"],
     "env_vars": [
@@ -28,22 +26,14 @@ $CLI apps deploy $UNIQUE_NAME --no-wait --json '{
 
 title "Plan should detect config drift"
 trace $CLI bundle plan
-$CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' > out.plan.direct.json
+# Skip entries with action "skip"
+$CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' | jq 'del(.[] | select(.action == "skip"))' >> out.plan.direct.json
 
 title "Redeploy to fix drift"
 trace $CLI bundle deploy
 
 title "Verify no drift after fix"
-trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.apps.myapp".changes.config // .plan."resources.apps.myapp".changes' | jq 'del(.[] | select(.action == "skip"))' >> out.plan.direct.json
 
-title "Simulate out-of-band deployment with git_source added"
-$CLI apps deploy $UNIQUE_NAME --no-wait --json '{
-    "source_code_path": "./app",
-    "mode": "SNAPSHOT",
-    "git_source": {"branch": "feature-branch"},
-    "command": ["python", "app.py"],
-    "env_vars": [{"name": "MY_VAR", "value": "original_value"}]
-  }' > /dev/null
-
-title "Plan should detect git_source drift"
-trace $CLI bundle plan
+# TODO: add test for git_source drift when git_source is supported in the Deploy API
+# Currently it fails with the error: Git source reference is required

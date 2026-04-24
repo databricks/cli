@@ -1,0 +1,8 @@
+# Shared setup: isolate HOME and clear inherited auth env vars so each
+# storage-mode test is deterministic regardless of the runner.
+sethome "./home"
+
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+unset DATABRICKS_AUTH_STORAGE
