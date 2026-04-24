@@ -111,7 +111,7 @@ parentPath = "/Workspace" + parentPath
 
 # Common Mistakes
 
-**RULE: Do not add dependencies without checking license compatibility.**
+**RULE: When adding a direct Go dependency, annotate its license in `go.mod` and update `NOTICE`.** The allowed SPDX identifiers are enforced by `internal/build/license_test.go`: currently `Apache-2.0`, `BSD-2-Clause`, `BSD-3-Clause`, `MIT`, and `MPL-2.0`. Each direct `require` line in `go.mod` must have a matching SPDX suffix comment (e.g. `// MIT`), and a corresponding entry belongs in `NOTICE` under the appropriate license section. If a dep's license isn't on the allowlist, the test fails — discuss before adding.
 
 **RULE: Do not use `os.Exit()` outside of `main.go`.** `main.go` owns the exit path; calling `os.Exit()` elsewhere skips deferred cleanup and complicates testing.
 
