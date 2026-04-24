@@ -61,7 +61,7 @@ targets:
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "https://example.cloud.databricks.com", cfg.Workspace.Host)
-	assert.Equal(t, "0000-0000", cfg.Account.AccountId)
+	assert.Equal(t, "0000-0000", cfg.Account.AccountID)
 
 	require.Contains(t, cfg.Resources.Catalogs, "team_alpha")
 	assert.Equal(t, "team_alpha", cfg.Resources.Catalogs["team_alpha"].Name)

@@ -12,7 +12,10 @@ import (
 	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config"
+	"github.com/databricks/cli/ucm/config/mutator"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -35,14 +38,16 @@ Common invocations:
 		PreRunE: utils.MustWorkspaceClient,
 	}
 
-	// forcePull and includeLocations are accepted for DAB parity but are no-ops
-	// today: summary reads the in-memory config, not cached remote state, and
-	// ucm has no location-populating mutator yet.
+	// forcePull is accepted for DAB parity but is a no-op today: summary reads
+	// the in-memory config, not cached remote state.
 	var forcePull bool
 	var includeLocations bool
+	var showFullConfig bool
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace (no-op today)")
 	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
 	_ = cmd.Flags().MarkHidden("include-locations")
+	cmd.Flags().BoolVar(&showFullConfig, "show-full-config", false, "Load and output the full ucm config")
+	_ = cmd.Flags().MarkHidden("show-full-config")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
@@ -51,7 +56,22 @@ Common invocations:
 			return root.ErrAlreadyPrinted
 		}
 
+		if includeLocations {
+			ucm.ApplyContext(ctx, u, mutator.PopulateLocations())
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+		}
+
 		out := cmd.OutOrStdout()
+		if showFullConfig {
+			buf, err := json.MarshalIndent(u.Config, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(out, string(buf))
+			return nil
+		}
 		switch summaryOutputType(cmd) {
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(u.Config, "", "  ")
@@ -61,7 +81,7 @@ Common invocations:
 			fmt.Fprintln(out, string(buf))
 			return nil
 		default:
-			renderSummaryText(out, &u.Config)
+			renderSummaryText(out, u)
 			return nil
 		}
 	}
@@ -95,10 +115,10 @@ type resourceGroup struct {
 // renderSummaryText writes the bundle-summary-shaped text output: header
 // (Name / Target / Workspace) followed by one section per non-empty resource
 // group. Empty groups are suppressed.
-func renderSummaryText(out io.Writer, cfg *config.Root) {
-	renderSummaryHeader(out, cfg)
+func renderSummaryText(out io.Writer, u *ucm.Ucm) {
+	renderSummaryHeader(out, u)
 
-	groups := collectResourceGroups(cfg)
+	groups := collectResourceGroups(&u.Config)
 	for _, g := range groups {
 		fmt.Fprintf(out, "%s:\n", g.Title)
 		for _, r := range g.Rows {
@@ -111,16 +131,32 @@ func renderSummaryText(out io.Writer, cfg *config.Root) {
 	}
 }
 
-func renderSummaryHeader(out io.Writer, cfg *config.Root) {
+func renderSummaryHeader(out io.Writer, u *ucm.Ucm) {
+	bold := color.New(color.Bold).SprintFunc()
+	cfg := &u.Config
 	if cfg.Ucm.Name != "" {
-		fmt.Fprintf(out, "Name: %s\n", cfg.Ucm.Name)
+		fmt.Fprintf(out, "Name: %s\n", bold(cfg.Ucm.Name))
 	}
 	if cfg.Ucm.Target != "" {
-		fmt.Fprintf(out, "Target: %s\n", cfg.Ucm.Target)
+		fmt.Fprintf(out, "Target: %s\n", bold(cfg.Ucm.Target))
 	}
-	if cfg.Workspace.Host != "" {
+
+	var userName string
+	if u.CurrentUser != nil && u.CurrentUser.User != nil {
+		userName = u.CurrentUser.UserName
+	}
+	hasWorkspace := cfg.Workspace.Host != "" || userName != "" || cfg.Workspace.RootPath != ""
+	if hasWorkspace {
 		fmt.Fprintln(out, "Workspace:")
-		fmt.Fprintf(out, "  Host: %s\n", cfg.Workspace.Host)
+		if cfg.Workspace.Host != "" {
+			fmt.Fprintf(out, "  Host: %s\n", bold(cfg.Workspace.Host))
+		}
+		if userName != "" {
+			fmt.Fprintf(out, "  User: %s\n", bold(userName))
+		}
+		if cfg.Workspace.RootPath != "" {
+			fmt.Fprintf(out, "  Path: %s\n", bold(cfg.Workspace.RootPath))
+		}
 	}
 	fmt.Fprintln(out)
 }

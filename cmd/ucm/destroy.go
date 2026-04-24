@@ -51,6 +51,7 @@ Common invocations:
 			return fmt.Errorf("resolve deploy options: %w", err)
 		}
 		opts.ForceLock = forceLock
+		opts.AutoApprove = autoApprove
 
 		phases.Destroy(ctx, u, opts)
 		if logdiag.HasError(ctx) {

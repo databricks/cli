@@ -2,11 +2,13 @@ package deployment
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/ucm/phases"
 	"github.com/spf13/cobra"
 )
 
@@ -54,27 +56,26 @@ made outside ucm may be overwritten on the next deploy.`,
 	}
 
 	var autoApprove bool
+	var forceLock bool
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Automatically approve the binding.")
+	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		key, ucName := args[0], args[1]
 		ctx := cmd.Context()
 
 		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		ctx = cmd.Context()
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
 
-		es, err := utils.ResolveEngineSetting(ctx, &u.Config.Ucm)
+		kind, err := resolveBindable(u, key)
 		if err != nil {
 			return err
 		}
-		if !es.Type.IsDirect() {
-			return notSupportedForEngine(es.Type)
-		}
 
-		kind, err := resolveBindable(u, key)
-		if err != nil {
+		if err := validateBindName(kind, ucName); err != nil {
 			return err
 		}
 
@@ -91,13 +92,15 @@ made outside ucm may be overwritten on the next deploy.`,
 			}
 		}
 
-		client, err := buildDirectClient(ctx, u)
+		opts, err := buildPhaseOptions(ctx, u)
 		if err != nil {
-			return err
+			return fmt.Errorf("resolve bind options: %w", err)
 		}
+		opts.ForceLock = forceLock
 
-		if err := bindResourceDirect(ctx, u, client, kind, key, ucName); err != nil {
-			return err
+		phases.Bind(ctx, u, opts, phases.BindRequest{Kind: kind, Name: ucName, Key: key})
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		cmdio.LogString(ctx, "Successfully bound "+string(kind)+"."+key+" to "+ucName)

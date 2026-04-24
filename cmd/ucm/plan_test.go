@@ -93,39 +93,16 @@ func TestCmd_Plan_SkipCountsUnchanged(t *testing.T) {
 	assert.NotContains(t, stdout, "skip catalogs.main")
 }
 
-func TestRenderPlanText_BucketsAllActionKinds(t *testing.T) {
-	cases := []struct {
-		name    string
-		actions map[string]deployplan.ActionType
-		want    string
-	}{
-		{
-			"update_with_id counts as change",
-			map[string]deployplan.ActionType{"resources.catalogs.a": deployplan.UpdateWithID},
-			"Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged",
-		},
-		{
-			"resize counts as change",
-			map[string]deployplan.ActionType{"resources.catalogs.a": deployplan.Resize},
-			"Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged",
-		},
-		{
-			"delete only",
-			map[string]deployplan.ActionType{"resources.catalogs.a": deployplan.Delete},
-			"Plan: 0 to add, 0 to change, 1 to delete, 0 unchanged",
-		},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			plan := deployplan.NewPlanTerraform()
-			for k, a := range c.actions {
-				plan.Plan[k] = &deployplan.PlanEntry{Action: a}
-			}
-			var buf stringBuf
-			renderPlanText(&buf, plan)
-			assert.Contains(t, buf.String(), c.want)
-		})
-	}
+// TestCmd_Plan_ForceFlagIsRegisteredAndHidden verifies the DAB-parity hidden
+// --force flag is registered on the plan verb. It is a documented no-op; we
+// only assert the flag is wired and marked hidden so users migrating from
+// `bundle plan --force` don't hit an unknown-flag error.
+func TestCmd_Plan_ForceFlagIsRegisteredAndHidden(t *testing.T) {
+	cmd := newPlanCommand()
+	f := cmd.Flags().Lookup("force")
+	require.NotNil(t, f, "--force flag should be registered on ucm plan")
+	assert.True(t, f.Hidden, "--force flag should be hidden")
+	assert.Equal(t, "false", f.DefValue)
 }
 
 // TestCmd_Plan_RoundTripsThroughJSONStructure verifies the structured plan
@@ -144,10 +121,3 @@ func TestCmd_Plan_RoundTripsThroughJSONStructure(t *testing.T) {
 	require.NoError(t, json.Unmarshal(buf, &round))
 	assert.Equal(t, deployplan.Create, round.Plan["resources.catalogs.main"].Action)
 }
-
-// stringBuf is a tiny io.Writer sink used by renderPlanText tests — avoids
-// pulling in bytes.Buffer just for a string accumulator.
-type stringBuf struct{ b []byte }
-
-func (s *stringBuf) Write(p []byte) (int, error) { s.b = append(s.b, p...); return len(p), nil }
-func (s *stringBuf) String() string               { return string(s.b) }

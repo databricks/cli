@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -13,11 +14,11 @@ import (
 // ReferenceClosure errors when any ${resources.<kind>.<key>.*} interpolation
 // points at a resource the user did not declare.
 //
-// Safe to run before OR after ResolveResourceReferences: resolved references
-// no longer match the pattern, and unresolvable ones stay in place. The
-// terraform engine runs it before Build (so the TF JSON never ships broken
-// refs); the direct engine runs it after ResolveResourceReferences (so any
-// leftover ${resources.*} is guaranteed-dangling).
+// Safe to run before OR after ResolveVariableReferencesOnlyResources: resolved
+// references no longer match the pattern, and unresolvable ones stay in place.
+// The terraform engine runs it before Build (so the TF JSON never ships broken
+// refs); the direct engine runs it after the resource-reference resolution pass
+// (so any leftover ${resources.*} is guaranteed-dangling).
 //
 // Scoped to ${resources.*} tokens only. Non-resource references (${var.*},
 // ${workspace.*}, etc.) are ignored here: the variable-resolution pass that
@@ -47,13 +48,14 @@ func (m *referenceClosure) Apply(_ context.Context, u *ucm.Ucm) diag.Diagnostics
 				continue
 			}
 			if !resourceExists(root, targetPath) {
+				// Clone p: WalkReadOnly reuses the backing slice across siblings.
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary: fmt.Sprintf(
 						"unresolved reference ${%s} at %s: target resource is not declared in config",
 						target, p.String(),
 					),
-					Paths:     []dyn.Path{p},
+					Paths:     []dyn.Path{slices.Clone(p)},
 					Locations: locsOf(v),
 				})
 			}

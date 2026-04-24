@@ -12,6 +12,8 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config/mutator"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -37,14 +39,16 @@ Common invocations:
 	var strict bool
 	var includeLocations bool
 	cmd.Flags().BoolVar(&strict, "strict", false, "Treat warnings as errors")
-	// include-locations is accepted for DAB parity; wiring the locations
-	// mutator into the JSON output is tracked as a follow-up.
 	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
 	_ = cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		u := utils.ProcessUcm(cmd, utils.ProcessOptions{Validate: true})
 		ctx := cmd.Context()
+
+		if includeLocations && u != nil && !logdiag.HasError(ctx) {
+			ucm.ApplyContext(ctx, u, mutator.PopulateLocations())
+		}
 
 		out := cmd.OutOrStdout()
 		output := validateOutputType(cmd)
@@ -56,6 +60,9 @@ Common invocations:
 				return err
 			}
 		} else {
+			if u != nil {
+				renderSummaryHeader(out, u)
+			}
 			writeValidateTrailer(ctx, out)
 		}
 
@@ -108,17 +115,17 @@ func writeValidateTrailer(ctx context.Context, out io.Writer) {
 	info := logdiag.Copy(ctx)
 	var parts []string
 	if info.Errors > 0 {
-		parts = append(parts, pluralize(info.Errors, "error", "errors"))
+		parts = append(parts, color.RedString(pluralize(info.Errors, "error", "errors")))
 	}
 	if info.Warnings > 0 {
-		parts = append(parts, pluralize(info.Warnings, "warning", "warnings"))
+		parts = append(parts, color.YellowString(pluralize(info.Warnings, "warning", "warnings")))
 	}
 	if info.Recommendations > 0 {
-		parts = append(parts, pluralize(info.Recommendations, "recommendation", "recommendations"))
+		parts = append(parts, color.BlueString(pluralize(info.Recommendations, "recommendation", "recommendations")))
 	}
 	switch len(parts) {
 	case 0:
-		fmt.Fprintln(out, "Validation OK!")
+		fmt.Fprint(out, color.GreenString("Validation OK!\n"))
 	case 1:
 		fmt.Fprintf(out, "Found %s\n", parts[0])
 	case 2:

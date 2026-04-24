@@ -2,110 +2,290 @@ package mutator
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config/variable"
 )
 
-// maxResolutionRounds caps the fixed-point iteration used when a resolved
-// value itself contains a reference. Matches bundle's budget; past 11 rounds
-// the cost grows exponentially with pathological input.
+/*
+For pathological cases, output and time grow exponentially.
+
+On my laptop, timings for acceptance/bundle/variables/complex-cycle:
+rounds           time
+
+	 9          0.10s
+	10          0.13s
+	11          0.27s
+	12          0.68s
+	13          1.98s
+	14          6.28s
+	15         21.70s
+	16         78.16s
+*/
 const maxResolutionRounds = 11
 
-// ResolveResourceReferences substitutes any ${resources.<kind>.<key>.<field>}
-// reference in the loaded ucm config with the pointed-at value from the same
-// tree. Non-resource references (var.*, workspace.*, anything else) are left
-// untouched for later passes.
-func ResolveResourceReferences() ucm.Mutator { return &resolveResourceReferences{} }
+// List of prefixes to be used by default in ResolveVariableReferencesOnlyResources/ResolveVariableReferencesWithoutResources
+// Prefixes specify which references are resolves, e.g. ${ucm...} and so on.
+// This list does not include "resources" because some of those references are known after resource is deployed.
+var defaultPrefixes = []string{
+	"ucm",
+	"workspace",
+	"variables",
+}
 
-type resolveResourceReferences struct{}
+var artifactPath = dyn.MustPathFromString("artifacts")
 
-func (m *resolveResourceReferences) Name() string { return "ResolveResourceReferences" }
+type resolveVariableReferences struct {
+	prefixes    []string
+	pattern     dyn.Pattern
+	lookupFn    func(dyn.Value, dyn.Path, *ucm.Ucm) (dyn.Value, error)
+	extraRounds int
 
-func (m *resolveResourceReferences) Apply(_ context.Context, u *ucm.Ucm) diag.Diagnostics {
-	var diags diag.Diagnostics
-	err := u.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return dynvar.Resolve(root, func(p dyn.Path) (dyn.Value, error) {
-			if len(p) == 0 || p[0].Key() != "resources" {
-				return dyn.InvalidValue, dynvar.ErrSkipResolution
-			}
-			v, err := dyn.GetByPath(root, p)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-			return v, nil
-		})
-	})
-	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  err.Error(),
-		})
+	// includeResources allows resolving variables in 'resources', otherwise, they are excluded.
+	//
+	// includeResources can be used with appropriate pattern to avoid resolving variables
+	// outside of 'resources'.
+	includeResources bool
+}
+
+func ResolveVariableReferencesOnlyResources(prefixes ...string) ucm.Mutator {
+	if len(prefixes) == 0 {
+		prefixes = defaultPrefixes
 	}
+	return &resolveVariableReferences{
+		prefixes:         prefixes,
+		lookupFn:         lookup,
+		extraRounds:      maxResolutionRounds - 1,
+		pattern:          dyn.NewPattern(dyn.Key("resources")),
+		includeResources: true,
+	}
+}
+
+func ResolveVariableReferencesWithoutResources(prefixes ...string) ucm.Mutator {
+	if len(prefixes) == 0 {
+		prefixes = defaultPrefixes
+	}
+	return &resolveVariableReferences{
+		prefixes:    prefixes,
+		lookupFn:    lookup,
+		extraRounds: maxResolutionRounds - 1,
+	}
+}
+
+func ResolveVariableReferencesInLookup() ucm.Mutator {
+	return &resolveVariableReferences{
+		prefixes:    defaultPrefixes,
+		pattern:     dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
+		lookupFn:    lookupForVariables,
+		extraRounds: maxResolutionRounds - 1,
+	}
+}
+
+func lookup(v dyn.Value, path dyn.Path, u *ucm.Ucm) (dyn.Value, error) {
+	// Future opportunity: if we lookup this path in both the given root
+	// and the synthesized root, we know if it was explicitly set or implied to be empty.
+	// Then we can emit a warning if it was not explicitly set.
+	return dyn.GetByPath(v, path)
+}
+
+func lookupForVariables(v dyn.Value, path dyn.Path, u *ucm.Ucm) (dyn.Value, error) {
+	if path[0].Key() != "variables" {
+		return lookup(v, path, u)
+	}
+
+	varV, err := dyn.GetByPath(v, path[:len(path)-1])
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	var vv variable.Variable
+	err = convert.ToTyped(&vv, varV)
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	if vv.Lookup != nil && vv.Lookup.String() != "" {
+		return dyn.InvalidValue, errors.New("lookup variables cannot contain references to another lookup variables")
+	}
+
+	return lookup(v, path, u)
+}
+
+func (m *resolveVariableReferences) Name() string {
+	if m.includeResources {
+		return "ResolveVariableReferences(resources)"
+	} else {
+		return "ResolveVariableReferences"
+	}
+}
+
+func (m *resolveVariableReferences) Apply(ctx context.Context, u *ucm.Ucm) diag.Diagnostics {
+	prefixes := make([]dyn.Path, len(m.prefixes))
+	for i, prefix := range m.prefixes {
+		prefixes[i] = dyn.MustPathFromString(prefix)
+	}
+
+	// The path ${var.foo} is a shorthand for ${variables.foo.value}.
+	// We rewrite it here to make the resolution logic simpler.
+	varPath := dyn.NewPath(dyn.Key("var"))
+
+	var diags diag.Diagnostics
+	maxRounds := 1 + m.extraRounds
+
+	for round := range maxRounds {
+		hasUpdates, newDiags := m.resolveOnce(u, prefixes, varPath)
+
+		diags = diags.Extend(newDiags)
+
+		if diags.HasError() {
+			break
+		}
+
+		if !hasUpdates {
+			break
+		}
+
+		if round >= maxRounds-1 {
+			diags = diags.Append(diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf("Variables references are too deep, stopping resolution after %d rounds. Unresolved variables may remain.", round+1),
+				// Would be nice to include names of the variables there, but that would complicate things more
+			})
+			break
+		}
+	}
+
 	return diags
 }
 
-// ResolveVariableReferences substitutes ${var.<name>} tokens (shorthand for
-// ${variables.<name>.value}) everywhere they appear. Iterates up to
-// maxResolutionRounds times to resolve references that themselves point at
-// other references.
-func ResolveVariableReferences() ucm.Mutator { return &resolveVariableReferences{} }
-
-type resolveVariableReferences struct{}
-
-func (m *resolveVariableReferences) Name() string { return "ResolveVariableReferences" }
-
-func (m *resolveVariableReferences) Apply(_ context.Context, u *ucm.Ucm) diag.Diagnostics {
+func (m *resolveVariableReferences) resolveOnce(u *ucm.Ucm, prefixes []dyn.Path, varPath dyn.Path) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	varPath := dyn.NewPath(dyn.Key("var"))
-	variablesKey := dyn.NewPath(dyn.Key("variables"))
+	hasUpdates := false
+	err := m.selectivelyMutate(u, func(root dyn.Value) (dyn.Value, error) {
+		// Synthesize a copy of the root that has all fields that are present in the type
+		// but not set in the dynamic value set to their corresponding empty value.
+		// This enables users to interpolate variable references to fields that haven't
+		// been explicitly set in the dynamic value.
+		//
+		// This is consistent with the behavior prior to using the dynamic value system.
+		//
+		// We can ignore the diagnostics return value because we know that the dynamic value
+		// has already been normalized when it was first loaded from the configuration file.
+		//
+		normalized, _ := convert.Normalize(u.Config, root, convert.IncludeMissingFields)
 
-	for round := range maxResolutionRounds {
-		updates := false
-		err := u.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-			return dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
-				// Rewrite ${var.foo} into ${variables.foo.value}.
-				resolved := path
-				if resolved.HasPrefix(varPath) {
-					np := dyn.NewPath(dyn.Key("variables"), resolved[1], dyn.Key("value"))
-					if len(resolved) > 2 {
-						np = np.Append(resolved[2:]...)
+		// If the pattern is nil, we resolve references in the entire configuration.
+		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// Resolve variable references in all values.
+			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
+				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
+				if path.HasPrefix(varPath) {
+					newPath := dyn.NewPath(
+						dyn.Key("variables"),
+						path[1],
+						dyn.Key("value"),
+					)
+
+					if len(path) > 2 {
+						newPath = newPath.Append(path[2:]...)
 					}
-					resolved = np
+
+					path = newPath
 				}
 
-				if !resolved.HasPrefix(variablesKey) {
-					return dyn.InvalidValue, dynvar.ErrSkipResolution
+				// UCM has no artifacts concept — reject references early so users get a clear error
+				// instead of a confusing "not found" from the generic lookup path.
+				if path.HasPrefix(artifactPath) {
+					return dyn.InvalidValue, errors.New("artifacts references are not supported in ucm")
 				}
 
-				v, err := dyn.GetByPath(root, resolved)
-				if err != nil {
-					return dyn.InvalidValue, err
+				// Perform resolution only if the path starts with one of the specified prefixes.
+				for _, prefix := range prefixes {
+					if path.HasPrefix(prefix) {
+						value, err := m.lookupFn(normalized, path, u)
+						hasUpdates = hasUpdates || (err == nil && value.IsValid())
+						return value, err
+					}
 				}
-				if v.IsValid() {
-					updates = true
-				}
-				return v, nil
+
+				return dyn.InvalidValue, dynvar.ErrSkipResolution
 			})
 		})
 		if err != nil {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  err.Error(),
-			})
-			return diags
+			return dyn.InvalidValue, err
 		}
-		if !updates {
-			break
+
+		// Normalize the result because variable resolution may have been applied to non-string fields.
+		// For example, a variable reference may have been resolved to a integer.
+		root, normaliseDiags := convert.Normalize(u.Config, root)
+		diags = diags.Extend(normaliseDiags)
+		return root, nil
+	})
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+	}
+
+	return hasUpdates, diags
+}
+
+// selectivelyMutate applies a function to a subset of the configuration
+func (m *resolveVariableReferences) selectivelyMutate(u *ucm.Ucm, fn func(value dyn.Value) (dyn.Value, error)) error {
+	return u.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		allKeys, err := getAllKeys(root)
+		if err != nil {
+			return dyn.InvalidValue, err
 		}
-		if round == maxResolutionRounds-1 {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  "Variable references are too deep; stopping resolution. Unresolved variables may remain.",
-			})
+
+		var included []string
+		for _, key := range allKeys {
+			if key == "resources" {
+				if m.includeResources {
+					included = append(included, key)
+				}
+			} else {
+				included = append(included, key)
+			}
+		}
+
+		includedRoot, err := merge.Select(root, included)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		excludedRoot, err := merge.AntiSelect(root, included)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		updatedRoot, err := fn(includedRoot)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		// merge is recursive, but it doesn't matter because keys are mutually exclusive
+		return merge.Merge(updatedRoot, excludedRoot)
+	})
+}
+
+func getAllKeys(root dyn.Value) ([]string, error) {
+	var keys []string
+
+	if mapping, ok := root.AsMap(); ok {
+		for _, key := range mapping.Keys() {
+			if keyString, ok := key.AsString(); ok {
+				keys = append(keys, keyString)
+			} else {
+				return nil, fmt.Errorf("key is not a string: %v", key)
+			}
 		}
 	}
-	return diags
+
+	return keys, nil
 }

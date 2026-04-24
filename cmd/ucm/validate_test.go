@@ -78,6 +78,28 @@ func TestCmd_Validate_JSONModeOnErrorFixture(t *testing.T) {
 	assert.Contains(t, stdout, `"catalogs"`)
 }
 
+func TestCmd_Validate_IncludeLocationsOffOmitsLocationsKey(t *testing.T) {
+	stdout, _, err := runValidate(t, filepath.Join("testdata", "valid"), "--output", "json")
+	require.NoError(t, err)
+
+	var tree map[string]any
+	require.NoError(t, json.Unmarshal([]byte(stdout), &tree))
+	_, ok := tree["__locations"]
+	assert.False(t, ok, "default validate JSON should not contain __locations")
+}
+
+func TestCmd_Validate_IncludeLocationsOnAddsLocationsKey(t *testing.T) {
+	stdout, _, err := runValidate(t, filepath.Join("testdata", "valid"), "--output", "json", "--include-locations")
+	require.NoError(t, err)
+
+	var tree map[string]any
+	require.NoError(t, json.Unmarshal([]byte(stdout), &tree))
+	locs, ok := tree["__locations"].(map[string]any)
+	require.True(t, ok, "expected __locations in JSON output: %s", stdout)
+	assert.Contains(t, locs, "files")
+	assert.Contains(t, locs, "locations")
+}
+
 func TestCmd_Validate_NestedFixturePasses(t *testing.T) {
 	stdout, stderr, err := runValidate(t, filepath.Join("testdata", "nested"))
 	t.Logf("stdout=%q", stdout)

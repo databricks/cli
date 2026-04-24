@@ -2,11 +2,13 @@ package deployment
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/ucm/phases"
 	"github.com/spf13/cobra"
 )
 
@@ -40,23 +42,18 @@ To re-bind later, use:
 	}
 
 	var autoApprove bool
+	var forceLock bool
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Automatically approve the unbind.")
+	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		key := args[0]
 		ctx := cmd.Context()
 
 		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		ctx = cmd.Context()
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
-		}
-
-		es, err := utils.ResolveEngineSetting(ctx, &u.Config.Ucm)
-		if err != nil {
-			return err
-		}
-		if !es.Type.IsDirect() {
-			return notSupportedForEngine(es.Type)
 		}
 
 		kind, err := resolveBindable(u, key)
@@ -77,8 +74,15 @@ To re-bind later, use:
 			}
 		}
 
-		if err := unbindResourceDirect(u, kind, key); err != nil {
-			return err
+		opts, err := buildPhaseOptions(ctx, u)
+		if err != nil {
+			return fmt.Errorf("resolve unbind options: %w", err)
+		}
+		opts.ForceLock = forceLock
+
+		phases.Unbind(ctx, u, opts, phases.UnbindRequest{Kind: kind, Key: key})
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		cmdio.LogString(ctx, "Successfully unbound "+string(kind)+"."+key)

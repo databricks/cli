@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -36,9 +37,17 @@ type Ucm struct {
 	// nil until a target has been selected.
 	Target *config.Target
 
+	// CurrentUser is populated by the PopulateCurrentUser mutator from the
+	// workspace client's CurrentUser.Me(). Lives on Ucm (not Config) so the
+	// dyn-tree round-trip in MarkMutatorEntry/Exit doesn't zero it between
+	// mutator applies.
+	CurrentUser *config.User
+
 	// getClient memoizes the workspace client built from Config.Workspace.
 	// Initialized lazily by WorkspaceClientE via initClientOnce.
 	getClient func() (*databricks.WorkspaceClient, error)
+
+	Metrics Metrics
 }
 
 // Load builds a Ucm for the given root path, reading the ucm.yml file
@@ -79,9 +88,9 @@ func MustLoad(ctx context.Context) *Ucm {
 	return u
 }
 
-func getRootEnv() (string, error) {
-	path := os.Getenv(RootEnv)
-	if path == "" {
+func getRootEnv(ctx context.Context) (string, error) {
+	path, ok := env.Lookup(ctx, RootEnv)
+	if !ok {
 		return "", nil
 	}
 	stat, err := os.Stat(path)
@@ -107,8 +116,9 @@ func getRootWithTraversal() (string, error) {
 	return "", fmt.Errorf("unable to locate ucm root: %s not found", config.FileNames[0])
 }
 
-func mustGetRoot(_ context.Context) (string, error) {
-	if path, err := getRootEnv(); path != "" || err != nil {
+func mustGetRoot(ctx context.Context) (string, error) {
+	path, err := getRootEnv(ctx)
+	if path != "" || err != nil {
 		return path, err
 	}
 	return getRootWithTraversal()

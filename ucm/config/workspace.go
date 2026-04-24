@@ -9,4 +9,14 @@ package config
 type Workspace struct {
 	Host    string `json:"host,omitempty"`
 	Profile string `json:"profile,omitempty"`
+
+	// RootPath is the workspace filesystem root for this deployment. Defaults
+	// to "~/databricks/ucm/<name>/<target>" via DefineDefaultWorkspaceRoot and
+	// is expanded to "/Workspace/Users/<user>/..." by ExpandWorkspaceRoot.
+	RootPath string `json:"root_path,omitempty"`
+
+	// StatePath is the workspace sub-path that holds the remote state artifacts
+	// (terraform.tfstate, ucm-state.json). Defaults to "<RootPath>/state" via
+	// DefineDefaultWorkspacePaths.
+	StatePath string `json:"state_path,omitempty"`
 }

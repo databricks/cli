@@ -1,5 +1,7 @@
 package resources
 
+import "net/url"
+
 // StorageCredential is a UC storage credential. Exactly one of the cloud
 // identity fields (AwsIamRole, AzureManagedIdentity, AzureServicePrincipal,
 // DatabricksGcpServiceAccount) must be set. Field shape mirrors
@@ -16,6 +18,17 @@ type StorageCredential struct {
 
 	ReadOnly       bool `json:"read_only,omitempty"`
 	SkipValidation bool `json:"skip_validation,omitempty"`
+
+	// URL is populated by the initialize_urls mutator.
+	URL string `json:"url,omitempty" ucm:"readonly"`
+}
+
+func (s *StorageCredential) InitializeURL(baseURL url.URL) {
+	if s.Name == "" {
+		return
+	}
+	baseURL.Path = "explore/storage-credentials/" + s.Name
+	s.URL = baseURL.String()
 }
 
 // AwsIamRole is the AWS IAM role UC assumes to vend temporary credentials.

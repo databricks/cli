@@ -141,18 +141,23 @@ func (*fakeReadClient) UpdatePermissions(context.Context, catalog.UpdatePermissi
 func (*fakeReadClient) ListCatalogs(context.Context) ([]catalog.CatalogInfo, error) {
 	return nil, nil
 }
+
 func (*fakeReadClient) ListSchemas(context.Context, string) ([]catalog.SchemaInfo, error) {
 	return nil, nil
 }
+
 func (*fakeReadClient) ListStorageCredentials(context.Context) ([]catalog.StorageCredentialInfo, error) {
 	return nil, nil
 }
+
 func (*fakeReadClient) ListExternalLocations(context.Context) ([]catalog.ExternalLocationInfo, error) {
 	return nil, nil
 }
+
 func (*fakeReadClient) ListVolumes(context.Context, string, string) ([]catalog.VolumeInfo, error) {
 	return nil, nil
 }
+
 func (*fakeReadClient) ListConnections(context.Context) ([]catalog.ConnectionInfo, error) {
 	return nil, nil
 }

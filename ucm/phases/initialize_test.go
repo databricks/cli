@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm/config/engine"
+	"github.com/databricks/cli/ucm/config/resources"
 	"github.com/databricks/cli/ucm/phases"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,4 +83,57 @@ func TestInitializeMissingBackendFails(t *testing.T) {
 	diags := logdiag.FlushCollected(ctx)
 	require.NotEmpty(t, diags)
 	assert.Contains(t, diags[0].Summary, "pull remote state")
+}
+
+// TestInitializeDefinesWorkspacePaths asserts DefineDefaultWorkspacePaths ran
+// inside Initialize: StatePath must be derived from RootPath when not set
+// explicitly. Parallels bundle/phases.Initialize's workspace-paths step.
+func TestInitializeDefinesWorkspacePaths(t *testing.T) {
+	f := newFixture(t)
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	phases.Initialize(ctx, f.u, phases.Options{Backend: f.backend})
+
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
+	assert.Equal(t, "/Workspace/Users/alice@example.com/databricks/ucm/test/dev/state", f.u.Config.Workspace.StatePath)
+}
+
+// TestInitializePopulatesResourceURLs asserts InitializeURLs ran inside
+// Initialize: each declared resource gets a console URL derived from the
+// configured Workspace.Host.
+func TestInitializePopulatesResourceURLs(t *testing.T) {
+	f := newFixture(t)
+	f.u.Config.Workspace.Host = "https://mycompany.databricks.com"
+	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
+		"cat1": {Name: "cat1"},
+	}
+
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	phases.Initialize(ctx, f.u, phases.Options{Backend: f.backend})
+
+	require.False(t, logdiag.HasError(ctx), "unexpected errors: %v", logdiag.FlushCollected(ctx))
+	assert.Equal(t, "https://mycompany.databricks.com/explore/data/cat1", f.u.Config.Resources.Catalogs["cat1"].URL)
+}
+
+// TestInitializeMissingWorkspaceRootFails asserts DefineDefaultWorkspacePaths
+// fails-fast when the caller neglected to run DefineDefaultWorkspaceRoot +
+// ExpandWorkspaceRoot first. Production callers route through
+// cmd/ucm/utils.ProcessUcm which wires those; Initialize enforces the
+// precondition explicitly so mis-wired callers get a useful diagnostic.
+func TestInitializeMissingWorkspaceRootFails(t *testing.T) {
+	f := newFixture(t)
+	f.u.Config.Workspace.RootPath = ""
+
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+
+	phases.Initialize(ctx, f.u, phases.Options{Backend: f.backend})
+
+	require.True(t, logdiag.HasError(ctx))
+	diags := logdiag.FlushCollected(ctx)
+	require.NotEmpty(t, diags)
+	assert.Contains(t, diags[0].Summary, "workspace root not defined")
 }

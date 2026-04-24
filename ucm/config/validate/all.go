@@ -16,5 +16,6 @@ func All(ctx context.Context, u *ucm.Ucm) {
 		RequiredFields(),
 		Naming(),
 		UniqueResourceKeys(),
+		ValidateTags(),
 	)
 }

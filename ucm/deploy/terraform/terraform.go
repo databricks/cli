@@ -31,6 +31,7 @@ type tfRunner interface {
 	Apply(ctx context.Context, opts ...tfexec.ApplyOption) error
 	Destroy(ctx context.Context, opts ...tfexec.DestroyOption) error
 	Import(ctx context.Context, address, id string, opts ...tfexec.ImportOption) error
+	StateRm(ctx context.Context, address string, opts ...tfexec.StateRmCmdOption) error
 	SetEnv(env map[string]string) error
 }
 

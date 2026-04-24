@@ -12,9 +12,20 @@ import (
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/config/engine"
+	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/phases"
 	"github.com/spf13/cobra"
 )
+
+// PreMutateHook is a test-only seam. When non-nil, it runs after the Ucm is
+// loaded and the target/variables are resolved but before the
+// workspace-context mutators (PopulateCurrentUser, DefineDefaultWorkspaceRoot,
+// ExpandWorkspaceRoot). Tests install it to pre-seed a fake CurrentUser so
+// the network-backed PopulateCurrentUser mutator short-circuits and the
+// downstream RootPath defaults can resolve offline.
+//
+// Left at nil in production; MUST NOT be set outside of tests.
+var PreMutateHook func(context.Context, *ucm.Ucm)
 
 const (
 	sourceConfig  = "config"
@@ -65,6 +76,25 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) *ucm.Ucm {
 	}
 
 	phases.Variables(ctx, u)
+	if logdiag.HasError(ctx) {
+		return u
+	}
+
+	if PreMutateHook != nil {
+		PreMutateHook(ctx, u)
+		if logdiag.HasError(ctx) {
+			return u
+		}
+	}
+
+	// Workspace context: parallel to bundle/phases.Initialize's Populate/Default/Expand
+	// triple. Runs after variables (so name/target are final) and before
+	// validate (so the header rendered alongside diagnostics includes User/Path).
+	ucm.ApplySeqContext(ctx, u,
+		mutator.PopulateCurrentUser(),
+		mutator.DefineDefaultWorkspaceRoot(),
+		mutator.ExpandWorkspaceRoot(),
+	)
 	if logdiag.HasError(ctx) {
 		return u
 	}

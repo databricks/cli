@@ -63,3 +63,9 @@ go.work.sum
 tools/gofumpt
 .claude/worktrees/
 .worktrees/
+
+# Local plan docs authored by Claude — not tracked.
+docs/superpowers/
+
+# Generated deployment artifacts from running cmd/ucm against testdata.
+cmd/ucm/testdata/**/.databricks/

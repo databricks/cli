@@ -1,5 +1,7 @@
 package resources
 
+import "net/url"
+
 // Volume is a UC volume (managed or external). Field names mirror
 // databricks-sdk-go's catalog.CreateVolumeRequestContent so the direct-
 // engine input builder stays a 1:1 copy.
@@ -14,4 +16,15 @@ type Volume struct {
 	VolumeType      string `json:"volume_type"`
 	StorageLocation string `json:"storage_location,omitempty"`
 	Comment         string `json:"comment,omitempty"`
+
+	// URL is populated by the initialize_urls mutator.
+	URL string `json:"url,omitempty" ucm:"readonly"`
+}
+
+func (v *Volume) InitializeURL(baseURL url.URL) {
+	if v.CatalogName == "" || v.SchemaName == "" || v.Name == "" {
+		return
+	}
+	baseURL.Path = "explore/data/" + v.CatalogName + "/" + v.SchemaName + "/" + v.Name
+	v.URL = baseURL.String()
 }

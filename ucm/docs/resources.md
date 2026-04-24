@@ -559,7 +559,7 @@ invoke them, but knowing the order explains some of the rules above:
 2. **InheritCatalogTags** — merges a catalog's `tags` into every child schema unless the schema sets `tag_inherit: false`. Schema keys win on collisions.
 3. **DefineDefaultTarget** / **SelectDefaultTarget** / **SelectTarget** — picks the active target (from `--target` or `default: true`) and folds its overrides into the top-level tree.
 4. **ValidateTags** — runs on `validate`/`plan`/`policy-check` only. Emits diagnostics for missing/disallowed tags.
-5. **ResolveResourceReferences** (direct engine only) — rewrites `${resources.*}` refs to literal strings for SDK calls. The terraform engine preserves the refs and runs its own `Interpolate` pass later, rewriting to `${databricks_*}` form.
+5. **ResolveVariableReferencesOnlyResources("resources")** (direct engine only) — rewrites `${resources.*}` refs to literal strings for SDK calls. The terraform engine preserves the refs and runs its own `Interpolate` pass later, rewriting to `${databricks_*}` form.
 
 ---
 

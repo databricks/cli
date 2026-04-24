@@ -62,6 +62,7 @@ func (c *importFakeClient) GetConnection(_ context.Context, name string) (*catal
 func (*importFakeClient) CreateCatalog(_ context.Context, _ catalog.CreateCatalog) (*catalog.CatalogInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) UpdateCatalog(_ context.Context, _ catalog.UpdateCatalog) (*catalog.CatalogInfo, error) {
 	return nil, nil
 }
@@ -69,6 +70,7 @@ func (*importFakeClient) DeleteCatalog(_ context.Context, _ string) error { retu
 func (*importFakeClient) CreateSchema(_ context.Context, _ catalog.CreateSchema) (*catalog.SchemaInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) UpdateSchema(_ context.Context, _ catalog.UpdateSchema) (*catalog.SchemaInfo, error) {
 	return nil, nil
 }
@@ -76,6 +78,7 @@ func (*importFakeClient) DeleteSchema(_ context.Context, _ string) error { retur
 func (*importFakeClient) CreateStorageCredential(_ context.Context, _ catalog.CreateStorageCredential) (*catalog.StorageCredentialInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) UpdateStorageCredential(_ context.Context, _ catalog.UpdateStorageCredential) (*catalog.StorageCredentialInfo, error) {
 	return nil, nil
 }
@@ -83,6 +86,7 @@ func (*importFakeClient) DeleteStorageCredential(_ context.Context, _ string) er
 func (*importFakeClient) CreateExternalLocation(_ context.Context, _ catalog.CreateExternalLocation) (*catalog.ExternalLocationInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) UpdateExternalLocation(_ context.Context, _ catalog.UpdateExternalLocation) (*catalog.ExternalLocationInfo, error) {
 	return nil, nil
 }
@@ -90,6 +94,7 @@ func (*importFakeClient) DeleteExternalLocation(_ context.Context, _ string) err
 func (*importFakeClient) CreateVolume(_ context.Context, _ catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) UpdateVolume(_ context.Context, _ catalog.UpdateVolumeRequestContent) (*catalog.VolumeInfo, error) {
 	return nil, nil
 }
@@ -97,6 +102,7 @@ func (*importFakeClient) DeleteVolume(_ context.Context, _ string) error { retur
 func (*importFakeClient) CreateConnection(_ context.Context, _ catalog.CreateConnection) (*catalog.ConnectionInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) UpdateConnection(_ context.Context, _ catalog.UpdateConnection) (*catalog.ConnectionInfo, error) {
 	return nil, nil
 }
@@ -108,18 +114,23 @@ func (*importFakeClient) UpdatePermissions(_ context.Context, _ catalog.UpdatePe
 func (*importFakeClient) ListCatalogs(context.Context) ([]catalog.CatalogInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) ListSchemas(context.Context, string) ([]catalog.SchemaInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) ListStorageCredentials(context.Context) ([]catalog.StorageCredentialInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) ListExternalLocations(context.Context) ([]catalog.ExternalLocationInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) ListVolumes(context.Context, string, string) ([]catalog.VolumeInfo, error) {
 	return nil, nil
 }
+
 func (*importFakeClient) ListConnections(context.Context) ([]catalog.ConnectionInfo, error) {
 	return nil, nil
 }

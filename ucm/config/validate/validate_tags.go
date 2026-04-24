@@ -1,4 +1,4 @@
-package mutator
+package validate
 
 import (
 	"context"
@@ -29,14 +29,7 @@ type validateTags struct{}
 // run during `validate`, `plan`, and `policy-check`.
 func ValidateTags() ucm.Mutator { return &validateTags{} }
 
-func (m *validateTags) Name() string { return "ValidateTags" }
-
-// securableFieldsToKind maps the Resources struct field (as it appears under
-// `resources:` in ucm.yml) to the rule's `securable_types` token.
-var securableFieldsToKind = map[string]string{
-	"catalogs": "catalog",
-	"schemas":  "schema",
-}
+func (m *validateTags) Name() string { return "validate:tags" }
 
 func (m *validateTags) Apply(_ context.Context, u *ucm.Ucm) diag.Diagnostics {
 	rules := u.Config.Resources.TagValidationRules
@@ -47,16 +40,16 @@ func (m *validateTags) Apply(_ context.Context, u *ucm.Ucm) diag.Diagnostics {
 	ruleNames := sortedKeys(rules)
 
 	var diags diag.Diagnostics
-	for _, field := range []string{"catalogs", "schemas"} {
-		kind := securableFieldsToKind[field]
-		for _, resourceName := range securableNames(u, field) {
-			tags := securableTags(u, field, resourceName)
+	for _, kind := range []string{"catalogs", "schemas"} {
+		singular := singularize(kind)
+		for _, resourceName := range securableNames(u, kind) {
+			tags := securableTags(u, kind, resourceName)
 			for _, ruleName := range ruleNames {
 				rule := rules[ruleName]
-				if rule == nil || !slices.Contains(rule.SecurableTypes, kind) {
+				if rule == nil || !slices.Contains(rule.SecurableTypes, singular) {
 					continue
 				}
-				diags = append(diags, evaluateRule(u, field, resourceName, tags, ruleName, rule)...)
+				diags = append(diags, evaluateRule(u, kind, resourceName, tags, ruleName, rule)...)
 			}
 		}
 	}
@@ -65,19 +58,15 @@ func (m *validateTags) Apply(_ context.Context, u *ucm.Ucm) diag.Diagnostics {
 
 func evaluateRule(
 	u *ucm.Ucm,
-	field, resourceName string,
+	kind, resourceName string,
 	tags map[string]string,
 	ruleName string,
 	rule *resources.TagValidationRule,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	tagsPath := dyn.NewPath(
-		dyn.Key("resources"),
-		dyn.Key(field),
-		dyn.Key(resourceName),
-		dyn.Key("tags"),
-	)
+	tagsPath := resourcePath(kind, resourceName).Append(dyn.Key("tags"))
+	singular := singularize(kind)
 
 	for _, key := range sortedStrings(rule.Required) {
 		if _, ok := tags[key]; !ok {
@@ -85,10 +74,10 @@ func evaluateRule(
 				Severity: diag.Error,
 				Summary: fmt.Sprintf(
 					"tag-validation-rule %q requires tag %q on %s %q",
-					ruleName, key, securableFieldsToKind[field], resourceName,
+					ruleName, key, singular, resourceName,
 				),
 				Paths:     []dyn.Path{tagsPath},
-				Locations: locations(u, tagsPath),
+				Locations: locationsAt(u, tagsPath),
 			})
 		}
 	}
@@ -100,14 +89,15 @@ func evaluateRule(
 			continue
 		}
 		if !slices.Contains(allowed, value) {
+			keyPath := tagsPath.Append(dyn.Key(key))
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary: fmt.Sprintf(
 					"tag-validation-rule %q: %s %q tag %q=%q is not in allowed values %v",
-					ruleName, securableFieldsToKind[field], resourceName, key, value, allowed,
+					ruleName, singular, resourceName, key, value, allowed,
 				),
-				Paths:     []dyn.Path{tagsPath.Append(dyn.Key(key))},
-				Locations: locations(u, tagsPath.Append(dyn.Key(key))),
+				Paths:     []dyn.Path{keyPath},
+				Locations: locationsAt(u, keyPath),
 			})
 		}
 	}
@@ -115,8 +105,8 @@ func evaluateRule(
 	return diags
 }
 
-func securableNames(u *ucm.Ucm, field string) []string {
-	switch field {
+func securableNames(u *ucm.Ucm, kind string) []string {
+	switch kind {
 	case "catalogs":
 		return sortedKeys(u.Config.Resources.Catalogs)
 	case "schemas":
@@ -125,8 +115,8 @@ func securableNames(u *ucm.Ucm, field string) []string {
 	return nil
 }
 
-func securableTags(u *ucm.Ucm, field, name string) map[string]string {
-	switch field {
+func securableTags(u *ucm.Ucm, kind, name string) map[string]string {
+	switch kind {
 	case "catalogs":
 		if c := u.Config.Resources.Catalogs[name]; c != nil {
 			return c.Tags
@@ -139,29 +129,8 @@ func securableTags(u *ucm.Ucm, field, name string) map[string]string {
 	return nil
 }
 
-func locations(u *ucm.Ucm, p dyn.Path) []dyn.Location {
-	v, err := dyn.GetByPath(u.Config.Value(), p)
-	if err != nil {
-		return nil
-	}
-	loc := v.Location()
-	if loc.File == "" && loc.Line == 0 {
-		return nil
-	}
-	return []dyn.Location{loc}
-}
-
 func sortedStrings(in []string) []string {
 	out := slices.Clone(in)
 	sort.Strings(out)
 	return out
-}
-
-func sortedKeys[V any](m map[string]V) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }

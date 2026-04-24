@@ -2,16 +2,75 @@ package phases
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/direct"
+	"github.com/databricks/cli/ucm/deployplan"
+	"github.com/databricks/cli/ucm/metadata"
+	"github.com/databricks/cli/ucm/permissions"
+	"github.com/databricks/cli/ucm/scripts"
 )
+
+func approvalForDeploy(ctx context.Context, _ *ucm.Ucm, plan *deployplan.Plan, opts Options) (bool, error) {
+	if plan == nil {
+		return true, nil
+	}
+
+	actions := plan.GetActions()
+	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
+	catalogActions := filterGroup(actions, "catalogs", types...)
+	schemaActions := filterGroup(actions, "schemas", types...)
+	volumeActions := filterGroup(actions, "volumes", types...)
+
+	if len(catalogActions) == 0 && len(schemaActions) == 0 && len(volumeActions) == 0 {
+		return true, nil
+	}
+
+	if len(catalogActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateCatalogMessage)
+		for _, a := range catalogActions {
+			cmdio.Log(ctx, a)
+		}
+	}
+
+	if len(schemaActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateSchemaMessage)
+		for _, a := range schemaActions {
+			cmdio.Log(ctx, a)
+		}
+	}
+
+	if len(volumeActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateVolumeMessage)
+		for _, a := range volumeActions {
+			cmdio.Log(ctx, a)
+		}
+	}
+
+	if opts.AutoApprove {
+		return true, nil
+	}
+
+	if !cmdio.IsPromptSupported(ctx) {
+		return false, errors.New("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+	}
+
+	cmdio.LogString(ctx, "")
+	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
+	if err != nil {
+		return false, err
+	}
+	return approved, nil
+}
 
 // Deploy runs the initialize → build → terraform-init → terraform-apply →
 // state-push sequence for the terraform engine, or the direct-apply path for
@@ -37,11 +96,31 @@ func Deploy(ctx context.Context, u *ucm.Ucm, opts Options) {
 		return
 	}
 
-	if setting.Type.IsDirect() {
-		deployDirect(ctx, u, opts)
+	// Precheck UC privileges before we attempt any mutating deploy work. Plan
+	// is read-only and skips this; Deploy must bail here so users see a clean
+	// permissions diagnostic instead of a mid-apply API error.
+	for _, d := range permissions.PermissionDiagnostics(ctx, u) {
+		logdiag.LogDiag(ctx, d)
+	}
+	if logdiag.HasError(ctx) {
 		return
 	}
-	deployTerraform(ctx, u, opts)
+
+	ucm.ApplyContext(ctx, u, scripts.Execute(config.ScriptPreDeploy))
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	if setting.Type.IsDirect() {
+		deployDirect(ctx, u, opts)
+	} else {
+		deployTerraform(ctx, u, opts)
+	}
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	ucm.ApplyContext(ctx, u, scripts.Execute(config.ScriptPostDeploy))
 }
 
 func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
@@ -60,6 +139,27 @@ func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 		return
 	}
 
+	// Plan before Apply so approvalForDeploy can inspect the diff. Apply
+	// consumes the saved plan artefact via tf.lastPlanPath and avoids
+	// re-planning inline.
+	var plan *deployplan.Plan
+	if result, err := tf.Plan(ctx, u); err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("terraform plan: %w", err))
+		return
+	} else if result != nil {
+		plan = result.Plan
+	}
+
+	approved, err := approvalForDeploy(ctx, u, plan, opts)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if !approved {
+		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
+	}
+
 	if err := tf.Apply(ctx, u, opts.ForceLock); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("terraform apply: %w", err))
 		return
@@ -71,10 +171,28 @@ func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 		logdiag.LogError(ctx, fmt.Errorf("push remote state: %w", err))
 		return
 	}
+
+	uploadMetadataBestEffort(ctx, u, opts.Backend)
+}
+
+// uploadMetadataBestEffort uploads provenance after a successful deploy. It
+// mirrors DAB's post-apply provenance write. The deploy has already succeeded
+// by the time this runs, so post-success failures degrade to a warning
+// instead of being surfaced via logdiag — masking the success with a metadata
+// glitch is the wrong tradeoff. Callers without a StateFiler (e.g. a
+// direct-engine deploy that never configures a remote backend) get no-op
+// semantics; this keeps both deploy paths able to call the helper unguarded.
+func uploadMetadataBestEffort(ctx context.Context, u *ucm.Ucm, b deploy.Backend) {
+	if b.StateFiler == nil {
+		return
+	}
+	if err := metadata.Upload(ctx, u, b, metadata.Compute(ctx, u)); err != nil {
+		log.Warnf(ctx, "ucm metadata: upload failed: %v", err)
+	}
 }
 
 func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
-	ucm.ApplyContext(ctx, u, mutator.ResolveResourceReferences())
+	ucm.ApplyContext(ctx, u, mutator.ResolveVariableReferencesOnlyResources("resources"))
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -98,6 +216,15 @@ func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
 	}
 
 	plan := direct.CalculatePlan(u, state)
+	approved, err := approvalForDeploy(ctx, u, plan, opts)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	if !approved {
+		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
+	}
 	applyErr := direct.Apply(ctx, u, client, plan, state)
 	// Always persist state — Apply mutates it as it goes, so partial progress
 	// from a mid-apply error must survive the process exit.
@@ -110,5 +237,8 @@ func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
 	}
 	if applyErr != nil {
 		logdiag.LogError(ctx, fmt.Errorf("direct apply: %w", applyErr))
+		return
 	}
+
+	uploadMetadataBestEffort(ctx, u, opts.Backend)
 }

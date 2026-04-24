@@ -39,10 +39,10 @@ func hasSummary(ds diag.Diagnostics, substr string) bool {
 
 func TestRequiredFields(t *testing.T) {
 	tests := []struct {
-		name         string
-		yaml         string
+		name          string
+		yaml          string
 		wantSummaries []string
-		wantEmpty    bool
+		wantEmpty     bool
 	}{
 		{
 			name: "valid fixture has no diagnostics",

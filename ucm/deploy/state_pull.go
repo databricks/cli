@@ -156,3 +156,28 @@ func readLocalState(localDir string) (*State, error) {
 	}
 	return loadState(bytes.NewReader(data))
 }
+
+// LoadLocalState returns the deployment state from the local cache directory
+// for u. It is the narrow read-only wrapper other packages (e.g. ucm/metadata)
+// should call instead of duplicating the ucm-state.json deserialisation path
+// with their own partial-JSON decoders.
+//
+// Returns (nil, false, nil) when the local state file does not exist yet —
+// the first-run case before Pull writes the cache, or after the cache has
+// been cleared.
+//
+// Returns (nil, false, err) on I/O or JSON errors so callers can distinguish
+// "absent" (ok=false, err=nil) from "malformed/unreadable" (ok=false, err!=nil).
+func LoadLocalState(ctx context.Context, u *ucm.Ucm) (*State, bool, error) {
+	if u == nil {
+		return nil, false, errors.New("ucm state: LoadLocalState called with nil Ucm")
+	}
+	s, err := readLocalState(LocalStateDir(u))
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	return s, true, nil
+}

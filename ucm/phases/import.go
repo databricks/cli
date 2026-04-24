@@ -144,7 +144,7 @@ func importTerraform(ctx context.Context, u *ucm.Ucm, opts Options, req ImportRe
 }
 
 func importDirect(ctx context.Context, u *ucm.Ucm, opts Options, req ImportRequest) {
-	ucm.ApplyContext(ctx, u, mutator.ResolveResourceReferences())
+	ucm.ApplyContext(ctx, u, mutator.ResolveVariableReferencesOnlyResources("resources"))
 	if logdiag.HasError(ctx) {
 		return
 	}

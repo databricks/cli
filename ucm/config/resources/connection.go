@@ -1,5 +1,7 @@
 package resources
 
+import "net/url"
+
 // Connection is a UC foreign-catalog connection (the federation link that
 // lets a foreign catalog reference tables in MySQL, PostgreSQL, Snowflake,
 // etc.). Field names mirror databricks-sdk-go's catalog.CreateConnection.
@@ -15,4 +17,15 @@ type Connection struct {
 	Comment        string            `json:"comment,omitempty"`
 	Properties     map[string]string `json:"properties,omitempty"`
 	ReadOnly       bool              `json:"read_only,omitempty"`
+
+	// URL is populated by the initialize_urls mutator.
+	URL string `json:"url,omitempty" ucm:"readonly"`
+}
+
+func (c *Connection) InitializeURL(baseURL url.URL) {
+	if c.Name == "" {
+		return
+	}
+	baseURL.Path = "explore/connections/" + c.Name
+	c.URL = baseURL.String()
 }

@@ -7,11 +7,30 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config/engine"
 	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/databricks/cli/ucm/deploy/direct"
+	"github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/deployplan"
 )
+
+// PreDeployChecks is common set of mutators between "ucm plan" and "ucm deploy".
+// Note, it is not run in "ucm migrate" so it must not modify the config
+func PreDeployChecks(ctx context.Context, u *ucm.Ucm, e engine.EngineType) {
+	ucm.ApplySeqContext(ctx, u,
+		mutator.ValidateDirectOnlyResources(e),
+	)
+	if logdiag.HasError(ctx) {
+		return
+	}
+	// Remote-drift detection is terraform-only; the direct engine has its own
+	// drift phase (ucm/phases/drift.go). Empty kinds today keeps this a no-op
+	// scaffold — concrete UC resource kinds get wired here in later tasks.
+	if !e.IsDirect() {
+		ucm.ApplyContext(ctx, u, terraform.CheckResourcesModifiedRemotely(nil))
+	}
+}
 
 // Plan runs the initialize → build → engine-specific plan sequence and
 // returns a *PlanOutcome carrying the structured plan + summary bits.
@@ -28,6 +47,11 @@ func Plan(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
 	log.Info(ctx, "Phase: plan")
 
 	setting := Initialize(ctx, u, opts)
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	PreDeployChecks(ctx, u, setting.Type)
 	if logdiag.HasError(ctx) {
 		return nil
 	}
@@ -71,7 +95,7 @@ func planTerraform(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
 }
 
 func planDirect(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
-	ucm.ApplyContext(ctx, u, mutator.ResolveResourceReferences())
+	ucm.ApplyContext(ctx, u, mutator.ResolveVariableReferencesOnlyResources("resources"))
 	if logdiag.HasError(ctx) {
 		return nil
 	}
