@@ -50,16 +50,17 @@ paths:
 
 ## Identification
 
-The files matching this rule glob pattern are most likely generated artifacts. Auto-generated files generally have a comment (if the file type allows for comments) at or near the top of the file indicating that they are generated, or their file name/path may indicate they are generated. You may also consult Makefile as starting point to determine if a file is auto-generated.
+Files matching this rule's glob pattern are most likely generated artifacts. Auto-generated files generally have a comment (when the file type allows it) at or near the top indicating they are generated, or their name or path signals it. You may also consult the Makefile as a starting point to determine if a file is auto-generated.
 
 ## Rules
 
-DO NOT "MANUALLY" EDIT THESE FILES!
+**RULE: Do not manually edit auto-generated files.**
 
-If a change is needed in any matched file:
-1. Find the source logic/template/annotation that drives the file.
-2. Run the appropriate generator/update command.
-3. Commit both the source change (if any) and regenerated outputs.
+**RULE: To change a generated file, edit the source and regenerate.**
+
+1. Find the source logic, template, or annotation that drives the file.
+2. Run the appropriate generator or update command.
+3. Commit both the source change (if any) and the regenerated outputs.
 
 ### Core generation commands
 
@@ -83,16 +84,19 @@ If a change is needed in any matched file:
 
 ### Acceptance and test generated outputs
 
-Acceptance outputs are generated and should not be hand-edited (except rare, intentional mass replacement when explicitly justified by repo guidance).
+**RULE: Do not hand-edit acceptance outputs.** Exception: rare, intentional mass replacement when explicitly justified by repo guidance.
 
-- Preferred regeneration:
-  - `make test-update`
-  - `make test-update-templates` (templates only)
-  - `make generate-out-test-toml` (only `out.test.toml`)
-- Typical generated files include:
-  - `acceptance/**/out*`
-  - `acceptance/**/output.txt`
-  - `acceptance/**/output.*.txt`
-  - `acceptance/**/output/**` (materialized template output trees)
+Regeneration commands:
 
-When touching acceptance sources (`databricks.yml`, scripts, templates, or test config), regenerate outputs instead of editing generated files directly.
+- `make test-update`
+- `make test-update-templates` (templates only)
+- `make generate-out-test-toml` (only `out.test.toml`)
+
+Typical generated files:
+
+- `acceptance/**/out*`
+- `acceptance/**/output.txt`
+- `acceptance/**/output.*.txt`
+- `acceptance/**/output/**` (materialized template output trees)
+
+**RULE: When touching acceptance sources, regenerate outputs instead of editing generated files.** Sources include `databricks.yml`, scripts, templates, and test config.
