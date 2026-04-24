@@ -24,10 +24,9 @@ import (
 )
 
 const (
-	skillsRepoOwner      = "databricks"
-	skillsRepoName       = "databricks-agent-skills"
-	skillsRepoPath       = "skills"
-	defaultSkillsRepoRef = "v0.1.5"
+	skillsRepoOwner = "databricks"
+	skillsRepoName  = "databricks-agent-skills"
+	skillsRepoPath  = "skills"
 )
 
 // fetchFileFn is the function used to download individual skill files.
