@@ -17,12 +17,17 @@ type Volume struct {
 	StorageLocation string `json:"storage_location,omitempty"`
 	Comment         string `json:"comment,omitempty"`
 
+	// ID is the deployed resource's terraform-state ID. Populated by
+	// statemgmt.Load from the local tfstate; never written from ucm.yml.
+	ID string `json:"id,omitempty" ucm:"readonly"`
+
 	// URL is populated by the initialize_urls mutator.
 	URL string `json:"url,omitempty" ucm:"readonly"`
 }
 
+// InitializeURL sets v.URL iff the volume has been deployed (ID is non-empty).
 func (v *Volume) InitializeURL(baseURL url.URL) {
-	if v.CatalogName == "" || v.SchemaName == "" || v.Name == "" {
+	if v.ID == "" {
 		return
 	}
 	baseURL.Path = "explore/data/" + v.CatalogName + "/" + v.SchemaName + "/" + v.Name

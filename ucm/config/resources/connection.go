@@ -18,12 +18,18 @@ type Connection struct {
 	Properties     map[string]string `json:"properties,omitempty"`
 	ReadOnly       bool              `json:"read_only,omitempty"`
 
+	// ID is the deployed resource's terraform-state ID. Populated by
+	// statemgmt.Load from the local tfstate; never written from ucm.yml.
+	ID string `json:"id,omitempty" ucm:"readonly"`
+
 	// URL is populated by the initialize_urls mutator.
 	URL string `json:"url,omitempty" ucm:"readonly"`
 }
 
+// InitializeURL sets c.URL iff the connection has been deployed
+// (ID is non-empty).
 func (c *Connection) InitializeURL(baseURL url.URL) {
-	if c.Name == "" {
+	if c.ID == "" {
 		return
 	}
 	baseURL.Path = "explore/connections/" + c.Name

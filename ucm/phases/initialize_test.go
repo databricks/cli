@@ -100,13 +100,15 @@ func TestInitializeDefinesWorkspacePaths(t *testing.T) {
 }
 
 // TestInitializePopulatesResourceURLs asserts InitializeURLs ran inside
-// Initialize: each declared resource gets a console URL derived from the
-// configured Workspace.Host.
+// Initialize: a resource with an ID (i.e. one already present in state) gets
+// a console URL derived from the configured Workspace.Host. Resources without
+// an ID are declared-but-not-deployed and deliberately keep URL == "" so
+// `ucm summary` can render "(not deployed)".
 func TestInitializePopulatesResourceURLs(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Workspace.Host = "https://mycompany.databricks.com"
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"cat1": {Name: "cat1"},
+		"cat1": {Name: "cat1", ID: "cat1"},
 	}
 
 	ctx := logdiag.InitContext(t.Context())

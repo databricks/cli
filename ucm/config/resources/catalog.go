@@ -24,12 +24,19 @@ type Catalog struct {
 	Schemas map[string]*Schema `json:"schemas,omitempty"`
 	Grants  map[string]*Grant  `json:"grants,omitempty"`
 
+	// ID is the deployed resource's terraform-state ID. Populated by
+	// statemgmt.Load from the local tfstate; never written from ucm.yml.
+	ID string `json:"id,omitempty" ucm:"readonly"`
+
 	// URL is populated by the initialize_urls mutator.
 	URL string `json:"url,omitempty" ucm:"readonly"`
 }
 
+// InitializeURL sets c.URL iff the catalog has been deployed (ID is non-empty).
+// Mirrors bundle/config/resources.Job.InitializeURL's ID-gated pattern so
+// `ucm summary` only prints URLs that actually resolve.
 func (c *Catalog) InitializeURL(baseURL url.URL) {
-	if c.Name == "" {
+	if c.ID == "" {
 		return
 	}
 	baseURL.Path = "explore/data/" + c.Name

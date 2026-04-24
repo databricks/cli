@@ -19,22 +19,22 @@ func TestInitializeURLs(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"cat1": {Name: "cat1"},
+					"cat1": {Name: "cat1", ID: "cat1"},
 				},
 				Schemas: map[string]*resources.Schema{
-					"sch1": {Name: "sch1", Catalog: "cat1"},
+					"sch1": {Name: "sch1", Catalog: "cat1", ID: "cat1.sch1"},
 				},
 				Volumes: map[string]*resources.Volume{
-					"vol1": {Name: "vol1", CatalogName: "cat1", SchemaName: "sch1"},
+					"vol1": {Name: "vol1", CatalogName: "cat1", SchemaName: "sch1", ID: "cat1.sch1.vol1"},
 				},
 				StorageCredentials: map[string]*resources.StorageCredential{
-					"sc1": {Name: "sc1"},
+					"sc1": {Name: "sc1", ID: "sc1"},
 				},
 				ExternalLocations: map[string]*resources.ExternalLocation{
-					"el1": {Name: "el1", Url: "s3://bucket/path"},
+					"el1": {Name: "el1", Url: "s3://bucket/path", ID: "el1"},
 				},
 				Connections: map[string]*resources.Connection{
-					"conn1": {Name: "conn1", ConnectionType: "POSTGRESQL"},
+					"conn1": {Name: "conn1", ConnectionType: "POSTGRESQL", ID: "conn1"},
 				},
 			},
 		},
@@ -76,7 +76,7 @@ func TestInitializeURLsStripsTrailingSlash(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"cat1": {Name: "cat1"},
+					"cat1": {Name: "cat1", ID: "cat1"},
 				},
 			},
 		},
@@ -88,4 +88,32 @@ func TestInitializeURLsStripsTrailingSlash(t *testing.T) {
 	// Exactly one slash between host and path — no double slash regardless of
 	// whether Workspace.Host had a trailing slash.
 	assert.Equal(t, "https://mycompany.databricks.com/explore/data/cat1", u.Config.Resources.Catalogs["cat1"].URL)
+}
+
+// TestInitializeURLsSkipsNonDeployedResources verifies the DAB-parity gate:
+// resources without a tfstate ID are declared-but-not-yet-deployed and must
+// leave URL empty so `ucm summary` renders "(not deployed)" instead of a URL
+// that 404s.
+func TestInitializeURLsSkipsNonDeployedResources(t *testing.T) {
+	u := &ucm.Ucm{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				Host: "https://mycompany.databricks.com",
+			},
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"cat1": {Name: "cat1"}, // no ID
+				},
+				Schemas: map[string]*resources.Schema{
+					"sch1": {Name: "sch1", Catalog: "cat1"}, // no ID
+				},
+			},
+		},
+	}
+
+	diags := ucm.Apply(t.Context(), u, mutator.InitializeURLs())
+	require.Empty(t, diags)
+
+	assert.Empty(t, u.Config.Resources.Catalogs["cat1"].URL)
+	assert.Empty(t, u.Config.Resources.Schemas["sch1"].URL)
 }
