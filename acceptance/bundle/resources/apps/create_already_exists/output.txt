@@ -1,6 +1,14 @@
 
 >>> [CLI] apps create test-app-already-exists
 {
+  "active_deployment": {
+    "deployment_id":"deploy-[NUMID]",
+    "source_code_path":"/Workspace/Users/[USERNAME]/test-app-already-exists",
+    "status": {
+      "message":"Deployment succeeded",
+      "state":"SUCCEEDED"
+    }
+  },
   "app_status": {
     "message":"Application is running.",
     "state":"RUNNING"
@@ -10,6 +18,7 @@
     "message":"App compute is active.",
     "state":"ACTIVE"
   },
+  "default_source_code_path":"/Workspace/Users/[USERNAME]/test-app-already-exists",
   "id":"1000",
   "name":"test-app-already-exists",
   "service_principal_client_id":"[UUID]",
