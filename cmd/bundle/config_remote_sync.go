@@ -63,7 +63,7 @@ Examples:
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
 
-				configsync.RestoreVariableReferences(b, fieldChanges)
+				configsync.RestoreVariableReferences(ctx, b, fieldChanges)
 
 				files, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
 				if err != nil {

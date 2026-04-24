@@ -11,12 +11,16 @@ Resource: resources.jobs.my_job
   parameters[name='catalog'].default: replace
   parameters[name='data_catalog']: add
   parameters[name='deploy_env']: add
+  parameters[name='deploy_target']: add
   parameters[name='file_sourced']: add
   parameters[name='region']: add
   parameters[name='some_schema']: add
   tags['deployment']: add
   tags['dev']: remove
   tasks[task_key='main'].notebook_task.base_parameters['source_path']: replace
+  tasks[task_key='run_pipeline'].pipeline_task.full_refresh: replace
+  tasks[task_key='run_pipeline_again']: add
+  tasks[task_key='secondary']: add
 
 
 
@@ -25,20 +29,22 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -28,5 +28,5 @@
+@@ -36,5 +36,5 @@
        parameters:
          - name: catalog
 -          default: ${var.my_catalog}
 +          default: staging_catalog
          - name: env
            default: ${var.target_env}
-@@ -39,4 +39,14 @@
+@@ -50,4 +50,16 @@
          - name: curated
            default: ${var.curated_schema}
 +        - default: ${var.my_catalog}
 +          name: data_catalog
 +        - default: ${var.target_env}
 +          name: deploy_env
++        - default: ${bundle.target}
++          name: deploy_target
 +        - default: ${var.file_override_var}
 +          name: file_sourced
 +        - default: us-west-2
@@ -47,11 +53,26 @@ Resource: resources.jobs.my_job
 +          name: some_schema
        tasks:
          - task_key: main
-@@ -45,5 +55,7 @@
+@@ -56,5 +68,5 @@
              base_parameters:
-               # Compound interpolation: variable embedded in a longer string.
--              source_path: /mnt/${var.my_catalog}/raw/landing
-+              source_path: /mnt/${var.my_catalog}/raw/landing_v2
+               # Compound interpolation: mixes ${var.X} and ${bundle.X} refs.
+-              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing
++              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing_v2
+         # Resource reference: ${resources.pipelines.my_pipeline.id} resolves to
+         # the deployed pipeline's ID. Used to test that resource refs are
+@@ -63,5 +75,15 @@
+           pipeline_task:
+             pipeline_id: ${resources.pipelines.my_pipeline.id}
+-            full_refresh: false
++            full_refresh: true
++        - pipeline_task:
++            pipeline_id: ${resources.pipelines.my_pipeline.id}
++          task_key: run_pipeline_again
++        - notebook_task:
++            base_parameters:
++              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing_v2
++            notebook_path: /Users/{{workspace_user_name}}/notebook
++          task_key: secondary
 +      tags:
 +        deployment: main
 
@@ -60,6 +81,11 @@ Resource: resources.jobs.my_job
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.my_job
+  delete resources.pipelines.my_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.my_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 

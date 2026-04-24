@@ -23,6 +23,14 @@ variables:
       num_workers: 2
 
 resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-$UNIQUE_NAME
+      development: false
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook
+
   jobs:
     my_job:
       parameters:
@@ -32,6 +40,9 @@ resources:
           default: ${var.target_env}
         - name: file_val
           default: ${var.file_override_var}
+        # Bundle reference: ${bundle.target} resolves to "default".
+        - name: target_name
+          default: ${bundle.target}
         # Both use variables that resolve to the same value ("raw_data").
         # Tests disambiguation: original reference is preserved on Replace.
         - name: landing
@@ -43,8 +54,15 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
             base_parameters:
-              # Compound interpolation: variable embedded in a longer string.
-              source_path: /mnt/${var.my_catalog}/raw/landing
+              # Compound interpolation: mixes ${var.X} and ${bundle.X} refs.
+              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing
+        # Resource reference: ${resources.pipelines.my_pipeline.id} resolves to
+        # the deployed pipeline's ID. Used to test that resource refs are
+        # treated the same as other reference kinds by the sync logic.
+        - task_key: run_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.my_pipeline.id}
+            full_refresh: false
 
 targets:
   default:

@@ -1,23 +1,27 @@
 package configsync
 
 import (
-	"bytes"
-	"os"
+	"context"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
 // varPrefix is the dyn.Path prefix for the ${var.X} shorthand.
 var varPrefix = dyn.NewPath(dyn.Key("var"))
 
 // RestoreVariableReferences replaces hardcoded change values with variable
-// references (e.g., ${var.foo}) when the value can be traced back to a
-// variable in the original YAML.
+// references (${var.foo}, ${bundle.target}, ${resources.X.Y.id}) when the
+// value can be traced back to a reference in the original YAML. Resource IDs
+// are injected from state since they aren't materialized into the resolved
+// config's dyn.Value tree.
 //
 // For Replace operations, restoration requires the pre-resolved YAML at the
 // exact field position. Pure variable references (e.g., ${var.catalog}) are
@@ -32,9 +36,33 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // variable reference at the exact same relative path whose resolved value
 // matches the leaf value. Non-sequence Adds (new map fields) are left
 // untouched.
-func RestoreVariableReferences(b *bundle.Bundle, fieldChanges []FieldChange) {
-	fileCache := map[string]dyn.Value{}
+//
+// The pre-resolved config is obtained by re-loading the bundle from disk
+// through the standard loader mutators (entry point + includes + target
+// overrides) but skipping variable resolution. This gives a fully merged
+// view where ${var.X} and ${resources.X.Y.id} references are still literal
+// strings — enabling correct sibling lookup even for sequences split across
+// files via target overrides.
+func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) {
+	preResolved := loadPreResolvedConfig(ctx, b)
+	if !preResolved.IsValid() {
+		return
+	}
 	resolved := b.Config.Value()
+
+	// Augment resolved with resource IDs from state — only when the config
+	// actually uses ${resources.X.Y.id} references. The IDs aren't materialized
+	// into b.Config.Value() (they live in the StateDB), so we inject them here
+	// to enable sibling-based restoration. Skipped entirely for bundles with
+	// no resource refs to avoid opening state DB files unnecessarily.
+	resourceRefs := collectResourceIDRefs(preResolved)
+	if len(resourceRefs) > 0 {
+		if lookup := resourceIDLookup(ctx, b); lookup != nil {
+			resolved = injectResourceIDs(ctx, resolved, resourceRefs, lookup)
+		} else {
+			log.Debugf(ctx, "variable restoration: state DB unavailable, skipping resource ID injection for %d refs", len(resourceRefs))
+		}
+	}
 
 	for i := range fieldChanges {
 		fc := &fieldChanges[i]
@@ -42,13 +70,13 @@ func RestoreVariableReferences(b *bundle.Bundle, fieldChanges []FieldChange) {
 		var newValue any
 		switch fc.Change.Operation {
 		case OperationReplace:
-			preResolved, ok := preResolvedValueAt(fileCache, fc.FilePath, fc.FieldCandidates)
+			fieldValue, ok := preResolvedValueAt(preResolved, fc.FieldCandidates)
 			if !ok {
 				continue
 			}
-			newValue = restoreOriginalRefs(fc.Change.Value, preResolved, resolved)
+			newValue = restoreOriginalRefs(fc.Change.Value, fieldValue, resolved)
 		case OperationAdd:
-			siblings, ok := sequenceSiblings(fileCache, fc.FilePath, fc.FieldCandidates)
+			siblings, ok := sequenceSiblings(preResolved, fc.FieldCandidates)
 			if !ok {
 				continue
 			}
@@ -62,6 +90,102 @@ func RestoreVariableReferences(b *bundle.Bundle, fieldChanges []FieldChange) {
 			Value:     newValue,
 		}
 	}
+}
+
+// loadPreResolvedConfig loads the bundle's configuration through the standard
+// loader mutators (entry point, includes, target overrides) but without
+// variable resolution. The resulting dyn.Value is fully merged across files
+// and targets, yet retains ${...} references as literal strings. Returns
+// InvalidValue if loading fails (restoration is then skipped).
+func loadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
+	fresh := &bundle.Bundle{
+		BundleRootPath: b.BundleRootPath,
+		BundleRoot:     b.BundleRoot,
+	}
+	// Use a fresh logdiag context — diagnostics from this loader are internal
+	// and should not pollute the outer command's diagnostics.
+	loadCtx := logdiag.InitContext(context.Background())
+	mutator.DefaultMutators(loadCtx, fresh)
+	if logdiag.HasError(loadCtx) {
+		log.Debugf(ctx, "variable restoration: pre-resolved config load failed: %s", logdiag.GetFirstErrorSummary(loadCtx))
+		return dyn.InvalidValue
+	}
+	target := b.Config.Bundle.Target
+	if target != "" {
+		if _, ok := fresh.Config.Targets[target]; ok {
+			bundle.ApplyContext(loadCtx, fresh, mutator.SelectTarget(target))
+			if logdiag.HasError(loadCtx) {
+				log.Debugf(ctx, "variable restoration: target %q merge failed: %s", target, logdiag.GetFirstErrorSummary(loadCtx))
+				return dyn.InvalidValue
+			}
+		}
+	}
+	return fresh.Config.Value()
+}
+
+// resourceIDLookup returns a function that resolves resource keys to their
+// deployed IDs from state. For the direct engine, the StateDB is already open
+// on b.DeploymentBundle. For the terraform engine, the config snapshot is
+// opened locally (it was downloaded by ensureSnapshotAvailable during
+// DetectChanges). Returns nil if no state is available.
+func resourceIDLookup(ctx context.Context, b *bundle.Bundle) func(string) string {
+	if b.DeploymentBundle.StateDB.Path != "" {
+		return b.DeploymentBundle.StateDB.GetResourceID
+	}
+	_, statePath := b.StateFilenameConfigSnapshot(ctx)
+	db := &dstate.DeploymentState{}
+	if err := db.Open(statePath); err != nil {
+		log.Debugf(ctx, "variable restoration: failed to open state DB at %s: %v", statePath, err)
+		return nil
+	}
+	return db.GetResourceID
+}
+
+// collectResourceIDRefs walks the pre-resolved merged config to find pure
+// ${resources.<kind>.<name>.id} references. Returns the unique set of paths
+// so the caller can inject IDs at those positions; returns nil if no such
+// references exist.
+func collectResourceIDRefs(preResolved dyn.Value) []dyn.Path {
+	seen := map[string]bool{}
+	var paths []dyn.Path
+	_ = dyn.WalkReadOnly(preResolved, func(_ dyn.Path, v dyn.Value) error {
+		s, ok := v.AsString()
+		if !ok || !dynvar.IsPureVariableReference(s) || seen[s] {
+			return nil
+		}
+		seen[s] = true
+		p, ok := dynvar.PureReferenceToPath(s)
+		if !ok {
+			return nil
+		}
+		if len(p) != 4 || p[0].Key() != "resources" || p[3].Key() != "id" {
+			return nil
+		}
+		paths = append(paths, p)
+		return nil
+	})
+	return paths
+}
+
+// injectResourceIDs populates the resolved dyn.Value with IDs from state for
+// the given resource reference paths. Skips references whose IDs aren't in
+// state or that can't be written back into the dyn.Value tree.
+func injectResourceIDs(ctx context.Context, resolved dyn.Value, paths []dyn.Path, lookupID func(string) string) dyn.Value {
+	for _, p := range paths {
+		resourceKey := p[:3].String()
+		id := lookupID(resourceKey)
+		if id == "" {
+			log.Debugf(ctx, "variable restoration: no state entry for resource %q", resourceKey)
+			continue
+		}
+		updated, err := dyn.SetByPath(resolved, p, dyn.V(id))
+		if err != nil {
+			log.Debugf(ctx, "variable restoration: SetByPath failed for %s: %v", p, err)
+			continue
+		}
+		resolved = updated
+	}
+	return resolved
 }
 
 // resolveReferencePath converts a variable reference string to the dyn.Path
@@ -148,25 +272,36 @@ func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, 
 	switch v := value.(type) {
 	case string, bool, int64:
 		refs := map[string]struct{}{}
+		strVal, isStr := value.(string)
 		for _, sib := range siblings {
 			sv, err := dyn.GetByPath(sib, relPath)
 			if err != nil {
 				continue
 			}
 			s, ok := sv.AsString()
-			if !ok || !dynvar.IsPureVariableReference(s) {
-				continue
-			}
-			rp, ok := resolveReferencePath(s)
 			if !ok {
 				continue
 			}
-			rv, getErr := dyn.GetByPath(resolved, rp)
-			if getErr != nil {
-				continue
-			}
-			if rv.AsAny() == value {
-				refs[s] = struct{}{}
+			if dynvar.IsPureVariableReference(s) {
+				rp, ok := resolveReferencePath(s)
+				if !ok {
+					continue
+				}
+				rv, getErr := dyn.GetByPath(resolved, rp)
+				if getErr != nil {
+					continue
+				}
+				if rv.AsAny() == value {
+					refs[s] = struct{}{}
+				}
+			} else if isStr && dynvar.ContainsVariableReference(s) {
+				// Compound interpolation in sibling: try to align the new
+				// value against the sibling's template. If all variables
+				// match at their positions, the template (possibly with
+				// updated literal segments) is used.
+				if restored, ok := restoreCompoundInterpolation(strVal, sv, resolved); ok {
+					refs[restored] = struct{}{}
+				}
 			}
 		}
 		if len(refs) == 1 {
@@ -393,40 +528,29 @@ func findAnchorOffset(segments []templateSegment, from int, remaining string) in
 	return len(remaining)
 }
 
-// preResolvedValueAt returns the pre-resolved dyn.Value at the field path, if
-// the field exists in the original YAML.
-func preResolvedValueAt(cache map[string]dyn.Value, filePath string, candidates []string) (dyn.Value, bool) {
-	configValue := loadCachedYAML(cache, filePath)
-	if !configValue.IsValid() {
-		return dyn.InvalidValue, false
-	}
-
+// preResolvedValueAt returns the pre-resolved dyn.Value at the field path,
+// if the field exists in the merged pre-resolved config.
+func preResolvedValueAt(preResolved dyn.Value, candidates []string) (dyn.Value, bool) {
 	for _, candidate := range candidates {
 		candidate = stripBracketStars(candidate)
 		p, err := dyn.NewPathFromString(candidate)
 		if err != nil {
 			continue
 		}
-		v, err := dyn.GetByPath(configValue, p)
+		v, err := dyn.GetByPath(preResolved, p)
 		if err == nil {
 			return v, true
 		}
 	}
-
 	return dyn.InvalidValue, false
 }
 
 // sequenceSiblings returns the sibling elements of the parent sequence when
 // the field change represents adding a new element to a sequence. The path's
-// last component must be an index ([*] or [N]) and the parent must resolve to
-// a sequence in the pre-resolved YAML. Returns false for non-sequence Adds
-// (e.g., new map fields).
-func sequenceSiblings(cache map[string]dyn.Value, filePath string, candidates []string) ([]dyn.Value, bool) {
-	configValue := loadCachedYAML(cache, filePath)
-	if !configValue.IsValid() {
-		return nil, false
-	}
-
+// last component must be an index ([*] or [N]) and the parent must resolve
+// to a sequence in the pre-resolved config. Returns false for non-sequence
+// Adds (e.g., new map fields).
+func sequenceSiblings(preResolved dyn.Value, candidates []string) ([]dyn.Value, bool) {
 	for _, candidate := range candidates {
 		parent, ok := extractSequenceParent(candidate)
 		if !ok {
@@ -436,7 +560,7 @@ func sequenceSiblings(cache map[string]dyn.Value, filePath string, candidates []
 		if err != nil {
 			continue
 		}
-		parentValue, err := dyn.GetByPath(configValue, p)
+		parentValue, err := dyn.GetByPath(preResolved, p)
 		if err != nil {
 			continue
 		}
@@ -449,7 +573,6 @@ func sequenceSiblings(cache map[string]dyn.Value, filePath string, candidates []
 		}
 		return seq, true
 	}
-
 	return nil, false
 }
 
@@ -478,27 +601,4 @@ func extractSequenceParent(candidate string) (string, bool) {
 // where the target element doesn't exist yet.
 func stripBracketStars(candidate string) string {
 	return strings.ReplaceAll(candidate, "[*]", "")
-}
-
-// loadCachedYAML parses a YAML file and caches the result. Returns the
-// pre-resolved dyn.Value (variable references are still literal strings).
-func loadCachedYAML(cache map[string]dyn.Value, filePath string) dyn.Value {
-	if v, ok := cache[filePath]; ok {
-		return v
-	}
-
-	raw, err := os.ReadFile(filePath)
-	if err != nil {
-		cache[filePath] = dyn.InvalidValue
-		return dyn.InvalidValue
-	}
-
-	v, err := yamlloader.LoadYAML(filePath, bytes.NewBuffer(raw))
-	if err != nil {
-		cache[filePath] = dyn.InvalidValue
-		return dyn.InvalidValue
-	}
-
-	cache[filePath] = v
-	return v
 }

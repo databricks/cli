@@ -23,6 +23,39 @@ r["parameters"].append({"name": "region", "default": "us-west-2"})
 r["parameters"].append({"name": "deploy_env", "default": "production"})
 # "from-overrides-file" matches file_override_var (set via variable-overrides.json) -> restored
 r["parameters"].append({"name": "file_sourced", "default": "from-overrides-file"})
+# "default" matches sibling target_name's \${bundle.target} -> restored
+r["parameters"].append({"name": "deploy_target", "default": "default"})
+
+# Add a new task with the same structure as the existing one (different task_key).
+# The sibling's source_path uses compound interpolation with \${var.my_catalog} and
+# \${bundle.target}; the new task's source_path matches the resolved template, so
+# both variables should be restored via compound-sibling alignment.
+r["tasks"].append({
+    "task_key": "secondary",
+    "notebook_task": {
+        "notebook_path": r["tasks"][0]["notebook_task"]["notebook_path"],
+        "base_parameters": {"source_path": "/mnt/main/default/raw/landing"}
+    }
+})
+
+# Change full_refresh on the existing run_pipeline task. The sibling field
+# pipeline_id uses \${resources.pipelines.my_pipeline.id} and must stay
+# intact in the YAML because the Replace only affects full_refresh.
+for t in r["tasks"]:
+    if t.get("task_key") == "run_pipeline":
+        t["pipeline_task"]["full_refresh"] = True
+
+# Add a new pipeline task that triggers the same pipeline. The sibling
+# run_pipeline has pipeline_id = \${resources.pipelines.my_pipeline.id}; the
+# new task uses the same resolved ID, so the sibling rule should restore
+# the resource reference.
+pipeline_id = next(t for t in r["tasks"] if t["task_key"] == "run_pipeline")["pipeline_task"]["pipeline_id"]
+r["tasks"].append({
+    "task_key": "run_pipeline_again",
+    "pipeline_task": {
+        "pipeline_id": pipeline_id,
+    }
+})
 
 # --- Replace operations (original ref) ---
 # Change "catalog" param (originally \${var.my_catalog} = "main") to unrelated value -> hardcoded
@@ -36,11 +69,12 @@ for p in r["parameters"]:
 r["tags"] = {"deployment": "main"}
 
 # Compound interpolation: change only the suffix of source_path.
-# The variable part (\${var.my_catalog} = "main") is unchanged -> preserved as \${var.my_catalog}
+# Both \${var.my_catalog}="main" and \${bundle.target}="default" are unchanged;
+# only the literal suffix changes. Expected: both refs preserved, suffix updated.
 for t in r["tasks"]:
     bp = t.get("notebook_task", {}).get("base_parameters", {})
     if "source_path" in bp:
-        bp["source_path"] = "/mnt/main/raw/landing_v2"
+        bp["source_path"] = "/mnt/main/default/raw/landing_v2"
 EOF
 
 title "Detect and save changes"
