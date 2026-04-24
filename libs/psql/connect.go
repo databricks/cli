@@ -98,10 +98,7 @@ func connectWithRetry(ctx context.Context, args, env []string, retryConfig Retry
 			case <-time.After(delay):
 			}
 
-			delay = time.Duration(float64(delay) * retryConfig.BackoffFactor)
-			if delay > retryConfig.MaxDelay {
-				delay = retryConfig.MaxDelay
-			}
+			delay = min(time.Duration(float64(delay)*retryConfig.BackoffFactor), retryConfig.MaxDelay)
 		}
 
 		if attempt > 0 {

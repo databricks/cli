@@ -23,7 +23,7 @@ import (
 // Heredoc is the equivalent of compute.TrimLeadingWhitespace
 // (command-execution API helper from SDK), except it's more
 // friendly to non-printable characters.
-func Heredoc(tmpl string) (trimmed string) {
+func Heredoc(tmpl string) string {
 	lines := strings.Split(tmpl, "\n")
 	leadingWhitespace := 1<<31 - 1
 	for _, line := range lines {
@@ -39,17 +39,19 @@ func Heredoc(tmpl string) (trimmed string) {
 			break
 		}
 	}
+	var sb strings.Builder
 	for i := range lines {
 		if lines[i] == "" || strings.TrimSpace(lines[i]) == "" {
 			continue
 		}
 		if len(lines[i]) < leadingWhitespace {
-			trimmed += lines[i] + "\n" // or not..
+			sb.WriteString(lines[i])
 		} else {
-			trimmed += lines[i][leadingWhitespace:] + "\n"
+			sb.WriteString(lines[i][leadingWhitespace:])
 		}
+		sb.WriteByte('\n')
 	}
-	return strings.TrimSpace(trimmed)
+	return strings.TrimSpace(sb.String())
 }
 
 // writeFlusher represents a buffered writer that can be flushed. This is useful when
@@ -271,27 +273,26 @@ func Render(ctx context.Context, v any) error {
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
+// RenderIterator renders the items produced by i. When the terminal is
+// fully interactive (stdin + stdout + stderr all TTYs) and the command
+// has a row template, we page through the existing template + tabwriter
+// pipeline (same colors, same alignment as the non-paged path; widths are
+// locked from the first batch so columns stay aligned across pages).
+// Piped output and JSON output keep the existing non-paged behavior.
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
+	if c.capabilities.SupportsPager() && c.outputFormat == flags.OutputText && c.template != "" {
+		return renderIteratorPagedTemplate(ctx, i, c.in, c.out, c.headerTemplate, c.template)
+	}
 	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
 	c := fromContext(ctx)
 	if _, ok := v.(listingInterface); ok {
-		panic("use RenderIteratorWithTemplate instead")
+		panic("listings must use RenderIterator, not RenderWithTemplate")
 	}
 	return renderWithTemplate(ctx, newRenderer(v), c.outputFormat, c.out, headerTemplate, template)
-}
-
-func RenderIteratorWithTemplate[T any](ctx context.Context, i listing.Iterator[T], headerTemplate, template string) error {
-	c := fromContext(ctx)
-	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, headerTemplate, template)
-}
-
-func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error {
-	c := fromContext(ctx)
-	return renderWithTemplate(ctx, newIteratorRenderer(i), c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 var renderFuncMap = template.FuncMap{

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -21,6 +22,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -56,6 +58,23 @@ func discoveryErr(msg string, err error) error {
 		return fmt.Errorf("%s: %w%s", msg, err, discoveryFallbackTip)
 	}
 	return fmt.Errorf("%s%s", msg, discoveryFallbackTip)
+}
+
+// dualWriteLegacyHostKey mirrors the freshly minted token under the legacy
+// host-based cache key so users alternating between CLI and SDK find it.
+// Skipped for secure mode to avoid multiplying keyring entries.
+func dualWriteLegacyHostKey(ctx context.Context, tokenCache cache.TokenCache, arg u2m.OAuthArgument, mode storage.StorageMode) {
+	if mode != storage.StorageModeLegacy {
+		return
+	}
+	t, err := tokenCache.Lookup(arg.GetCacheKey())
+	if err != nil || t == nil {
+		return
+	}
+	dual := storage.NewDualWritingTokenCache(tokenCache, arg)
+	if err := dual.Store(arg.GetCacheKey(), t); err != nil {
+		log.Debugf(ctx, "token cache dual-write failed: %v", err)
+	}
 }
 
 type discoveryPersistentAuth interface {
@@ -145,6 +164,11 @@ a new profile is created.
 		ctx := cmd.Context()
 		profileName := cmd.Flag("profile").Value.String()
 
+		tokenCache, mode, err := storage.ResolveCache(ctx, "")
+		if err != nil {
+			return err
+		}
+
 		// Cluster and Serverless are mutually exclusive.
 		if configureCluster && configureServerless {
 			return errors.New("please either configure serverless or cluster, not both")
@@ -195,7 +219,16 @@ a new profile is created.
 			if err := validateDiscoveryFlagCompatibility(cmd); err != nil {
 				return err
 			}
-			return discoveryLogin(ctx, &defaultDiscoveryClient{}, profileName, loginTimeout, scopes, existingProfile, getBrowserFunc(cmd))
+			return discoveryLogin(ctx, discoveryLoginInputs{
+				dc:              &defaultDiscoveryClient{},
+				profileName:     profileName,
+				timeout:         loginTimeout,
+				scopes:          scopes,
+				existingProfile: existingProfile,
+				browserFunc:     getBrowserFunc(cmd),
+				tokenCache:      tokenCache,
+				mode:            mode,
+			})
 		}
 
 		// Load unified host flag from the profile if not explicitly set via CLI flag.
@@ -230,6 +263,7 @@ a new profile is created.
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
+			u2m.WithTokenCache(tokenCache),
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -246,6 +280,7 @@ a new profile is created.
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
+		dualWriteLegacyHostKey(ctx, tokenCache, oauthArgument, mode)
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
@@ -559,34 +594,48 @@ func validateDiscoveryFlagCompatibility(cmd *cobra.Command) error {
 	return nil
 }
 
+// discoveryLoginInputs groups the dependencies of discoveryLogin.
+// See https://google.github.io/styleguide/go/best-practices#option-structure.
+type discoveryLoginInputs struct {
+	dc              discoveryClient
+	profileName     string
+	timeout         time.Duration
+	scopes          string
+	existingProfile *profile.Profile
+	browserFunc     func(string) error
+	tokenCache      cache.TokenCache
+	mode            storage.StorageMode
+}
+
 // discoveryLogin runs the login.databricks.com discovery flow. The user
 // authenticates in the browser, selects a workspace, and the CLI receives
 // the workspace host from the OAuth callback's iss parameter.
-func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string, timeout time.Duration, scopes string, existingProfile *profile.Profile, browserFunc func(string) error) error {
-	arg, err := dc.NewOAuthArgument(profileName)
+func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
+	arg, err := in.dc.NewOAuthArgument(in.profileName)
 	if err != nil {
 		return discoveryErr("setting up login.databricks.com", err)
 	}
 
-	scopesList := splitScopes(scopes)
-	if len(scopesList) == 0 && existingProfile != nil && existingProfile.Scopes != "" {
-		scopesList = splitScopes(existingProfile.Scopes)
+	scopesList := splitScopes(in.scopes)
+	if len(scopesList) == 0 && in.existingProfile != nil && in.existingProfile.Scopes != "" {
+		scopesList = splitScopes(in.existingProfile.Scopes)
 	}
 
 	opts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(arg),
-		u2m.WithBrowser(browserFunc),
+		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
+		u2m.WithTokenCache(in.tokenCache),
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
 	}
 
 	// Apply timeout before creating PersistentAuth so Challenge() respects it.
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, in.timeout)
 	defer cancel()
 
-	persistentAuth, err := dc.NewPersistentAuth(ctx, opts...)
+	persistentAuth, err := in.dc.NewPersistentAuth(ctx, opts...)
 	if err != nil {
 		return discoveryErr("setting up login.databricks.com", err)
 	}
@@ -596,6 +645,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
+	dualWriteLegacyHostKey(ctx, in.tokenCache, arg, in.mode)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {
@@ -618,7 +668,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 		return fmt.Errorf("retrieving token after login: %w", err)
 	}
 
-	introspection, err := dc.IntrospectToken(ctx, discoveredHost, tok.AccessToken)
+	introspection, err := in.dc.IntrospectToken(ctx, discoveredHost, tok.AccessToken)
 	if err != nil {
 		log.Debugf(ctx, "token introspection failed (non-fatal): %v", err)
 	} else {
@@ -629,10 +679,10 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 			accountID = introspection.AccountID
 		}
 
-		if existingProfile != nil && existingProfile.AccountID != "" && introspection.AccountID != "" &&
-			existingProfile.AccountID != introspection.AccountID {
+		if in.existingProfile != nil && in.existingProfile.AccountID != "" && introspection.AccountID != "" &&
+			in.existingProfile.AccountID != introspection.AccountID {
 			log.Warnf(ctx, "detected account ID %q differs from existing profile account ID %q",
-				introspection.AccountID, existingProfile.AccountID)
+				introspection.AccountID, in.existingProfile.AccountID)
 		}
 	}
 
@@ -651,7 +701,7 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 		"serverless_compute_id",
 	)
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
-		Profile:     profileName,
+		Profile:     in.profileName,
 		Host:        discoveredHost,
 		AuthType:    authTypeDatabricksCLI,
 		AccountID:   accountID,
@@ -661,19 +711,19 @@ func discoveryLogin(ctx context.Context, dc discoveryClient, profileName string,
 	}, clearKeys...)
 	if err != nil {
 		if configFile != "" {
-			return fmt.Errorf("saving profile %q to %s: %w", profileName, configFile, err)
+			return fmt.Errorf("saving profile %q to %s: %w", in.profileName, configFile, err)
 		}
-		return fmt.Errorf("saving profile %q: %w", profileName, err)
+		return fmt.Errorf("saving profile %q: %w", in.profileName, err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
+	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", in.profileName))
 	return nil
 }
 
 // splitScopes splits a comma-separated scopes string into a trimmed slice.
 func splitScopes(scopes string) []string {
 	var result []string
-	for _, s := range strings.Split(scopes, ",") {
+	for s := range strings.SplitSeq(scopes, ",") {
 		scope := strings.TrimSpace(s)
 		if scope == "" {
 			continue

@@ -20,11 +20,18 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
+
+// newTestTokenCache returns an in-memory token cache for tests so that
+// discoveryLogin and other login helpers don't touch ~/.databricks/token-cache.json.
+func newTestTokenCache() cache.TokenCache {
+	return &inMemoryTokenCache{Tokens: map[string]*oauth2.Token{}}
+}
 
 // logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
 type logBuffer struct {
@@ -623,7 +630,14 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "all-apis, ,sql,", nil, func(string) error { return nil })
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		scopes:      "all-apis, ,sql,",
+		browserFunc: func(string) error { return nil },
+		tokenCache:  newTestTokenCache(),
+	})
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://workspace.example.com", dc.introspectHost)
@@ -671,7 +685,14 @@ func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
 		AccountID: "old-account-id",
 	}
 
-	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:              dc,
+		profileName:     "DISCOVERY",
+		timeout:         time.Second,
+		existingProfile: existingProfile,
+		browserFunc:     func(string) error { return nil },
+		tokenCache:      newTestTokenCache(),
+	})
 	require.NoError(t, err)
 
 	// Verify warning about mismatched account IDs was logged.
@@ -719,7 +740,14 @@ func TestDiscoveryLogin_NoWarningWhenAccountIDsMatch(t *testing.T) {
 		AccountID: "same-account-id",
 	}
 
-	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:              dc,
+		profileName:     "DISCOVERY",
+		timeout:         time.Second,
+		existingProfile: existingProfile,
+		browserFunc:     func(string) error { return nil },
+		tokenCache:      newTestTokenCache(),
+	})
 	require.NoError(t, err)
 
 	// No warning should be logged when account IDs match.
@@ -739,7 +767,13 @@ func TestDiscoveryLogin_EmptyDiscoveredHostReturnsError(t *testing.T) {
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", nil, func(string) error { return nil })
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenCache:  newTestTokenCache(),
+	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no workspace host was discovered")
 }
@@ -771,7 +805,14 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 
 	// No --scopes flag (empty string), should fall back to existing profile scopes.
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:              dc,
+		profileName:     "DISCOVERY",
+		timeout:         time.Second,
+		existingProfile: existingProfile,
+		browserFunc:     func(string) error { return nil },
+		tokenCache:      newTestTokenCache(),
+	})
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
@@ -808,7 +849,15 @@ func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {
 
 	// Explicit --scopes flag should override existing profile scopes.
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "all-apis", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:              dc,
+		profileName:     "DISCOVERY",
+		timeout:         time.Second,
+		scopes:          "all-apis",
+		existingProfile: existingProfile,
+		browserFunc:     func(string) error { return nil },
+		tokenCache:      newTestTokenCache(),
+	})
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
@@ -848,7 +897,13 @@ func TestDiscoveryLogin_SPOGHostPopulatesAccountIDFromDiscovery(t *testing.T) {
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", nil, func(string) error { return nil })
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenCache:  newTestTokenCache(),
+	})
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
@@ -883,7 +938,13 @@ func TestDiscoveryLogin_IntrospectionFallsBackWhenDiscoveryFails(t *testing.T) {
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", nil, func(string) error { return nil })
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenCache:  newTestTokenCache(),
+	})
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
@@ -932,7 +993,14 @@ auth_type = databricks-cli
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:              dc,
+		profileName:     "DISCOVERY",
+		timeout:         time.Second,
+		existingProfile: existingProfile,
+		browserFunc:     func(string) error { return nil },
+		tokenCache:      newTestTokenCache(),
+	})
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
@@ -982,7 +1050,14 @@ auth_type = databricks-cli
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, dc, "DISCOVERY", time.Second, "", existingProfile, func(string) error { return nil })
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:              dc,
+		profileName:     "DISCOVERY",
+		timeout:         time.Second,
+		existingProfile: existingProfile,
+		browserFunc:     func(string) error { return nil },
+		tokenCache:      newTestTokenCache(),
+	})
 	require.NoError(t, err)
 
 	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)

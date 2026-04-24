@@ -15,6 +15,14 @@ Deployment complete!
     "name": "[UNIQUE_NAME]"
   }
 }
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",
+  "body": {
+    "mode": "SNAPSHOT",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files/app"
+  }
+}
 
 >>> errcode [CLI] apps get [UNIQUE_NAME]
 "ACTIVE"
@@ -25,7 +33,6 @@ Deployment complete!
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Deploying resources...
-✓ Deployment succeeded
 Updating deployment state...
 Deployment complete!
 
@@ -52,7 +59,6 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Deploying resources...
-✓ Deployment succeeded
 Updating deployment state...
 Deployment complete!
 
@@ -99,7 +105,6 @@ Deployment complete!
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lifecycle-started-[UNIQUE_NAME]/default/files...
 Deploying resources...
-✓ Deployment succeeded
 Updating deployment state...
 Deployment complete!
 

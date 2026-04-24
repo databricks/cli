@@ -13,7 +13,7 @@
 
 === Inside the bundle, profile flag not matching bundle host. Should use profile from the flag and not the bundle.
 >>> errcode [CLI] current-user me -p profile_name
-Warn: Failed to resolve host metadata: (redacted). Falling back to user config.
+Warn: [hostmetadata] failed to fetch host metadata for https://non.existing.subdomain.databricks.com, will skip for 1m0s
 Error: Get "https://non.existing.subdomain.databricks.com/api/2.0/preview/scim/v2/Me": (redacted)
 
 Exit code: 1
@@ -73,7 +73,7 @@ Validation OK!
 
 === Bundle commands load bundle configuration with -t and -p flag, validation not OK (profile host don't match bundle host)
 >>> errcode [CLI] bundle validate -t prod -p DEFAULT
-Warn: Failed to resolve host metadata: (redacted). Falling back to user config.
+Warn: [hostmetadata] failed to fetch host metadata for https://bar.com, will skip for 1m0s
 Error: cannot resolve bundle auth configuration: the host in the profile ([DATABRICKS_TARGET]) doesn’t match the host configured in the bundle (https://bar.com)
 
 Name: test-auth

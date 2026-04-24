@@ -33,14 +33,6 @@ func NewFileSetAtRoot(ctx context.Context, root vfs.Path, paths ...[]string) (*F
 	return NewFileSet(ctx, root, root, paths...)
 }
 
-func (f *FileSet) IgnoreFile(file string) (bool, error) {
-	return f.view.IgnoreFile(file)
-}
-
-func (f *FileSet) IgnoreDirectory(dir string) (bool, error) {
-	return f.view.IgnoreDirectory(dir)
-}
-
 func (f *FileSet) Files() ([]fileset.File, error) {
 	f.view.repo.taintIgnoreRules()
 	return f.fileset.Files()

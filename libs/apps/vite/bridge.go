@@ -280,10 +280,7 @@ func (vb *Bridge) ConnectToTunnelWithRetry(appDomain *url.URL) error {
 		}
 
 		// Exponential backoff with cap
-		backoff = time.Duration(float64(backoff) * 1.5)
-		if backoff > tunnelConnectMaxBackoff {
-			backoff = tunnelConnectMaxBackoff
-		}
+		backoff = min(time.Duration(float64(backoff)*1.5), tunnelConnectMaxBackoff)
 	}
 
 	return fmt.Errorf("failed to connect after %d attempts: %w", tunnelConnectMaxRetries, lastErr)

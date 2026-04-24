@@ -1,7 +1,6 @@
 package dyn
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -33,7 +32,7 @@ func (p Pattern) String() string {
 				}
 				buf.WriteString(c.Key())
 			} else {
-				buf.WriteString(fmt.Sprintf("[%d]", c.Index()))
+				fmt.Fprintf(&buf, "[%d]", c.Index())
 			}
 		default:
 			buf.WriteString("???")
@@ -108,11 +107,6 @@ func (e expectedMapError) Error() string {
 	return fmt.Sprintf("expected a map at %q, found %s", e.p, e.v.Kind())
 }
 
-func IsExpectedMapError(err error) bool {
-	var target expectedMapError
-	return errors.As(err, &target)
-}
-
 type expectedSequenceError struct {
 	p Path
 	v Value
@@ -120,11 +114,6 @@ type expectedSequenceError struct {
 
 func (e expectedSequenceError) Error() string {
 	return fmt.Sprintf("expected a sequence at %q, found %s", e.p, e.v.Kind())
-}
-
-func IsExpectedSequenceError(err error) bool {
-	var target expectedSequenceError
-	return errors.As(err, &target)
 }
 
 // This function implements the patternComponent interface.

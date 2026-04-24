@@ -37,9 +37,9 @@ func benchmarkWalkType(b *testing.B, tt reflect.Type) {
 }
 
 func BenchmarkWalkTypeJobSettings(b *testing.B) {
-	benchmarkWalkType(b, reflect.TypeOf(jobs.JobSettings{}))
+	benchmarkWalkType(b, reflect.TypeFor[jobs.JobSettings]())
 }
 
 func BenchmarkWalkTypeRoot(b *testing.B) {
-	benchmarkWalkType(b, reflect.TypeOf(config.Root{}))
+	benchmarkWalkType(b, reflect.TypeFor[config.Root]())
 }

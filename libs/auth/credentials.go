@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
@@ -97,7 +98,19 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if err != nil {
 		return nil, err
 	}
-	ts, err := c.persistentAuth(ctx, u2m.WithOAuthArgument(oauthArg))
+	// Without WithTokenCache, u2m.NewPersistentAuth falls back to the SDK's
+	// default file cache. For secure-storage users that would split tokens
+	// across two backends: login writes to the keyring, but every workspace
+	// client built through this strategy would read an empty file cache and
+	// fail with "cache: token not found".
+	tokenCache, _, err := storage.ResolveCache(ctx, "")
+	if err != nil {
+		return nil, err
+	}
+	ts, err := c.persistentAuth(ctx,
+		u2m.WithOAuthArgument(oauthArg),
+		u2m.WithTokenCache(tokenCache),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +122,10 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 
 // persistentAuth returns a token source. It is a convenience function that
 // overrides the default implementation of the persistent auth client if
-// an alternative implementation is provided for testing.
+// an alternative implementation is provided for testing. The caller is
+// responsible for supplying the token cache via u2m.WithTokenCache; Configure
+// does this via storage.ResolveCache so login, refresh, and all workspace
+// clients share the same backend.
 func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
 	if c.persistentAuthFn != nil {
 		return c.persistentAuthFn(ctx, opts...)
