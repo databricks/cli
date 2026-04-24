@@ -117,8 +117,8 @@ func TestCheckConfigFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := profile.WithProfiler(cmdio.MockDiscard(t.Context()), tt.profiler)
-			result := checkConfigFile(ctx)
+			ctx := cmdio.MockDiscard(t.Context())
+			result := checkConfigFile(ctx, tt.profiler)
 			assert.Equal(t, "Config File", result.Name)
 			assert.Equal(t, tt.wantStatus, result.Status)
 			if tt.wantMsg != "" {
@@ -576,12 +576,6 @@ func TestNewCommandJSON(t *testing.T) {
 	clearConfigEnv(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	ctx = profile.WithProfiler(ctx, &mockProfiler{
-		path: "/tmp/.databrickscfg",
-		profiles: profile.Profiles{
-			{Name: "default", Host: "https://example.com"},
-		},
-	})
 
 	cmd := NewDoctorCmd()
 	cmd.SetContext(ctx)

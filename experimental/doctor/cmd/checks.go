@@ -49,8 +49,8 @@ func fail(name, msg string, err error) CheckResult {
 }
 
 // runChecks runs all diagnostic checks and returns the results.
-func runChecks(ctx context.Context, profile string, profileFromFlag bool) []CheckResult {
-	cfg, resolveErr := resolveConfig(ctx, profile, profileFromFlag)
+func runChecks(ctx context.Context, profileName string, profileFromFlag bool) []CheckResult {
+	cfg, resolveErr := resolveConfig(ctx, profileName, profileFromFlag)
 
 	var (
 		authResult CheckResult
@@ -73,8 +73,8 @@ func runChecks(ctx context.Context, profile string, profileFromFlag bool) []Chec
 		checkToolchain(ctx, realExec),
 		checkProxy(ctx),
 		checkLogFile(ctx),
-		checkConfigFile(ctx),
-		checkCurrentProfile(ctx, profile, profileFromFlag, cfg),
+		checkConfigFile(ctx, profile.DefaultProfiler),
+		checkCurrentProfile(ctx, profileName, profileFromFlag, cfg),
 		authResult,
 		identityResult,
 		checkNetwork(ctx, cfg, resolveErr, authCfg),
@@ -85,9 +85,7 @@ func checkCLIVersion() CheckResult {
 	return info("CLI Version", build.GetInfo().Version)
 }
 
-func checkConfigFile(ctx context.Context) CheckResult {
-	profiler := profile.GetProfiler(ctx)
-
+func checkConfigFile(ctx context.Context, profiler profile.Profiler) CheckResult {
 	path, err := profiler.GetPath(ctx)
 	if err != nil {
 		return fail("Config File", "Cannot determine config file path", err)
