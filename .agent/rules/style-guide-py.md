@@ -9,11 +9,18 @@ paths:
 
 ## General guidance
 
-When writing Python scripts, we bias for conciseness. We think of Python in this code base as scripts.
-- use Python 3.11
-- Do not catch exceptions to make nicer messages, only catch if you can add critical information
-- use pathlib.Path in almost all cases over os.path unless it makes code longer
-- Do not add redundant comments.
-- Try to keep your code small and the number of abstractions low.
-- After done, format your code with `ruff format -n <path>`
-- Use `#!/usr/bin/env python3` shebang.
+Python in this codebase is written as scripts. Bias for conciseness.
+
+**RULE: Use Python 3.11.**
+
+**RULE: Use `#!/usr/bin/env python3` as the shebang.**
+
+**RULE: Prefer `pathlib.Path` over `os.path`.** Exception: when it would make the code longer.
+
+**RULE: Do not catch exceptions just to add a nicer message.** Only catch if you can add critical information the caller can't produce.
+
+**RULE: Avoid redundant comments.**
+
+**RULE: Keep code small and minimize abstractions.**
+
+**RULE: Format with `ruff format -n <path>` before committing.**

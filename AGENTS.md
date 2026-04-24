@@ -6,7 +6,7 @@ This is the Databricks CLI, a command-line interface for interacting with Databr
 
 # General Rules
 
-When moving code from one place to another, please don't unnecessarily change the code or omit parts.
+**RULE: When moving code from one place to another, don't unnecessarily change or omit parts.** Keep refactors separate from content changes so reviewers can tell them apart.
 
 # Development Commands
 
@@ -34,9 +34,10 @@ When moving code from one place to another, please don't unnecessarily change th
 
 ### Git Commands
 
-Use `git rm` to remove and `git mv` to rename files instead of directly modifying files on FS.
+**RULE: Use `git rm` to remove and `git mv` to rename files, instead of directly modifying files on the filesystem.**
 
-If asked to rebase, always prefix each git command with appropriate settings so that it never launches interactive editor:
+**RULE: When rebasing, prefix git commands so they never launch an interactive editor.**
+
 ```sh
 GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git fetch origin main &&
 GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase origin/main
@@ -77,20 +78,39 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 
 # Development Tips
 
-- Use `make test-update` to regenerate acceptance test outputs after changes
-- The CLI binary supports both `databricks` and `pipelines` command modes based on executable name
-- Comments should explain "why", not "what" — reviewers consistently reject comments that merely restate the code
+- Use `make test-update` to regenerate acceptance test outputs after changes.
+- The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
+
+**RULE: Comments should explain "why", not "what".** Reviewers consistently reject comments that merely restate the code.
 
 # Common Mistakes
 
-- Do NOT add dependencies without checking license compatibility.
-- Do NOT use `os.Exit()` outside of `main.go`.
-- Do NOT remove or skip failing tests to fix CI — fix the underlying issue.
-- Do NOT leave debug print statements (`fmt.Println`, `log.Printf` for debugging) in committed code — always scrub before committing.
+**RULE: Do not add dependencies without checking license compatibility.**
+
+**RULE: Do not use `os.Exit()` outside of `main.go`.** `main.go` owns the exit path; calling `os.Exit()` elsewhere skips deferred cleanup and complicates testing.
+
+**RULE: Do not remove or skip failing tests to fix CI.** Fix the underlying issue instead.
+
+**RULE: Do not leave debug print statements in committed code.** `fmt.Println`, `log.Printf`, or similar. Always scrub before committing.
 
 # Error Handling
 
-- Wrap errors with context: `fmt.Errorf("failed to deploy %s: %w", name, err)`
-- Use `logdiag.LogDiag` / `logdiag.LogError` for logging diagnostics.
-- Return early on errors; avoid deeply nested if-else chains.
-- Use `diag.Errorf` / `diag.Warningf` to create diagnostics with severity.
+**RULE: Wrap errors with context using `%w`.** Preserves the error chain so `errors.Is` and `errors.As` keep working upstream.
+
+GOOD:
+
+```go
+return fmt.Errorf("failed to deploy %s: %w", name, err)
+```
+
+BAD:
+
+```go
+return fmt.Errorf("failed to deploy %s: %s", name, err)
+```
+
+**RULE: Return early on errors; avoid deeply nested if-else chains.**
+
+**RULE: Use `logdiag.LogDiag` and `logdiag.LogError` for logging diagnostics.**
+
+**RULE: Use `diag.Errorf` and `diag.Warningf` to create diagnostics with severity.**

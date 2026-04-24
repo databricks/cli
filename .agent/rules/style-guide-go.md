@@ -9,11 +9,9 @@ paths:
 
 ## General guidance
 
-Please make sure code that you author is consistent with the codebase and concise.
+Code you author should be consistent with the codebase and concise. The code should be self-documenting based on its function and variable names.
 
-The code should be self-documenting based on the code and function names.
-
-Functions should be documented with a doc comment as follows:
+**RULE: Document functions with a doc comment that starts with the function name and ends with a period.**
 
 ```go
 // SomeFunc does something.
@@ -22,21 +20,37 @@ func SomeFunc() {
 }
 ```
 
-Note how the comment starts with the name of the function and is followed by a period.
+**RULE: Avoid redundant and verbose comments.** Only add a comment if it complements the code rather than repeating it.
 
-Avoid redundant and verbose comments. Use terse comments and only add comments if it complements, not repeats the code.
+**RULE: Focus on making implementations as small and elegant as possible.** Avoid unnecessary loops and allocations. If dropping or relaxing a requirement would simplify things, ask the user about the trade-off.
 
-Focus on making implementation as small and elegant as possible. Avoid unnecessary loops and allocations. If you see an opportunity of making things simpler by dropping or relaxing some requirements, ask user about the trade-off.
+### Modern Go (1.24+) idioms
 
-Use modern idiomatic Golang features (version 1.24+). Specifically:
- - Use for-range for integer iteration where possible. Instead of for i:=0; i < X; i++ {} you must write for i := range X{}.
- - Use builtin min() and max() where possible (works on any type and any number of values).
- - Do not capture the for-range variable, since go 1.22 a new copy of the variable is created for each loop iteration.
- - Use empty struct types for context keys: `type myKeyType struct{}` (not `int`).
- - Define magic strings as named constants at the top of the file.
- - When integrating external tools or detecting environment variables, include source reference URLs as comments so they can be traced later.
+**RULE: Use `for i := range X` for integer iteration, not `for i := 0; i < X; i++`.**
 
-### Configuration Patterns
+**RULE: Use builtin `min()` and `max()` where possible.** They work on any type and any number of values.
+
+**RULE: Do not capture the for-range variable.** Since Go 1.22 a new copy is created each iteration, so the capture workaround is no longer needed.
+
+**RULE: Use empty struct types for context keys.**
+
+GOOD:
+
+```go
+type myKeyType struct{}
+```
+
+BAD:
+
+```go
+type myKeyType int
+```
+
+**RULE: Define magic strings as named constants at the top of the file.**
+
+**RULE: When integrating external tools or detecting environment variables, include source reference URLs as comments.** This lets future readers trace where the behavior came from.
+
+### Configuration patterns
 
 - Bundle config uses `dyn.Value` for dynamic typing
 - Config loading supports includes, variable interpolation, and target overrides
@@ -44,11 +58,15 @@ Use modern idiomatic Golang features (version 1.24+). Specifically:
 
 ## Context
 
-Always pass `context.Context` as a function argument; never store it in a struct. Storing context in a struct obscures the lifecycle and prevents callers from setting per-call deadlines, cancellation, and metadata (see https://go.dev/blog/context-and-structs). Do not use `context.Background()` outside of `main.go` files. In tests, use `t.Context()` (or `b.Context()` for benchmarks).
+**RULE: Always pass `context.Context` as a function argument; never store it in a struct.** Storing context in a struct obscures the lifecycle and prevents callers from setting per-call deadlines, cancellation, and metadata. See https://go.dev/blog/context-and-structs.
+
+**RULE: Do not use `context.Background()` outside of `main.go` files.**
+
+**RULE: In tests, use `t.Context()` (or `b.Context()` for benchmarks).**
 
 ## Logging
 
-Use the following for logging:
+**RULE: Use `github.com/databricks/cli/libs/log` for debug/info/warn/error logging.** The `ctx` variable must be passed in by the caller.
 
 ```go
 import "github.com/databricks/cli/libs/log"
@@ -59,10 +77,7 @@ log.Warnf(ctx, "...")
 log.Errorf(ctx, "...")
 ```
 
-Note that the 'ctx' variable here is something that should be passed in as
-an argument by the caller.
-
-Use cmdio.LogString to print to stdout:
+**RULE: Use `cmdio.LogString` to print to stdout.**
 
 ```go
 import "github.com/databricks/cli/libs/cmdio"
@@ -70,4 +85,4 @@ import "github.com/databricks/cli/libs/cmdio"
 cmdio.LogString(ctx, "...")
 ```
 
-Always output file path with forward slashes, even on Windows, so that acceptance test output is stable between OSes. Use filepath.ToSlash for this.
+**RULE: Always output file paths with forward slashes, even on Windows.** Use `filepath.ToSlash` so acceptance test output is stable between OSes.
