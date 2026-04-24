@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 )
 
 // varPrefix is the dyn.Path prefix for the ${var.X} shorthand.
@@ -102,22 +101,10 @@ func loadPreResolvedConfig(ctx context.Context, b *bundle.Bundle) dyn.Value {
 		BundleRootPath: b.BundleRootPath,
 		BundleRoot:     b.BundleRoot,
 	}
-	// Use a fresh logdiag context — diagnostics from this loader are internal
-	// and should not pollute the outer command's diagnostics.
-	loadCtx := logdiag.InitContext(context.Background())
-	mutator.DefaultMutators(loadCtx, fresh)
-	if logdiag.HasError(loadCtx) {
-		log.Debugf(ctx, "variable restoration: pre-resolved config load failed: %s", logdiag.GetFirstErrorSummary(loadCtx))
-		return dyn.InvalidValue
-	}
-	target := b.Config.Bundle.Target
-	if target != "" {
+	mutator.DefaultMutators(ctx, fresh)
+	if target := b.Config.Bundle.Target; target != "" {
 		if _, ok := fresh.Config.Targets[target]; ok {
-			bundle.ApplyContext(loadCtx, fresh, mutator.SelectTarget(target))
-			if logdiag.HasError(loadCtx) {
-				log.Debugf(ctx, "variable restoration: target %q merge failed: %s", target, logdiag.GetFirstErrorSummary(loadCtx))
-				return dyn.InvalidValue
-			}
+			bundle.ApplyContext(ctx, fresh, mutator.SelectTarget(target))
 		}
 	}
 	return fresh.Config.Value()
