@@ -158,7 +158,7 @@ if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 BAD:
 
 ```go
-if strings.Contains(err.Error(), "does not exist") {
+if err != nil && strings.Contains(err.Error(), "does not exist") {
 	return nil
 }
 ```

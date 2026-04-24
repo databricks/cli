@@ -12,7 +12,7 @@ description: Rules for the testing strategy of this repo
 
 ## Choosing a test level
 
-**RULE: For user-visible CLI output and mutator pipeline behavior, reach for acceptance tests first.** They exercise the full pipeline and capture the exact output the user sees. `cmd/...` commands and changes to `bundle/config/mutator/...` are the strongest candidates. Before adding a new acceptance test file, see if an existing nearby test can be extended.
+**RULE: For user-visible CLI output and changes to the bundle mutator pipeline, reach for acceptance tests first.** They exercise the full pipeline and capture the exact output the user sees. `cmd/...` commands and anything under the mutator pipeline (`bundle/config/mutator/...` and `bundle/mutator/...`) are the strongest candidates. When the coverage overlaps with an existing test, extend the existing acceptance directory instead of creating a new one.
 
 **Unit tests are still the right tool** for pure functions, utility code, parsing/formatting helpers, and anything you can meaningfully test without mocking the whole world. Don't force a unit into an acceptance test just because the code lives under `cmd/`, and don't add a mutator unit test that only duplicates what an acceptance test already covers.
 

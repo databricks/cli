@@ -52,24 +52,25 @@ type myKeyType int
 
 ### Control flow
 
-**RULE: For mutually exclusive, terminal branches, use `switch` instead of `if / else if`.** The branches read as clearly exclusive and Go flags a missing default when it matters.
+**RULE: When several branches are alternatives for the same decision, prefer `switch` over `if / else if`.** Same-decision means: you're dispatching on one value or one boolean question and each branch is a different answer to it. Ordered precedence chains (try this, else this, else this) are a different shape; leave those as early-return `if`s.
 
-GOOD:
+GOOD (alternatives for one decision):
 
 ```go
-switch {
-case override != "":
-	return override, nil
-case envValue != "":
-	return parseMode(envValue)
+switch mode {
+case modeText:
+	renderText(out, result)
+case modeJSON:
+	renderJSON(out, result)
 default:
-	return loadFromFile()
+	return fmt.Errorf("unknown mode %q", mode)
 }
 ```
 
-BAD:
+Also fine (ordered precedence, early-return style):
 
 ```go
+// see libs/auth/storage/mode.go#ResolveStorageMode
 if override != "" {
 	return override, nil
 }
@@ -98,7 +99,7 @@ return nil
 
 ### Determinism
 
-**RULE: When you build a slice by iterating over a map and the slice influences an API payload, update mask, log line, or anything a human might diff, sort it before returning.** Go maps have randomized iteration order, so the same input produces different outputs across runs. Non-deterministic update masks hit the wire with varying field order and non-deterministic test output creates flaky comparisons.
+**RULE: When you build a slice by iterating over a map and its order affects tests, logs, update masks, or the wire format, sort it before returning.** Go maps have randomized iteration order, so the same input produces different outputs across runs. Reviewers catch these when they produce flaky test output or noisy diffs in update masks. If the slice is purely internal and nothing downstream observes its order, sorting is unnecessary — some accepted code in `bundle/direct/dresources/` and `bundle/config/mutator/resourcemutator/` returns unsorted slices precisely because order doesn't matter there.
 
 GOOD:
 
@@ -123,7 +124,7 @@ return fieldPaths
 
 ### Environment variables
 
-**RULE: Use `github.com/databricks/cli/libs/env` for reading environment variables, not `os.Getenv`.** `env.Get(ctx, name)` and `env.Lookup(ctx, name)` can be overridden per-context in tests, so you don't have to mutate process-wide state to exercise a code path.
+**RULE: In library and product code, use `github.com/databricks/cli/libs/env` for reading environment variables, not `os.Getenv`.** `env.Get(ctx, name)` and `env.Lookup(ctx, name)` can be overridden per-context in tests, so you don't have to mutate process-wide state to exercise a code path. `os.Getenv` is still fine in `main`, tests, and acceptance/integration harnesses where no `ctx` is available and overrides aren't needed.
 
 GOOD:
 
