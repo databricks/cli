@@ -141,7 +141,7 @@ func renderSummaryText(out io.Writer, u *ucm.Ucm) {
 				continue
 			}
 			if r.URL == "" {
-				fmt.Fprintf(out, "    URL:  %s\n", notDeployedURL)
+				fmt.Fprintf(out, "    URL:  %s\n", cyan(notDeployedURL))
 			} else {
 				fmt.Fprintf(out, "    URL:  %s\n", cyan(r.URL))
 			}
