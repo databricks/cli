@@ -204,10 +204,11 @@ func buildEnv(ctx context.Context, u *ucm.Ucm, authCfg *config.Config) (map[stri
 		return nil, err
 	}
 
-	// Pick up DATABRICKS_CLI_PATH from the parent env/context so
-	// resolveDatabricksCliPath can absolute-ize it. It is not in
-	// envCopy because it is UCM-only and must be processed rather than
-	// forwarded verbatim.
+	// Pre-seed DATABRICKS_CLI_PATH from the parent env so
+	// resolveDatabricksCliPath has something to absolute-ize when
+	// authCfg is nil. inheritEnvVars's envCopy allow-list
+	// intentionally omits this key — it needs to be processed (made
+	// absolute), not forwarded verbatim.
 	if v, ok := env.Lookup(ctx, "DATABRICKS_CLI_PATH"); ok && v != "" {
 		out["DATABRICKS_CLI_PATH"] = v
 	}
