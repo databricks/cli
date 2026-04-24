@@ -5,9 +5,11 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"runtime"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/ucm"
 )
 
 // getEnvVarWithMatchingVersion returns envVarName's value only when the
@@ -136,5 +138,32 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		environ["TF_CLI_CONFIG_FILE"] = configFile
 	}
 
+	return nil
+}
+
+// setTempDirEnvVars sets TMP/TEMP (Windows) or TMPDIR (Unix) on environ.
+// On Windows, if none of TMP/TEMP are set on the parent process, it
+// falls back to `<root>/.databricks/ucm/<target>/tmp` to avoid MAX_PATH
+// blow-ups for deeply nested state dirs. Mirrors
+// bundle/deploy/terraform/init.go's setTempDirEnvVars.
+func setTempDirEnvVars(ctx context.Context, environ map[string]string, u *ucm.Ucm) error {
+	switch runtime.GOOS {
+	case "windows":
+		if v, ok := env.Lookup(ctx, "TMP"); ok {
+			environ["TMP"] = v
+		} else if v, ok := env.Lookup(ctx, "TEMP"); ok {
+			environ["TEMP"] = v
+		} else {
+			tmpDir, err := localStateDir(u, "tmp")
+			if err != nil {
+				return err
+			}
+			environ["TMP"] = tmpDir
+		}
+	default:
+		if v, ok := env.Lookup(ctx, "TMPDIR"); ok {
+			environ["TMPDIR"] = v
+		}
+	}
 	return nil
 }

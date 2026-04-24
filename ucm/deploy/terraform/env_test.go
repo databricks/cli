@@ -3,6 +3,7 @@ package terraform
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -156,4 +157,61 @@ func TestInheritEnvVarsSkipsCliConfigFileOnVersionMismatch(t *testing.T) {
 
 	_, ok := out["TF_CLI_CONFIG_FILE"]
 	assert.False(t, ok, "mismatched version must not emit TF_CLI_CONFIG_FILE")
+}
+
+func TestSetTempDirEnvVarsUnixInheritsTMPDIR(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix-only branch")
+	}
+	u, _ := newRenderUcm(t)
+	ctx := env.Set(t.Context(), "TMPDIR", "/custom/tmp")
+
+	out := map[string]string{}
+	require.NoError(t, setTempDirEnvVars(ctx, out, u))
+
+	assert.Equal(t, "/custom/tmp", out["TMPDIR"])
+}
+
+func TestSetTempDirEnvVarsUnixOmitsWhenUnset(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix-only branch")
+	}
+	u, _ := newRenderUcm(t)
+	// Ensure TMPDIR is truly absent from both the context and the process env.
+	t.Setenv("TMPDIR", "")
+	require.NoError(t, os.Unsetenv("TMPDIR"))
+	ctx := t.Context()
+
+	out := map[string]string{}
+	require.NoError(t, setTempDirEnvVars(ctx, out, u))
+
+	_, ok := out["TMPDIR"]
+	assert.False(t, ok)
+}
+
+func TestSetTempDirEnvVarsWindowsInheritsTMP(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows-only branch")
+	}
+	u, _ := newRenderUcm(t)
+	ctx := env.Set(t.Context(), "TMP", `C:\custom\tmp`)
+
+	out := map[string]string{}
+	require.NoError(t, setTempDirEnvVars(ctx, out, u))
+
+	assert.Equal(t, `C:\custom\tmp`, out["TMP"])
+}
+
+func TestSetTempDirEnvVarsWindowsFallsBackToLocalStateDir(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("windows-only branch")
+	}
+	u, root := newRenderUcm(t)
+	ctx := t.Context()
+
+	out := map[string]string{}
+	require.NoError(t, setTempDirEnvVars(ctx, out, u))
+
+	want := filepath.Join(root, ".databricks", "ucm", "dev", "tmp")
+	assert.Equal(t, want, out["TMP"])
 }
