@@ -9,6 +9,39 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    # Mount a ReFS Dev Drive on Windows and route Go's cache dirs onto it.
+    # The default C: drive on GH runners is ~4.3k IOPS; a Dev Drive is ~127k.
+    # Go build compilation is small-file-heavy and benefits most. The
+    # `-DevDrive` flag is Win11 22621+ / WS2025; older hosts fall back to plain
+    # ReFS which is still markedly faster than C:. Must run before setup-go so
+    # GOCACHE/GOMODCACHE save/restore lands on the drive.
+    #
+    # Note: TEMP/TMP are intentionally NOT redirected. Doing so puts
+    # `t.TempDir()` on Z: while the checkout and uv's Python package cache stay
+    # on C:, which triggers `ValueError: Paths don't have the same drive` in
+    # older databricks-bundles versions under `bundle/python/*` tests
+    # (`os.path.commonpath` can't span drives).
+    - name: Mount ReFS Dev Drive (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $vhdPath = "$env:RUNNER_TEMP\devdrive.vhdx"
+        New-VHD -Path $vhdPath -SizeBytes 20GB -Dynamic | Out-Null
+        $disk = Mount-VHD -Path $vhdPath -Passthru |
+          Initialize-Disk -PartitionStyle GPT -Passthru
+        New-Partition -DiskNumber $disk.Number -UseMaximumSize -DriveLetter Z | Out-Null
+        try {
+          Format-Volume -DriveLetter Z -FileSystem ReFS -DevDrive `
+            -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+        } catch {
+          Format-Volume -DriveLetter Z -FileSystem ReFS `
+            -NewFileSystemLabel DevDrive -Confirm:$false -Force | Out-Null
+        }
+        New-Item -ItemType Directory -Path Z:\go-build,Z:\go-mod,Z:\go-tmp | Out-Null
+        "GOCACHE=Z:\go-build"  | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        "GOMODCACHE=Z:\go-mod" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+        "GOTMPDIR=Z:\go-tmp"   | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
     - name: Checkout repository and submodules
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
