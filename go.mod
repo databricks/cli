@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/terraform-json v0.27.2 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
-	github.com/mattn/go-isatty v0.0.20 // MIT
+	github.com/mattn/go-isatty v0.0.21 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
 	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // BSD-2-Clause
