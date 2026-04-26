@@ -252,7 +252,10 @@ def main():
     # so they match touched paths (which are rel to tmp, mirroring the repo).
     task_rel = str(task_dir.relative_to(root))
     prefix = "" if task_rel == "." else task_rel + "/"
-    generates_res = [glob_to_regex(prefix + p) for p in generates_pats or []]
+    # normpath collapses `../` so generates paths declared from a `dir:` task
+    # (e.g. `../foo.json` from dir `tools`) match touched paths reported
+    # relative to tmp.
+    generates_res = [glob_to_regex(os.path.normpath(prefix + p)) for p in generates_pats or []]
     enforce = bool(generates_pats)
 
     # Create tmp manually so we can manage cleanup around `git worktree remove`,

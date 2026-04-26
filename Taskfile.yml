@@ -425,12 +425,14 @@ tasks:
       - go.sum
       # testmask/targets_test.go reads ../../Taskfile.yml
       - ../Taskfile.yml
+    generates:
+      - ../test-output-unit-tools.json
     cmds:
       - |
         {{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --jsonfile {{.ROOT_DIR}}/test-output-unit-tools.json \
+          --jsonfile ../test-output-unit-tools.json \
           --rerun-fails \
           --packages ./... \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
@@ -442,12 +444,14 @@ tasks:
       - "**/*.go"
       - go.mod
       - go.sum
+    generates:
+      - ../../../test-output-unit-codegen.json
     cmds:
       - |
         {{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --jsonfile {{.ROOT_DIR}}/test-output-unit-codegen.json \
+          --jsonfile ../../../test-output-unit-codegen.json \
           --rerun-fails \
           --packages ./... \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
