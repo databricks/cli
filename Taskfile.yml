@@ -26,6 +26,7 @@ tasks:
       - task: checks
       - task: fmt-q
       - task: lint-q
+      - task: test-unit
       - task: test-update
 
   full:
@@ -34,6 +35,7 @@ tasks:
       - task: checks
       - task: fmt
       - task: lint
+      - task: test-unit
       - task: test-update
 
   all:
