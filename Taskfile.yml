@@ -2,6 +2,10 @@ version: '3'
 
 vars:
   # Absolute path so tasks with `dir:` (lint-go-tools, lint-go-codegen) can use it.
+  # Reads tools/go.mod via absolute path, bypassing the SANDBOX_CMD copy tree —
+  # accepted bypass: tools/go.mod is treated as ambient build config rather than
+  # a per-task source. As a consequence, tool-version bumps in tools/go.mod won't
+  # invalidate task source-hash caches; clear .task/ to force a re-run after a bump.
   GO_TOOL: go tool -modfile={{.ROOT_DIR}}/tools/go.mod
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
