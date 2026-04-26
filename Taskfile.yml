@@ -6,11 +6,11 @@ vars:
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
-  # computed via `go list`. Evaluated lazily by Task so tasks that don't
-  # reference it pay nothing. testdata/ dirs are covered by `**/testdata/**`
-  # separately — not included here.
+  # computed by grepping `//go:embed` directives. Evaluated lazily by Task so
+  # tasks that don't reference it pay nothing. testdata/ dirs are covered by
+  # a separate static `**/testdata/**` glob, not this script.
   EMBED_SOURCES:
-    sh: '{{.ROOT_DIR}}/tools/list_embeds.sh'
+    sh: '{{.ROOT_DIR}}/tools/list_embeds.py'
 
 # Per-task env exported to every cmd. TASK_NAME lets tools/sandboxed_run.py
 # look up its enclosing task without parsing argv. TASK_CMD_PREFIX is empty
