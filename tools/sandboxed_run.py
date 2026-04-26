@@ -16,12 +16,13 @@ Reads the task name from $TASK_NAME (set by Taskfile's top-level
   - `sources:` and `generates:`       → sandbox + enforce that touched files
                                         are a subset of generates
 
-Hooked into Taskfile.yml via TASK_CMD_PREFIX. Default is empty (no-op);
-set it to this script to enable sandbox validation:
+Hooked into Taskfile.yml via the SANDBOX_CMD task var, prepended to every
+cmd as {{.SANDBOX_CMD}}. Default is empty (no-op). Two ways to enable:
 
-    TASK_CMD_PREFIX=$PWD/tools/sandboxed_run.py ./task build
+    SANDBOX=1 ./task build               # uses this script (resolved via ROOT_DIR)
+    SANDBOX=$PWD/my_wrapper.py ./task X  # uses a custom wrapper
 
-Tasks with `dir:` work too, but TASK_CMD_PREFIX must be an absolute path.
+Tasks with `dir:` work too, but SANDBOX must be an absolute path.
 """
 
 import os

@@ -11,13 +11,17 @@ vars:
   # a separate static `**/testdata/**` glob, not this script.
   EMBED_SOURCES:
     sh: '{{.ROOT_DIR}}/tools/list_embeds.py'
+  # Optional cmd wrapper, prepended to every cmd via {{.SANDBOX_CMD}}. Empty
+  # by default. SANDBOX=1 expands to tools/sandboxed_run.py; any other value
+  # is treated as a path to a custom wrapper. Substituted into the cmd string
+  # before the shell sees it (using Task's `env:` would not work because OS
+  # env takes precedence over the Taskfile env block).
+  SANDBOX_CMD: '{{if eq .SANDBOX "1"}}{{.ROOT_DIR}}/tools/sandboxed_run.py{{else}}{{.SANDBOX}}{{end}}'
 
-# Per-task env exported to every cmd. TASK_NAME lets tools/sandboxed_run.py
-# look up its enclosing task without parsing argv. TASK_CMD_PREFIX is empty
-# by default; set SANDBOX=1 to wrap every cmd through sandboxed_run.py.
+# TASK_NAME lets tools/sandboxed_run.py look up its enclosing task without
+# parsing argv.
 env:
   TASK_NAME: '{{.TASK}}'
-  TASK_CMD_PREFIX: '{{if eq .SANDBOX "1"}}{{.ROOT_DIR}}/tools/sandboxed_run.py{{end}}'
 
 tasks:
   default:
@@ -103,7 +107,7 @@ tasks:
     cmds:
       - cmd: mkdir -p "{{.TMPDIR}}"
         silent: true
-      - TMPDIR="{{.TMPDIR}}" ${TASK_CMD_PREFIX} {{.GO_TOOL}} golangci-lint run ./...
+      - TMPDIR="{{.TMPDIR}}" {{.SANDBOX_CMD}} {{.GO_TOOL}} golangci-lint run ./...
 
   lint-go-tools:
     desc: Lint Go files in tools/ module
@@ -120,7 +124,7 @@ tasks:
         silent: true
       # gocritic is disabled because root's ruleguard rules path is cwd-relative
       # and cannot be resolved from this nested module.
-      - TMPDIR="{{.TMPDIR}}" ${TASK_CMD_PREFIX} {{.GO_TOOL}} golangci-lint run --disable gocritic ./...
+      - TMPDIR="{{.TMPDIR}}" {{.SANDBOX_CMD}} {{.GO_TOOL}} golangci-lint run --disable gocritic ./...
 
   lint-go-codegen:
     desc: Lint Go files in bundle/internal/tf/codegen module
@@ -137,7 +141,7 @@ tasks:
         silent: true
       # gocritic is disabled because root's ruleguard rules path is cwd-relative
       # and cannot be resolved from this nested module.
-      - TMPDIR="{{.TMPDIR}}" ${TASK_CMD_PREFIX} {{.GO_TOOL}} golangci-lint run --disable gocritic ./...
+      - TMPDIR="{{.TMPDIR}}" {{.SANDBOX_CMD}} {{.GO_TOOL}} golangci-lint run --disable gocritic ./...
 
   lint-q-go-root:
     desc: Lint changed Go files in root module (diff vs main, with --fix). Does not check tools/ or bundle/internal/tf/codegen — use `lint` for full coverage.
@@ -155,7 +159,7 @@ tasks:
     cmds:
       - cmd: mkdir -p "{{.TMPDIR}}"
         silent: true
-      - TMPDIR="{{.TMPDIR}}" ${TASK_CMD_PREFIX} ./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --fix
+      - TMPDIR="{{.TMPDIR}}" {{.SANDBOX_CMD}} ./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --fix
 
   # --- Formatting ---
 
@@ -175,7 +179,7 @@ tasks:
       # Pinned to match the version used by the `ruff format --check` step in
       # .github/workflows/check.yml — newer ruff versions reformat files that
       # CI considers already formatted.
-      - ${TASK_CMD_PREFIX} uvx ruff@0.9.1 format -n
+      - "{{.SANDBOX_CMD}} uvx ruff@0.9.1 format -n"
 
   # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
   # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
@@ -190,7 +194,7 @@ tasks:
       - "{{.EMBED_SOURCES}}"
       - "**/testdata/**"
     cmds:
-      - "${TASK_CMD_PREFIX} {{.GO_TOOL}} golangci-lint fmt"
+      - "{{.SANDBOX_CMD}} {{.GO_TOOL}} golangci-lint fmt"
 
   fmt-q-go:
     desc: Format changed Go files (diff vs main)
@@ -203,7 +207,7 @@ tasks:
       - "{{.EMBED_SOURCES}}"
       - "**/testdata/**"
     cmds:
-      - "${TASK_CMD_PREFIX} ./tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
+      - "{{.SANDBOX_CMD}} ./tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
 
   fmt-yaml:
     desc: Format YAML files
@@ -211,10 +215,9 @@ tasks:
       - "**/*.yml"
       - "**/*.yaml"
       - yamlfmt.yml
-      - go.mod
-      - go.sum
+      - tools/go.{mod,sum}
     cmds:
-      - "${TASK_CMD_PREFIX} {{.GO_TOOL}} yamlfmt ."
+      - "{{.SANDBOX_CMD}} {{.GO_TOOL}} yamlfmt ."
 
   # --- Code checks ---
 
@@ -233,7 +236,7 @@ tasks:
       - "{{.EMBED_SOURCES}}"
       - "**/testdata/**"
     cmds:
-      - ${TASK_CMD_PREFIX} go mod tidy
+      - "{{.SANDBOX_CMD}} go mod tidy"
 
   tidy-tools:
     desc: Run go mod tidy in tools/ module
@@ -243,7 +246,7 @@ tasks:
       - go.sum
       - "**/*.go"
     cmds:
-      - ${TASK_CMD_PREFIX} go mod tidy
+      - "{{.SANDBOX_CMD}} go mod tidy"
 
   tidy-codegen:
     desc: Run go mod tidy in bundle/internal/tf/codegen module
@@ -253,17 +256,17 @@ tasks:
       - go.sum
       - "**/*.go"
     cmds:
-      - ${TASK_CMD_PREFIX} go mod tidy
+      - "{{.SANDBOX_CMD}} go mod tidy"
 
   ws:
     desc: Check whitespace
     cmds:
-      - ${TASK_CMD_PREFIX} ./tools/validate_whitespace.py
+      - "{{.SANDBOX_CMD}} ./tools/validate_whitespace.py"
 
   ws-fix:
     desc: Fix whitespace issues
     cmds:
-      - ${TASK_CMD_PREFIX} ./tools/validate_whitespace.py --fix
+      - "{{.SANDBOX_CMD}} ./tools/validate_whitespace.py --fix"
 
   links:
     desc: Update GitHub links in docs
@@ -271,7 +274,7 @@ tasks:
       - "**/*.md"
       - tools/update_github_links.py
     cmds:
-      - ${TASK_CMD_PREFIX} ./tools/update_github_links.py
+      - "{{.SANDBOX_CMD}} ./tools/update_github_links.py"
 
   deadcode:
     desc: Check for dead code
@@ -295,7 +298,7 @@ tasks:
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
     cmds:
-      - ${TASK_CMD_PREFIX} uv python install 3.9 3.10 3.11 3.12 3.13
+      - "{{.SANDBOX_CMD}} uv python install 3.9 3.10 3.11 3.12 3.13"
 
   # --- Building ---
 
@@ -318,7 +321,7 @@ tasks:
     generates:
       - cli
     cmds:
-      - ${TASK_CMD_PREFIX} go build
+      - "{{.SANDBOX_CMD}} go build"
 
   snapshot:
     desc: Build snapshot binary to .databricks/databricks
@@ -327,7 +330,7 @@ tasks:
     generates:
       - .databricks/databricks
     cmds:
-      - ${TASK_CMD_PREFIX} go build -o .databricks/databricks
+      - "{{.SANDBOX_CMD}} go build -o .databricks/databricks"
 
   snapshot-release:
     desc: Build release binaries locally without uploading
@@ -349,7 +352,7 @@ tasks:
     generates:
       - dist/**
     cmds:
-      - ${TASK_CMD_PREFIX} goreleaser release --clean --skip docker --snapshot
+      - "{{.SANDBOX_CMD}} goreleaser release --clean --skip docker --snapshot"
 
   # --- Testing ---
 
@@ -403,7 +406,7 @@ tasks:
       - bundle/internal/schema/annotations*.yml
     cmds:
       - |
-        ${TASK_CMD_PREFIX} {{.GO_TOOL}} gotestsum \
+        {{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --jsonfile test-output-unit-root.json \
@@ -422,7 +425,7 @@ tasks:
       - ../Taskfile.yml
     cmds:
       - |
-        ${TASK_CMD_PREFIX} {{.GO_TOOL}} gotestsum \
+        {{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --jsonfile {{.ROOT_DIR}}/test-output-unit-tools.json \
@@ -439,7 +442,7 @@ tasks:
       - go.sum
     cmds:
       - |
-        ${TASK_CMD_PREFIX} {{.GO_TOOL}} gotestsum \
+        {{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --jsonfile {{.ROOT_DIR}}/test-output-unit-codegen.json \
@@ -473,7 +476,7 @@ tasks:
       - "{{.EMBED_SOURCES}}"
     cmds:
       - |
-        ${TASK_CMD_PREFIX} {{.GO_TOOL}} gotestsum \
+        {{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --jsonfile test-output-acc.json \
@@ -502,19 +505,19 @@ tasks:
       - go.sum
       - "{{.EMBED_SOURCES}}"
     cmds:
-      - "${TASK_CMD_PREFIX} go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-30m}"
+      - "{{.SANDBOX_CMD}} go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-30m}"
 
   test-update-templates:
     desc: Update acceptance test template output
     sources: *ACC_SOURCES_UPDATE
     cmds:
-      - "${TASK_CMD_PREFIX} go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-30m}"
+      - "{{.SANDBOX_CMD}} go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-30m}"
 
   test-update-aws:
     desc: Update acceptance test output (integration, requires deco access)
     sources: *ACC_SOURCES_UPDATE
     cmds:
-      - "${TASK_CMD_PREFIX} deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=1 go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
+      - "{{.SANDBOX_CMD}} deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=1 go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
 
   test-update-all:
     desc: Update all acceptance test outputs
@@ -526,7 +529,7 @@ tasks:
   slowest:
     desc: Show 50 slowest tests from last run
     cmds:
-      - "${TASK_CMD_PREFIX} {{.GO_TOOL}} gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50"
+      - "{{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50"
 
   cover:
     desc: Run tests with coverage
@@ -650,12 +653,12 @@ tasks:
     desc: Run DBR acceptance tests on Databricks Runtime
     deps: [install-pythons]
     cmds:
-      - "DBR_ENABLED=true ${TASK_CMD_PREFIX} go test -v -timeout 4h -run TestDbrAcceptance$ ./acceptance"
+      - "DBR_ENABLED=true {{.SANDBOX_CMD}} go test -v -timeout 4h -run TestDbrAcceptance$ ./acceptance"
 
   dbr-test:
     desc: Run DBR tests via deco env (requires deco + aws-prod-ucws access)
     cmds:
-      - "${TASK_CMD_PREFIX} deco env run -i -n aws-prod-ucws -- ./task dbr-integration"
+      - "{{.SANDBOX_CMD}} deco env run -i -n aws-prod-ucws -- ./task dbr-integration"
 
   # --- Code generation ---
   #
@@ -761,7 +764,7 @@ tasks:
       - bundle/schema/jsonschema.json
       - bundle/internal/schema/annotations.yml
     cmds:
-      - ${TASK_CMD_PREFIX} go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
+      - "{{.SANDBOX_CMD}} go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json"
 
   generate-schema-docs:
     desc: Generate bundle JSON schema for documentation
@@ -770,7 +773,7 @@ tasks:
       - bundle/schema/jsonschema_for_docs.json
       - bundle/internal/schema/annotations.yml
     cmds:
-      - ${TASK_CMD_PREFIX} go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs
+      - "{{.SANDBOX_CMD}} go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs"
 
   generate-docs:
     desc: Generate bundle documentation
@@ -786,7 +789,7 @@ tasks:
       - bundle/docsgen/output/reference.md
       - bundle/docsgen/output/resources.md
     cmds:
-      - ${TASK_CMD_PREFIX} go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
+      - "{{.SANDBOX_CMD}} go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen"
 
   generate-validation:
     desc: Generate enum and required field validation code
@@ -799,7 +802,7 @@ tasks:
     generates:
       - bundle/internal/validation/generated/**/*.go
     cmds:
-      - ${TASK_CMD_PREFIX} sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/internal/validation/generated'
+      - "{{.SANDBOX_CMD}} sh -c 'go run ./bundle/internal/validation/. && gofmt -w -s ./bundle/internal/validation/generated'"
 
   generate-direct:
     desc: Generate direct engine config (apitypes + resources)
@@ -815,7 +818,7 @@ tasks:
     generates:
       - bundle/direct/dresources/apitypes.generated.yml
     cmds:
-      - ${TASK_CMD_PREFIX} sh -c 'python3 bundle/direct/tools/generate_apitypes.py .codegen/openapi.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'
+      - "{{.SANDBOX_CMD}} sh -c 'python3 bundle/direct/tools/generate_apitypes.py .codegen/openapi.json acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/apitypes.generated.yml'"
 
   generate-direct-resources:
     desc: Generate direct engine resources YAML
@@ -829,7 +832,7 @@ tasks:
     generates:
       - bundle/direct/dresources/resources.generated.yml
     cmds:
-      - ${TASK_CMD_PREFIX} sh -c 'python3 bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'
+      - "{{.SANDBOX_CMD}} sh -c 'python3 bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
 
   generate-openapi-json:
     desc: Download OpenAPI spec (triggered by _openapi_sha change)
@@ -854,7 +857,7 @@ tasks:
       - README.md
       - LICENSE
     cmds:
-      - ${TASK_CMD_PREFIX} uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv
+      - "{{.SANDBOX_CMD}} uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv"
 
   pydabs-lint:
     desc: Run pydabs lint checks
@@ -866,10 +869,10 @@ tasks:
       - README.md
       - LICENSE
     cmds:
-      - ${TASK_CMD_PREFIX} uv lock --check
-      - ${TASK_CMD_PREFIX} uv run ruff check databricks databricks_tests
-      - ${TASK_CMD_PREFIX} uv run pyright
-      - ${TASK_CMD_PREFIX} uv run ruff format --diff databricks databricks_tests
+      - "{{.SANDBOX_CMD}} uv lock --check"
+      - "{{.SANDBOX_CMD}} uv run ruff check databricks databricks_tests"
+      - "{{.SANDBOX_CMD}} uv run pyright"
+      - "{{.SANDBOX_CMD}} uv run ruff format --diff databricks databricks_tests"
 
   pydabs-fmt:
     desc: Format pydabs code
@@ -894,7 +897,7 @@ tasks:
     generates:
       - docs/_output/**
     cmds:
-      - ${TASK_CMD_PREFIX} uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going
+      - "{{.SANDBOX_CMD}} uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going"
 
   pydabs-codegen:
     desc: Run pydabs codegen
