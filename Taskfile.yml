@@ -25,7 +25,7 @@ env:
 
 tasks:
   default:
-    desc: Quick dev loop (checks, formatters, incremental lint, tests). Use `all` for the full suite.
+    desc: Quick dev loop (checks, formatters, incremental lint, tests). Use `full` for non-incremental linters.
     cmds:
       - task: checks
       - task: fmt-q
@@ -34,7 +34,7 @@ tasks:
       - task: test-update
 
   full:
-    desc: More complete dev loop
+    desc: More complete dev loop (full rather than incremental formatters and linters)
     cmds:
       - task: checks
       - task: fmt
