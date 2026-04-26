@@ -170,7 +170,10 @@ tasks:
     sources:
       - "**/*.py"
     cmds:
-      - ${TASK_CMD_PREFIX} ruff format -n
+      # Pinned to match the version used by the `ruff format --check` step in
+      # .github/workflows/check.yml — newer ruff versions reformat files that
+      # CI considers already formatted.
+      - ${TASK_CMD_PREFIX} uvx ruff@0.9.1 format -n
 
   # `golangci-lint fmt` walks the filesystem and doesn't typecheck, so it
   # formats files across all nested modules (tools/, bundle/internal/tf/codegen/)
