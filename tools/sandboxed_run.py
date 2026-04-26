@@ -327,7 +327,7 @@ def main():
             src = tmp / t
             dst = root / t
             dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dst)
+            shutil.move(src, dst)
         # `touched` is reported relative to tmp, so paths are already
         # repo-root-relative (the sandbox tree mirrors the real tree).
     finally:
