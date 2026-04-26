@@ -192,7 +192,6 @@ tasks:
       - go.mod
       - go.sum
       - "{{.EMBED_SOURCES}}"
-      - "**/testdata/**"
     cmds:
       - "{{.SANDBOX_CMD}} {{.GO_TOOL}} golangci-lint fmt"
 
@@ -205,7 +204,6 @@ tasks:
       - go.sum
       - tools/lintdiff.py
       - "{{.EMBED_SOURCES}}"
-      - "**/testdata/**"
     cmds:
       - "{{.SANDBOX_CMD}} ./tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
 
@@ -215,7 +213,8 @@ tasks:
       - "**/*.yml"
       - "**/*.yaml"
       - yamlfmt.yml
-      - tools/go.{mod,sum}
+      - tools/go.mod
+      - tools/go.sum
     cmds:
       - "{{.SANDBOX_CMD}} {{.GO_TOOL}} yamlfmt ."
 
@@ -234,7 +233,6 @@ tasks:
       - exclude: tools/**
       - exclude: bundle/internal/tf/codegen/**
       - "{{.EMBED_SOURCES}}"
-      - "**/testdata/**"
     cmds:
       - "{{.SANDBOX_CMD}} go mod tidy"
 
