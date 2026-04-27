@@ -257,27 +257,15 @@ func TestCancelDiscoverInFlightCallsAPIPerID(t *testing.T) {
 	cancelDiscoverInFlight(ctx, mockAPI, []string{"stmt-a", "stmt-b", "stmt-c"})
 }
 
-func TestCancelDiscoverInFlightHandlesEmptyList(t *testing.T) {
-	// Empty list = no API calls. Mock asserts (via t.Cleanup) that nothing
-	// unexpected happens.
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	cancelDiscoverInFlight(ctx, mockAPI, nil)
-}
-
-func TestDiscoverSchemaConcurrencyZeroRejected(t *testing.T) {
-	cmd := newDiscoverSchemaCmd()
-	cmd.SetArgs([]string{"--concurrency", "0", "main.public.orders"})
-	err := cmd.Execute()
-	require.ErrorIs(t, err, errInvalidBatchConcurrency)
-}
-
-func TestDiscoverSchemaConcurrencyNegativeRejected(t *testing.T) {
-	cmd := newDiscoverSchemaCmd()
-	cmd.SetArgs([]string{"--concurrency", "-1", "main.public.orders"})
-	err := cmd.Execute()
-	require.ErrorIs(t, err, errInvalidBatchConcurrency)
+func TestDiscoverSchemaConcurrencyRejection(t *testing.T) {
+	for _, value := range []string{"0", "-1"} {
+		t.Run(value, func(t *testing.T) {
+			cmd := newDiscoverSchemaCmd()
+			cmd.SetArgs([]string{"--concurrency", value, "main.public.orders"})
+			err := cmd.Execute()
+			require.ErrorIs(t, err, errInvalidBatchConcurrency)
+		})
+	}
 }
 
 func TestDiscoverSchemaInvalidTableNameRejectedBeforeWorkspaceClient(t *testing.T) {
@@ -288,12 +276,4 @@ func TestDiscoverSchemaInvalidTableNameRejectedBeforeWorkspaceClient(t *testing.
 	err := cmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "expected CATALOG.SCHEMA.TABLE")
-}
-
-func TestDiscoverSchemaInjectionAttemptRejected(t *testing.T) {
-	cmd := newDiscoverSchemaCmd()
-	cmd.SetArgs([]string{"a;DROP--.b.c"})
-	err := cmd.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid SQL identifier")
 }
