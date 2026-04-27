@@ -68,6 +68,32 @@ var (
 				Bold(true)
 )
 
+// Stability tier styles, applied to the parenthetical suffix in plugin labels.
+var (
+	stabilityExperimentalStyle = lipgloss.NewStyle().Foreground(colorOrange)
+	stabilityPreviewStyle      = lipgloss.NewStyle().Foreground(colorYellow)
+	stabilityUnknownStyle      = lipgloss.NewStyle().Foreground(colorGray)
+)
+
+// RenderStabilityTier renders a stability tier as a colored " (tier)" suffix,
+// or returns "" for stable/unset. Unknown tiers are rendered in gray so we
+// remain forward-compatible with future tier names.
+func RenderStabilityTier(tier string) string {
+	if tier == "" {
+		return ""
+	}
+	var style lipgloss.Style
+	switch tier {
+	case "experimental":
+		style = stabilityExperimentalStyle
+	case "preview":
+		style = stabilityPreviewStyle
+	default:
+		style = stabilityUnknownStyle
+	}
+	return " " + style.Render("("+tier+")")
+}
+
 // PrintAnswered prints a completed prompt answer to keep history visible.
 func PrintAnswered(ctx context.Context, title, value string) {
 	cmdio.LogString(ctx, fmt.Sprintf("%s %s", answeredTitleStyle.Render(title+":"), answeredValueStyle.Render(value)))

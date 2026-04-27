@@ -357,7 +357,7 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 	if len(config.Features) == 0 && len(selectablePlugins) > 0 {
 		options := make([]huh.Option[string], 0, len(selectablePlugins))
 		for _, p := range selectablePlugins {
-			label := p.DisplayName + " - " + p.Description
+			label := p.DisplayName + prompt.RenderStabilityTier(p.StabilityLabel()) + " - " + p.Description
 			options = append(options, huh.NewOption(label, p.Name))
 		}
 

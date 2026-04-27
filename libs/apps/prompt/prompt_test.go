@@ -310,3 +310,26 @@ func TestMaxAppNameLength(t *testing.T) {
 	assert.Len(t, invalidName, 27)
 	assert.Error(t, ValidateProjectName(invalidName))
 }
+
+func TestRenderStabilityTier(t *testing.T) {
+	tests := []struct {
+		tier       string
+		wantEmpty  bool
+		wantSubstr string
+	}{
+		{"", true, ""},
+		{"experimental", false, "(experimental)"},
+		{"preview", false, "(preview)"},
+		{"alpha", false, "(alpha)"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.tier, func(t *testing.T) {
+			got := RenderStabilityTier(tc.tier)
+			if tc.wantEmpty {
+				assert.Empty(t, got)
+				return
+			}
+			assert.Contains(t, got, tc.wantSubstr)
+		})
+	}
+}

@@ -16,13 +16,14 @@ func TestLoad(t *testing.T) {
 
 	content := `{
 		"$schema": "https://databricks.github.io/appkit/schemas/template-plugins.schema.json",
-		"version": "1.0",
+		"version": "1.1",
 		"plugins": {
 			"analytics": {
 				"name": "analytics",
 				"displayName": "Analytics Plugin",
 				"description": "SQL query execution",
 				"package": "@databricks/appkit",
+				"stability": "preview",
 				"resources": {
 					"required": [
 						{
@@ -39,11 +40,23 @@ func TestLoad(t *testing.T) {
 					"optional": []
 				}
 			},
+			"genie": {
+				"name": "genie",
+				"displayName": "Genie Plugin",
+				"description": "Genie space integration",
+				"package": "@databricks/appkit",
+				"stability": "experimental",
+				"resources": {
+					"required": [],
+					"optional": []
+				}
+			},
 			"server": {
 				"name": "server",
 				"displayName": "Server Plugin",
 				"description": "HTTP server",
 				"package": "@databricks/appkit",
+				"stability": "stable",
 				"requiredByTemplate": true,
 				"resources": {
 					"required": [],
@@ -58,10 +71,32 @@ func TestLoad(t *testing.T) {
 
 	m, err := manifest.Load(dir)
 	require.NoError(t, err)
-	assert.Equal(t, "1.0", m.Version)
-	assert.Len(t, m.Plugins, 2)
+	assert.Equal(t, "1.1", m.Version)
+	assert.Len(t, m.Plugins, 3)
 	assert.True(t, m.Plugins["server"].RequiredByTemplate)
 	assert.False(t, m.Plugins["analytics"].RequiredByTemplate)
+	assert.Equal(t, "preview", m.Plugins["analytics"].Stability)
+	assert.Equal(t, "experimental", m.Plugins["genie"].Stability)
+	assert.Equal(t, "stable", m.Plugins["server"].Stability)
+}
+
+func TestPlugin_StabilityLabel(t *testing.T) {
+	tests := []struct {
+		stability string
+		want      string
+	}{
+		{"", ""},
+		{"stable", ""},
+		{"preview", "preview"},
+		{"experimental", "experimental"},
+		{"alpha", "alpha"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.stability, func(t *testing.T) {
+			p := manifest.Plugin{Stability: tc.stability}
+			assert.Equal(t, tc.want, p.StabilityLabel())
+		})
+	}
 }
 
 func TestLoadNotFound(t *testing.T) {
