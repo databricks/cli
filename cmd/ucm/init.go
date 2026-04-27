@@ -20,7 +20,6 @@ func newInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [TEMPLATE_PATH]",
 		Short: "Scaffold a new ucm.yml project from a starter template.",
-		Args:  root.MaximumNArgs(1),
 		Long: fmt.Sprintf(`Scaffold a new ucm.yml project from a starter template.
 
 TEMPLATE_PATH is optional. It can be one of:
@@ -38,6 +37,7 @@ Examples:
 
 See https://docs.databricks.com/en/dev-tools/ucm/index.html for more
 information on ucm templates.`, ucmtemplates.HelpDescriptions()),
+		Args: root.MaximumNArgs(1),
 	}
 
 	var configFile string
