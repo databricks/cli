@@ -15,11 +15,14 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 var sqlIdentifierRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 func newDiscoverSchemaCmd() *cobra.Command {
+	var concurrency int
+
 	cmd := &cobra.Command{
 		Use:   "discover-schema TABLE...",
 		Short: "Discover schema for one or more tables",
@@ -31,14 +34,22 @@ For each table, returns:
 - Column names and types
 - Sample data (5 rows)
 - Null counts per column
-- Total row count`,
+- Total row count
+
+Multiple tables are discovered in parallel against the warehouse, capped
+by --concurrency (default 8). Within a single table, the sample-data and
+null-counts probes also run in parallel after the column list is known.`,
 		Example: `  databricks experimental aitools tools discover-schema samples.nyctaxi.trips
   databricks experimental aitools tools discover-schema catalog.schema.table1 catalog.schema.table2`,
-		Args:    cobra.MinimumNArgs(1),
-		PreRunE: root.MustWorkspaceClient,
+		Args: cobra.MinimumNArgs(1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if concurrency <= 0 {
+				return errInvalidBatchConcurrency
+			}
+			return root.MustWorkspaceClient(cmd, args)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			w := cmdctx.WorkspaceClient(ctx)
 
 			// validate table names: each part must be a safe SQL identifier
 			for _, table := range args {
@@ -46,6 +57,8 @@ For each table, returns:
 					return err
 				}
 			}
+
+			w := cmdctx.WorkspaceClient(ctx)
 
 			// set up session with client for middleware compatibility
 			sess := session.NewSession()
@@ -57,14 +70,22 @@ For each table, returns:
 				return err
 			}
 
-			var results []string
-			for _, table := range args {
-				result, err := discoverTable(ctx, w, warehouseID, table)
-				if err != nil {
-					result = fmt.Sprintf("Error discovering %s: %v", table, err)
-				}
-				results = append(results, result)
+			results := make([]string, len(args))
+			g := new(errgroup.Group)
+			g.SetLimit(concurrency)
+			for i, table := range args {
+				g.Go(func() error {
+					result, err := discoverTable(ctx, w, warehouseID, table)
+					if err != nil {
+						results[i] = fmt.Sprintf("Error discovering %s: %v", table, err)
+					} else {
+						results[i] = result
+					}
+					// A failure on one table shouldn't abort the others.
+					return nil
+				})
 			}
+			_ = g.Wait()
 
 			// format output with dividers for multiple tables
 			var output string
@@ -90,12 +111,12 @@ For each table, returns:
 		},
 	}
 
+	cmd.Flags().IntVar(&concurrency, "concurrency", defaultBatchConcurrency, "Maximum in-flight SQL statements when discovering multiple tables")
+
 	return cmd
 }
 
 func discoverTable(ctx context.Context, w *databricks.WorkspaceClient, warehouseID, table string) (string, error) {
-	var sb strings.Builder
-
 	quoted, err := quoteTableName(table)
 	if err != nil {
 		return "", err
@@ -113,22 +134,10 @@ func discoverTable(ctx context.Context, w *databricks.WorkspaceClient, warehouse
 		return "", errors.New("no columns found")
 	}
 
-	sb.WriteString("COLUMNS:\n")
-	for i, col := range columns {
-		fmt.Fprintf(&sb, "  %s: %s\n", col, types[i])
-	}
-
-	// 2. sample data (5 rows)
+	// 2 + 3. Sample data and null counts run in parallel; both depend only on
+	// the column list (already known) and not on each other.
 	sampleSQL := fmt.Sprintf("SELECT * FROM %s LIMIT 5", quoted)
-	sampleResp, err := executeSQL(ctx, w, warehouseID, sampleSQL)
-	if err != nil {
-		fmt.Fprintf(&sb, "\nSAMPLE DATA: Error - %v\n", err)
-	} else {
-		sb.WriteString("\nSAMPLE DATA:\n")
-		sb.WriteString(formatTableData(sampleResp))
-	}
 
-	// 3. null counts per column
 	nullCountExprs := make([]string, len(columns))
 	for i, col := range columns {
 		nullCountExprs[i] = fmt.Sprintf("SUM(CASE WHEN `%s` IS NULL THEN 1 ELSE 0 END) AS `%s_nulls`", col, col)
@@ -136,9 +145,36 @@ func discoverTable(ctx context.Context, w *databricks.WorkspaceClient, warehouse
 	nullSQL := fmt.Sprintf("SELECT COUNT(*) AS total_rows, %s FROM %s",
 		strings.Join(nullCountExprs, ", "), quoted)
 
-	nullResp, err := executeSQL(ctx, w, warehouseID, nullSQL)
-	if err != nil {
-		fmt.Fprintf(&sb, "\nNULL COUNTS: Error - %v\n", err)
+	var sampleResp, nullResp *dbsql.StatementResponse
+	var sampleErr, nullErr error
+
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		sampleResp, sampleErr = executeSQL(ctx, w, warehouseID, sampleSQL)
+		return nil
+	})
+	g.Go(func() error {
+		nullResp, nullErr = executeSQL(ctx, w, warehouseID, nullSQL)
+		return nil
+	})
+	_ = g.Wait()
+
+	// Assemble the output in the established order: columns, sample, null counts.
+	var sb strings.Builder
+	sb.WriteString("COLUMNS:\n")
+	for i, col := range columns {
+		fmt.Fprintf(&sb, "  %s: %s\n", col, types[i])
+	}
+
+	if sampleErr != nil {
+		fmt.Fprintf(&sb, "\nSAMPLE DATA: Error - %v\n", sampleErr)
+	} else {
+		sb.WriteString("\nSAMPLE DATA:\n")
+		sb.WriteString(formatTableData(sampleResp))
+	}
+
+	if nullErr != nil {
+		fmt.Fprintf(&sb, "\nNULL COUNTS: Error - %v\n", nullErr)
 	} else {
 		sb.WriteString("\nNULL COUNTS:\n")
 		sb.WriteString(formatNullCounts(nullResp, columns))
@@ -148,24 +184,25 @@ func discoverTable(ctx context.Context, w *databricks.WorkspaceClient, warehouse
 }
 
 func executeSQL(ctx context.Context, w *databricks.WorkspaceClient, warehouseID, statement string) (*dbsql.StatementResponse, error) {
-	resp, err := w.StatementExecution.ExecuteAndWait(ctx, dbsql.ExecuteStatementRequest{
-		WarehouseId: warehouseID,
-		Statement:   statement,
-		WaitTimeout: "50s",
+	resp, err := w.StatementExecution.ExecuteStatement(ctx, dbsql.ExecuteStatementRequest{
+		WarehouseId:   warehouseID,
+		Statement:     statement,
+		WaitTimeout:   "0s",
+		OnWaitTimeout: dbsql.ExecuteStatementRequestOnWaitTimeoutContinue,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("execute statement: %w", err)
+	}
+
+	pollResp, err := pollStatement(ctx, w.StatementExecution, resp)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.Status != nil && resp.Status.State == dbsql.StatementStateFailed {
-		errMsg := "query failed"
-		if resp.Status.Error != nil {
-			errMsg = resp.Status.Error.Message
-		}
-		return nil, errors.New(errMsg)
+	if err := checkFailedState(pollResp.Status); err != nil {
+		return nil, err
 	}
-
-	return resp, nil
+	return pollResp, nil
 }
 
 func parseDescribeResult(resp *dbsql.StatementResponse) (columns, types []string) {
