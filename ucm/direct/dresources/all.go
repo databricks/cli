@@ -7,14 +7,17 @@ import (
 )
 
 // SupportedResources maps a resource type identifier to a typed-nil pointer
-// of the resource implementation. UCM-specific resource handlers will be
-// added here as each resource is migrated to the embedded-SDK-type pattern
-// (mirroring bundle/direct/dresources/all.go).
-//
-// Sub-resource handlers (".permissions", ".grants") follow the same convention
-// as bundle/direct/dresources but are gated on the parent resource being
-// migrated first.
-var SupportedResources = map[string]any{}
+// of the resource implementation. Mirrors bundle/direct/dresources/all.go.
+// More entries land as each ucm resource is migrated to the
+// embedded-SDK-type pattern.
+var SupportedResources = map[string]any{
+	"catalogs": (*ResourceCatalog)(nil),
+	"schemas":  (*ResourceSchema)(nil),
+
+	// Grants
+	"catalogs.grants": (*ResourceGrants)(nil),
+	"schemas.grants":  (*ResourceGrants)(nil),
+}
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {
 	result := make(map[string]*Adapter)

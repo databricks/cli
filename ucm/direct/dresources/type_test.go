@@ -82,30 +82,21 @@ var knownMissingInRemoteType = map[string][]string{
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.
-// These are bundle-specific fields that exist in InputType but not in StateType.
+// These are ucm-specific sibling fields that exist in InputType but not in StateType.
 var commonMissingInStateType = []string{
 	"grants",
-	"lifecycle",
-	"permissions",
+	"tags",
 }
 
 // knownMissingInStateType lists resource-specific fields that exist in InputType but not in StateType.
 // Fields in commonMissingInStateType are automatically included for all types.
-// Note: Fields with bundle:"internal" or bundle:"readonly" tags are automatically skipped.
+// Note: Fields with bundle:"internal", bundle:"readonly", or ucm:"readonly" tags are automatically skipped.
 var knownMissingInStateType = map[string][]string{
-	"alerts": {
-		"file_path",
+	"catalogs": {
+		"schemas",
 	},
-	"apps": {
-		"lifecycle.prevent_destroy",
-	},
-	"dashboards": {
-		"file_path",
-	},
-	"secret_scopes": {
-		"backend_type",
-		"keyvault_metadata",
-		"name",
+	"schemas": {
+		"tag_inherit",
 	},
 }
 
@@ -130,11 +121,15 @@ func TestInputSubset(t *testing.T) {
 				if path.IsRoot() {
 					return true
 				}
-				// Skip fields marked as internal or readonly in bundle tags
+				// Skip fields marked as internal or readonly in bundle/ucm tags
 				if field != nil {
 					btag := structtag.BundleTag(field.Tag.Get("bundle"))
 					if btag.Internal() || btag.ReadOnly() {
 						return false // don't recurse into internal/readonly fields
+					}
+					utag := field.Tag.Get("ucm")
+					if utag == "readonly" {
+						return false
 					}
 				}
 				if structaccess.ValidatePattern(stateType, path) != nil {
