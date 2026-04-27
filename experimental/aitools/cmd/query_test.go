@@ -612,6 +612,22 @@ func TestQueryCommandBatchCsvOutputRejected(t *testing.T) {
 	assert.Contains(t, err.Error(), "multiple queries require --output json")
 }
 
+func TestQueryCommandConcurrencyZeroRejected(t *testing.T) {
+	// errgroup.SetLimit(0) deadlocks; we reject it in PreRunE.
+	cmd := newQueryCmd()
+	cmd.SetArgs([]string{"--concurrency", "0", "--output", "json", "SELECT 1", "SELECT 2"})
+	err := cmd.Execute()
+	require.ErrorIs(t, err, errInvalidBatchConcurrency)
+}
+
+func TestQueryCommandConcurrencyNegativeRejected(t *testing.T) {
+	// Negative removes the cap entirely in errgroup, which surprises users.
+	cmd := newQueryCmd()
+	cmd.SetArgs([]string{"--concurrency", "-1", "--output", "json", "SELECT 1", "SELECT 2"})
+	err := cmd.Execute()
+	require.ErrorIs(t, err, errInvalidBatchConcurrency)
+}
+
 func TestQueryCommandOutputFlagIsCaseInsensitive(t *testing.T) {
 	cmd := newQueryCmd()
 	cmd.PreRunE = nil

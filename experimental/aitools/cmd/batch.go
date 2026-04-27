@@ -2,6 +2,7 @@ package aitools
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -18,6 +19,10 @@ import (
 // defaultBatchConcurrency caps in-flight statements when --concurrency is unset.
 // Matches the default used by cmd/fs/cp.go for similar fan-out work.
 const defaultBatchConcurrency = 8
+
+// errInvalidBatchConcurrency is returned when --concurrency is set to a value
+// that errgroup.SetLimit can't honor (0 deadlocks, negative removes the cap).
+var errInvalidBatchConcurrency = errors.New("--concurrency must be at least 1")
 
 // batchResult is the per-statement payload emitted in batch mode JSON output.
 // State is the server-reported terminal state. Error is set whenever the

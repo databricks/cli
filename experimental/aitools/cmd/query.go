@@ -92,8 +92,9 @@ file exists, it is read as a SQL file automatically.
 Pass multiple positional arguments and/or repeat --file to run several
 queries in parallel against the warehouse. Multi-query output is always
 JSON: an array of {sql, statement_id, state, elapsed_ms, columns, rows,
-error} objects in input order. The exit code is non-zero if any query
-failed.
+error} objects. Result order is: --file inputs first (in flag order),
+then positional SQLs (in arg order). The exit code is non-zero if any
+query failed.
 
 The command auto-detects an available warehouse unless --warehouse is set
 or the DATABRICKS_WAREHOUSE_ID environment variable is configured.
@@ -108,8 +109,13 @@ interactive table browser. Use --output csv to export results as CSV.`,
   databricks experimental aitools tools query --output csv "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --output json "SELECT 1" "SELECT 2" "SELECT 3"
   echo "SELECT 1" | databricks experimental aitools tools query`,
-		Args:    cobra.ArbitraryArgs,
-		PreRunE: root.MustWorkspaceClient,
+		Args: cobra.ArbitraryArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if concurrency <= 0 {
+				return errInvalidBatchConcurrency
+			}
+			return root.MustWorkspaceClient(cmd, args)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
