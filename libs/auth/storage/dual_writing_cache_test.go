@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"sync"
 	"testing"
 
@@ -166,4 +167,36 @@ func TestDualWritingCacheLookupDelegates(t *testing.T) {
 
 	_, err = c.Lookup("missing")
 	require.ErrorIs(t, err, u2m_cache.ErrNotFound)
+}
+
+// failOnHostKeyCache returns an error when asked to write under hostKey;
+// primary writes succeed. Used to verify the wrapper treats host-key
+// mirrors as best-effort.
+type failOnHostKeyCache struct {
+	memoryCache
+	hostKey string
+}
+
+func (c *failOnHostKeyCache) Store(key string, t *oauth2.Token) error {
+	if key == c.hostKey {
+		return errors.New("simulated host-key write failure")
+	}
+	return c.memoryCache.Store(key, t)
+}
+
+func TestDualWritingCacheStoreHostKeyFailureIsBestEffort(t *testing.T) {
+	const (
+		profileKey = "profile-a"
+		hostKey    = "https://example.databricks.com"
+	)
+	inner := &failOnHostKeyCache{memoryCache: *newMemoryCache(), hostKey: hostKey}
+	arg := hostArg{key: profileKey, hostKey: hostKey}
+	c := NewDualWritingTokenCache(inner, arg)
+	tok := &oauth2.Token{AccessToken: "abc"}
+
+	require.NoError(t, c.Store(profileKey, tok), "host-key mirror failure must not propagate to primary Store")
+
+	primary, err := inner.Lookup(profileKey)
+	require.NoError(t, err)
+	assert.Equal(t, tok, primary, "primary write must persist even when host-key mirror fails")
 }

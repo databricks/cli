@@ -117,25 +117,44 @@ func TestResolveCache_FileFactoryErrorPropagates(t *testing.T) {
 }
 
 func TestWrapForOAuthArgument(t *testing.T) {
-	arg, err := u2m.NewBasicWorkspaceOAuthArgument("https://example.com")
+	const (
+		host       = "https://example.com"
+		profileKey = "myprofile"
+	)
+	arg, err := u2m.NewProfileWorkspaceOAuthArgument(host, profileKey)
 	require.NoError(t, err)
 
-	inner := stubCache{source: "inner"}
-
 	cases := []struct {
-		name     string
-		mode     StorageMode
-		wantWrap bool
+		name        string
+		mode        StorageMode
+		wantWrap    bool
+		wantHostKey bool
 	}{
-		{"plaintext wraps in DualWritingTokenCache", StorageModePlaintext, true},
-		{"secure returns inner unchanged", StorageModeSecure, false},
-		{"unknown returns inner unchanged", StorageModeUnknown, false},
+		{"plaintext wraps and mirrors under host key", StorageModePlaintext, true, true},
+		{"secure returns inner unchanged; no host-key mirror", StorageModeSecure, false, false},
+		{"unknown returns inner unchanged; no host-key mirror", StorageModeUnknown, false, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			inner := newMemoryCache()
 			got := WrapForOAuthArgument(inner, tc.mode, arg)
+
 			_, wrapped := got.(*DualWritingTokenCache)
-			assert.Equal(t, tc.wantWrap, wrapped)
+			assert.Equal(t, tc.wantWrap, wrapped, "wrapper presence")
+
+			tok := &oauth2.Token{AccessToken: "abc"}
+			require.NoError(t, got.Store(profileKey, tok))
+
+			primary, err := inner.Lookup(profileKey)
+			require.NoError(t, err, "primary key must always be written")
+			assert.Equal(t, tok, primary)
+
+			_, err = inner.Lookup(host)
+			if tc.wantHostKey {
+				require.NoError(t, err, "host-key mirror expected in plaintext mode")
+			} else {
+				assert.ErrorIs(t, err, cache.ErrNotFound, "no host-key mirror expected outside plaintext mode")
+			}
 		})
 	}
 }
