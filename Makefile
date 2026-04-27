@@ -250,6 +250,28 @@ bundle/direct/dresources/apitypes.generated.yml: ./bundle/direct/tools/generate_
 bundle/direct/dresources/resources.generated.yml: ./bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt
 	python3 $^ > $@
 
+# UCM mirrors the bundle generate-direct targets. Empty until UCM resources
+# are migrated to the embedded-SDK-type pattern; out.fields.txt is produced
+# by `acceptance/ucm/refschema` (run `make test-update` to refresh).
+.PHONY: generate-ucm-direct
+generate-ucm-direct: generate-ucm-direct-apitypes generate-ucm-direct-resources
+
+.PHONY: generate-ucm-direct-apitypes
+generate-ucm-direct-apitypes: ucm/direct/dresources/apitypes.generated.yml
+
+.PHONY: generate-ucm-direct-resources
+generate-ucm-direct-resources: ucm/direct/dresources/resources.generated.yml
+
+.PHONY: generate-ucm-direct-clean
+generate-ucm-direct-clean:
+	rm -f ucm/direct/dresources/apitypes.generated.yml ucm/direct/dresources/resources.generated.yml
+
+ucm/direct/dresources/apitypes.generated.yml: ./ucm/direct/tools/generate_apitypes.py .codegen/openapi.json acceptance/ucm/refschema/out.fields.txt
+	python3 $^ > $@
+
+ucm/direct/dresources/resources.generated.yml: ./ucm/direct/tools/generate_resources.py .codegen/openapi.json ucm/direct/dresources/apitypes.generated.yml ucm/direct/dresources/apitypes.yml acceptance/ucm/refschema/out.fields.txt
+	python3 $^ > $@
+
 .PHONY: test-exp-aitools
 test-exp-aitools:
 	make test TEST_PACKAGES="./experimental/aitools/..." ACCEPTANCE_TEST_FILTER="TestAccept/apps"

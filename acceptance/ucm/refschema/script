@@ -1,0 +1,2 @@
+trace $CLI ucm debug refschema --help
+trace $CLI ucm debug refschema > out.fields.txt
