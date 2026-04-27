@@ -60,9 +60,9 @@ func discoveryErr(msg string, err error) error {
 	return fmt.Errorf("%s%s", msg, discoveryFallbackTip)
 }
 
-// mirrorTokenUnderHostKey mirrors the freshly minted token under the legacy
-// host-based cache key so users alternating between CLI and SDK find it.
-// Only runs for plaintext mode; secure mode never writes a host-key entry.
+// mirrorTokenUnderHostKey writes a second copy of the freshly minted token
+// under the legacy host-based cache key so older Go SDKs (v0.61-v0.103)
+// that still look up by host can find it. No-op for any non-plaintext mode.
 func mirrorTokenUnderHostKey(ctx context.Context, tokenCache cache.TokenCache, arg u2m.OAuthArgument, mode storage.StorageMode) {
 	if mode != storage.StorageModePlaintext {
 		return
