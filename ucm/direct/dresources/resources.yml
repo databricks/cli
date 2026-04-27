@@ -1,0 +1,17 @@
+# Resource lifecycle configuration for ucm.
+# This file defines how field changes affect resource operations.
+#
+# Available options:
+#   recreate_on_changes: fields that trigger delete + create
+#   update_id_on_changes: fields that trigger UpdateWithID (ID may change)
+#   ignore_remote_changes: fields where remote changes are ignored
+#   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
+#   backend_defaults: fields where the backend may set defaults
+#
+# Each field entry has:
+#   field: the field path
+#   reason: why this field is in this category
+#
+# Empty until UCM resources are migrated to the embedded-SDK-type pattern.
+
+resources:
