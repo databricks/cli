@@ -1,6 +1,7 @@
 package tfdyn
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -20,15 +21,11 @@ func TestConvertConnection(t *testing.T) {
 		{
 			name: "mysql minimal",
 			key:  "sales_mysql",
-			src: resources.Connection{
-				Name:           "sales_mysql",
-				ConnectionType: "MYSQL",
-				Options: map[string]string{
+			src: resources.Connection{CreateConnection: catalog.CreateConnection{Name: "sales_mysql", ConnectionType: catalog.ConnectionType("MYSQL"), Options: map[string]string{
 					"host": "mysql.acme.internal",
 					"port": "3306",
 					"user": "reader",
-				},
-			},
+				}}},
 			want: map[string]any{
 				"name":            "sales_mysql",
 				"connection_type": "MYSQL",
@@ -42,14 +39,7 @@ func TestConvertConnection(t *testing.T) {
 		{
 			name: "all fields",
 			key:  "pg",
-			src: resources.Connection{
-				Name:           "pg",
-				ConnectionType: "POSTGRESQL",
-				Options:        map[string]string{"host": "pg.acme.internal"},
-				Comment:        "prod pg",
-				Properties:     map[string]string{"purpose": "analytics"},
-				ReadOnly:       true,
-			},
+			src: resources.Connection{CreateConnection: catalog.CreateConnection{Name: "pg", ConnectionType: catalog.ConnectionType("POSTGRESQL"), Options: map[string]string{"host": "pg.acme.internal"}, Comment: "prod pg", Properties: map[string]string{"purpose": "analytics"}, ReadOnly: true}},
 			want: map[string]any{
 				"name":            "pg",
 				"connection_type": "POSTGRESQL",
@@ -83,12 +73,12 @@ func TestConvertConnection_Errors(t *testing.T) {
 	}{
 		{
 			name:    "missing connection_type",
-			src:     resources.Connection{Name: "c", Options: map[string]string{"host": "x"}},
+			src:     resources.Connection{CreateConnection: catalog.CreateConnection{Name: "c", Options: map[string]string{"host": "x"}}},
 			wantMsg: "connection_type is required",
 		},
 		{
 			name:    "missing options",
-			src:     resources.Connection{Name: "c", ConnectionType: "MYSQL"},
+			src:     resources.Connection{CreateConnection: catalog.CreateConnection{Name: "c", ConnectionType: catalog.ConnectionType("MYSQL")}},
 			wantMsg: "options is required",
 		},
 	}

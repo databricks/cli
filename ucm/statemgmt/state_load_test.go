@@ -88,16 +88,16 @@ func TestLoad_PopulatesIDsForMappedKinds(t *testing.T) {
 			"bronze": {CreateSchema: catalog.CreateSchema{Name: "bronze", CatalogName: "team_alpha"}},
 		},
 		Volumes: map[string]*resources.Volume{
-			"raw": {Name: "raw", CatalogName: "team_alpha", SchemaName: "bronze"},
+			"raw": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "raw", CatalogName: "team_alpha", SchemaName: "bronze"}},
 		},
 		StorageCredentials: map[string]*resources.StorageCredential{
-			"creds": {Name: "creds"},
+			"creds": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "creds"}},
 		},
 		ExternalLocations: map[string]*resources.ExternalLocation{
-			"loc": {Name: "loc"},
+			"loc": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "loc"}},
 		},
 		Connections: map[string]*resources.Connection{
-			"conn": {Name: "conn", ConnectionType: "POSTGRESQL"},
+			"conn": {CreateConnection: catalog.CreateConnection{Name: "conn", ConnectionType: catalog.ConnectionType("POSTGRESQL")}},
 		},
 	})
 

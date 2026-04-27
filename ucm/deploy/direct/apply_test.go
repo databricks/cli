@@ -367,10 +367,7 @@ func TestApply_StorageCredentialCreateOrdersBeforeCatalog(t *testing.T) {
 		nil,
 	)
 	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
-		"prod": {
-			Name:       "prod",
-			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/uc"},
-		},
+		"prod": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "prod", AwsIamRole: &catalog.AwsIamRoleRequest{RoleArn: "arn:aws:iam::1:role/uc"}}},
 	}
 
 	state := direct.NewState()
@@ -391,11 +388,7 @@ func TestApply_StorageCredentialCreateOrdersBeforeCatalog(t *testing.T) {
 func TestApply_StorageCredentialUpdate(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
-		"prod": {
-			Name:       "prod",
-			Comment:    "new",
-			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/new"},
-		},
+		"prod": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "prod", Comment: "new", AwsIamRole: &catalog.AwsIamRoleRequest{RoleArn: "arn:aws:iam::1:role/new"}}},
 	}
 	state := direct.NewState()
 	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
@@ -439,7 +432,7 @@ func TestApply_StorageCredentialDeleteOrdersAfterCatalog(t *testing.T) {
 func TestApply_StorageCredentialRejectsMissingIdentity(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
-		"bad": {Name: "bad"},
+		"bad": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "bad"}},
 	}
 	state := direct.NewState()
 	plan := direct.CalculatePlan(u, state)
@@ -454,17 +447,10 @@ func TestApply_StorageCredentialRejectsMissingIdentity(t *testing.T) {
 func TestApply_ExternalLocationCreateOrdersAfterStorageCredential(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
-		"prod": {
-			Name:       "prod",
-			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/uc"},
-		},
+		"prod": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "prod", AwsIamRole: &catalog.AwsIamRoleRequest{RoleArn: "arn:aws:iam::1:role/uc"}}},
 	}
 	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
-		"data": {
-			Name:           "data",
-			Url:            "s3://bucket/prefix",
-			CredentialName: "prod",
-		},
+		"data": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "data", Url: "s3://bucket/prefix", CredentialName: "prod"}},
 	}
 
 	state := direct.NewState()
@@ -486,12 +472,7 @@ func TestApply_ExternalLocationCreateOrdersAfterStorageCredential(t *testing.T) 
 func TestApply_ExternalLocationUpdate(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
-		"data": {
-			Name:           "data",
-			Url:            "s3://bucket/new",
-			CredentialName: "prod",
-			Comment:        "new",
-		},
+		"data": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "data", Url: "s3://bucket/new", CredentialName: "prod", Comment: "new"}},
 	}
 	state := direct.NewState()
 	state.ExternalLocations["data"] = &direct.ExternalLocationState{
@@ -547,12 +528,7 @@ func TestApply_VolumeCreateOrdersAfterSchema(t *testing.T) {
 		nil,
 	)
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"raw": {
-			Name:        "raw",
-			CatalogName: "main",
-			SchemaName:  "bronze",
-			VolumeType:  "MANAGED",
-		},
+		"raw": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "raw", CatalogName: "main", SchemaName: "bronze", VolumeType: catalog.VolumeType("MANAGED")}},
 	}
 	state := direct.NewState()
 	plan := direct.CalculatePlan(u, state)
@@ -575,13 +551,7 @@ func TestApply_VolumeCreateOrdersAfterSchema(t *testing.T) {
 func TestApply_VolumeExternalCreatePreservesStorageLocation(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"raw": {
-			Name:            "raw",
-			CatalogName:     "main",
-			SchemaName:      "bronze",
-			VolumeType:      "EXTERNAL",
-			StorageLocation: "s3://bucket/raw",
-		},
+		"raw": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "raw", CatalogName: "main", SchemaName: "bronze", VolumeType: catalog.VolumeType("EXTERNAL"), StorageLocation: "s3://bucket/raw"}},
 	}
 	state := direct.NewState()
 	plan := direct.CalculatePlan(u, state)
@@ -597,13 +567,7 @@ func TestApply_VolumeExternalCreatePreservesStorageLocation(t *testing.T) {
 func TestApply_VolumeUpdate(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"raw": {
-			Name:        "raw",
-			CatalogName: "main",
-			SchemaName:  "bronze",
-			VolumeType:  "MANAGED",
-			Comment:     "new",
-		},
+		"raw": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "raw", CatalogName: "main", SchemaName: "bronze", VolumeType: catalog.VolumeType("MANAGED"), Comment: "new"}},
 	}
 	state := direct.NewState()
 	state.Volumes["raw"] = &direct.VolumeState{
@@ -653,12 +617,7 @@ func TestApply_VolumeDestroyOrder(t *testing.T) {
 func TestApply_VolumeRejectsInvalidType(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"raw": {
-			Name:        "raw",
-			CatalogName: "main",
-			SchemaName:  "bronze",
-			VolumeType:  "BOGUS",
-		},
+		"raw": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "raw", CatalogName: "main", SchemaName: "bronze", VolumeType: catalog.VolumeType("BOGUS")}},
 	}
 	state := direct.NewState()
 	plan := direct.CalculatePlan(u, state)
@@ -673,12 +632,7 @@ func TestApply_VolumeRejectsInvalidType(t *testing.T) {
 func TestApply_VolumeExternalRequiresStorageLocation(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"raw": {
-			Name:        "raw",
-			CatalogName: "main",
-			SchemaName:  "bronze",
-			VolumeType:  "EXTERNAL",
-		},
+		"raw": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "raw", CatalogName: "main", SchemaName: "bronze", VolumeType: catalog.VolumeType("EXTERNAL")}},
 	}
 	state := direct.NewState()
 	plan := direct.CalculatePlan(u, state)
@@ -692,19 +646,10 @@ func TestApply_VolumeExternalRequiresStorageLocation(t *testing.T) {
 func TestApply_ConnectionCreateOrdersAfterVolume(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"raw": {
-			Name:        "raw",
-			CatalogName: "main",
-			SchemaName:  "bronze",
-			VolumeType:  "MANAGED",
-		},
+		"raw": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "raw", CatalogName: "main", SchemaName: "bronze", VolumeType: catalog.VolumeType("MANAGED")}},
 	}
 	u.Config.Resources.Connections = map[string]*resources.Connection{
-		"mysql_prod": {
-			Name:           "mysql_prod",
-			ConnectionType: "MYSQL",
-			Options:        map[string]string{"host": "db.example.com"},
-		},
+		"mysql_prod": {CreateConnection: catalog.CreateConnection{Name: "mysql_prod", ConnectionType: catalog.ConnectionType("MYSQL"), Options: map[string]string{"host": "db.example.com"}}},
 	}
 
 	state := direct.NewState()
@@ -726,11 +671,7 @@ func TestApply_ConnectionCreateOrdersAfterVolume(t *testing.T) {
 func TestApply_ConnectionUpdate(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.Connections = map[string]*resources.Connection{
-		"mysql_prod": {
-			Name:           "mysql_prod",
-			ConnectionType: "MYSQL",
-			Options:        map[string]string{"host": "new.example.com"},
-		},
+		"mysql_prod": {CreateConnection: catalog.CreateConnection{Name: "mysql_prod", ConnectionType: catalog.ConnectionType("MYSQL"), Options: map[string]string{"host": "new.example.com"}}},
 	}
 	state := direct.NewState()
 	state.Connections["mysql_prod"] = &direct.ConnectionState{
@@ -779,10 +720,7 @@ func TestApply_ConnectionDestroyOrder(t *testing.T) {
 func TestApply_ConnectionRejectsMissingOptions(t *testing.T) {
 	u := &ucm.Ucm{}
 	u.Config.Resources.Connections = map[string]*resources.Connection{
-		"mysql_prod": {
-			Name:           "mysql_prod",
-			ConnectionType: "MYSQL",
-		},
+		"mysql_prod": {CreateConnection: catalog.CreateConnection{Name: "mysql_prod", ConnectionType: catalog.ConnectionType("MYSQL")}},
 	}
 	state := direct.NewState()
 	plan := direct.CalculatePlan(u, state)

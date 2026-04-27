@@ -1,6 +1,7 @@
 package tfdyn
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -20,11 +21,7 @@ func TestConvertExternalLocation(t *testing.T) {
 		{
 			name: "minimal",
 			key:  "sales_loc",
-			src: resources.ExternalLocation{
-				Name:           "sales_loc",
-				Url:            "s3://acme-sales/prod",
-				CredentialName: "sales_cred",
-			},
+			src: resources.ExternalLocation{CreateExternalLocation: catalog.CreateExternalLocation{Name: "sales_loc", Url: "s3://acme-sales/prod", CredentialName: "sales_cred"}},
 			want: map[string]any{
 				"name":            "sales_loc",
 				"url":             "s3://acme-sales/prod",
@@ -34,15 +31,7 @@ func TestConvertExternalLocation(t *testing.T) {
 		{
 			name: "all fields",
 			key:  "ro_loc",
-			src: resources.ExternalLocation{
-				Name:           "ro_loc",
-				Url:            "abfss://data@acme.dfs.core.windows.net/ro",
-				CredentialName: "shared_cred",
-				Comment:        "read-only location",
-				ReadOnly:       true,
-				SkipValidation: true,
-				Fallback:       true,
-			},
+			src: resources.ExternalLocation{CreateExternalLocation: catalog.CreateExternalLocation{Name: "ro_loc", Url: "abfss://data@acme.dfs.core.windows.net/ro", CredentialName: "shared_cred", Comment: "read-only location", ReadOnly: true, SkipValidation: true, Fallback: true}},
 			want: map[string]any{
 				"name":            "ro_loc",
 				"url":             "abfss://data@acme.dfs.core.windows.net/ro",
@@ -56,10 +45,7 @@ func TestConvertExternalLocation(t *testing.T) {
 		{
 			name: "defaults name from key",
 			key:  "inferred",
-			src: resources.ExternalLocation{
-				Url:            "gs://acme/prod",
-				CredentialName: "cred",
-			},
+			src: resources.ExternalLocation{CreateExternalLocation: catalog.CreateExternalLocation{Url: "gs://acme/prod", CredentialName: "cred"}},
 			want: map[string]any{
 				"name":            "inferred",
 				"url":             "gs://acme/prod",
@@ -83,7 +69,7 @@ func TestConvertExternalLocation(t *testing.T) {
 }
 
 func TestConvertExternalLocation_ErrorsOnMissingUrl(t *testing.T) {
-	vin, err := convert.FromTyped(resources.ExternalLocation{Name: "bad", CredentialName: "c"}, dyn.NilValue)
+	vin, err := convert.FromTyped(resources.ExternalLocation{CreateExternalLocation: catalog.CreateExternalLocation{Name: "bad", CredentialName: "c"}}, dyn.NilValue)
 	require.NoError(t, err)
 	out := NewResources()
 	err = externalLocationConverter{}.Convert(t.Context(), "bad", vin, out)
@@ -92,7 +78,7 @@ func TestConvertExternalLocation_ErrorsOnMissingUrl(t *testing.T) {
 }
 
 func TestConvertExternalLocation_ErrorsOnMissingCredentialName(t *testing.T) {
-	vin, err := convert.FromTyped(resources.ExternalLocation{Name: "bad", Url: "s3://x/y"}, dyn.NilValue)
+	vin, err := convert.FromTyped(resources.ExternalLocation{CreateExternalLocation: catalog.CreateExternalLocation{Name: "bad", Url: "s3://x/y"}}, dyn.NilValue)
 	require.NoError(t, err)
 	out := NewResources()
 	err = externalLocationConverter{}.Convert(t.Context(), "bad", vin, out)

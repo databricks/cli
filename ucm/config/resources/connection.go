@@ -1,22 +1,16 @@
 package resources
 
-import "net/url"
+import (
+	"net/url"
 
-// Connection is a UC foreign-catalog connection (the federation link that
-// lets a foreign catalog reference tables in MySQL, PostgreSQL, Snowflake,
-// etc.). Field names mirror databricks-sdk-go's catalog.CreateConnection.
-//
-// ConnectionType is a free string matching the SDK enum (e.g. MYSQL,
-// POSTGRESQL, SNOWFLAKE, REDSHIFT, BIGQUERY). Options carries the
-// connection-specific configuration (host, port, user, password, etc.) and
-// must contain at least enough keys for UC to authenticate.
+	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+)
+
+// Connection is a UC foreign-catalog connection. Embeds the SDK's
+// CreateConnection for full attribute coverage.
 type Connection struct {
-	Name           string            `json:"name"`
-	ConnectionType string            `json:"connection_type"`
-	Options        map[string]string `json:"options"`
-	Comment        string            `json:"comment,omitempty"`
-	Properties     map[string]string `json:"properties,omitempty"`
-	ReadOnly       bool              `json:"read_only,omitempty"`
+	catalog.CreateConnection
 
 	// ID is the deployed resource's terraform-state ID. Populated by
 	// statemgmt.Load from the local tfstate; never written from ucm.yml.
@@ -34,4 +28,12 @@ func (c *Connection) InitializeURL(baseURL url.URL) {
 	}
 	baseURL.Path = "explore/connections/" + c.Name
 	c.URL = baseURL.String()
+}
+
+func (c *Connection) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, c)
+}
+
+func (c Connection) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(c)
 }

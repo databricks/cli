@@ -1,23 +1,18 @@
 package resources
 
-import "net/url"
+import (
+	"net/url"
 
-// StorageCredential is a UC storage credential. Exactly one of the cloud
+	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+)
+
+// StorageCredential is a UC storage credential. Embeds the SDK's
+// CreateStorageCredential for full attribute coverage; one of the SDK
 // identity fields (AwsIamRole, AzureManagedIdentity, AzureServicePrincipal,
-// DatabricksGcpServiceAccount) must be set. Field shape mirrors
-// databricks-sdk-go's catalog.CreateStorageCredential so the direct-engine
-// input builder is a 1:1 copy rather than a mapping layer.
+// DatabricksGcpServiceAccount, CloudflareApiToken) must be set.
 type StorageCredential struct {
-	Name    string `json:"name"`
-	Comment string `json:"comment,omitempty"`
-
-	AwsIamRole                  *AwsIamRole                  `json:"aws_iam_role,omitempty"`
-	AzureManagedIdentity        *AzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
-	AzureServicePrincipal       *AzureServicePrincipal       `json:"azure_service_principal,omitempty"`
-	DatabricksGcpServiceAccount *DatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
-
-	ReadOnly       bool `json:"read_only,omitempty"`
-	SkipValidation bool `json:"skip_validation,omitempty"`
+	catalog.CreateStorageCredential
 
 	// ID is the deployed resource's terraform-state ID. Populated by
 	// statemgmt.Load from the local tfstate; never written from ucm.yml.
@@ -37,24 +32,10 @@ func (s *StorageCredential) InitializeURL(baseURL url.URL) {
 	s.URL = baseURL.String()
 }
 
-// AwsIamRole is the AWS IAM role UC assumes to vend temporary credentials.
-type AwsIamRole struct {
-	RoleArn string `json:"role_arn"`
+func (s *StorageCredential) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
 }
 
-// AzureManagedIdentity identifies an Azure managed identity by access connector.
-type AzureManagedIdentity struct {
-	AccessConnectorId string `json:"access_connector_id"`
-	ManagedIdentityId string `json:"managed_identity_id,omitempty"`
+func (s StorageCredential) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
-
-// AzureServicePrincipal holds an Azure AD service principal reference.
-type AzureServicePrincipal struct {
-	DirectoryId   string `json:"directory_id"`
-	ApplicationId string `json:"application_id"`
-	ClientSecret  string `json:"client_secret"`
-}
-
-// DatabricksGcpServiceAccount toggles the Databricks-managed GCP identity
-// shape. Presence alone is meaningful; there are no user-supplied fields.
-type DatabricksGcpServiceAccount struct{}

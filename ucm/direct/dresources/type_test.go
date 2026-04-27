@@ -22,6 +22,9 @@ var knownMissingInRemoteType = map[string][]string{
 	"external_locations": {
 		"skip_validation",
 	},
+	"storage_credentials": {
+		"skip_validation",
+	},
 	"model_serving_endpoints": {
 		"ai_gateway",
 		"budget_policy_id",

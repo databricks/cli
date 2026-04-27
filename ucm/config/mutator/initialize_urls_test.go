@@ -26,16 +26,16 @@ func TestInitializeURLs(t *testing.T) {
 					"sch1": {CreateSchema: catalog.CreateSchema{Name: "sch1", CatalogName: "cat1"}, ID: "cat1.sch1"},
 				},
 				Volumes: map[string]*resources.Volume{
-					"vol1": {Name: "vol1", CatalogName: "cat1", SchemaName: "sch1", ID: "cat1.sch1.vol1"},
+					"vol1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "vol1", CatalogName: "cat1", SchemaName: "sch1"}, ID: "cat1.sch1.vol1"},
 				},
 				StorageCredentials: map[string]*resources.StorageCredential{
-					"sc1": {Name: "sc1", ID: "sc1"},
+					"sc1": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "sc1"}, ID: "sc1"},
 				},
 				ExternalLocations: map[string]*resources.ExternalLocation{
-					"el1": {Name: "el1", Url: "s3://bucket/path", ID: "el1"},
+					"el1": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "el1", Url: "s3://bucket/path"}, ID: "el1"},
 				},
 				Connections: map[string]*resources.Connection{
-					"conn1": {Name: "conn1", ConnectionType: "POSTGRESQL", ID: "conn1"},
+					"conn1": {CreateConnection: catalog.CreateConnection{Name: "conn1", ConnectionType: catalog.ConnectionType("POSTGRESQL")}, ID: "conn1"},
 				},
 			},
 		},

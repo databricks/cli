@@ -102,7 +102,7 @@ func volumeStateFromConfig(v *resources.Volume) VolumeState {
 		Name:            v.Name,
 		CatalogName:     v.CatalogName,
 		SchemaName:      v.SchemaName,
-		VolumeType:      v.VolumeType,
+		VolumeType:      string(v.VolumeType),
 		StorageLocation: v.StorageLocation,
 		Comment:         v.Comment,
 	}
@@ -114,7 +114,7 @@ func connectionStateFromConfig(c *resources.Connection) ConnectionState {
 	}
 	return ConnectionState{
 		Name:           c.Name,
-		ConnectionType: c.ConnectionType,
+		ConnectionType: string(c.ConnectionType),
 		Options:        copyTags(c.Options),
 		Comment:        c.Comment,
 		Properties:     copyTags(c.Properties),

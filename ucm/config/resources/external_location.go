@@ -1,27 +1,20 @@
 package resources
 
-import "net/url"
+import (
+	"net/url"
 
-// ExternalLocation is a UC external location. URL + storage credential
-// together grant UC access to a specific cloud-storage prefix. Field names
-// mirror databricks-sdk-go's catalog.CreateExternalLocation so the direct-
-// engine input builder stays a 1:1 copy rather than a mapping layer.
+	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+)
+
+// ExternalLocation is a UC external location. Embeds the SDK's
+// CreateExternalLocation for full attribute coverage.
 //
-// M0 scope: name, url, credential_name, comment, read_only, skip_validation,
-// fallback. Encryption details and file-event queue support land later.
-//
-// Url (lowercase) is the cloud storage path (s3://..., abfss://..., gs://...);
-// URL (uppercase) is the workspace console URL populated by the
-// initialize_urls mutator. The two are distinct.
+// SDK's `Url` field (lowercase, the cloud storage path) is distinct from
+// ucm's `URL` field (uppercase, the workspace console URL set by
+// initialize_urls).
 type ExternalLocation struct {
-	Name           string `json:"name"`
-	Url            string `json:"url"`
-	CredentialName string `json:"credential_name"`
-
-	Comment        string `json:"comment,omitempty"`
-	ReadOnly       bool   `json:"read_only,omitempty"`
-	SkipValidation bool   `json:"skip_validation,omitempty"`
-	Fallback       bool   `json:"fallback,omitempty"`
+	catalog.CreateExternalLocation
 
 	// ID is the deployed resource's terraform-state ID. Populated by
 	// statemgmt.Load from the local tfstate; never written from ucm.yml.
@@ -39,4 +32,12 @@ func (e *ExternalLocation) InitializeURL(baseURL url.URL) {
 	}
 	baseURL.Path = "explore/external-locations/" + e.Name
 	e.URL = baseURL.String()
+}
+
+func (e *ExternalLocation) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, e)
+}
+
+func (e ExternalLocation) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(e)
 }

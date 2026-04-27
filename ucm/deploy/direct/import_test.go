@@ -182,14 +182,11 @@ func TestImportResource_SchemaUsesFullName(t *testing.T) {
 func TestImportResource_StorageCredentialRetainsClientSecret(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
-		"azure_sp": {
-			Name: "azure_sp",
-			AzureServicePrincipal: &resources.AzureServicePrincipal{
+		"azure_sp": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "azure_sp", AzureServicePrincipal: &catalog.AzureServicePrincipal{
 				DirectoryId:   "tenant",
 				ApplicationId: "app",
 				ClientSecret:  "local-only-secret",
-			},
-		},
+			}}},
 	}
 	client := &importFakeClient{StorageCredential: &catalog.StorageCredentialInfo{
 		Name:    "azure_sp",
@@ -213,7 +210,7 @@ func TestImportResource_StorageCredentialRetainsClientSecret(t *testing.T) {
 func TestImportResource_VolumeUsesFullName(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"docs": {Name: "docs", CatalogName: "main", SchemaName: "raw", VolumeType: "MANAGED"},
+		"docs": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "docs", CatalogName: "main", SchemaName: "raw", VolumeType: catalog.VolumeType("MANAGED")}},
 	}
 	client := &importFakeClient{Volume: &catalog.VolumeInfo{
 		Name: "docs", CatalogName: "main", SchemaName: "raw", VolumeType: catalog.VolumeTypeManaged,
@@ -232,7 +229,7 @@ func TestImportResource_VolumeUsesFullName(t *testing.T) {
 func TestImportResource_ConnectionCopiesOptions(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Connections = map[string]*resources.Connection{
-		"mysql_prod": {Name: "mysql_prod", ConnectionType: "MYSQL"},
+		"mysql_prod": {CreateConnection: catalog.CreateConnection{Name: "mysql_prod", ConnectionType: catalog.ConnectionType("MYSQL")}},
 	}
 	client := &importFakeClient{Connection: &catalog.ConnectionInfo{
 		Name:           "mysql_prod",

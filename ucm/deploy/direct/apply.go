@@ -543,24 +543,19 @@ func storageCredentialUpdateInput(c *resources.StorageCredential) (catalog.Updat
 // SDK Create payload. EXTERNAL volumes require storage_location; MANAGED ones
 // must not carry one.
 func volumeCreateInput(v *resources.Volume) (catalog.CreateVolumeRequestContent, error) {
-	vType := strings.ToUpper(v.VolumeType)
-	if vType != "MANAGED" && vType != "EXTERNAL" {
+	vType := catalog.VolumeType(strings.ToUpper(string(v.VolumeType)))
+	if vType != catalog.VolumeTypeManaged && vType != catalog.VolumeTypeExternal {
 		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: volume_type must be MANAGED or EXTERNAL, got %q", v.Name, v.VolumeType)
 	}
-	if vType == "EXTERNAL" && v.StorageLocation == "" {
+	if vType == catalog.VolumeTypeExternal && v.StorageLocation == "" {
 		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: storage_location is required for EXTERNAL volumes", v.Name)
 	}
-	if vType == "MANAGED" && v.StorageLocation != "" {
+	if vType == catalog.VolumeTypeManaged && v.StorageLocation != "" {
 		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: storage_location must not be set for MANAGED volumes", v.Name)
 	}
-	return catalog.CreateVolumeRequestContent{
-		Name:            v.Name,
-		CatalogName:     v.CatalogName,
-		SchemaName:      v.SchemaName,
-		VolumeType:      catalog.VolumeType(vType),
-		StorageLocation: v.StorageLocation,
-		Comment:         v.Comment,
-	}, nil
+	in := v.CreateVolumeRequestContent
+	in.VolumeType = vType
+	return in, nil
 }
 
 // volumeUpdateInput produces a comment-only update. The UC API only supports

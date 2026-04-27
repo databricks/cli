@@ -141,10 +141,7 @@ func TestCalculatePlan_PrivilegeReorderIsSkip(t *testing.T) {
 func TestCalculatePlan_StorageCredentialCreate(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
-		"prod": {
-			Name:       "prod",
-			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/uc"},
-		},
+		"prod": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "prod", AwsIamRole: &catalog.AwsIamRoleRequest{RoleArn: "arn:aws:iam::1:role/uc"}}},
 	}
 	plan := direct.CalculatePlan(u, direct.NewState())
 	assert.Equal(t, deployplan.Create, plan.Plan["resources.storage_credentials.prod"].Action)
@@ -164,11 +161,7 @@ func TestCalculatePlan_StorageCredentialDelete(t *testing.T) {
 func TestCalculatePlan_StorageCredentialSkip(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
-		"prod": {
-			Name:       "prod",
-			Comment:    "prod",
-			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/uc"},
-		},
+		"prod": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "prod", Comment: "prod", AwsIamRole: &catalog.AwsIamRoleRequest{RoleArn: "arn:aws:iam::1:role/uc"}}},
 	}
 	state := direct.NewState()
 	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
@@ -183,10 +176,7 @@ func TestCalculatePlan_StorageCredentialSkip(t *testing.T) {
 func TestCalculatePlan_StorageCredentialUpdateOnIdentityDrift(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
-		"prod": {
-			Name:       "prod",
-			AwsIamRole: &resources.AwsIamRole{RoleArn: "arn:aws:iam::1:role/new"},
-		},
+		"prod": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "prod", AwsIamRole: &catalog.AwsIamRoleRequest{RoleArn: "arn:aws:iam::1:role/new"}}},
 	}
 	state := direct.NewState()
 	state.StorageCredentials["prod"] = &direct.StorageCredentialState{
@@ -200,11 +190,7 @@ func TestCalculatePlan_StorageCredentialUpdateOnIdentityDrift(t *testing.T) {
 func TestCalculatePlan_ExternalLocationCreate(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
-		"prod": {
-			Name:           "prod",
-			Url:            "s3://bucket/prefix",
-			CredentialName: "prod",
-		},
+		"prod": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "prod", Url: "s3://bucket/prefix", CredentialName: "prod"}},
 	}
 	plan := direct.CalculatePlan(u, direct.NewState())
 	assert.Equal(t, deployplan.Create, plan.Plan["resources.external_locations.prod"].Action)
@@ -225,13 +211,7 @@ func TestCalculatePlan_ExternalLocationDelete(t *testing.T) {
 func TestCalculatePlan_ExternalLocationSkip(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
-		"prod": {
-			Name:           "prod",
-			Url:            "s3://bucket/prefix",
-			CredentialName: "prod",
-			Comment:        "prod",
-			ReadOnly:       true,
-		},
+		"prod": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "prod", Url: "s3://bucket/prefix", CredentialName: "prod", Comment: "prod", ReadOnly: true}},
 	}
 	state := direct.NewState()
 	state.ExternalLocations["prod"] = &direct.ExternalLocationState{
@@ -248,11 +228,7 @@ func TestCalculatePlan_ExternalLocationSkip(t *testing.T) {
 func TestCalculatePlan_ExternalLocationUpdateOnUrlDrift(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.ExternalLocations = map[string]*resources.ExternalLocation{
-		"prod": {
-			Name:           "prod",
-			Url:            "s3://bucket/new",
-			CredentialName: "prod",
-		},
+		"prod": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "prod", Url: "s3://bucket/new", CredentialName: "prod"}},
 	}
 	state := direct.NewState()
 	state.ExternalLocations["prod"] = &direct.ExternalLocationState{
@@ -267,12 +243,7 @@ func TestCalculatePlan_ExternalLocationUpdateOnUrlDrift(t *testing.T) {
 func TestCalculatePlan_VolumeCreate(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"raw": {
-			Name:        "raw",
-			CatalogName: "main",
-			SchemaName:  "bronze",
-			VolumeType:  "MANAGED",
-		},
+		"raw": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "raw", CatalogName: "main", SchemaName: "bronze", VolumeType: catalog.VolumeType("MANAGED")}},
 	}
 	plan := direct.CalculatePlan(u, direct.NewState())
 	assert.Equal(t, deployplan.Create, plan.Plan["resources.volumes.raw"].Action)
@@ -294,14 +265,7 @@ func TestCalculatePlan_VolumeDelete(t *testing.T) {
 func TestCalculatePlan_VolumeSkip(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"raw": {
-			Name:            "raw",
-			CatalogName:     "main",
-			SchemaName:      "bronze",
-			VolumeType:      "EXTERNAL",
-			StorageLocation: "s3://bucket/raw",
-			Comment:         "prod",
-		},
+		"raw": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "raw", CatalogName: "main", SchemaName: "bronze", VolumeType: catalog.VolumeType("EXTERNAL"), StorageLocation: "s3://bucket/raw", Comment: "prod"}},
 	}
 	state := direct.NewState()
 	state.Volumes["raw"] = &direct.VolumeState{
@@ -319,13 +283,7 @@ func TestCalculatePlan_VolumeSkip(t *testing.T) {
 func TestCalculatePlan_VolumeUpdateOnCommentDrift(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"raw": {
-			Name:        "raw",
-			CatalogName: "main",
-			SchemaName:  "bronze",
-			VolumeType:  "MANAGED",
-			Comment:     "new",
-		},
+		"raw": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "raw", CatalogName: "main", SchemaName: "bronze", VolumeType: catalog.VolumeType("MANAGED"), Comment: "new"}},
 	}
 	state := direct.NewState()
 	state.Volumes["raw"] = &direct.VolumeState{
@@ -342,11 +300,7 @@ func TestCalculatePlan_VolumeUpdateOnCommentDrift(t *testing.T) {
 func TestCalculatePlan_ConnectionCreate(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Connections = map[string]*resources.Connection{
-		"mysql_prod": {
-			Name:           "mysql_prod",
-			ConnectionType: "MYSQL",
-			Options:        map[string]string{"host": "db.example.com"},
-		},
+		"mysql_prod": {CreateConnection: catalog.CreateConnection{Name: "mysql_prod", ConnectionType: catalog.ConnectionType("MYSQL"), Options: map[string]string{"host": "db.example.com"}}},
 	}
 	plan := direct.CalculatePlan(u, direct.NewState())
 	assert.Equal(t, deployplan.Create, plan.Plan["resources.connections.mysql_prod"].Action)
@@ -367,13 +321,7 @@ func TestCalculatePlan_ConnectionDelete(t *testing.T) {
 func TestCalculatePlan_ConnectionSkip(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Connections = map[string]*resources.Connection{
-		"mysql_prod": {
-			Name:           "mysql_prod",
-			ConnectionType: "MYSQL",
-			Options:        map[string]string{"host": "db.example.com"},
-			Comment:        "prod",
-			ReadOnly:       true,
-		},
+		"mysql_prod": {CreateConnection: catalog.CreateConnection{Name: "mysql_prod", ConnectionType: catalog.ConnectionType("MYSQL"), Options: map[string]string{"host": "db.example.com"}, Comment: "prod", ReadOnly: true}},
 	}
 	state := direct.NewState()
 	state.Connections["mysql_prod"] = &direct.ConnectionState{
@@ -390,11 +338,7 @@ func TestCalculatePlan_ConnectionSkip(t *testing.T) {
 func TestCalculatePlan_ConnectionUpdateOnOptionsDrift(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Connections = map[string]*resources.Connection{
-		"mysql_prod": {
-			Name:           "mysql_prod",
-			ConnectionType: "MYSQL",
-			Options:        map[string]string{"host": "new.example.com"},
-		},
+		"mysql_prod": {CreateConnection: catalog.CreateConnection{Name: "mysql_prod", ConnectionType: catalog.ConnectionType("MYSQL"), Options: map[string]string{"host": "new.example.com"}}},
 	}
 	state := direct.NewState()
 	state.Connections["mysql_prod"] = &direct.ConnectionState{

@@ -11,12 +11,19 @@ import (
 // More entries land as each ucm resource is migrated to the
 // embedded-SDK-type pattern.
 var SupportedResources = map[string]any{
-	"catalogs": (*ResourceCatalog)(nil),
-	"schemas":  (*ResourceSchema)(nil),
+	"catalogs":            (*ResourceCatalog)(nil),
+	"schemas":             (*ResourceSchema)(nil),
+	"volumes":             (*ResourceVolume)(nil),
+	"connections":         (*ResourceConnection)(nil),
+	"external_locations":  (*ResourceExternalLocation)(nil),
+	"storage_credentials": (*ResourceStorageCredential)(nil),
 
 	// Grants
-	"catalogs.grants": (*ResourceGrants)(nil),
-	"schemas.grants":  (*ResourceGrants)(nil),
+	"catalogs.grants":            (*ResourceGrants)(nil),
+	"schemas.grants":             (*ResourceGrants)(nil),
+	"volumes.grants":             (*ResourceGrants)(nil),
+	"external_locations.grants":  (*ResourceGrants)(nil),
+	"storage_credentials.grants": (*ResourceGrants)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {
