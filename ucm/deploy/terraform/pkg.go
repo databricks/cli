@@ -35,12 +35,10 @@ const PlanFileName = "plan"
 const ProviderSource = "databricks/databricks"
 
 // ProviderVersion pins the databricks terraform provider version ucm
-// renders into main.tf.json. Temporarily held one minor behind the DABs
-// pin (1.113.0) because the internal terraform-proxy.dev.databricks.com
-// mirror tops out at 1.112.0 at the time of writing. Bump back to match
-// bundle/internal/tf/schema.ProviderVersion once the internal mirror
-// catches up.
-const ProviderVersion = "1.112.0"
+// renders into main.tf.json. Kept in lockstep with
+// bundle/internal/tf/schema.ProviderVersion (the DAB pin) and with
+// ucm/internal/tf/codegen/schema/version.go.
+const ProviderVersion = "1.113.0"
 
 // Terraform CLI override env vars. Same wire names as bundle/deploy/terraform
 // so a user's DATABRICKS_TF_EXEC_PATH works for both subcommands.
