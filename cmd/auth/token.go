@@ -132,9 +132,9 @@ type loadTokenArgs struct {
 	// responsible for construction so that tests can substitute an in-memory cache.
 	tokenCache cache.TokenCache
 
-	// mode is the resolved storage mode. When set to StorageModeLegacy, login
-	// paths mirror freshly minted tokens under the legacy host-based key so
-	// older SDKs that still look up by host continue to find them.
+	// mode is the resolved storage mode. When set to StorageModePlaintext,
+	// login paths mirror freshly minted tokens under the legacy host-based
+	// key so older SDKs that still look up by host continue to find them.
 	mode storage.StorageMode
 
 	// persistentAuthOpts are the options to pass to the persistent auth client.
@@ -477,7 +477,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	if err = persistentAuth.Challenge(); err != nil {
 		return "", nil, err
 	}
-	dualWriteLegacyHostKey(ctx, tokenCache, oauthArgument, mode)
+	mirrorTokenUnderHostKey(ctx, tokenCache, oauthArgument, mode)
 
 	clearKeys := oauthLoginClearKeys()
 	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)

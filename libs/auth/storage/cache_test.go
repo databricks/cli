@@ -36,14 +36,14 @@ func hermetic(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(t.TempDir(), "databrickscfg"))
 }
 
-func TestResolveCache_DefaultsToLegacyFile(t *testing.T) {
+func TestResolveCache_DefaultsToPlaintextFile(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 
 	got, mode, err := resolveCacheWith(ctx, "", fakeFactories(t))
 
 	require.NoError(t, err)
-	assert.Equal(t, StorageModeLegacy, mode)
+	assert.Equal(t, StorageModePlaintext, mode)
 	assert.Equal(t, "file", got.(stubCache).source)
 }
 
@@ -69,7 +69,7 @@ func TestResolveCache_EnvVarSelectsSecure(t *testing.T) {
 	assert.Equal(t, "keyring", got.(stubCache).source)
 }
 
-func TestResolveCache_PlaintextFallsBackToFile(t *testing.T) {
+func TestResolveCache_PlaintextOverrideUsesFile(t *testing.T) {
 	hermetic(t)
 	ctx := t.Context()
 
@@ -109,7 +109,7 @@ func TestResolveCache_FileFactoryErrorPropagates(t *testing.T) {
 		newKeyring: func() cache.TokenCache { return stubCache{source: "keyring"} },
 	}
 
-	_, _, err := resolveCacheWith(ctx, StorageModeLegacy, factories)
+	_, _, err := resolveCacheWith(ctx, StorageModePlaintext, factories)
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)

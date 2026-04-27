@@ -47,9 +47,7 @@ func resolveCacheWith(ctx context.Context, override StorageMode, f cacheFactorie
 	switch mode {
 	case StorageModeSecure:
 		return f.newKeyring(), mode, nil
-	case StorageModeLegacy, StorageModePlaintext:
-		// Plaintext currently maps to the file cache; a dedicated
-		// plaintext backend (no host-keyed dual-writes) is a follow-up.
+	case StorageModePlaintext:
 		c, err := f.newFile(ctx)
 		if err != nil {
 			return nil, "", fmt.Errorf("open file token cache: %w", err)

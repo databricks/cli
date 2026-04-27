@@ -60,11 +60,11 @@ func discoveryErr(msg string, err error) error {
 	return fmt.Errorf("%s%s", msg, discoveryFallbackTip)
 }
 
-// dualWriteLegacyHostKey mirrors the freshly minted token under the legacy
+// mirrorTokenUnderHostKey mirrors the freshly minted token under the legacy
 // host-based cache key so users alternating between CLI and SDK find it.
-// Skipped for secure mode to avoid multiplying keyring entries.
-func dualWriteLegacyHostKey(ctx context.Context, tokenCache cache.TokenCache, arg u2m.OAuthArgument, mode storage.StorageMode) {
-	if mode != storage.StorageModeLegacy {
+// Only runs for plaintext mode; secure mode never writes a host-key entry.
+func mirrorTokenUnderHostKey(ctx context.Context, tokenCache cache.TokenCache, arg u2m.OAuthArgument, mode storage.StorageMode) {
+	if mode != storage.StorageModePlaintext {
 		return
 	}
 	t, err := tokenCache.Lookup(arg.GetCacheKey())
@@ -273,7 +273,7 @@ a new profile is created.
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
-		dualWriteLegacyHostKey(ctx, tokenCache, oauthArgument, mode)
+		mirrorTokenUnderHostKey(ctx, tokenCache, oauthArgument, mode)
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
@@ -613,7 +613,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
-	dualWriteLegacyHostKey(ctx, in.tokenCache, arg, in.mode)
+	mirrorTokenUnderHostKey(ctx, in.tokenCache, arg, in.mode)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {

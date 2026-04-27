@@ -1105,7 +1105,7 @@ func TestLoginRejectsPositionalArgWithProfileFlag(t *testing.T) {
 	assert.ErrorContains(t, err, `argument "https://example.com" cannot be combined with --host or --profile`)
 }
 
-func TestDualWriteLegacyHostKey(t *testing.T) {
+func TestMirrorTokenUnderHostKey(t *testing.T) {
 	const (
 		profileName = "dual-profile"
 		host        = "https://dual-host.example.com"
@@ -1132,24 +1132,19 @@ func TestDualWriteLegacyHostKey(t *testing.T) {
 		wantHostKey bool
 	}{
 		{
-			name:        "legacy mirrors cached token under host key",
-			mode:        storage.StorageModeLegacy,
+			name:        "plaintext mirrors cached token under host key",
+			mode:        storage.StorageModePlaintext,
 			cache:       cacheWithToken,
 			wantHostKey: true,
 		},
 		{
-			name:  "legacy is a no-op when cache has no entry",
-			mode:  storage.StorageModeLegacy,
+			name:  "plaintext is a no-op when cache has no entry",
+			mode:  storage.StorageModePlaintext,
 			cache: emptyCache,
 		},
 		{
 			name:  "secure skips dual-write",
 			mode:  storage.StorageModeSecure,
-			cache: cacheWithToken,
-		},
-		{
-			name:  "plaintext skips dual-write",
-			mode:  storage.StorageModePlaintext,
 			cache: cacheWithToken,
 		},
 		{
@@ -1162,7 +1157,7 @@ func TestDualWriteLegacyHostKey(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			c := tc.cache()
-			dualWriteLegacyHostKey(t.Context(), c, newArg(t), tc.mode)
+			mirrorTokenUnderHostKey(t.Context(), c, newArg(t), tc.mode)
 
 			got, err := c.Lookup(host)
 			if tc.wantHostKey {
