@@ -433,69 +433,95 @@ func TestPollingConstants(t *testing.T) {
 	assert.Equal(t, 10*time.Second, cancelTimeout)
 }
 
-// newTestCmd creates a minimal cobra.Command for testing resolveSQL.
+// newTestCmd creates a minimal cobra.Command for testing resolveSQLs.
 func newTestCmd() *cobra.Command {
 	return &cobra.Command{Use: "test"}
 }
 
-func TestResolveSQLFromFileFlag(t *testing.T) {
+func TestResolveSQLsFromFileFlag(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "query.sql")
 	err := os.WriteFile(path, []byte("SELECT 1"), 0o644)
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
+	result, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, nil, []string{path})
 	require.NoError(t, err)
-	assert.Equal(t, "SELECT 1", result)
+	assert.Equal(t, []string{"SELECT 1"}, result)
 }
 
-func TestResolveSQLFromFileFlagWithComments(t *testing.T) {
+func TestResolveSQLsFromFileFlagWithComments(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "query.sql")
 	err := os.WriteFile(path, []byte("-- header comment\nSELECT 1\n-- trailing"), 0o644)
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
+	result, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, nil, []string{path})
 	require.NoError(t, err)
-	assert.Equal(t, "SELECT 1", result)
+	assert.Equal(t, []string{"SELECT 1"}, result)
 }
 
-func TestResolveSQLFileFlagConflictsWithArg(t *testing.T) {
-	cmd := newTestCmd()
-	_, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 1"}, "/some/file.sql")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot use both --file and a positional SQL argument")
-}
-
-func TestResolveSQLFromPositionalArg(t *testing.T) {
-	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 42"}, "")
+func TestResolveSQLsMixedFileAndPositional(t *testing.T) {
+	// --file paths are emitted before positional args, in flag order.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "from-file.sql")
+	err := os.WriteFile(path, []byte("SELECT 'from file'"), 0o644)
 	require.NoError(t, err)
-	assert.Equal(t, "SELECT 42", result)
+
+	cmd := newTestCmd()
+	result, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 'from arg'"}, []string{path})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"SELECT 'from file'", "SELECT 'from arg'"}, result)
 }
 
-func TestResolveSQLAutoDetectsSQLFile(t *testing.T) {
+func TestResolveSQLsMultiplePositional(t *testing.T) {
+	cmd := newTestCmd()
+	result, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 1", "SELECT 2", "SELECT 3"}, nil)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"SELECT 1", "SELECT 2", "SELECT 3"}, result)
+}
+
+func TestResolveSQLsMultipleFiles(t *testing.T) {
+	dir := t.TempDir()
+	pathA := filepath.Join(dir, "a.sql")
+	pathB := filepath.Join(dir, "b.sql")
+	require.NoError(t, os.WriteFile(pathA, []byte("SELECT 'a'"), 0o644))
+	require.NoError(t, os.WriteFile(pathB, []byte("SELECT 'b'"), 0o644))
+
+	cmd := newTestCmd()
+	result, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, nil, []string{pathA, pathB})
+	require.NoError(t, err)
+	assert.Equal(t, []string{"SELECT 'a'", "SELECT 'b'"}, result)
+}
+
+func TestResolveSQLsFromPositionalArg(t *testing.T) {
+	cmd := newTestCmd()
+	result, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 42"}, nil)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"SELECT 42"}, result)
+}
+
+func TestResolveSQLsAutoDetectsSQLFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "report.sql")
 	err := os.WriteFile(path, []byte("SELECT * FROM sales"), 0o644)
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{path}, "")
+	result, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, []string{path}, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "SELECT * FROM sales", result)
+	assert.Equal(t, []string{"SELECT * FROM sales"}, result)
 }
 
-func TestResolveSQLNonexistentSQLFileTreatedAsString(t *testing.T) {
+func TestResolveSQLsNonexistentSQLFileTreatedAsString(t *testing.T) {
 	cmd := newTestCmd()
-	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{"nonexistent.sql"}, "")
+	result, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, []string{"nonexistent.sql"}, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "nonexistent.sql", result)
+	assert.Equal(t, []string{"nonexistent.sql"}, result)
 }
 
-func TestResolveSQLUnreadableSQLFileReturnsError(t *testing.T) {
+func TestResolveSQLsUnreadableSQLFileReturnsError(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "locked.sql")
 	err := os.WriteFile(path, []byte("SELECT 1"), 0o644)
@@ -507,47 +533,54 @@ func TestResolveSQLUnreadableSQLFileReturnsError(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chmod(path, 0o644) })
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(cmdio.MockDiscard(t.Context()), cmd, []string{path}, "")
+	_, err = resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, []string{path}, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "read SQL file")
 }
 
-func TestResolveSQLFromStdin(t *testing.T) {
+func TestResolveSQLsFromStdin(t *testing.T) {
 	cmd := newTestCmd()
 	cmd.SetIn(strings.NewReader("SELECT 1 FROM stdin_test"))
 
-	result, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, "")
+	result, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, nil, nil)
 	require.NoError(t, err)
-	assert.Equal(t, "SELECT 1 FROM stdin_test", result)
+	assert.Equal(t, []string{"SELECT 1 FROM stdin_test"}, result)
 }
 
-func TestResolveSQLEmptyFileReturnsError(t *testing.T) {
+func TestResolveSQLsEmptyFileReturnsError(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "empty.sql")
 	err := os.WriteFile(path, []byte(""), 0o644)
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
+	_, err = resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, nil, []string{path})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty")
 }
 
-func TestResolveSQLCommentsOnlyFileReturnsError(t *testing.T) {
+func TestResolveSQLsCommentsOnlyFileReturnsError(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "comments.sql")
 	err := os.WriteFile(path, []byte("-- just a comment\n-- another"), 0o644)
 	require.NoError(t, err)
 
 	cmd := newTestCmd()
-	_, err = resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, path)
+	_, err = resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, nil, []string{path})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "empty")
 }
 
-func TestResolveSQLMissingFileReturnsError(t *testing.T) {
+func TestResolveSQLsBatchEmptyAtIndexReturnsIndexedError(t *testing.T) {
 	cmd := newTestCmd()
-	_, err := resolveSQL(cmdio.MockDiscard(t.Context()), cmd, nil, "/nonexistent/path/query.sql")
+	_, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 1", "-- comment only", "SELECT 3"}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "SQL statement #2 is empty")
+}
+
+func TestResolveSQLsMissingFileReturnsError(t *testing.T) {
+	cmd := newTestCmd()
+	_, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, nil, []string{"/nonexistent/path/query.sql"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "read SQL file")
 }
@@ -559,6 +592,24 @@ func TestQueryCommandUnsupportedOutputReturnsError(t *testing.T) {
 	err := cmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported output format")
+}
+
+func TestQueryCommandBatchTextOutputRejected(t *testing.T) {
+	cmd := newQueryCmd()
+	cmd.PreRunE = nil
+	cmd.SetArgs([]string{"--output", "text", "SELECT 1", "SELECT 2"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "multiple queries require --output json")
+}
+
+func TestQueryCommandBatchCsvOutputRejected(t *testing.T) {
+	cmd := newQueryCmd()
+	cmd.PreRunE = nil
+	cmd.SetArgs([]string{"--output", "csv", "SELECT 1", "SELECT 2"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "multiple queries require --output json")
 }
 
 func TestQueryCommandOutputFlagIsCaseInsensitive(t *testing.T) {
