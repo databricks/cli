@@ -20,6 +20,7 @@ import (
 func PreDeployChecks(ctx context.Context, u *ucm.Ucm, e engine.EngineType) {
 	ucm.ApplySeqContext(ctx, u,
 		mutator.ValidateDirectOnlyResources(e),
+		mutator.ValidateLifecycleStarted(e),
 	)
 	if logdiag.HasError(ctx) {
 		return
