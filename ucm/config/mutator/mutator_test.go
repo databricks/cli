@@ -30,7 +30,7 @@ resources:
 	// FlattenNestedResources unrolled schemas and cleared the nested map.
 	got := u.Config.Resources.Schemas["s1"]
 	require.NotNil(t, got)
-	assert.Equal(t, "c1", got.Catalog)
+	assert.Equal(t, "c1", got.CatalogName)
 	assert.Nil(t, u.Config.Resources.Catalogs["c1"].Schemas)
 
 	// InheritCatalogTags propagated parent tags down to the schema.
@@ -39,4 +39,24 @@ resources:
 	// DefineDefaultTarget added the "default" target since none were declared.
 	_, ok := u.Config.Targets["default"]
 	assert.True(t, ok)
+}
+
+func TestDefaultMutators_FlagsDuplicateResourceKeys(t *testing.T) {
+	// A schema and a volume sharing the same key "x" must be rejected by
+	// UniqueResourceKeys. This guards against silent precedence bugs at
+	// plan/deploy time, mirroring DAB's mutator chain.
+	u := loadUcm(t, `
+ucm:
+  name: acme
+resources:
+  schemas:
+    x: {name: s, catalog_name: c}
+  volumes:
+    x: {name: v, catalog_name: c, schema_name: s, volume_type: MANAGED}
+`)
+
+	ctx := logdiag.InitContext(t.Context())
+	logdiag.SetCollect(ctx, true)
+	mutator.DefaultMutators(ctx, u)
+	assert.True(t, logdiag.HasError(ctx))
 }

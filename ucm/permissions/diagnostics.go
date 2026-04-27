@@ -52,10 +52,10 @@ func PermissionDiagnostics(ctx context.Context, u *ucm.Ucm) diag.Diagnostics {
 	}
 	for _, name := range sortedKeys(u.Config.Resources.Schemas) {
 		s := u.Config.Resources.Schemas[name]
-		if s == nil || s.Name == "" || s.Catalog == "" {
+		if s == nil || s.Name == "" || s.CatalogName == "" {
 			continue
 		}
-		fullName := s.Catalog + "." + s.Name
+		fullName := s.CatalogName + "." + s.Name
 		diags = append(diags, checkSecurable(ctx, w.Grants, catalog.SecurableTypeSchema, fullName, principal)...)
 	}
 	return diags

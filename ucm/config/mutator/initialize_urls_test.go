@@ -1,6 +1,7 @@
 package mutator_test
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"testing"
 
 	"github.com/databricks/cli/ucm"
@@ -19,22 +20,22 @@ func TestInitializeURLs(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"cat1": {Name: "cat1", ID: "cat1"},
+					"cat1": {CreateCatalog: catalog.CreateCatalog{Name: "cat1"}, ID: "cat1"},
 				},
 				Schemas: map[string]*resources.Schema{
-					"sch1": {Name: "sch1", Catalog: "cat1", ID: "cat1.sch1"},
+					"sch1": {CreateSchema: catalog.CreateSchema{Name: "sch1", CatalogName: "cat1"}, ID: "cat1.sch1"},
 				},
 				Volumes: map[string]*resources.Volume{
-					"vol1": {Name: "vol1", CatalogName: "cat1", SchemaName: "sch1", ID: "cat1.sch1.vol1"},
+					"vol1": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "vol1", CatalogName: "cat1", SchemaName: "sch1"}, ID: "cat1.sch1.vol1"},
 				},
 				StorageCredentials: map[string]*resources.StorageCredential{
-					"sc1": {Name: "sc1", ID: "sc1"},
+					"sc1": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "sc1"}, ID: "sc1"},
 				},
 				ExternalLocations: map[string]*resources.ExternalLocation{
-					"el1": {Name: "el1", Url: "s3://bucket/path", ID: "el1"},
+					"el1": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "el1", Url: "s3://bucket/path"}, ID: "el1"},
 				},
 				Connections: map[string]*resources.Connection{
-					"conn1": {Name: "conn1", ConnectionType: "POSTGRESQL", ID: "conn1"},
+					"conn1": {CreateConnection: catalog.CreateConnection{Name: "conn1", ConnectionType: catalog.ConnectionType("POSTGRESQL")}, ID: "conn1"},
 				},
 			},
 		},
@@ -56,7 +57,7 @@ func TestInitializeURLsWarnsWhenHostEmpty(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"cat1": {Name: "cat1"},
+					"cat1": {CreateCatalog: catalog.CreateCatalog{Name: "cat1"}},
 				},
 			},
 		},
@@ -76,7 +77,7 @@ func TestInitializeURLsStripsTrailingSlash(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"cat1": {Name: "cat1", ID: "cat1"},
+					"cat1": {CreateCatalog: catalog.CreateCatalog{Name: "cat1"}, ID: "cat1"},
 				},
 			},
 		},
@@ -102,10 +103,10 @@ func TestInitializeURLsSkipsNonDeployedResources(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Catalogs: map[string]*resources.Catalog{
-					"cat1": {Name: "cat1"}, // no ID
+					"cat1": {CreateCatalog: catalog.CreateCatalog{Name: "cat1"}}, // no ID
 				},
 				Schemas: map[string]*resources.Schema{
-					"sch1": {Name: "sch1", Catalog: "cat1"}, // no ID
+					"sch1": {CreateSchema: catalog.CreateSchema{Name: "sch1", CatalogName: "cat1"}}, // no ID
 				},
 			},
 		},

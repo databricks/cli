@@ -237,10 +237,12 @@ func scanCatalogs(catalogs []catalog.CatalogInfo, root *config.Root, state *dire
 			continue
 		}
 		res := &resources.Catalog{
-			Name:        c.Name,
-			Comment:     c.Comment,
-			StorageRoot: c.StorageRoot,
-			Tags:        copyTags(c.Properties),
+			CreateCatalog: catalog.CreateCatalog{
+				Name:        c.Name,
+				Comment:     c.Comment,
+				StorageRoot: c.StorageRoot,
+			},
+			Tags: copyTags(c.Properties),
 		}
 		key := c.Name
 		ensureCatalogMap(root)[key] = res
@@ -259,10 +261,12 @@ func addSchemas(schemas []catalog.SchemaInfo, root *config.Root, state *direct.S
 			continue
 		}
 		res := &resources.Schema{
-			Name:    s.Name,
-			Catalog: s.CatalogName,
-			Comment: s.Comment,
-			Tags:    copyTags(s.Properties),
+			CreateSchema: catalog.CreateSchema{
+				Name:        s.Name,
+				CatalogName: s.CatalogName,
+				Comment:     s.Comment,
+			},
+			Tags: copyTags(s.Properties),
 		}
 		key := s.CatalogName + "_" + s.Name
 		ensureSchemaMap(root)[key] = res
@@ -286,12 +290,14 @@ func addVolumes(volumes []catalog.VolumeInfo, root *config.Root, state *direct.S
 			storage = ""
 		}
 		res := &resources.Volume{
-			Name:            v.Name,
-			CatalogName:     v.CatalogName,
-			SchemaName:      v.SchemaName,
-			VolumeType:      vt,
-			StorageLocation: storage,
-			Comment:         v.Comment,
+			CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{
+				Name:            v.Name,
+				CatalogName:     v.CatalogName,
+				SchemaName:      v.SchemaName,
+				VolumeType:      catalog.VolumeType(vt),
+				StorageLocation: storage,
+				Comment:         v.Comment,
+			},
 		}
 		key := v.CatalogName + "_" + v.SchemaName + "_" + v.Name
 		ensureVolumeMap(root)[key] = res
@@ -335,9 +341,11 @@ func scanStorageCredentials(ctx context.Context, client direct.Client, root *con
 
 func convertStorageCredential(c catalog.StorageCredentialInfo) (*resources.StorageCredential, *direct.StorageCredentialState, string) {
 	res := &resources.StorageCredential{
-		Name:     c.Name,
-		Comment:  c.Comment,
-		ReadOnly: c.ReadOnly,
+		CreateStorageCredential: catalog.CreateStorageCredential{
+			Name:     c.Name,
+			Comment:  c.Comment,
+			ReadOnly: c.ReadOnly,
+		},
 	}
 	st := &direct.StorageCredentialState{
 		Name:     c.Name,
@@ -347,10 +355,10 @@ func convertStorageCredential(c catalog.StorageCredentialInfo) (*resources.Stora
 	var warn string
 	switch {
 	case c.AwsIamRole != nil:
-		res.AwsIamRole = &resources.AwsIamRole{RoleArn: c.AwsIamRole.RoleArn}
+		res.AwsIamRole = &catalog.AwsIamRoleRequest{RoleArn: c.AwsIamRole.RoleArn}
 		st.AwsIamRole = &direct.AwsIamRoleState{RoleArn: c.AwsIamRole.RoleArn}
 	case c.AzureManagedIdentity != nil:
-		res.AzureManagedIdentity = &resources.AzureManagedIdentity{
+		res.AzureManagedIdentity = &catalog.AzureManagedIdentityRequest{
 			AccessConnectorId: c.AzureManagedIdentity.AccessConnectorId,
 			ManagedIdentityId: c.AzureManagedIdentity.ManagedIdentityId,
 		}
@@ -359,7 +367,7 @@ func convertStorageCredential(c catalog.StorageCredentialInfo) (*resources.Stora
 			ManagedIdentityId: c.AzureManagedIdentity.ManagedIdentityId,
 		}
 	case c.AzureServicePrincipal != nil:
-		res.AzureServicePrincipal = &resources.AzureServicePrincipal{
+		res.AzureServicePrincipal = &catalog.AzureServicePrincipal{
 			DirectoryId:   c.AzureServicePrincipal.DirectoryId,
 			ApplicationId: c.AzureServicePrincipal.ApplicationId,
 			ClientSecret:  "", // UC does not echo the secret; user must fill it in.
@@ -370,7 +378,7 @@ func convertStorageCredential(c catalog.StorageCredentialInfo) (*resources.Stora
 		}
 		warn = fmt.Sprintf("storage_credential %q: azure_service_principal.client_secret not available from UC; set it in ucm.yml before the next deploy", c.Name)
 	case c.DatabricksGcpServiceAccount != nil:
-		res.DatabricksGcpServiceAccount = &resources.DatabricksGcpServiceAccount{}
+		res.DatabricksGcpServiceAccount = &catalog.DatabricksGcpServiceAccountRequest{}
 		st.DatabricksGcpServiceAccount = &direct.DatabricksGcpServiceAccountState{}
 	default:
 		return nil, nil, ""
@@ -385,12 +393,14 @@ func scanExternalLocations(ctx context.Context, client direct.Client, root *conf
 	}
 	for _, l := range locs {
 		res := &resources.ExternalLocation{
-			Name:           l.Name,
-			Url:            l.Url,
-			CredentialName: l.CredentialName,
-			Comment:        l.Comment,
-			ReadOnly:       l.ReadOnly,
-			Fallback:       l.Fallback,
+			CreateExternalLocation: catalog.CreateExternalLocation{
+				Name:           l.Name,
+				Url:            l.Url,
+				CredentialName: l.CredentialName,
+				Comment:        l.Comment,
+				ReadOnly:       l.ReadOnly,
+				Fallback:       l.Fallback,
+			},
 		}
 		ensureExternalLocationMap(root)[l.Name] = res
 		state.ExternalLocations[l.Name] = &direct.ExternalLocationState{
@@ -412,12 +422,14 @@ func scanConnections(ctx context.Context, client direct.Client, root *config.Roo
 	}
 	for _, c := range conns {
 		res := &resources.Connection{
-			Name:           c.Name,
-			ConnectionType: string(c.ConnectionType),
-			Options:        copyTags(c.Options),
-			Comment:        c.Comment,
-			Properties:     copyTags(c.Properties),
-			ReadOnly:       c.ReadOnly,
+			CreateConnection: catalog.CreateConnection{
+				Name:           c.Name,
+				ConnectionType: c.ConnectionType,
+				Options:        copyTags(c.Options),
+				Comment:        c.Comment,
+				Properties:     copyTags(c.Properties),
+				ReadOnly:       c.ReadOnly,
+			},
 		}
 		ensureConnectionMap(root)[c.Name] = res
 		state.Connections[c.Name] = &direct.ConnectionState{

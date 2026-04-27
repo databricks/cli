@@ -229,15 +229,15 @@ func applySchemaCreates(ctx context.Context, u *ucm.Ucm, client Client, plan *de
 		cfg := u.Config.Resources.Schemas[name]
 		switch entry.Action {
 		case deployplan.Create:
-			log.Infof(ctx, "direct: creating schema %s.%s", cfg.Catalog, cfg.Name)
+			log.Infof(ctx, "direct: creating schema %s.%s", cfg.CatalogName, cfg.Name)
 			if _, err := client.CreateSchema(ctx, schemaCreateInput(cfg)); err != nil {
-				return fmt.Errorf("create schema %s.%s: %w", cfg.Catalog, cfg.Name, err)
+				return fmt.Errorf("create schema %s.%s: %w", cfg.CatalogName, cfg.Name, err)
 			}
 			state.Schemas[name] = ptrSchema(schemaStateFromConfig(cfg))
 		case deployplan.Update:
-			log.Infof(ctx, "direct: updating schema %s.%s", cfg.Catalog, cfg.Name)
+			log.Infof(ctx, "direct: updating schema %s.%s", cfg.CatalogName, cfg.Name)
 			if _, err := client.UpdateSchema(ctx, schemaUpdateInput(cfg)); err != nil {
-				return fmt.Errorf("update schema %s.%s: %w", cfg.Catalog, cfg.Name, err)
+				return fmt.Errorf("update schema %s.%s: %w", cfg.CatalogName, cfg.Name, err)
 			}
 			state.Schemas[name] = ptrSchema(schemaStateFromConfig(cfg))
 		}
@@ -422,12 +422,11 @@ func applyCatalogDeletes(ctx context.Context, client Client, plan *deployplan.Pl
 // ---- SDK input builders ----
 
 func catalogCreateInput(c *resources.Catalog) catalog.CreateCatalog {
-	return catalog.CreateCatalog{
-		Name:        c.Name,
-		Comment:     c.Comment,
-		StorageRoot: c.StorageRoot,
-		Properties:  copyTags(c.Tags),
+	in := c.CreateCatalog
+	if in.Properties == nil {
+		in.Properties = copyTags(c.Tags)
 	}
+	return in
 }
 
 func catalogUpdateInput(c *resources.Catalog) catalog.UpdateCatalog {
@@ -439,17 +438,16 @@ func catalogUpdateInput(c *resources.Catalog) catalog.UpdateCatalog {
 }
 
 func schemaCreateInput(s *resources.Schema) catalog.CreateSchema {
-	return catalog.CreateSchema{
-		Name:        s.Name,
-		CatalogName: s.Catalog,
-		Comment:     s.Comment,
-		Properties:  copyTags(s.Tags),
+	in := s.CreateSchema
+	if in.Properties == nil {
+		in.Properties = copyTags(s.Tags)
 	}
+	return in
 }
 
 func schemaUpdateInput(s *resources.Schema) catalog.UpdateSchema {
 	return catalog.UpdateSchema{
-		FullName:   s.Catalog + "." + s.Name,
+		FullName:   s.CatalogName + "." + s.Name,
 		Comment:    s.Comment,
 		Properties: copyTags(s.Tags),
 	}
@@ -545,24 +543,19 @@ func storageCredentialUpdateInput(c *resources.StorageCredential) (catalog.Updat
 // SDK Create payload. EXTERNAL volumes require storage_location; MANAGED ones
 // must not carry one.
 func volumeCreateInput(v *resources.Volume) (catalog.CreateVolumeRequestContent, error) {
-	vType := strings.ToUpper(v.VolumeType)
-	if vType != "MANAGED" && vType != "EXTERNAL" {
+	vType := catalog.VolumeType(strings.ToUpper(string(v.VolumeType)))
+	if vType != catalog.VolumeTypeManaged && vType != catalog.VolumeTypeExternal {
 		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: volume_type must be MANAGED or EXTERNAL, got %q", v.Name, v.VolumeType)
 	}
-	if vType == "EXTERNAL" && v.StorageLocation == "" {
+	if vType == catalog.VolumeTypeExternal && v.StorageLocation == "" {
 		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: storage_location is required for EXTERNAL volumes", v.Name)
 	}
-	if vType == "MANAGED" && v.StorageLocation != "" {
+	if vType == catalog.VolumeTypeManaged && v.StorageLocation != "" {
 		return catalog.CreateVolumeRequestContent{}, fmt.Errorf("volume %q: storage_location must not be set for MANAGED volumes", v.Name)
 	}
-	return catalog.CreateVolumeRequestContent{
-		Name:            v.Name,
-		CatalogName:     v.CatalogName,
-		SchemaName:      v.SchemaName,
-		VolumeType:      catalog.VolumeType(vType),
-		StorageLocation: v.StorageLocation,
-		Comment:         v.Comment,
-	}, nil
+	in := v.CreateVolumeRequestContent
+	in.VolumeType = vType
+	return in, nil
 }
 
 // volumeUpdateInput produces a comment-only update. The UC API only supports

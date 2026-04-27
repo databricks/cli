@@ -1,6 +1,7 @@
 package phases_test
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"io"
 	"net/http"
 	"testing"
@@ -121,7 +122,7 @@ func TestDestroySkipsPromptWhenNoResources(t *testing.T) {
 func TestDestroySkipsPromptWhenAutoApprove(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
 	}
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
@@ -143,7 +144,7 @@ func TestDestroySkipsPromptWhenAutoApprove(t *testing.T) {
 func TestDestroyErrorsWhenPromptingNotSupported(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
 	}
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
@@ -167,7 +168,7 @@ func TestDestroyErrorsWhenPromptingNotSupported(t *testing.T) {
 func TestDestroyPromptsAndAccepts(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
 	}
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
@@ -221,7 +222,7 @@ func TestDestroyNoActiveDeploymentWhenWorkspaceRootMissing(t *testing.T) {
 func TestDestroyAbortsWhenPromptDeclined(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
 	}
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)

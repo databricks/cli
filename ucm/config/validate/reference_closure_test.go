@@ -26,7 +26,7 @@ resources:
   catalogs:
     c1: {name: c1}
   schemas:
-    s1: {name: s1, catalog: "${resources.catalogs.c1.name}"}
+    s1: {name: s1, catalog_name: "${resources.catalogs.c1.name}"}
 `,
 			resolveFirst: true,
 			wantEmpty:    true,
@@ -39,7 +39,7 @@ resources:
   catalogs:
     c1: {name: c1}
   schemas:
-    s1: {name: s1, catalog: "${resources.catalogs.c1.name}"}
+    s1: {name: s1, catalog_name: "${resources.catalogs.c1.name}"}
 `,
 			resolveFirst: false,
 			wantEmpty:    true,
@@ -52,7 +52,7 @@ resources:
   catalogs:
     c1: {name: c1}
   schemas:
-    s1: {name: s1, catalog: "${resources.catalogs.missing.name}"}
+    s1: {name: s1, catalog_name: "${resources.catalogs.missing.name}"}
 `,
 			resolveFirst: false,
 			wantSummary:  `${resources.catalogs.missing.name}`,
@@ -65,7 +65,7 @@ resources:
   catalogs:
     c1: {name: c1}
   schemas:
-    s1: {name: s1, catalog: "${resources.volumes.nope.name}"}
+    s1: {name: s1, catalog_name: "${resources.volumes.nope.name}"}
 `,
 			resolveFirst: false,
 			wantSummary:  `${resources.volumes.nope.name}`,
@@ -125,9 +125,9 @@ resources:
   catalogs:
     c1: {name: c1}
   schemas:
-    s1: {name: s1, catalog: "${resources.catalogs.a.name}"}
-    s2: {name: s2, catalog: "${resources.catalogs.b.name}"}
-    s3: {name: s3, catalog: "${resources.catalogs.c.name}"}
+    s1: {name: s1, catalog_name: "${resources.catalogs.a.name}"}
+    s2: {name: s2, catalog_name: "${resources.catalogs.b.name}"}
+    s3: {name: s3, catalog_name: "${resources.catalogs.c.name}"}
 `)
 	diags := ucm.Apply(t.Context(), u, validate.ReferenceClosure())
 	require.Len(t, diags, 3)
@@ -146,7 +146,7 @@ resources:
   catalogs:
     c1: {name: c1}
   schemas:
-    s1: {name: s1, catalog: "${resources.catalogs.missing.name}"}
+    s1: {name: s1, catalog_name: "${resources.catalogs.missing.name}"}
 `)
 	// Resolution will leave the token in place because the target does not
 	// exist; the closure check then errors on it.

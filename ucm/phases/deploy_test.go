@@ -263,7 +263,7 @@ func TestDeployPromptsAndAccepts(t *testing.T) {
 func TestDeployAbortsWhenUserLacksManage(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
 	}
 	f.u.CurrentUser = &config.User{User: &iam.User{UserName: "alice@example.com"}}
 	f.mockWS.GetMockGrantsAPI().EXPECT().

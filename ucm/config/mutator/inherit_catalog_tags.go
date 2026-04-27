@@ -20,13 +20,13 @@ func (m *inheritCatalogTags) Name() string { return "InheritCatalogTags" }
 func (m *inheritCatalogTags) Apply(_ context.Context, u *ucm.Ucm) diag.Diagnostics {
 	catalogs := u.Config.Resources.Catalogs
 	for _, schema := range u.Config.Resources.Schemas {
-		if schema == nil || schema.Catalog == "" {
+		if schema == nil || schema.CatalogName == "" {
 			continue
 		}
 		if schema.TagInherit != nil && !*schema.TagInherit {
 			continue
 		}
-		parent := catalogs[schema.Catalog]
+		parent := catalogs[schema.CatalogName]
 		if parent == nil || len(parent.Tags) == 0 {
 			continue
 		}

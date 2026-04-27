@@ -205,8 +205,8 @@ func collectResourceGroups(cfg *config.Root) []resourceGroup {
 		rows := make([]resourceRow, 0, len(cfg.Resources.Schemas))
 		for key, s := range cfg.Resources.Schemas {
 			full := s.Name
-			if s.Catalog != "" {
-				full = s.Catalog + "." + s.Name
+			if s.CatalogName != "" {
+				full = s.CatalogName + "." + s.Name
 			}
 			rows = append(rows, resourceRow{Key: key, Name: full, URL: s.URL})
 		}

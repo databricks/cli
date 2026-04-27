@@ -1,0 +1,8 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual edits and schema description, see resources.yml.
+#
+# Empty until UCM resources are migrated and `make generate-ucm-direct`
+# is wired up.
+
+resources:

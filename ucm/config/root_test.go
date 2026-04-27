@@ -39,7 +39,7 @@ resources:
         cost_center: "1234"
   schemas:
     bronze:
-      catalog: team_alpha
+      catalog_name: team_alpha
       name: bronze
   grants:
     reads:
@@ -68,7 +68,7 @@ targets:
 	assert.Equal(t, "1234", cfg.Resources.Catalogs["team_alpha"].Tags["cost_center"])
 
 	require.Contains(t, cfg.Resources.Schemas, "bronze")
-	assert.Equal(t, "team_alpha", cfg.Resources.Schemas["bronze"].Catalog)
+	assert.Equal(t, "team_alpha", cfg.Resources.Schemas["bronze"].CatalogName)
 
 	require.Contains(t, cfg.Resources.Grants, "reads")
 	assert.Equal(t, "catalog", cfg.Resources.Grants["reads"].Securable.Type)

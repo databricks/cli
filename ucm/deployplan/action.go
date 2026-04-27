@@ -13,17 +13,27 @@ import (
 )
 
 type Action struct {
+	// Full resource key, e.g. "resources.jobs.foo" or "resources.jobs.foo.permissions"
 	ResourceKey string
 	ActionType  ActionType
 }
 
-// String returns the DAB-style "  <action> <key>" form used by plan output.
 func (a Action) String() string {
 	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), a.ResourceKey)
 }
 
+func (a Action) IsChildResource() bool {
+	// Note, strictly speaking ResourceKey could be resources.jobs["my.job"] but
+	// we have an assumption in many other places that it's always looks like "resources.jobs.my_job"
+	items := strings.Split(a.ResourceKey, ".")
+	return len(items) == 4
+}
+
 type ActionType string
 
+// Actions are ordered in increasing severity.
+// If case of several options, action with highest severity wins.
+// Note, Create/Delete are handled explicitly and never compared.
 const (
 	Undefined    ActionType = ""
 	Skip         ActionType = "skip"
@@ -46,7 +56,6 @@ var actionOrder = map[ActionType]int{
 	Delete:       7,
 }
 
-// KeepsID reports whether an action preserves the resource's existing id.
 func (a ActionType) KeepsID() bool {
 	switch a {
 	case Create, UpdateWithID, Recreate, Delete:
@@ -56,13 +65,14 @@ func (a ActionType) KeepsID() bool {
 	}
 }
 
-// StringShort returns the verb without the "_..." suffix (e.g. "update_id" → "update").
+// StringShort short version of action string, without suffix
 func (a ActionType) StringShort() string {
 	items := strings.SplitN(string(a), "_", 2)
 	return items[0]
 }
 
 // GetHigherAction returns the action with higher severity between a and b.
+// Actions are ordered by severity in actionOrder map.
 func GetHigherAction(a, b ActionType) ActionType {
 	if actionOrder[a] > actionOrder[b] {
 		return a

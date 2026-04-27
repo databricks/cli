@@ -102,7 +102,7 @@ func liftNestedSchemas(catalogName string, nested dyn.Value, schemas, grants *dy
 		}
 		updated := schemaValue.Clone()
 
-		if d := injectStringField(&updated, "catalog", catalogName,
+		if d := injectStringField(&updated, "catalog_name", catalogName,
 			fmt.Sprintf("schema %q nested under catalog %q", schemaName, catalogName),
 			sp.Key.Locations()); d != nil {
 			diags = append(diags, d...)

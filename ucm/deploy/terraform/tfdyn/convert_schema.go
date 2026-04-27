@@ -16,7 +16,7 @@ func convertSchemaResource(_ context.Context, key string, vin dyn.Value, out *Re
 	pairs := []dyn.Pair{}
 	appendString(&pairs, vin, "name", key)
 
-	catalogField := vin.Get("catalog")
+	catalogField := vin.Get("catalog_name")
 	catalogName, _ := catalogField.AsString()
 	pairs = append(pairs, dyn.Pair{
 		Key:   dyn.NewValue("catalog_name", catalogField.Locations()),

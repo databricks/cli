@@ -165,6 +165,13 @@ func deployTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 		return
 	}
 
+	// Advance the local state cache before Push so the on-remote record
+	// carries a fresh Seq/CliVersion/Timestamp/UUID. Push only mirrors local.
+	ucm.ApplyContext(ctx, u, deploy.StateUpdate())
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	pushBackend := opts.Backend
 	pushBackend.ForceLock = opts.ForceLock
 	if err := deploy.Push(ctx, u, pushBackend); err != nil {

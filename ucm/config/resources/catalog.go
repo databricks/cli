@@ -1,26 +1,28 @@
 package resources
 
-import "net/url"
+import (
+	"net/url"
 
-// Catalog is a UC catalog. M0 scope: name, comment, storage_root, tags.
-// Additional fields (owner, properties, isolation_mode, etc.) will land in M1.
+	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+)
+
+// Catalog is a UC catalog. Embeds the SDK's CreateCatalog so every API-level
+// field is part of ucm's surface; ucm-specific concerns (tag validation, the
+// post-deploy ID/URL pair) are sibling fields. Mirrors
+// bundle/config/resources where Job/Schema/etc. embed their SDK request
+// types.
 type Catalog struct {
-	// Name of the catalog in Unity Catalog. Required.
-	Name string `json:"name"`
-
-	// Comment is a human-readable description.
-	Comment string `json:"comment,omitempty"`
-
-	// StorageRoot is the cloud storage URL backing the catalog (optional for
-	// managed catalogs without an explicit storage root).
-	StorageRoot string `json:"storage_root,omitempty"`
+	catalog.CreateCatalog
 
 	// Tags is a key/value map evaluated by ucm's tag-validation mutators.
+	// Distinct from the SDK's `properties` (free-form) and `options` (managed
+	// by the backend) — Tags is ucm-policy material.
 	Tags map[string]string `json:"tags,omitempty"`
 
-	// Schemas and Grants are nested-form conveniences: the FlattenNestedResources
-	// mutator moves them to Root.Resources.{Schemas,Grants} (injecting parent
-	// references) before any other mutator runs. Always nil after load.
+	// Schemas and Grants exist solely to keep convert.Normalize from
+	// dropping nested-form keys during load — FlattenNestedResources
+	// zeroes them before any other mutator runs. Always nil after load.
 	Schemas map[string]*Schema `json:"schemas,omitempty"`
 	Grants  map[string]*Grant  `json:"grants,omitempty"`
 
@@ -33,12 +35,18 @@ type Catalog struct {
 }
 
 // InitializeURL sets c.URL iff the catalog has been deployed (ID is non-empty).
-// Mirrors bundle/config/resources.Job.InitializeURL's ID-gated pattern so
-// `ucm summary` only prints URLs that actually resolve.
 func (c *Catalog) InitializeURL(baseURL url.URL) {
 	if c.ID == "" {
 		return
 	}
 	baseURL.Path = "explore/data/" + c.Name
 	c.URL = baseURL.String()
+}
+
+func (c *Catalog) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, c)
+}
+
+func (c Catalog) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(c)
 }

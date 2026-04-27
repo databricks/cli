@@ -44,8 +44,8 @@ func readOnlyAssignment() []catalog.EffectivePrivilegeAssignment {
 
 func TestPermissionDiagnosticsEmptyWhenAllPass(t *testing.T) {
 	u := userFixture(
-		map[string]*resources.Catalog{"main": {Name: "main"}},
-		map[string]*resources.Schema{"bronze": {Name: "bronze", Catalog: "main"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}},
+		map[string]*resources.Schema{"bronze": {CreateSchema: catalog.CreateSchema{Name: "bronze", CatalogName: "main"}}},
 	)
 	ws := mocks.NewMockWorkspaceClient(t)
 	ws.GetMockGrantsAPI().EXPECT().
@@ -70,8 +70,8 @@ func TestPermissionDiagnosticsEmptyWhenAllPass(t *testing.T) {
 
 func TestPermissionDiagnosticsEmitsWhenUserLacksManage(t *testing.T) {
 	u := userFixture(
-		map[string]*resources.Catalog{"main": {Name: "main"}},
-		map[string]*resources.Schema{"bronze": {Name: "bronze", Catalog: "main"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}},
+		map[string]*resources.Schema{"bronze": {CreateSchema: catalog.CreateSchema{Name: "bronze", CatalogName: "main"}}},
 	)
 	ws := mocks.NewMockWorkspaceClient(t)
 	ws.GetMockGrantsAPI().EXPECT().
@@ -97,7 +97,7 @@ func TestPermissionDiagnosticsEmitsWhenUserLacksManage(t *testing.T) {
 
 func TestPermissionDiagnosticsSkipsWhenCatalogNotFound(t *testing.T) {
 	u := userFixture(
-		map[string]*resources.Catalog{"main": {Name: "main"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}},
 		nil,
 	)
 	ws := mocks.NewMockWorkspaceClient(t)
@@ -112,7 +112,7 @@ func TestPermissionDiagnosticsSkipsWhenCatalogNotFound(t *testing.T) {
 
 func TestPermissionDiagnosticsEmitsWhenForbidden(t *testing.T) {
 	u := userFixture(
-		map[string]*resources.Catalog{"main": {Name: "main"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}},
 		nil,
 	)
 	ws := mocks.NewMockWorkspaceClient(t)
@@ -137,7 +137,7 @@ func TestPermissionDiagnosticsNoopWhenNoResources(t *testing.T) {
 
 func TestPermissionDiagnosticsSkipsWhenNoCurrentUser(t *testing.T) {
 	u := &ucm.Ucm{}
-	u.Config.Resources.Catalogs = map[string]*resources.Catalog{"main": {Name: "main"}}
+	u.Config.Resources.Catalogs = map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}}
 	ws := mocks.NewMockWorkspaceClient(t)
 	u.SetWorkspaceClient(ws.WorkspaceClient)
 

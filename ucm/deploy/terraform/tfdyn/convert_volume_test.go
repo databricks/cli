@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/ucm/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,13 +21,7 @@ func TestConvertVolume(t *testing.T) {
 		{
 			name: "managed",
 			key:  "landing",
-			src: resources.Volume{
-				Name:        "landing",
-				CatalogName: "sales",
-				SchemaName:  "raw",
-				VolumeType:  "MANAGED",
-				Comment:     "landing zone",
-			},
+			src: resources.Volume{CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "landing", CatalogName: "sales", SchemaName: "raw", VolumeType: catalog.VolumeType("MANAGED"), Comment: "landing zone"}},
 			want: map[string]any{
 				"name":         "landing",
 				"catalog_name": "sales",
@@ -38,13 +33,7 @@ func TestConvertVolume(t *testing.T) {
 		{
 			name: "external",
 			key:  "archive",
-			src: resources.Volume{
-				Name:            "archive",
-				CatalogName:     "sales",
-				SchemaName:      "raw",
-				VolumeType:      "EXTERNAL",
-				StorageLocation: "s3://acme-archive/sales",
-			},
+			src: resources.Volume{CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "archive", CatalogName: "sales", SchemaName: "raw", VolumeType: catalog.VolumeType("EXTERNAL"), StorageLocation: "s3://acme-archive/sales"}},
 			want: map[string]any{
 				"name":             "archive",
 				"catalog_name":     "sales",
@@ -56,12 +45,7 @@ func TestConvertVolume(t *testing.T) {
 		{
 			name: "lowercase volume_type normalised",
 			key:  "lower",
-			src: resources.Volume{
-				Name:        "lower",
-				CatalogName: "sales",
-				SchemaName:  "raw",
-				VolumeType:  "managed",
-			},
+			src: resources.Volume{CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "lower", CatalogName: "sales", SchemaName: "raw", VolumeType: catalog.VolumeType("managed")}},
 			want: map[string]any{
 				"name":         "lower",
 				"catalog_name": "sales",
@@ -93,27 +77,27 @@ func TestConvertVolume_Errors(t *testing.T) {
 	}{
 		{
 			name:    "missing catalog_name",
-			src:     resources.Volume{Name: "v", SchemaName: "s", VolumeType: "MANAGED"},
+			src:     resources.Volume{CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "v", SchemaName: "s", VolumeType: catalog.VolumeType("MANAGED")}},
 			wantMsg: "catalog_name is required",
 		},
 		{
 			name:    "missing schema_name",
-			src:     resources.Volume{Name: "v", CatalogName: "c", VolumeType: "MANAGED"},
+			src:     resources.Volume{CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "v", CatalogName: "c", VolumeType: catalog.VolumeType("MANAGED")}},
 			wantMsg: "schema_name is required",
 		},
 		{
 			name:    "invalid volume_type",
-			src:     resources.Volume{Name: "v", CatalogName: "c", SchemaName: "s", VolumeType: "WEIRD"},
+			src:     resources.Volume{CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "v", CatalogName: "c", SchemaName: "s", VolumeType: catalog.VolumeType("WEIRD")}},
 			wantMsg: "volume_type must be MANAGED or EXTERNAL",
 		},
 		{
 			name:    "external without storage_location",
-			src:     resources.Volume{Name: "v", CatalogName: "c", SchemaName: "s", VolumeType: "EXTERNAL"},
+			src:     resources.Volume{CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "v", CatalogName: "c", SchemaName: "s", VolumeType: catalog.VolumeType("EXTERNAL")}},
 			wantMsg: "storage_location is required for EXTERNAL",
 		},
 		{
 			name:    "managed with storage_location",
-			src:     resources.Volume{Name: "v", CatalogName: "c", SchemaName: "s", VolumeType: "MANAGED", StorageLocation: "s3://x/y"},
+			src:     resources.Volume{CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "v", CatalogName: "c", SchemaName: "s", VolumeType: catalog.VolumeType("MANAGED"), StorageLocation: "s3://x/y"}},
 			wantMsg: "storage_location must not be set for MANAGED",
 		},
 	}

@@ -1,6 +1,7 @@
 package phases_test
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"testing"
 
 	"github.com/databricks/cli/libs/logdiag"
@@ -15,7 +16,7 @@ import (
 func TestBindTerraformEngineRunsImportAndPushes(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
 	}
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
@@ -50,7 +51,7 @@ func TestBindDirectEngineSkipsTerraform(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Ucm.Engine = engine.EngineDirect
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
 	}
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
@@ -98,7 +99,7 @@ func TestUnbindDirectEngineSkipsTerraform(t *testing.T) {
 
 	// Seed direct state with the catalog so Unbind has something to remove.
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
 	}
 	phases.Bind(ctx, f.u, phases.Options{
 		TerraformFactory:    fakeTfFactory(f.tf),

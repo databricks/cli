@@ -22,5 +22,6 @@ func New() *cobra.Command {
 	}
 	cmd.AddCommand(NewTerraformCommand())
 	cmd.AddCommand(NewStatesCommand())
+	cmd.AddCommand(NewRefSchemaCommand())
 	return cmd
 }

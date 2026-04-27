@@ -24,7 +24,7 @@ resources:
   catalogs:
     c1: {name: c1}
   schemas:
-    s1: {name: s1, catalog: c1}
+    s1: {name: s1, catalog_name: c1}
 `,
 			wantEmpty: true,
 		},
@@ -36,7 +36,7 @@ resources:
   catalogs:
     shared: {name: shared}
   schemas:
-    shared: {name: shared, catalog: shared}
+    shared: {name: shared, catalog_name: shared}
 `,
 			wantSummary: "resource key shared is declared under multiple",
 		},

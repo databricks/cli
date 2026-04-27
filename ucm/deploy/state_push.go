@@ -14,14 +14,19 @@ import (
 	"github.com/databricks/cli/ucm/deploy/lock"
 )
 
-// Push mirrors the local state cache into the remote StateFiler. It bumps
-// Seq, refuses to overwrite a remote that has advanced past the Seq we
-// observed locally, and writes atomically-ish by writing ucm-state.json last
-// so a partial push leaves the remote tfstate readable but clearly un-acked.
+// Push mirrors the local state cache into the remote StateFiler. It refuses
+// to overwrite a remote that has advanced past the Seq we observed locally,
+// and writes atomically-ish by writing ucm-state.json last so a partial push
+// leaves the remote tfstate readable but clearly un-acked.
+//
+// Push assumes the local ucm-state.json has already been advanced by the
+// StateUpdate mutator. The expected shape is Pull → StateUpdate → Push: a
+// caller pushing without a prior bump would write a remote with the same
+// Seq, defeating the conflict-detection contract.
 //
 // On a fresh local (no ucm-state.json under LocalStateDir), Push returns an
-// error — the expected shape is Pull → mutate → Push, and pushing without a
-// pull means the caller has no baseline Seq to reason about.
+// error — pushing without a pull means the caller has no baseline Seq to
+// reason about.
 func Push(ctx context.Context, u *ucm.Ucm, b Backend) error {
 	if u == nil {
 		return errors.New("ucm state: Push called with nil Ucm")
@@ -46,28 +51,20 @@ func Push(ctx context.Context, u *ucm.Ucm, b Backend) error {
 		return err
 	}
 
-	// Bump Seq before serialising so the on-remote record matches the
-	// intent of this Push. A crash after writeRemote but before the
-	// bookkeeping below leaves the remote ahead of local; the next Pull
-	// catches up.
-	next := StateUpdate(local)
-
-	if err := writeRemote(ctx, b.StateFiler, LocalTfStatePath(u), next); err != nil {
+	if err := writeRemote(ctx, b.StateFiler, LocalTfStatePath(u), local); err != nil {
 		return err
 	}
 
-	// Mirror the bumped Seq into the local cache so the next Push starts
-	// from an accurate baseline without requiring an intervening Pull.
-	if err := writeLocalState(localDir, next); err != nil {
-		return fmt.Errorf("ucm state: refresh local %s: %w", UcmStateFileName, err)
-	}
-	log.Infof(ctx, "ucm state: pushed state (seq %d -> %d) for target %s", local.Seq, next.Seq, u.Config.Ucm.Target)
+	log.Infof(ctx, "ucm state: pushed state (seq %d) for target %s", local.Seq, u.Config.Ucm.Target)
 	return nil
 }
 
-// assertRemoteNotAhead fails with ErrStaleState when the remote Seq exceeds
-// the local Seq. Missing remote state counts as Seq=-1 for comparison so a
-// first Push always succeeds.
+// assertRemoteNotAhead fails with ErrStaleState when the remote Seq is at
+// or past the local (post-bump) Seq. A healthy Push has local strictly
+// greater than remote because StateUpdate already advanced local; equality
+// means a peer beat us to this Seq slot, and greater-than means a peer is
+// strictly ahead. Missing remote state means a first Push and always
+// succeeds.
 func assertRemoteNotAhead(ctx context.Context, f filer.StateFiler, local *State) error {
 	remote, err := readRemoteUcmState(ctx, f)
 	if err != nil {
@@ -76,7 +73,7 @@ func assertRemoteNotAhead(ctx context.Context, f filer.StateFiler, local *State)
 	if remote == nil {
 		return nil
 	}
-	if remote.Seq > local.Seq {
+	if remote.Seq >= local.Seq {
 		return &ErrStaleState{LocalSeq: local.Seq, RemoteSeq: remote.Seq}
 	}
 	return nil

@@ -1,6 +1,7 @@
 package generate_test
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,7 +21,7 @@ func TestSaveToFileEmitsNameAndResources(t *testing.T) {
 		},
 		Resources: config.Resources{
 			Catalogs: map[string]*resources.Catalog{
-				"team_alpha": {Name: "team_alpha", Comment: "alpha"},
+				"team_alpha": {CreateCatalog: catalog.CreateCatalog{Name: "team_alpha", Comment: "alpha"}},
 			},
 		},
 	}

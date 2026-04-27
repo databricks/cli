@@ -1,6 +1,7 @@
 package tfdyn
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -20,7 +21,7 @@ func TestConvertCatalog(t *testing.T) {
 		{
 			name: "minimal",
 			key:  "sales",
-			src:  resources.Catalog{Name: "sales_prod"},
+			src:  resources.Catalog{CreateCatalog: catalog.CreateCatalog{Name: "sales_prod"}},
 			want: map[string]any{
 				"name":          "sales_prod",
 				"force_destroy": true,
@@ -29,11 +30,7 @@ func TestConvertCatalog(t *testing.T) {
 		{
 			name: "with comment and storage root",
 			key:  "sales",
-			src: resources.Catalog{
-				Name:        "sales_prod",
-				Comment:     "Sales team catalog",
-				StorageRoot: "s3://bucket/root",
-			},
+			src: resources.Catalog{CreateCatalog: catalog.CreateCatalog{Name: "sales_prod", Comment: "Sales team catalog", StorageRoot: "s3://bucket/root"}},
 			want: map[string]any{
 				"name":          "sales_prod",
 				"comment":       "Sales team catalog",
@@ -44,10 +41,7 @@ func TestConvertCatalog(t *testing.T) {
 		{
 			name: "with tags -> properties",
 			key:  "sales",
-			src: resources.Catalog{
-				Name: "sales_prod",
-				Tags: map[string]string{"team": "sales", "env": "prod"},
-			},
+			src: resources.Catalog{CreateCatalog: catalog.CreateCatalog{Name: "sales_prod"}, Tags: map[string]string{"team": "sales", "env": "prod"}},
 			want: map[string]any{
 				"name": "sales_prod",
 				"properties": map[string]any{

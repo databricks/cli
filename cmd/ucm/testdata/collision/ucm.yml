@@ -19,7 +19,7 @@ resources:
   schemas:
     bronze:
       name: bronze
-      catalog: team_alpha
+      catalog_name: team_alpha
       tags:
         cost_center: "1234"
         data_owner: alpha

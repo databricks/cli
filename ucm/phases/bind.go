@@ -100,6 +100,13 @@ func bindTerraform(ctx context.Context, u *ucm.Ucm, opts Options, req BindReques
 		return
 	}
 
+	// StateUpdate must run before Push so the pushed blob carries a fresh
+	// Seq/CliVersion/Timestamp/UUID. Push only mirrors local.
+	ucm.ApplyContext(ctx, u, deploy.StateUpdate())
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	if err := deploy.Push(ctx, u, opts.Backend); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("push remote state: %w", err))
 		return
@@ -157,6 +164,13 @@ func unbindTerraform(ctx context.Context, u *ucm.Ucm, opts Options, req UnbindRe
 	address := terraformAddress(ImportRequest{Kind: req.Kind, Key: req.Key})
 	if err := tf.StateRm(ctx, u, address); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("terraform state rm: %w", err))
+		return
+	}
+
+	// StateUpdate must run before Push so the pushed blob carries a fresh
+	// Seq/CliVersion/Timestamp/UUID. Push only mirrors local.
+	ucm.ApplyContext(ctx, u, deploy.StateUpdate())
+	if logdiag.HasError(ctx) {
 		return
 	}
 

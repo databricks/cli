@@ -1,6 +1,7 @@
 package mutator_test
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"testing"
 
 	"github.com/databricks/cli/ucm"
@@ -89,7 +90,7 @@ func TestSelectTarget_RecordsTargetSnapshot(t *testing.T) {
 		Config: config.Root{
 			Ucm: config.Ucm{Name: "acme"},
 			Resources: config.Resources{
-				Catalogs: map[string]*resources.Catalog{"base": {Name: "base"}},
+				Catalogs: map[string]*resources.Catalog{"base": {CreateCatalog: catalog.CreateCatalog{Name: "base"}}},
 			},
 			Targets: map[string]*config.Target{"dev": {Default: true}},
 		},

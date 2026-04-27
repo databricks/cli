@@ -137,6 +137,13 @@ func importTerraform(ctx context.Context, u *ucm.Ucm, opts Options, req ImportRe
 		return
 	}
 
+	// StateUpdate must run before Push so the pushed blob carries a fresh
+	// Seq/CliVersion/Timestamp/UUID. Push only mirrors local.
+	ucm.ApplyContext(ctx, u, deploy.StateUpdate())
+	if logdiag.HasError(ctx) {
+		return
+	}
+
 	if err := deploy.Push(ctx, u, opts.Backend); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("push remote state: %w", err))
 		return

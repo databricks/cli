@@ -138,7 +138,7 @@ func (*importFakeClient) ListConnections(context.Context) ([]catalog.ConnectionI
 func TestImportResource_CatalogSeedsStateFromSDK(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main", Comment: "declared comment"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main", Comment: "declared comment"}},
 	}
 	client := &importFakeClient{Catalog: &catalog.CatalogInfo{
 		Name:        "main",
@@ -162,7 +162,7 @@ func TestImportResource_CatalogSeedsStateFromSDK(t *testing.T) {
 func TestImportResource_SchemaUsesFullName(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Schemas = map[string]*resources.Schema{
-		"raw": {Name: "raw", Catalog: "main"},
+		"raw": {CreateSchema: catalog.CreateSchema{Name: "raw", CatalogName: "main"}},
 	}
 	client := &importFakeClient{Schema: &catalog.SchemaInfo{
 		Name: "raw", CatalogName: "main", Comment: "bronze",
@@ -182,14 +182,11 @@ func TestImportResource_SchemaUsesFullName(t *testing.T) {
 func TestImportResource_StorageCredentialRetainsClientSecret(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.StorageCredentials = map[string]*resources.StorageCredential{
-		"azure_sp": {
-			Name: "azure_sp",
-			AzureServicePrincipal: &resources.AzureServicePrincipal{
+		"azure_sp": {CreateStorageCredential: catalog.CreateStorageCredential{Name: "azure_sp", AzureServicePrincipal: &catalog.AzureServicePrincipal{
 				DirectoryId:   "tenant",
 				ApplicationId: "app",
 				ClientSecret:  "local-only-secret",
-			},
-		},
+			}}},
 	}
 	client := &importFakeClient{StorageCredential: &catalog.StorageCredentialInfo{
 		Name:    "azure_sp",
@@ -213,7 +210,7 @@ func TestImportResource_StorageCredentialRetainsClientSecret(t *testing.T) {
 func TestImportResource_VolumeUsesFullName(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Volumes = map[string]*resources.Volume{
-		"docs": {Name: "docs", CatalogName: "main", SchemaName: "raw", VolumeType: "MANAGED"},
+		"docs": {CreateVolumeRequestContent: catalog.CreateVolumeRequestContent{Name: "docs", CatalogName: "main", SchemaName: "raw", VolumeType: catalog.VolumeType("MANAGED")}},
 	}
 	client := &importFakeClient{Volume: &catalog.VolumeInfo{
 		Name: "docs", CatalogName: "main", SchemaName: "raw", VolumeType: catalog.VolumeTypeManaged,
@@ -232,7 +229,7 @@ func TestImportResource_VolumeUsesFullName(t *testing.T) {
 func TestImportResource_ConnectionCopiesOptions(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Connections = map[string]*resources.Connection{
-		"mysql_prod": {Name: "mysql_prod", ConnectionType: "MYSQL"},
+		"mysql_prod": {CreateConnection: catalog.CreateConnection{Name: "mysql_prod", ConnectionType: catalog.ConnectionType("MYSQL")}},
 	}
 	client := &importFakeClient{Connection: &catalog.ConnectionInfo{
 		Name:           "mysql_prod",
@@ -259,7 +256,7 @@ func TestImportResource_UnknownKindErrors(t *testing.T) {
 
 func TestImportResource_PropagatesSDKError(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
-	u.Config.Resources.Catalogs = map[string]*resources.Catalog{"main": {Name: "main"}}
+	u.Config.Resources.Catalogs = map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}}
 	sentinel := errors.New("sdk boom")
 	client := &importFakeClient{Err: sentinel}
 	state := direct.NewState()

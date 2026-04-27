@@ -177,7 +177,7 @@ func TestGenerate_SchemasSkipInformationSchema(t *testing.T) {
 	s := r.Root.Resources.Schemas["team_alpha_bronze"]
 	require.NotNil(t, s)
 	assert.Equal(t, "bronze", s.Name)
-	assert.Equal(t, "team_alpha", s.Catalog)
+	assert.Equal(t, "team_alpha", s.CatalogName)
 
 	require.NotNil(t, r.State.Schemas["team_alpha_bronze"])
 }
@@ -204,12 +204,12 @@ func TestGenerate_Volumes(t *testing.T) {
 
 	managed := r.Root.Resources.Volumes["team_alpha_bronze_landing"]
 	require.NotNil(t, managed)
-	assert.Equal(t, "MANAGED", managed.VolumeType)
+	assert.Equal(t, catalog.VolumeTypeManaged, managed.VolumeType)
 	assert.Empty(t, managed.StorageLocation, "managed volume must not retain echoed storage_location")
 
 	external := r.Root.Resources.Volumes["team_alpha_bronze_raw"]
 	require.NotNil(t, external)
-	assert.Equal(t, "EXTERNAL", external.VolumeType)
+	assert.Equal(t, catalog.VolumeTypeExternal, external.VolumeType)
 	assert.Equal(t, "s3://bucket/raw", external.StorageLocation)
 }
 
@@ -299,7 +299,7 @@ func TestGenerate_Connections(t *testing.T) {
 	require.NoError(t, err)
 	res := r.Root.Resources.Connections["pg-main"]
 	require.NotNil(t, res)
-	assert.Equal(t, "POSTGRESQL", res.ConnectionType)
+	assert.Equal(t, catalog.ConnectionType("POSTGRESQL"), res.ConnectionType)
 	assert.Equal(t, "pg.example.com", res.Options["host"])
 	assert.True(t, res.ReadOnly)
 }

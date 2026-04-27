@@ -28,7 +28,7 @@ resources:
       name: team_alpha
   schemas:
     my_schema:
-      catalog: team_alpha
+      catalog_name: team_alpha
       name: bronze
   storage_credentials:
     my_sc:

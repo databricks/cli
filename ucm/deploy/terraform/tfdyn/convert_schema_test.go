@@ -1,6 +1,7 @@
 package tfdyn
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -21,7 +22,7 @@ func TestConvertSchema(t *testing.T) {
 		{
 			name: "minimal external catalog",
 			key:  "raw",
-			src:  resources.Schema{Name: "raw", Catalog: "external_catalog"},
+			src:  resources.Schema{CreateSchema: catalog.CreateSchema{Name: "raw", CatalogName: "external_catalog"}},
 			want: map[string]any{
 				"name":          "raw",
 				"catalog_name":  "external_catalog",
@@ -31,7 +32,7 @@ func TestConvertSchema(t *testing.T) {
 		{
 			name:    "managed catalog emits depends_on",
 			key:     "raw",
-			src:     resources.Schema{Name: "raw_data", Catalog: "sales"},
+			src:     resources.Schema{CreateSchema: catalog.CreateSchema{Name: "raw_data", CatalogName: "sales"}},
 			managed: map[string]struct{}{"sales": {}},
 			want: map[string]any{
 				"name":          "raw_data",
@@ -43,12 +44,7 @@ func TestConvertSchema(t *testing.T) {
 		{
 			name: "with comment and tags",
 			key:  "analytics",
-			src: resources.Schema{
-				Name:    "analytics",
-				Catalog: "ext",
-				Comment: "analytics schema",
-				Tags:    map[string]string{"owner": "data"},
-			},
+			src: resources.Schema{CreateSchema: catalog.CreateSchema{Name: "analytics", CatalogName: "ext", Comment: "analytics schema"}, Tags: map[string]string{"owner": "data"}},
 			want: map[string]any{
 				"name":          "analytics",
 				"catalog_name":  "ext",
