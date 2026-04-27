@@ -10,6 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestPlanSummary(t *testing.T) {
+	assert.Equal(t, "plan has changes", render.PlanSummary(true))
+	assert.Equal(t, "no changes", render.PlanSummary(false))
+}
+
 func TestRenderPlanEmptyPlanPrintsZeroTally(t *testing.T) {
 	plan := deployplan.NewPlanTerraform()
 	var buf bytes.Buffer

@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/ucm/deploy/direct"
 	"github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/deployplan"
+	"github.com/databricks/cli/ucm/render"
 )
 
 // PreDeployChecks is common set of mutators between "ucm plan" and "ucm deploy".
@@ -117,7 +118,7 @@ func planDirect(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
 	return &PlanOutcome{
 		Plan:       plan,
 		HasChanges: hasChanges,
-		Summary:    planSummary(hasChanges),
+		Summary:    render.PlanSummary(hasChanges),
 	}
 }
 
@@ -134,14 +135,4 @@ func planHasChanges(plan *deployplan.Plan) bool {
 		}
 	}
 	return false
-}
-
-// planSummary returns the legacy one-liner the terraform engine has always
-// emitted. Kept local to this file because the terraform wrapper has its own
-// identical helper; duplicating avoids a cross-package call for a 2-arm switch.
-func planSummary(hasChanges bool) string {
-	if hasChanges {
-		return "plan has changes"
-	}
-	return "no changes"
 }

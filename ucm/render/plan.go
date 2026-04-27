@@ -11,6 +11,16 @@ import (
 	"github.com/databricks/cli/ucm/deployplan"
 )
 
+// PlanSummary returns the legacy one-liner that ucm/phases emits as the
+// PlanOutcome.Summary. Centralized here so both engines call into the
+// same render-package helper.
+func PlanSummary(hasChanges bool) string {
+	if hasChanges {
+		return "plan has changes"
+	}
+	return "no changes"
+}
+
 // RenderPlan prints the DAB-style per-resource action list followed by the
 // `Plan: N to add, ...` tally. Mirrors cmd/bundle/plan.go so ucm plan output
 // is byte-identical to bundle plan for the resources ucm models.
