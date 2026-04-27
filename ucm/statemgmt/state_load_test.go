@@ -1,6 +1,7 @@
 package statemgmt_test
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,7 +45,7 @@ func TestLoad_NilUcmIsNoOp(t *testing.T) {
 
 func TestLoad_MissingFileIsNoOp(t *testing.T) {
 	u := newUcm(t, "dev", config.Resources{
-		Catalogs: map[string]*resources.Catalog{"c1": {Name: "c1"}},
+		Catalogs: map[string]*resources.Catalog{"c1": {CreateCatalog: catalog.CreateCatalog{Name: "c1"}}},
 	})
 
 	diags := statemgmt.Load(t.Context(), u)
@@ -55,7 +56,7 @@ func TestLoad_MissingFileIsNoOp(t *testing.T) {
 
 func TestLoad_MalformedJSONWarns(t *testing.T) {
 	u := newUcm(t, "dev", config.Resources{
-		Catalogs: map[string]*resources.Catalog{"c1": {Name: "c1"}},
+		Catalogs: map[string]*resources.Catalog{"c1": {CreateCatalog: catalog.CreateCatalog{Name: "c1"}}},
 	})
 	writeTfstate(t, u, `{not valid json`)
 
@@ -68,7 +69,7 @@ func TestLoad_MalformedJSONWarns(t *testing.T) {
 
 func TestLoad_WrongVersionWarns(t *testing.T) {
 	u := newUcm(t, "dev", config.Resources{
-		Catalogs: map[string]*resources.Catalog{"c1": {Name: "c1"}},
+		Catalogs: map[string]*resources.Catalog{"c1": {CreateCatalog: catalog.CreateCatalog{Name: "c1"}}},
 	})
 	writeTfstate(t, u, `{"version": 3, "resources": []}`)
 
@@ -81,10 +82,10 @@ func TestLoad_WrongVersionWarns(t *testing.T) {
 func TestLoad_PopulatesIDsForMappedKinds(t *testing.T) {
 	u := newUcm(t, "dev", config.Resources{
 		Catalogs: map[string]*resources.Catalog{
-			"team_alpha": {Name: "team_alpha"},
+			"team_alpha": {CreateCatalog: catalog.CreateCatalog{Name: "team_alpha"}},
 		},
 		Schemas: map[string]*resources.Schema{
-			"bronze": {Name: "bronze", Catalog: "team_alpha"},
+			"bronze": {CreateSchema: catalog.CreateSchema{Name: "bronze", CatalogName: "team_alpha"}},
 		},
 		Volumes: map[string]*resources.Volume{
 			"raw": {Name: "raw", CatalogName: "team_alpha", SchemaName: "bronze"},
@@ -125,7 +126,7 @@ func TestLoad_PopulatesIDsForMappedKinds(t *testing.T) {
 
 func TestLoad_UnknownTypeIsSkipped(t *testing.T) {
 	u := newUcm(t, "dev", config.Resources{
-		Catalogs: map[string]*resources.Catalog{"c1": {Name: "c1"}},
+		Catalogs: map[string]*resources.Catalog{"c1": {CreateCatalog: catalog.CreateCatalog{Name: "c1"}}},
 	})
 	writeTfstate(t, u, `{
   "version": 4,
@@ -144,7 +145,7 @@ func TestLoad_UnknownTypeIsSkipped(t *testing.T) {
 func TestLoad_MissingConfigKeyIsSkipped(t *testing.T) {
 	u := newUcm(t, "dev", config.Resources{
 		Catalogs: map[string]*resources.Catalog{
-			"c1": {Name: "c1"},
+			"c1": {CreateCatalog: catalog.CreateCatalog{Name: "c1"}},
 		},
 	})
 	// state references c2, which has been removed from ucm.yml.
@@ -163,7 +164,7 @@ func TestLoad_MissingConfigKeyIsSkipped(t *testing.T) {
 
 func TestLoad_SkipsNonManagedMode(t *testing.T) {
 	u := newUcm(t, "dev", config.Resources{
-		Catalogs: map[string]*resources.Catalog{"c1": {Name: "c1"}},
+		Catalogs: map[string]*resources.Catalog{"c1": {CreateCatalog: catalog.CreateCatalog{Name: "c1"}}},
 	})
 	writeTfstate(t, u, `{
   "version": 4,

@@ -177,7 +177,7 @@ func TestGenerate_SchemasSkipInformationSchema(t *testing.T) {
 	s := r.Root.Resources.Schemas["team_alpha_bronze"]
 	require.NotNil(t, s)
 	assert.Equal(t, "bronze", s.Name)
-	assert.Equal(t, "team_alpha", s.Catalog)
+	assert.Equal(t, "team_alpha", s.CatalogName)
 
 	require.NotNil(t, r.State.Schemas["team_alpha_bronze"])
 }

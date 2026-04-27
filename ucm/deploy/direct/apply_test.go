@@ -258,8 +258,8 @@ func (*recordingClient) ListConnections(_ context.Context) ([]catalog.Connection
 
 func TestApply_CreateHappyPath(t *testing.T) {
 	u := ucmWith(
-		map[string]*resources.Catalog{"main": {Name: "main", Comment: "prod"}},
-		map[string]*resources.Schema{"raw": {Name: "raw", Catalog: "main"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main", Comment: "prod"}}},
+		map[string]*resources.Schema{"raw": {CreateSchema: catalog.CreateSchema{Name: "raw", CatalogName: "main"}}},
 		map[string]*resources.Grant{
 			"analysts": {
 				Securable:  resources.Securable{Type: "schema", Name: "main.raw"},
@@ -343,8 +343,8 @@ func TestApply_DeleteReversesOrder(t *testing.T) {
 
 func TestApply_PreservesStateOnMidApplyError(t *testing.T) {
 	u := ucmWith(
-		map[string]*resources.Catalog{"main": {Name: "main"}},
-		map[string]*resources.Schema{"raw": {Name: "raw", Catalog: "main"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}},
+		map[string]*resources.Schema{"raw": {CreateSchema: catalog.CreateSchema{Name: "raw", CatalogName: "main"}}},
 		nil,
 	)
 	state := direct.NewState()
@@ -362,7 +362,7 @@ func TestApply_PreservesStateOnMidApplyError(t *testing.T) {
 
 func TestApply_StorageCredentialCreateOrdersBeforeCatalog(t *testing.T) {
 	u := ucmWith(
-		map[string]*resources.Catalog{"main": {Name: "main"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}},
 		nil,
 		nil,
 	)
@@ -542,8 +542,8 @@ func TestApply_ExternalLocationDestroyOrder(t *testing.T) {
 
 func TestApply_VolumeCreateOrdersAfterSchema(t *testing.T) {
 	u := ucmWith(
-		map[string]*resources.Catalog{"main": {Name: "main"}},
-		map[string]*resources.Schema{"bronze": {Name: "bronze", Catalog: "main"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}},
+		map[string]*resources.Schema{"bronze": {CreateSchema: catalog.CreateSchema{Name: "bronze", CatalogName: "main"}}},
 		nil,
 	)
 	u.Config.Resources.Volumes = map[string]*resources.Volume{

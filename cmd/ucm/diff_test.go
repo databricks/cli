@@ -31,7 +31,7 @@ resources:
       name: marketing
   schemas:
     raw:
-      catalog: sales
+      catalog_name: sales
       name: raw
 `
 
@@ -48,10 +48,10 @@ resources:
       name: marketing
   schemas:
     raw:
-      catalog: sales
+      catalog_name: sales
       name: raw
     bronze:
-      catalog: sales
+      catalog_name: sales
       name: bronze
 `
 
@@ -68,7 +68,7 @@ resources:
       name: marketing
   schemas:
     raw:
-      catalog: sales
+      catalog_name: sales
       name: raw
 `
 )
@@ -328,7 +328,7 @@ resources:
   schemas:
     raw:
       name: raw
-      catalog: sales
+      catalog_name: sales
   catalogs:
     marketing:
       name: marketing

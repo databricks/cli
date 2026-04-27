@@ -11,7 +11,7 @@ resources:
   schemas:
     raw:
       name: raw
-      catalog: main
+      catalog_name: main
 
   grants:
     analysts:

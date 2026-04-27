@@ -69,7 +69,7 @@ resources:
   catalogs:
     c1: {name: c1, tags: {cost_center: "1"}}
   schemas:
-    s1: {name: s1, catalog: c1}
+    s1: {name: s1, catalog_name: c1}
 `,
 			schema:   "s1",
 			wantTags: map[string]string{"cost_center": "1"},

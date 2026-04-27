@@ -80,7 +80,7 @@ resources:
   schemas:
     raw:
       name: raw
-      catalog: sales
+      catalog_name: sales
   grants:
     sales_admins:
       securable:

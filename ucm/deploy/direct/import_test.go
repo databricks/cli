@@ -138,7 +138,7 @@ func (*importFakeClient) ListConnections(context.Context) ([]catalog.ConnectionI
 func TestImportResource_CatalogSeedsStateFromSDK(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main", Comment: "declared comment"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main", Comment: "declared comment"}},
 	}
 	client := &importFakeClient{Catalog: &catalog.CatalogInfo{
 		Name:        "main",
@@ -162,7 +162,7 @@ func TestImportResource_CatalogSeedsStateFromSDK(t *testing.T) {
 func TestImportResource_SchemaUsesFullName(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
 	u.Config.Resources.Schemas = map[string]*resources.Schema{
-		"raw": {Name: "raw", Catalog: "main"},
+		"raw": {CreateSchema: catalog.CreateSchema{Name: "raw", CatalogName: "main"}},
 	}
 	client := &importFakeClient{Schema: &catalog.SchemaInfo{
 		Name: "raw", CatalogName: "main", Comment: "bronze",
@@ -259,7 +259,7 @@ func TestImportResource_UnknownKindErrors(t *testing.T) {
 
 func TestImportResource_PropagatesSDKError(t *testing.T) {
 	u := &ucm.Ucm{Config: config.Root{}}
-	u.Config.Resources.Catalogs = map[string]*resources.Catalog{"main": {Name: "main"}}
+	u.Config.Resources.Catalogs = map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}}
 	sentinel := errors.New("sdk boom")
 	client := &importFakeClient{Err: sentinel}
 	state := direct.NewState()

@@ -71,8 +71,8 @@ func checkSchemas(u *ucm.Ucm) diag.Diagnostics {
 		if s.Name == "" {
 			diags = append(diags, missingField(u, "schemas", key, "name"))
 		}
-		if s.Catalog == "" {
-			diags = append(diags, missingField(u, "schemas", key, "catalog"))
+		if s.CatalogName == "" {
+			diags = append(diags, missingField(u, "schemas", key, "catalog_name"))
 		}
 	}
 	return diags

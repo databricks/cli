@@ -30,7 +30,7 @@ resources:
 	// FlattenNestedResources unrolled schemas and cleared the nested map.
 	got := u.Config.Resources.Schemas["s1"]
 	require.NotNil(t, got)
-	assert.Equal(t, "c1", got.Catalog)
+	assert.Equal(t, "c1", got.CatalogName)
 	assert.Nil(t, u.Config.Resources.Catalogs["c1"].Schemas)
 
 	// InheritCatalogTags propagated parent tags down to the schema.

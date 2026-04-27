@@ -52,7 +52,7 @@ resources:
   catalogs:
     c1: {name: c1}
   schemas:
-    s1: {name: s1, catalog: c1}
+    s1: {name: s1, catalog_name: c1}
 `,
 			wantEmpty: true,
 		},
@@ -76,7 +76,7 @@ resources:
 `,
 			wantSummaries: []string{
 				`schema "s1": required field "name"`,
-				`schema "s1": required field "catalog"`,
+				`schema "s1": required field "catalog_name"`,
 			},
 		},
 		{

@@ -1,21 +1,21 @@
 package resources
 
-import "net/url"
+import (
+	"net/url"
+	"strings"
 
-// Schema is a UC schema (a.k.a. database) nested inside a catalog.
+	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
+)
+
+// Schema is a UC schema (a.k.a. database) nested inside a catalog. Embeds the
+// SDK's CreateSchema so every API-level field is part of ucm's surface.
 type Schema struct {
-	// Name of the schema. Required.
-	Name string `json:"name"`
-
-	// Catalog is the name of the parent catalog. Required in flat form;
-	// injected by FlattenNestedResources when declared nested under a catalog.
-	// In M1 this becomes interpolatable via ${resources.catalogs.X.name}.
-	Catalog string `json:"catalog,omitempty"`
-
-	// Comment is a human-readable description.
-	Comment string `json:"comment,omitempty"`
+	catalog.CreateSchema
 
 	// Tags is a key/value map evaluated by ucm's tag-validation mutators.
+	// Distinct from the SDK's `properties` (free-form) — Tags is ucm-policy
+	// material.
 	Tags map[string]string `json:"tags,omitempty"`
 
 	// TagInherit controls whether parent-catalog tags merge into this schema's
@@ -23,9 +23,9 @@ type Schema struct {
 	// opt out.
 	TagInherit *bool `json:"tag_inherit,omitempty"`
 
-	// Grants nested under this schema. FlattenNestedResources moves them to
-	// Root.Resources.Grants with securable={type:schema, name:<this>} injected.
-	// Always nil after load.
+	// Grants exists solely to keep convert.Normalize from dropping nested-form
+	// keys during load — FlattenNestedResources zeroes it before any other
+	// mutator runs. Always nil after load.
 	Grants map[string]*Grant `json:"grants,omitempty"`
 
 	// ID is the deployed resource's terraform-state ID. Populated by
@@ -37,10 +37,19 @@ type Schema struct {
 }
 
 // InitializeURL sets s.URL iff the schema has been deployed (ID is non-empty).
+// Schema ID is the dotted full name catalog.schema; explore URLs use slashes.
 func (s *Schema) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	baseURL.Path = "explore/data/" + s.Catalog + "/" + s.Name
+	baseURL.Path = "explore/data/" + strings.ReplaceAll(s.ID, ".", "/")
 	s.URL = baseURL.String()
+}
+
+func (s *Schema) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s Schema) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }

@@ -1,6 +1,7 @@
 package phases_test
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -108,7 +109,7 @@ func TestInitializePopulatesResourceURLs(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Workspace.Host = "https://mycompany.databricks.com"
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"cat1": {Name: "cat1", ID: "cat1"},
+		"cat1": {CreateCatalog: catalog.CreateCatalog{Name: "cat1"}, ID: "cat1"},
 	}
 
 	ctx := logdiag.InitContext(t.Context())

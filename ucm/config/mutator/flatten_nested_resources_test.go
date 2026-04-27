@@ -41,7 +41,7 @@ resources:
     c1:
       name: c1
       schemas:
-        s1: {name: s1, catalog: c1}
+        s1: {name: s1, catalog_name: c1}
 `,
 			wantSchema: map[string]string{"s1": "c1"},
 		},
@@ -54,7 +54,7 @@ resources:
     c1:
       name: c1
       schemas:
-        s1: {name: s1, catalog: other}
+        s1: {name: s1, catalog_name: other}
 `,
 			wantDiagSubs: []string{"conflicts with parent"},
 			wantSchema:   map[string]string{"s1": "other"},
@@ -97,7 +97,7 @@ resources:
 ucm: {name: t}
 resources:
   schemas:
-    s1: {name: s1, catalog: c1}
+    s1: {name: s1, catalog_name: c1}
   catalogs:
     c1:
       name: c1
@@ -129,7 +129,7 @@ resources:
 			for name, want := range tc.wantSchema {
 				got := u.Config.Resources.Schemas[name]
 				require.NotNil(t, got, "schema %q missing", name)
-				assert.Equal(t, want, got.Catalog, "schema %q catalog", name)
+				assert.Equal(t, want, got.CatalogName, "schema %q catalog", name)
 			}
 			for name, want := range tc.wantGrantKind {
 				got := u.Config.Resources.Grants[name]

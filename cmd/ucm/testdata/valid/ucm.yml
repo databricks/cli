@@ -23,7 +23,7 @@ resources:
 
   schemas:
     bronze:
-      catalog: team_alpha
+      catalog_name: team_alpha
       name: bronze
       tags:
         cost_center: "1234"

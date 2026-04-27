@@ -237,10 +237,12 @@ func scanCatalogs(catalogs []catalog.CatalogInfo, root *config.Root, state *dire
 			continue
 		}
 		res := &resources.Catalog{
-			Name:        c.Name,
-			Comment:     c.Comment,
-			StorageRoot: c.StorageRoot,
-			Tags:        copyTags(c.Properties),
+			CreateCatalog: catalog.CreateCatalog{
+				Name:        c.Name,
+				Comment:     c.Comment,
+				StorageRoot: c.StorageRoot,
+			},
+			Tags: copyTags(c.Properties),
 		}
 		key := c.Name
 		ensureCatalogMap(root)[key] = res
@@ -259,10 +261,12 @@ func addSchemas(schemas []catalog.SchemaInfo, root *config.Root, state *direct.S
 			continue
 		}
 		res := &resources.Schema{
-			Name:    s.Name,
-			Catalog: s.CatalogName,
-			Comment: s.Comment,
-			Tags:    copyTags(s.Properties),
+			CreateSchema: catalog.CreateSchema{
+				Name:        s.Name,
+				CatalogName: s.CatalogName,
+				Comment:     s.Comment,
+			},
+			Tags: copyTags(s.Properties),
 		}
 		key := s.CatalogName + "_" + s.Name
 		ensureSchemaMap(root)[key] = res

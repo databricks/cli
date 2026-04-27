@@ -92,7 +92,7 @@ resources:
   schemas:
     s1:
       name: s1
-      catalog: c1
+      catalog_name: c1
       # missing all required tags
   tag_validation_rules:
     r:

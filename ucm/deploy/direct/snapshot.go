@@ -27,7 +27,7 @@ func schemaStateFromConfig(s *resources.Schema) SchemaState {
 	}
 	return SchemaState{
 		Name:    s.Name,
-		Catalog: s.Catalog,
+		Catalog: s.CatalogName,
 		Comment: s.Comment,
 		Tags:    copyTags(s.Tags),
 	}

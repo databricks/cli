@@ -1,6 +1,7 @@
 package phases_test
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"testing"
 
 	"github.com/databricks/cli/libs/logdiag"
@@ -14,7 +15,7 @@ import (
 func TestImportTerraformEngineRunsImportAndPushes(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
 	}
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
@@ -49,7 +50,7 @@ func TestImportDirectEngineSkipsTerraform(t *testing.T) {
 	f := newFixture(t)
 	f.u.Config.Ucm.Engine = engine.EngineDirect
 	f.u.Config.Resources.Catalogs = map[string]*resources.Catalog{
-		"main": {Name: "main"},
+		"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}},
 	}
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)

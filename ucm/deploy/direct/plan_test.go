@@ -1,6 +1,7 @@
 package direct_test
 
 import (
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"testing"
 
 	"github.com/databricks/cli/ucm"
@@ -19,8 +20,8 @@ func TestCalculatePlan_EmptyConfigAndState(t *testing.T) {
 
 func TestCalculatePlan_CreatesWhenStateEmpty(t *testing.T) {
 	u := ucmWith(
-		map[string]*resources.Catalog{"main": {Name: "main"}},
-		map[string]*resources.Schema{"raw": {Name: "raw", Catalog: "main"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main"}}},
+		map[string]*resources.Schema{"raw": {CreateSchema: catalog.CreateSchema{Name: "raw", CatalogName: "main"}}},
 		map[string]*resources.Grant{
 			"analysts": {
 				Securable:  resources.Securable{Type: "schema", Name: "main.raw"},
@@ -58,8 +59,8 @@ func TestCalculatePlan_DeletesWhenConfigEmpty(t *testing.T) {
 
 func TestCalculatePlan_SkipsUnchangedEntries(t *testing.T) {
 	u := ucmWith(
-		map[string]*resources.Catalog{"main": {Name: "main", Comment: "prod"}},
-		map[string]*resources.Schema{"raw": {Name: "raw", Catalog: "main"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main", Comment: "prod"}}},
+		map[string]*resources.Schema{"raw": {CreateSchema: catalog.CreateSchema{Name: "raw", CatalogName: "main"}}},
 		map[string]*resources.Grant{
 			"analysts": {
 				Securable:  resources.Securable{Type: "schema", Name: "main.raw"},
@@ -88,8 +89,8 @@ func TestCalculatePlan_SkipsUnchangedEntries(t *testing.T) {
 
 func TestCalculatePlan_UpdatesOnFieldDrift(t *testing.T) {
 	u := ucmWith(
-		map[string]*resources.Catalog{"main": {Name: "main", Comment: "new"}},
-		map[string]*resources.Schema{"raw": {Name: "raw", Catalog: "main", Comment: "new"}},
+		map[string]*resources.Catalog{"main": {CreateCatalog: catalog.CreateCatalog{Name: "main", Comment: "new"}}},
+		map[string]*resources.Schema{"raw": {CreateSchema: catalog.CreateSchema{Name: "raw", CatalogName: "main", Comment: "new"}}},
 		map[string]*resources.Grant{
 			"analysts": {
 				Securable:  resources.Securable{Type: "schema", Name: "main.raw"},
