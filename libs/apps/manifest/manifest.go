@@ -35,6 +35,10 @@ type Resource struct {
 	Permission  string                   `json:"permission"`  // e.g., "CAN_USE"
 	Fields      map[string]ResourceField `json:"fields"`      // field definitions with env var mappings
 
+	// PluginName is the machine name of the plugin (e.g., "lakebase").
+	// Set during resource collection. Not part of the JSON manifest.
+	PluginName string `json:"-"`
+
 	// PluginDisplayName is set during resource collection to identify which
 	// plugin requires this resource. Not part of the JSON manifest.
 	PluginDisplayName string `json:"-"`
@@ -218,6 +222,7 @@ func (m *Manifest) CollectResources(pluginNames []string) []Resource {
 			key := r.Type + ":" + r.Key()
 			if !seen[key] {
 				seen[key] = true
+				r.PluginName = name
 				r.PluginDisplayName = plugin.DisplayName
 				resources = append(resources, r)
 			}
@@ -246,6 +251,7 @@ func (m *Manifest) CollectOptionalResources(pluginNames []string) []Resource {
 			key := r.Type + ":" + r.Key()
 			if !seen[key] {
 				seen[key] = true
+				r.PluginName = name
 				r.PluginDisplayName = plugin.DisplayName
 				resources = append(resources, r)
 			}
