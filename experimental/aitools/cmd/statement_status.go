@@ -46,12 +46,7 @@ func getStatementStatus(ctx context.Context, api sql.StatementExecutionInterface
 	info := statementInfo{StatementID: resp.StatementId}
 	if resp.Status != nil {
 		info.State = resp.Status.State
-		if resp.Status.Error != nil {
-			info.Error = &batchResultError{
-				Message:   resp.Status.Error.Message,
-				ErrorCode: string(resp.Status.Error.ErrorCode),
-			}
-		}
 	}
+	info.Error = statementErrorFromStatus(resp.Status)
 	return info, nil
 }

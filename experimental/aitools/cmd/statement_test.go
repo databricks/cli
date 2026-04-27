@@ -258,3 +258,141 @@ func TestStatementCancelRequiresStatementID(t *testing.T) {
 	err := cmd.Execute()
 	require.Error(t, err)
 }
+
+func TestStatementErrorFromStatus(t *testing.T) {
+	tests := []struct {
+		name     string
+		status   *sql.StatementStatus
+		wantNil  bool
+		wantMsg  string
+		wantCode string
+	}{
+		{
+			name:    "nil status",
+			status:  nil,
+			wantNil: true,
+		},
+		{
+			name:    "succeeded never produces an error",
+			status:  &sql.StatementStatus{State: sql.StatementStateSucceeded},
+			wantNil: true,
+		},
+		{
+			name:    "running is not terminal",
+			status:  &sql.StatementStatus{State: sql.StatementStateRunning},
+			wantNil: true,
+		},
+		{
+			name:    "pending is not terminal",
+			status:  &sql.StatementStatus{State: sql.StatementStatePending},
+			wantNil: true,
+		},
+		{
+			name: "failed with backend error preserves both fields",
+			status: &sql.StatementStatus{
+				State: sql.StatementStateFailed,
+				Error: &sql.ServiceError{ErrorCode: "SYNTAX_ERROR", Message: "near 'bad'"},
+			},
+			wantMsg:  "near 'bad'",
+			wantCode: "SYNTAX_ERROR",
+		},
+		{
+			name:    "failed without backend error synthesizes message",
+			status:  &sql.StatementStatus{State: sql.StatementStateFailed},
+			wantMsg: "statement reached terminal state FAILED",
+		},
+		{
+			name:    "canceled without backend error synthesizes message",
+			status:  &sql.StatementStatus{State: sql.StatementStateCanceled},
+			wantMsg: "statement reached terminal state CANCELED",
+		},
+		{
+			name:    "closed without backend error synthesizes message",
+			status:  &sql.StatementStatus{State: sql.StatementStateClosed},
+			wantMsg: "statement reached terminal state CLOSED",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := statementErrorFromStatus(tc.status)
+			if tc.wantNil {
+				assert.Nil(t, got)
+				return
+			}
+			require.NotNil(t, got)
+			assert.Equal(t, tc.wantMsg, got.Message)
+			assert.Equal(t, tc.wantCode, got.ErrorCode)
+		})
+	}
+}
+
+func TestGetStatementResultClosedTerminalSynthesizesError(t *testing.T) {
+	// Statement reached CLOSED with no Error payload from the server. The shared
+	// statementInfo contract guarantees a non-nil Error for any non-success
+	// terminal state so consumers can branch on `error == null` alone.
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStateClosed},
+	}, nil).Once()
+
+	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
+	require.NoError(t, err)
+	assert.Equal(t, sql.StatementStateClosed, info.State)
+	require.NotNil(t, info.Error)
+	assert.Contains(t, info.Error.Message, "CLOSED")
+	assert.Empty(t, info.Error.ErrorCode)
+	assert.Nil(t, info.Rows)
+}
+
+func TestGetStatementResultFailedWithoutBackendErrorSynthesizesError(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStateFailed},
+	}, nil).Once()
+
+	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
+	require.NoError(t, err)
+	assert.Equal(t, sql.StatementStateFailed, info.State)
+	require.NotNil(t, info.Error)
+	assert.Contains(t, info.Error.Message, "FAILED")
+}
+
+func TestGetStatementStatusFailedWithoutBackendErrorSynthesizesError(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStateFailed},
+	}, nil).Once()
+
+	info, err := getStatementStatus(ctx, mockAPI, "stmt-1")
+	require.NoError(t, err)
+	assert.Equal(t, sql.StatementStateFailed, info.State)
+	require.NotNil(t, info.Error)
+	assert.Contains(t, info.Error.Message, "FAILED")
+}
+
+func TestGetStatementStatusRunningHasNoError(t *testing.T) {
+	// PENDING/RUNNING legitimately have no error; the contract only requires
+	// error population for terminal non-success states.
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStateRunning},
+	}, nil).Once()
+
+	info, err := getStatementStatus(ctx, mockAPI, "stmt-1")
+	require.NoError(t, err)
+	assert.Equal(t, sql.StatementStateRunning, info.State)
+	assert.Nil(t, info.Error)
+}

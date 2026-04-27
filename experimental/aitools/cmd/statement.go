@@ -31,6 +31,27 @@ func renderStatementInfo(w io.Writer, info statementInfo) error {
 	return nil
 }
 
+// statementErrorFromStatus builds a batchResultError for any terminal non-success
+// state (FAILED, CANCELED, CLOSED), populating it from the server's ServiceError
+// when available and synthesizing a message when it isn't. Returns nil for
+// SUCCEEDED, non-terminal states, and nil status. The synthesized fallback
+// matters because the Statements API can hand back a non-success terminal state
+// with `Error == nil`, and skill consumers should be able to branch on
+// `error == null` alone instead of inspecting `state`.
+func statementErrorFromStatus(status *sql.StatementStatus) *batchResultError {
+	if status == nil || !isTerminalState(status) || status.State == sql.StatementStateSucceeded {
+		return nil
+	}
+	out := &batchResultError{}
+	if status.Error != nil {
+		out.Message = status.Error.Message
+		out.ErrorCode = string(status.Error.ErrorCode)
+	} else {
+		out.Message = fmt.Sprintf("statement reached terminal state %s", status.State)
+	}
+	return out
+}
+
 func newStatementCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "statement",

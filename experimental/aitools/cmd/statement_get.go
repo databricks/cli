@@ -72,13 +72,8 @@ func getStatementResult(ctx context.Context, api sql.StatementExecutionInterface
 	info := statementInfo{StatementID: pollResp.StatementId}
 	if pollResp.Status != nil {
 		info.State = pollResp.Status.State
-		if pollResp.Status.Error != nil {
-			info.Error = &batchResultError{
-				Message:   pollResp.Status.Error.Message,
-				ErrorCode: string(pollResp.Status.Error.ErrorCode),
-			}
-		}
 	}
+	info.Error = statementErrorFromStatus(pollResp.Status)
 
 	if info.State == sql.StatementStateSucceeded {
 		info.Columns = extractColumns(pollResp.Manifest)
