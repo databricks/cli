@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -113,4 +114,28 @@ func TestResolveCache_FileFactoryErrorPropagates(t *testing.T) {
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
+}
+
+func TestWrapForOAuthArgument(t *testing.T) {
+	arg, err := u2m.NewBasicWorkspaceOAuthArgument("https://example.com")
+	require.NoError(t, err)
+
+	inner := stubCache{source: "inner"}
+
+	cases := []struct {
+		name     string
+		mode     StorageMode
+		wantWrap bool
+	}{
+		{"plaintext wraps in DualWritingTokenCache", StorageModePlaintext, true},
+		{"secure returns inner unchanged", StorageModeSecure, false},
+		{"unknown returns inner unchanged", StorageModeUnknown, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := WrapForOAuthArgument(inner, tc.mode, arg)
+			_, wrapped := got.(*DualWritingTokenCache)
+			assert.Equal(t, tc.wantWrap, wrapped)
+		})
+	}
 }

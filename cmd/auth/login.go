@@ -60,23 +60,6 @@ func discoveryErr(msg string, err error) error {
 	return fmt.Errorf("%s%s", msg, discoveryFallbackTip)
 }
 
-// mirrorTokenUnderHostKey writes a second copy of the freshly minted token
-// under the legacy host-based cache key so older Go SDKs (v0.61-v0.103)
-// that still look up by host can find it. No-op for any non-plaintext mode.
-func mirrorTokenUnderHostKey(ctx context.Context, tokenCache cache.TokenCache, arg u2m.OAuthArgument, mode storage.StorageMode) {
-	if mode != storage.StorageModePlaintext {
-		return
-	}
-	t, err := tokenCache.Lookup(arg.GetCacheKey())
-	if err != nil || t == nil {
-		return
-	}
-	dual := storage.NewDualWritingTokenCache(tokenCache, arg)
-	if err := dual.Store(arg.GetCacheKey(), t); err != nil {
-		log.Debugf(ctx, "token cache dual-write failed: %v", err)
-	}
-}
-
 type discoveryPersistentAuth interface {
 	Challenge() error
 	Token() (*oauth2.Token, error)
@@ -256,7 +239,7 @@ a new profile is created.
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
-			u2m.WithTokenCache(tokenCache),
+			u2m.WithTokenCache(storage.WrapForOAuthArgument(tokenCache, mode, oauthArgument)),
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
@@ -273,7 +256,6 @@ a new profile is created.
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
-		mirrorTokenUnderHostKey(ctx, tokenCache, oauthArgument, mode)
 		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
@@ -593,7 +575,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
-		u2m.WithTokenCache(in.tokenCache),
+		u2m.WithTokenCache(storage.WrapForOAuthArgument(in.tokenCache, in.mode, arg)),
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
@@ -613,7 +595,6 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	if err := persistentAuth.Challenge(); err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
-	mirrorTokenUnderHostKey(ctx, in.tokenCache, arg, in.mode)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 )
 
@@ -35,6 +36,21 @@ func defaultCacheFactories() cacheFactories {
 // and splits the user's tokens across two backends.
 func ResolveCache(ctx context.Context, override StorageMode) (cache.TokenCache, StorageMode, error) {
 	return resolveCacheWith(ctx, override, defaultCacheFactories())
+}
+
+// WrapForOAuthArgument wraps tokenCache so SDK-side writes (Challenge, refresh)
+// dual-write to the legacy host-based cache key when mode is plaintext. Other
+// modes return tokenCache unchanged: secure mode never writes a host-key entry,
+// and the wrapper has nothing to do for non-file backends.
+//
+// Pass the OAuthArgument that the same NewPersistentAuth call will use. For
+// discovery arguments the discovered host is read at Store time, so it is
+// safe to wrap before Challenge populates it.
+func WrapForOAuthArgument(tokenCache cache.TokenCache, mode StorageMode, arg u2m.OAuthArgument) cache.TokenCache {
+	if mode != StorageModePlaintext {
+		return tokenCache
+	}
+	return NewDualWritingTokenCache(tokenCache, arg)
 }
 
 // resolveCacheWith is the pure form of ResolveCache. It takes the factory
