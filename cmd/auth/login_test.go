@@ -219,10 +219,9 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 
 	// Test setting workspace-id from flag for unified host
 	authArguments = auth.AuthArguments{
-		Host:          "https://unified.databricks.com",
-		AccountID:     "test-unified-account",
-		WorkspaceID:   "val from --workspace-id",
-		IsUnifiedHost: true,
+		Host:        "https://unified.databricks.com",
+		AccountID:   "test-unified-account",
+		WorkspaceID: "val from --workspace-id",
 	}
 	err := setHostAndAccountId(ctx, unifiedWorkspaceProfile, &authArguments, []string{})
 	assert.NoError(t, err)
@@ -232,9 +231,8 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 
 	// Test setting workspace_id from profile for unified host
 	authArguments = auth.AuthArguments{
-		Host:          "https://unified.databricks.com",
-		AccountID:     "test-unified-account",
-		IsUnifiedHost: true,
+		Host:      "https://unified.databricks.com",
+		AccountID: "test-unified-account",
 	}
 	err = setHostAndAccountId(ctx, unifiedWorkspaceProfile, &authArguments, []string{})
 	assert.NoError(t, err)
@@ -244,9 +242,8 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 
 	// Test workspace_id is optional - should default to empty in non-interactive mode
 	authArguments = auth.AuthArguments{
-		Host:          "https://unified.databricks.com",
-		AccountID:     "test-unified-account",
-		IsUnifiedHost: true,
+		Host:      "https://unified.databricks.com",
+		AccountID: "test-unified-account",
 	}
 	err = setHostAndAccountId(ctx, unifiedAccountProfile, &authArguments, []string{})
 	assert.NoError(t, err)
@@ -256,9 +253,8 @@ func TestSetWorkspaceIDForUnifiedHost(t *testing.T) {
 
 	// Test workspace_id is optional - should default to empty when no profile exists
 	authArguments = auth.AuthArguments{
-		Host:          "https://unified.databricks.com",
-		AccountID:     "test-unified-account",
-		IsUnifiedHost: true,
+		Host:      "https://unified.databricks.com",
+		AccountID: "test-unified-account",
 	}
 	err = setHostAndAccountId(ctx, nil, &authArguments, []string{})
 	assert.NoError(t, err)
@@ -400,6 +396,29 @@ func TestShouldUseDiscovery(t *testing.T) {
 	}
 }
 
+func TestNeedsAccountIDPrompt(t *testing.T) {
+	cases := []struct {
+		name         string
+		host         string
+		discoveryURL string
+		want         bool
+	}{
+		{name: "classic accounts host", host: "https://accounts.cloud.databricks.com", want: true},
+		{name: "accounts-dod host", host: "https://accounts-dod.databricks.com", want: true},
+		{name: "accounts host with path", host: "https://accounts.cloud.databricks.com/some/path", want: true},
+		{name: "plain workspace host", host: "https://workspace.cloud.databricks.com"},
+		{name: "account-scoped DiscoveryURL", host: "https://spog.cloud.databricks.com", discoveryURL: "https://spog.cloud.databricks.com/oidc/accounts/acct-123/.well-known/oauth-authorization-server", want: true},
+		{name: "workspace-scoped DiscoveryURL", host: "https://workspace.cloud.databricks.com", discoveryURL: "https://workspace.cloud.databricks.com/oidc/.well-known/oauth-authorization-server"},
+		{name: "workspace host no signals", host: "https://workspace.cloud.databricks.com"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := needsAccountIDPrompt(tc.host, tc.discoveryURL)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
 func TestSplitScopes(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -537,9 +556,8 @@ func TestSetHostAndAccountId_URLParamsOverrideProfile(t *testing.T) {
 	// The profile has workspace_id=123456789, but the URL has ?o=99999.
 	// URL params should win over profile values.
 	args := auth.AuthArguments{
-		Host:          "https://unified.databricks.com?o=99999",
-		AccountID:     "test-unified-account",
-		IsUnifiedHost: true,
+		Host:      "https://unified.databricks.com?o=99999",
+		AccountID: "test-unified-account",
 	}
 	err := setHostAndAccountId(ctx, unifiedWorkspaceProfile, &args, []string{})
 	assert.NoError(t, err)
@@ -567,12 +585,6 @@ func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
 			wantErr: "--workspace-id requires --host to be specified",
 		},
 		{
-			name:    "experimental-is-unified-host is incompatible",
-			setFlag: "experimental-is-unified-host",
-			flagVal: "true",
-			wantErr: "--experimental-is-unified-host requires --host to be specified",
-		},
-		{
 			name:    "configure-cluster is incompatible",
 			setFlag: "configure-cluster",
 			flagVal: "true",
@@ -593,7 +605,6 @@ func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
 			cmd := &cobra.Command{}
 			cmd.Flags().String("account-id", "", "")
 			cmd.Flags().String("workspace-id", "", "")
-			cmd.Flags().Bool("experimental-is-unified-host", false, "")
 			cmd.Flags().Bool("configure-cluster", false, "")
 			cmd.Flags().Bool("configure-serverless", false, "")
 
@@ -986,11 +997,10 @@ auth_type = databricks-cli
 	}
 
 	existingProfile := &profile.Profile{
-		Name:          "DISCOVERY",
-		Host:          "https://old-unified.databricks.com",
-		AccountID:     "old-account",
-		WorkspaceID:   "999999",
-		IsUnifiedHost: true,
+		Name:        "DISCOVERY",
+		Host:        "https://old-unified.databricks.com",
+		AccountID:   "old-account",
+		WorkspaceID: "999999",
 	}
 
 	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
@@ -1011,7 +1021,11 @@ auth_type = databricks-cli
 	// Stale routing fields must be cleared.
 	assert.Empty(t, savedProfile.AccountID, "stale account_id should be cleared")
 	assert.Empty(t, savedProfile.WorkspaceID, "stale workspace_id should be cleared on introspection failure")
-	assert.False(t, savedProfile.IsUnifiedHost, "stale experimental_is_unified_host should be cleared")
+
+	// Verify the experimental_is_unified_host INI key was also cleared from disk.
+	raw, err := os.ReadFile(configPath)
+	require.NoError(t, err)
+	assert.NotContains(t, string(raw), "experimental_is_unified_host")
 }
 
 func TestDiscoveryLogin_IntrospectionWritesFreshWorkspaceID(t *testing.T) {
