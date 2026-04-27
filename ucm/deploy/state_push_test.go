@@ -2,6 +2,7 @@ package deploy_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -10,11 +11,20 @@ import (
 	"testing"
 
 	libsfiler "github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/lock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// applyStateUpdate runs the StateUpdate mutator against f.u so subsequent
+// Push calls operate on a bumped local state — Push no longer bumps inline.
+func applyStateUpdate(t *testing.T, ctx context.Context, f *fixture) {
+	t.Helper()
+	diags := ucm.Apply(ctx, f.u, deploy.StateUpdate())
+	require.Empty(t, diags)
+}
 
 // readRemoteState round-trips the remote ucm-state.json for assertion
 // purposes. Returns nil if the remote hasn't been written yet.
@@ -36,8 +46,10 @@ func TestPushFirstWriteAfterPull(t *testing.T) {
 	ctx := t.Context()
 	f := newFixture(t)
 
-	// First Pull on an empty remote establishes a Seq=0 local.
+	// First Pull on an empty remote establishes a Seq=0 local; StateUpdate
+	// bumps it to 1 in the local cache. Push only mirrors that to remote.
 	require.NoError(t, deploy.Pull(ctx, f.u, f.backend))
+	applyStateUpdate(t, ctx, f)
 
 	// Drop a tfstate blob locally so Push has something to upload.
 	writeLocalTf(t, f, []byte(`{"tf":"v1"}`))
@@ -48,7 +60,7 @@ func TestPushFirstWriteAfterPull(t *testing.T) {
 	require.NotNil(t, remote)
 	assert.Equal(t, 1, remote.Seq)
 
-	// Local should have been refreshed to match the new Seq.
+	// Local Seq matches remote because StateUpdate already advanced it.
 	localData, err := os.ReadFile(filepath.Join(f.localDir, deploy.UcmStateFileName))
 	require.NoError(t, err)
 	var local deploy.State
@@ -61,6 +73,7 @@ func TestPushPullRoundTripIsIdentical(t *testing.T) {
 	f := newFixture(t)
 
 	require.NoError(t, deploy.Pull(ctx, f.u, f.backend))
+	applyStateUpdate(t, ctx, f)
 	tfBlob := []byte(`{"tf":"roundtrip"}`)
 	writeLocalTf(t, f, tfBlob)
 	require.NoError(t, deploy.Push(ctx, f.u, f.backend))
@@ -86,8 +99,9 @@ func TestPushDetectsStaleState(t *testing.T) {
 	ctx := t.Context()
 	f := newFixture(t)
 
-	// Client A pulls and prepares to push.
+	// Client A pulls and prepares to push (Seq goes 0→1 locally).
 	require.NoError(t, deploy.Pull(ctx, f.u, f.backend))
+	applyStateUpdate(t, ctx, f)
 
 	// Meanwhile, client B advances the remote Seq out from under A.
 	seedRemoteUcmState(t, ctx, f.remote, deploy.State{Version: deploy.StateVersion, Seq: 5})
@@ -97,7 +111,7 @@ func TestPushDetectsStaleState(t *testing.T) {
 
 	var stale *deploy.ErrStaleState
 	require.ErrorAs(t, err, &stale)
-	assert.Equal(t, 0, stale.LocalSeq)
+	assert.Equal(t, 1, stale.LocalSeq)
 	assert.Equal(t, 5, stale.RemoteSeq)
 }
 
@@ -106,6 +120,7 @@ func TestPushSecondPushAfterRemoteBumpFails(t *testing.T) {
 	f := newFixture(t)
 
 	require.NoError(t, deploy.Pull(ctx, f.u, f.backend))
+	applyStateUpdate(t, ctx, f)
 	require.NoError(t, deploy.Push(ctx, f.u, f.backend))
 
 	// Peer bumps remote Seq.
@@ -151,6 +166,7 @@ func TestPushReleasesLockOnSuccess(t *testing.T) {
 	f := newFixture(t)
 
 	require.NoError(t, deploy.Pull(ctx, f.u, f.backend))
+	applyStateUpdate(t, ctx, f)
 	require.NoError(t, deploy.Push(ctx, f.u, f.backend))
 
 	contender := lock.NewLockerWithFiler("bob@example.com", ".", f.remote)
@@ -179,6 +195,7 @@ func TestPushMirrorsTfstateBytesExactly(t *testing.T) {
 	f := newFixture(t)
 
 	require.NoError(t, deploy.Pull(ctx, f.u, f.backend))
+	applyStateUpdate(t, ctx, f)
 	tfBlob := bytes.Repeat([]byte{0xAB}, 2048)
 	writeLocalTf(t, f, tfBlob)
 
