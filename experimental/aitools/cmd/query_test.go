@@ -594,38 +594,32 @@ func TestQueryCommandUnsupportedOutputReturnsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "unsupported output format")
 }
 
-func TestQueryCommandBatchTextOutputRejected(t *testing.T) {
-	cmd := newQueryCmd()
-	cmd.PreRunE = nil
-	cmd.SetArgs([]string{"--output", "text", "SELECT 1", "SELECT 2"})
-	err := cmd.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "multiple queries require --output json")
+func TestQueryCommandBatchOutputRejection(t *testing.T) {
+	// Multi-query mode is JSON-only. text and csv are rejected with an
+	// actionable error before any API call.
+	for _, format := range []string{"text", "csv"} {
+		t.Run(format, func(t *testing.T) {
+			cmd := newQueryCmd()
+			cmd.PreRunE = nil
+			cmd.SetArgs([]string{"--output", format, "SELECT 1", "SELECT 2"})
+			err := cmd.Execute()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "multiple queries require --output json")
+		})
+	}
 }
 
-func TestQueryCommandBatchCsvOutputRejected(t *testing.T) {
-	cmd := newQueryCmd()
-	cmd.PreRunE = nil
-	cmd.SetArgs([]string{"--output", "csv", "SELECT 1", "SELECT 2"})
-	err := cmd.Execute()
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "multiple queries require --output json")
-}
-
-func TestQueryCommandConcurrencyZeroRejected(t *testing.T) {
-	// errgroup.SetLimit(0) deadlocks; we reject it in PreRunE.
-	cmd := newQueryCmd()
-	cmd.SetArgs([]string{"--concurrency", "0", "--output", "json", "SELECT 1", "SELECT 2"})
-	err := cmd.Execute()
-	require.ErrorIs(t, err, errInvalidBatchConcurrency)
-}
-
-func TestQueryCommandConcurrencyNegativeRejected(t *testing.T) {
-	// Negative removes the cap entirely in errgroup, which surprises users.
-	cmd := newQueryCmd()
-	cmd.SetArgs([]string{"--concurrency", "-1", "--output", "json", "SELECT 1", "SELECT 2"})
-	err := cmd.Execute()
-	require.ErrorIs(t, err, errInvalidBatchConcurrency)
+func TestQueryCommandConcurrencyRejection(t *testing.T) {
+	// errgroup.SetLimit(0) deadlocks; negative removes the cap entirely.
+	// Both surprise users, so PreRunE rejects anything <= 0.
+	for _, value := range []string{"0", "-1"} {
+		t.Run(value, func(t *testing.T) {
+			cmd := newQueryCmd()
+			cmd.SetArgs([]string{"--concurrency", value, "--output", "json", "SELECT 1", "SELECT 2"})
+			err := cmd.Execute()
+			require.ErrorIs(t, err, errInvalidBatchConcurrency)
+		})
+	}
 }
 
 func TestQueryCommandOutputFlagIsCaseInsensitive(t *testing.T) {
