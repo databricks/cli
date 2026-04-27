@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -53,9 +54,9 @@ func TestParseDescribeResultSkipsMetadataRows(t *testing.T) {
 		Result: &dbsql.ResultData{DataArray: [][]string{
 			{"id", "BIGINT", ""},
 			{"name", "STRING", ""},
-			{"# Partition Information", "", ""}, // metadata divider, skip
+			{"# Partition Information", "", ""},
 			{"region", "STRING", ""},
-			{"", "STRING", ""}, // empty col name, skip
+			{"", "STRING", ""},
 		}},
 	}
 
@@ -64,7 +65,7 @@ func TestParseDescribeResultSkipsMetadataRows(t *testing.T) {
 	assert.Equal(t, []string{"BIGINT", "STRING", "STRING"}, types)
 }
 
-func TestExecuteSQLUsesPollStatementAndPinsOnWaitTimeout(t *testing.T) {
+func TestSQLGateRunPinsOnWaitTimeoutAndRecordsID(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
@@ -79,12 +80,15 @@ func TestExecuteSQLUsesPollStatementAndPinsOnWaitTimeout(t *testing.T) {
 	}, nil).Once()
 
 	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
-	resp, err := executeSQL(ctx, w, "wh-1", "SELECT 1")
+	gate := newSQLGate(2)
+
+	resp, err := gate.run(ctx, w, "wh-1", "SELECT 1")
 	require.NoError(t, err)
 	assert.Equal(t, "stmt-1", resp.StatementId)
+	assert.Equal(t, []string{"stmt-1"}, gate.trackedIDs())
 }
 
-func TestExecuteSQLPropagatesFailedState(t *testing.T) {
+func TestSQLGateRunPropagatesFailedState(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
@@ -97,12 +101,16 @@ func TestExecuteSQLPropagatesFailedState(t *testing.T) {
 	}, nil).Once()
 
 	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
-	_, err := executeSQL(ctx, w, "wh-1", "SELECT oops")
+	gate := newSQLGate(2)
+
+	_, err := gate.run(ctx, w, "wh-1", "SELECT oops")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "SYNTAX_ERROR")
+	// Even on failure, the id is recorded so a cancellation sweep can clean up.
+	assert.Equal(t, []string{"stmt-1"}, gate.trackedIDs())
 }
 
-func TestExecuteSQLWrapsTransportError(t *testing.T) {
+func TestSQLGateRunWrapsTransportError(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
@@ -110,20 +118,36 @@ func TestExecuteSQLWrapsTransportError(t *testing.T) {
 		Return(nil, errors.New("network unreachable")).Once()
 
 	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
-	_, err := executeSQL(ctx, w, "wh-1", "SELECT 1")
+	gate := newSQLGate(2)
+
+	_, err := gate.run(ctx, w, "wh-1", "SELECT 1")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "execute statement")
 	assert.Contains(t, err.Error(), "network unreachable")
+	assert.Empty(t, gate.trackedIDs(), "no id should be recorded when ExecuteStatement fails")
 }
 
-func TestDiscoverTableRunsSampleAndNullsInParallel(t *testing.T) {
-	// After DESCRIBE returns, sample SELECT and null counts must run in
-	// parallel, not back-to-back. Each mocked probe blocks briefly so an
-	// atomic counter can observe peak in-flight calls.
+func TestSQLGateRunRespectsCancelledContext(t *testing.T) {
+	// With ctx already cancelled, gate.run must not call any API method:
+	// it bails at the semaphore-acquire select.
+	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
+	cancel()
+
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	gate := newSQLGate(2)
+
+	_, err := gate.run(ctx, w, "wh-1", "SELECT 1")
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func TestDiscoverTableRunsSampleAndNullsConcurrently(t *testing.T) {
+	// Deterministic barrier: both probes must enter before either is allowed
+	// to leave. If gate.run/discoverTable serialized them, the first probe
+	// would time out and return an error, which would surface as
+	// "SAMPLE DATA: Error - " or "NULL COUNTS: Error - " in the output.
 	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	var inFlight, peak atomic.Int32
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
 		return strings.HasPrefix(req.Statement, "DESCRIBE TABLE")
@@ -136,18 +160,22 @@ func TestDiscoverTableRunsSampleAndNullsInParallel(t *testing.T) {
 		}},
 	}, nil).Once()
 
+	const numProbes = 2
+	var dispatched atomic.Int32
+	release := make(chan struct{})
+	closeRelease := sync.OnceFunc(func() { close(release) })
+
 	probe := func(ctx context.Context, req dbsql.ExecuteStatementRequest) (*dbsql.StatementResponse, error) {
-		n := inFlight.Add(1)
-		for {
-			cur := peak.Load()
-			if n <= cur || peak.CompareAndSwap(cur, n) {
-				break
-			}
+		if dispatched.Add(1) == numProbes {
+			closeRelease()
 		}
-		time.Sleep(50 * time.Millisecond)
-		inFlight.Add(-1)
+		select {
+		case <-release:
+		case <-time.After(2 * time.Second):
+			return nil, errors.New("probe timeout: not running concurrently")
+		}
 		return &dbsql.StatementResponse{
-			StatementId: "stmt-probe",
+			StatementId: "stmt-probe-" + req.Statement[:7],
 			Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
 			Manifest:    &dbsql.ResultManifest{Schema: &dbsql.ResultSchema{Columns: []dbsql.ColumnInfo{{Name: "x"}}}},
 			Result:      &dbsql.ResultData{DataArray: [][]string{{"0"}}},
@@ -163,10 +191,12 @@ func TestDiscoverTableRunsSampleAndNullsInParallel(t *testing.T) {
 	})).RunAndReturn(probe).Once()
 
 	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
-	out, err := discoverTable(ctx, w, "wh-1", "main.public.orders")
-	require.NoError(t, err)
+	gate := newSQLGate(8)
 
-	assert.GreaterOrEqual(t, peak.Load(), int32(2), "sample and null-count probes should run concurrently")
+	out, err := discoverTable(ctx, gate, w, "wh-1", "main.public.orders")
+	require.NoError(t, err)
+	assert.Equal(t, int32(numProbes), dispatched.Load(), "both probes should have entered concurrently")
+	assert.NotContains(t, out, "Error - ", "no probe should have surfaced an error")
 	assert.Contains(t, out, "COLUMNS:")
 	assert.Contains(t, out, "SAMPLE DATA:")
 	assert.Contains(t, out, "NULL COUNTS:")
@@ -204,12 +234,36 @@ func TestDiscoverTableSampleErrorDoesNotAbortNullCounts(t *testing.T) {
 	}, nil).Once()
 
 	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
-	out, err := discoverTable(ctx, w, "wh-1", "main.public.orders")
+	gate := newSQLGate(8)
+
+	out, err := discoverTable(ctx, gate, w, "wh-1", "main.public.orders")
 	require.NoError(t, err)
 	assert.Contains(t, out, "SAMPLE DATA: Error - ")
 	assert.Contains(t, out, "permission denied")
 	assert.Contains(t, out, "NULL COUNTS:")
 	assert.Contains(t, out, "total_rows: 100")
+}
+
+func TestCancelDiscoverInFlightCallsAPIPerID(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	for _, id := range []string{"stmt-a", "stmt-b", "stmt-c"} {
+		mockAPI.EXPECT().CancelExecution(mock.Anything, dbsql.CancelExecutionRequest{
+			StatementId: id,
+		}).Return(nil).Once()
+	}
+
+	cancelDiscoverInFlight(ctx, mockAPI, []string{"stmt-a", "stmt-b", "stmt-c"})
+}
+
+func TestCancelDiscoverInFlightHandlesEmptyList(t *testing.T) {
+	// Empty list = no API calls. Mock asserts (via t.Cleanup) that nothing
+	// unexpected happens.
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	cancelDiscoverInFlight(ctx, mockAPI, nil)
 }
 
 func TestDiscoverSchemaConcurrencyZeroRejected(t *testing.T) {
@@ -226,11 +280,20 @@ func TestDiscoverSchemaConcurrencyNegativeRejected(t *testing.T) {
 	require.ErrorIs(t, err, errInvalidBatchConcurrency)
 }
 
-func TestDiscoverSchemaInvalidTableNameRejected(t *testing.T) {
+func TestDiscoverSchemaInvalidTableNameRejectedBeforeWorkspaceClient(t *testing.T) {
+	// PreRunE rejects malformed identifiers before MustWorkspaceClient runs,
+	// so the test passes without any workspace mocking.
 	cmd := newDiscoverSchemaCmd()
-	cmd.PreRunE = nil // skip workspace client requirement
 	cmd.SetArgs([]string{"not-three-parts"})
 	err := cmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "expected CATALOG.SCHEMA.TABLE")
+}
+
+func TestDiscoverSchemaInjectionAttemptRejected(t *testing.T) {
+	cmd := newDiscoverSchemaCmd()
+	cmd.SetArgs([]string{"a;DROP--.b.c"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid SQL identifier")
 }
