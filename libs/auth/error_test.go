@@ -228,20 +228,20 @@ func TestEnrichAuthError(t *testing.T) {
 				"\n  - Consider setting up a profile: databricks auth login --profile <name>",
 		},
 		{
-			name: "401 with unified host and no profile",
+			name: "401 with unified host (resolved DiscoveryURL) and no profile",
 			cfg: &config.Config{
-				Host:                       "https://unified.cloud.databricks.com",
-				AccountID:                  "acc-123",
-				WorkspaceID:                "ws-456",
-				AuthType:                   AuthTypeDatabricksCli,
-				Experimental_IsUnifiedHost: true,
+				Host:         "https://unified.cloud.databricks.com",
+				AccountID:    "acc-123",
+				WorkspaceID:  "ws-456",
+				AuthType:     AuthTypeDatabricksCli,
+				DiscoveryURL: "https://unified.cloud.databricks.com/oidc/accounts/acc-123/.well-known/oauth-authorization-server",
 			},
 			statusCode: 401,
 			wantMsg: "test error message\n" +
 				"\nHost:      https://unified.cloud.databricks.com" +
 				"\nAuth type: OAuth (databricks-cli)" +
 				"\n\nNext steps:" +
-				"\n  - Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123 --experimental-is-unified-host" +
+				"\n  - Re-authenticate: databricks auth login --host https://unified.cloud.databricks.com --account-id acc-123" +
 				"\n  - Check your identity: databricks auth describe" +
 				"\n  - Consider setting up a profile: databricks auth login --profile <name>",
 		},
