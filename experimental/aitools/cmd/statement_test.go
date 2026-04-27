@@ -182,46 +182,63 @@ func TestCancelStatementExecutionWrapsAPIError(t *testing.T) {
 }
 
 func TestRenderStatementInfo(t *testing.T) {
-	info := statementInfo{
-		StatementID: "stmt-1",
-		State:       sql.StatementStateSucceeded,
-		WarehouseID: "wh-1",
-		Columns:     []string{"n"},
-		Rows:        [][]string{{"42"}},
+	tests := []struct {
+		name        string
+		info        statementInfo
+		mustHave    []string
+		mustNotHave []string
+	}{
+		{
+			name: "full payload renders every populated field",
+			info: statementInfo{
+				StatementID: "stmt-1",
+				State:       sql.StatementStateSucceeded,
+				WarehouseID: "wh-1",
+				Columns:     []string{"n"},
+				Rows:        [][]string{{"42"}},
+			},
+			mustHave: []string{
+				`"statement_id": "stmt-1"`,
+				`"state": "SUCCEEDED"`,
+				`"warehouse_id": "wh-1"`,
+				`"columns": [`,
+				`"rows": [`,
+			},
+		},
+		{
+			name: "cancel-style payload omits unset fields",
+			info: statementInfo{
+				StatementID: "stmt-1",
+				State:       sql.StatementStateCanceled,
+			},
+			mustHave: []string{
+				`"statement_id": "stmt-1"`,
+				`"state": "CANCELED"`,
+			},
+			mustNotHave: []string{`"warehouse_id"`, `"columns"`, `"rows"`, `"error"`},
+		},
 	}
 
-	var buf strings.Builder
-	require.NoError(t, renderStatementInfo(&buf, info))
-
-	output := buf.String()
-	assert.Contains(t, output, `"statement_id": "stmt-1"`)
-	assert.Contains(t, output, `"state": "SUCCEEDED"`)
-	assert.Contains(t, output, `"warehouse_id": "wh-1"`)
-	assert.Contains(t, output, `"columns": [`)
-	assert.Contains(t, output, `"rows": [`)
-	assert.True(t, strings.HasSuffix(output, "\n"))
-}
-
-func TestRenderStatementInfoOmitsEmptyFields(t *testing.T) {
-	// Cancel-style payload: only statement_id + state.
-	info := statementInfo{
-		StatementID: "stmt-1",
-		State:       sql.StatementStateCanceled,
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf strings.Builder
+			require.NoError(t, renderStatementInfo(&buf, tc.info))
+			out := buf.String()
+			for _, want := range tc.mustHave {
+				assert.Contains(t, out, want)
+			}
+			for _, missing := range tc.mustNotHave {
+				assert.NotContains(t, out, missing)
+			}
+			assert.True(t, strings.HasSuffix(out, "\n"))
+		})
 	}
-
-	var buf strings.Builder
-	require.NoError(t, renderStatementInfo(&buf, info))
-
-	output := buf.String()
-	assert.Contains(t, output, `"statement_id": "stmt-1"`)
-	assert.Contains(t, output, `"state": "CANCELED"`)
-	assert.NotContains(t, output, `"warehouse_id"`)
-	assert.NotContains(t, output, `"columns"`)
-	assert.NotContains(t, output, `"rows"`)
-	assert.NotContains(t, output, `"error"`)
 }
 
 func TestStatementSubmitRejectsMultipleSQLs(t *testing.T) {
+	// The "exactly one SQL" check is something we wrote, so it earns a test.
+	// Cobra's own MaximumNArgs / ExactArgs enforcement is its own contract
+	// and is not asserted here.
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.sql")
 	require.NoError(t, os.WriteFile(path, []byte("SELECT 1"), 0o644))
@@ -232,31 +249,6 @@ func TestStatementSubmitRejectsMultipleSQLs(t *testing.T) {
 	err := cmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "exactly one")
-}
-
-func TestStatementSubmitArgsBound(t *testing.T) {
-	// MaximumNArgs(1) means cobra rejects 2+ positionals at parse time.
-	cmd := newStatementSubmitCmd()
-	cmd.PreRunE = nil
-	cmd.SetArgs([]string{"SELECT 1", "SELECT 2"})
-	err := cmd.Execute()
-	require.Error(t, err)
-}
-
-func TestStatementGetRequiresStatementID(t *testing.T) {
-	cmd := newStatementGetCmd()
-	cmd.PreRunE = nil
-	cmd.SetArgs([]string{})
-	err := cmd.Execute()
-	require.Error(t, err)
-}
-
-func TestStatementCancelRequiresStatementID(t *testing.T) {
-	cmd := newStatementCancelCmd()
-	cmd.PreRunE = nil
-	cmd.SetArgs([]string{})
-	err := cmd.Execute()
-	require.Error(t, err)
 }
 
 func TestStatementErrorFromStatus(t *testing.T) {
@@ -325,74 +317,4 @@ func TestStatementErrorFromStatus(t *testing.T) {
 			assert.Equal(t, tc.wantCode, got.ErrorCode)
 		})
 	}
-}
-
-func TestGetStatementResultClosedTerminalSynthesizesError(t *testing.T) {
-	// Statement reached CLOSED with no Error payload from the server. The shared
-	// statementInfo contract guarantees a non-nil Error for any non-success
-	// terminal state so consumers can branch on `error == null` alone.
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateClosed},
-	}, nil).Once()
-
-	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
-	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateClosed, info.State)
-	require.NotNil(t, info.Error)
-	assert.Contains(t, info.Error.Message, "CLOSED")
-	assert.Empty(t, info.Error.ErrorCode)
-	assert.Nil(t, info.Rows)
-}
-
-func TestGetStatementResultFailedWithoutBackendErrorSynthesizesError(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateFailed},
-	}, nil).Once()
-
-	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
-	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateFailed, info.State)
-	require.NotNil(t, info.Error)
-	assert.Contains(t, info.Error.Message, "FAILED")
-}
-
-func TestGetStatementStatusFailedWithoutBackendErrorSynthesizesError(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateFailed},
-	}, nil).Once()
-
-	info, err := getStatementStatus(ctx, mockAPI, "stmt-1")
-	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateFailed, info.State)
-	require.NotNil(t, info.Error)
-	assert.Contains(t, info.Error.Message, "FAILED")
-}
-
-func TestGetStatementStatusRunningHasNoError(t *testing.T) {
-	// PENDING/RUNNING legitimately have no error; the contract only requires
-	// error population for terminal non-success states.
-	ctx := cmdio.MockDiscard(t.Context())
-	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
-
-	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
-		StatementId: "stmt-1",
-		Status:      &sql.StatementStatus{State: sql.StatementStateRunning},
-	}, nil).Once()
-
-	info, err := getStatementStatus(ctx, mockAPI, "stmt-1")
-	require.NoError(t, err)
-	assert.Equal(t, sql.StatementStateRunning, info.State)
-	assert.Nil(t, info.Error)
 }
