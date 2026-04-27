@@ -70,9 +70,8 @@ var (
 
 // Stability tier styles, applied to the parenthetical suffix in plugin labels.
 var (
-	stabilityExperimentalStyle = lipgloss.NewStyle().Foreground(colorOrange)
-	stabilityPreviewStyle      = lipgloss.NewStyle().Foreground(colorYellow)
-	stabilityUnknownStyle      = lipgloss.NewStyle().Foreground(colorGray)
+	stabilityBetaStyle    = lipgloss.NewStyle().Foreground(colorYellow)
+	stabilityUnknownStyle = lipgloss.NewStyle().Foreground(colorGray)
 )
 
 // RenderStabilityTier renders a stability tier as a colored " (tier)" suffix,
@@ -84,10 +83,8 @@ func RenderStabilityTier(tier string) string {
 	}
 	var style lipgloss.Style
 	switch tier {
-	case "experimental":
-		style = stabilityExperimentalStyle
-	case "preview":
-		style = stabilityPreviewStyle
+	case "beta":
+		style = stabilityBetaStyle
 	default:
 		style = stabilityUnknownStyle
 	}

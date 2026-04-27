@@ -23,7 +23,7 @@ func TestLoad(t *testing.T) {
 				"displayName": "Analytics Plugin",
 				"description": "SQL query execution",
 				"package": "@databricks/appkit",
-				"stability": "preview",
+				"stability": "beta",
 				"resources": {
 					"required": [
 						{
@@ -45,7 +45,7 @@ func TestLoad(t *testing.T) {
 				"displayName": "Genie Plugin",
 				"description": "Genie space integration",
 				"package": "@databricks/appkit",
-				"stability": "experimental",
+				"stability": "alpha",
 				"resources": {
 					"required": [],
 					"optional": []
@@ -75,8 +75,8 @@ func TestLoad(t *testing.T) {
 	assert.Len(t, m.Plugins, 3)
 	assert.True(t, m.Plugins["server"].RequiredByTemplate)
 	assert.False(t, m.Plugins["analytics"].RequiredByTemplate)
-	assert.Equal(t, "preview", m.Plugins["analytics"].Stability)
-	assert.Equal(t, "experimental", m.Plugins["genie"].Stability)
+	assert.Equal(t, "beta", m.Plugins["analytics"].Stability)
+	assert.Equal(t, "alpha", m.Plugins["genie"].Stability)
 	assert.Equal(t, "stable", m.Plugins["server"].Stability)
 }
 
@@ -87,8 +87,7 @@ func TestPlugin_StabilityLabel(t *testing.T) {
 	}{
 		{"", ""},
 		{"stable", ""},
-		{"preview", "preview"},
-		{"experimental", "experimental"},
+		{"beta", "beta"},
 		{"alpha", "alpha"},
 	}
 	for _, tc := range tests {

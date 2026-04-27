@@ -77,7 +77,7 @@ type Plugin struct {
 	Resources          Resources `json:"resources"`
 	OnSetupMessage     string    `json:"onSetupMessage"`
 
-	// Stability is one of "experimental", "preview", "stable", or empty.
+	// Stability is one of "beta", "stable", or empty.
 	// Stored as a plain string so unknown future values round-trip unchanged.
 	// See https://github.com/databricks/appkit/pull/264.
 	Stability string `json:"stability,omitempty"`

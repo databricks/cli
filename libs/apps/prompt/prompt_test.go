@@ -318,8 +318,7 @@ func TestRenderStabilityTier(t *testing.T) {
 		wantSubstr string
 	}{
 		{"", true, ""},
-		{"experimental", false, "(experimental)"},
-		{"preview", false, "(preview)"},
+		{"beta", false, "(beta)"},
 		{"alpha", false, "(alpha)"},
 	}
 	for _, tc := range tests {
