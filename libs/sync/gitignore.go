@@ -18,6 +18,7 @@ func WriteGitIgnore(ctx context.Context, dir string) {
 			return
 		}
 		log.Debugf(ctx, "Failed to create %s: %s", gitignorePath, err)
+		return
 	}
 
 	defer file.Close()

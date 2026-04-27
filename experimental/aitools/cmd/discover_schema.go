@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
@@ -15,6 +16,8 @@ import (
 	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
+
+var sqlIdentifierRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 func newDiscoverSchemaCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -37,11 +40,10 @@ For each table, returns:
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 
-			// validate table names
+			// validate table names: each part must be a safe SQL identifier
 			for _, table := range args {
-				parts := strings.Split(table, ".")
-				if len(parts) != 3 {
-					return fmt.Errorf("invalid table format %q: expected CATALOG.SCHEMA.TABLE", table)
+				if _, err := quoteTableName(table); err != nil {
+					return err
 				}
 			}
 
@@ -94,8 +96,13 @@ For each table, returns:
 func discoverTable(ctx context.Context, w *databricks.WorkspaceClient, warehouseID, table string) (string, error) {
 	var sb strings.Builder
 
+	quoted, err := quoteTableName(table)
+	if err != nil {
+		return "", err
+	}
+
 	// 1. describe table - get columns and types
-	describeSQL := "DESCRIBE TABLE " + table
+	describeSQL := "DESCRIBE TABLE " + quoted
 	descResp, err := executeSQL(ctx, w, warehouseID, describeSQL)
 	if err != nil {
 		return "", fmt.Errorf("describe table: %w", err)
@@ -112,7 +119,7 @@ func discoverTable(ctx context.Context, w *databricks.WorkspaceClient, warehouse
 	}
 
 	// 2. sample data (5 rows)
-	sampleSQL := fmt.Sprintf("SELECT * FROM %s LIMIT 5", table)
+	sampleSQL := fmt.Sprintf("SELECT * FROM %s LIMIT 5", quoted)
 	sampleResp, err := executeSQL(ctx, w, warehouseID, sampleSQL)
 	if err != nil {
 		fmt.Fprintf(&sb, "\nSAMPLE DATA: Error - %v\n", err)
@@ -127,7 +134,7 @@ func discoverTable(ctx context.Context, w *databricks.WorkspaceClient, warehouse
 		nullCountExprs[i] = fmt.Sprintf("SUM(CASE WHEN `%s` IS NULL THEN 1 ELSE 0 END) AS `%s_nulls`", col, col)
 	}
 	nullSQL := fmt.Sprintf("SELECT COUNT(*) AS total_rows, %s FROM %s",
-		strings.Join(nullCountExprs, ", "), table)
+		strings.Join(nullCountExprs, ", "), quoted)
 
 	nullResp, err := executeSQL(ctx, w, warehouseID, nullSQL)
 	if err != nil {
@@ -230,4 +237,18 @@ func formatNullCounts(resp *dbsql.StatementResponse, columns []string) string {
 	}
 
 	return sb.String()
+}
+
+// quoteTableName validates and backtick-quotes a CATALOG.SCHEMA.TABLE identifier.
+func quoteTableName(table string) (string, error) {
+	parts := strings.Split(table, ".")
+	if len(parts) != 3 {
+		return "", fmt.Errorf("invalid table format %q: expected CATALOG.SCHEMA.TABLE", table)
+	}
+	for _, part := range parts {
+		if !sqlIdentifierRe.MatchString(part) {
+			return "", fmt.Errorf("invalid SQL identifier %q in table name %q", part, table)
+		}
+	}
+	return fmt.Sprintf("`%s`.`%s`.`%s`", parts[0], parts[1], parts[2]), nil
 }
