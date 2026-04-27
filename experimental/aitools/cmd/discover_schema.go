@@ -46,6 +46,13 @@ func newSQLGate(limit int) *sqlGate {
 // cancelled. Acquires a slot from the gate before submitting and releases it
 // when polling completes (or the caller's context is cancelled).
 func (g *sqlGate) run(ctx context.Context, w *databricks.WorkspaceClient, warehouseID, statement string) (*dbsql.StatementResponse, error) {
+	// If the caller cancelled before we even tried, don't enter the select:
+	// when the gate has free slots both cases are ready and Go picks one
+	// pseudo-randomly. Without this early-out we'd occasionally submit a
+	// statement under a cancelled context.
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	select {
 	case g.sem <- struct{}{}:
 		defer func() { <-g.sem }()
