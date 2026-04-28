@@ -12,7 +12,6 @@
 
 
 ### Bundles
-* Fix float precision loss when parsing number-type template variables during `bundle init` (denik/random-bugfixes-3)
 
 * Translate relative paths in `alert_task.workspace_path` on job tasks to fully qualified workspace paths, matching the behavior of other task path fields. Applies to both regular tasks and `for_each_task` nested tasks ([#4836](https://github.com/databricks/cli/pull/4836)).
 
