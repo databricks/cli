@@ -21,7 +21,7 @@ on:
       - go.mod
       - go.sum
   schedule:
-    - cron: '0 6 * * *'  # Daily — prevents 7-day GitHub cache eviction
+    - cron: '0 6 * * *' # Daily — prevents 7-day GitHub cache eviction
   workflow_dispatch:
     inputs:
       pr_number:

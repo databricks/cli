@@ -677,35 +677,3 @@ jobs:
                 summary: '⏭️ Skipped (dependabot PR)'
               }
             });
-
-  # Skip integration tests for fork PRs.
-  # Fork PRs cannot access the "test-trigger-is" environment secrets (OIDC
-  # tokens are unavailable), so we use the built-in GITHUB_TOKEN to mark the
-  # required "Integration Tests" check as passed.
-  integration-trigger-fork:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.fork
-
-    runs-on: ubuntu-latest
-
-    permissions:
-      checks: write
-
-    steps:
-      - name: Skip integration tests (fork PR)
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |-
-            await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: 'Integration Tests',
-              head_sha: '${{ github.event.pull_request.head.sha }}',
-              status: 'completed',
-              conclusion: 'success',
-              output: {
-                title: 'Integration Tests',
-                summary: '⏭️ Skipped (fork PR)'
-              }
-            });
