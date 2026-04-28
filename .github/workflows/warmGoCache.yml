@@ -1,0 +1,85 @@
+name: Warm Go Module Cache
+
+# Pre-warms the Go module download cache using JFrog as the proxy.
+# Fork PRs cannot mint OIDC tokens, so they cannot authenticate to JFrog directly.
+# Instead, they restore this pre-warmed cache and use Go's file:// proxy in offline
+# mode, which reads the same proxy-format layout that 'go mod download' writes.
+#
+# Cache is OS-scoped in GitHub Actions, so this job runs on Linux only because
+# fork test jobs also run on Linux (ubuntu-latest).
+#
+# Gotcha — fork PR with new Go dependency:
+#   CI fails because the new module is not in the cache.
+#   Fix: Actions → Warm Go Module Cache → Run workflow → pr_number = <N>
+#   The warmer fetches go.mod/go.sum from the fork (no source code) and rebuilds
+#   the cache. Re-run the fork PR's CI after the warmer completes.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - go.mod
+      - go.sum
+  schedule:
+    - cron: '0 6 * * *'  # Daily — prevents 7-day GitHub cache eviction
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Fork PR number to fetch go.mod/go.sum from. Leave empty to use main.'
+        required: false
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  warm-cache:
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Sparse-checkout of go.mod/go.sum from the fork PR (no source code).
+      # This lets the warmer download any new dependencies the fork PR introduces
+      # without executing untrusted code from the fork.
+      - name: Fetch go.mod and go.sum from fork PR
+        if: inputs.pr_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_JSON=$(gh pr view ${{ inputs.pr_number }} \
+            --json headRepositoryOwner,headRepository,headRefName)
+          OWNER=$(echo "$PR_JSON" | jq -r '.headRepositoryOwner.login')
+          REPO=$(echo "$PR_JSON" | jq -r '.headRepository.name')
+          BRANCH=$(echo "$PR_JSON" | jq -r '.headRefName')
+          git fetch "https://github.com/${OWNER}/${REPO}.git" "${BRANCH}"
+          git checkout FETCH_HEAD -- go.mod go.sum
+
+      - name: Setup JFrog
+        uses: ./.github/actions/setup-jfrog
+
+      # Disable setup-go's built-in caching — the warmer is the sole cache writer.
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # Download all modules (direct + indirect + test deps) through JFrog.
+      # This populates ~/go/pkg/mod/cache/download in Go's proxy wire format,
+      # which is what GOPROXY=file:// reads in fork PR runs.
+      - name: Download all Go module dependencies via JFrog
+        run: go mod download all
+
+      - name: Save Go module cache
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/go/pkg/mod/cache/download
+          # Timestamp suffix makes the key unique so GitHub never rejects it as
+          # an immutable duplicate. restore-keys in fork runs prefix-match to
+          # find the latest cache for the current go.sum hash.
+          key: go-modules-${{ runner.os }}-${{ hashFiles('go.sum') }}-${{ github.run_id }}
