@@ -101,7 +101,7 @@ jobs:
 
       - name: Update latest multi-arch manifest
         if: inputs.update_latest
-        run: |
+        run: |-
           docker buildx imagetools create \
             --tag ghcr.io/databricks/cli:latest-amd64 \
             "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-amd64"
