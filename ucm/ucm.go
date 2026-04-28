@@ -43,6 +43,17 @@ type Ucm struct {
 	// mutator applies.
 	CurrentUser *config.User
 
+	// AutoApprove mirrors --auto-approve. Set by verb InitFuncs and read by
+	// the verb body to populate phases.Options.AutoApprove. Bundle parity:
+	// bundle.Bundle has the same field at the same level.
+	AutoApprove bool
+
+	// ForceLock mirrors --force-lock. Set by verb InitFuncs and read by the
+	// verb body to populate phases.Options.ForceLock. Bundle's equivalent
+	// lives at b.Config.Bundle.Deployment.Lock.Force; ucm has no Deployment
+	// config block today, so the field lives directly on Ucm.
+	ForceLock bool
+
 	// getClient memoizes the workspace client built from Config.Workspace.
 	// Initialized lazily by WorkspaceClientE via initClientOnce.
 	getClient func() (*databricks.WorkspaceClient, error)
