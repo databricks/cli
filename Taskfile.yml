@@ -327,7 +327,6 @@ tasks:
 
   snapshot:
     desc: Build snapshot binary to .databricks/databricks
-    deps: ['tidy-root']
     sources: *BUILD_SOURCES
     generates:
       - .databricks/databricks
@@ -336,7 +335,6 @@ tasks:
 
   snapshot-release:
     desc: Build release binaries locally without uploading
-    deps: ['tidy-root']
     # Same as BUILD_SOURCES + .goreleaser.yaml (list concat is not expressible
     # via YAML anchor alone, so the shared block is duplicated here).
     sources:
