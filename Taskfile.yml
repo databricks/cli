@@ -34,6 +34,7 @@ includes:
     taskfile: ./python/Taskfile.yml
     dir: ./python
     flatten: true
+    excludes: [default]
 
 tasks:
   default:
@@ -43,6 +44,8 @@ tasks:
       - task: fmt-q
       - task: lint-q
       - task: test-unit
+      # test-update regenerates golden files so the loop ends with a clean tree
+      # rather than a diff. Intentional: the loop is for local development, not CI.
       - task: test-update
 
   full:
@@ -52,6 +55,7 @@ tasks:
       - task: fmt
       - task: lint
       - task: test-unit
+      # See comment in `default` above.
       - task: test-update
 
   all:
@@ -728,6 +732,8 @@ tasks:
     sources:
       - .codegen/_openapi_sha
       - .gitattributes.manual
+      - go.mod
+      - go.sum
     vars:
       UNIVERSE_DIR:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"

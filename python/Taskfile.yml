@@ -13,6 +13,13 @@ env:
   TASK_NAME: '{{.TASK}}'
 
 tasks:
+  default:
+    desc: Quick dev loop (format, lint, test)
+    cmds:
+      - task: pydabs-fmt
+      - task: pydabs-lint
+      - task: pydabs-test
+
   pydabs-test:
     desc: Run pydabs tests
     sources:

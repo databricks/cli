@@ -23,6 +23,9 @@ var commonTriggerPatterns = []string{
 	"go.mod",
 	"go.sum",
 	".github/actions/setup-build-environment/",
+	"Taskfile.yml",
+	"task",
+	"tools/task/",
 }
 
 type targetMapping struct {

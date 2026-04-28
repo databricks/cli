@@ -153,7 +153,7 @@ jobs:
         shell: bash
         run: |
           if ! git diff --exit-code; then
-            echo "ERROR: detected changed files in the repository; Most likely you have out.test.toml files that are out of date. Run './task generate-out-test-toml' to update."
+            echo "ERROR: detected changed files in the repository; Most likely you have out.test.toml files that are out of date. Run 'go test ./acceptance -run \"^TestAccept$\" -only-out-test-toml' to update."
             exit 1
           fi
 
