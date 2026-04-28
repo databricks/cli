@@ -490,6 +490,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var resourceValues map[string]string
 	var shouldDeploy bool
 	isInteractive := opts.interactive && cmdio.IsPromptSupported(ctx)
+	if opts.interactive && !cmdio.IsPromptSupported(ctx) {
+		return fmt.Errorf("interactive mode requested but the terminal does not support prompts; pass --interactive=false to use defaults, or run in an interactive terminal")
+	}
 
 	// Use plugins from flags if provided
 	if len(opts.plugins) > 0 {
@@ -650,24 +653,25 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
-	// In non-interactive mode, validate that all required resources are provided.
-	if !isInteractive {
-		resources := m.CollectResources(selectedPlugins)
-		for _, r := range resources {
-			found := false
-			for k := range resourceValues {
-				if strings.HasPrefix(k, r.Key()+".") {
-					found = true
-					break
-				}
+	// Validate that all required resources have non-empty values. Runs in both
+	// modes: interactive prompts may have been skipped (e.g. --plugins preselected
+	// without --features), and an empty --set value would otherwise pass the
+	// prefix check.
+	resources := m.CollectResources(selectedPlugins)
+	for _, r := range resources {
+		found := false
+		for k, v := range resourceValues {
+			if strings.HasPrefix(k, r.Key()+".") && v != "" {
+				found = true
+				break
 			}
-			if !found {
-				fieldHint := "id"
-				if names := r.FieldNames(); len(names) > 0 {
-					fieldHint = names[0]
-				}
-				return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s=value)", r.Alias, r.Key(), fieldHint)
+		}
+		if !found {
+			fieldHint := "id"
+			if names := r.FieldNames(); len(names) > 0 {
+				fieldHint = names[0]
 			}
+			return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s=value)", r.Alias, r.Key(), fieldHint)
 		}
 	}
 
@@ -842,20 +846,23 @@ func runPostCreateDeploy(ctx context.Context, profile string) error {
 const defaultProjectName = "my-app"
 
 // generateProjectName returns a unique project name by appending a numeric
-// suffix when the base name directory already exists.
+// suffix when the base name directory already exists. Only os.ErrNotExist
+// is treated as "available"; other errors (e.g. permission denied) advance to
+// the next candidate so we don't pick a name that may collide with an
+// inaccessible directory.
 func generateProjectName(outputDir string) string {
 	candidate := defaultProjectName
-	for i := 1; ; i++ {
+	for i := 1; i <= 1000; i++ {
 		dir := candidate
 		if outputDir != "" {
 			dir = filepath.Join(outputDir, candidate)
 		}
-		if _, err := os.Stat(dir); err != nil {
-			// Directory doesn't exist (or can't be checked) — use this name.
+		if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
 			return candidate
 		}
 		candidate = fmt.Sprintf("%s-%d", defaultProjectName, i)
 	}
+	return candidate
 }
 
 // appendUnique appends values to a slice, skipping duplicates.
