@@ -743,6 +743,14 @@ func runTest(t *testing.T,
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
+	// On script timeout the test directory holds partial state: the script was
+	// killed mid-run, so any "out.*" files (e.g. out.requests.txt) reflect an
+	// incomplete recording, and output.txt has only the prefix that streamed
+	// before the kill. Suppress OverwriteMode so `make test-update` does not
+	// taint committed reference files with this partial state.
+	timedOut := errors.Is(err, errScriptTimedOut)
+	overwrite := testdiff.OverwriteMode && !timedOut
+
 	loadUserReplacements(t, &repls, tmpDir)
 
 	printedRepls := false
@@ -755,7 +763,14 @@ func runTest(t *testing.T,
 			continue
 		}
 
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, overwrite)
+	}
+
+	// On timeout, partial files left over by the killed script (e.g.
+	// out.requests.txt) should not be reported as unexpected nor written out;
+	// the timeout is the only failure that matters.
+	if timedOut {
+		return
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -789,7 +804,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, overwrite)
 		}
 	}
 
@@ -862,7 +877,7 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool, overwrite bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -884,7 +899,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	// The test did not produce an expected output file.
 	if okRef && !okNew {
 		t.Errorf("Missing output file: %s", relPath)
-		if testdiff.OverwriteMode {
+		if overwrite {
 			t.Logf("Removing output file: %s", relPath)
 			require.NoError(t, os.Remove(pathRef))
 		}
@@ -897,7 +912,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 		if shouldShowDiff(pathNew, valueNew) {
 			testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
 		}
-		if testdiff.OverwriteMode {
+		if overwrite {
 			t.Logf("Writing output file: %s", relPath)
 			testutil.WriteFile(t, pathRef, valueNew)
 		}
@@ -906,7 +921,7 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 
 	// Compare the reference and new values.
 	equal := testdiff.AssertEqualTexts(t, pathRef, pathNew, valueRef, valueNew)
-	if !equal && testdiff.OverwriteMode {
+	if !equal && overwrite {
 		t.Logf("Overwriting existing output file: %s", relPath)
 		testutil.WriteFile(t, pathRef, valueNew)
 	}
@@ -1343,6 +1358,24 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
+// errScriptTimedOut is returned when a test script is killed because it exceeded its timeout.
+// Callers can match it with errors.Is to suppress destructive side effects
+// (e.g. overwriting committed outputs with partial results).
+var errScriptTimedOut = errors.New("test script killed due to a timeout")
+
+// scriptTimeoutError carries the timeout duration for the user-facing message
+// while wrapping errScriptTimedOut so that errors.Is matches without the
+// sentinel's text appearing in the formatted output.
+type scriptTimeoutError struct {
+	timeout time.Duration
+}
+
+func (e scriptTimeoutError) Error() string {
+	return fmt.Sprintf("Test script killed due to a timeout (%s)", e.timeout)
+}
+
+func (scriptTimeoutError) Unwrap() error { return errScriptTimedOut }
+
 func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout time.Duration) (string, error) {
 	r, w := io.Pipe()
 	cmd.Stdout = w
@@ -1350,7 +1383,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout ti
 	processErrCh := make(chan error, 1)
 
 	cmd.Cancel = func() error {
-		processErrCh <- fmt.Errorf("Test script killed due to a timeout (%s)", timeout)
+		processErrCh <- scriptTimeoutError{timeout: timeout}
 		_ = cmd.Process.Kill()
 		_ = w.Close()
 		return nil
