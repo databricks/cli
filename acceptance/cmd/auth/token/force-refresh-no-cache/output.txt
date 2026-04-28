@@ -2,7 +2,7 @@ Error: cache: databricks OAuth is not configured for this host.
 
 To reauthenticate, run the following command:
 
-  $ databricks auth login --profile test-profile
+  $ databricks auth login --profile test-profile --workspace-id [NUMID]
 
 If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new
 

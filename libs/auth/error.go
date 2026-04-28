@@ -54,18 +54,19 @@ func AuthTypeDisplayName(authType string) string {
 
 // RewriteAuthError rewrites the error message for invalid refresh token error.
 // It returns whether the error was rewritten and the rewritten error.
-func RewriteAuthError(ctx context.Context, host, accountId, profile string, err error) (bool, error) {
+func RewriteAuthError(ctx context.Context, host, accountId, workspaceId, profile string, err error) (bool, error) {
 	target := &u2m.InvalidRefreshTokenError{}
 	if errors.As(err, &target) {
 		oauthArgument, err := AuthArguments{
-			Host:      host,
-			AccountID: accountId,
+			Host:        host,
+			AccountID:   accountId,
+			WorkspaceID: workspaceId,
 		}.ToOAuthArgument()
 		if err != nil {
 			return false, err
 		}
 		msg := `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
-  $ ` + BuildLoginCommand(ctx, profile, oauthArgument)
+  $ ` + BuildLoginCommand(ctx, profile, workspaceId, oauthArgument)
 		return true, errors.New(msg)
 	}
 	return false, err
@@ -134,7 +135,7 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 			fmt.Fprint(b, "\n  - Re-authenticate: databricks auth login")
 			return
 		}
-		fmt.Fprintf(b, "\n  - Re-authenticate: %s", BuildLoginCommand(ctx, "", oauthArg))
+		fmt.Fprintf(b, "\n  - Re-authenticate: %s", BuildLoginCommand(ctx, "", cfg.WorkspaceID, oauthArg))
 
 	case AuthTypePat:
 		if cfg.Profile != "" {
@@ -165,7 +166,12 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 // profile. Each argument is shell-quoted so the rendered command is safe to
 // copy-paste even when host, profile, or account-id values contain spaces or
 // shell metacharacters.
-func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgument) string {
+//
+// workspaceID, when non-empty and not the WorkspaceIDNone sentinel, is
+// emitted as --workspace-id for unified hosts so the suggested reauth
+// targets the same workspace the failing call resolved against (the
+// information the OAuthArgument otherwise drops).
+func BuildLoginCommand(ctx context.Context, profile, workspaceID string, arg u2m.OAuthArgument) string {
 	cmd := []string{
 		"databricks",
 		"auth",
@@ -173,6 +179,9 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 	}
 	if profile != "" {
 		cmd = append(cmd, "--profile", profile)
+		if isExplicitWorkspaceID(workspaceID) {
+			cmd = append(cmd, "--workspace-id", workspaceID)
+		}
 	} else {
 		switch arg := arg.(type) {
 		case u2m.UnifiedOAuthArgument:
@@ -180,6 +189,9 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 			// discovery handles routing, but kept for backward compatibility
 			// until the flag is fully removed.
 			cmd = append(cmd, "--host", arg.GetHost(), "--account-id", arg.GetAccountId(), "--experimental-is-unified-host")
+			if isExplicitWorkspaceID(workspaceID) {
+				cmd = append(cmd, "--workspace-id", workspaceID)
+			}
 		case u2m.AccountOAuthArgument:
 			cmd = append(cmd, "--host", arg.GetAccountHost(), "--account-id", arg.GetAccountId())
 		case u2m.WorkspaceOAuthArgument:
@@ -191,6 +203,13 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 		quoted[i] = shellquote.BashArg(c)
 	}
 	return strings.Join(quoted, " ")
+}
+
+// isExplicitWorkspaceID reports whether workspaceID names a real workspace
+// (not the "none" sentinel persisted to .databrickscfg when the user
+// explicitly skipped workspace selection).
+func isExplicitWorkspaceID(workspaceID string) bool {
+	return workspaceID != "" && workspaceID != WorkspaceIDNone
 }
 
 // BuildDescribeCommand builds the describe command for the given config.
