@@ -566,8 +566,8 @@ func sequenceSiblings(preResolved dyn.Value, candidates []string) ([]dyn.Value, 
 // extractSequenceParent returns the parent path if the candidate ends in an
 // index (either [*] or [N]).
 func extractSequenceParent(candidate string) (string, bool) {
-	if strings.HasSuffix(candidate, "[*]") {
-		return strings.TrimSuffix(candidate, "[*]"), true
+	if before, ok := strings.CutSuffix(candidate, "[*]"); ok {
+		return before, true
 	}
 	if !strings.HasSuffix(candidate, "]") {
 		return "", false
