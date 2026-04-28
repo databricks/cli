@@ -251,6 +251,29 @@ func TestExecuteTemplateInvalidSyntaxReturnsOriginal(t *testing.T) {
 	assert.Equal(t, input, string(result))
 }
 
+// TestExecuteTemplatePluginStability locks down the contract that the
+// AppKit init template relies on: ranging over .plugins exposes a
+// .Stability field per plugin, with stable/unset rendering as the empty
+// string. See databricks/appkit#264 commit d826a532 (server.ts branches
+// imports between `@databricks/appkit` and `@databricks/appkit/beta`).
+func TestExecuteTemplatePluginStability(t *testing.T) {
+	ctx := t.Context()
+	vars := templateVars{
+		Plugins: map[string]*pluginVar{
+			"stable-plugin": {},
+			"beta-plugin":   {Stability: "beta"},
+		},
+	}
+
+	input := `{{range $n, $p := .plugins}}{{$n}}={{$p.Stability}};{{end}}`
+	result, err := executeTemplate(ctx, "server.ts", []byte(input), vars)
+	require.NoError(t, err)
+	got := string(result)
+
+	assert.Contains(t, got, "stable-plugin=;")
+	assert.Contains(t, got, "beta-plugin=beta;")
+}
+
 func TestInitCmdBranchAndVersionMutuallyExclusive(t *testing.T) {
 	cmd := newInitCmd()
 	cmd.PreRunE = nil // skip workspace client setup for flag validation test
