@@ -486,6 +486,11 @@ tasks:
       - go.mod
       - go.sum
       - "{{.EMBED_SOURCES}}"
+    generates:
+      - test-output-acc.json
+      # Materialized test config is rewritten on every run (acceptance_test.go).
+      # Other out.* files are read-only inputs in non-update mode — see test-update.
+      - acceptance/**/out.test.toml
     cmds:
       - |
         {{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum \
@@ -516,18 +521,22 @@ tasks:
       - go.mod
       - go.sum
       - "{{.EMBED_SOURCES}}"
+    generates: &ACC_GENERATES_UPDATE
+      - acceptance/**/out*
     cmds:
       - "{{.SANDBOX_CMD}} go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-30m}"
 
   test-update-templates:
     desc: Update acceptance test template output
     sources: *ACC_SOURCES_UPDATE
+    generates: *ACC_GENERATES_UPDATE
     cmds:
       - "{{.SANDBOX_CMD}} go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-30m}"
 
   test-update-aws:
     desc: Update acceptance test output (integration, requires deco access)
     sources: *ACC_SOURCES_UPDATE
+    generates: *ACC_GENERATES_UPDATE
     cmds:
       - "{{.SANDBOX_CMD}} deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=1 go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
 
