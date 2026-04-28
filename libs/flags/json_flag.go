@@ -113,3 +113,10 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 func (j *JsonFlag) Type() string {
 	return "JSON"
 }
+
+// Raw returns the raw JSON bytes the flag was set to (or nil when the flag
+// was not provided). Exposed so command overrides can do shape-level
+// validation before the generated Unmarshal call.
+func (j *JsonFlag) Raw() []byte {
+	return j.raw
+}
