@@ -4,14 +4,6 @@ version: '3'
 # Taskfile via `includes:` with `flatten: true`, so `./task pydabs-codegen`
 # works from the repo root and `task pydabs-codegen` works from this dir.
 
-vars:
-  # Resolved relative to TASKFILE_DIR (this file's dir) so the same expression
-  # works whether this Taskfile is the root or included from ../Taskfile.yml.
-  SANDBOX_CMD: '{{if eq .SANDBOX "1"}}{{.TASKFILE_DIR}}/../tools/sandboxed_run.py{{else}}{{.SANDBOX}}{{end}}'
-
-env:
-  TASK_NAME: '{{.TASK}}'
-
 tasks:
   default:
     desc: Quick dev loop (format, lint, test)
@@ -29,7 +21,7 @@ tasks:
       - README.md
       - LICENSE
     cmds:
-      - "{{.SANDBOX_CMD}} uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv"
+      - "uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv"
 
   pydabs-lint:
     desc: Run pydabs lint checks
@@ -40,10 +32,10 @@ tasks:
       - README.md
       - LICENSE
     cmds:
-      - "{{.SANDBOX_CMD}} uv lock --check"
-      - "{{.SANDBOX_CMD}} uv run ruff check databricks databricks_tests"
-      - "{{.SANDBOX_CMD}} uv run pyright"
-      - "{{.SANDBOX_CMD}} uv run ruff format --diff databricks databricks_tests"
+      - "uv lock --check"
+      - "uv run ruff check databricks databricks_tests"
+      - "uv run pyright"
+      - "uv run ruff format --diff databricks databricks_tests"
 
   pydabs-fmt:
     desc: Format pydabs code
@@ -66,7 +58,7 @@ tasks:
     generates:
       - docs/_output/**
     cmds:
-      - "{{.SANDBOX_CMD}} uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going"
+      - "uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going"
 
   pydabs-codegen:
     desc: Run pydabs codegen
