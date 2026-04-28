@@ -378,12 +378,12 @@ tasks:
     deps: ['test-unit-root', 'test-unit-tools', 'test-unit-codegen']
     sources:
       - test-output-unit-root.json
-      - test-output-unit-tools.json
-      - test-output-unit-codegen.json
+      - tools/test-output-unit-tools.json
+      - bundle/internal/tf/codegen/test-output-unit-codegen.json
     generates:
       - test-output-unit.json
     cmds:
-      - cat test-output-unit-root.json test-output-unit-tools.json test-output-unit-codegen.json > test-output-unit.json
+      - cat test-output-unit-root.json tools/test-output-unit-tools.json bundle/internal/tf/codegen/test-output-unit-codegen.json > test-output-unit.json
 
   test-unit-root:
     desc: Run unit tests in root module
@@ -406,6 +406,8 @@ tasks:
       - .codegen/_openapi_sha
       # bundle/internal/schema TestRequiredAnnotationsForNewFields reads these.
       - bundle/internal/schema/annotations*.yml
+    generates:
+      - test-output-unit-root.json
     cmds:
       - |
         {{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum \
@@ -426,13 +428,16 @@ tasks:
       # testmask/targets_test.go reads ../../Taskfile.yml
       - ../Taskfile.yml
     generates:
-      - ../test-output-unit-tools.json
+      # Stays inside the task's `dir:` because gotestsum resolves --jsonfile
+      # from each package's binary cwd (not gotestsum's cwd) — `../` paths
+      # land at unpredictable depths. Parent test-unit reads from this path.
+      - test-output-unit-tools.json
     cmds:
       - |
         {{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --jsonfile ../test-output-unit-tools.json \
+          --jsonfile test-output-unit-tools.json \
           --rerun-fails \
           --packages ./... \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
@@ -445,13 +450,14 @@ tasks:
       - go.mod
       - go.sum
     generates:
-      - ../../../test-output-unit-codegen.json
+      # See comment on test-unit-tools' generates.
+      - test-output-unit-codegen.json
     cmds:
       - |
         {{.SANDBOX_CMD}} {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
-          --jsonfile ../../../test-output-unit-codegen.json \
+          --jsonfile test-output-unit-codegen.json \
           --rerun-fails \
           --packages ./... \
           -- -timeout=${LOCAL_TIMEOUT:-30m}
