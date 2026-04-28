@@ -1,6 +1,8 @@
 package ucm
 
 import (
+	"errors"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/databricks/cli/libs/diag"
@@ -48,8 +50,11 @@ Common invocations:
 		// project has errors. Mirrors cmd/bundle/summary.go::showFullConfig
 		// shape: prime the logdiag context, downgrade severity so noisy
 		// recommendations don't crowd the JSON output, then render whatever
-		// ProcessUcm could resolve. Skipping the HasError gate is deliberate
-		// — users debugging a broken ucm.yml need the JSON to inspect.
+		// ProcessUcm could resolve. The render is unconditional so users
+		// debugging a broken ucm.yml can still inspect the JSON, but the
+		// outer HasError gate (mirroring cmd/bundle/summary.go:61) ensures
+		// the process still exits non-zero — important for `ucm summary
+		// --show-full-config | jq ...` in CI scripts.
 		if shouldShowFullConfig {
 			ctx := logdiag.InitContext(cmd.Context())
 			cmd.SetContext(ctx)
@@ -59,13 +64,19 @@ Common invocations:
 				SkipInitContext:  true,
 				IncludeLocations: includeLocations,
 			})
-			if err != nil && err != root.ErrAlreadyPrinted {
+			if err != nil && !errors.Is(err, root.ErrAlreadyPrinted) {
 				return err
 			}
 			if u == nil {
 				return root.ErrAlreadyPrinted
 			}
-			return renderJsonOutput(cmd, u)
+			if err := renderJsonOutput(cmd, u); err != nil {
+				return err
+			}
+			if logdiag.HasError(cmd.Context()) {
+				return root.ErrAlreadyPrinted
+			}
+			return nil
 		}
 
 		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
