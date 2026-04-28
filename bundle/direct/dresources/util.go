@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -40,14 +41,11 @@ func ParsePostgresName(name string) (PostgresNameComponents, error) {
 // This is copied from the retries package of the databricks-sdk-go. It should be made public,
 // but for now, I'm copying it here.
 func shouldRetry(err error) bool {
-	if err == nil {
-		return false
+	var e *retries.Err
+	if errors.As(err, &e) {
+		return !e.Halt
 	}
-	e := err.(*retries.Err)
-	if e == nil {
-		return false
-	}
-	return !e.Halt
+	return false
 }
 
 // collectUpdatePathsWithPrefix extracts field paths from Changes that have action=Update,

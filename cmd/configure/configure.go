@@ -162,9 +162,9 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 			clearKeys = append(clearKeys, "serverless_compute_id")
 		}
 
-		// Clear stale unified-host metadata — PAT profiles don't use it,
+		// Clear stale unified-host metadata, PAT profiles don't use it,
 		// and leaving it can change HostType() routing.
-		clearKeys = append(clearKeys, "experimental_is_unified_host")
+		clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
 
 		err = databrickscfg.SaveToProfile(ctx, &config.Config{
 			Profile:    cfg.Profile,

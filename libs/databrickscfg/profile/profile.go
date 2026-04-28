@@ -14,7 +14,6 @@ type Profile struct {
 	Host                 string
 	AccountID            string
 	WorkspaceID          string
-	IsUnifiedHost        bool
 	ClusterID            string
 	ServerlessComputeID  string
 	HasClientCredentials bool
