@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
@@ -160,7 +161,10 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 	}
 }
 
-// BuildLoginCommand builds the login command for the given OAuth argument or profile.
+// BuildLoginCommand builds the login command for the given OAuth argument or
+// profile. Each argument is shell-quoted so the rendered command is safe to
+// copy-paste even when host, profile, or account-id values contain spaces or
+// shell metacharacters.
 func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgument) string {
 	cmd := []string{
 		"databricks",
@@ -182,7 +186,11 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 			cmd = append(cmd, "--host", arg.GetWorkspaceHost())
 		}
 	}
-	return strings.Join(cmd, " ")
+	quoted := make([]string, len(cmd))
+	for i, c := range cmd {
+		quoted[i] = shellquote.BashArg(c)
+	}
+	return strings.Join(quoted, " ")
 }
 
 // BuildDescribeCommand builds the describe command for the given config.
@@ -191,7 +199,7 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 // automatically.
 func BuildDescribeCommand(cfg *config.Config) string {
 	if cfg.Profile != "" {
-		return "databricks auth describe --profile " + cfg.Profile
+		return "databricks auth describe --profile " + shellquote.BashArg(cfg.Profile)
 	}
 	return "databricks auth describe"
 }
