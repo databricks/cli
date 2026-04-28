@@ -372,6 +372,8 @@ func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 		if aerr.StatusCode == http.StatusNotFound {
 			return nil, fileDoesNotExistError{absPath}
 		}
+
+		return nil, err
 	}
 
 	return stat, nil
