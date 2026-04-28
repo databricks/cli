@@ -1,0 +1,9 @@
+package ucm
+
+import (
+	"github.com/spf13/cobra"
+)
+
+func initVariableFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringSlice("var", []string{}, `set values for variables defined in ucm config. Example: --var="foo=bar"`)
+}
