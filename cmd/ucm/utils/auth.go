@@ -1,8 +1,3 @@
-// TODO(#99): port AccountClient resolution here. v1 ucm
-// design (see cmd/ucm/CLAUDE.md "Auth model") requires both clients,
-// but A.iii.1 ships workspace-only to keep the fork mechanically aligned
-// with bundle's shape.
-
 package utils
 
 import (
@@ -43,11 +38,6 @@ type ErrNoWorkspaceProfiles struct {
 
 func (e ErrNoWorkspaceProfiles) Error() string {
 	return e.path + " does not contain workspace profiles; please create one by running 'databricks auth login'"
-}
-
-func initProfileFlag(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
-	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }
 
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
@@ -102,6 +92,14 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	return w, err
 }
 
+// MustWorkspaceClient resolves a workspace client (with optional ucm.yml
+// auth fields layered on top of profile/env), stores it on the command
+// context, and returns. Used as a Cobra (Persistent)PreRunE hook on ucm
+// verbs that need a live SDK client.
+//
+// TODO(#99): port AccountClient resolution here. v1 ucm design (see
+// cmd/ucm/CLAUDE.md "Auth model") requires both clients, but A.iii.1 ships
+// workspace-only to keep the fork mechanically aligned with bundle's shape.
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	ctx := logdiag.InitContext(cmd.Context())
 	cmd.SetContext(ctx)

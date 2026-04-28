@@ -243,14 +243,17 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 	return slices.Collect(maps.Keys(u.Config.Targets)), cobra.ShellCompDirectiveDefault
 }
 
-func initTargetFlag(cmd *cobra.Command) {
+// InitTargetFlag wires the persistent --target flag and its target-completion
+// shell handler onto cmd.
+func InitTargetFlag(cmd *cobra.Command) {
 	// To operate in the context of a ucm, all commands must take an "target" parameter.
 	cmd.PersistentFlags().StringP("target", "t", "", "ucm target to use (if applicable)")
 	cmd.RegisterFlagCompletionFunc("target", targetCompletion)
 }
 
-// DEPRECATED flag
-func initEnvironmentFlag(cmd *cobra.Command) {
+// InitEnvironmentFlag wires the deprecated --environment flag onto cmd. Kept
+// as a synonym for --target during the DAB→ucm UX migration.
+func InitEnvironmentFlag(cmd *cobra.Command) {
 	// To operate in the context of a ucm, all commands must take an "environment" parameter.
 	cmd.PersistentFlags().StringP("environment", "e", "", "ucm target to use (if applicable)")
 	cmd.PersistentFlags().MarkDeprecated("environment", "use --target flag instead")
