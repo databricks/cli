@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/manifest"
@@ -272,6 +273,144 @@ func TestExecuteTemplatePluginStability(t *testing.T) {
 
 	assert.Contains(t, got, "stable-plugin=;")
 	assert.Contains(t, got, "beta-plugin=beta;")
+}
+
+// TestExecuteTemplateBetaImportAccumulator pins the full text/template
+// pattern used by the AppKit server.ts template (databricks/appkit#264
+// commit 488797fc): a string-accumulator pre-pass over .plugins that
+// reassigns an outer-scope variable inside `range` and concatenates
+// names via `printf`, then emits a single guarded import line.
+//
+// If a future refactor of executeTemplate breaks variable reassignment,
+// printf, or pointer-field access on map values, this test fails before
+// users see broken init output.
+func TestExecuteTemplateBetaImportAccumulator(t *testing.T) {
+	ctx := t.Context()
+
+	// Mirror of the relevant slice of template/server/server.ts in AppKit.
+	// Kept as a literal string (not loaded from the AppKit repo) so this
+	// test is hermetic and survives AppKit branch movement.
+	input := `{{- $betaImports := "" -}}
+{{- range $name, $p := .plugins -}}
+  {{- if eq $p.Stability "beta" -}}
+    {{- if eq $betaImports "" -}}
+      {{- $betaImports = $name -}}
+    {{- else -}}
+      {{- $betaImports = printf "%s, %s" $betaImports $name -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+import { createApp{{range $name, $p := .plugins}}{{if ne $p.Stability "beta"}}, {{$name}}{{end}}{{end}} } from '@databricks/appkit';
+{{- if ne $betaImports "" }}
+import { {{$betaImports}} } from '@databricks/appkit/beta';
+{{- end}}
+`
+
+	cases := []struct {
+		name              string
+		plugins           map[string]*pluginVar
+		wantStableImports []string // names that must appear on the stable line
+		wantBetaImports   []string // names that must appear on the beta line, "" means no beta line
+		wantNoBetaLine    bool
+	}{
+		{
+			name: "all stable: no beta line",
+			plugins: map[string]*pluginVar{
+				"server":    {},
+				"analytics": {},
+			},
+			wantStableImports: []string{"server", "analytics"},
+			wantNoBetaLine:    true,
+		},
+		{
+			name: "mixed single beta",
+			plugins: map[string]*pluginVar{
+				"server":  {},
+				"betaOne": {Stability: "beta"},
+			},
+			wantStableImports: []string{"server"},
+			wantBetaImports:   []string{"betaOne"},
+		},
+		{
+			name: "mixed multiple betas: combined into one import line",
+			plugins: map[string]*pluginVar{
+				"server":  {},
+				"betaOne": {Stability: "beta"},
+				"betaTwo": {Stability: "beta"},
+			},
+			wantStableImports: []string{"server"},
+			wantBetaImports:   []string{"betaOne", "betaTwo"},
+		},
+		{
+			name: "all beta: createApp alone on stable line",
+			plugins: map[string]*pluginVar{
+				"betaOne": {Stability: "beta"},
+				"betaTwo": {Stability: "beta"},
+			},
+			wantBetaImports: []string{"betaOne", "betaTwo"},
+		},
+		{
+			name: "future tier (alpha) routes to stable line for now",
+			plugins: map[string]*pluginVar{
+				"server":   {},
+				"alphaOne": {Stability: "alpha"},
+			},
+			wantStableImports: []string{"server", "alphaOne"},
+			wantNoBetaLine:    true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			vars := templateVars{Plugins: tc.plugins}
+			result, err := executeTemplate(ctx, "server.ts", []byte(input), vars)
+			require.NoError(t, err)
+			got := string(result)
+
+			lines := strings.Split(got, "\n")
+			require.NotEmpty(t, lines)
+
+			// Stable line is always first: starts with `import { createApp`
+			// and ends with `from '@databricks/appkit';`.
+			stableLine := lines[0]
+			assert.True(t, strings.HasPrefix(stableLine, "import { createApp"),
+				"stable line: %q", stableLine)
+			assert.True(t, strings.HasSuffix(stableLine, "} from '@databricks/appkit';"),
+				"stable line: %q", stableLine)
+			for _, name := range tc.wantStableImports {
+				assert.Contains(t, stableLine, name,
+					"stable line missing %q: %q", name, stableLine)
+			}
+			for _, name := range tc.wantBetaImports {
+				assert.NotContains(t, stableLine, ", "+name,
+					"beta plugin %q leaked onto stable line: %q", name, stableLine)
+			}
+
+			if tc.wantNoBetaLine {
+				assert.NotContains(t, got, "@databricks/appkit/beta",
+					"unexpected beta import emitted: %q", got)
+				return
+			}
+
+			// Beta line: exactly one `from '@databricks/appkit/beta'` line.
+			betaLineCount := strings.Count(got, "from '@databricks/appkit/beta'")
+			assert.Equal(t, 1, betaLineCount,
+				"expected exactly one beta import line, got %d: %q", betaLineCount, got)
+
+			var betaLine string
+			for _, l := range lines {
+				if strings.Contains(l, "@databricks/appkit/beta") {
+					betaLine = l
+					break
+				}
+			}
+			require.NotEmpty(t, betaLine, "beta line not found in: %q", got)
+			for _, name := range tc.wantBetaImports {
+				assert.Contains(t, betaLine, name,
+					"beta line missing %q: %q", name, betaLine)
+			}
+		})
+	}
 }
 
 func TestInitCmdBranchAndVersionMutuallyExclusive(t *testing.T) {
