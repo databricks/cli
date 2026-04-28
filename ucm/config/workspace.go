@@ -28,6 +28,11 @@ type Workspace struct {
 // Config returns the SDK config built from this Workspace's auth fields.
 // Mirrors bundle/config/workspace.go's Workspace.Config(); ucm's M0 surface
 // is only Host+Profile, so the returned config is intentionally minimal.
+//
+// TODO(M1): when Workspace gains the auth-attribute fields bundle has
+// (HTTPTimeoutSeconds, OAuth, Azure, Google, etc.), call SetAttrSource for
+// each non-zero attribute as bundle.config.Workspace.Config() does, so SDK
+// debug logs attribute the config source correctly.
 func (w *Workspace) Config() *sdkconfig.Config {
 	return &sdkconfig.Config{
 		Host:    w.Host,
