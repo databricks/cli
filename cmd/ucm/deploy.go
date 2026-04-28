@@ -34,10 +34,10 @@ Common invocations:
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for destructive actions.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
+	cmd.Flags().StringVar(&readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
 	// Verbose flag is parity with bundle; UCM has no file sync today so the
 	// flag is currently a no-op. Hidden until file sync lands.
-	_ = cmd.Flags().MarkHidden("verbose")
-	cmd.Flags().StringVar(&readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
+	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
@@ -62,6 +62,10 @@ Common invocations:
 		// UCM's phases.Deploy needs a Backend + TerraformFactory that ProcessUcm
 		// does not yet plumb (tracked in #103). Until then the verb assembles
 		// phases.Options here and runs Deploy directly.
+		// (Build: true above is safe — phases.BuildArtifacts is a no-op stub
+		// today per #101. Deploy: true would trigger phases.Deploy with
+		// zero-value Options that lacks Backend; we run Deploy ourselves below
+		// until #103 plumbs Backend through ProcessOptions.)
 		opts, err := buildPhaseOptions(ctx, u)
 		if err != nil {
 			return fmt.Errorf("resolve deploy options: %w", err)

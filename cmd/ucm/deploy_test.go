@@ -33,7 +33,7 @@ func TestCmd_Deploy_PropagatesApplyError(t *testing.T) {
 
 func TestCmd_Deploy_DeclaresAutoApproveAndForceLockFlags(t *testing.T) {
 	cmd := newDeployCommand()
-	for _, name := range []string{"auto-approve", "force-lock"} {
+	for _, name := range []string{"auto-approve", "force-lock", "verbose", "plan"} {
 		flag := cmd.Flags().Lookup(name)
 		assert.NotNil(t, flag, "deploy missing --%s flag", name)
 	}

@@ -60,7 +60,7 @@ Common invocations:
 		// assembles phases.Options here and runs Destroy directly.
 		opts, err := buildPhaseOptions(ctx, u)
 		if err != nil {
-			return fmt.Errorf("resolve deploy options: %w", err)
+			return fmt.Errorf("resolve destroy options: %w", err)
 		}
 		opts.ForceLock = u.ForceLock
 		opts.AutoApprove = u.AutoApprove
