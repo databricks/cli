@@ -88,6 +88,26 @@ func MustLoad(ctx context.Context) *Ucm {
 	return u
 }
 
+// TryLoad returns a Ucm if a ucm.yml is reachable from the working
+// directory (or DATABRICKS_UCM_ROOT). Returns nil with no diagnostic
+// when no config is found — mirrors bundle.TryLoad.
+func TryLoad(ctx context.Context) *Ucm {
+	root, err := tryGetRoot(ctx)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	if root == "" {
+		return nil
+	}
+	u, err := Load(ctx, root)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return nil
+	}
+	return u
+}
+
 func getRootEnv(ctx context.Context) (string, error) {
 	path, ok := env.Lookup(ctx, RootEnv)
 	if !ok {
@@ -122,4 +142,18 @@ func mustGetRoot(ctx context.Context) (string, error) {
 		return path, err
 	}
 	return getRootWithTraversal()
+}
+
+// tryGetRoot is the non-fatal sibling of mustGetRoot. Returns "" with no
+// diagnostic when no ucm.yml is reachable from the working directory and
+// DATABRICKS_UCM_ROOT is unset.
+func tryGetRoot(ctx context.Context) (string, error) {
+	// Note: an invalid value in the environment variable is still an error.
+	path, err := getRootEnv(ctx)
+	if path != "" || err != nil {
+		return path, err
+	}
+	// Note: traversal failing means the ucm root cannot be found.
+	path, _ = getRootWithTraversal()
+	return path, nil
 }
