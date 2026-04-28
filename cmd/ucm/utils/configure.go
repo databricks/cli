@@ -243,28 +243,6 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 	return slices.Collect(maps.Keys(u.Config.Targets)), cobra.ShellCompDirectiveDefault
 }
 
-// shouldSkipPrompt returns whether or not [SkipPrompt] has been set on the
-// specified context. Forked from cmd/root/auth_options.go alongside the auth
-// fork; the matching SkipPrompt setter lives in auth.go to keep the auth-options
-// helpers grouped.
-func shouldSkipPrompt(ctx context.Context) bool {
-	skipPrompt, ok := ctx.Value(skipPromptKey).(bool)
-	return ok && skipPrompt
-}
-
-type skipPrompt int
-
-var skipPromptKey skipPrompt
-
-func profileFlagValue(cmd *cobra.Command) (string, bool) {
-	profileFlag := cmd.Flag("profile")
-	if profileFlag == nil {
-		return "", false
-	}
-	value := profileFlag.Value.String()
-	return value, value != ""
-}
-
 func initTargetFlag(cmd *cobra.Command) {
 	// To operate in the context of a ucm, all commands must take an "target" parameter.
 	cmd.PersistentFlags().StringP("target", "t", "", "ucm target to use (if applicable)")
