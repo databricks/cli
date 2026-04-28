@@ -5,10 +5,19 @@ package phases
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config/mutator"
 )
+
+// Load reads ucm.yml from disk into u.Config and runs the default mutator
+// chain. Used by targetCompletion to enumerate target names without
+// selecting one. Mirrors bundle/phases/load.go::Load.
+func Load(ctx context.Context, u *ucm.Ucm) {
+	log.Info(ctx, "Phase: load")
+	mutator.DefaultMutators(ctx, u)
+}
 
 // LoadDefaultTarget prepares a freshly-loaded Ucm for downstream phases when
 // the user did not pass --target. CLI --var values must be applied AFTER this
