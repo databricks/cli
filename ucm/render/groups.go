@@ -9,9 +9,8 @@ import (
 
 // resourceGroupsForUcm enumerates UC resource kinds for RenderSummary.
 // Skips empty groups so a project with no schemas doesn't print "Schemas:"
-// with nothing under it. Mirrors the inline resource-list assembly in
-// bundle/render/render_text_output.go::RenderSummary, adapted to ucm's
-// resource shapes (no uniform ResourceDescription accessor today).
+// with nothing under it. The enumeration order here is irrelevant — the
+// downstream template alphabetizes both groups and rows for stable output.
 func resourceGroupsForUcm(u *ucm.Ucm) []ResourceGroup {
 	if u == nil {
 		return nil

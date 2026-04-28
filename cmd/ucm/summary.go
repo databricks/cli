@@ -3,18 +3,13 @@ package ucm
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/ucm/utils"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/render"
 	"github.com/spf13/cobra"
 )
-
-// notDeployedURL is the literal rendered when a URL-bearing resource has no
-// ID in the local tfstate. Matches the DAB wording at
-// bundle/render/render_text_output.go so users reading both tools' output
-// get a consistent signal.
-const notDeployedURL = "(not deployed)"
 
 func newSummaryCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -26,7 +21,7 @@ with workspace URLs when a Workspace.Host is configured.
 Mirrors ` + "`databricks bundle summary`" + `: loads the per-target
 terraform.tfstate from the local cache to determine which resources have
 actually been deployed. URL lines show the workspace console link for
-resources present in state and ` + "`" + notDeployedURL + "`" + ` for resources declared in
+resources present in state and ` + "`(not deployed)`" + ` for resources declared in
 ucm.yml but not yet applied. Run ` + "`ucm deploy`" + ` to realize declared intents.
 
 Common invocations:
@@ -49,6 +44,30 @@ Common invocations:
 	_ = cmd.Flags().MarkHidden("show-full-config")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		// --show-full-config dumps the resolved config tree even when the
+		// project has errors. Mirrors cmd/bundle/summary.go::showFullConfig
+		// shape: prime the logdiag context, downgrade severity so noisy
+		// recommendations don't crowd the JSON output, then render whatever
+		// ProcessUcm could resolve. Skipping the HasError gate is deliberate
+		// — users debugging a broken ucm.yml need the JSON to inspect.
+		if shouldShowFullConfig {
+			ctx := logdiag.InitContext(cmd.Context())
+			cmd.SetContext(ctx)
+			logdiag.SetSeverity(ctx, diag.Warning)
+
+			u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
+				SkipInitContext:  true,
+				IncludeLocations: includeLocations,
+			})
+			if err != nil && err != root.ErrAlreadyPrinted {
+				return err
+			}
+			if u == nil {
+				return root.ErrAlreadyPrinted
+			}
+			return renderJsonOutput(cmd, u)
+		}
+
 		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
 			InitIDs:          true,
 			IncludeLocations: includeLocations,
@@ -59,12 +78,6 @@ Common invocations:
 		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
-		}
-
-		// --show-full-config short-circuits the grouped text renderer and
-		// always emits the resolved config tree as JSON, regardless of -o.
-		if shouldShowFullConfig {
-			return renderJsonOutput(cmd, u)
 		}
 
 		return showSummary(cmd, u)
