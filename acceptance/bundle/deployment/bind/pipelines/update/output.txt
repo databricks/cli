@@ -8,5 +8,8 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
 
-Error: Test script killed due to a timeout (1m0s)
+>>> print_requests.py ^//import-file/ ^//workspace/delete ^//telemetry-ext
