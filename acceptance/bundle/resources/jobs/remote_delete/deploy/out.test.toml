@@ -1,6 +1,10 @@
 Local = true
 Cloud = false
 
+[GOOS]
+  darwin = false
+  windows = false
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
   READPLAN = ["", "1"]

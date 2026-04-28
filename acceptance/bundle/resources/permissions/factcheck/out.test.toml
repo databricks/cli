@@ -3,6 +3,10 @@ Cloud = true
 CloudSlow = true
 RunsOnDbr = true
 
+[GOOS]
+  darwin = false
+  windows = false
+
 [CloudEnvs]
   gcp = false
 

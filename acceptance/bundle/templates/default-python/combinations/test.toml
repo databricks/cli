@@ -1,5 +1,12 @@
 Cloud = true
 
+# 18 matrix variants at ~1m7s each cost ~20m of cumulative time on windows
+# alone. The CLI behavior is OS-agnostic; linux covers the full matrix. On
+# windows/macos the `classic/` smoke is enough to prove the template
+# machinery works.
+GOOS.windows = false
+GOOS.darwin = false
+
 Ignore = ["input.json"]
 
 EnvMatrix.READPLAN = ["", "1"]

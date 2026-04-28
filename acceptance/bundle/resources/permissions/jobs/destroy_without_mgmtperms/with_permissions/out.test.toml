@@ -2,6 +2,10 @@ Local = false
 Cloud = true
 RunsOnDbr = false
 
+[GOOS]
+  darwin = false
+  windows = false
+
 [CloudEnvs]
   azure = false
   gcp = false
