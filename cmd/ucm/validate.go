@@ -1,21 +1,31 @@
 package ucm
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
-	"github.com/databricks/cli/ucm/config/mutator"
-	"github.com/fatih/color"
+	"github.com/databricks/cli/ucm/render"
 	"github.com/spf13/cobra"
 )
+
+func renderJsonOutput(cmd *cobra.Command, u *ucm.Ucm) error {
+	if u == nil {
+		return nil
+	}
+	buf, err := json.MarshalIndent(u.Config.Value().AsAny(), "", "  ")
+	if err != nil {
+		return err
+	}
+	out := cmd.OutOrStdout()
+	_, _ = out.Write(buf)
+	_, _ = out.Write([]byte{'\n'})
+	return nil
+}
 
 func newValidateCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -43,98 +53,47 @@ Common invocations:
 	_ = cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{Validate: true})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
+			Validate:         true,
+			IncludeLocations: includeLocations,
+		})
 		ctx := cmd.Context()
-		// Surface non-ErrAlreadyPrinted errors as a diagnostic so the trailer
-		// still prints; the deferred return below preserves the failure exit.
+
 		if err != nil && err != root.ErrAlreadyPrinted {
 			logdiag.LogError(ctx, err)
 			err = root.ErrAlreadyPrinted
 		}
 
-		if includeLocations && u != nil && !logdiag.HasError(ctx) {
-			ucm.ApplyContext(ctx, u, mutator.PopulateLocations())
-		}
+		// output before checking the error on purpose
 
-		out := cmd.OutOrStdout()
-		output := root.OutputType(cmd)
-
-		// Emit output before returning on error so users see the summary or
-		// the (partial) config tree regardless.
-		if output == flags.OutputJSON {
-			if err := renderValidateJSON(out, u); err != nil {
-				return err
+		if root.OutputType(cmd) == flags.OutputText {
+			err1 := render.RenderDiagnosticsSummary(ctx, cmd.OutOrStdout(), u)
+			if err1 != nil {
+				return err1
 			}
-		} else {
-			if u != nil {
-				renderSummaryHeader(out, u)
+		}
+
+		if root.OutputType(cmd) == flags.OutputJSON {
+			err1 := renderJsonOutput(cmd, u)
+			if err1 != nil {
+				return err1
 			}
-			writeValidateTrailer(ctx, out)
 		}
 
-		if err != nil {
-			return err
-		}
-
+		// In strict mode, treat warnings as errors.
 		numWarnings := logdiag.NumWarnings(ctx)
-		if strict && numWarnings > 0 {
-			noun := "warning"
-			if numWarnings != 1 {
-				noun = "warnings"
+		if err == nil && strict && numWarnings > 0 {
+			prefix := ""
+			if numWarnings == 1 {
+				prefix = "1 warning was found"
+			} else {
+				prefix = fmt.Sprintf("%d warnings were found", numWarnings)
 			}
-			return fmt.Errorf("%d %s found. Warnings are not allowed in strict mode", numWarnings, noun)
+			return fmt.Errorf("%s. Warnings are not allowed in strict mode", prefix)
 		}
 
-		return nil
+		return err
 	}
 
 	return cmd
-}
-
-// renderValidateJSON emits the loaded ucm config tree as indented JSON.
-func renderValidateJSON(out io.Writer, u *ucm.Ucm) error {
-	if u == nil {
-		return nil
-	}
-	buf, err := json.MarshalIndent(u.Config.Value().AsAny(), "", "  ")
-	if err != nil {
-		return err
-	}
-	_, _ = out.Write(buf)
-	_, _ = out.Write([]byte{'\n'})
-	return nil
-}
-
-// writeValidateTrailer prints the DAB-style "Found X errors / Y warnings"
-// summary, or "Validation OK!" when no diagnostics were recorded.
-func writeValidateTrailer(ctx context.Context, out io.Writer) {
-	info := logdiag.Copy(ctx)
-	var parts []string
-	if info.Errors > 0 {
-		parts = append(parts, color.RedString(pluralize(info.Errors, "error", "errors")))
-	}
-	if info.Warnings > 0 {
-		parts = append(parts, color.YellowString(pluralize(info.Warnings, "warning", "warnings")))
-	}
-	if info.Recommendations > 0 {
-		parts = append(parts, color.BlueString(pluralize(info.Recommendations, "recommendation", "recommendations")))
-	}
-	switch len(parts) {
-	case 0:
-		fmt.Fprint(out, color.GreenString("Validation OK!\n"))
-	case 1:
-		fmt.Fprintf(out, "Found %s\n", parts[0])
-	case 2:
-		fmt.Fprintf(out, "Found %s and %s\n", parts[0], parts[1])
-	default:
-		first := strings.Join(parts[:len(parts)-1], ", ")
-		fmt.Fprintf(out, "Found %s, and %s\n", first, parts[len(parts)-1])
-	}
-}
-
-func pluralize(n int, singular, plural string) string {
-	if n == 1 {
-		return fmt.Sprintf("%d %s", n, singular)
-	}
-	return fmt.Sprintf("%d %s", n, plural)
 }

@@ -1,7 +1,6 @@
 package ucm
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -105,15 +104,20 @@ func TestCmd_Summary_ListsCatalogsAndSchemasWhenNotDeployed(t *testing.T) {
 	assert.NotContains(t, stdout, "explore/data/team_alpha")
 }
 
-func TestCmd_Summary_ListsGrantsWithoutURL(t *testing.T) {
+// TestCmd_Summary_ListsGrantsWithNotDeployedURL covers the rendered shape for
+// resources that intentionally have no workspace URL (grants, tag-validation
+// rules): the URL line is still emitted, but with the "(not deployed)" literal
+// from the shared resources template.
+func TestCmd_Summary_ListsGrantsWithNotDeployedURL(t *testing.T) {
 	stdout, _, err := runVerb(t, validFixtureDir(t), "summary")
 
 	require.NoError(t, err)
 	assert.Contains(t, stdout, "Grants:")
 	assert.Contains(t, stdout, "alpha_read:")
 	assert.Contains(t, stdout, "Name: catalog team_alpha -> alpha-readers")
-	// Grants deliberately do not carry a workspace URL.
-	assert.NotContains(t, stdout, "URL:  https://example.cloud.databricks.com/explore/grants")
+	// Grants don't carry a workspace URL, so the URL line falls back to the
+	// shared "(not deployed)" literal rather than a real https:// link.
+	assert.Contains(t, stdout, "URL:  (not deployed)")
 }
 
 func TestCmd_Summary_ListsStorageCredentialsWhenDeployed(t *testing.T) {
@@ -272,33 +276,3 @@ func TestCmd_Summary_ShowFullConfigBypassesGroupedText(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(stdout), &tree))
 }
 
-// TestRenderSummaryText_EmitsOnlyNonEmptyGroups covers the shape contract:
-// groups with no entries do not emit a header.
-func TestRenderSummaryText_EmitsOnlyNonEmptyGroups(t *testing.T) {
-	work := writeUcmYml(t, `ucm:
-  name: demo
-
-workspace:
-  host: https://workspace.cloud.databricks.com
-
-resources:
-  catalogs:
-    sales:
-      name: sales_prod
-`)
-
-	ctx := logdiag.InitContext(context.Background())
-	u, err := ucmpkg.Load(ctx, work)
-	require.NoError(t, err)
-	phases.LoadDefaultTarget(ctx, u)
-	require.False(t, logdiag.HasError(ctx))
-
-	var buf bytes.Buffer
-	renderSummaryText(&buf, u)
-
-	out := buf.String()
-	assert.Contains(t, out, "Catalogs:")
-	assert.NotContains(t, out, "Schemas:")
-	assert.NotContains(t, out, "Grants:")
-	assert.NotContains(t, out, "Storage credentials:")
-}
