@@ -3,7 +3,6 @@ package ucm
 import (
 	"context"
 
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/phases"
@@ -17,14 +16,17 @@ import (
 var buildPhaseOptions = defaultBuildPhaseOptions
 
 // defaultBuildPhaseOptions is the production implementation of
-// buildPhaseOptions. It reads the workspace client from ctx (populated by
-// root.MustWorkspaceClient when the user supplies auth) and delegates the
-// state-backend shape to ucm/deploy.BackendFromUcm. The returned Options
-// always uses phases.DefaultTerraformFactory — the terraform wrapper
-// constructor is expensive (binary resolution + working dir) and we only
-// stand it up on first invocation.
+// buildPhaseOptions. It reads the workspace client off the Ucm struct (built
+// lazily by ProcessUcm via MustConfigureUcm) and delegates the state-backend
+// shape to ucm/deploy.BackendFromUcm. The returned Options always uses
+// phases.DefaultTerraformFactory — the terraform wrapper constructor is
+// expensive (binary resolution + working dir) and we only stand it up on
+// first invocation.
 func defaultBuildPhaseOptions(ctx context.Context, u *ucm.Ucm) (phases.Options, error) {
-	w := cmdctx.WorkspaceClient(ctx)
+	w, err := u.WorkspaceClientE()
+	if err != nil {
+		return phases.Options{}, err
+	}
 	backend, err := deploy.BackendFromUcm(ctx, u, w)
 	if err != nil {
 		return phases.Options{}, err

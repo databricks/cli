@@ -3,7 +3,6 @@ package deployment
 import (
 	"context"
 
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/phases"
@@ -21,7 +20,10 @@ var buildPhaseOptions = defaultBuildPhaseOptions
 // here (not imported) to keep cmd/ucm/deployment free of a cyclic dependency
 // on its parent package while still presenting the same test seam.
 func defaultBuildPhaseOptions(ctx context.Context, u *ucm.Ucm) (phases.Options, error) {
-	w := cmdctx.WorkspaceClient(ctx)
+	w, err := u.WorkspaceClientE()
+	if err != nil {
+		return phases.Options{}, err
+	}
 	backend, err := deploy.BackendFromUcm(ctx, u, w)
 	if err != nil {
 		return phases.Options{}, err
