@@ -51,8 +51,7 @@ volumes, connections. Grants are not bindable (they reconcile per securable).
 
 WARNING: After binding, the UC object will be managed by ucm. Manual changes
 made outside ucm may be overwritten on the next deploy.`,
-		Args:    root.ExactArgs(2),
-		PreRunE: utils.MustWorkspaceClient,
+		Args: root.ExactArgs(2),
 	}
 
 	var autoApprove bool
@@ -64,8 +63,11 @@ made outside ucm may be overwritten on the next deploy.`,
 		key, ucName := args[0], args[1]
 		ctx := cmd.Context()
 
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx = cmd.Context()
+		if err != nil {
+			return err
+		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

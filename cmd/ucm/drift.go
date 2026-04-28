@@ -38,13 +38,15 @@ Exit codes:
 Note: drift currently operates on direct-engine state only. Terraform-engine
 drift requires parsing generic attribute maps from tfstate and is a follow-up;
 the command still routes all live reads through the SDK regardless of engine.`,
-		Args:    root.NoArgs,
-		PreRunE: utils.MustWorkspaceClient,
+		Args: root.NoArgs,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx := cmd.Context()
+		if err != nil {
+			return err
+		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
@@ -63,7 +65,7 @@ the command still routes all live reads through the SDK regardless of engine.`,
 		}
 
 		out := cmd.OutOrStdout()
-		switch driftOutputType(cmd) {
+		switch root.OutputType(cmd) {
 		case flags.OutputJSON:
 			if err := renderDriftJSON(out, report); err != nil {
 				return err
@@ -81,16 +83,6 @@ the command still routes all live reads through the SDK regardless of engine.`,
 	}
 
 	return cmd
-}
-
-// driftOutputType returns the configured -o value, defaulting to OutputText
-// when the flag is not wired. Mirrors planOutputType — kept local so drift
-// doesn't import the plan file's helper across verb boundaries.
-func driftOutputType(cmd *cobra.Command) flags.Output {
-	if cmd.Flag("output") == nil {
-		return flags.OutputText
-	}
-	return root.OutputType(cmd)
 }
 
 // renderDriftText emits the human-readable report.

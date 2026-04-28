@@ -4,15 +4,19 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 
 	"github.com/databricks/cli/cmd/ucm/utils"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	libsfiler "github.com/databricks/cli/libs/filer"
-	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/telemetry"
 	ucmpkg "github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/deploy"
@@ -20,6 +24,7 @@ import (
 	ucmfiler "github.com/databricks/cli/ucm/deploy/filer"
 	"github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/phases"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -28,28 +33,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-// init pre-seeds Workspace.CurrentUser on every loaded Ucm so the
-// network-backed PopulateCurrentUser mutator short-circuits in unit tests.
-// DefineDefaultWorkspaceRoot + ExpandWorkspaceRoot then produce a
-// deterministic RootPath ("/Workspace/Users/test-user@example.com/...")
-// without touching a real workspace. Both `package ucm` and `package
-// ucm_test` share this test binary, so one init() covers both.
-func init() {
-	utils.PreMutateHook = seedFakeWorkspaceContext
-}
-
-func seedFakeWorkspaceContext(_ context.Context, u *ucmpkg.Ucm) {
-	if u == nil {
-		return
-	}
-	if u.CurrentUser == nil {
-		u.CurrentUser = &config.User{
-			ShortName: "test-user",
-			User:      &iam.User{UserName: "test-user@example.com"},
-		}
-	}
-}
 
 // fakeTf satisfies phases.TerraformWrapper for verb smoke tests. Mirrors the
 // shape of ucm/phases/helpers_test.go's fakeTf but lives in this package so
@@ -167,36 +150,6 @@ func newVerbHarness(t *testing.T) *verbHarness {
 		remote: remote,
 	}
 
-	// Stub the workspace client on every Ucm loaded during this test so
-	// Destroy's assertRootPathExists precondition (and any other verb
-	// reaching for the live client) succeeds without ~/.databrickscfg.
-	prevHook := utils.PreMutateHook
-	utils.PreMutateHook = func(ctx context.Context, u *ucmpkg.Ucm) {
-		if prevHook != nil {
-			prevHook(ctx, u)
-		}
-		if u == nil {
-			return
-		}
-		m := mocks.NewMockWorkspaceClient(t)
-		m.GetMockWorkspaceAPI().EXPECT().
-			GetStatusByPath(mock.Anything, mock.Anything).
-			Return(&workspace.ObjectInfo{}, nil).Maybe()
-		// Deploy's permission precheck calls Grants.GetEffective per catalog +
-		// schema. Default to granting MANAGE so the pre-existing happy-path
-		// tests still succeed; per-test cases can override the expectation.
-		m.GetMockGrantsAPI().EXPECT().
-			GetEffective(mock.Anything, mock.Anything).
-			Return(&catalog.EffectivePermissionsList{
-				PrivilegeAssignments: []catalog.EffectivePrivilegeAssignment{{
-					Principal:  "test-user@example.com",
-					Privileges: []catalog.EffectivePrivilege{{Privilege: catalog.PrivilegeManage}},
-				}},
-			}, nil).Maybe()
-		u.SetWorkspaceClient(m.WorkspaceClient)
-	}
-	t.Cleanup(func() { utils.PreMutateHook = prevHook })
-
 	prev := buildPhaseOptions
 	buildPhaseOptions = func(_ context.Context, _ *ucmpkg.Ucm) (phases.Options, error) {
 		opts := phases.Options{
@@ -233,31 +186,154 @@ func runVerb(t *testing.T, fixtureDir string, args ...string) (string, string, e
 // runVerbInDir runs the ucm cobra tree in workDir as-is (no cloning). Use
 // this from tests that need to seed files into the cwd before invocation
 // (e.g. summary tests seeding a tfstate).
+//
+// The helper:
+//   - Writes a fixture databrickscfg + restricts PATH so MustConfigureUcm
+//     resolves a real (but offline) workspace client without invoking
+//     az/gcloud or hitting the network.
+//   - Installs a TestProcessHook that swaps in a mock WorkspaceClient on the
+//     loaded Ucm and pre-seeds CurrentUser. Mock expectations cover the
+//     deploy/destroy precheck calls (GetStatusByPath, Grants.GetEffective)
+//     so the network-touching mutators short-circuit.
+//   - Builds a minimal cobra root that owns the persistent --output flag the
+//     verbs read via root.OutputType. Mirrors what cmd/root.New() supplies
+//     in production without dragging in the full PersistentPreRunE chain.
+//   - Strips PreRunE auth hooks on init/generate; their real hooks
+//     (root.MustWorkspaceClient) need live credentials.
 func runVerbInDir(t *testing.T, workDir string, args ...string) (string, string, error) {
 	t.Helper()
 
-	prev, err := os.Getwd()
-	require.NoError(t, err)
-	require.NoError(t, os.Chdir(workDir))
-	t.Cleanup(func() { _ = os.Chdir(prev) })
+	setupTestEnvironment(t)
+	t.Chdir(workDir)
+	installTestProcessHook(t)
 
-	cmd := New()
-	// plan/deploy/destroy/summary attach PreRunE: root.MustWorkspaceClient
-	// for real-world auth. Tests fake the workspace client via buildPhaseOptions,
-	// so strip the hook on every subcommand before invoking cobra.
-	stripAuthHooks(cmd)
-	var out, errOut bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetErr(&errOut)
-	cmd.SetArgs(args)
+	rootCmd, ucmCmd, out, errOut := buildTestCobraRoot(t)
+	rootCmd.SetArgs(append([]string{"ucm"}, args...))
+	rootCmd.SetContext(buildTestContext(t, out, errOut))
+	stripAuthHooks(ucmCmd)
 
-	ctx, diagOut := cmdio.NewTestContextWithStderr(context.Background())
-	ctx = logdiag.InitContext(ctx)
-	logdiag.SetRoot(ctx, workDir)
-	cmd.SetContext(ctx)
+	err := rootCmd.Execute()
+	return out.String(), errOut.String(), err
+}
 
-	err = cmd.Execute()
-	return out.String(), diagOut.String() + errOut.String(), err
+// buildTestContext wires a cmdio context that fans out cmdio.LogString-style
+// writes to the test's stderr buffer + a mock cmdctx workspace client so verbs
+// (init/generate) that read off cmdctx don't panic when their PreRunE is
+// stripped. Mirrors what root.New's PersistentPreRunE +
+// root.MustWorkspaceClient do in production.
+func buildTestContext(t *testing.T, out, errOut io.Writer) context.Context {
+	t.Helper()
+	ctx := t.Context()
+	ctx = telemetry.WithNewLogger(ctx)
+	cmdIO := cmdio.NewIO(ctx, flags.OutputText, nil, out, errOut, "", "")
+	ctx = cmdio.InContext(ctx, cmdIO)
+
+	m := mocks.NewMockWorkspaceClient(t)
+	m.WorkspaceClient.Config = &sdkconfig.Config{Host: "https://example.cloud.databricks.com"}
+	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+	return ctx
+}
+
+// buildTestCobraRoot constructs a minimal cobra root with the persistent flags
+// the ucm verbs read in production (currently --output) and adds the ucm
+// subtree. Out/Err are captured into the returned buffers.
+func buildTestCobraRoot(t *testing.T) (*cobra.Command, *cobra.Command, *bytes.Buffer, *bytes.Buffer) {
+	t.Helper()
+	rootCmd := &cobra.Command{Use: "test-root", SilenceUsage: true, SilenceErrors: true}
+	output := flags.OutputText
+	rootCmd.PersistentFlags().VarP(&output, "output", "o", "output type: text or json")
+	// cmdUcm.New() registers itself under GroupID "development" so cobra
+	// expects that group on the parent. Mirrors cmd/cmd.New's wiring.
+	rootCmd.AddGroup(&cobra.Group{ID: "development", Title: "Development"})
+
+	ucmCmd := New()
+	rootCmd.AddCommand(ucmCmd)
+
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	rootCmd.SetOut(out)
+	rootCmd.SetErr(errOut)
+	return rootCmd, ucmCmd, out, errOut
+}
+
+// setupTestEnvironment isolates the test from the developer's databricks
+// config + restricts PATH so the SDK's auth resolution stays fully offline.
+// We don't write a databrickscfg or set profile vars: every fixture under
+// cmd/ucm/testdata declares its own workspace.host, and the SDK falls back
+// to env-based auth (DATABRICKS_TOKEN / DATABRICKS_AUTH_TYPE) for the
+// host-only profile resolution path. Mock-backed verbs override the
+// resulting client via TestProcessHook.
+func setupTestEnvironment(t *testing.T) {
+	t.Helper()
+	tempHomeDir := t.TempDir()
+	homeEnvVar := "HOME"
+	if runtime.GOOS == "windows" {
+		homeEnvVar = "USERPROFILE"
+	}
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(tempHomeDir, "missing-databrickscfg"))
+	t.Setenv(homeEnvVar, tempHomeDir)
+	t.Setenv("DATABRICKS_TOKEN", "test-token")
+	t.Setenv("DATABRICKS_AUTH_TYPE", "pat")
+	// Clear any inherited profile / metadata env vars so the SDK can't pick
+	// up the developer's local credentials and so DATABRICKS_HOST doesn't
+	// override the per-fixture workspace.host.
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
+	t.Setenv("DATABRICKS_HOST", "")
+	t.Setenv("DATABRICKS_METADATA_SERVICE_URL", "")
+	if runtime.GOOS == "windows" {
+		t.Setenv("PATH", `C:\Windows\System32`)
+	} else {
+		t.Setenv("PATH", "/usr/bin:/bin")
+	}
+}
+
+// installTestProcessHook sets utils.TestProcessHook to the standard verb-test
+// seed: a mock WorkspaceClient + pre-set CurrentUser. The previous hook is
+// restored on test cleanup so a parallel test file's seed doesn't leak across
+// runs. Per-test customisations (extra mock expectations, extra warnings)
+// chain on top by reading and re-wrapping utils.TestProcessHook.
+func installTestProcessHook(t *testing.T) {
+	t.Helper()
+	prev := utils.TestProcessHook
+	utils.TestProcessHook = func(ctx context.Context, u *ucmpkg.Ucm) {
+		if prev != nil {
+			prev(ctx, u)
+		}
+		seedFakeWorkspaceContext(t, u)
+	}
+	t.Cleanup(func() { utils.TestProcessHook = prev })
+}
+
+// seedFakeWorkspaceContext primes the loaded Ucm with the minimal state
+// downstream mutators and verbs expect from a real deployment: a CurrentUser
+// (so PopulateCurrentUser short-circuits) and a mock WorkspaceClient with the
+// API expectations the deploy / destroy precheck paths exercise on the happy
+// path. Per-test overrides can re-set expectations on the same mock by
+// reading u.WorkspaceClientE().
+func seedFakeWorkspaceContext(t *testing.T, u *ucmpkg.Ucm) {
+	t.Helper()
+	if u == nil {
+		return
+	}
+	if u.CurrentUser == nil {
+		u.CurrentUser = &config.User{
+			ShortName: "test-user",
+			User:      &iam.User{UserName: "test-user@example.com"},
+		}
+	}
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockWorkspaceAPI().EXPECT().
+		GetStatusByPath(mock.Anything, mock.Anything).
+		Return(&workspace.ObjectInfo{}, nil).Maybe()
+	m.GetMockGrantsAPI().EXPECT().
+		GetEffective(mock.Anything, mock.Anything).
+		Return(&catalog.EffectivePermissionsList{
+			PrivilegeAssignments: []catalog.EffectivePrivilegeAssignment{{
+				Principal:  "test-user@example.com",
+				Privileges: []catalog.EffectivePrivilege{{Privilege: catalog.PrivilegeManage}},
+			}},
+		}, nil).Maybe()
+	u.SetWorkspaceClient(m.WorkspaceClient)
 }
 
 // cloneFixture copies the flat set of files in fixtureDir into a per-test
@@ -294,10 +370,10 @@ func validFixtureDir(t *testing.T) string {
 var assertSentinel = errors.New("ucm verb test sentinel")
 
 // stripAuthHooks recursively clears PersistentPreRunE and PreRunE on cmd and
-// all of its subcommands. The ucm verbs that need live auth wire
-// root.MustWorkspaceClient as PreRunE; tests stand in their own Backend via
-// buildPhaseOptions so the real auth hook would just fail on a missing
-// ~/.databrickscfg.
+// all of its subcommands. The ucm verbs that need live auth (init, generate)
+// wire root.MustWorkspaceClient as PreRunE; tests stand in their own Backend
+// via buildPhaseOptions and a TestProcessHook so the real auth hook would just
+// fail on a missing ~/.databrickscfg.
 func stripAuthHooks(cmd *cobra.Command) {
 	cmd.PersistentPreRunE = nil
 	cmd.PersistentPreRun = nil

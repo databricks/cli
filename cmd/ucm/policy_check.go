@@ -25,8 +25,11 @@ required fields). No network I/O.`,
 	cmd.Flags().BoolVar(&strict, "strict", false, "Treat warnings as errors")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx := cmd.Context()
+		if err != nil {
+			return err
+		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

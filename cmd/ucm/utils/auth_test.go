@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -50,6 +49,11 @@ func setupDatabricksCfg(t *testing.T) {
 
 // setupUcmWithHost drops a ucm.yml with the given host into a fresh working
 // directory and returns a *cobra.Command wired for MustWorkspaceClient.
+//
+// MustWorkspaceClient owns logdiag.InitContext (faithful fork from upstream
+// cmd/root/auth.go); pre-initializing here would panic. Tests assert against
+// logdiag's HasError/GetFirstErrorSummary on the post-init context the
+// function installs back on cmd.
 func setupUcmWithHost(t *testing.T, host string) *cobra.Command {
 	t.Helper()
 	rootPath := t.TempDir()
@@ -62,11 +66,7 @@ func setupUcmWithHost(t *testing.T, host string) *cobra.Command {
 	cmd.PersistentFlags().String("target", "", "")
 	cmd.PersistentFlags().String("profile", "", "")
 
-	ctx := t.Context()
-	ctx = cmdio.MockDiscard(ctx)
-	ctx = logdiag.InitContext(ctx)
-	logdiag.SetCollect(ctx, true)
-	cmd.SetContext(ctx)
+	cmd.SetContext(cmdio.MockDiscard(t.Context()))
 	return cmd
 }
 
@@ -82,10 +82,9 @@ func TestMustWorkspaceClient_UniqueHostMatchResolvesProfile(t *testing.T) {
 
 	cmd := setupUcmWithHost(t, "https://unique.example.com")
 	err := MustWorkspaceClient(cmd, nil)
-	diags := logdiag.FlushCollected(cmd.Context())
 
 	require.NoError(t, err)
-	require.Empty(t, diags)
+	require.False(t, logdiag.HasError(cmd.Context()))
 	w := cmdctx.WorkspaceClient(cmd.Context())
 	assert.Equal(t, "PROFILE-UNIQUE", w.Config.Profile)
 	assert.Equal(t, "https://unique.example.com", w.Config.Host)
@@ -102,14 +101,14 @@ func TestMustWorkspaceClient_AmbiguousHostReturnsGuidanceError(t *testing.T) {
 
 	cmd := setupUcmWithHost(t, "https://dup.example.com")
 	err := MustWorkspaceClient(cmd, nil)
-	diags := logdiag.FlushCollected(cmd.Context())
 
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
-	require.Len(t, diags, 1)
-	assert.Contains(t, diags[0].Summary, "multiple profiles matched")
-	assert.Contains(t, diags[0].Summary, "Matching workspace profiles")
-	assert.Contains(t, diags[0].Summary, "PROFILE-DUP-1")
-	assert.Contains(t, diags[0].Summary, "PROFILE-DUP-2")
+	require.True(t, logdiag.HasError(cmd.Context()))
+	summary := logdiag.GetFirstErrorSummary(cmd.Context())
+	assert.Contains(t, summary, "multiple profiles matched")
+	assert.Contains(t, summary, "Matching workspace profiles")
+	assert.Contains(t, summary, "PROFILE-DUP-1")
+	assert.Contains(t, summary, "PROFILE-DUP-2")
 }
 
 func TestMustWorkspaceClient_NoMatchingProfileDoesNotPrompt(t *testing.T) {
@@ -123,7 +122,6 @@ func TestMustWorkspaceClient_NoMatchingProfileDoesNotPrompt(t *testing.T) {
 
 	cmd := setupUcmWithHost(t, "https://nobody.example.com")
 	err := MustWorkspaceClient(cmd, nil)
-	diags := logdiag.FlushCollected(cmd.Context())
 
 	// DAB-parallel behavior: the ResolveProfileFromHost loader swallows
 	// "no matching profiles" so EnsureResolved may succeed with only the host.
@@ -131,14 +129,14 @@ func TestMustWorkspaceClient_NoMatchingProfileDoesNotPrompt(t *testing.T) {
 	// ambiguity text and never drop into the interactive picker. Either a
 	// clean error or a clean success is acceptable.
 	if err != nil {
-		require.ErrorIs(t, err, root.ErrAlreadyPrinted)
-		require.Len(t, diags, 1)
-		assert.Equal(t, diag.Error, diags[0].Severity)
-		assert.NotContains(t, diags[0].Summary, "Multiple profiles")
-		assert.NotContains(t, diags[0].Summary, "multiple profiles matched")
+		assert.NotContains(t, err.Error(), "Multiple profiles")
+		assert.NotContains(t, err.Error(), "multiple profiles matched")
+		summary := logdiag.GetFirstErrorSummary(cmd.Context())
+		assert.NotContains(t, summary, "Multiple profiles")
+		assert.NotContains(t, summary, "multiple profiles matched")
 		return
 	}
-	assert.Empty(t, diags)
+	assert.False(t, logdiag.HasError(cmd.Context()))
 }
 
 func TestMustWorkspaceClient_ProfileInYamlUsedVerbatim(t *testing.T) {
@@ -159,17 +157,12 @@ func TestMustWorkspaceClient_ProfileInYamlUsedVerbatim(t *testing.T) {
 	cmd := &cobra.Command{Use: "plan"}
 	cmd.PersistentFlags().String("target", "", "")
 	cmd.PersistentFlags().String("profile", "", "")
-	ctx := t.Context()
-	ctx = cmdio.MockDiscard(ctx)
-	ctx = logdiag.InitContext(ctx)
-	logdiag.SetCollect(ctx, true)
-	cmd.SetContext(ctx)
+	cmd.SetContext(cmdio.MockDiscard(t.Context()))
 
 	err := MustWorkspaceClient(cmd, nil)
-	diags := logdiag.FlushCollected(cmd.Context())
 
 	require.NoError(t, err)
-	require.Empty(t, diags)
+	require.False(t, logdiag.HasError(cmd.Context()))
 	w := cmdctx.WorkspaceClient(cmd.Context())
 	assert.Equal(t, "PROFILE-UNIQUE", w.Config.Profile)
 }

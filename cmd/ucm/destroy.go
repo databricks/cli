@@ -25,8 +25,7 @@ cached from the last apply.
 Common invocations:
   databricks ucm destroy --auto-approve                # Destroy default target
   databricks ucm destroy --target dev --auto-approve   # Destroy a specific target`,
-		Args:    root.NoArgs,
-		PreRunE: utils.MustWorkspaceClient,
+		Args: root.NoArgs,
 	}
 
 	var autoApprove bool
@@ -40,8 +39,11 @@ Common invocations:
 			return errors.New("please specify --auto-approve since terminal does not support interactive prompts")
 		}
 
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx = cmd.Context()
+		if err != nil {
+			return err
+		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

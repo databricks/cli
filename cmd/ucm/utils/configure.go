@@ -1,0 +1,261 @@
+package utils
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"maps"
+	"slices"
+	"strings"
+
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	envlib "github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/env"
+	"github.com/databricks/cli/ucm/phases"
+	"github.com/spf13/cobra"
+)
+
+// getTarget returns the name of the target to operate in.
+func getTarget(cmd *cobra.Command) (value string) {
+	target, isFlagSet := targetFlagValue(cmd)
+	if isFlagSet {
+		return target
+	}
+
+	// If it's not set, use the environment variable.
+	target, _ = env.Target(cmd.Context())
+	return target
+}
+
+func targetFlagValue(cmd *cobra.Command) (string, bool) {
+	// The command line flag takes precedence.
+	flag := cmd.Flag("target")
+	if flag != nil {
+		value := flag.Value.String()
+		if value != "" {
+			return value, true
+		}
+	}
+
+	oldFlag := cmd.Flag("environment")
+	if oldFlag != nil {
+		value := oldFlag.Value.String()
+		if value != "" {
+			return value, true
+		}
+	}
+
+	return "", false
+}
+
+func getProfile(cmd *cobra.Command) (value string) {
+	// The command line flag takes precedence.
+	flag := cmd.Flag("profile")
+	if flag != nil {
+		value = flag.Value.String()
+		if value != "" {
+			return value
+		}
+	}
+
+	// If it's not set, use the environment variable.
+	return envlib.Get(cmd.Context(), "DATABRICKS_CONFIG_PROFILE")
+}
+
+// configureProfile applies the profile flag to the ucm.
+func configureProfile(cmd *cobra.Command, u *ucm.Ucm) {
+	profile := getProfile(cmd)
+	if profile == "" {
+		return
+	}
+
+	ucm.ApplyFuncContext(cmd.Context(), u, func(ctx context.Context, u *ucm.Ucm) {
+		u.Config.Workspace.Profile = profile
+	})
+}
+
+// resolveProfileAmbiguity resolves a multi-profile match by filtering to
+// workspace-compatible profiles and either auto-selecting, prompting, or
+// returning a guidance error.
+func resolveProfileAmbiguity(cmd *cobra.Command, u *ucm.Ucm, originalErr error, names []string) (string, error) {
+	ctx := cmd.Context()
+
+	namesMatcher := profile.MatchProfileNames(names...)
+	profiler := profile.GetProfiler(ctx)
+	profiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
+		return namesMatcher(p) && profile.MatchWorkspaceProfiles(p)
+	})
+	if err != nil {
+		if errors.Is(err, profile.ErrNoConfiguration) {
+			return "", originalErr
+		}
+		return "", err
+	}
+
+	switch len(profiles) {
+	case 0:
+		return "", originalErr
+	case 1:
+		// Exactly one workspace-compatible profile — auto-select.
+		// This happens when multiple profiles match a host but only one
+		// is workspace-compatible (the rest are account-only).
+		return profiles[0].Name, nil
+	}
+
+	// Multiple workspace-compatible profiles — need interactive selection.
+	_, hasProfileFlag := profileFlagValue(cmd)
+	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(ctx)
+	if !allowPrompt || !cmdio.IsPromptSupported(ctx) {
+		return "", fmt.Errorf(
+			"%w\n\nMatching workspace profiles: %s\n\n"+
+				"Fix (pick one):\n"+
+				"  1. Set profile in ucm.yml:\n"+
+				"       workspace:\n"+
+				"         profile: %s\n"+
+				"  2. Pass a flag:\n"+
+				"       %s --profile %s\n"+
+				"  3. Set env var:\n"+
+				"       DATABRICKS_CONFIG_PROFILE=%s",
+			originalErr,
+			strings.Join(profiles.Names(), ", "),
+			profiles[0].Name,
+			cmd.CommandPath(),
+			profiles[0].Name,
+			profiles[0].Name,
+		)
+	}
+
+	return profile.SelectProfile(ctx, profile.SelectConfig{
+		Label:             "Multiple profiles match host " + u.Config.Workspace.Host,
+		Profiles:          profiles,
+		StartInSearchMode: true,
+		ActiveTemplate:    `{{.Name | bold}}{{if .AccountID}} (account: {{.AccountID|faint}}){{end}}{{if .WorkspaceID}} (workspace: {{.WorkspaceID|faint}}){{end}}`,
+		InactiveTemplate:  `{{.Name}}{{if .AccountID}} (account: {{.AccountID}}){{end}}{{if .WorkspaceID}} (workspace: {{.WorkspaceID}}){{end}}`,
+		SelectedTemplate:  `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
+	})
+}
+
+// configureUcm loads the ucm configuration and configures flag values, if any.
+func configureUcm(cmd *cobra.Command, u *ucm.Ucm) {
+	// Load ucm and select target.
+	ctx := cmd.Context()
+	if target := getTarget(cmd); target == "" {
+		phases.LoadDefaultTarget(ctx, u)
+	} else {
+		phases.LoadNamedTarget(ctx, u, target)
+	}
+
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// Configure the workspace profile if the flag has been set.
+	configureProfile(cmd, u)
+
+	// Set the auth configuration in the command context. This can be used
+	// downstream to initialize a API client.
+	//
+	// Note that just initializing a workspace client and loading auth configuration
+	// is a fast operation. It does not perform network I/O or invoke processes (for example the Azure CLI).
+	client, err := u.WorkspaceClientE()
+	if err != nil {
+		names, isMulti := databrickscfg.AsMultipleProfiles(err)
+		if !isMulti {
+			logdiag.LogError(ctx, err)
+			return
+		}
+
+		selected, resolveErr := resolveProfileAmbiguity(cmd, u, err, names)
+		if resolveErr != nil {
+			logdiag.LogError(ctx, resolveErr)
+			return
+		}
+
+		u.Config.Workspace.Profile = selected
+		u.ClearWorkspaceClient()
+		client, err = u.WorkspaceClientE()
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
+	ctx = cmdctx.SetConfigUsed(ctx, client.Config)
+	cmd.SetContext(ctx)
+}
+
+// MustConfigureUcm configures a ucm on the command context.
+func MustConfigureUcm(cmd *cobra.Command) *ucm.Ucm {
+	// A ucm may be configured on the context when testing.
+	// If it is, return it immediately.
+	u := ucm.GetOrNil(cmd.Context())
+	if u != nil {
+		return u
+	}
+
+	u = ucm.MustLoad(cmd.Context())
+	if u != nil {
+		configureUcm(cmd, u)
+	}
+	return u
+}
+
+// TryConfigureUcm configures a ucm on the command context
+// if there is one, but doesn't fail if there isn't one.
+func TryConfigureUcm(cmd *cobra.Command) *ucm.Ucm {
+	// A ucm may be configured on the context when testing.
+	// If it is, return it immediately.
+	u := ucm.GetOrNil(cmd.Context())
+	if u != nil {
+		return u
+	}
+
+	ctx := cmd.Context()
+	u = ucm.TryLoad(ctx)
+	// No ucm is fine in this case.
+	if u == nil || logdiag.HasError(ctx) {
+		return nil
+	}
+
+	configureUcm(cmd, u)
+	return u
+}
+
+// targetCompletion executes to autocomplete the argument to the target flag.
+func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	ctx := cmd.Context()
+	u := ucm.MustLoad(ctx)
+	if u == nil || logdiag.HasError(ctx) {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	// Load ucm but don't select a target (we're completing those).
+	phases.Load(ctx, u)
+	if logdiag.HasError(ctx) {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	return slices.Collect(maps.Keys(u.Config.Targets)), cobra.ShellCompDirectiveDefault
+}
+
+// InitTargetFlag wires the persistent --target flag and its target-completion
+// shell handler onto cmd.
+func InitTargetFlag(cmd *cobra.Command) {
+	// To operate in the context of a ucm, all commands must take an "target" parameter.
+	cmd.PersistentFlags().StringP("target", "t", "", "ucm target to use (if applicable)")
+	cmd.RegisterFlagCompletionFunc("target", targetCompletion)
+}
+
+// InitEnvironmentFlag wires the deprecated --environment flag onto cmd. Kept
+// as a synonym for --target during the DAB→ucm UX migration.
+func InitEnvironmentFlag(cmd *cobra.Command) {
+	// To operate in the context of a ucm, all commands must take an "environment" parameter.
+	cmd.PersistentFlags().StringP("environment", "e", "", "ucm target to use (if applicable)")
+	cmd.PersistentFlags().MarkDeprecated("environment", "use --target flag instead")
+	cmd.RegisterFlagCompletionFunc("environment", targetCompletion)
+}

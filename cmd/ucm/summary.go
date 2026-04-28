@@ -41,8 +41,7 @@ Common invocations:
   databricks ucm summary                   # Text summary of the default target
   databricks ucm summary --target prod     # Summary of a named target
   databricks ucm summary -o json           # Emit the full config as JSON`,
-		Args:    root.NoArgs,
-		PreRunE: utils.MustWorkspaceClient,
+		Args: root.NoArgs,
 	}
 
 	// forcePull is accepted for DAB parity but is a no-op today: summary reads
@@ -58,8 +57,11 @@ Common invocations:
 	_ = cmd.Flags().MarkHidden("show-full-config")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{InitIDs: true})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{InitIDs: true})
 		ctx := cmd.Context()
+		if err != nil {
+			return err
+		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
@@ -80,7 +82,7 @@ Common invocations:
 			fmt.Fprintln(out, string(buf))
 			return nil
 		}
-		switch summaryOutputType(cmd) {
+		switch root.OutputType(cmd) {
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(u.Config, "", "  ")
 			if err != nil {
@@ -95,16 +97,6 @@ Common invocations:
 	}
 
 	return cmd
-}
-
-// summaryOutputType mirrors planOutputType: returns OutputText when the
-// persistent --output flag wasn't wired (unit tests build the tree directly
-// via New() rather than going through root.New).
-func summaryOutputType(cmd *cobra.Command) flags.Output {
-	if cmd.Flag("output") == nil {
-		return flags.OutputText
-	}
-	return root.OutputType(cmd)
 }
 
 // resourceRow is one line in a summary group.
