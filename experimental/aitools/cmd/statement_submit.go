@@ -14,6 +14,10 @@ import (
 func newStatementSubmitCmd() *cobra.Command {
 	var warehouseID string
 	var filePath string
+	// resolved by PreRunE so input validation runs before any auth/profile
+	// work and the documented "validates input before WorkspaceClient" claim
+	// in the PR description is actually true.
+	var sqlStatement string
 
 	cmd := &cobra.Command{
 		Use:   "submit [SQL | file.sql]",
@@ -26,9 +30,8 @@ The statement keeps running server-side. Harvest results with
 with 'statement cancel <id>'.`,
 		Example: `  databricks experimental aitools tools statement submit "SELECT pg_sleep(60)" --warehouse <wh>
   databricks experimental aitools tools statement submit --file query.sql`,
-		Args:    cobra.MaximumNArgs(1),
-		PreRunE: root.MustWorkspaceClient,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Args: cobra.MaximumNArgs(1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
 			var fps []string
@@ -42,14 +45,19 @@ with 'statement cancel <id>'.`,
 			if len(sqls) != 1 {
 				return errors.New("submit accepts exactly one SQL statement; pass multiple to 'query' for batch")
 			}
+			sqlStatement = sqls[0]
 
+			return root.MustWorkspaceClient(cmd, args)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 			wID, err := resolveWarehouseID(ctx, w, warehouseID)
 			if err != nil {
 				return err
 			}
 
-			info, err := submitStatement(ctx, w.StatementExecution, sqls[0], wID)
+			info, err := submitStatement(ctx, w.StatementExecution, sqlStatement, wID)
 			if err != nil {
 				return err
 			}

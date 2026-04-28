@@ -116,6 +116,37 @@ func TestGetStatementResultDoesNotCancelServerSideOnContextCancel(t *testing.T) 
 	require.ErrorIs(t, err, context.Canceled)
 }
 
+func TestGetStatementResultChunkFetchFailureRendersPartialInfo(t *testing.T) {
+	// SUCCEEDED state but a later chunk fetch fails (network blip, throttle,
+	// 5xx). getStatementResult should surface this as a structured error on
+	// the same statementInfo so the caller still gets parseable JSON with the
+	// statement_id, instead of returning a raw Go error that RunE would
+	// discard along with the populated info.
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+		Manifest: &sql.ResultManifest{
+			Schema:          &sql.ResultSchema{Columns: []sql.ColumnInfo{{Name: "n"}}},
+			TotalChunkCount: 2,
+		},
+		Result: &sql.ResultData{DataArray: [][]string{{"1"}}},
+	}, nil).Once()
+
+	mockAPI.EXPECT().GetStatementResultChunkNByStatementIdAndChunkIndex(mock.Anything, "stmt-1", 1).
+		Return(nil, errors.New("network blip")).Once()
+
+	info, err := getStatementResult(ctx, mockAPI, "stmt-1")
+	require.NoError(t, err)
+	assert.Equal(t, sql.StatementStateSucceeded, info.State)
+	assert.Equal(t, []string{"n"}, info.Columns, "columns from the initial response are still surfaced")
+	require.NotNil(t, info.Error)
+	assert.Contains(t, info.Error.Message, "fetch result rows")
+	assert.Contains(t, info.Error.Message, "network blip")
+}
+
 func TestGetStatementStatusSinglePoll(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
@@ -235,16 +266,17 @@ func TestRenderStatementInfo(t *testing.T) {
 	}
 }
 
-func TestStatementSubmitRejectsMultipleSQLs(t *testing.T) {
-	// The "exactly one SQL" check is something we wrote, so it earns a test.
-	// Cobra's own MaximumNArgs / ExactArgs enforcement is its own contract
-	// and is not asserted here.
+func TestStatementSubmitRejectsMultipleSQLsBeforeWorkspaceClient(t *testing.T) {
+	// The "exactly one SQL" check runs in PreRunE BEFORE MustWorkspaceClient,
+	// so a malformed invocation is rejected without any auth/profile work.
+	// The test relies on this ordering: it does not stub out PreRunE, so if
+	// validation moved back after MustWorkspaceClient the test would panic
+	// on a missing workspace client instead of returning the validation error.
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.sql")
 	require.NoError(t, os.WriteFile(path, []byte("SELECT 1"), 0o644))
 
 	cmd := newStatementSubmitCmd()
-	cmd.PreRunE = nil
 	cmd.SetArgs([]string{"--file", path, "SELECT 2"})
 	err := cmd.Execute()
 	require.Error(t, err)

@@ -39,8 +39,9 @@ invoked the synchronous path.)`,
 			}
 
 			// Non-zero exit when the statement reached a non-success terminal
-			// state. The error info is already in the JSON output.
-			if info.State != sql.StatementStateSucceeded {
+			// state OR a chunk-fetch failure prevented assembling the rows.
+			// In both cases the failure detail is already in the JSON output.
+			if info.State != sql.StatementStateSucceeded || info.Error != nil {
 				return root.ErrAlreadyPrinted
 			}
 			return nil
@@ -79,7 +80,15 @@ func getStatementResult(ctx context.Context, api sql.StatementExecutionInterface
 		info.Columns = extractColumns(pollResp.Manifest)
 		rows, err := fetchAllRows(ctx, api, pollResp)
 		if err != nil {
-			return info, err
+			// The query succeeded server-side but a later chunk fetch failed
+			// (network blip, throttling, transient 5xx). Surface this as a
+			// structured error on the same statementInfo so the caller still
+			// gets a parseable JSON response with the statement_id; RunE then
+			// signals exit-non-zero based on info.Error.
+			info.Error = &batchResultError{
+				Message: fmt.Sprintf("fetch result rows: %v", err),
+			}
+			return info, nil
 		}
 		info.Rows = rows
 	}
