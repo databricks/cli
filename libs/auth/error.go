@@ -124,10 +124,10 @@ func writeReauthSteps(ctx context.Context, cfg *config.Config, b *strings.Builde
 			return
 		}
 		oauthArg, argErr := AuthArguments{
-			Host:          cfg.Host,
-			AccountID:     cfg.AccountID,
-			WorkspaceID:   cfg.WorkspaceID,
-			IsUnifiedHost: cfg.Experimental_IsUnifiedHost,
+			Host:         cfg.Host,
+			AccountID:    cfg.AccountID,
+			WorkspaceID:  cfg.WorkspaceID,
+			DiscoveryURL: cfg.DiscoveryURL,
 		}.ToOAuthArgument()
 		if argErr != nil {
 			fmt.Fprint(b, "\n  - Re-authenticate: databricks auth login")
@@ -172,10 +172,9 @@ func BuildLoginCommand(ctx context.Context, profile string, arg u2m.OAuthArgumen
 	} else {
 		switch arg := arg.(type) {
 		case u2m.UnifiedOAuthArgument:
-			// The --experimental-is-unified-host flag is redundant now that
-			// discovery handles routing, but kept for backward compatibility
-			// until the flag is fully removed.
-			cmd = append(cmd, "--host", arg.GetHost(), "--account-id", arg.GetAccountId(), "--experimental-is-unified-host")
+			// Discovery handles unified-host routing from --host + --account-id,
+			// so we no longer suggest --experimental-is-unified-host here.
+			cmd = append(cmd, "--host", arg.GetHost(), "--account-id", arg.GetAccountId())
 		case u2m.AccountOAuthArgument:
 			cmd = append(cmd, "--host", arg.GetAccountHost(), "--account-id", arg.GetAccountId())
 		case u2m.WorkspaceOAuthArgument:

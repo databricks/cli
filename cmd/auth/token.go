@@ -41,19 +41,6 @@ const (
 	createNewSelected                               // User chose "Create a new profile"
 )
 
-// applyUnifiedHostFlags copies unified host fields from the profile to the
-// auth arguments when they are not already set. WorkspaceID is NOT copied
-// here; it is deferred to setHostAndAccountId() so that URL query params
-// (?o=...) can override stale profile values.
-func applyUnifiedHostFlags(p *profile.Profile, args *auth.AuthArguments) {
-	if p == nil {
-		return
-	}
-	if !args.IsUnifiedHost && p.IsUnifiedHost {
-		args.IsUnifiedHost = p.IsUnifiedHost
-	}
-}
-
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [PROFILE]",
@@ -195,8 +182,6 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	applyUnifiedHostFlags(existingProfile, args.authArguments)
-
 	// When no explicit profile, host, or positional args are provided, attempt to
 	// resolve the target through environment variables or interactive profile selection.
 	if args.profileName == "" && args.authArguments.Host == "" && len(args.args) == 0 {
@@ -206,7 +191,6 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 			return nil, err
 		}
 		args.profileName = resolvedProfile
-		applyUnifiedHostFlags(existingProfile, args.authArguments)
 	}
 
 	err = setHostAndAccountId(ctx, existingProfile, args.authArguments, args.args)
@@ -342,9 +326,6 @@ func resolveNoArgsToken(ctx context.Context, profiler profile.Profiler, authArgs
 		if v := env.Get(ctx, "DATABRICKS_WORKSPACE_ID"); v != "" {
 			authArgs.WorkspaceID = v
 		}
-		if ok, _ := env.GetBool(ctx, "DATABRICKS_EXPERIMENTAL_IS_UNIFIED_HOST"); ok {
-			authArgs.IsUnifiedHost = true
-		}
 		return "", nil, nil
 	}
 
@@ -457,7 +438,6 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	}
 
 	loginArgs := &auth.AuthArguments{}
-	applyUnifiedHostFlags(existingProfile, loginArgs)
 
 	err = setHostAndAccountId(ctx, existingProfile, loginArgs, nil)
 	if err != nil {
@@ -500,19 +480,16 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenCache c
 	dualWriteLegacyHostKey(ctx, tokenCache, oauthArgument, mode)
 
 	clearKeys := oauthLoginClearKeys()
-	if !loginArgs.IsUnifiedHost {
-		clearKeys = append(clearKeys, "experimental_is_unified_host")
-	}
+	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
 
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
-		Profile:                    profileName,
-		Host:                       loginArgs.Host,
-		AuthType:                   authTypeDatabricksCLI,
-		AccountID:                  loginArgs.AccountID,
-		WorkspaceID:                loginArgs.WorkspaceID,
-		Experimental_IsUnifiedHost: loginArgs.IsUnifiedHost,
-		ConfigFile:                 env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
-		Scopes:                     scopesList,
+		Profile:     profileName,
+		Host:        loginArgs.Host,
+		AuthType:    authTypeDatabricksCLI,
+		AccountID:   loginArgs.AccountID,
+		WorkspaceID: loginArgs.WorkspaceID,
+		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
+		Scopes:      scopesList,
 	}, clearKeys...)
 	if err != nil {
 		return "", nil, err

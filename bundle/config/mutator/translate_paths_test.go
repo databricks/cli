@@ -290,6 +290,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "pipeline", "my_python_file.py"))
 	touchEmptyFile(t, filepath.Join(dir, "job", "my_sql_file.sql"))
 	touchEmptyFile(t, filepath.Join(dir, "job", "my_dbt_project", "dbt_project.yml"))
+	touchEmptyFile(t, filepath.Join(dir, "job", "my_alert.dbalert.json"))
 
 	b := &bundle.Bundle{
 		SyncRootPath:   dir,
@@ -327,6 +328,11 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 								{
 									DbtTask: &jobs.DbtTask{
 										ProjectDirectory: "./my_dbt_project",
+									},
+								},
+								{
+									AlertTask: &jobs.AlertTask{
+										WorkspacePath: "./my_alert.dbalert.json",
 									},
 								},
 							},
@@ -375,6 +381,11 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 		t,
 		"/bundle/job/my_dbt_project",
 		b.Config.Resources.Jobs["job"].Tasks[3].DbtTask.ProjectDirectory,
+	)
+	assert.Equal(
+		t,
+		"/bundle/job/my_alert.dbalert.json",
+		b.Config.Resources.Jobs["job"].Tasks[4].AlertTask.WorkspacePath,
 	)
 
 	assert.Equal(
