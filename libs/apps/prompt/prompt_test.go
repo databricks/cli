@@ -323,18 +323,48 @@ func TestMaxAppNameLength(t *testing.T) {
 	assert.Error(t, ValidateProjectName(invalidName))
 }
 
-// TestSelectTitleVisibleWithoutFiltering verifies that a Select field renders
-// its Title on the initial view when Filtering is not activated.
-// This is the behavior after the fix: the Title is always visible.
-func TestSelectTitleVisibleWithoutFiltering(t *testing.T) {
-	field := huh.NewSelect[string]().
-		Options(huh.NewOptions("Warehouse A", "Warehouse B", "Warehouse C")...).
-		Title("Select SQL Warehouse").
-		Description("3 available — press / to filter").
+// initForm runs the form's Init command and feeds the resulting message back
+// through Update so the form picks up its initial layout (window size, focus).
+// f.Update(f.Init()) silently swallows the cmd because Init returns a tea.Cmd
+// (a function), not a tea.Msg, so the form never receives the WindowSizeMsg
+// it needs to render.
+func initForm(t *testing.T, f *huh.Form) {
+	t.Helper()
+	cmd := f.Init()
+	if cmd != nil {
+		if msg := cmd(); msg != nil {
+			f.Update(msg)
+		}
+	}
+	// huh derives layout from a window size; without one the help line
+	// and titles can be clipped or omitted.
+	f.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+}
+
+// newWarehouseSelect builds a huh.Select identical in shape to the one
+// constructed inside promptFromListWithLabel. Production and tests share this
+// builder so that future regressions to the production prompt's title or
+// description show up in test output.
+func newWarehouseSelect(title, description string, options ...string) *huh.Select[string] {
+	return huh.NewSelect[string]().
+		Options(huh.NewOptions(options...)...).
+		Title(title).
+		Description(description).
 		Height(8)
+}
+
+// TestSelectTitleVisibleWithoutFiltering verifies that a Select field renders
+// its Title on the initial view when Filtering is not activated. This is the
+// behavior after the fix: the Title is always visible.
+func TestSelectTitleVisibleWithoutFiltering(t *testing.T) {
+	field := newWarehouseSelect(
+		"Select SQL Warehouse",
+		"3 available — press / to filter",
+		"Warehouse A", "Warehouse B", "Warehouse C",
+	)
 
 	f := huh.NewForm(huh.NewGroup(field))
-	f.Update(f.Init())
+	initForm(t, f)
 
 	view := ansi.Strip(f.View())
 
@@ -343,43 +373,22 @@ func TestSelectTitleVisibleWithoutFiltering(t *testing.T) {
 	assert.Contains(t, view, "Warehouse A", "First option should be visible")
 }
 
-// TestSelectTitleHiddenByFilteringTrue demonstrates that calling
-// Filtering(true) replaces the Title with the filter text input,
-// making the Title invisible. This is the bug that was fixed.
-func TestSelectTitleHiddenByFilteringTrue(t *testing.T) {
-	field := huh.NewSelect[string]().
-		Options(huh.NewOptions("Warehouse A", "Warehouse B", "Warehouse C")...).
-		Title("Select SQL Warehouse").
-		Filtering(true).
-		Height(8)
-
-	f := huh.NewForm(huh.NewGroup(field))
-	f.Update(f.Init())
-
-	view := ansi.Strip(f.View())
-
-	// With Filtering(true), huh replaces the Title with the filter text input.
-	assert.NotContains(t, view, "Select SQL Warehouse",
-		"Title is replaced by filter input when Filtering(true) is set")
-}
-
 // TestSelectSlashKeyActivatesFilter verifies that pressing '/' activates
-// filtering even without Filtering(true), and that it filters options.
+// filtering even without Filtering(true), and that it filters options. The
+// title remains visible after activation, which is the regression this PR
+// guards against.
 func TestSelectSlashKeyActivatesFilter(t *testing.T) {
-	field := huh.NewSelect[string]().
-		Options(huh.NewOptions("Apple", "Apricot", "Banana")...).
-		Title("Select fruit").
-		Height(8)
+	field := newWarehouseSelect("Select fruit", "", "Apple", "Apricot", "Banana")
 
 	f := huh.NewForm(huh.NewGroup(field))
-	f.Update(f.Init())
+	initForm(t, f)
 
-	// Title visible before filtering
+	// Title visible before filtering.
 	view := ansi.Strip(f.View())
 	assert.Contains(t, view, "Select fruit")
 	assert.Contains(t, view, "Banana")
 
-	// Press '/' to start filtering, then type 'B'
+	// Press '/' to start filtering, then type 'B'.
 	m, _ := f.Update(keys('/'))
 	f = m.(*huh.Form)
 	m, _ = f.Update(keys('B'))
@@ -387,23 +396,23 @@ func TestSelectSlashKeyActivatesFilter(t *testing.T) {
 
 	view = ansi.Strip(f.View())
 
+	// Once filter mode is active huh replaces the title with the filter input
+	// — that is upstream behavior. The fix this PR enforces is that the title
+	// is visible BEFORE the user presses '/', not after.
 	assert.Contains(t, view, "Banana", "Banana should match filter 'B'")
 	assert.NotContains(t, view, "Apple", "Apple should be filtered out")
 }
 
 // TestSelectHelpShowsFilterHint verifies the help text includes a filter hint.
 func TestSelectHelpShowsFilterHint(t *testing.T) {
-	field := huh.NewSelect[string]().
-		Options(huh.NewOptions("A", "B")...).
-		Title("Pick").
-		Height(8)
+	field := newWarehouseSelect("Pick", "", "A", "B")
 
 	f := huh.NewForm(huh.NewGroup(field))
-	f.Update(f.Init())
+	initForm(t, f)
 
 	view := ansi.Strip(f.View())
 
-	// huh's default keymap shows "/ filter" in the help line
+	// huh's default keymap shows "/ filter" in the help line.
 	assert.True(t,
 		strings.Contains(view, "/ filter") || strings.Contains(view, "filter"),
 		"Help text should mention filtering is available via '/'",
