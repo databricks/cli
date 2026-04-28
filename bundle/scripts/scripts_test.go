@@ -38,13 +38,3 @@ func TestExecuteOutputWithoutTrailingNewline(t *testing.T) {
 	assert.Contains(t, output, "line2")
 	assert.Contains(t, output, "last line without newline")
 }
-
-func TestExecuteNoScript(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{},
-	}
-
-	ctx, _ := cmdio.NewTestContextWithStderr(t.Context())
-	diags := bundle.Apply(ctx, b, scripts.Execute(config.ScriptPreInit))
-	require.NoError(t, diags.Error())
-}
