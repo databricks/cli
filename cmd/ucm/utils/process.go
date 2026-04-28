@@ -144,12 +144,23 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 
 	if !opts.SkipInitialize {
 		t0 := time.Now()
-		// UCM's phases.Initialize requires Options (Backend etc.); the
-		// foundation port (#98) supplies a zero-value Options for now —
-		// rich opts wiring is sub-project C. Returns the resolved engine
-		// setting; we discard it here because the surrounding function
-		// derives engine again via ResolveEngineSetting when it needs it.
-		_ = phases.Initialize(ctx, u, phases.Options{})
+		// UCM's phases.Initialize requires a Backend that's only available
+		// after the verb builds opts; we run only the workspace-context
+		// mutators and variable resolution here, deferring state pull and
+		// full Initialize to the verb's own phase calls. Sub-project C
+		// (#103) will close this gap by plumbing Backend through
+		// ProcessOptions so ProcessUcm can call phases.Initialize like
+		// bundle does.
+		// TODO(#103): wire Backend through ProcessOptions when verbs adopt
+		// opts-driven orchestration (sub-project C).
+		ucm.ApplySeqContext(ctx, u,
+			mutator.PopulateCurrentUser(),
+			mutator.DefineDefaultWorkspaceRoot(),
+			mutator.ExpandWorkspaceRoot(),
+		)
+		if !logdiag.HasError(ctx) {
+			phases.Variables(ctx, u)
+		}
 		u.Metrics.ExecutionTimes = append(u.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Initialize",
 			Value: time.Since(t0).Milliseconds(),
