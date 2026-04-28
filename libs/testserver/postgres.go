@@ -74,6 +74,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 	// Copy spec fields to status (API returns status as materialized view)
 	if project.Spec != nil {
 		project.Status = &postgres.ProjectStatus{
+			DefaultBranch:               name + "/branches/production",
 			DisplayName:                 project.Spec.DisplayName,
 			PgVersion:                   project.Spec.PgVersion,
 			HistoryRetentionDuration:    project.Spec.HistoryRetentionDuration,

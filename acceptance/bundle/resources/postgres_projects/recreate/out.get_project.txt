@@ -3,6 +3,7 @@
   "name":"[MY_PROJECT_ID_2]",
   "status": {
     "branch_logical_size_limit_bytes":[NUMID],
+    "default_branch":"[MY_PROJECT_ID_2]/branches/production",
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu":4,
       "autoscaling_limit_min_cu":0.5,
