@@ -450,7 +450,7 @@ github.com/databricks/cli/bundle/config.Workspace:
       The client ID for the workspace
   "experimental_is_unified_host":
     "description": |-
-      Experimental feature flag to indicate if the host is a unified host
+      Deprecated: no-op. Unified hosts are now detected automatically from /.well-known/databricks-config. Retained for schema compatibility with existing databricks.yml files.
   "file_path":
     "description": |-
       The file path to use within the workspace for both deployments and job runs
