@@ -23,7 +23,13 @@ func createRoleOverride(createRoleCmd *cobra.Command, _ *postgres.CreateRoleRequ
 
     databricks postgres create-role projects/<PROJECT_ID>/branches/<BRANCH_ID> \
       --role-id <SP_CLIENT_ID> \
-      --json '{"spec": {"identity_type": "SERVICE_PRINCIPAL", "postgres_role": "<SP_CLIENT_ID>", "auth_method": "LAKEBASE_OAUTH_V1", "membership_roles": ["DATABRICKS_SUPERUSER"]}}'
+      --json '{"spec": {"identity_type": "SERVICE_PRINCIPAL", "postgres_role": "<SP_CLIENT_ID>", "auth_method": "LAKEBASE_OAUTH_V1"}}'
+
+  The example omits 'membership_roles' so the role starts with default
+  privileges only — grant database/schema/table access separately via
+  SQL, following least privilege. Set 'membership_roles' (e.g.
+  ["DATABRICKS_SUPERUSER"]) only when broad administrative access is
+  intentional.
 
   See databricks-sdk-go/service/postgres.RoleRoleSpec for the full set of
   spec fields.`
