@@ -1,0 +1,59 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/deployment.json"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/permissions/pipelines/[UUID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}

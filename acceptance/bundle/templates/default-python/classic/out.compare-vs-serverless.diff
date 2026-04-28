@@ -1,3 +1,16 @@
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/.gitignore
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/dev/deployment.json
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/dev/sync-snapshots/2586b0fe[NUMID].json
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/dev/terraform/.terraform.lock.hcl
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/dev/terraform/bundle.tf.json
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/dev/terraform/terraform.tfstate
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/prod/deployment.json
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/prod/sync-snapshots/15d13a1146535b40.json
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/prod/terraform/.terraform.lock.hcl
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/prod/terraform/.terraform.tfstate.lock.info
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/prod/terraform/bundle.tf.json
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.databricks/bundle/prod/terraform/terraform.tfstate
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/.gitignore
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/databricks.yml
 +++ output/my_default_python/databricks.yml
 @@ -33,4 +33,6 @@
@@ -7,6 +20,8 @@
 +      artifacts_dynamic_version: true
    prod:
      mode: production
+Only in [TESTROOT]/bundle/templates/default-python/classic/../serverless/output: my_default_python/dist/.gitignore
+Only in output: my_default_python/out.gitignore
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/my_default_python_etl.pipeline.yml
 +++ output/my_default_python/resources/my_default_python_etl.pipeline.yml
 @@ -5,8 +5,7 @@

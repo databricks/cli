@@ -75,7 +75,5 @@ Deployment complete!
 
 >>> [CLI] bundle plan -t prod
 Building python_artifact...
-Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
 
->>> [CLI] bundle plan -t prod -o json
-Building python_artifact...
+Error: Test script killed due to a timeout (1m0s)
