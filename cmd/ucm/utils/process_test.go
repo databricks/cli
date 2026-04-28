@@ -8,9 +8,11 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
 	ucmpkg "github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config"
+	"github.com/databricks/cli/ucm/config/engine"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -67,4 +69,61 @@ func TestProcessUcmTerraformEngineNoBackendError(t *testing.T) {
 	assert.False(t, logdiag.HasError(cmd.Context()),
 		"ProcessUcm must not log errors during the workspace-context-only Initialize stand-in: %s",
 		logdiag.GetFirstErrorSummary(cmd.Context()))
+}
+
+// ResolveEngineSetting tests cover the priority chain: ucm.engine config >
+// DATABRICKS_UCM_ENGINE env var > Default. Mirrors the bundle parallel in
+// cmd/bundle/utils/resolve_engine_test.go but checks the ucm-flavoured Source
+// labels ("config" / "env" / "default") rather than bundle's longer
+// descriptions.
+
+func TestResolveEngineSettingConfigTakesPriority(t *testing.T) {
+	ctx := env.Set(t.Context(), engine.EnvVar, "terraform")
+	u := &config.Ucm{Engine: engine.EngineDirect}
+	got, err := ResolveEngineSetting(ctx, u)
+	require.NoError(t, err)
+	assert.Equal(t, engine.EngineDirect, got.Type)
+	assert.Equal(t, engine.EngineDirect, got.ConfigType)
+	assert.Equal(t, "config", got.Source)
+}
+
+func TestResolveEngineSettingConfigOverridesInvalidEnv(t *testing.T) {
+	// An invalid env var is ignored when the config already selects an engine.
+	ctx := env.Set(t.Context(), engine.EnvVar, "bogus")
+	u := &config.Ucm{Engine: engine.EngineTerraform}
+	got, err := ResolveEngineSetting(ctx, u)
+	require.NoError(t, err)
+	assert.Equal(t, engine.EngineTerraform, got.Type)
+	assert.Equal(t, "config", got.Source)
+}
+
+func TestResolveEngineSettingFallsBackToEnv(t *testing.T) {
+	ctx := env.Set(t.Context(), engine.EnvVar, "direct")
+	got, err := ResolveEngineSetting(ctx, &config.Ucm{})
+	require.NoError(t, err)
+	assert.Equal(t, engine.EngineDirect, got.Type)
+	assert.Equal(t, engine.EngineNotSet, got.ConfigType)
+	assert.Equal(t, "env", got.Source)
+}
+
+func TestResolveEngineSettingDefault(t *testing.T) {
+	got, err := ResolveEngineSetting(t.Context(), &config.Ucm{})
+	require.NoError(t, err)
+	assert.Equal(t, engine.EngineTerraform, got.Type)
+	assert.Equal(t, engine.EngineNotSet, got.ConfigType)
+	assert.Equal(t, "default", got.Source)
+}
+
+func TestResolveEngineSettingNilUcm(t *testing.T) {
+	got, err := ResolveEngineSetting(t.Context(), nil)
+	require.NoError(t, err)
+	assert.Equal(t, engine.EngineTerraform, got.Type)
+	assert.Equal(t, "default", got.Source)
+}
+
+func TestResolveEngineSettingInvalidEnv(t *testing.T) {
+	ctx := env.Set(t.Context(), engine.EnvVar, "bogus")
+	_, err := ResolveEngineSetting(ctx, &config.Ucm{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), engine.EnvVar)
 }
