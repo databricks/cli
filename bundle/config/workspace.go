@@ -46,6 +46,11 @@ type Workspace struct {
 	AzureLoginAppID  string `json:"azure_login_app_id,omitempty"`
 
 	// Unified host specific attributes.
+	//
+	// ExperimentalIsUnifiedHost is a deprecated no-op. Unified hosts are now
+	// detected automatically from /.well-known/databricks-config. The field is
+	// retained so existing databricks.yml files using it still validate against
+	// the bundle schema.
 	ExperimentalIsUnifiedHost bool   `json:"experimental_is_unified_host,omitempty"`
 	AccountID                 string `json:"account_id,omitempty"`
 	WorkspaceID               string `json:"workspace_id,omitempty"`
@@ -135,9 +140,8 @@ func (w *Workspace) Config(ctx context.Context) *config.Config {
 		AzureLoginAppID:  w.AzureLoginAppID,
 
 		// Unified host
-		Experimental_IsUnifiedHost: w.ExperimentalIsUnifiedHost,
-		AccountID:                  w.AccountID,
-		WorkspaceID:                w.WorkspaceID,
+		AccountID:   w.AccountID,
+		WorkspaceID: w.WorkspaceID,
 	}
 
 	for k := range config.ConfigAttributes {

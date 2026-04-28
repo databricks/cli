@@ -28,7 +28,6 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	var authArguments auth.AuthArguments
 	cmd.PersistentFlags().StringVar(&authArguments.Host, "host", "", "Databricks Host")
 	cmd.PersistentFlags().StringVar(&authArguments.AccountID, "account-id", "", "Databricks Account ID")
-	cmd.PersistentFlags().BoolVar(&authArguments.IsUnifiedHost, "experimental-is-unified-host", false, "Flag to indicate if the host is a unified host")
 	cmd.PersistentFlags().StringVar(&authArguments.WorkspaceID, "workspace-id", "", "Databricks Workspace ID")
 
 	cmd.AddCommand(newEnvCommand())

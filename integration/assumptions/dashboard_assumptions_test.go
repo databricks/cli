@@ -111,15 +111,10 @@ func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Confirm that only the expected fields have been updated.
-		assert.ElementsMatch(t, []string{
-			"etag",
-			"update_time",
-		}, updatedFieldPaths)
-
-		// The warehouse_id field is cleared after workspace import.
-		assert.ElementsMatch(t, []string{
-			"warehouse_id",
-		}, deletedFieldPaths)
+		// etag and update_time always change after workspace import. serialized_dashboard and
+		// warehouse_id vary by Lakeview server version: observed on AWS staging but not GCP prod.
+		assert.Subset(t, updatedFieldPaths, []string{"etag", "update_time"})
+		assert.Subset(t, []string{"etag", "update_time", "serialized_dashboard"}, updatedFieldPaths)
+		assert.Subset(t, []string{"warehouse_id"}, deletedFieldPaths)
 	}
 }

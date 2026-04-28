@@ -29,10 +29,6 @@
 >>> print_requests
 {
   "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/pipelines/[UUID]"
 }
 
@@ -40,10 +36,6 @@
 >>> [CLI] pipelines update [UUID] --json @pipeline2.json
 
 >>> print_requests
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
 {
   "method": "PUT",
   "path": "/api/2.0/pipelines/[UUID]",
@@ -67,10 +59,6 @@
 >>> print_requests
 {
   "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/pipelines/[UUID]"
 }
 
@@ -78,10 +66,6 @@
 >>> [CLI] pipelines delete [UUID]
 
 >>> print_requests
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
 {
   "method": "DELETE",
   "path": "/api/2.0/pipelines/[UUID]"
@@ -94,10 +78,6 @@ Error: The specified pipeline [UUID] was not found.
 Exit code: 1
 
 >>> print_requests
-{
-  "method": "GET",
-  "path": "/.well-known/databricks-config"
-}
 {
   "method": "GET",
   "path": "/api/2.0/pipelines/[UUID]"

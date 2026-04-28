@@ -1,0 +1,114 @@
+name: release-docker
+
+# Publishes a Docker image for a specific CLI release tag to ghcr.io/databricks/cli.
+#
+# Why this is a separate workflow (not part of release-build):
+# The release pipeline was simplified in April 2026 (commit 6a0ddd896) by
+# consolidating two goreleaser configs into one. Docker publishing was
+# intentionally removed from goreleaser at that point ("to be handled
+# separately") because goreleaser's docker_manifests step was broken by
+# Docker 29.x changing how buildx pushes single-platform images (they became
+# OCI manifest lists, which goreleaser could not merge). Rather than pin the
+# entire release runner to Docker 28.x indefinitely, Docker publishing was
+# decoupled into this standalone workflow that uses `docker buildx imagetools`
+# directly and is unaffected by the goreleaser/Docker compatibility issue.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v0.298.0)"
+        type: string
+        required: true
+      update_latest:
+        description: "Also update the 'latest' and 'latest-<arch>' tags"
+        type: boolean
+        default: true
+
+jobs:
+  docker:
+    runs-on:
+      group: databricks-protected-runner-group-large
+      labels: linux-ubuntu-latest-large
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout repository at release tag
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Set up QEMU for cross-platform builds
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+
+      - name: Create a buildx builder with multi-platform support
+        run: docker buildx create --use --driver docker-container
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Strip leading 'v' from tag
+        id: version
+        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+        env:
+          TAG: ${{ inputs.tag }}
+
+      - name: Download CLI release binaries
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ inputs.tag }}"
+          for ARCH in amd64 arm64; do
+            curl -sfL \
+              "https://github.com/databricks/cli/releases/download/${TAG}/databricks_cli_${VERSION}_linux_${ARCH}.tar.gz" \
+              -o "/tmp/databricks_${ARCH}.tar.gz"
+            mkdir -p "/tmp/cli_${ARCH}"
+            tar -xzf "/tmp/databricks_${ARCH}.tar.gz" -C "/tmp/cli_${ARCH}" databricks
+          done
+
+      - name: Build and push amd64 image
+        run: |
+          cp /tmp/cli_amd64/databricks ./databricks
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg ARCH=amd64 \
+            --tag "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-amd64" \
+            --push .
+          rm databricks
+
+      - name: Build and push arm64 image
+        run: |
+          cp /tmp/cli_arm64/databricks ./databricks
+          docker buildx build \
+            --platform linux/arm64 \
+            --build-arg ARCH=arm64 \
+            --tag "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-arm64" \
+            --push .
+          rm databricks
+
+      - name: Create and push version-pinned multi-arch manifest
+        run: |
+          docker buildx imagetools create \
+            --tag "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}" \
+            "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-amd64" \
+            "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-arm64"
+
+      - name: Update latest multi-arch manifest
+        if: inputs.update_latest
+        run: |-
+          docker buildx imagetools create \
+            --tag ghcr.io/databricks/cli:latest-amd64 \
+            "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-amd64"
+          docker buildx imagetools create \
+            --tag ghcr.io/databricks/cli:latest-arm64 \
+            "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-arm64"
+          docker buildx imagetools create \
+            --tag ghcr.io/databricks/cli:latest \
+            "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-amd64" \
+            "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-arm64"
