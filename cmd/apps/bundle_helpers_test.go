@@ -146,7 +146,7 @@ func TestMissingAppNameError(t *testing.T) {
 	t.Run("includes APP_NAME and usage info", func(t *testing.T) {
 		t.Chdir(t.TempDir())
 
-		err := missingAppNameError()
+		err := missingAppNameError(nil)
 		assert.Contains(t, err.Error(), "APP_NAME")
 		assert.Contains(t, err.Error(), "databricks.yml")
 		assert.NotContains(t, err.Error(), "Did you mean")
@@ -158,7 +158,7 @@ func TestMissingAppNameError(t *testing.T) {
 		writeErr := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
 		assert.NoError(t, writeErr)
 
-		err := missingAppNameError()
+		err := missingAppNameError(nil)
 		assert.Contains(t, err.Error(), "Did you mean")
 		assert.Contains(t, err.Error(), filepath.Base(dir))
 	})
@@ -168,8 +168,38 @@ func TestMissingAppNameError(t *testing.T) {
 		t.Chdir(dir)
 		os.Remove(dir)
 
-		err := missingAppNameError()
+		err := missingAppNameError(nil)
 		assert.Contains(t, err.Error(), "APP_NAME")
+		assert.NotContains(t, err.Error(), "Did you mean")
+	})
+
+	t.Run("renders usage and hint from cmd path per verb", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		writeErr := os.WriteFile(filepath.Join(dir, "app.yml"), []byte("command: [\"python\"]"), 0o644)
+		assert.NoError(t, writeErr)
+
+		for _, verb := range []string{"deploy", "start", "stop", "delete"} {
+			t.Run(verb, func(t *testing.T) {
+				root := &cobra.Command{Use: "databricks"}
+				apps := &cobra.Command{Use: "apps"}
+				sub := &cobra.Command{Use: verb}
+				root.AddCommand(apps)
+				apps.AddCommand(sub)
+
+				err := missingAppNameError(sub)
+				assert.Contains(t, err.Error(), "Usage: databricks apps "+verb+" APP_NAME")
+				assert.Contains(t, err.Error(), "databricks apps "+verb+" "+filepath.Base(dir))
+			})
+		}
+	})
+
+	t.Run("ignores non-regular app.yml entries", func(t *testing.T) {
+		dir := t.TempDir()
+		t.Chdir(dir)
+		assert.NoError(t, os.Mkdir(filepath.Join(dir, "app.yml"), 0o755))
+
+		err := missingAppNameError(nil)
 		assert.NotContains(t, err.Error(), "Did you mean")
 	})
 }

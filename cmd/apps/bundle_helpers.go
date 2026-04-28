@@ -29,7 +29,7 @@ func makeArgsOptionalWithBundle(cmd *cobra.Command, usage string) {
 			return fmt.Errorf("accepts at most 1 arg(s), received %d", len(args))
 		}
 		if !hasBundleConfig() && len(args) != 1 {
-			return missingAppNameError()
+			return missingAppNameError(cmd)
 		}
 		return nil
 	}
@@ -37,18 +37,26 @@ func makeArgsOptionalWithBundle(cmd *cobra.Command, usage string) {
 
 // missingAppNameError returns an error message that explains what the positional
 // argument should be, and attempts to infer a suggestion from the local environment.
-func missingAppNameError() error {
+// The full subcommand path (e.g. "databricks apps start") is rendered from cmd so
+// the usage line and "Did you mean?" hint match the verb the user actually ran.
+func missingAppNameError(cmd *cobra.Command) error {
 	hint := inferAppNameHint()
-	msg := `missing required argument: APP_NAME
+	commandPath := "databricks apps <command>"
+	if cmd != nil {
+		if p := cmd.CommandPath(); p != "" {
+			commandPath = p
+		}
+	}
+	msg := fmt.Sprintf(`missing required argument: APP_NAME
 
-Usage: databricks apps <command> APP_NAME
+Usage: %s APP_NAME
 
 APP_NAME is the name of the Databricks app to operate on.
 Alternatively, run this command from a project directory containing
-databricks.yml to auto-detect the app name.`
+databricks.yml to auto-detect the app name.`, commandPath)
 
 	if hint != "" {
-		msg += "\n\nDid you mean?\n  databricks apps deploy " + hint
+		msg += fmt.Sprintf("\n\nDid you mean?\n  %s %s", commandPath, hint)
 	}
 
 	return errors.New(msg)
@@ -64,7 +72,8 @@ func inferAppNameHint() string {
 	}
 
 	for _, filename := range []string{"app.yml", "app.yaml"} {
-		if _, err := os.Stat(filepath.Join(wd, filename)); err == nil {
+		info, err := os.Stat(filepath.Join(wd, filename))
+		if err == nil && info.Mode().IsRegular() {
 			return filepath.Base(wd)
 		}
 	}
