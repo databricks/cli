@@ -103,5 +103,37 @@ Deployment complete!
 >>> print_requests.py //jobs //pipelines
 
 >>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.bar
+  delete resources.pipelines.foo
 
-Error: Test script killed due to a timeout (1m0s)
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py //jobs //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [BAR_ID]
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[FOO_ID_2]"
+}
+
+>>> musterr [CLI] pipelines get [FOO_ID]
+Error: The specified pipeline [FOO_ID] was not found.
+
+>>> musterr [CLI] pipelines get [FOO_ID_2]
+Error: The specified pipeline [FOO_ID_2] was not found.
+
+>>> musterr [CLI] jobs get [BAR_ID]
+Error: Not Found
