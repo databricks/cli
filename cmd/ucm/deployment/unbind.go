@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/phases"
 	"github.com/spf13/cobra"
 )
@@ -47,10 +48,14 @@ To re-bind later, use:
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		key := args[0]
-		ctx := cmd.Context()
 
-		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
-		ctx = cmd.Context()
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
+			InitFunc: func(u *ucm.Ucm) {
+				u.ForceLock = forceLock
+			},
+			InitIDs: true,
+		})
+		ctx := cmd.Context()
 		if err != nil {
 			return err
 		}
@@ -76,11 +81,13 @@ To re-bind later, use:
 			}
 		}
 
+		// UCM's phases.Unbind needs a Backend + TerraformFactory that
+		// ProcessUcm does not yet plumb (tracked in #103).
 		opts, err := buildPhaseOptions(ctx, u)
 		if err != nil {
 			return fmt.Errorf("resolve unbind options: %w", err)
 		}
-		opts.ForceLock = forceLock
+		opts.ForceLock = u.ForceLock
 
 		phases.Unbind(ctx, u, opts, phases.UnbindRequest{Kind: kind, Key: key})
 		if logdiag.HasError(ctx) {
