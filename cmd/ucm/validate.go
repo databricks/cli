@@ -45,8 +45,11 @@ Common invocations:
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{Validate: true})
 		ctx := cmd.Context()
-		if err != nil {
-			return err
+		// Surface non-ErrAlreadyPrinted errors as a diagnostic so the trailer
+		// still prints; the deferred return below preserves the failure exit.
+		if err != nil && err != root.ErrAlreadyPrinted {
+			logdiag.LogError(ctx, err)
+			err = root.ErrAlreadyPrinted
 		}
 
 		if includeLocations && u != nil && !logdiag.HasError(ctx) {
@@ -54,7 +57,7 @@ Common invocations:
 		}
 
 		out := cmd.OutOrStdout()
-		output := validateOutputType(cmd)
+		output := root.OutputType(cmd)
 
 		// Emit output before returning on error so users see the summary or
 		// the (partial) config tree regardless.
@@ -69,8 +72,8 @@ Common invocations:
 			writeValidateTrailer(ctx, out)
 		}
 
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		if err != nil {
+			return err
 		}
 
 		numWarnings := logdiag.NumWarnings(ctx)
@@ -86,16 +89,6 @@ Common invocations:
 	}
 
 	return cmd
-}
-
-// validateOutputType returns the configured -o value, defaulting to OutputText
-// when the flag is not wired (e.g. in standalone unit tests that don't go
-// through root.New). root.OutputType would panic in that case.
-func validateOutputType(cmd *cobra.Command) flags.Output {
-	if cmd.Flag("output") == nil {
-		return flags.OutputText
-	}
-	return root.OutputType(cmd)
 }
 
 // renderValidateJSON emits the loaded ucm config tree as indented JSON.

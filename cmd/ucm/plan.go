@@ -68,7 +68,7 @@ Common invocations:
 		}
 
 		out := cmd.OutOrStdout()
-		switch planOutputType(cmd) {
+		switch root.OutputType(cmd) {
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")
 			if err != nil {
@@ -84,12 +84,3 @@ Common invocations:
 	return cmd
 }
 
-// planOutputType returns the configured -o value, defaulting to OutputText
-// when the flag is not wired (e.g. in standalone unit tests that don't go
-// through root.New). root.OutputType would panic in that case.
-func planOutputType(cmd *cobra.Command) flags.Output {
-	if cmd.Flag("output") == nil {
-		return flags.OutputText
-	}
-	return root.OutputType(cmd)
-}

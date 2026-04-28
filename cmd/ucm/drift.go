@@ -65,7 +65,7 @@ the command still routes all live reads through the SDK regardless of engine.`,
 		}
 
 		out := cmd.OutOrStdout()
-		switch driftOutputType(cmd) {
+		switch root.OutputType(cmd) {
 		case flags.OutputJSON:
 			if err := renderDriftJSON(out, report); err != nil {
 				return err
@@ -83,16 +83,6 @@ the command still routes all live reads through the SDK regardless of engine.`,
 	}
 
 	return cmd
-}
-
-// driftOutputType returns the configured -o value, defaulting to OutputText
-// when the flag is not wired. Mirrors planOutputType — kept local so drift
-// doesn't import the plan file's helper across verb boundaries.
-func driftOutputType(cmd *cobra.Command) flags.Output {
-	if cmd.Flag("output") == nil {
-		return flags.OutputText
-	}
-	return root.OutputType(cmd)
 }
 
 // renderDriftText emits the human-readable report.

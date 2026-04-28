@@ -85,7 +85,7 @@ Common invocations:
 		r := &diffRunner{
 			base:    base,
 			head:    head,
-			output:  diffOutputType(cmd),
+			output:  root.OutputType(cmd),
 			workDir: wd,
 			gitRun:  defaultGitRun(wd),
 		}
@@ -93,15 +93,6 @@ Common invocations:
 	}
 
 	return cmd
-}
-
-// diffOutputType mirrors planOutputType: returns OutputText when the flag is
-// not wired (e.g. in unit tests invoking the command directly).
-func diffOutputType(cmd *cobra.Command) flags.Output {
-	if cmd.Flag("output") == nil {
-		return flags.OutputText
-	}
-	return root.OutputType(cmd)
 }
 
 // defaultGitRun returns a gitRun closure rooted at dir. The -C flag makes the

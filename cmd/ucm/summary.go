@@ -82,7 +82,7 @@ Common invocations:
 			fmt.Fprintln(out, string(buf))
 			return nil
 		}
-		switch summaryOutputType(cmd) {
+		switch root.OutputType(cmd) {
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(u.Config, "", "  ")
 			if err != nil {
@@ -97,16 +97,6 @@ Common invocations:
 	}
 
 	return cmd
-}
-
-// summaryOutputType mirrors planOutputType: returns OutputText when the
-// persistent --output flag wasn't wired (unit tests build the tree directly
-// via New() rather than going through root.New).
-func summaryOutputType(cmd *cobra.Command) flags.Output {
-	if cmd.Flag("output") == nil {
-		return flags.OutputText
-	}
-	return root.OutputType(cmd)
 }
 
 // resourceRow is one line in a summary group.
