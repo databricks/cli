@@ -1,67 +1,24 @@
-package ucm_test
+package ucm
 
 import (
-	"bytes"
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
-	cmdUcm "github.com/databricks/cli/cmd/ucm"
-	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/telemetry"
-	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // runInit invokes `databricks ucm init <args...>` inside a temp dir that
 // doubles as the template's output parent. Returns stdout, stderr, and the
-// directory the project was materialized into.
+// directory the project was materialized into. Wraps runVerbInDir so init
+// shares the auth + cmdio + cobra-root setup with the rest of the verb tests.
 func runInit(t *testing.T, args ...string) (string, string, string, error) {
 	t.Helper()
 
 	workDir := t.TempDir()
-	prev, err := os.Getwd()
-	require.NoError(t, err)
-	require.NoError(t, os.Chdir(workDir))
-	t.Cleanup(func() { _ = os.Chdir(prev) })
-
-	cmd := cmdUcm.New()
-	// init's PreRunE resolves a real workspace client; tests inject a mock via
-	// the context instead so they don't depend on ~/.databrickscfg.
-	stripInitAuthHook(cmd)
-	var out, errOut bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetErr(&errOut)
-	cmd.SetArgs(append([]string{"init"}, args...))
-
-	ctx, diagOut := cmdio.NewTestContextWithStderr(context.Background())
-	ctx = logdiag.InitContext(ctx)
-	ctx = telemetry.WithNewLogger(ctx)
-	logdiag.SetRoot(ctx, workDir)
-
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &config.Config{Host: "https://example.cloud.databricks.com"}
-	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
-
-	cmd.SetContext(ctx)
-
-	err = cmd.Execute()
-	return out.String(), diagOut.String() + errOut.String(), workDir, err
-}
-
-func stripInitAuthHook(cmd *cobra.Command) {
-	for _, sub := range cmd.Commands() {
-		if sub.Name() == "init" {
-			sub.PreRunE = nil
-			sub.PreRun = nil
-		}
-	}
+	stdout, stderr, err := runVerbInDir(t, workDir, append([]string{"init"}, args...)...)
+	return stdout, stderr, workDir, err
 }
 
 func TestCmd_Init_Default_MaterializesValidProject(t *testing.T) {
@@ -125,24 +82,7 @@ func TestCmd_Init_Default_ValidatesCleanly(t *testing.T) {
 	require.NoError(t, err)
 
 	projectDir := filepath.Join(workDir, "my_ucm_project")
-
-	prev, err := os.Getwd()
-	require.NoError(t, err)
-	require.NoError(t, os.Chdir(projectDir))
-	t.Cleanup(func() { _ = os.Chdir(prev) })
-
-	cmd := cmdUcm.New()
-	var out, errOut bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetErr(&errOut)
-	cmd.SetArgs([]string{"validate"})
-
-	ctx, diagOut := cmdio.NewTestContextWithStderr(context.Background())
-	ctx = logdiag.InitContext(ctx)
-	logdiag.SetRoot(ctx, projectDir)
-	cmd.SetContext(ctx)
-
-	err = cmd.Execute()
-	require.NoError(t, err, "stdout=%q stderr=%q", out.String(), diagOut.String()+errOut.String())
-	assert.Contains(t, out.String(), "Validation OK!")
+	stdout, stderr, err := runVerbInDir(t, projectDir, "validate")
+	require.NoError(t, err, "stdout=%q stderr=%q", stdout, stderr)
+	assert.Contains(t, stdout, "Validation OK!")
 }

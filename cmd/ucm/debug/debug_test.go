@@ -6,16 +6,22 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
+	cmdUcm "github.com/databricks/cli/cmd/ucm"
 	"github.com/databricks/cli/cmd/ucm/debug"
+	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/ucm"
+	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/direct"
 	ucmtf "github.com/databricks/cli/ucm/deploy/terraform"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,29 +31,90 @@ import (
 // Returns captured stdout+stderr exactly like cmd/ucm/helpers_test.go's
 // runVerb — kept local because the debug subpackage can't import the `ucm`
 // test helpers (cycle: ucm -> debug).
+//
+// Mirrors the runVerbInDir shape: build a tiny cobra root that owns the
+// persistent --output flag, install cmdio on the context, then let the
+// production code run logdiag.InitContext. No pre-init here so ProcessUcm
+// (called by the states subcommand) does not panic on double-init.
 func runDebug(t *testing.T, workDir string, args ...string) (string, string, error) {
 	t.Helper()
+	t.Chdir(workDir)
+	setupDebugTestEnv(t)
+	installDebugTestHook(t)
 
-	prev, err := os.Getwd()
-	require.NoError(t, err)
-	require.NoError(t, os.Chdir(workDir))
-	t.Cleanup(func() { _ = os.Chdir(prev) })
+	rootCmd := &cobra.Command{Use: "test-root", SilenceUsage: true, SilenceErrors: true}
+	output := flags.OutputText
+	rootCmd.PersistentFlags().VarP(&output, "output", "o", "output type: text or json")
+	rootCmd.AddGroup(&cobra.Group{ID: "development", Title: "Development"})
 
-	cmd := debug.New()
-	stripHooks(cmd)
+	// Build the full ucm subtree so the persistent --var / --target / --profile
+	// flags ProcessUcm reads off cmd.Flags() are wired. The standalone
+	// debug.New() output omits them.
+	ucmCmd := cmdUcm.New()
+	rootCmd.AddCommand(ucmCmd)
+	stripHooks(ucmCmd)
 
-	var out, errOut bytes.Buffer
-	cmd.SetOut(&out)
-	cmd.SetErr(&errOut)
-	cmd.SetArgs(args)
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	rootCmd.SetOut(out)
+	rootCmd.SetErr(errOut)
+	rootCmd.SetArgs(append([]string{"ucm", "debug"}, args...))
 
-	ctx, diagOut := cmdio.NewTestContextWithStderr(context.Background())
-	ctx = logdiag.InitContext(ctx)
-	logdiag.SetRoot(ctx, workDir)
-	cmd.SetContext(ctx)
+	cmdIO := cmdio.NewIO(t.Context(), flags.OutputText, nil, out, errOut, "", "")
+	rootCmd.SetContext(cmdio.InContext(t.Context(), cmdIO))
 
-	err = cmd.Execute()
-	return out.String(), diagOut.String() + errOut.String(), err
+	err := rootCmd.Execute()
+	return out.String(), errOut.String(), err
+}
+
+// installDebugTestHook installs a utils.TestProcessHook for the duration of
+// the test so the debug states subcommand (which calls ProcessUcm) finds a
+// pre-seeded CurrentUser + mock WorkspaceClient. Mirrors the helper in
+// cmd/ucm/helpers_test.go but lives here to avoid the import cycle.
+func installDebugTestHook(t *testing.T) {
+	t.Helper()
+	prev := utils.TestProcessHook
+	utils.TestProcessHook = func(ctx context.Context, u *ucm.Ucm) {
+		if prev != nil {
+			prev(ctx, u)
+		}
+		if u == nil {
+			return
+		}
+		if u.CurrentUser == nil {
+			u.CurrentUser = &config.User{
+				ShortName: "test-user",
+				User:      &iam.User{UserName: "test-user@example.com"},
+			}
+		}
+		m := mocks.NewMockWorkspaceClient(t)
+		u.SetWorkspaceClient(m.WorkspaceClient)
+	}
+	t.Cleanup(func() { utils.TestProcessHook = prev })
+}
+
+// setupDebugTestEnv mirrors helpers_test.setupTestEnvironment for the debug
+// subpackage. Kept local so cmd/ucm/debug doesn't have to import test code
+// from cmd/ucm.
+func setupDebugTestEnv(t *testing.T) {
+	t.Helper()
+	tempHomeDir := t.TempDir()
+	homeEnvVar := "HOME"
+	if runtime.GOOS == "windows" {
+		homeEnvVar = "USERPROFILE"
+	}
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(tempHomeDir, "missing-databrickscfg"))
+	t.Setenv(homeEnvVar, tempHomeDir)
+	t.Setenv("DATABRICKS_TOKEN", "test-token")
+	t.Setenv("DATABRICKS_AUTH_TYPE", "pat")
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
+	t.Setenv("DATABRICKS_HOST", "")
+	t.Setenv("DATABRICKS_METADATA_SERVICE_URL", "")
+	if runtime.GOOS == "windows" {
+		t.Setenv("PATH", `C:\Windows\System32`)
+	} else {
+		t.Setenv("PATH", "/usr/bin:/bin")
+	}
 }
 
 // stripHooks mirrors cmd/ucm/helpers_test.go.stripAuthHooks so tests don't
