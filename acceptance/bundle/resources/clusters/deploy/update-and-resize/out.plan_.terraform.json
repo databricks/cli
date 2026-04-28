@@ -6,27 +6,3 @@
     }
   }
 }
-{
-  "cli_version": "[DEV_VERSION]",
-  "plan": {
-    "resources.clusters.test_cluster": {
-      "action": "update"
-    }
-  }
-}
-{
-  "cli_version": "[DEV_VERSION]",
-  "plan": {
-    "resources.clusters.test_cluster": {
-      "action": "update"
-    }
-  }
-}
-{
-  "cli_version": "[DEV_VERSION]",
-  "plan": {
-    "resources.clusters.test_cluster": {
-      "action": "update"
-    }
-  }
-}

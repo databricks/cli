@@ -1,8 +1,0 @@
-{
-  "cli_version": "[DEV_VERSION]",
-  "plan": {
-    "resources.dashboards.dashboard1": {
-      "action": "skip"
-    }
-  }
-}

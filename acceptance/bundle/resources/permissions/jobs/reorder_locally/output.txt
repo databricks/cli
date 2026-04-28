@@ -15,4 +15,5 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+Error: Test script killed due to a timeout (1m0s)

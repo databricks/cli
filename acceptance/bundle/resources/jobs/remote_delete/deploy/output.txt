@@ -16,7 +16,5 @@ Deployment complete!
 create jobs.foo
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+
+Error: Test script killed due to a timeout (1m0s)

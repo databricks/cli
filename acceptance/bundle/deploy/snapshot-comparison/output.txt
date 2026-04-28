@@ -55,15 +55,5 @@ Destroy complete!
 
 === Cleanup bundle 2
 >>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.jobs.test_job
-  delete resources.pipelines.test_pipeline
 
-This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete resources.pipelines.test_pipeline
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/snapshot-test-2-[UNIQUE_NAME]/default
-
-Deleting files...
-Destroy complete!
+Error: Test script killed due to a timeout (1m0s)

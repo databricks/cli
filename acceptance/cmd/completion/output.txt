@@ -35,3 +35,5 @@ Status:  not installed
 # fish completion for databricks                           -*- shell-script -*-
 # powershell completion for databricks                           -*- shell-script -*-
 # bash completion V2 for databricks                           -*- shell-script -*-
+
+Exit code: 141

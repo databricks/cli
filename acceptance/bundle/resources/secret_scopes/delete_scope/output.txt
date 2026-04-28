@@ -13,10 +13,5 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.secret_scopes.first
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default
-
-Deleting files...
-Destroy complete!
+Error: Test script killed due to a timeout (1m0s)

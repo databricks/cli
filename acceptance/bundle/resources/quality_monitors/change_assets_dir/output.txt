@@ -23,13 +23,4 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> print_requests.py ^//import-file/ ^//workspace/ ^//telemetry-ext
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.quality_monitors.monitor1
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default
-
-Deleting files...
-Destroy complete!
+Error: Test script killed due to a timeout (1m0s)

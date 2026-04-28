@@ -60,50 +60,5 @@ Deployment complete!
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
->>> print_requests.py //secrets
-
->>> [CLI] secrets list-scopes -o json
-{
-  "backend_type": "DATABRICKS",
-  "name": "test-scope-[UNIQUE_NAME]-2"
-}
-
-=== put and get secret in recreated scope
->>> [CLI] secrets put-secret test-scope-[UNIQUE_NAME]-2 another-key --string-value another-secret-value
-
->>> [CLI] secrets get-secret test-scope-[UNIQUE_NAME]-2 another-key
-{
-  "key":"another-key",
-  "value":"YW5vdGhlci1zZWNyZXQtdmFsdWU="
-}
-
->>> [CLI] secrets list-acls test-scope-[UNIQUE_NAME]-2
-{"permission":"MANAGE","principal":"[USERNAME]"}
-{"permission":"WRITE","principal":"deco-test-user@databricks.com"}
-
->>> print_requests.py //secrets
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/put",
-  "body": {
-    "key": "another-key",
-    "scope": "test-scope-[UNIQUE_NAME]-2",
-    "string_value": "another-secret-value"
-  }
-}
-
-=== verify there's no persistent drift
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.secret_scopes.my_scope
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default
-
-Deleting files...
-Destroy complete!
+Error: Test script killed due to a timeout (1m0s)

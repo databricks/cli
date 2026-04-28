@@ -1,0 +1,1212 @@
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/script",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "errcode() {\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\n    set +e\n    # Execute the provided command with all arguments\n    \"$@\"\n    local exit_code=$?\n    # Re-enable 'set -e' if it was previously set\n    set -e\n    if [ $exit_code -ne 0 ]; then\n        \u003e\u00262 printf \"\\nExit code: $exit_code\\n\"\n    fi\n}\n\nmusterr() {\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\n    set +e\n    # Execute the provided command with all arguments\n    \"$@\"\n    local exit_code=$?\n    # Re-enable 'set -e'\n    set -e\n    if [ $exit_code -eq 0 ]; then\n        \u003e\u00262 printf \"\\nUnexpected success\\n\"\n        exit 1\n    fi\n}\n\ntrace() {\n    \u003e\u00262 printf \"\\n\u003e\u003e\u003e %s\\n\" \"$*\"\n\n    if [[ \"$1\" == *\"=\"* ]]; then\n        # If the first argument contains '=', collect all env vars\n        local env_vars=()\n        while [[ \"$1\" == *\"=\"* ]]; do\n            env_vars+=(\"$1\")\n            shift\n        done\n        # Export environment variables in a subshell and execute the command\n        (\n            export \"${env_vars[@]}\"\n            \"$@\"\n        )\n    else\n        # Execute the command normally\n        \"$@\"\n    fi\n\n    return $?\n}\n\ngit-repo-init() {\n    git init -qb main\n    git config core.autocrlf false\n    git config user.name \"Tester\"\n    git config user.email \"[USERNAME]\"\n    git config core.hooksPath no-hooks\n    git add databricks.yml\n    git commit -qm 'Add databricks.yml'\n}\n\ntitle() {\n    local label=\"$1\"\n    printf \"\\n=== %b\" \"$label\"\n}\n\nwithdir() {\n    local dir=\"$1\"\n    shift\n    local orig_dir=\"$(pwd)\"\n    cd \"$dir\" || return $?\n    \"$@\"\n    local exit_code=$?\n    cd \"$orig_dir\" || return $?\n    return $exit_code\n}\n\nuuid() {\n    python3 -c 'import uuid; print(uuid.uuid4())'\n}\n\nvenv_activate() {\n    if [[ \"$OSTYPE\" == \"msys\" || \"$OSTYPE\" == \"cygwin\" || \"$OSTYPE\" == \"win32\" ]]; then\n        source .venv/Scripts/activate\n    else\n        source .venv/bin/activate\n    fi\n}\n\nenvsubst() {\n    # We need to disable MSYS_NO_PATHCONV when running the python script.\n    # This is because the python interpreter is otherwise unable to find the python script\n    # when MSYS_NO_PATHCONV is enabled.\n    env -u MSYS_NO_PATHCONV envsubst.py\n}\n\nprint_telemetry_bool_values() {\n    jq -r 'select(.path? == \"/telemetry-ext\") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map(\"\\(.key) \\(.value)\") | .[]' out.requests.txt | sort\n}\n\nsethome() {\n    local home=\"$1\"\n    mkdir -p \"$home\"\n\n    # For macOS and Linux, use HOME.\n    export HOME=\"$home\"\n\n    # For Windows, use USERPROFILE.\n    export USERPROFILE=\"$home\"\n}\n\nas-test-sp() {\n    if [[ -z \"$TEST_SP_TOKEN\" ]]; then\n        echo \"Error: TEST_SP_TOKEN is not set.\" \u003e\u00262\n        return 1\n    fi\n\n    DATABRICKS_TOKEN=\"$TEST_SP_TOKEN\" \\\n    DATABRICKS_CLIENT_SECRET=\"\" \\\n    DATABRICKS_CLIENT_ID=\"\" \\\n    DATABRICKS_AUTH_TYPE=\"\" \\\n    \"$@\"\n}\n\nreadplanarg() {\n    # Expands into \"--plan \u003cfilename\u003e\" based on READPLAN env var\n    # Use it with \"bundle deploy\" to configure two runs: once with saved plan and one without.\n    # Note: READPLAN is specially handled in test runner so that engine=terraform/readplan is set combination is skipped.\n    if [[ -n \"$READPLAN\" ]]; then\n        printf -- \"--plan %s\" \"$1\"\n    else\n        printf \"\"\n    fi\n}\n\n(\nenvsubst \u003c databricks.yml.tmpl \u003e databricks.yml\n\ncleanup() {\n    trace errcode $CLI bundle destroy --auto-approve\n    rm -f out.requests.txt\n}\ntrap cleanup EXIT\n\ntrace $CLI bundle deploy\ntrace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py \"$CURRENT_USER_NAME\" 'deco-test-user@databricks.com'\n\ngrep -v 'TO_REMOVE' databricks.yml \u003e tmp.yml \u0026\u0026 mv tmp.yml databricks.yml\n\ntrace $CLI bundle deploy\ntrace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py \"$CURRENT_USER_NAME\" '!deco-test-user@databricks.com' \u0026\u003e out.grants.$DATABRICKS_BUNDLE_ENGINE.txt\ntrace $CLI bundle plan\ntrace $CLI bundle deploy\ntrace $CLI bundle plan\n)\n\nrm -fr .databricks .gitignore\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/repls.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": [
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/\\.terraformrc",
+      "New": "[DATABRICKS_TF_CLI_CONFIG_FILE]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/terraform",
+      "New": "[TERRAFORM]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/libs/vendored_py_packages",
+      "New": "[VENDORED_PY_PACKAGES]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/databricks_bundles-0\\.298\\.0-py3-none-any\\.whl",
+      "New": "[DATABRICKS_BUNDLES_WHEEL]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/databricks",
+      "New": "[CLI]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/0\\.293\\.0/databricks",
+      "New": "[CLI_293]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_DEFAULT_WAREHOUSE_ID]",
+      "New": "[TEST_DEFAULT_WAREHOUSE_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_DEFAULT_CLUSTER_ID]",
+      "New": "[TEST_DEFAULT_CLUSTER_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_INSTANCE_POOL_ID]",
+      "New": "[TEST_INSTANCE_POOL_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64",
+      "New": "[BUILD_DIR]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "0\\.0\\.0-dev([-+][a-f0-9]{10,16})?",
+      "New": "[DEV_VERSION]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "databricks-sdk-go/[0-9]+\\.[0-9]+\\.[0-9]+",
+      "New": "databricks-sdk-go/[SDK_VERSION]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "1\\.26\\.2",
+      "New": "[GO_VERSION]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance",
+      "New": "[TESTROOT]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "dbapi[0-9a-f]+",
+      "New": "[DATABRICKS_TOKEN]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "i3\\.xlarge",
+      "New": "[NODE_TYPE_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[UNIQUE_NAME]",
+      "New": "[UNIQUE_NAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_TMP_DIR]",
+      "New": "[TEST_TMP_DIR]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_TMP_DIR]_PARENT",
+      "New": "[TEST_TMP_DIR]_PARENT",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[USERNAME]@databricks\\.com",
+      "New": "[USERNAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[USERNAME]",
+      "New": "[USERNAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[USERID]",
+      "New": "[USERID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "https://127\\.0\\.0\\.1:43945",
+      "New": "[DATABRICKS_URL]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "http://127\\.0\\.0\\.1:43945",
+      "New": "[DATABRICKS_URL]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "127\\.0\\.0\\.1:43945",
+      "New": "[DATABRICKS_HOST]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}",
+      "New": "[UUID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "\\d{20,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "1[78]\\d{17}",
+      "New": "[UNIX_TIME_NANOS]",
+      "Order": 10,
+      "Distinct": true
+    },
+    {
+      "Old": "\\d{17,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "\\d{14,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "1[78]\\d{11}",
+      "New": "[UNIX_TIME_MILLIS]",
+      "Order": 10,
+      "Distinct": true
+    },
+    {
+      "Old": "\\d{11,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "1[78]\\d{8}",
+      "New": "[UNIX_TIME_S]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "\\d{8,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "2\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d\\d:\\d\\d:\\d\\d\\.\\d+(Z|\\+\\d\\d:\\d\\d)?",
+      "New": "[TIMESTAMP]",
+      "Order": 9,
+      "Distinct": false
+    },
+    {
+      "Old": "2\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d\\d:\\d\\d:\\d\\dZ?",
+      "New": "[TIMESTAMP]",
+      "Order": 9,
+      "Distinct": false
+    },
+    {
+      "Old": "[METASTORE_NAME]|[METASTORE_NAME]",
+      "New": "[METASTORE_NAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "os/[OS]",
+      "New": "os/[OS]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "os/[OS]",
+      "New": "os/[OS]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "os/[OS]",
+      "New": "os/[OS]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "",
+      "New": "",
+      "Order": 0,
+      "Distinct": false
+    }
+  ]
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/out.requests.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/preview/scim/v2/Me\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/databricks.yml.tmpl",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "bundle:\n  name: schema-grants-remove-principal-$UNIQUE_NAME\n\nresources:\n  schemas:\n    grants_schema:\n      name: schema_remove_principal_$UNIQUE_NAME\n      catalog_name: main\n      grants:\n        - principal: $CURRENT_USER_NAME\n          privileges:\n            - CREATE_TABLE\n        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_REMOVE\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/databricks.yml",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "bundle:\n  name: schema-grants-remove-principal-[UNIQUE_NAME]\n\nresources:\n  schemas:\n    grants_schema:\n      name: schema_remove_principal_[UNIQUE_NAME]\n      catalog_name: main\n      grants:\n        - principal: [USERNAME]\n          privileges:\n            - CREATE_TABLE\n        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_REMOVE\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/output.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "seq": 1,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": [
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml.tmpl",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.requests.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "output.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "repls.json",
+        "is_notebook": false
+      }
+    ],
+    "id": "[UUID]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/schemas",
+  "body": {
+    "catalog_name": "main",
+    "name": "schema_remove_principal_[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "USE_SCHEMA"
+        ],
+        "principal": "deco-test-user@databricks.com"
+      },
+      {
+        "add": [
+          "CREATE_TABLE"
+        ],
+        "principal": "[USERNAME]"
+      }
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 4,
+    "terraform_version": "1.5.5",
+    "serial": 3,
+    "lineage": "[UUID]",
+    "outputs": {},
+    "resources": [
+      {
+        "mode": "managed",
+        "type": "databricks_grants",
+        "name": "schema_grants_schema",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "catalog": null,
+              "credential": null,
+              "external_location": null,
+              "foreign_connection": null,
+              "function": null,
+              "grant": [
+                {
+                  "principal": "deco-test-user@databricks.com",
+                  "privileges": [
+                    "USE_SCHEMA"
+                  ]
+                },
+                {
+                  "principal": "[USERNAME]",
+                  "privileges": [
+                    "CREATE_TABLE"
+                  ]
+                }
+              ],
+              "id": "schema/main.schema_remove_principal_[UNIQUE_NAME]",
+              "metastore": null,
+              "model": null,
+              "pipeline": null,
+              "provider_config": [],
+              "recipient": null,
+              "schema": "main.schema_remove_principal_[UNIQUE_NAME]",
+              "share": null,
+              "storage_credential": null,
+              "table": null,
+              "volume": null
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA==",
+            "dependencies": [
+              "databricks_schema.grants_schema"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "managed",
+        "type": "databricks_schema",
+        "name": "grants_schema",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "catalog_name": "main",
+              "comment": null,
+              "enable_predictive_optimization": "INHERIT",
+              "force_destroy": true,
+              "id": "main.schema_remove_principal_[UNIQUE_NAME]",
+              "metastore_id": "[UUID]",
+              "name": "schema_remove_principal_[UNIQUE_NAME]",
+              "owner": "[USERNAME]",
+              "properties": null,
+              "provider_config": [],
+              "schema_id": "[UUID]",
+              "storage_root": null
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA=="
+          }
+        ]
+      }
+    ],
+    "check_results": null
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/metadata.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "config": {
+      "bundle": {
+        "name": "schema-grants-remove-principal-[UNIQUE_NAME]",
+        "target": "default",
+        "git": {
+          "bundle_root_path": "."
+        }
+      },
+      "workspace": {
+        "file_path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files"
+      },
+      "resources": {},
+      "presets": {
+        "source_linked_deployment": false
+      }
+    },
+    "extra": {}
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/telemetry-ext",
+  "body": {
+    "uploadTime": [UNIX_TIME_MILLIS][0],
+    "items": [],
+    "protoLogs": [
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"linux\",\"execution_time_ms\":18030,\"exit_code\":0},\"bundle_deploy_event\":{\"bundle_uuid\":\"[UUID]\",\"deployment_id\":\"[UUID]\",\"resource_count\":1,\"resource_job_count\":0,\"resource_pipeline_count\":0,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":0,\"resource_quality_monitor_count\":0,\"resource_schema_count\":1,\"resource_volume_count\":0,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0,\"experimental\":{\"configuration_file_count\":1,\"variable_count\":0,\"complex_variable_count\":0,\"lookup_variable_count\":0,\"target_count\":1,\"bool_values\":[{\"key\":\"local.cache.attempt\",\"value\":true},{\"key\":\"local.cache.miss\",\"value\":true},{\"key\":\"experimental.use_legacy_run_as\",\"value\":false},{\"key\":\"run_as_set\",\"value\":false},{\"key\":\"presets_name_prefix_is_set\",\"value\":false},{\"key\":\"python_wheel_wrapper_is_set\",\"value\":false},{\"key\":\"skip_artifact_cleanup\",\"value\":false},{\"key\":\"has_serverless_compute\",\"value\":false},{\"key\":\"has_classic_job_compute\",\"value\":false},{\"key\":\"has_classic_interactive_compute\",\"value\":false}],\"bundle_mode\":\"TYPE_UNSPECIFIED\",\"workspace_artifact_path_type\":\"WORKSPACE_FILE_SYSTEM\",\"bundle_mutator_execution_time_ms\":[{\"key\":\"phases.Deploy\",\"value\":17841},{\"key\":\"terraform.(plan)\",\"value\":8794},{\"key\":\"terraform.(apply)\",\"value\":5237},{\"key\":\"phases.Initialize\",\"value\":69},{\"key\":\"resourcemutator.(processStaticResources)\",\"value\":38},{\"key\":\"validate.(uniqueResourceKeys)\",\"value\":28},{\"key\":\"bundle.(setDefault)\",\"value\":26},{\"key\":\"validate.(required)\",\"value\":24},{\"key\":\"files.(upload)\",\"value\":5},{\"key\":\"bundle.(setDefault)\",\"value\":5},{\"key\":\"lock.(acquire)\",\"value\":1},{\"key\":\"deploy.(statePush)\",\"value\":1},{\"key\":\"terraform.(write)\",\"value\":1},{\"key\":\"phases.Build\",\"value\":1},{\"key\":\"lock.(release)\",\"value\":1},{\"key\":\"validate.FastValidate\",\"value\":0}],\"local_cache_measurements_ms\":[{\"key\":\"local.cache.compute_duration\",\"value\":0}]}}}}}"
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/output.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n\u003e\u003e\u003e [CLI] grants get schema main.schema_remove_principal_[UNIQUE_NAME]\njson.privilege_assignments[].principal = \"[USERNAME]\";\njson.privilege_assignments[].principal = \"deco-test-user@databricks.com\";\njson.privilege_assignments[].privileges[] = \"CREATE_TABLE\";\njson.privilege_assignments[].privileges[] = \"USE_SCHEMA\";\n\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/databricks.yml",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "bundle:\n  name: schema-grants-remove-principal-[UNIQUE_NAME]\n\nresources:\n  schemas:\n    grants_schema:\n      name: schema_remove_principal_[UNIQUE_NAME]\n      catalog_name: main\n      grants:\n        - principal: [USERNAME]\n          privileges:\n            - CREATE_TABLE\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/out.requests.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/preview/scim/v2/Me\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/script\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"errcode() {\\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\\n    set +e\\n    # Execute the provided command with all arguments\\n    \\\"$@\\\"\\n    local exit_code=$?\\n    # Re-enable 'set -e' if it was previously set\\n    set -e\\n    if [ $exit_code -ne 0 ]; then\\n        \\u003e\\u00262 printf \\\"\\\\nExit code: $exit_code\\\\n\\\"\\n    fi\\n}\\n\\nmusterr() {\\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\\n    set +e\\n    # Execute the provided command with all arguments\\n    \\\"$@\\\"\\n    local exit_code=$?\\n    # Re-enable 'set -e'\\n    set -e\\n    if [ $exit_code -eq 0 ]; then\\n        \\u003e\\u00262 printf \\\"\\\\nUnexpected success\\\\n\\\"\\n        exit 1\\n    fi\\n}\\n\\ntrace() {\\n    \\u003e\\u00262 printf \\\"\\\\n\\u003e\\u003e\\u003e %s\\\\n\\\" \\\"$*\\\"\\n\\n    if [[ \\\"$1\\\" == *\\\"=\\\"* ]]; then\\n        # If the first argument contains '=', collect all env vars\\n        local env_vars=()\\n        while [[ \\\"$1\\\" == *\\\"=\\\"* ]]; do\\n            env_vars+=(\\\"$1\\\")\\n            shift\\n        done\\n        # Export environment variables in a subshell and execute the command\\n        (\\n            export \\\"${env_vars[@]}\\\"\\n            \\\"$@\\\"\\n        )\\n    else\\n        # Execute the command normally\\n        \\\"$@\\\"\\n    fi\\n\\n    return $?\\n}\\n\\ngit-repo-init() {\\n    git init -qb main\\n    git config core.autocrlf false\\n    git config user.name \\\"Tester\\\"\\n    git config user.email \\\"[USERNAME]\\\"\\n    git config core.hooksPath no-hooks\\n    git add databricks.yml\\n    git commit -qm 'Add databricks.yml'\\n}\\n\\ntitle() {\\n    local label=\\\"$1\\\"\\n    printf \\\"\\\\n=== %b\\\" \\\"$label\\\"\\n}\\n\\nwithdir() {\\n    local dir=\\\"$1\\\"\\n    shift\\n    local orig_dir=\\\"$(pwd)\\\"\\n    cd \\\"$dir\\\" || return $?\\n    \\\"$@\\\"\\n    local exit_code=$?\\n    cd \\\"$orig_dir\\\" || return $?\\n    return $exit_code\\n}\\n\\nuuid() {\\n    python3 -c 'import uuid; print(uuid.uuid4())'\\n}\\n\\nvenv_activate() {\\n    if [[ \\\"$OSTYPE\\\" == \\\"msys\\\" || \\\"$OSTYPE\\\" == \\\"cygwin\\\" || \\\"$OSTYPE\\\" == \\\"win32\\\" ]]; then\\n        source .venv/Scripts/activate\\n    else\\n        source .venv/bin/activate\\n    fi\\n}\\n\\nenvsubst() {\\n    # We need to disable MSYS_NO_PATHCONV when running the python script.\\n    # This is because the python interpreter is otherwise unable to find the python script\\n    # when MSYS_NO_PATHCONV is enabled.\\n    env -u MSYS_NO_PATHCONV envsubst.py\\n}\\n\\nprint_telemetry_bool_values() {\\n    jq -r 'select(.path? == \\\"/telemetry-ext\\\") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map(\\\"\\\\(.key) \\\\(.value)\\\") | .[]' out.requests.txt | sort\\n}\\n\\nsethome() {\\n    local home=\\\"$1\\\"\\n    mkdir -p \\\"$home\\\"\\n\\n    # For macOS and Linux, use HOME.\\n    export HOME=\\\"$home\\\"\\n\\n    # For Windows, use USERPROFILE.\\n    export USERPROFILE=\\\"$home\\\"\\n}\\n\\nas-test-sp() {\\n    if [[ -z \\\"$TEST_SP_TOKEN\\\" ]]; then\\n        echo \\\"Error: TEST_SP_TOKEN is not set.\\\" \\u003e\\u00262\\n        return 1\\n    fi\\n\\n    DATABRICKS_TOKEN=\\\"$TEST_SP_TOKEN\\\" \\\\\\n    DATABRICKS_CLIENT_SECRET=\\\"\\\" \\\\\\n    DATABRICKS_CLIENT_ID=\\\"\\\" \\\\\\n    DATABRICKS_AUTH_TYPE=\\\"\\\" \\\\\\n    \\\"$@\\\"\\n}\\n\\nreadplanarg() {\\n    # Expands into \\\"--plan \\u003cfilename\\u003e\\\" based on READPLAN env var\\n    # Use it with \\\"bundle deploy\\\" to configure two runs: once with saved plan and one without.\\n    # Note: READPLAN is specially handled in test runner so that engine=terraform/readplan is set combination is skipped.\\n    if [[ -n \\\"$READPLAN\\\" ]]; then\\n        printf -- \\\"--plan %s\\\" \\\"$1\\\"\\n    else\\n        printf \\\"\\\"\\n    fi\\n}\\n\\n(\\nenvsubst \\u003c databricks.yml.tmpl \\u003e databricks.yml\\n\\ncleanup() {\\n    trace errcode $CLI bundle destroy --auto-approve\\n    rm -f out.requests.txt\\n}\\ntrap cleanup EXIT\\n\\ntrace $CLI bundle deploy\\ntrace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py \\\"$CURRENT_USER_NAME\\\" 'deco-test-user@databricks.com'\\n\\ngrep -v 'TO_REMOVE' databricks.yml \\u003e tmp.yml \\u0026\\u0026 mv tmp.yml databricks.yml\\n\\ntrace $CLI bundle deploy\\ntrace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py \\\"$CURRENT_USER_NAME\\\" '!deco-test-user@databricks.com' \\u0026\\u003e out.grants.$DATABRICKS_BUNDLE_ENGINE.txt\\ntrace $CLI bundle plan\\ntrace $CLI bundle deploy\\ntrace $CLI bundle plan\\n)\\n\\nrm -fr .databricks .gitignore\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/repls.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": [\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/\\\\.terraformrc\",\n      \"New\": \"[DATABRICKS_TF_CLI_CONFIG_FILE]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/terraform\",\n      \"New\": \"[TERRAFORM]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/libs/vendored_py_packages\",\n      \"New\": \"[VENDORED_PY_PACKAGES]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/databricks_bundles-0\\\\.298\\\\.0-py3-none-any\\\\.whl\",\n      \"New\": \"[DATABRICKS_BUNDLES_WHEEL]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/databricks\",\n      \"New\": \"[CLI]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/0\\\\.293\\\\.0/databricks\",\n      \"New\": \"[CLI_293]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[TEST_DEFAULT_WAREHOUSE_ID]\",\n      \"New\": \"[TEST_DEFAULT_WAREHOUSE_ID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[TEST_DEFAULT_CLUSTER_ID]\",\n      \"New\": \"[TEST_DEFAULT_CLUSTER_ID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[TEST_INSTANCE_POOL_ID]\",\n      \"New\": \"[TEST_INSTANCE_POOL_ID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64\",\n      \"New\": \"[BUILD_DIR]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"0\\\\.0\\\\.0-dev([-+][a-f0-9]{10,16})?\",\n      \"New\": \"[DEV_VERSION]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"databricks-sdk-go/[0-9]+\\\\.[0-9]+\\\\.[0-9]+\",\n      \"New\": \"databricks-sdk-go/[SDK_VERSION]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"1\\\\.26\\\\.2\",\n      \"New\": \"[GO_VERSION]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance\",\n      \"New\": \"[TESTROOT]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"dbapi[0-9a-f]+\",\n      \"New\": \"[DATABRICKS_TOKEN]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"i3\\\\.xlarge\",\n      \"New\": \"[NODE_TYPE_ID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[UNIQUE_NAME]\",\n      \"New\": \"[UNIQUE_NAME]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[TEST_TMP_DIR]\",\n      \"New\": \"[TEST_TMP_DIR]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[TEST_TMP_DIR]_PARENT\",\n      \"New\": \"[TEST_TMP_DIR]_PARENT\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[USERNAME]@databricks\\\\.com\",\n      \"New\": \"[USERNAME]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[USERNAME]\",\n      \"New\": \"[USERNAME]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[USERID]\",\n      \"New\": \"[USERID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"https://127\\\\.0\\\\.0\\\\.1:43945\",\n      \"New\": \"[DATABRICKS_URL]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"http://127\\\\.0\\\\.0\\\\.1:43945\",\n      \"New\": \"[DATABRICKS_URL]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"127\\\\.0\\\\.0\\\\.1:43945\",\n      \"New\": \"[DATABRICKS_HOST]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\",\n      \"New\": \"[UUID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"\\\\d{20,}\",\n      \"New\": \"[NUMID]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"1[78]\\\\d{17}\",\n      \"New\": \"[UNIX_TIME_NANOS]\",\n      \"Order\": 10,\n      \"Distinct\": true\n    },\n    {\n      \"Old\": \"\\\\d{17,}\",\n      \"New\": \"[NUMID]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"\\\\d{14,}\",\n      \"New\": \"[NUMID]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"1[78]\\\\d{11}\",\n      \"New\": \"[UNIX_TIME_MILLIS]\",\n      \"Order\": 10,\n      \"Distinct\": true\n    },\n    {\n      \"Old\": \"\\\\d{11,}\",\n      \"New\": \"[NUMID]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"1[78]\\\\d{8}\",\n      \"New\": \"[UNIX_TIME_S]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"\\\\d{8,}\",\n      \"New\": \"[NUMID]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"2\\\\d\\\\d\\\\d-\\\\d\\\\d-\\\\d\\\\d(T| )\\\\d\\\\d:\\\\d\\\\d:\\\\d\\\\d\\\\.\\\\d+(Z|\\\\+\\\\d\\\\d:\\\\d\\\\d)?\",\n      \"New\": \"[TIMESTAMP]\",\n      \"Order\": 9,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"2\\\\d\\\\d\\\\d-\\\\d\\\\d-\\\\d\\\\d(T| )\\\\d\\\\d:\\\\d\\\\d:\\\\d\\\\dZ?\",\n      \"New\": \"[TIMESTAMP]\",\n      \"Order\": 9,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[METASTORE_NAME]|[METASTORE_NAME]\",\n      \"New\": \"[METASTORE_NAME]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"os/[OS]\",\n      \"New\": \"os/[OS]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"os/[OS]\",\n      \"New\": \"os/[OS]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"os/[OS]\",\n      \"New\": \"os/[OS]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"\",\n      \"New\": \"\",\n      \"Order\": 0,\n      \"Distinct\": false\n    }\n  ]\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/out.requests.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/.well-known/databricks-config\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/preview/scim/v2/Me\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"false\\\"\\n  },\\n  \\\"body\\\": {\\n    \\\"ID\\\": \\\"[UUID]\\\",\\n    \\\"AcquisitionTime\\\": \\\"[TIMESTAMP]\\\",\\n    \\\"IsForced\\\": false,\\n    \\\"User\\\": \\\"[USERNAME]\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/export\\\",\\n  \\\"q\\\": {\\n    \\\"direct_download\\\": \\\"true\\\",\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/delete\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\\\",\\n    \\\"recursive\\\": true\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/mkdirs\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/mkdirs\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n  }\\n}\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/databricks.yml.tmpl\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"bundle:\\n  name: schema-grants-remove-principal-$UNIQUE_NAME\\n\\nresources:\\n  schemas:\\n    grants_schema:\\n      name: schema_remove_principal_$UNIQUE_NAME\\n      catalog_name: main\\n      grants:\\n        - principal: $CURRENT_USER_NAME\\n          privileges:\\n            - CREATE_TABLE\\n        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_REMOVE\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/databricks.yml\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"bundle:\\n  name: schema-grants-remove-principal-[UNIQUE_NAME]\\n\\nresources:\\n  schemas:\\n    grants_schema:\\n      name: schema_remove_principal_[UNIQUE_NAME]\\n      catalog_name: main\\n      grants:\\n        - principal: [USERNAME]\\n          privileges:\\n            - CREATE_TABLE\\n        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_REMOVE\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/output.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"\\n\\u003e\\u003e\\u003e [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 1,\n    \"seq\": 1,\n    \"cli_version\": \"[DEV_VERSION]\",\n    \"timestamp\": \"[TIMESTAMP]\",\n    \"files\": [\n      {\n        \"local_path\": \"script\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"databricks.yml\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"databricks.yml.tmpl\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"out.requests.txt\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"output.txt\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"repls.json\",\n        \"is_notebook\": false\n      }\n    ],\n    \"id\": \"[UUID]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.1/unity-catalog/schemas\",\n  \"body\": {\n    \"catalog_name\": \"main\",\n    \"name\": \"schema_remove_principal_[UNIQUE_NAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/schemas/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"PATCH\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\",\n  \"body\": {\n    \"changes\": [\n      {\n        \"add\": [\n          \"USE_SCHEMA\"\n        ],\n        \"principal\": \"deco-test-user@databricks.com\"\n      },\n      {\n        \"add\": [\n          \"CREATE_TABLE\"\n        ],\n        \"principal\": \"[USERNAME]\"\n      }\n    ]\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 4,\n    \"terraform_version\": \"1.5.5\",\n    \"serial\": 3,\n    \"lineage\": \"[UUID]\",\n    \"outputs\": {},\n    \"resources\": [\n      {\n        \"mode\": \"managed\",\n        \"type\": \"databricks_grants\",\n        \"name\": \"schema_grants_schema\",\n        \"provider\": \"provider[\\\"registry.terraform.io/databricks/databricks\\\"]\",\n        \"instances\": [\n          {\n            \"schema_version\": 0,\n            \"attributes\": {\n              \"catalog\": null,\n              \"credential\": null,\n              \"external_location\": null,\n              \"foreign_connection\": null,\n              \"function\": null,\n              \"grant\": [\n                {\n                  \"principal\": \"deco-test-user@databricks.com\",\n                  \"privileges\": [\n                    \"USE_SCHEMA\"\n                  ]\n                },\n                {\n                  \"principal\": \"[USERNAME]\",\n                  \"privileges\": [\n                    \"CREATE_TABLE\"\n                  ]\n                }\n              ],\n              \"id\": \"schema/main.schema_remove_principal_[UNIQUE_NAME]\",\n              \"metastore\": null,\n              \"model\": null,\n              \"pipeline\": null,\n              \"provider_config\": [],\n              \"recipient\": null,\n              \"schema\": \"main.schema_remove_principal_[UNIQUE_NAME]\",\n              \"share\": null,\n              \"storage_credential\": null,\n              \"table\": null,\n              \"volume\": null\n            },\n            \"sensitive_attributes\": [],\n            \"private\": \"bnVsbA==\",\n            \"dependencies\": [\n              \"databricks_schema.grants_schema\"\n            ]\n          }\n        ]\n      },\n      {\n        \"mode\": \"managed\",\n        \"type\": \"databricks_schema\",\n        \"name\": \"grants_schema\",\n        \"provider\": \"provider[\\\"registry.terraform.io/databricks/databricks\\\"]\",\n        \"instances\": [\n          {\n            \"schema_version\": 0,\n            \"attributes\": {\n              \"catalog_name\": \"main\",\n              \"comment\": null,\n              \"enable_predictive_optimization\": \"INHERIT\",\n              \"force_destroy\": true,\n              \"id\": \"main.schema_remove_principal_[UNIQUE_NAME]\",\n              \"metastore_id\": \"[UUID]\",\n              \"name\": \"schema_remove_principal_[UNIQUE_NAME]\",\n              \"owner\": \"[USERNAME]\",\n              \"properties\": null,\n              \"provider_config\": [],\n              \"schema_id\": \"[UUID]\",\n              \"storage_root\": null\n            },\n            \"sensitive_attributes\": [],\n            \"private\": \"bnVsbA==\"\n          }\n        ]\n      }\n    ],\n    \"check_results\": null\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/metadata.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 1,\n    \"config\": {\n      \"bundle\": {\n        \"name\": \"schema-grants-remove-principal-[UNIQUE_NAME]\",\n        \"target\": \"default\",\n        \"git\": {\n          \"bundle_root_path\": \".\"\n        }\n      },\n      \"workspace\": {\n        \"file_path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n      },\n      \"resources\": {},\n      \"presets\": {\n        \"source_linked_deployment\": false\n      }\n    },\n    \"extra\": {}\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/telemetry-ext\",\n  \"body\": {\n    \"uploadTime\": [UNIX_TIME_MILLIS][0],\n    \"items\": [],\n    \"protoLogs\": [\n      \"{\\\"frontend_log_event_id\\\":\\\"[UUID]\\\",\\\"entry\\\":{\\\"databricks_cli_log\\\":{\\\"execution_context\\\":{\\\"cmd_exec_id\\\":\\\"[UUID]\\\",\\\"version\\\":\\\"[DEV_VERSION]\\\",\\\"command\\\":\\\"bundle_deploy\\\",\\\"operating_system\\\":\\\"linux\\\",\\\"execution_time_ms\\\":18030,\\\"exit_code\\\":0},\\\"bundle_deploy_event\\\":{\\\"bundle_uuid\\\":\\\"[UUID]\\\",\\\"deployment_id\\\":\\\"[UUID]\\\",\\\"resource_count\\\":1,\\\"resource_job_count\\\":0,\\\"resource_pipeline_count\\\":0,\\\"resource_model_count\\\":0,\\\"resource_experiment_count\\\":0,\\\"resource_model_serving_endpoint_count\\\":0,\\\"resource_registered_model_count\\\":0,\\\"resource_quality_monitor_count\\\":0,\\\"resource_schema_count\\\":1,\\\"resource_volume_count\\\":0,\\\"resource_cluster_count\\\":0,\\\"resource_dashboard_count\\\":0,\\\"resource_app_count\\\":0,\\\"experimental\\\":{\\\"configuration_file_count\\\":1,\\\"variable_count\\\":0,\\\"complex_variable_count\\\":0,\\\"lookup_variable_count\\\":0,\\\"target_count\\\":1,\\\"bool_values\\\":[{\\\"key\\\":\\\"local.cache.attempt\\\",\\\"value\\\":true},{\\\"key\\\":\\\"local.cache.miss\\\",\\\"value\\\":true},{\\\"key\\\":\\\"experimental.use_legacy_run_as\\\",\\\"value\\\":false},{\\\"key\\\":\\\"run_as_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"presets_name_prefix_is_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"python_wheel_wrapper_is_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"skip_artifact_cleanup\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_serverless_compute\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_classic_job_compute\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_classic_interactive_compute\\\",\\\"value\\\":false}],\\\"bundle_mode\\\":\\\"TYPE_UNSPECIFIED\\\",\\\"workspace_artifact_path_type\\\":\\\"WORKSPACE_FILE_SYSTEM\\\",\\\"bundle_mutator_execution_time_ms\\\":[{\\\"key\\\":\\\"phases.Deploy\\\",\\\"value\\\":17841},{\\\"key\\\":\\\"terraform.(plan)\\\",\\\"value\\\":8794},{\\\"key\\\":\\\"terraform.(apply)\\\",\\\"value\\\":5237},{\\\"key\\\":\\\"phases.Initialize\\\",\\\"value\\\":69},{\\\"key\\\":\\\"resourcemutator.(processStaticResources)\\\",\\\"value\\\":38},{\\\"key\\\":\\\"validate.(uniqueResourceKeys)\\\",\\\"value\\\":28},{\\\"key\\\":\\\"bundle.(setDefault)\\\",\\\"value\\\":26},{\\\"key\\\":\\\"validate.(required)\\\",\\\"value\\\":24},{\\\"key\\\":\\\"files.(upload)\\\",\\\"value\\\":5},{\\\"key\\\":\\\"bundle.(setDefault)\\\",\\\"value\\\":5},{\\\"key\\\":\\\"lock.(acquire)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"deploy.(statePush)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"terraform.(write)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"phases.Build\\\",\\\"value\\\":1},{\\\"key\\\":\\\"lock.(release)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"validate.FastValidate\\\",\\\"value\\\":0}],\\\"local_cache_measurements_ms\\\":[{\\\"key\\\":\\\"local.cache.compute_duration\\\",\\\"value\\\":0}]}}}}}\"\n    ]\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "seq": 2,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": [
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml.tmpl",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.requests.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "output.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "repls.json",
+        "is_notebook": false
+      }
+    ],
+    "id": "[UUID]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "USE_SCHEMA"
+        ]
+      }
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 4,
+    "terraform_version": "1.5.5",
+    "serial": 5,
+    "lineage": "[UUID]",
+    "outputs": {},
+    "resources": [
+      {
+        "mode": "managed",
+        "type": "databricks_grants",
+        "name": "schema_grants_schema",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "catalog": null,
+              "credential": null,
+              "external_location": null,
+              "foreign_connection": null,
+              "function": null,
+              "grant": [
+                {
+                  "principal": "[USERNAME]",
+                  "privileges": [
+                    "CREATE_TABLE"
+                  ]
+                }
+              ],
+              "id": "schema/main.schema_remove_principal_[UNIQUE_NAME]",
+              "metastore": null,
+              "model": null,
+              "pipeline": null,
+              "provider_config": [],
+              "recipient": null,
+              "schema": "main.schema_remove_principal_[UNIQUE_NAME]",
+              "share": null,
+              "storage_credential": null,
+              "table": null,
+              "volume": null
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA==",
+            "dependencies": [
+              "databricks_schema.grants_schema"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "managed",
+        "type": "databricks_schema",
+        "name": "grants_schema",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "catalog_name": "main",
+              "comment": null,
+              "enable_predictive_optimization": "INHERIT",
+              "force_destroy": true,
+              "id": "main.schema_remove_principal_[UNIQUE_NAME]",
+              "metastore_id": "[UUID]",
+              "name": "schema_remove_principal_[UNIQUE_NAME]",
+              "owner": "[USERNAME]",
+              "properties": null,
+              "provider_config": [],
+              "schema_id": "[UUID]",
+              "storage_root": null
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA=="
+          }
+        ]
+      }
+    ],
+    "check_results": null
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/metadata.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "config": {
+      "bundle": {
+        "name": "schema-grants-remove-principal-[UNIQUE_NAME]",
+        "target": "default",
+        "git": {
+          "bundle_root_path": "."
+        }
+      },
+      "workspace": {
+        "file_path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files"
+      },
+      "resources": {},
+      "presets": {
+        "source_linked_deployment": false
+      }
+    },
+    "extra": {}
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/telemetry-ext",
+  "body": {
+    "uploadTime": [UNIX_TIME_MILLIS][1],
+    "items": [],
+    "protoLogs": [
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"linux\",\"execution_time_ms\":19827,\"exit_code\":0},\"bundle_deploy_event\":{\"bundle_uuid\":\"[UUID]\",\"deployment_id\":\"[UUID]\",\"resource_count\":1,\"resource_job_count\":0,\"resource_pipeline_count\":0,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":0,\"resource_quality_monitor_count\":0,\"resource_schema_count\":1,\"resource_volume_count\":0,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0,\"experimental\":{\"configuration_file_count\":1,\"variable_count\":0,\"complex_variable_count\":0,\"lookup_variable_count\":0,\"target_count\":1,\"bool_values\":[{\"key\":\"local.cache.attempt\",\"value\":true},{\"key\":\"local.cache.hit\",\"value\":true},{\"key\":\"experimental.use_legacy_run_as\",\"value\":false},{\"key\":\"run_as_set\",\"value\":false},{\"key\":\"presets_name_prefix_is_set\",\"value\":false},{\"key\":\"python_wheel_wrapper_is_set\",\"value\":false},{\"key\":\"skip_artifact_cleanup\",\"value\":false},{\"key\":\"has_serverless_compute\",\"value\":false},{\"key\":\"has_classic_job_compute\",\"value\":false},{\"key\":\"has_classic_interactive_compute\",\"value\":false}],\"bundle_mode\":\"TYPE_UNSPECIFIED\",\"workspace_artifact_path_type\":\"WORKSPACE_FILE_SYSTEM\",\"bundle_mutator_execution_time_ms\":[{\"key\":\"phases.Deploy\",\"value\":19747},{\"key\":\"terraform.(plan)\",\"value\":11532},{\"key\":\"terraform.(apply)\",\"value\":4803},{\"key\":\"phases.Initialize\",\"value\":57},{\"key\":\"validate.(required)\",\"value\":27},{\"key\":\"resourcemutator.(processStaticResources)\",\"value\":24},{\"key\":\"mutator.(resolveVariableReferences)\",\"value\":17},{\"key\":\"files.(upload)\",\"value\":3},{\"key\":\"lock.(release)\",\"value\":2},{\"key\":\"phases.Build\",\"value\":1},{\"key\":\"terraform.(write)\",\"value\":1},{\"key\":\"validate.FastValidate\",\"value\":0}]}}}}}"
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/schemas/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/output.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n\u003e\u003e\u003e [CLI] grants get schema main.schema_remove_principal_[UNIQUE_NAME]\njson.privilege_assignments[].principal = \"[USERNAME]\";\njson.privilege_assignments[].principal = \"deco-test-user@databricks.com\";\njson.privilege_assignments[].privileges[] = \"CREATE_TABLE\";\njson.privilege_assignments[].privileges[] = \"USE_SCHEMA\";\n\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n\u003e\u003e\u003e [CLI] grants get schema main.schema_remove_principal_[UNIQUE_NAME]\n\n\u003e\u003e\u003e [CLI] bundle plan\nPlan: 0 to add, 0 to change, 0 to delete, 2 unchanged\n\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/out.requests.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/preview/scim/v2/Me\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/script\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"errcode() {\\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\\n    set +e\\n    # Execute the provided command with all arguments\\n    \\\"$@\\\"\\n    local exit_code=$?\\n    # Re-enable 'set -e' if it was previously set\\n    set -e\\n    if [ $exit_code -ne 0 ]; then\\n        \\u003e\\u00262 printf \\\"\\\\nExit code: $exit_code\\\\n\\\"\\n    fi\\n}\\n\\nmusterr() {\\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\\n    set +e\\n    # Execute the provided command with all arguments\\n    \\\"$@\\\"\\n    local exit_code=$?\\n    # Re-enable 'set -e'\\n    set -e\\n    if [ $exit_code -eq 0 ]; then\\n        \\u003e\\u00262 printf \\\"\\\\nUnexpected success\\\\n\\\"\\n        exit 1\\n    fi\\n}\\n\\ntrace() {\\n    \\u003e\\u00262 printf \\\"\\\\n\\u003e\\u003e\\u003e %s\\\\n\\\" \\\"$*\\\"\\n\\n    if [[ \\\"$1\\\" == *\\\"=\\\"* ]]; then\\n        # If the first argument contains '=', collect all env vars\\n        local env_vars=()\\n        while [[ \\\"$1\\\" == *\\\"=\\\"* ]]; do\\n            env_vars+=(\\\"$1\\\")\\n            shift\\n        done\\n        # Export environment variables in a subshell and execute the command\\n        (\\n            export \\\"${env_vars[@]}\\\"\\n            \\\"$@\\\"\\n        )\\n    else\\n        # Execute the command normally\\n        \\\"$@\\\"\\n    fi\\n\\n    return $?\\n}\\n\\ngit-repo-init() {\\n    git init -qb main\\n    git config core.autocrlf false\\n    git config user.name \\\"Tester\\\"\\n    git config user.email \\\"[USERNAME]\\\"\\n    git config core.hooksPath no-hooks\\n    git add databricks.yml\\n    git commit -qm 'Add databricks.yml'\\n}\\n\\ntitle() {\\n    local label=\\\"$1\\\"\\n    printf \\\"\\\\n=== %b\\\" \\\"$label\\\"\\n}\\n\\nwithdir() {\\n    local dir=\\\"$1\\\"\\n    shift\\n    local orig_dir=\\\"$(pwd)\\\"\\n    cd \\\"$dir\\\" || return $?\\n    \\\"$@\\\"\\n    local exit_code=$?\\n    cd \\\"$orig_dir\\\" || return $?\\n    return $exit_code\\n}\\n\\nuuid() {\\n    python3 -c 'import uuid; print(uuid.uuid4())'\\n}\\n\\nvenv_activate() {\\n    if [[ \\\"$OSTYPE\\\" == \\\"msys\\\" || \\\"$OSTYPE\\\" == \\\"cygwin\\\" || \\\"$OSTYPE\\\" == \\\"win32\\\" ]]; then\\n        source .venv/Scripts/activate\\n    else\\n        source .venv/bin/activate\\n    fi\\n}\\n\\nenvsubst() {\\n    # We need to disable MSYS_NO_PATHCONV when running the python script.\\n    # This is because the python interpreter is otherwise unable to find the python script\\n    # when MSYS_NO_PATHCONV is enabled.\\n    env -u MSYS_NO_PATHCONV envsubst.py\\n}\\n\\nprint_telemetry_bool_values() {\\n    jq -r 'select(.path? == \\\"/telemetry-ext\\\") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map(\\\"\\\\(.key) \\\\(.value)\\\") | .[]' out.requests.txt | sort\\n}\\n\\nsethome() {\\n    local home=\\\"$1\\\"\\n    mkdir -p \\\"$home\\\"\\n\\n    # For macOS and Linux, use HOME.\\n    export HOME=\\\"$home\\\"\\n\\n    # For Windows, use USERPROFILE.\\n    export USERPROFILE=\\\"$home\\\"\\n}\\n\\nas-test-sp() {\\n    if [[ -z \\\"$TEST_SP_TOKEN\\\" ]]; then\\n        echo \\\"Error: TEST_SP_TOKEN is not set.\\\" \\u003e\\u00262\\n        return 1\\n    fi\\n\\n    DATABRICKS_TOKEN=\\\"$TEST_SP_TOKEN\\\" \\\\\\n    DATABRICKS_CLIENT_SECRET=\\\"\\\" \\\\\\n    DATABRICKS_CLIENT_ID=\\\"\\\" \\\\\\n    DATABRICKS_AUTH_TYPE=\\\"\\\" \\\\\\n    \\\"$@\\\"\\n}\\n\\nreadplanarg() {\\n    # Expands into \\\"--plan \\u003cfilename\\u003e\\\" based on READPLAN env var\\n    # Use it with \\\"bundle deploy\\\" to configure two runs: once with saved plan and one without.\\n    # Note: READPLAN is specially handled in test runner so that engine=terraform/readplan is set combination is skipped.\\n    if [[ -n \\\"$READPLAN\\\" ]]; then\\n        printf -- \\\"--plan %s\\\" \\\"$1\\\"\\n    else\\n        printf \\\"\\\"\\n    fi\\n}\\n\\n(\\nenvsubst \\u003c databricks.yml.tmpl \\u003e databricks.yml\\n\\ncleanup() {\\n    trace errcode $CLI bundle destroy --auto-approve\\n    rm -f out.requests.txt\\n}\\ntrap cleanup EXIT\\n\\ntrace $CLI bundle deploy\\ntrace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py \\\"$CURRENT_USER_NAME\\\" 'deco-test-user@databricks.com'\\n\\ngrep -v 'TO_REMOVE' databricks.yml \\u003e tmp.yml \\u0026\\u0026 mv tmp.yml databricks.yml\\n\\ntrace $CLI bundle deploy\\ntrace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py \\\"$CURRENT_USER_NAME\\\" '!deco-test-user@databricks.com' \\u0026\\u003e out.grants.$DATABRICKS_BUNDLE_ENGINE.txt\\ntrace $CLI bundle plan\\ntrace $CLI bundle deploy\\ntrace $CLI bundle plan\\n)\\n\\nrm -fr .databricks .gitignore\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/repls.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": [\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/\\\\.terraformrc\",\n      \"New\": \"[DATABRICKS_TF_CLI_CONFIG_FILE]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/terraform\",\n      \"New\": \"[TERRAFORM]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/libs/vendored_py_packages\",\n      \"New\": \"[VENDORED_PY_PACKAGES]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/databricks_bundles-0\\\\.298\\\\.0-py3-none-any\\\\.whl\",\n      \"New\": \"[DATABRICKS_BUNDLES_WHEEL]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/databricks\",\n      \"New\": \"[CLI]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/0\\\\.293\\\\.0/databricks\",\n      \"New\": \"[CLI_293]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[TEST_DEFAULT_WAREHOUSE_ID]\",\n      \"New\": \"[TEST_DEFAULT_WAREHOUSE_ID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[TEST_DEFAULT_CLUSTER_ID]\",\n      \"New\": \"[TEST_DEFAULT_CLUSTER_ID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[TEST_INSTANCE_POOL_ID]\",\n      \"New\": \"[TEST_INSTANCE_POOL_ID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64\",\n      \"New\": \"[BUILD_DIR]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"0\\\\.0\\\\.0-dev([-+][a-f0-9]{10,16})?\",\n      \"New\": \"[DEV_VERSION]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"databricks-sdk-go/[0-9]+\\\\.[0-9]+\\\\.[0-9]+\",\n      \"New\": \"databricks-sdk-go/[SDK_VERSION]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"1\\\\.26\\\\.2\",\n      \"New\": \"[GO_VERSION]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"/home/denis\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance\",\n      \"New\": \"[TESTROOT]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"dbapi[0-9a-f]+\",\n      \"New\": \"[DATABRICKS_TOKEN]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"i3\\\\.xlarge\",\n      \"New\": \"[NODE_TYPE_ID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[UNIQUE_NAME]\",\n      \"New\": \"[UNIQUE_NAME]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[TEST_TMP_DIR]\",\n      \"New\": \"[TEST_TMP_DIR]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[TEST_TMP_DIR]_PARENT\",\n      \"New\": \"[TEST_TMP_DIR]_PARENT\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[USERNAME]@databricks\\\\.com\",\n      \"New\": \"[USERNAME]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[USERNAME]\",\n      \"New\": \"[USERNAME]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[USERID]\",\n      \"New\": \"[USERID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"https://127\\\\.0\\\\.0\\\\.1:43945\",\n      \"New\": \"[DATABRICKS_URL]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"http://127\\\\.0\\\\.0\\\\.1:43945\",\n      \"New\": \"[DATABRICKS_URL]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"127\\\\.0\\\\.0\\\\.1:43945\",\n      \"New\": \"[DATABRICKS_HOST]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\",\n      \"New\": \"[UUID]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"\\\\d{20,}\",\n      \"New\": \"[NUMID]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"1[78]\\\\d{17}\",\n      \"New\": \"[UNIX_TIME_NANOS]\",\n      \"Order\": 10,\n      \"Distinct\": true\n    },\n    {\n      \"Old\": \"\\\\d{17,}\",\n      \"New\": \"[NUMID]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"\\\\d{14,}\",\n      \"New\": \"[NUMID]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"1[78]\\\\d{11}\",\n      \"New\": \"[UNIX_TIME_MILLIS]\",\n      \"Order\": 10,\n      \"Distinct\": true\n    },\n    {\n      \"Old\": \"\\\\d{11,}\",\n      \"New\": \"[NUMID]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"1[78]\\\\d{8}\",\n      \"New\": \"[UNIX_TIME_S]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"\\\\d{8,}\",\n      \"New\": \"[NUMID]\",\n      \"Order\": 10,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"2\\\\d\\\\d\\\\d-\\\\d\\\\d-\\\\d\\\\d(T| )\\\\d\\\\d:\\\\d\\\\d:\\\\d\\\\d\\\\.\\\\d+(Z|\\\\+\\\\d\\\\d:\\\\d\\\\d)?\",\n      \"New\": \"[TIMESTAMP]\",\n      \"Order\": 9,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"2\\\\d\\\\d\\\\d-\\\\d\\\\d-\\\\d\\\\d(T| )\\\\d\\\\d:\\\\d\\\\d:\\\\d\\\\dZ?\",\n      \"New\": \"[TIMESTAMP]\",\n      \"Order\": 9,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"[METASTORE_NAME]|[METASTORE_NAME]\",\n      \"New\": \"[METASTORE_NAME]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"os/[OS]\",\n      \"New\": \"os/[OS]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"os/[OS]\",\n      \"New\": \"os/[OS]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"os/[OS]\",\n      \"New\": \"os/[OS]\",\n      \"Order\": 0,\n      \"Distinct\": false\n    },\n    {\n      \"Old\": \"\",\n      \"New\": \"\",\n      \"Order\": 0,\n      \"Distinct\": false\n    }\n  ]\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/out.requests.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/.well-known/databricks-config\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/preview/scim/v2/Me\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"false\\\"\\n  },\\n  \\\"body\\\": {\\n    \\\"ID\\\": \\\"[UUID]\\\",\\n    \\\"AcquisitionTime\\\": \\\"[TIMESTAMP]\\\",\\n    \\\"IsForced\\\": false,\\n    \\\"User\\\": \\\"[USERNAME]\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/export\\\",\\n  \\\"q\\\": {\\n    \\\"direct_download\\\": \\\"true\\\",\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/delete\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\\\",\\n    \\\"recursive\\\": true\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/mkdirs\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/mkdirs\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n  }\\n}\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/databricks.yml.tmpl\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"bundle:\\n  name: schema-grants-remove-principal-$UNIQUE_NAME\\n\\nresources:\\n  schemas:\\n    grants_schema:\\n      name: schema_remove_principal_$UNIQUE_NAME\\n      catalog_name: main\\n      grants:\\n        - principal: $CURRENT_USER_NAME\\n          privileges:\\n            - CREATE_TABLE\\n        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_REMOVE\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/databricks.yml\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"bundle:\\n  name: schema-grants-remove-principal-[UNIQUE_NAME]\\n\\nresources:\\n  schemas:\\n    grants_schema:\\n      name: schema_remove_principal_[UNIQUE_NAME]\\n      catalog_name: main\\n      grants:\\n        - principal: [USERNAME]\\n          privileges:\\n            - CREATE_TABLE\\n        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_REMOVE\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/output.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"\\n\\u003e\\u003e\\u003e [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 1,\n    \"seq\": 1,\n    \"cli_version\": \"[DEV_VERSION]\",\n    \"timestamp\": \"[TIMESTAMP]\",\n    \"files\": [\n      {\n        \"local_path\": \"script\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"databricks.yml\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"databricks.yml.tmpl\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"out.requests.txt\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"output.txt\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"repls.json\",\n        \"is_notebook\": false\n      }\n    ],\n    \"id\": \"[UUID]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.1/unity-catalog/schemas\",\n  \"body\": {\n    \"catalog_name\": \"main\",\n    \"name\": \"schema_remove_principal_[UNIQUE_NAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/schemas/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"PATCH\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\",\n  \"body\": {\n    \"changes\": [\n      {\n        \"add\": [\n          \"USE_SCHEMA\"\n        ],\n        \"principal\": \"deco-test-user@databricks.com\"\n      },\n      {\n        \"add\": [\n          \"CREATE_TABLE\"\n        ],\n        \"principal\": \"[USERNAME]\"\n      }\n    ]\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 4,\n    \"terraform_version\": \"1.5.5\",\n    \"serial\": 3,\n    \"lineage\": \"[UUID]\",\n    \"outputs\": {},\n    \"resources\": [\n      {\n        \"mode\": \"managed\",\n        \"type\": \"databricks_grants\",\n        \"name\": \"schema_grants_schema\",\n        \"provider\": \"provider[\\\"registry.terraform.io/databricks/databricks\\\"]\",\n        \"instances\": [\n          {\n            \"schema_version\": 0,\n            \"attributes\": {\n              \"catalog\": null,\n              \"credential\": null,\n              \"external_location\": null,\n              \"foreign_connection\": null,\n              \"function\": null,\n              \"grant\": [\n                {\n                  \"principal\": \"deco-test-user@databricks.com\",\n                  \"privileges\": [\n                    \"USE_SCHEMA\"\n                  ]\n                },\n                {\n                  \"principal\": \"[USERNAME]\",\n                  \"privileges\": [\n                    \"CREATE_TABLE\"\n                  ]\n                }\n              ],\n              \"id\": \"schema/main.schema_remove_principal_[UNIQUE_NAME]\",\n              \"metastore\": null,\n              \"model\": null,\n              \"pipeline\": null,\n              \"provider_config\": [],\n              \"recipient\": null,\n              \"schema\": \"main.schema_remove_principal_[UNIQUE_NAME]\",\n              \"share\": null,\n              \"storage_credential\": null,\n              \"table\": null,\n              \"volume\": null\n            },\n            \"sensitive_attributes\": [],\n            \"private\": \"bnVsbA==\",\n            \"dependencies\": [\n              \"databricks_schema.grants_schema\"\n            ]\n          }\n        ]\n      },\n      {\n        \"mode\": \"managed\",\n        \"type\": \"databricks_schema\",\n        \"name\": \"grants_schema\",\n        \"provider\": \"provider[\\\"registry.terraform.io/databricks/databricks\\\"]\",\n        \"instances\": [\n          {\n            \"schema_version\": 0,\n            \"attributes\": {\n              \"catalog_name\": \"main\",\n              \"comment\": null,\n              \"enable_predictive_optimization\": \"INHERIT\",\n              \"force_destroy\": true,\n              \"id\": \"main.schema_remove_principal_[UNIQUE_NAME]\",\n              \"metastore_id\": \"[UUID]\",\n              \"name\": \"schema_remove_principal_[UNIQUE_NAME]\",\n              \"owner\": \"[USERNAME]\",\n              \"properties\": null,\n              \"provider_config\": [],\n              \"schema_id\": \"[UUID]\",\n              \"storage_root\": null\n            },\n            \"sensitive_attributes\": [],\n            \"private\": \"bnVsbA==\"\n          }\n        ]\n      }\n    ],\n    \"check_results\": null\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/metadata.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 1,\n    \"config\": {\n      \"bundle\": {\n        \"name\": \"schema-grants-remove-principal-[UNIQUE_NAME]\",\n        \"target\": \"default\",\n        \"git\": {\n          \"bundle_root_path\": \".\"\n        }\n      },\n      \"workspace\": {\n        \"file_path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n      },\n      \"resources\": {},\n      \"presets\": {\n        \"source_linked_deployment\": false\n      }\n    },\n    \"extra\": {}\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/telemetry-ext\",\n  \"body\": {\n    \"uploadTime\": [UNIX_TIME_MILLIS][0],\n    \"items\": [],\n    \"protoLogs\": [\n      \"{\\\"frontend_log_event_id\\\":\\\"[UUID]\\\",\\\"entry\\\":{\\\"databricks_cli_log\\\":{\\\"execution_context\\\":{\\\"cmd_exec_id\\\":\\\"[UUID]\\\",\\\"version\\\":\\\"[DEV_VERSION]\\\",\\\"command\\\":\\\"bundle_deploy\\\",\\\"operating_system\\\":\\\"linux\\\",\\\"execution_time_ms\\\":18030,\\\"exit_code\\\":0},\\\"bundle_deploy_event\\\":{\\\"bundle_uuid\\\":\\\"[UUID]\\\",\\\"deployment_id\\\":\\\"[UUID]\\\",\\\"resource_count\\\":1,\\\"resource_job_count\\\":0,\\\"resource_pipeline_count\\\":0,\\\"resource_model_count\\\":0,\\\"resource_experiment_count\\\":0,\\\"resource_model_serving_endpoint_count\\\":0,\\\"resource_registered_model_count\\\":0,\\\"resource_quality_monitor_count\\\":0,\\\"resource_schema_count\\\":1,\\\"resource_volume_count\\\":0,\\\"resource_cluster_count\\\":0,\\\"resource_dashboard_count\\\":0,\\\"resource_app_count\\\":0,\\\"experimental\\\":{\\\"configuration_file_count\\\":1,\\\"variable_count\\\":0,\\\"complex_variable_count\\\":0,\\\"lookup_variable_count\\\":0,\\\"target_count\\\":1,\\\"bool_values\\\":[{\\\"key\\\":\\\"local.cache.attempt\\\",\\\"value\\\":true},{\\\"key\\\":\\\"local.cache.miss\\\",\\\"value\\\":true},{\\\"key\\\":\\\"experimental.use_legacy_run_as\\\",\\\"value\\\":false},{\\\"key\\\":\\\"run_as_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"presets_name_prefix_is_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"python_wheel_wrapper_is_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"skip_artifact_cleanup\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_serverless_compute\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_classic_job_compute\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_classic_interactive_compute\\\",\\\"value\\\":false}],\\\"bundle_mode\\\":\\\"TYPE_UNSPECIFIED\\\",\\\"workspace_artifact_path_type\\\":\\\"WORKSPACE_FILE_SYSTEM\\\",\\\"bundle_mutator_execution_time_ms\\\":[{\\\"key\\\":\\\"phases.Deploy\\\",\\\"value\\\":17841},{\\\"key\\\":\\\"terraform.(plan)\\\",\\\"value\\\":8794},{\\\"key\\\":\\\"terraform.(apply)\\\",\\\"value\\\":5237},{\\\"key\\\":\\\"phases.Initialize\\\",\\\"value\\\":69},{\\\"key\\\":\\\"resourcemutator.(processStaticResources)\\\",\\\"value\\\":38},{\\\"key\\\":\\\"validate.(uniqueResourceKeys)\\\",\\\"value\\\":28},{\\\"key\\\":\\\"bundle.(setDefault)\\\",\\\"value\\\":26},{\\\"key\\\":\\\"validate.(required)\\\",\\\"value\\\":24},{\\\"key\\\":\\\"files.(upload)\\\",\\\"value\\\":5},{\\\"key\\\":\\\"bundle.(setDefault)\\\",\\\"value\\\":5},{\\\"key\\\":\\\"lock.(acquire)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"deploy.(statePush)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"terraform.(write)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"phases.Build\\\",\\\"value\\\":1},{\\\"key\\\":\\\"lock.(release)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"validate.FastValidate\\\",\\\"value\\\":0}],\\\"local_cache_measurements_ms\\\":[{\\\"key\\\":\\\"local.cache.compute_duration\\\",\\\"value\\\":0}]}}}}}\"\n    ]\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/output.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"\\n\\u003e\\u003e\\u003e [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n\\u003e\\u003e\\u003e [CLI] grants get schema main.schema_remove_principal_[UNIQUE_NAME]\\njson.privilege_assignments[].principal = \\\"[USERNAME]\\\";\\njson.privilege_assignments[].principal = \\\"deco-test-user@databricks.com\\\";\\njson.privilege_assignments[].privileges[] = \\\"CREATE_TABLE\\\";\\njson.privilege_assignments[].privileges[] = \\\"USE_SCHEMA\\\";\\n\\n\\u003e\\u003e\\u003e [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/databricks.yml\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"bundle:\\n  name: schema-grants-remove-principal-[UNIQUE_NAME]\\n\\nresources:\\n  schemas:\\n    grants_schema:\\n      name: schema_remove_principal_[UNIQUE_NAME]\\n      catalog_name: main\\n      grants:\\n        - principal: [USERNAME]\\n          privileges:\\n            - CREATE_TABLE\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/out.requests.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/.well-known/databricks-config\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/preview/scim/v2/Me\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"false\\\"\\n  },\\n  \\\"body\\\": {\\n    \\\"ID\\\": \\\"[UUID]\\\",\\n    \\\"AcquisitionTime\\\": \\\"[TIMESTAMP]\\\",\\n    \\\"IsForced\\\": false,\\n    \\\"User\\\": \\\"[USERNAME]\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/export\\\",\\n  \\\"q\\\": {\\n    \\\"direct_download\\\": \\\"true\\\",\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/delete\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\\\",\\n    \\\"recursive\\\": true\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/mkdirs\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/mkdirs\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/script\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"true\\\"\\n  },\\n  \\\"raw_body\\\": \\\"errcode() {\\\\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\\\\n    set +e\\\\n    # Execute the provided command with all arguments\\\\n    \\\\\\\"$@\\\\\\\"\\\\n    local exit_code=$?\\\\n    # Re-enable 'set -e' if it was previously set\\\\n    set -e\\\\n    if [ $exit_code -ne 0 ]; then\\\\n        \\\\u003e\\\\u00262 printf \\\\\\\"\\\\\\\\nExit code: $exit_code\\\\\\\\n\\\\\\\"\\\\n    fi\\\\n}\\\\n\\\\nmusterr() {\\\\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\\\\n    set +e\\\\n    # Execute the provided command with all arguments\\\\n    \\\\\\\"$@\\\\\\\"\\\\n    local exit_code=$?\\\\n    # Re-enable 'set -e'\\\\n    set -e\\\\n    if [ $exit_code -eq 0 ]; then\\\\n        \\\\u003e\\\\u00262 printf \\\\\\\"\\\\\\\\nUnexpected success\\\\\\\\n\\\\\\\"\\\\n        exit 1\\\\n    fi\\\\n}\\\\n\\\\ntrace() {\\\\n    \\\\u003e\\\\u00262 printf \\\\\\\"\\\\\\\\n\\\\u003e\\\\u003e\\\\u003e %s\\\\\\\\n\\\\\\\" \\\\\\\"$*\\\\\\\"\\\\n\\\\n    if [[ \\\\\\\"$1\\\\\\\" == *\\\\\\\"=\\\\\\\"* ]]; then\\\\n        # If the first argument contains '=', collect all env vars\\\\n        local env_vars=()\\\\n        while [[ \\\\\\\"$1\\\\\\\" == *\\\\\\\"=\\\\\\\"* ]]; do\\\\n            env_vars+=(\\\\\\\"$1\\\\\\\")\\\\n            shift\\\\n        done\\\\n        # Export environment variables in a subshell and execute the command\\\\n        (\\\\n            export \\\\\\\"${env_vars[@]}\\\\\\\"\\\\n            \\\\\\\"$@\\\\\\\"\\\\n        )\\\\n    else\\\\n        # Execute the command normally\\\\n        \\\\\\\"$@\\\\\\\"\\\\n    fi\\\\n\\\\n    return $?\\\\n}\\\\n\\\\ngit-repo-init() {\\\\n    git init -qb main\\\\n    git config core.autocrlf false\\\\n    git config user.name \\\\\\\"Tester\\\\\\\"\\\\n    git config user.email \\\\\\\"[USERNAME]\\\\\\\"\\\\n    git config core.hooksPath no-hooks\\\\n    git add databricks.yml\\\\n    git commit -qm 'Add databricks.yml'\\\\n}\\\\n\\\\ntitle() {\\\\n    local label=\\\\\\\"$1\\\\\\\"\\\\n    printf \\\\\\\"\\\\\\\\n=== %b\\\\\\\" \\\\\\\"$label\\\\\\\"\\\\n}\\\\n\\\\nwithdir() {\\\\n    local dir=\\\\\\\"$1\\\\\\\"\\\\n    shift\\\\n    local orig_dir=\\\\\\\"$(pwd)\\\\\\\"\\\\n    cd \\\\\\\"$dir\\\\\\\" || return $?\\\\n    \\\\\\\"$@\\\\\\\"\\\\n    local exit_code=$?\\\\n    cd \\\\\\\"$orig_dir\\\\\\\" || return $?\\\\n    return $exit_code\\\\n}\\\\n\\\\nuuid() {\\\\n    python3 -c 'import uuid; print(uuid.uuid4())'\\\\n}\\\\n\\\\nvenv_activate() {\\\\n    if [[ \\\\\\\"$OSTYPE\\\\\\\" == \\\\\\\"msys\\\\\\\" || \\\\\\\"$OSTYPE\\\\\\\" == \\\\\\\"cygwin\\\\\\\" || \\\\\\\"$OSTYPE\\\\\\\" == \\\\\\\"win32\\\\\\\" ]]; then\\\\n        source .venv/Scripts/activate\\\\n    else\\\\n        source .venv/bin/activate\\\\n    fi\\\\n}\\\\n\\\\nenvsubst() {\\\\n    # We need to disable MSYS_NO_PATHCONV when running the python script.\\\\n    # This is because the python interpreter is otherwise unable to find the python script\\\\n    # when MSYS_NO_PATHCONV is enabled.\\\\n    env -u MSYS_NO_PATHCONV envsubst.py\\\\n}\\\\n\\\\nprint_telemetry_bool_values() {\\\\n    jq -r 'select(.path? == \\\\\\\"/telemetry-ext\\\\\\\") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map(\\\\\\\"\\\\\\\\(.key) \\\\\\\\(.value)\\\\\\\") | .[]' out.requests.txt | sort\\\\n}\\\\n\\\\nsethome() {\\\\n    local home=\\\\\\\"$1\\\\\\\"\\\\n    mkdir -p \\\\\\\"$home\\\\\\\"\\\\n\\\\n    # For macOS and Linux, use HOME.\\\\n    export HOME=\\\\\\\"$home\\\\\\\"\\\\n\\\\n    # For Windows, use USERPROFILE.\\\\n    export USERPROFILE=\\\\\\\"$home\\\\\\\"\\\\n}\\\\n\\\\nas-test-sp() {\\\\n    if [[ -z \\\\\\\"$TEST_SP_TOKEN\\\\\\\" ]]; then\\\\n        echo \\\\\\\"Error: TEST_SP_TOKEN is not set.\\\\\\\" \\\\u003e\\\\u00262\\\\n        return 1\\\\n    fi\\\\n\\\\n    DATABRICKS_TOKEN=\\\\\\\"$TEST_SP_TOKEN\\\\\\\" \\\\\\\\\\\\n    DATABRICKS_CLIENT_SECRET=\\\\\\\"\\\\\\\" \\\\\\\\\\\\n    DATABRICKS_CLIENT_ID=\\\\\\\"\\\\\\\" \\\\\\\\\\\\n    DATABRICKS_AUTH_TYPE=\\\\\\\"\\\\\\\" \\\\\\\\\\\\n    \\\\\\\"$@\\\\\\\"\\\\n}\\\\n\\\\nreadplanarg() {\\\\n    # Expands into \\\\\\\"--plan \\\\u003cfilename\\\\u003e\\\\\\\" based on READPLAN env var\\\\n    # Use it with \\\\\\\"bundle deploy\\\\\\\" to configure two runs: once with saved plan and one without.\\\\n    # Note: READPLAN is specially handled in test runner so that engine=terraform/readplan is set combination is skipped.\\\\n    if [[ -n \\\\\\\"$READPLAN\\\\\\\" ]]; then\\\\n        printf -- \\\\\\\"--plan %s\\\\\\\" \\\\\\\"$1\\\\\\\"\\\\n    else\\\\n        printf \\\\\\\"\\\\\\\"\\\\n    fi\\\\n}\\\\n\\\\n(\\\\nenvsubst \\\\u003c databricks.yml.tmpl \\\\u003e databricks.yml\\\\n\\\\ncleanup() {\\\\n    trace errcode $CLI bundle destroy --auto-approve\\\\n    rm -f out.requests.txt\\\\n}\\\\ntrap cleanup EXIT\\\\n\\\\ntrace $CLI bundle deploy\\\\ntrace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py \\\\\\\"$CURRENT_USER_NAME\\\\\\\" 'deco-test-user@databricks.com'\\\\n\\\\ngrep -v 'TO_REMOVE' databricks.yml \\\\u003e tmp.yml \\\\u0026\\\\u0026 mv tmp.yml databricks.yml\\\\n\\\\ntrace $CLI bundle deploy\\\\ntrace $CLI grants get schema main.schema_remove_principal_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py \\\\\\\"$CURRENT_USER_NAME\\\\\\\" '!deco-test-user@databricks.com' \\\\u0026\\\\u003e out.grants.$DATABRICKS_BUNDLE_ENGINE.txt\\\\ntrace $CLI bundle plan\\\\ntrace $CLI bundle deploy\\\\ntrace $CLI bundle plan\\\\n)\\\\n\\\\nrm -fr .databricks .gitignore\\\\n\\\"\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/repls.json\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"true\\\"\\n  },\\n  \\\"body\\\": [\\n    {\\n      \\\"Old\\\": \\\"/home/denis\\\\\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/\\\\\\\\.terraformrc\\\",\\n      \\\"New\\\": \\\"[DATABRICKS_TF_CLI_CONFIG_FILE]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"/home/denis\\\\\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/terraform\\\",\\n      \\\"New\\\": \\\"[TERRAFORM]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"/home/denis\\\\\\\\.bilenko/work/cli-trees/random-bugfixes-4/libs/vendored_py_packages\\\",\\n      \\\"New\\\": \\\"[VENDORED_PY_PACKAGES]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"/home/denis\\\\\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/databricks_bundles-0\\\\\\\\.298\\\\\\\\.0-py3-none-any\\\\\\\\.whl\\\",\\n      \\\"New\\\": \\\"[DATABRICKS_BUNDLES_WHEEL]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"/home/denis\\\\\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/databricks\\\",\\n      \\\"New\\\": \\\"[CLI]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"/home/denis\\\\\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/0\\\\\\\\.293\\\\\\\\.0/databricks\\\",\\n      \\\"New\\\": \\\"[CLI_293]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[TEST_DEFAULT_WAREHOUSE_ID]\\\",\\n      \\\"New\\\": \\\"[TEST_DEFAULT_WAREHOUSE_ID]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[TEST_DEFAULT_CLUSTER_ID]\\\",\\n      \\\"New\\\": \\\"[TEST_DEFAULT_CLUSTER_ID]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[TEST_INSTANCE_POOL_ID]\\\",\\n      \\\"New\\\": \\\"[TEST_INSTANCE_POOL_ID]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"/home/denis\\\\\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64\\\",\\n      \\\"New\\\": \\\"[BUILD_DIR]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"0\\\\\\\\.0\\\\\\\\.0-dev([-+][a-f0-9]{10,16})?\\\",\\n      \\\"New\\\": \\\"[DEV_VERSION]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"databricks-sdk-go/[0-9]+\\\\\\\\.[0-9]+\\\\\\\\.[0-9]+\\\",\\n      \\\"New\\\": \\\"databricks-sdk-go/[SDK_VERSION]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"1\\\\\\\\.26\\\\\\\\.2\\\",\\n      \\\"New\\\": \\\"[GO_VERSION]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"/home/denis\\\\\\\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance\\\",\\n      \\\"New\\\": \\\"[TESTROOT]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"dbapi[0-9a-f]+\\\",\\n      \\\"New\\\": \\\"[DATABRICKS_TOKEN]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"i3\\\\\\\\.xlarge\\\",\\n      \\\"New\\\": \\\"[NODE_TYPE_ID]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[UNIQUE_NAME]\\\",\\n      \\\"New\\\": \\\"[UNIQUE_NAME]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[TEST_TMP_DIR]\\\",\\n      \\\"New\\\": \\\"[TEST_TMP_DIR]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[TEST_TMP_DIR]_PARENT\\\",\\n      \\\"New\\\": \\\"[TEST_TMP_DIR]_PARENT\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[USERNAME]@databricks\\\\\\\\.com\\\",\\n      \\\"New\\\": \\\"[USERNAME]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[USERNAME]\\\",\\n      \\\"New\\\": \\\"[USERNAME]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[USERID]\\\",\\n      \\\"New\\\": \\\"[USERID]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"https://127\\\\\\\\.0\\\\\\\\.0\\\\\\\\.1:43945\\\",\\n      \\\"New\\\": \\\"[DATABRICKS_URL]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"http://127\\\\\\\\.0\\\\\\\\.0\\\\\\\\.1:43945\\\",\\n      \\\"New\\\": \\\"[DATABRICKS_URL]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"127\\\\\\\\.0\\\\\\\\.0\\\\\\\\.1:43945\\\",\\n      \\\"New\\\": \\\"[DATABRICKS_HOST]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\\\",\\n      \\\"New\\\": \\\"[UUID]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"\\\\\\\\d{20,}\\\",\\n      \\\"New\\\": \\\"[NUMID]\\\",\\n      \\\"Order\\\": 10,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"1[78]\\\\\\\\d{17}\\\",\\n      \\\"New\\\": \\\"[UNIX_TIME_NANOS]\\\",\\n      \\\"Order\\\": 10,\\n      \\\"Distinct\\\": true\\n    },\\n    {\\n      \\\"Old\\\": \\\"\\\\\\\\d{17,}\\\",\\n      \\\"New\\\": \\\"[NUMID]\\\",\\n      \\\"Order\\\": 10,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"\\\\\\\\d{14,}\\\",\\n      \\\"New\\\": \\\"[NUMID]\\\",\\n      \\\"Order\\\": 10,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"1[78]\\\\\\\\d{11}\\\",\\n      \\\"New\\\": \\\"[UNIX_TIME_MILLIS]\\\",\\n      \\\"Order\\\": 10,\\n      \\\"Distinct\\\": true\\n    },\\n    {\\n      \\\"Old\\\": \\\"\\\\\\\\d{11,}\\\",\\n      \\\"New\\\": \\\"[NUMID]\\\",\\n      \\\"Order\\\": 10,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"1[78]\\\\\\\\d{8}\\\",\\n      \\\"New\\\": \\\"[UNIX_TIME_S]\\\",\\n      \\\"Order\\\": 10,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"\\\\\\\\d{8,}\\\",\\n      \\\"New\\\": \\\"[NUMID]\\\",\\n      \\\"Order\\\": 10,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"2\\\\\\\\d\\\\\\\\d\\\\\\\\d-\\\\\\\\d\\\\\\\\d-\\\\\\\\d\\\\\\\\d(T| )\\\\\\\\d\\\\\\\\d:\\\\\\\\d\\\\\\\\d:\\\\\\\\d\\\\\\\\d\\\\\\\\.\\\\\\\\d+(Z|\\\\\\\\+\\\\\\\\d\\\\\\\\d:\\\\\\\\d\\\\\\\\d)?\\\",\\n      \\\"New\\\": \\\"[TIMESTAMP]\\\",\\n      \\\"Order\\\": 9,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"2\\\\\\\\d\\\\\\\\d\\\\\\\\d-\\\\\\\\d\\\\\\\\d-\\\\\\\\d\\\\\\\\d(T| )\\\\\\\\d\\\\\\\\d:\\\\\\\\d\\\\\\\\d:\\\\\\\\d\\\\\\\\dZ?\\\",\\n      \\\"New\\\": \\\"[TIMESTAMP]\\\",\\n      \\\"Order\\\": 9,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"[METASTORE_NAME]|[METASTORE_NAME]\\\",\\n      \\\"New\\\": \\\"[METASTORE_NAME]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"os/[OS]\\\",\\n      \\\"New\\\": \\\"os/[OS]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"os/[OS]\\\",\\n      \\\"New\\\": \\\"os/[OS]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"os/[OS]\\\",\\n      \\\"New\\\": \\\"os/[OS]\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    },\\n    {\\n      \\\"Old\\\": \\\"\\\",\\n      \\\"New\\\": \\\"\\\",\\n      \\\"Order\\\": 0,\\n      \\\"Distinct\\\": false\\n    }\\n  ]\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/out.requests.txt\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"true\\\"\\n  },\\n  \\\"raw_body\\\": \\\"{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/.well-known/databricks-config\\\\\\\"\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/preview/scim/v2/Me\\\\\\\"\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace/get-status\\\\\\\",\\\\n  \\\\\\\"q\\\\\\\": {\\\\n    \\\\\\\"path\\\\\\\": \\\\\\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\\\\\\\",\\\\n    \\\\\\\"return_export_info\\\\\\\": \\\\\\\"true\\\\\\\"\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace/get-status\\\\\\\",\\\\n  \\\\\\\"q\\\\\\\": {\\\\n    \\\\\\\"path\\\\\\\": \\\\\\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\\\\\\\",\\\\n    \\\\\\\"return_export_info\\\\\\\": \\\\\\\"true\\\\\\\"\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace/get-status\\\\\\\",\\\\n  \\\\\\\"q\\\\\\\": {\\\\n    \\\\\\\"path\\\\\\\": \\\\\\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\\\\\\\",\\\\n    \\\\\\\"return_export_info\\\\\\\": \\\\\\\"true\\\\\\\"\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"POST\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\\\\\",\\\\n  \\\\\\\"q\\\\\\\": {\\\\n    \\\\\\\"overwrite\\\\\\\": \\\\\\\"false\\\\\\\"\\\\n  },\\\\n  \\\\\\\"body\\\\\\\": {\\\\n    \\\\\\\"ID\\\\\\\": \\\\\\\"[UUID]\\\\\\\",\\\\n    \\\\\\\"AcquisitionTime\\\\\\\": \\\\\\\"[TIMESTAMP]\\\\\\\",\\\\n    \\\\\\\"IsForced\\\\\\\": false,\\\\n    \\\\\\\"User\\\\\\\": \\\\\\\"[USERNAME]\\\\\\\"\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace/get-status\\\\\\\",\\\\n  \\\\\\\"q\\\\\\\": {\\\\n    \\\\\\\"path\\\\\\\": \\\\\\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\\\\\",\\\\n    \\\\\\\"return_export_info\\\\\\\": \\\\\\\"true\\\\\\\"\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace/export\\\\\\\",\\\\n  \\\\\\\"q\\\\\\\": {\\\\n    \\\\\\\"direct_download\\\\\\\": \\\\\\\"true\\\\\\\",\\\\n    \\\\\\\"path\\\\\\\": \\\\\\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\\\\\"\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"POST\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace/delete\\\\\\\",\\\\n  \\\\\\\"body\\\\\\\": {\\\\n    \\\\\\\"path\\\\\\\": \\\\\\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\\\\\\\",\\\\n    \\\\\\\"recursive\\\\\\\": true\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"POST\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace/mkdirs\\\\\\\",\\\\n  \\\\\\\"body\\\\\\\": {\\\\n    \\\\\\\"path\\\\\\\": \\\\\\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\\\\\\\"\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace/get-status\\\\\\\",\\\\n  \\\\\\\"q\\\\\\\": {\\\\n    \\\\\\\"path\\\\\\\": \\\\\\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\\\\\"\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"POST\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace/mkdirs\\\\\\\",\\\\n  \\\\\\\"body\\\\\\\": {\\\\n    \\\\\\\"path\\\\\\\": \\\\\\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\\\\\"\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.0/workspace/get-status\\\\\\\",\\\\n  \\\\\\\"q\\\\\\\": {\\\\n    \\\\\\\"path\\\\\\\": \\\\\\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\\\\\"\\\\n  }\\\\n}\\\\n\\\"\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/databricks.yml.tmpl\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"true\\\"\\n  },\\n  \\\"raw_body\\\": \\\"bundle:\\\\n  name: schema-grants-remove-principal-$UNIQUE_NAME\\\\n\\\\nresources:\\\\n  schemas:\\\\n    grants_schema:\\\\n      name: schema_remove_principal_$UNIQUE_NAME\\\\n      catalog_name: main\\\\n      grants:\\\\n        - principal: $CURRENT_USER_NAME\\\\n          privileges:\\\\n            - CREATE_TABLE\\\\n        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_REMOVE\\\\n\\\"\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/databricks.yml\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"true\\\"\\n  },\\n  \\\"raw_body\\\": \\\"bundle:\\\\n  name: schema-grants-remove-principal-[UNIQUE_NAME]\\\\n\\\\nresources:\\\\n  schemas:\\\\n    grants_schema:\\\\n      name: schema_remove_principal_[UNIQUE_NAME]\\\\n      catalog_name: main\\\\n      grants:\\\\n        - principal: [USERNAME]\\\\n          privileges:\\\\n            - CREATE_TABLE\\\\n        - { principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] } # TO_REMOVE\\\\n\\\"\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/output.txt\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"true\\\"\\n  },\\n  \\\"raw_body\\\": \\\"\\\\n\\\\u003e\\\\u003e\\\\u003e [CLI] bundle deploy\\\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files...\\\\n\\\"\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"true\\\"\\n  },\\n  \\\"body\\\": {\\n    \\\"version\\\": 1,\\n    \\\"seq\\\": 1,\\n    \\\"cli_version\\\": \\\"[DEV_VERSION]\\\",\\n    \\\"timestamp\\\": \\\"[TIMESTAMP]\\\",\\n    \\\"files\\\": [\\n      {\\n        \\\"local_path\\\": \\\"script\\\",\\n        \\\"is_notebook\\\": false\\n      },\\n      {\\n        \\\"local_path\\\": \\\"databricks.yml\\\",\\n        \\\"is_notebook\\\": false\\n      },\\n      {\\n        \\\"local_path\\\": \\\"databricks.yml.tmpl\\\",\\n        \\\"is_notebook\\\": false\\n      },\\n      {\\n        \\\"local_path\\\": \\\"out.requests.txt\\\",\\n        \\\"is_notebook\\\": false\\n      },\\n      {\\n        \\\"local_path\\\": \\\"output.txt\\\",\\n        \\\"is_notebook\\\": false\\n      },\\n      {\\n        \\\"local_path\\\": \\\"repls.json\\\",\\n        \\\"is_notebook\\\": false\\n      }\\n    ],\\n    \\\"id\\\": \\\"[UUID]\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/.well-known/databricks-config\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/.well-known/databricks-config\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/.well-known/databricks-config\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/.well-known/databricks-config\\\"\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.1/unity-catalog/schemas\\\",\\n  \\\"body\\\": {\\n    \\\"catalog_name\\\": \\\"main\\\",\\n    \\\"name\\\": \\\"schema_remove_principal_[UNIQUE_NAME]\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.1/unity-catalog/schemas/main.schema_remove_principal_[UNIQUE_NAME]\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\\\"\\n}\\n{\\n  \\\"method\\\": \\\"PATCH\\\",\\n  \\\"path\\\": \\\"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\\\",\\n  \\\"body\\\": {\\n    \\\"changes\\\": [\\n      {\\n        \\\"add\\\": [\\n          \\\"USE_SCHEMA\\\"\\n        ],\\n        \\\"principal\\\": \\\"deco-test-user@databricks.com\\\"\\n      },\\n      {\\n        \\\"add\\\": [\\n          \\\"CREATE_TABLE\\\"\\n        ],\\n        \\\"principal\\\": \\\"[USERNAME]\\\"\\n      }\\n    ]\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\\\"\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"true\\\"\\n  },\\n  \\\"body\\\": {\\n    \\\"version\\\": 4,\\n    \\\"terraform_version\\\": \\\"1.5.5\\\",\\n    \\\"serial\\\": 3,\\n    \\\"lineage\\\": \\\"[UUID]\\\",\\n    \\\"outputs\\\": {},\\n    \\\"resources\\\": [\\n      {\\n        \\\"mode\\\": \\\"managed\\\",\\n        \\\"type\\\": \\\"databricks_grants\\\",\\n        \\\"name\\\": \\\"schema_grants_schema\\\",\\n        \\\"provider\\\": \\\"provider[\\\\\\\"registry.terraform.io/databricks/databricks\\\\\\\"]\\\",\\n        \\\"instances\\\": [\\n          {\\n            \\\"schema_version\\\": 0,\\n            \\\"attributes\\\": {\\n              \\\"catalog\\\": null,\\n              \\\"credential\\\": null,\\n              \\\"external_location\\\": null,\\n              \\\"foreign_connection\\\": null,\\n              \\\"function\\\": null,\\n              \\\"grant\\\": [\\n                {\\n                  \\\"principal\\\": \\\"deco-test-user@databricks.com\\\",\\n                  \\\"privileges\\\": [\\n                    \\\"USE_SCHEMA\\\"\\n                  ]\\n                },\\n                {\\n                  \\\"principal\\\": \\\"[USERNAME]\\\",\\n                  \\\"privileges\\\": [\\n                    \\\"CREATE_TABLE\\\"\\n                  ]\\n                }\\n              ],\\n              \\\"id\\\": \\\"schema/main.schema_remove_principal_[UNIQUE_NAME]\\\",\\n              \\\"metastore\\\": null,\\n              \\\"model\\\": null,\\n              \\\"pipeline\\\": null,\\n              \\\"provider_config\\\": [],\\n              \\\"recipient\\\": null,\\n              \\\"schema\\\": \\\"main.schema_remove_principal_[UNIQUE_NAME]\\\",\\n              \\\"share\\\": null,\\n              \\\"storage_credential\\\": null,\\n              \\\"table\\\": null,\\n              \\\"volume\\\": null\\n            },\\n            \\\"sensitive_attributes\\\": [],\\n            \\\"private\\\": \\\"bnVsbA==\\\",\\n            \\\"dependencies\\\": [\\n              \\\"databricks_schema.grants_schema\\\"\\n            ]\\n          }\\n        ]\\n      },\\n      {\\n        \\\"mode\\\": \\\"managed\\\",\\n        \\\"type\\\": \\\"databricks_schema\\\",\\n        \\\"name\\\": \\\"grants_schema\\\",\\n        \\\"provider\\\": \\\"provider[\\\\\\\"registry.terraform.io/databricks/databricks\\\\\\\"]\\\",\\n        \\\"instances\\\": [\\n          {\\n            \\\"schema_version\\\": 0,\\n            \\\"attributes\\\": {\\n              \\\"catalog_name\\\": \\\"main\\\",\\n              \\\"comment\\\": null,\\n              \\\"enable_predictive_optimization\\\": \\\"INHERIT\\\",\\n              \\\"force_destroy\\\": true,\\n              \\\"id\\\": \\\"main.schema_remove_principal_[UNIQUE_NAME]\\\",\\n              \\\"metastore_id\\\": \\\"[UUID]\\\",\\n              \\\"name\\\": \\\"schema_remove_principal_[UNIQUE_NAME]\\\",\\n              \\\"owner\\\": \\\"[USERNAME]\\\",\\n              \\\"properties\\\": null,\\n              \\\"provider_config\\\": [],\\n              \\\"schema_id\\\": \\\"[UUID]\\\",\\n              \\\"storage_root\\\": null\\n            },\\n            \\\"sensitive_attributes\\\": [],\\n            \\\"private\\\": \\\"bnVsbA==\\\"\\n          }\\n        ]\\n      }\\n    ],\\n    \\\"check_results\\\": null\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/metadata.json\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"true\\\"\\n  },\\n  \\\"body\\\": {\\n    \\\"version\\\": 1,\\n    \\\"config\\\": {\\n      \\\"bundle\\\": {\\n        \\\"name\\\": \\\"schema-grants-remove-principal-[UNIQUE_NAME]\\\",\\n        \\\"target\\\": \\\"default\\\",\\n        \\\"git\\\": {\\n          \\\"bundle_root_path\\\": \\\".\\\"\\n        }\\n      },\\n      \\\"workspace\\\": {\\n        \\\"file_path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n      },\\n      \\\"resources\\\": {},\\n      \\\"presets\\\": {\\n        \\\"source_linked_deployment\\\": false\\n      }\\n    },\\n    \\\"extra\\\": {}\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/export\\\",\\n  \\\"q\\\": {\\n    \\\"direct_download\\\": \\\"true\\\",\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/delete\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/telemetry-ext\\\",\\n  \\\"body\\\": {\\n    \\\"uploadTime\\\": [UNIX_TIME_MILLIS][0],\\n    \\\"items\\\": [],\\n    \\\"protoLogs\\\": [\\n      \\\"{\\\\\\\"frontend_log_event_id\\\\\\\":\\\\\\\"[UUID]\\\\\\\",\\\\\\\"entry\\\\\\\":{\\\\\\\"databricks_cli_log\\\\\\\":{\\\\\\\"execution_context\\\\\\\":{\\\\\\\"cmd_exec_id\\\\\\\":\\\\\\\"[UUID]\\\\\\\",\\\\\\\"version\\\\\\\":\\\\\\\"[DEV_VERSION]\\\\\\\",\\\\\\\"command\\\\\\\":\\\\\\\"bundle_deploy\\\\\\\",\\\\\\\"operating_system\\\\\\\":\\\\\\\"linux\\\\\\\",\\\\\\\"execution_time_ms\\\\\\\":18030,\\\\\\\"exit_code\\\\\\\":0},\\\\\\\"bundle_deploy_event\\\\\\\":{\\\\\\\"bundle_uuid\\\\\\\":\\\\\\\"[UUID]\\\\\\\",\\\\\\\"deployment_id\\\\\\\":\\\\\\\"[UUID]\\\\\\\",\\\\\\\"resource_count\\\\\\\":1,\\\\\\\"resource_job_count\\\\\\\":0,\\\\\\\"resource_pipeline_count\\\\\\\":0,\\\\\\\"resource_model_count\\\\\\\":0,\\\\\\\"resource_experiment_count\\\\\\\":0,\\\\\\\"resource_model_serving_endpoint_count\\\\\\\":0,\\\\\\\"resource_registered_model_count\\\\\\\":0,\\\\\\\"resource_quality_monitor_count\\\\\\\":0,\\\\\\\"resource_schema_count\\\\\\\":1,\\\\\\\"resource_volume_count\\\\\\\":0,\\\\\\\"resource_cluster_count\\\\\\\":0,\\\\\\\"resource_dashboard_count\\\\\\\":0,\\\\\\\"resource_app_count\\\\\\\":0,\\\\\\\"experimental\\\\\\\":{\\\\\\\"configuration_file_count\\\\\\\":1,\\\\\\\"variable_count\\\\\\\":0,\\\\\\\"complex_variable_count\\\\\\\":0,\\\\\\\"lookup_variable_count\\\\\\\":0,\\\\\\\"target_count\\\\\\\":1,\\\\\\\"bool_values\\\\\\\":[{\\\\\\\"key\\\\\\\":\\\\\\\"local.cache.attempt\\\\\\\",\\\\\\\"value\\\\\\\":true},{\\\\\\\"key\\\\\\\":\\\\\\\"local.cache.miss\\\\\\\",\\\\\\\"value\\\\\\\":true},{\\\\\\\"key\\\\\\\":\\\\\\\"experimental.use_legacy_run_as\\\\\\\",\\\\\\\"value\\\\\\\":false},{\\\\\\\"key\\\\\\\":\\\\\\\"run_as_set\\\\\\\",\\\\\\\"value\\\\\\\":false},{\\\\\\\"key\\\\\\\":\\\\\\\"presets_name_prefix_is_set\\\\\\\",\\\\\\\"value\\\\\\\":false},{\\\\\\\"key\\\\\\\":\\\\\\\"python_wheel_wrapper_is_set\\\\\\\",\\\\\\\"value\\\\\\\":false},{\\\\\\\"key\\\\\\\":\\\\\\\"skip_artifact_cleanup\\\\\\\",\\\\\\\"value\\\\\\\":false},{\\\\\\\"key\\\\\\\":\\\\\\\"has_serverless_compute\\\\\\\",\\\\\\\"value\\\\\\\":false},{\\\\\\\"key\\\\\\\":\\\\\\\"has_classic_job_compute\\\\\\\",\\\\\\\"value\\\\\\\":false},{\\\\\\\"key\\\\\\\":\\\\\\\"has_classic_interactive_compute\\\\\\\",\\\\\\\"value\\\\\\\":false}],\\\\\\\"bundle_mode\\\\\\\":\\\\\\\"TYPE_UNSPECIFIED\\\\\\\",\\\\\\\"workspace_artifact_path_type\\\\\\\":\\\\\\\"WORKSPACE_FILE_SYSTEM\\\\\\\",\\\\\\\"bundle_mutator_execution_time_ms\\\\\\\":[{\\\\\\\"key\\\\\\\":\\\\\\\"phases.Deploy\\\\\\\",\\\\\\\"value\\\\\\\":17841},{\\\\\\\"key\\\\\\\":\\\\\\\"terraform.(plan)\\\\\\\",\\\\\\\"value\\\\\\\":8794},{\\\\\\\"key\\\\\\\":\\\\\\\"terraform.(apply)\\\\\\\",\\\\\\\"value\\\\\\\":5237},{\\\\\\\"key\\\\\\\":\\\\\\\"phases.Initialize\\\\\\\",\\\\\\\"value\\\\\\\":69},{\\\\\\\"key\\\\\\\":\\\\\\\"resourcemutator.(processStaticResources)\\\\\\\",\\\\\\\"value\\\\\\\":38},{\\\\\\\"key\\\\\\\":\\\\\\\"validate.(uniqueResourceKeys)\\\\\\\",\\\\\\\"value\\\\\\\":28},{\\\\\\\"key\\\\\\\":\\\\\\\"bundle.(setDefault)\\\\\\\",\\\\\\\"value\\\\\\\":26},{\\\\\\\"key\\\\\\\":\\\\\\\"validate.(required)\\\\\\\",\\\\\\\"value\\\\\\\":24},{\\\\\\\"key\\\\\\\":\\\\\\\"files.(upload)\\\\\\\",\\\\\\\"value\\\\\\\":5},{\\\\\\\"key\\\\\\\":\\\\\\\"bundle.(setDefault)\\\\\\\",\\\\\\\"value\\\\\\\":5},{\\\\\\\"key\\\\\\\":\\\\\\\"lock.(acquire)\\\\\\\",\\\\\\\"value\\\\\\\":1},{\\\\\\\"key\\\\\\\":\\\\\\\"deploy.(statePush)\\\\\\\",\\\\\\\"value\\\\\\\":1},{\\\\\\\"key\\\\\\\":\\\\\\\"terraform.(write)\\\\\\\",\\\\\\\"value\\\\\\\":1},{\\\\\\\"key\\\\\\\":\\\\\\\"phases.Build\\\\\\\",\\\\\\\"value\\\\\\\":1},{\\\\\\\"key\\\\\\\":\\\\\\\"lock.(release)\\\\\\\",\\\\\\\"value\\\\\\\":1},{\\\\\\\"key\\\\\\\":\\\\\\\"validate.FastValidate\\\\\\\",\\\\\\\"value\\\\\\\":0}],\\\\\\\"local_cache_measurements_ms\\\\\\\":[{\\\\\\\"key\\\\\\\":\\\\\\\"local.cache.compute_duration\\\\\\\",\\\\\\\"value\\\\\\\":0}]}}}}}\\\"\\n    ]\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\\\"\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\\\"\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"false\\\"\\n  },\\n  \\\"body\\\": {\\n    \\\"ID\\\": \\\"[UUID]\\\",\\n    \\\"AcquisitionTime\\\": \\\"[TIMESTAMP]\\\",\\n    \\\"IsForced\\\": false,\\n    \\\"User\\\": \\\"[USERNAME]\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/export\\\",\\n  \\\"q\\\": {\\n    \\\"direct_download\\\": \\\"true\\\",\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/delete\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\\\",\\n    \\\"recursive\\\": true\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/mkdirs\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\\\"\\n  }\\n}\\n{\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\\\"\\n  }\\n}\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 1,\n    \"seq\": 2,\n    \"cli_version\": \"[DEV_VERSION]\",\n    \"timestamp\": \"[TIMESTAMP]\",\n    \"files\": [\n      {\n        \"local_path\": \"script\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"databricks.yml\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"databricks.yml.tmpl\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"out.requests.txt\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"output.txt\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"repls.json\",\n        \"is_notebook\": false\n      }\n    ],\n    \"id\": \"[UUID]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/schemas/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"PATCH\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\",\n  \"body\": {\n    \"changes\": [\n      {\n        \"principal\": \"deco-test-user@databricks.com\",\n        \"remove\": [\n          \"USE_SCHEMA\"\n        ]\n      }\n    ]\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 4,\n    \"terraform_version\": \"1.5.5\",\n    \"serial\": 5,\n    \"lineage\": \"[UUID]\",\n    \"outputs\": {},\n    \"resources\": [\n      {\n        \"mode\": \"managed\",\n        \"type\": \"databricks_grants\",\n        \"name\": \"schema_grants_schema\",\n        \"provider\": \"provider[\\\"registry.terraform.io/databricks/databricks\\\"]\",\n        \"instances\": [\n          {\n            \"schema_version\": 0,\n            \"attributes\": {\n              \"catalog\": null,\n              \"credential\": null,\n              \"external_location\": null,\n              \"foreign_connection\": null,\n              \"function\": null,\n              \"grant\": [\n                {\n                  \"principal\": \"[USERNAME]\",\n                  \"privileges\": [\n                    \"CREATE_TABLE\"\n                  ]\n                }\n              ],\n              \"id\": \"schema/main.schema_remove_principal_[UNIQUE_NAME]\",\n              \"metastore\": null,\n              \"model\": null,\n              \"pipeline\": null,\n              \"provider_config\": [],\n              \"recipient\": null,\n              \"schema\": \"main.schema_remove_principal_[UNIQUE_NAME]\",\n              \"share\": null,\n              \"storage_credential\": null,\n              \"table\": null,\n              \"volume\": null\n            },\n            \"sensitive_attributes\": [],\n            \"private\": \"bnVsbA==\",\n            \"dependencies\": [\n              \"databricks_schema.grants_schema\"\n            ]\n          }\n        ]\n      },\n      {\n        \"mode\": \"managed\",\n        \"type\": \"databricks_schema\",\n        \"name\": \"grants_schema\",\n        \"provider\": \"provider[\\\"registry.terraform.io/databricks/databricks\\\"]\",\n        \"instances\": [\n          {\n            \"schema_version\": 0,\n            \"attributes\": {\n              \"catalog_name\": \"main\",\n              \"comment\": null,\n              \"enable_predictive_optimization\": \"INHERIT\",\n              \"force_destroy\": true,\n              \"id\": \"main.schema_remove_principal_[UNIQUE_NAME]\",\n              \"metastore_id\": \"[UUID]\",\n              \"name\": \"schema_remove_principal_[UNIQUE_NAME]\",\n              \"owner\": \"[USERNAME]\",\n              \"properties\": null,\n              \"provider_config\": [],\n              \"schema_id\": \"[UUID]\",\n              \"storage_root\": null\n            },\n            \"sensitive_attributes\": [],\n            \"private\": \"bnVsbA==\"\n          }\n        ]\n      }\n    ],\n    \"check_results\": null\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/metadata.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 1,\n    \"config\": {\n      \"bundle\": {\n        \"name\": \"schema-grants-remove-principal-[UNIQUE_NAME]\",\n        \"target\": \"default\",\n        \"git\": {\n          \"bundle_root_path\": \".\"\n        }\n      },\n      \"workspace\": {\n        \"file_path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n      },\n      \"resources\": {},\n      \"presets\": {\n        \"source_linked_deployment\": false\n      }\n    },\n    \"extra\": {}\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/telemetry-ext\",\n  \"body\": {\n    \"uploadTime\": [UNIX_TIME_MILLIS][1],\n    \"items\": [],\n    \"protoLogs\": [\n      \"{\\\"frontend_log_event_id\\\":\\\"[UUID]\\\",\\\"entry\\\":{\\\"databricks_cli_log\\\":{\\\"execution_context\\\":{\\\"cmd_exec_id\\\":\\\"[UUID]\\\",\\\"version\\\":\\\"[DEV_VERSION]\\\",\\\"command\\\":\\\"bundle_deploy\\\",\\\"operating_system\\\":\\\"linux\\\",\\\"execution_time_ms\\\":19827,\\\"exit_code\\\":0},\\\"bundle_deploy_event\\\":{\\\"bundle_uuid\\\":\\\"[UUID]\\\",\\\"deployment_id\\\":\\\"[UUID]\\\",\\\"resource_count\\\":1,\\\"resource_job_count\\\":0,\\\"resource_pipeline_count\\\":0,\\\"resource_model_count\\\":0,\\\"resource_experiment_count\\\":0,\\\"resource_model_serving_endpoint_count\\\":0,\\\"resource_registered_model_count\\\":0,\\\"resource_quality_monitor_count\\\":0,\\\"resource_schema_count\\\":1,\\\"resource_volume_count\\\":0,\\\"resource_cluster_count\\\":0,\\\"resource_dashboard_count\\\":0,\\\"resource_app_count\\\":0,\\\"experimental\\\":{\\\"configuration_file_count\\\":1,\\\"variable_count\\\":0,\\\"complex_variable_count\\\":0,\\\"lookup_variable_count\\\":0,\\\"target_count\\\":1,\\\"bool_values\\\":[{\\\"key\\\":\\\"local.cache.attempt\\\",\\\"value\\\":true},{\\\"key\\\":\\\"local.cache.hit\\\",\\\"value\\\":true},{\\\"key\\\":\\\"experimental.use_legacy_run_as\\\",\\\"value\\\":false},{\\\"key\\\":\\\"run_as_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"presets_name_prefix_is_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"python_wheel_wrapper_is_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"skip_artifact_cleanup\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_serverless_compute\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_classic_job_compute\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_classic_interactive_compute\\\",\\\"value\\\":false}],\\\"bundle_mode\\\":\\\"TYPE_UNSPECIFIED\\\",\\\"workspace_artifact_path_type\\\":\\\"WORKSPACE_FILE_SYSTEM\\\",\\\"bundle_mutator_execution_time_ms\\\":[{\\\"key\\\":\\\"phases.Deploy\\\",\\\"value\\\":19747},{\\\"key\\\":\\\"terraform.(plan)\\\",\\\"value\\\":11532},{\\\"key\\\":\\\"terraform.(apply)\\\",\\\"value\\\":4803},{\\\"key\\\":\\\"phases.Initialize\\\",\\\"value\\\":57},{\\\"key\\\":\\\"validate.(required)\\\",\\\"value\\\":27},{\\\"key\\\":\\\"resourcemutator.(processStaticResources)\\\",\\\"value\\\":24},{\\\"key\\\":\\\"mutator.(resolveVariableReferences)\\\",\\\"value\\\":17},{\\\"key\\\":\\\"files.(upload)\\\",\\\"value\\\":3},{\\\"key\\\":\\\"lock.(release)\\\",\\\"value\\\":2},{\\\"key\\\":\\\"phases.Build\\\",\\\"value\\\":1},{\\\"key\\\":\\\"terraform.(write)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"validate.FastValidate\\\",\\\"value\\\":0}]}}}}}\"\n    ]\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/schemas/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/permissions/schema/main.schema_remove_principal_[UNIQUE_NAME]\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/terraform.tfstate\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/artifacts/.internal\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files\"\n  }\n}\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/files/out.grants.terraform.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "json.privilege_assignments[].principal = \"[USERNAME]\";\njson.privilege_assignments[].privileges[] = \"CREATE_TABLE\";\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-[UNIQUE_NAME]/default/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "seq": 3,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": [
+      {
+        "local_path": "databricks.yml.tmpl",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.grants.terraform.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.requests.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "output.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "repls.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml",
+        "is_notebook": false
+      }
+    ],
+    "id": "[UUID]"
+  }
+}

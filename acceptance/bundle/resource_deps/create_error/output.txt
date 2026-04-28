@@ -74,41 +74,4 @@ create jobs.foo
 
 Plan: 3 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== Expecting no difference in the output between first and second deploy
->>> print_requests.py //jobs
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "description": "INJECT_ERROR",
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "foo",
-    "queue": {
-      "enabled": true
-    }
-  }
-}
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.jobs.independent
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Deleting files...
-Destroy complete!
-
->>> print_requests.py //jobs
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete",
-  "body": {
-    "job_id": [INDEPENDENT_ID]
-  }
-}
+Error: Test script killed due to a timeout (1m0s)

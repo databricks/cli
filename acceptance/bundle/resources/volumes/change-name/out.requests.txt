@@ -1,0 +1,254 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.plan.terraform.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "cli_version": "[DEV_VERSION]",
+    "plan": {
+      "resources.volumes.volume1": {
+        "action": "update"
+      }
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n\u003e\u003e\u003e print_requests\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.1/unity-catalog/volumes\",\n  \"body\": {\n    \"catalog_name\": \"main\",\n    \"comment\": \"COMMENT1\",\n    \"name\": \"myvolume\",\n    \"schema_name\": \"myschema\",\n    \"volume_type\": \"MANAGED\"\n  }\n}\n\n=== Summary should now show id and url\n{\n  \"volumes\": {\n    \"volume1\": {\n      \"catalog_name\": \"main\",\n      \"comment\": \"COMMENT1\",\n      \"id\": \"main.myschema.myvolume\",\n      \"name\": \"myvolume\",\n      \"schema_name\": \"myschema\",\n      \"url\": \"[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?o=[NUMID]\",\n      \"volume_type\": \"MANAGED\"\n    }\n  }\n}\n\n=== Update name\n\u003e\u003e\u003e update_file.py databricks.yml myvolume mynewvolume\n\n\u003e\u003e\u003e [CLI] bundle plan\nupdate volumes.volume1\n\nPlan: 0 to add, 1 to change, 0 to delete, 0 unchanged\n\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/volumes/main.myschema.myvolume\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/volumes/main.myschema.myvolume\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files\"\n  }\n}\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "bundle:\n  name: test-bundle\n\nresources:\n  volumes:\n    volume1:\n      catalog_name: main\n      schema_name: myschema\n      name: mynewvolume\n      comment: COMMENT1\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "seq": 2,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": [
+      {
+        "local_path": "repls.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
+      {
+        "local_path": "test.toml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.plan.terraform.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.requests.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "output.txt",
+        "is_notebook": false
+      }
+    ],
+    "id": "[UUID]"
+  }
+}

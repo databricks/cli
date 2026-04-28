@@ -1,0 +1,2235 @@
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/mycat.myschema.myvol"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/mycat.myschema.myvol"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/artifacts/.internal"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/output.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "\n\u003e\u003e\u003e musterr [CLI] bundle deployment migrate\nError: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.\n\nTo start using direct engine, set \"engine: direct\" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n\u003e\u003e\u003e [CLI] bundle deployment migrate\nNote: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\nSuccess! Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json\n\nValidate the migration by running \"databricks bundle plan\", there should be no actions planned.\n\nThe state file is not synchronized to the workspace yet. To do that and finalize the migration, run \"bundle deploy\".\n\nTo undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate\n\n\n\u003e\u003e\u003e diff out.original_state.json out.backup_state.json\n\n\u003e\u003e\u003e jq .state.\"resources.pipelines.test_pipeline\".state.tags.volume_storage_location out.new_state.json\n\"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\"\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n=== Should show that it's already migrated\n\u003e\u003e\u003e musterr [CLI] bundle deployment migrate\nError: already using direct engine\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=7 lineage=\"[UUID]\"\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\n\n\u003e\u003e\u003e print_requests.py --get //jobs/get\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.2/jobs/get\",\n  \"q\": {\n    \"job_id\": \"[NUMID]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.2/jobs/get\",\n  \"q\": {\n    \"job_id\": \"[NUMID]\"\n  }\n}\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n\u003e\u003e\u003e print_requests.py --get //jobs/get\n\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n\n=== Should show that it's already migrated\n\u003e\u003e\u003e musterr [CLI] bundle deployment migrate\nError: already using direct engine\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\"[UUID]\"\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\"[UUID]\"\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull\nresources.json: remote direct state serial=8 lineage=\"[UUID]\"\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\"[UUID]\"\n\n=== Extra plan: should have no drift\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\n\n=== Update databricks.yml, run plan \u0026 update\n\u003e\u003e\u003e update_file.py databricks.yml Migration Migrated\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\nupdate jobs.test_job\nupdate pipelines.test_pipeline\n\nPlan: 0 to add, 2 to change, 0 to delete, 1 unchanged\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/out.plan_update.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "plan_version": 2,
+    "cli_version": "[DEV_VERSION]",
+    "lineage": "[UUID]",
+    "serial": 8,
+    "plan": {
+      "resources.jobs.test_job": {
+        "action": "update",
+        "new_state": {
+          "value": {
+            "deployment": {
+              "kind": "BUNDLE",
+              "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+            },
+            "edit_mode": "UI_LOCKED",
+            "format": "MULTI_TASK",
+            "max_concurrent_runs": 1,
+            "name": "Test Migrated Job",
+            "queue": {
+              "enabled": true
+            },
+            "tasks": [
+              {
+                "notebook_task": {
+                  "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook"
+                },
+                "task_key": "main"
+              }
+            ]
+          }
+        },
+        "remote_state": {
+          "created_time": [UNIX_TIME_MILLIS][0],
+          "creator_user_name": "[USERNAME]",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
+          "format": "MULTI_TASK",
+          "job_id": [NUMID],
+          "max_concurrent_runs": 1,
+          "name": "Test Migration Job",
+          "queue": {
+            "enabled": true
+          },
+          "run_as_user_name": "[USERNAME]",
+          "tasks": [
+            {
+              "email_notifications": {},
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook",
+                "source": "WORKSPACE"
+              },
+              "run_if": "ALL_SUCCESS",
+              "task_key": "main",
+              "timeout_seconds": 0
+            }
+          ],
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        },
+        "changes": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "empty",
+            "remote": {}
+          },
+          "name": {
+            "action": "update",
+            "old": "Test Migration Job",
+            "new": "Test Migrated Job",
+            "remote": "Test Migration Job"
+          },
+          "tasks[task_key='main'].email_notifications": {
+            "action": "skip",
+            "reason": "empty",
+            "remote": {}
+          },
+          "tasks[task_key='main'].notebook_task.source": {
+            "action": "skip",
+            "reason": "backend_default",
+            "remote": "WORKSPACE"
+          },
+          "tasks[task_key='main'].run_if": {
+            "action": "skip",
+            "reason": "backend_default",
+            "remote": "ALL_SUCCESS"
+          },
+          "tasks[task_key='main'].timeout_seconds": {
+            "action": "skip",
+            "reason": "empty",
+            "remote": 0
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "empty",
+            "remote": 0
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "empty",
+            "remote": {}
+          }
+        }
+      },
+      "resources.pipelines.test_pipeline": {
+        "depends_on": [
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.id}"
+          },
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.name}"
+          },
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.timeout_seconds}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.catalog_name}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.id}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.storage_location}"
+          }
+        ],
+        "action": "update",
+        "new_state": {
+          "value": {
+            "channel": "CURRENT",
+            "deployment": {
+              "kind": "BUNDLE",
+              "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+            },
+            "edition": "ADVANCED",
+            "libraries": [
+              {
+                "notebook": {
+                  "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+                }
+              }
+            ],
+            "name": "Test Migrated Pipeline",
+            "tags": {
+              "myjob_id": "[NUMID]",
+              "myjob_name": "Test Migrated Job",
+              "myjob_timeout": "${resources.jobs.test_job.timeout_seconds}",
+              "myvolume_id": "mycat.myschema.myvol",
+              "volume_catalog_name": "mycat",
+              "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+            }
+          },
+          "vars": {
+            "tags.myjob_timeout": "${resources.jobs.test_job.timeout_seconds}"
+          }
+        },
+        "remote_state": {
+          "channel": "CURRENT",
+          "creator_user_name": "[USERNAME]",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+          "id": "[UUID]",
+          "last_modified": [UNIX_TIME_MILLIS][1],
+          "libraries": [
+            {
+              "notebook": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+              }
+            }
+          ],
+          "name": "Test Migration Pipeline",
+          "pipeline_id": "[UUID]",
+          "run_as_user_name": "[USERNAME]",
+          "state": "IDLE",
+          "storage": "dbfs:/pipelines/[UUID]",
+          "tags": {
+            "myjob_id": "[NUMID]",
+            "myjob_name": "Test Migration Job",
+            "myjob_timeout": "0",
+            "myvolume_id": "mycat.myschema.myvol",
+            "volume_catalog_name": "mycat",
+            "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+          }
+        },
+        "changes": {
+          "name": {
+            "action": "update",
+            "old": "Test Migration Pipeline",
+            "new": "Test Migrated Pipeline",
+            "remote": "Test Migration Pipeline"
+          },
+          "storage": {
+            "action": "skip",
+            "reason": "backend_default",
+            "remote": "dbfs:/pipelines/[UUID]"
+          },
+          "tags['myjob_name']": {
+            "action": "update",
+            "old": "Test Migration Job",
+            "new": "Test Migrated Job",
+            "remote": "Test Migration Job"
+          },
+          "tags['myjob_timeout']": {
+            "action": "update",
+            "old": "0",
+            "new": "${resources.jobs.test_job.timeout_seconds}",
+            "remote": "0"
+          }
+        }
+      },
+      "resources.volumes.test_volume": {
+        "action": "skip",
+        "remote_state": {
+          "catalog_name": "mycat",
+          "created_at": [UNIX_TIME_MILLIS][2],
+          "created_by": "[USERNAME]",
+          "full_name": "mycat.myschema.myvol",
+          "name": "myvol",
+          "owner": "[USERNAME]",
+          "schema_name": "myschema",
+          "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+          "updated_at": [UNIX_TIME_MILLIS][2],
+          "volume_id": "[UUID]",
+          "volume_type": "MANAGED"
+        },
+        "changes": {
+          "storage_location": {
+            "action": "skip",
+            "reason": "backend_default",
+            "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+          }
+        }
+      }
+    }
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/out.requests.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.2/jobs/get\",\n  \"q\": {\n    \"job_id\": \"[NUMID]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/volumes/mycat.myschema.myvol\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/pipelines/[UUID]\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/volumes/mycat.myschema.myvol\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.2/jobs/get\",\n  \"q\": {\n    \"job_id\": \"[NUMID]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/pipelines/[UUID]\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/artifacts/.internal\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/output.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"\\n\\u003e\\u003e\\u003e musterr [CLI] bundle deployment migrate\\nError: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.\\n\\nTo start using direct engine, set \\\"engine: direct\\\" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n\\u003e\\u003e\\u003e [CLI] bundle deployment migrate\\nNote: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\nSuccess! Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json\\n\\nValidate the migration by running \\\"databricks bundle plan\\\", there should be no actions planned.\\n\\nThe state file is not synchronized to the workspace yet. To do that and finalize the migration, run \\\"bundle deploy\\\".\\n\\nTo undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate\\n\\n\\n\\u003e\\u003e\\u003e diff out.original_state.json out.backup_state.json\\n\\n\\u003e\\u003e\\u003e jq .state.\\\"resources.pipelines.test_pipeline\\\".state.tags.volume_storage_location out.new_state.json\\n\\\"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n=== Should show that it's already migrated\\n\\u003e\\u003e\\u003e musterr [CLI] bundle deployment migrate\\nError: already using direct engine\\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=7 lineage=\\\"[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n\\u003e\\u003e\\u003e print_requests.py --get //jobs/get\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.2/jobs/get\\\",\\n  \\\"q\\\": {\\n    \\\"job_id\\\": \\\"[NUMID]\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.2/jobs/get\\\",\\n  \\\"q\\\": {\\n    \\\"job_id\\\": \\\"[NUMID]\\\"\\n  }\\n}\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n\\u003e\\u003e\\u003e print_requests.py --get //jobs/get\\n\\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n\\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n\\n=== Should show that it's already migrated\\n\\u003e\\u003e\\u003e musterr [CLI] bundle deployment migrate\\nError: already using direct engine\\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\"[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states\\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\"[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull\\nresources.json: remote direct state serial=8 lineage=\\\"[UUID]\\\"\\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\"[UUID]\\\"\\n\\n=== Extra plan: should have no drift\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n=== Update databricks.yml, run plan \\u0026 update\\n\\u003e\\u003e\\u003e update_file.py databricks.yml Migration Migrated\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\nupdate jobs.test_job\\nupdate pipelines.test_pipeline\\n\\nPlan: 0 to add, 2 to change, 0 to delete, 1 unchanged\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\n\"\n}\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/databricks.yml",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "bundle:\n  name: migrate-basic-test\n\nresources:\n  jobs:\n    test_job:\n      name: \"Test Migrated Job\"\n      tasks:\n        - task_key: \"main\"\n          notebook_task:\n            notebook_path: \"./notebook.py\"\n  volumes:\n    test_volume:\n      catalog_name: \"mycat\"\n      schema_name: \"myschema\"\n      name: \"myvol\"\n\n  pipelines:\n    test_pipeline:\n      name: \"Test Migrated Pipeline\"\n      tags:\n        # ids\n        myjob_id: ${resources.jobs.test_job.id}\n        myvolume_id: ${resources.volumes.test_volume.id}\n\n        # local field, string:\n        myjob_name: ${resources.jobs.test_job.name}\n        volume_catalog_name: ${resources.volumes.test_volume.catalog_name}\n\n        # remote field, int\n        myjob_timeout: ${resources.jobs.test_job.timeout_seconds}\n\n        # remote field, string:\n        volume_storage_location: ${resources.volumes.test_volume.storage_location}\n      libraries:\n        - notebook:\n            path: \"./pipeline.py\"\n\ntargets:\n  dev:\n    default: true\n  prod:\n    resources:\n      schemas:\n        test_schema:\n          catalog_name: mycat\n          name: myschema\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "seq": 4,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": [
+      {
+        "local_path": "out.new_state.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.original_state.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.plan_update.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.requests.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "pipeline.py",
+        "is_notebook": true
+      },
+      {
+        "local_path": "databricks.yml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "notebook.py",
+        "is_notebook": true
+      },
+      {
+        "local_path": "output.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "repls.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
+      {
+        "local_path": "test.toml",
+        "is_notebook": false
+      }
+    ],
+    "id": "[UUID]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/mycat.myschema.myvol"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset",
+  "body": {
+    "job_id": [NUMID],
+    "new_settings": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Test Migrated Job",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook"
+          },
+          "task_key": "main"
+        }
+      ]
+    }
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/volumes/mycat.myschema.myvol"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "PUT",
+  "path": "/api/2.0/pipelines/[UUID]",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "notebook": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+        }
+      }
+    ],
+    "name": "Test Migrated Pipeline",
+    "tags": {
+      "myjob_id": "[NUMID]",
+      "myjob_name": "Test Migrated Job",
+      "myjob_timeout": "0",
+      "myvolume_id": "mycat.myschema.myvol",
+      "volume_catalog_name": "mycat",
+      "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+    }
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "state_version": 2,
+    "cli_version": "[DEV_VERSION]",
+    "lineage": "[UUID]",
+    "serial": 9,
+    "state": {
+      "resources.jobs.test_job": {
+        "__id__": "[NUMID]",
+        "state": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "Test Migrated Job",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook"
+              },
+              "task_key": "main"
+            }
+          ]
+        }
+      },
+      "resources.pipelines.test_pipeline": {
+        "__id__": "[UUID]",
+        "state": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "libraries": [
+            {
+              "notebook": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+              }
+            }
+          ],
+          "name": "Test Migrated Pipeline",
+          "tags": {
+            "myjob_id": "[NUMID]",
+            "myjob_name": "Test Migrated Job",
+            "myjob_timeout": "0",
+            "myvolume_id": "mycat.myschema.myvol",
+            "volume_catalog_name": "mycat",
+            "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+          }
+        },
+        "depends_on": [
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.id}"
+          },
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.name}"
+          },
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.timeout_seconds}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.catalog_name}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.id}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.storage_location}"
+          }
+        ]
+      },
+      "resources.volumes.test_volume": {
+        "__id__": "mycat.myschema.myvol",
+        "state": {
+          "catalog_name": "mycat",
+          "name": "myvol",
+          "schema_name": "myschema",
+          "volume_type": "MANAGED"
+        }
+      }
+    }
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "config": {
+      "bundle": {
+        "name": "migrate-basic-test",
+        "target": "dev",
+        "git": {
+          "bundle_root_path": "."
+        }
+      },
+      "workspace": {
+        "file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files"
+      },
+      "resources": {
+        "jobs": {
+          "test_job": {
+            "id": "[NUMID]",
+            "relative_path": "databricks.yml"
+          }
+        },
+        "pipelines": {
+          "test_pipeline": {
+            "id": "[UUID]",
+            "relative_path": "databricks.yml"
+          }
+        }
+      },
+      "presets": {
+        "source_linked_deployment": false
+      }
+    },
+    "extra": {}
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/telemetry-ext",
+  "body": {
+    "uploadTime": [UNIX_TIME_MILLIS][3],
+    "items": [],
+    "protoLogs": [
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[DEV_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"linux\",\"execution_time_ms\":196,\"exit_code\":0},\"bundle_deploy_event\":{\"bundle_uuid\":\"[UUID]\",\"deployment_id\":\"[UUID]\",\"resource_count\":3,\"resource_job_count\":1,\"resource_pipeline_count\":1,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":0,\"resource_quality_monitor_count\":0,\"resource_schema_count\":0,\"resource_volume_count\":1,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0,\"resource_job_ids\":[\"[NUMID]\"],\"resource_pipeline_ids\":[\"[UUID]\"],\"experimental\":{\"configuration_file_count\":1,\"variable_count\":0,\"complex_variable_count\":0,\"lookup_variable_count\":0,\"target_count\":2,\"bool_values\":[{\"key\":\"local.cache.attempt\",\"value\":true},{\"key\":\"local.cache.hit\",\"value\":true},{\"key\":\"resref_volumes.storage_location\",\"value\":true},{\"key\":\"resref_jobs.id\",\"value\":true},{\"key\":\"resref_volumes.id\",\"value\":true},{\"key\":\"resref_jobs.name\",\"value\":true},{\"key\":\"resref_volumes.catalog_name\",\"value\":true},{\"key\":\"resref_jobs.timeout_seconds\",\"value\":true},{\"key\":\"experimental.use_legacy_run_as\",\"value\":false},{\"key\":\"run_as_set\",\"value\":false},{\"key\":\"presets_name_prefix_is_set\",\"value\":false},{\"key\":\"python_wheel_wrapper_is_set\",\"value\":false},{\"key\":\"skip_artifact_cleanup\",\"value\":false},{\"key\":\"has_serverless_compute\",\"value\":true},{\"key\":\"has_classic_job_compute\",\"value\":false},{\"key\":\"has_classic_interactive_compute\",\"value\":false}],\"bundle_mode\":\"TYPE_UNSPECIFIED\",\"workspace_artifact_path_type\":\"WORKSPACE_FILE_SYSTEM\",\"bundle_mutator_execution_time_ms\":[{\"key\":\"phases.Initialize\",\"value\":73},{\"key\":\"phases.Deploy\",\"value\":69},{\"key\":\"resourcemutator.(processStaticResources)\",\"value\":44},{\"key\":\"loader.(entryPoint)\",\"value\":31},{\"key\":\"resourcemutator.(configureDashboardSerializedDashboard)\",\"value\":17},{\"key\":\"bundle.(setDefault)\",\"value\":13},{\"key\":\"mutator.(prependWorkspacePrefix)\",\"value\":10},{\"key\":\"phases.Build\",\"value\":9},{\"key\":\"validate.(validateDashboardEtags)\",\"value\":5},{\"key\":\"libraries.(expand)\",\"value\":4},{\"key\":\"mutator.(applySourceLinkedDeploymentPreset)\",\"value\":2},{\"key\":\"validate.(noInterpolationInAuthConfig)\",\"value\":2},{\"key\":\"files.(upload)\",\"value\":2},{\"key\":\"mutator.(resolveVariableReferences)\",\"value\":1},{\"key\":\"mutator.(resolveVariableReferences)\",\"value\":1},{\"key\":\"lock.(release)\",\"value\":1},{\"key\":\"mutator.(resolveVariableReferences)\",\"value\":1},{\"key\":\"validate.FastValidate\",\"value\":0}]}}}}}"
+    ]
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/deploy.lock"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/artifacts/.internal"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/out.original_state.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 4,
+    "terraform_version": "1.5.5",
+    "serial": 4,
+    "lineage": "[UUID]",
+    "outputs": {},
+    "resources": [
+      {
+        "mode": "managed",
+        "type": "databricks_job",
+        "name": "test_job",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 2,
+            "attributes": {
+              "always_running": false,
+              "budget_policy_id": null,
+              "continuous": [],
+              "control_run_state": false,
+              "dbt_task": [],
+              "deployment": [
+                {
+                  "kind": "BUNDLE",
+                  "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+                }
+              ],
+              "description": null,
+              "edit_mode": "UI_LOCKED",
+              "email_notifications": [
+                {
+                  "no_alert_for_skipped_runs": false,
+                  "on_duration_warning_threshold_exceeded": [],
+                  "on_failure": [],
+                  "on_start": [],
+                  "on_streaming_backlog_exceeded": [],
+                  "on_success": []
+                }
+              ],
+              "environment": [],
+              "existing_cluster_id": null,
+              "format": "MULTI_TASK",
+              "git_source": [],
+              "health": [],
+              "id": "[NUMID]",
+              "job_cluster": [],
+              "library": [],
+              "max_concurrent_runs": 1,
+              "max_retries": 0,
+              "min_retry_interval_millis": 0,
+              "name": "Test Migration Job",
+              "new_cluster": [],
+              "notebook_task": [],
+              "notification_settings": [],
+              "parameter": [],
+              "performance_target": null,
+              "pipeline_task": [],
+              "provider_config": [],
+              "python_wheel_task": [],
+              "queue": [
+                {
+                  "enabled": true
+                }
+              ],
+              "retry_on_timeout": false,
+              "run_as": [
+                {
+                  "group_name": "",
+                  "service_principal_name": "",
+                  "user_name": "[USERNAME]"
+                }
+              ],
+              "run_job_task": [],
+              "schedule": [],
+              "spark_jar_task": [],
+              "spark_python_task": [],
+              "spark_submit_task": [],
+              "tags": null,
+              "task": [
+                {
+                  "alert_task": [],
+                  "clean_rooms_notebook_task": [],
+                  "compute": [],
+                  "condition_task": [],
+                  "dashboard_task": [],
+                  "dbt_cloud_task": [],
+                  "dbt_platform_task": [],
+                  "dbt_task": [],
+                  "depends_on": [],
+                  "description": "",
+                  "disable_auto_optimization": false,
+                  "disabled": false,
+                  "email_notifications": [
+                    {
+                      "no_alert_for_skipped_runs": false,
+                      "on_duration_warning_threshold_exceeded": [],
+                      "on_failure": [],
+                      "on_start": [],
+                      "on_streaming_backlog_exceeded": [],
+                      "on_success": []
+                    }
+                  ],
+                  "environment_key": "",
+                  "existing_cluster_id": "",
+                  "for_each_task": [],
+                  "gen_ai_compute_task": [],
+                  "health": [],
+                  "job_cluster_key": "",
+                  "library": [],
+                  "max_retries": 0,
+                  "min_retry_interval_millis": 0,
+                  "new_cluster": [],
+                  "notebook_task": [
+                    {
+                      "base_parameters": null,
+                      "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook",
+                      "source": "WORKSPACE",
+                      "warehouse_id": ""
+                    }
+                  ],
+                  "notification_settings": [],
+                  "pipeline_task": [],
+                  "power_bi_task": [],
+                  "python_wheel_task": [],
+                  "retry_on_timeout": false,
+                  "run_if": "ALL_SUCCESS",
+                  "run_job_task": [],
+                  "spark_jar_task": [],
+                  "spark_python_task": [],
+                  "spark_submit_task": [],
+                  "sql_task": [],
+                  "task_key": "main",
+                  "timeout_seconds": 0,
+                  "webhook_notifications": []
+                }
+              ],
+              "timeout_seconds": 0,
+              "timeouts": null,
+              "trigger": [],
+              "url": "[DATABRICKS_URL]/#job/[NUMID]",
+              "usage_policy_id": null,
+              "webhook_notifications": [
+                {
+                  "on_duration_warning_threshold_exceeded": [],
+                  "on_failure": [],
+                  "on_start": [],
+                  "on_streaming_backlog_exceeded": [],
+                  "on_success": []
+                }
+              ]
+            },
+            "sensitive_attributes": [],
+            "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJ1cGRhdGUiOjE4MDAwMDAwMDAwMDB9LCJzY2hlbWFfdmVyc2lvbiI6IjIifQ=="
+          }
+        ]
+      },
+      {
+        "mode": "managed",
+        "type": "databricks_pipeline",
+        "name": "test_pipeline",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "allow_duplicate_names": false,
+              "budget_policy_id": null,
+              "catalog": null,
+              "cause": null,
+              "channel": "CURRENT",
+              "cluster": [],
+              "cluster_id": null,
+              "configuration": null,
+              "continuous": false,
+              "creator_user_name": "[USERNAME]",
+              "deployment": [
+                {
+                  "kind": "BUNDLE",
+                  "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+                }
+              ],
+              "development": false,
+              "edition": "ADVANCED",
+              "environment": [],
+              "event_log": [],
+              "expected_last_modified": 0,
+              "filters": [],
+              "gateway_definition": [],
+              "health": null,
+              "id": "[UUID]",
+              "ingestion_definition": [],
+              "last_modified": [UNIX_TIME_MILLIS][1],
+              "latest_updates": null,
+              "library": [
+                {
+                  "file": [],
+                  "glob": [],
+                  "jar": "",
+                  "maven": [],
+                  "notebook": [
+                    {
+                      "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+                    }
+                  ],
+                  "whl": ""
+                }
+              ],
+              "name": "Test Migration Pipeline",
+              "notification": [],
+              "photon": false,
+              "provider_config": [],
+              "restart_window": [],
+              "root_path": null,
+              "run_as": [],
+              "run_as_user_name": "[USERNAME]",
+              "schema": null,
+              "serverless": false,
+              "state": "IDLE",
+              "storage": "dbfs:/pipelines/[UUID]",
+              "tags": {
+                "myjob_id": "[NUMID]",
+                "myjob_name": "Test Migration Job",
+                "myjob_timeout": "0",
+                "myvolume_id": "mycat.myschema.myvol",
+                "volume_catalog_name": "mycat",
+                "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+              },
+              "target": null,
+              "timeouts": null,
+              "trigger": [],
+              "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]",
+              "usage_policy_id": null
+            },
+            "sensitive_attributes": [],
+            "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWZhdWx0IjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+            "dependencies": [
+              "databricks_job.test_job",
+              "databricks_volume.test_volume"
+            ]
+          }
+        ]
+      },
+      {
+        "mode": "managed",
+        "type": "databricks_volume",
+        "name": "test_volume",
+        "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+        "instances": [
+          {
+            "schema_version": 0,
+            "attributes": {
+              "catalog_name": "mycat",
+              "comment": null,
+              "id": "mycat.myschema.myvol",
+              "name": "myvol",
+              "owner": "[USERNAME]",
+              "provider_config": [],
+              "schema_name": "myschema",
+              "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+              "volume_path": "/Volumes/mycat/myschema/myvol",
+              "volume_type": "MANAGED"
+            },
+            "sensitive_attributes": [],
+            "private": "bnVsbA=="
+          }
+        ]
+      }
+    ],
+    "check_results": null
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/output.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "\n\u003e\u003e\u003e musterr [CLI] bundle deployment migrate\nError: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.\n\nTo start using direct engine, set \"engine: direct\" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n\u003e\u003e\u003e [CLI] bundle deployment migrate\nNote: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\nSuccess! Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json\n\nValidate the migration by running \"databricks bundle plan\", there should be no actions planned.\n\nThe state file is not synchronized to the workspace yet. To do that and finalize the migration, run \"bundle deploy\".\n\nTo undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate\n\n\n\u003e\u003e\u003e diff out.original_state.json out.backup_state.json\n\n\u003e\u003e\u003e jq .state.\"resources.pipelines.test_pipeline\".state.tags.volume_storage_location out.new_state.json\n\"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\"\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n=== Should show that it's already migrated\n\u003e\u003e\u003e musterr [CLI] bundle deployment migrate\nError: already using direct engine\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=7 lineage=\"[UUID]\"\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\n\n\u003e\u003e\u003e print_requests.py --get //jobs/get\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.2/jobs/get\",\n  \"q\": {\n    \"job_id\": \"[NUMID]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.2/jobs/get\",\n  \"q\": {\n    \"job_id\": \"[NUMID]\"\n  }\n}\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n\u003e\u003e\u003e print_requests.py --get //jobs/get\n\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n\n=== Should show that it's already migrated\n\u003e\u003e\u003e musterr [CLI] bundle deployment migrate\nError: already using direct engine\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\"[UUID]\"\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\"[UUID]\"\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull\nresources.json: remote direct state serial=8 lineage=\"[UUID]\"\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\"[UUID]\"\n\n=== Extra plan: should have no drift\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\n\n=== Update databricks.yml, run plan \u0026 update\n\u003e\u003e\u003e update_file.py databricks.yml Migration Migrated\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\nupdate jobs.test_job\nupdate pipelines.test_pipeline\n\nPlan: 0 to add, 2 to change, 0 to delete, 1 unchanged\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json\n\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n=== Different target, still on terraform\n\u003e\u003e\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy -t prod\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/out.new_state.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "state_version": 2,
+    "cli_version": "[DEV_VERSION]",
+    "lineage": "[UUID]",
+    "serial": 6,
+    "state": {
+      "resources.jobs.test_job": {
+        "__id__": "[NUMID]",
+        "state": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "Test Migration Job",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook"
+              },
+              "task_key": "main"
+            }
+          ]
+        }
+      },
+      "resources.pipelines.test_pipeline": {
+        "__id__": "[UUID]",
+        "state": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "libraries": [
+            {
+              "notebook": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+              }
+            }
+          ],
+          "name": "Test Migration Pipeline",
+          "tags": {
+            "myjob_id": "[NUMID]",
+            "myjob_name": "Test Migration Job",
+            "myjob_timeout": "0",
+            "myvolume_id": "mycat.myschema.myvol",
+            "volume_catalog_name": "mycat",
+            "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+          }
+        },
+        "depends_on": [
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.id}"
+          },
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.name}"
+          },
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.timeout_seconds}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.catalog_name}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.id}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.storage_location}"
+          }
+        ]
+      },
+      "resources.volumes.test_volume": {
+        "__id__": "mycat.myschema.myvol",
+        "state": {
+          "catalog_name": "mycat",
+          "name": "myvol",
+          "schema_name": "myschema",
+          "volume_type": "MANAGED"
+        }
+      }
+    }
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/out.requests.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.2/jobs/get\",\n  \"q\": {\n    \"job_id\": \"[NUMID]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/volumes/mycat.myschema.myvol\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/pipelines/[UUID]\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/volumes/mycat.myschema.myvol\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.2/jobs/get\",\n  \"q\": {\n    \"job_id\": \"[NUMID]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/pipelines/[UUID]\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/artifacts/.internal\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/output.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"\\n\\u003e\\u003e\\u003e musterr [CLI] bundle deployment migrate\\nError: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.\\n\\nTo start using direct engine, set \\\"engine: direct\\\" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n\\u003e\\u003e\\u003e [CLI] bundle deployment migrate\\nNote: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\nSuccess! Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json\\n\\nValidate the migration by running \\\"databricks bundle plan\\\", there should be no actions planned.\\n\\nThe state file is not synchronized to the workspace yet. To do that and finalize the migration, run \\\"bundle deploy\\\".\\n\\nTo undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate\\n\\n\\n\\u003e\\u003e\\u003e diff out.original_state.json out.backup_state.json\\n\\n\\u003e\\u003e\\u003e jq .state.\\\"resources.pipelines.test_pipeline\\\".state.tags.volume_storage_location out.new_state.json\\n\\\"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n=== Should show that it's already migrated\\n\\u003e\\u003e\\u003e musterr [CLI] bundle deployment migrate\\nError: already using direct engine\\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=7 lineage=\\\"[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n\\u003e\\u003e\\u003e print_requests.py --get //jobs/get\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.2/jobs/get\\\",\\n  \\\"q\\\": {\\n    \\\"job_id\\\": \\\"[NUMID]\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.2/jobs/get\\\",\\n  \\\"q\\\": {\\n    \\\"job_id\\\": \\\"[NUMID]\\\"\\n  }\\n}\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n\\u003e\\u003e\\u003e print_requests.py --get //jobs/get\\n\\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n\\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n\\n=== Should show that it's already migrated\\n\\u003e\\u003e\\u003e musterr [CLI] bundle deployment migrate\\nError: already using direct engine\\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\"[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states\\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\"[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull\\nresources.json: remote direct state serial=8 lineage=\\\"[UUID]\\\"\\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\"[UUID]\\\"\\n\\n=== Extra plan: should have no drift\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n=== Update databricks.yml, run plan \\u0026 update\\n\\u003e\\u003e\\u003e update_file.py databricks.yml Migration Migrated\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\nupdate jobs.test_job\\nupdate pipelines.test_pipeline\\n\\nPlan: 0 to add, 2 to change, 0 to delete, 1 unchanged\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\n\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/out.plan_update.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"plan_version\": 2,\n    \"cli_version\": \"[DEV_VERSION]\",\n    \"lineage\": \"[UUID]\",\n    \"serial\": 8,\n    \"plan\": {\n      \"resources.jobs.test_job\": {\n        \"action\": \"update\",\n        \"new_state\": {\n          \"value\": {\n            \"deployment\": {\n              \"kind\": \"BUNDLE\",\n              \"metadata_file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\"\n            },\n            \"edit_mode\": \"UI_LOCKED\",\n            \"format\": \"MULTI_TASK\",\n            \"max_concurrent_runs\": 1,\n            \"name\": \"Test Migrated Job\",\n            \"queue\": {\n              \"enabled\": true\n            },\n            \"tasks\": [\n              {\n                \"notebook_task\": {\n                  \"notebook_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook\"\n                },\n                \"task_key\": \"main\"\n              }\n            ]\n          }\n        },\n        \"remote_state\": {\n          \"created_time\": [UNIX_TIME_MILLIS][0],\n          \"creator_user_name\": \"[USERNAME]\",\n          \"deployment\": {\n            \"kind\": \"BUNDLE\",\n            \"metadata_file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\"\n          },\n          \"edit_mode\": \"UI_LOCKED\",\n          \"email_notifications\": {},\n          \"format\": \"MULTI_TASK\",\n          \"job_id\": [NUMID],\n          \"max_concurrent_runs\": 1,\n          \"name\": \"Test Migration Job\",\n          \"queue\": {\n            \"enabled\": true\n          },\n          \"run_as_user_name\": \"[USERNAME]\",\n          \"tasks\": [\n            {\n              \"email_notifications\": {},\n              \"notebook_task\": {\n                \"notebook_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook\",\n                \"source\": \"WORKSPACE\"\n              },\n              \"run_if\": \"ALL_SUCCESS\",\n              \"task_key\": \"main\",\n              \"timeout_seconds\": 0\n            }\n          ],\n          \"timeout_seconds\": 0,\n          \"webhook_notifications\": {}\n        },\n        \"changes\": {\n          \"email_notifications\": {\n            \"action\": \"skip\",\n            \"reason\": \"empty\",\n            \"remote\": {}\n          },\n          \"name\": {\n            \"action\": \"update\",\n            \"old\": \"Test Migration Job\",\n            \"new\": \"Test Migrated Job\",\n            \"remote\": \"Test Migration Job\"\n          },\n          \"tasks[task_key='main'].email_notifications\": {\n            \"action\": \"skip\",\n            \"reason\": \"empty\",\n            \"remote\": {}\n          },\n          \"tasks[task_key='main'].notebook_task.source\": {\n            \"action\": \"skip\",\n            \"reason\": \"backend_default\",\n            \"remote\": \"WORKSPACE\"\n          },\n          \"tasks[task_key='main'].run_if\": {\n            \"action\": \"skip\",\n            \"reason\": \"backend_default\",\n            \"remote\": \"ALL_SUCCESS\"\n          },\n          \"tasks[task_key='main'].timeout_seconds\": {\n            \"action\": \"skip\",\n            \"reason\": \"empty\",\n            \"remote\": 0\n          },\n          \"timeout_seconds\": {\n            \"action\": \"skip\",\n            \"reason\": \"empty\",\n            \"remote\": 0\n          },\n          \"webhook_notifications\": {\n            \"action\": \"skip\",\n            \"reason\": \"empty\",\n            \"remote\": {}\n          }\n        }\n      },\n      \"resources.pipelines.test_pipeline\": {\n        \"depends_on\": [\n          {\n            \"node\": \"resources.jobs.test_job\",\n            \"label\": \"${resources.jobs.test_job.id}\"\n          },\n          {\n            \"node\": \"resources.jobs.test_job\",\n            \"label\": \"${resources.jobs.test_job.name}\"\n          },\n          {\n            \"node\": \"resources.jobs.test_job\",\n            \"label\": \"${resources.jobs.test_job.timeout_seconds}\"\n          },\n          {\n            \"node\": \"resources.volumes.test_volume\",\n            \"label\": \"${resources.volumes.test_volume.catalog_name}\"\n          },\n          {\n            \"node\": \"resources.volumes.test_volume\",\n            \"label\": \"${resources.volumes.test_volume.id}\"\n          },\n          {\n            \"node\": \"resources.volumes.test_volume\",\n            \"label\": \"${resources.volumes.test_volume.storage_location}\"\n          }\n        ],\n        \"action\": \"update\",\n        \"new_state\": {\n          \"value\": {\n            \"channel\": \"CURRENT\",\n            \"deployment\": {\n              \"kind\": \"BUNDLE\",\n              \"metadata_file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\"\n            },\n            \"edition\": \"ADVANCED\",\n            \"libraries\": [\n              {\n                \"notebook\": {\n                  \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline\"\n                }\n              }\n            ],\n            \"name\": \"Test Migrated Pipeline\",\n            \"tags\": {\n              \"myjob_id\": \"[NUMID]\",\n              \"myjob_name\": \"Test Migrated Job\",\n              \"myjob_timeout\": \"${resources.jobs.test_job.timeout_seconds}\",\n              \"myvolume_id\": \"mycat.myschema.myvol\",\n              \"volume_catalog_name\": \"mycat\",\n              \"volume_storage_location\": \"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\"\n            }\n          },\n          \"vars\": {\n            \"tags.myjob_timeout\": \"${resources.jobs.test_job.timeout_seconds}\"\n          }\n        },\n        \"remote_state\": {\n          \"channel\": \"CURRENT\",\n          \"creator_user_name\": \"[USERNAME]\",\n          \"deployment\": {\n            \"kind\": \"BUNDLE\",\n            \"metadata_file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\"\n          },\n          \"edition\": \"ADVANCED\",\n          \"effective_publishing_mode\": \"DEFAULT_PUBLISHING_MODE\",\n          \"id\": \"[UUID]\",\n          \"last_modified\": [UNIX_TIME_MILLIS][1],\n          \"libraries\": [\n            {\n              \"notebook\": {\n                \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline\"\n              }\n            }\n          ],\n          \"name\": \"Test Migration Pipeline\",\n          \"pipeline_id\": \"[UUID]\",\n          \"run_as_user_name\": \"[USERNAME]\",\n          \"state\": \"IDLE\",\n          \"storage\": \"dbfs:/pipelines/[UUID]\",\n          \"tags\": {\n            \"myjob_id\": \"[NUMID]\",\n            \"myjob_name\": \"Test Migration Job\",\n            \"myjob_timeout\": \"0\",\n            \"myvolume_id\": \"mycat.myschema.myvol\",\n            \"volume_catalog_name\": \"mycat\",\n            \"volume_storage_location\": \"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\"\n          }\n        },\n        \"changes\": {\n          \"name\": {\n            \"action\": \"update\",\n            \"old\": \"Test Migration Pipeline\",\n            \"new\": \"Test Migrated Pipeline\",\n            \"remote\": \"Test Migration Pipeline\"\n          },\n          \"storage\": {\n            \"action\": \"skip\",\n            \"reason\": \"backend_default\",\n            \"remote\": \"dbfs:/pipelines/[UUID]\"\n          },\n          \"tags['myjob_name']\": {\n            \"action\": \"update\",\n            \"old\": \"Test Migration Job\",\n            \"new\": \"Test Migrated Job\",\n            \"remote\": \"Test Migration Job\"\n          },\n          \"tags['myjob_timeout']\": {\n            \"action\": \"update\",\n            \"old\": \"0\",\n            \"new\": \"${resources.jobs.test_job.timeout_seconds}\",\n            \"remote\": \"0\"\n          }\n        }\n      },\n      \"resources.volumes.test_volume\": {\n        \"action\": \"skip\",\n        \"remote_state\": {\n          \"catalog_name\": \"mycat\",\n          \"created_at\": [UNIX_TIME_MILLIS][2],\n          \"created_by\": \"[USERNAME]\",\n          \"full_name\": \"mycat.myschema.myvol\",\n          \"name\": \"myvol\",\n          \"owner\": \"[USERNAME]\",\n          \"schema_name\": \"myschema\",\n          \"storage_location\": \"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\",\n          \"updated_at\": [UNIX_TIME_MILLIS][2],\n          \"volume_id\": \"[UUID]\",\n          \"volume_type\": \"MANAGED\"\n        },\n        \"changes\": {\n          \"storage_location\": {\n            \"action\": \"skip\",\n            \"reason\": \"backend_default\",\n            \"remote\": \"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\"\n          }\n        }\n      }\n    }\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/out.requests.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\\\"\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\\\"\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.2/jobs/get\\\",\\n  \\\"q\\\": {\\n    \\\"job_id\\\": \\\"[NUMID]\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.1/unity-catalog/volumes/mycat.myschema.myvol\\\"\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/pipelines/[UUID]\\\"\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\\\"\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\\\"\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.1/unity-catalog/volumes/mycat.myschema.myvol\\\"\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.2/jobs/get\\\",\\n  \\\"q\\\": {\\n    \\\"job_id\\\": \\\"[NUMID]\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/pipelines/[UUID]\\\"\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/terraform.tfstate\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\\\"\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\\\"\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"false\\\"\\n  },\\n  \\\"body\\\": {\\n    \\\"ID\\\": \\\"[UUID]\\\",\\n    \\\"AcquisitionTime\\\": \\\"[TIMESTAMP]\\\",\\n    \\\"IsForced\\\": false,\\n    \\\"User\\\": \\\"[USERNAME]\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\\\",\\n    \\\"return_export_info\\\": \\\"true\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/export\\\",\\n  \\\"q\\\": {\\n    \\\"direct_download\\\": \\\"true\\\",\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/delete\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/artifacts/.internal\\\",\\n    \\\"recursive\\\": true\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/mkdirs\\\",\\n  \\\"body\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/artifacts/.internal\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace/get-status\\\",\\n  \\\"q\\\": {\\n    \\\"path\\\": \\\"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"POST\\\",\\n  \\\"path\\\": \\\"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/output.txt\\\",\\n  \\\"q\\\": {\\n    \\\"overwrite\\\": \\\"true\\\"\\n  },\\n  \\\"raw_body\\\": \\\"\\\\n\\\\u003e\\\\u003e\\\\u003e musterr [CLI] bundle deployment migrate\\\\nError: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.\\\\n\\\\nTo start using direct engine, set \\\\\\\"engine: direct\\\\\\\" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\\\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\\\nDeploying resources...\\\\nUpdating deployment state...\\\\nDeployment complete!\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e [CLI] bundle deployment migrate\\\\nNote: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\\\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\\\nSuccess! Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json\\\\n\\\\nValidate the migration by running \\\\\\\"databricks bundle plan\\\\\\\", there should be no actions planned.\\\\n\\\\nThe state file is not synchronized to the workspace yet. To do that and finalize the migration, run \\\\\\\"bundle deploy\\\\\\\".\\\\n\\\\nTo undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate\\\\n\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e diff out.original_state.json out.backup_state.json\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e jq .state.\\\\\\\"resources.pipelines.test_pipeline\\\\\\\".state.tags.volume_storage_location out.new_state.json\\\\n\\\\\\\"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\\\\\\\"\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan\\\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\\\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\\\nDeploying resources...\\\\nUpdating deployment state...\\\\nDeployment complete!\\\\n\\\\n=== Should show that it's already migrated\\\\n\\\\u003e\\\\u003e\\\\u003e musterr [CLI] bundle deployment migrate\\\\nError: already using direct engine\\\\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=7 lineage=\\\\\\\"[UUID]\\\\\\\"\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan\\\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e print_requests.py --get //jobs/get\\\\n{\\\\n  \\\\\\\"headers\\\\\\\": {\\\\n    \\\\\\\"User-Agent\\\\\\\": [\\\\n      \\\\\\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\\\\\"\\\\n    ]\\\\n  },\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.2/jobs/get\\\\\\\",\\\\n  \\\\\\\"q\\\\\\\": {\\\\n    \\\\\\\"job_id\\\\\\\": \\\\\\\"[NUMID]\\\\\\\"\\\\n  }\\\\n}\\\\n{\\\\n  \\\\\\\"headers\\\\\\\": {\\\\n    \\\\\\\"User-Agent\\\\\\\": [\\\\n      \\\\\\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\\\\\"\\\\n    ]\\\\n  },\\\\n  \\\\\\\"method\\\\\\\": \\\\\\\"GET\\\\\\\",\\\\n  \\\\\\\"path\\\\\\\": \\\\\\\"/api/2.2/jobs/get\\\\\\\",\\\\n  \\\\\\\"q\\\\\\\": {\\\\n    \\\\\\\"job_id\\\\\\\": \\\\\\\"[NUMID]\\\\\\\"\\\\n  }\\\\n}\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\\\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\\\nDeploying resources...\\\\nUpdating deployment state...\\\\nDeployment complete!\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e print_requests.py --get //jobs/get\\\\n\\\\\\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\\\\\"\\\\n\\\\\\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\\\\\"\\\\n\\\\n=== Should show that it's already migrated\\\\n\\\\u003e\\\\u003e\\\\u003e musterr [CLI] bundle deployment migrate\\\\nError: already using direct engine\\\\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\\\\\"[UUID]\\\\\\\"\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states\\\\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\\\\\"[UUID]\\\\\\\"\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull\\\\nresources.json: remote direct state serial=8 lineage=\\\\\\\"[UUID]\\\\\\\"\\\\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\\\\\"[UUID]\\\\\\\"\\\\n\\\\n=== Extra plan: should have no drift\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\\\n\\\\n=== Update databricks.yml, run plan \\\\u0026 update\\\\n\\\\u003e\\\\u003e\\\\u003e update_file.py databricks.yml Migration Migrated\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\\\nupdate jobs.test_job\\\\nupdate pipelines.test_pipeline\\\\n\\\\nPlan: 0 to add, 2 to change, 0 to delete, 1 unchanged\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json\\\\n\\\\n\\\\u003e\\\\u003e\\\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\\\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\\\n\\\"\\n}\\n\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/databricks.yml\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"bundle:\\n  name: migrate-basic-test\\n\\nresources:\\n  jobs:\\n    test_job:\\n      name: \\\"Test Migrated Job\\\"\\n      tasks:\\n        - task_key: \\\"main\\\"\\n          notebook_task:\\n            notebook_path: \\\"./notebook.py\\\"\\n  volumes:\\n    test_volume:\\n      catalog_name: \\\"mycat\\\"\\n      schema_name: \\\"myschema\\\"\\n      name: \\\"myvol\\\"\\n\\n  pipelines:\\n    test_pipeline:\\n      name: \\\"Test Migrated Pipeline\\\"\\n      tags:\\n        # ids\\n        myjob_id: ${resources.jobs.test_job.id}\\n        myvolume_id: ${resources.volumes.test_volume.id}\\n\\n        # local field, string:\\n        myjob_name: ${resources.jobs.test_job.name}\\n        volume_catalog_name: ${resources.volumes.test_volume.catalog_name}\\n\\n        # remote field, int\\n        myjob_timeout: ${resources.jobs.test_job.timeout_seconds}\\n\\n        # remote field, string:\\n        volume_storage_location: ${resources.volumes.test_volume.storage_location}\\n      libraries:\\n        - notebook:\\n            path: \\\"./pipeline.py\\\"\\n\\ntargets:\\n  dev:\\n    default: true\\n  prod:\\n    resources:\\n      schemas:\\n        test_schema:\\n          catalog_name: mycat\\n          name: myschema\\n\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deployment.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 1,\n    \"seq\": 4,\n    \"cli_version\": \"[DEV_VERSION]\",\n    \"timestamp\": \"[TIMESTAMP]\",\n    \"files\": [\n      {\n        \"local_path\": \"out.new_state.json\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"out.original_state.json\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"out.plan_update.json\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"out.requests.txt\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"pipeline.py\",\n        \"is_notebook\": true\n      },\n      {\n        \"local_path\": \"databricks.yml\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"notebook.py\",\n        \"is_notebook\": true\n      },\n      {\n        \"local_path\": \"output.txt\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"repls.json\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"script\",\n        \"is_notebook\": false\n      },\n      {\n        \"local_path\": \"test.toml\",\n        \"is_notebook\": false\n      }\n    ],\n    \"id\": \"[UUID]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/volumes/mycat.myschema.myvol\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.2/jobs/get\",\n  \"q\": {\n    \"job_id\": \"[NUMID]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/pipelines/[UUID]\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.2/jobs/reset\",\n  \"body\": {\n    \"job_id\": [NUMID],\n    \"new_settings\": {\n      \"deployment\": {\n        \"kind\": \"BUNDLE\",\n        \"metadata_file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\"\n      },\n      \"edit_mode\": \"UI_LOCKED\",\n      \"format\": \"MULTI_TASK\",\n      \"max_concurrent_runs\": 1,\n      \"name\": \"Test Migrated Job\",\n      \"queue\": {\n        \"enabled\": true\n      },\n      \"tasks\": [\n        {\n          \"notebook_task\": {\n            \"notebook_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook\"\n          },\n          \"task_key\": \"main\"\n        }\n      ]\n    }\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.1/unity-catalog/volumes/mycat.myschema.myvol\"\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.2/jobs/get\",\n  \"q\": {\n    \"job_id\": \"[NUMID]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"PUT\",\n  \"path\": \"/api/2.0/pipelines/[UUID]\",\n  \"body\": {\n    \"channel\": \"CURRENT\",\n    \"deployment\": {\n      \"kind\": \"BUNDLE\",\n      \"metadata_file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\"\n    },\n    \"edition\": \"ADVANCED\",\n    \"libraries\": [\n      {\n        \"notebook\": {\n          \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline\"\n        }\n      }\n    ],\n    \"name\": \"Test Migrated Pipeline\",\n    \"tags\": {\n      \"myjob_id\": \"[NUMID]\",\n      \"myjob_name\": \"Test Migrated Job\",\n      \"myjob_timeout\": \"0\",\n      \"myvolume_id\": \"mycat.myschema.myvol\",\n      \"volume_catalog_name\": \"mycat\",\n      \"volume_storage_location\": \"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\"\n    }\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/resources.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"state_version\": 2,\n    \"cli_version\": \"[DEV_VERSION]\",\n    \"lineage\": \"[UUID]\",\n    \"serial\": 9,\n    \"state\": {\n      \"resources.jobs.test_job\": {\n        \"__id__\": \"[NUMID]\",\n        \"state\": {\n          \"deployment\": {\n            \"kind\": \"BUNDLE\",\n            \"metadata_file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\"\n          },\n          \"edit_mode\": \"UI_LOCKED\",\n          \"format\": \"MULTI_TASK\",\n          \"max_concurrent_runs\": 1,\n          \"name\": \"Test Migrated Job\",\n          \"queue\": {\n            \"enabled\": true\n          },\n          \"tasks\": [\n            {\n              \"notebook_task\": {\n                \"notebook_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook\"\n              },\n              \"task_key\": \"main\"\n            }\n          ]\n        }\n      },\n      \"resources.pipelines.test_pipeline\": {\n        \"__id__\": \"[UUID]\",\n        \"state\": {\n          \"channel\": \"CURRENT\",\n          \"deployment\": {\n            \"kind\": \"BUNDLE\",\n            \"metadata_file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\"\n          },\n          \"edition\": \"ADVANCED\",\n          \"libraries\": [\n            {\n              \"notebook\": {\n                \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline\"\n              }\n            }\n          ],\n          \"name\": \"Test Migrated Pipeline\",\n          \"tags\": {\n            \"myjob_id\": \"[NUMID]\",\n            \"myjob_name\": \"Test Migrated Job\",\n            \"myjob_timeout\": \"0\",\n            \"myvolume_id\": \"mycat.myschema.myvol\",\n            \"volume_catalog_name\": \"mycat\",\n            \"volume_storage_location\": \"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\"\n          }\n        },\n        \"depends_on\": [\n          {\n            \"node\": \"resources.jobs.test_job\",\n            \"label\": \"${resources.jobs.test_job.id}\"\n          },\n          {\n            \"node\": \"resources.jobs.test_job\",\n            \"label\": \"${resources.jobs.test_job.name}\"\n          },\n          {\n            \"node\": \"resources.jobs.test_job\",\n            \"label\": \"${resources.jobs.test_job.timeout_seconds}\"\n          },\n          {\n            \"node\": \"resources.volumes.test_volume\",\n            \"label\": \"${resources.volumes.test_volume.catalog_name}\"\n          },\n          {\n            \"node\": \"resources.volumes.test_volume\",\n            \"label\": \"${resources.volumes.test_volume.id}\"\n          },\n          {\n            \"node\": \"resources.volumes.test_volume\",\n            \"label\": \"${resources.volumes.test_volume.storage_location}\"\n          }\n        ]\n      },\n      \"resources.volumes.test_volume\": {\n        \"__id__\": \"mycat.myschema.myvol\",\n        \"state\": {\n          \"catalog_name\": \"mycat\",\n          \"name\": \"myvol\",\n          \"schema_name\": \"myschema\",\n          \"volume_type\": \"MANAGED\"\n        }\n      }\n    }\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 1,\n    \"config\": {\n      \"bundle\": {\n        \"name\": \"migrate-basic-test\",\n        \"target\": \"dev\",\n        \"git\": {\n          \"bundle_root_path\": \".\"\n        }\n      },\n      \"workspace\": {\n        \"file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files\"\n      },\n      \"resources\": {\n        \"jobs\": {\n          \"test_job\": {\n            \"id\": \"[NUMID]\",\n            \"relative_path\": \"databricks.yml\"\n          }\n        },\n        \"pipelines\": {\n          \"test_pipeline\": {\n            \"id\": \"[UUID]\",\n            \"relative_path\": \"databricks.yml\"\n          }\n        }\n      },\n      \"presets\": {\n        \"source_linked_deployment\": false\n      }\n    },\n    \"extra\": {}\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/deploy.lock\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/telemetry-ext\",\n  \"body\": {\n    \"uploadTime\": [UNIX_TIME_MILLIS][3],\n    \"items\": [],\n    \"protoLogs\": [\n      \"{\\\"frontend_log_event_id\\\":\\\"[UUID]\\\",\\\"entry\\\":{\\\"databricks_cli_log\\\":{\\\"execution_context\\\":{\\\"cmd_exec_id\\\":\\\"[UUID]\\\",\\\"version\\\":\\\"[DEV_VERSION]\\\",\\\"command\\\":\\\"bundle_deploy\\\",\\\"operating_system\\\":\\\"linux\\\",\\\"execution_time_ms\\\":196,\\\"exit_code\\\":0},\\\"bundle_deploy_event\\\":{\\\"bundle_uuid\\\":\\\"[UUID]\\\",\\\"deployment_id\\\":\\\"[UUID]\\\",\\\"resource_count\\\":3,\\\"resource_job_count\\\":1,\\\"resource_pipeline_count\\\":1,\\\"resource_model_count\\\":0,\\\"resource_experiment_count\\\":0,\\\"resource_model_serving_endpoint_count\\\":0,\\\"resource_registered_model_count\\\":0,\\\"resource_quality_monitor_count\\\":0,\\\"resource_schema_count\\\":0,\\\"resource_volume_count\\\":1,\\\"resource_cluster_count\\\":0,\\\"resource_dashboard_count\\\":0,\\\"resource_app_count\\\":0,\\\"resource_job_ids\\\":[\\\"[NUMID]\\\"],\\\"resource_pipeline_ids\\\":[\\\"[UUID]\\\"],\\\"experimental\\\":{\\\"configuration_file_count\\\":1,\\\"variable_count\\\":0,\\\"complex_variable_count\\\":0,\\\"lookup_variable_count\\\":0,\\\"target_count\\\":2,\\\"bool_values\\\":[{\\\"key\\\":\\\"local.cache.attempt\\\",\\\"value\\\":true},{\\\"key\\\":\\\"local.cache.hit\\\",\\\"value\\\":true},{\\\"key\\\":\\\"resref_volumes.storage_location\\\",\\\"value\\\":true},{\\\"key\\\":\\\"resref_jobs.id\\\",\\\"value\\\":true},{\\\"key\\\":\\\"resref_volumes.id\\\",\\\"value\\\":true},{\\\"key\\\":\\\"resref_jobs.name\\\",\\\"value\\\":true},{\\\"key\\\":\\\"resref_volumes.catalog_name\\\",\\\"value\\\":true},{\\\"key\\\":\\\"resref_jobs.timeout_seconds\\\",\\\"value\\\":true},{\\\"key\\\":\\\"experimental.use_legacy_run_as\\\",\\\"value\\\":false},{\\\"key\\\":\\\"run_as_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"presets_name_prefix_is_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"python_wheel_wrapper_is_set\\\",\\\"value\\\":false},{\\\"key\\\":\\\"skip_artifact_cleanup\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_serverless_compute\\\",\\\"value\\\":true},{\\\"key\\\":\\\"has_classic_job_compute\\\",\\\"value\\\":false},{\\\"key\\\":\\\"has_classic_interactive_compute\\\",\\\"value\\\":false}],\\\"bundle_mode\\\":\\\"TYPE_UNSPECIFIED\\\",\\\"workspace_artifact_path_type\\\":\\\"WORKSPACE_FILE_SYSTEM\\\",\\\"bundle_mutator_execution_time_ms\\\":[{\\\"key\\\":\\\"phases.Initialize\\\",\\\"value\\\":73},{\\\"key\\\":\\\"phases.Deploy\\\",\\\"value\\\":69},{\\\"key\\\":\\\"resourcemutator.(processStaticResources)\\\",\\\"value\\\":44},{\\\"key\\\":\\\"loader.(entryPoint)\\\",\\\"value\\\":31},{\\\"key\\\":\\\"resourcemutator.(configureDashboardSerializedDashboard)\\\",\\\"value\\\":17},{\\\"key\\\":\\\"bundle.(setDefault)\\\",\\\"value\\\":13},{\\\"key\\\":\\\"mutator.(prependWorkspacePrefix)\\\",\\\"value\\\":10},{\\\"key\\\":\\\"phases.Build\\\",\\\"value\\\":9},{\\\"key\\\":\\\"validate.(validateDashboardEtags)\\\",\\\"value\\\":5},{\\\"key\\\":\\\"libraries.(expand)\\\",\\\"value\\\":4},{\\\"key\\\":\\\"mutator.(applySourceLinkedDeploymentPreset)\\\",\\\"value\\\":2},{\\\"key\\\":\\\"validate.(noInterpolationInAuthConfig)\\\",\\\"value\\\":2},{\\\"key\\\":\\\"files.(upload)\\\",\\\"value\\\":2},{\\\"key\\\":\\\"mutator.(resolveVariableReferences)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"mutator.(resolveVariableReferences)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"lock.(release)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"mutator.(resolveVariableReferences)\\\",\\\"value\\\":1},{\\\"key\\\":\\\"validate.FastValidate\\\",\\\"value\\\":0}]}}}}}\"\n    ]\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/deploy.lock\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/artifacts/.internal\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files\"\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/out.original_state.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"version\": 4,\n    \"terraform_version\": \"1.5.5\",\n    \"serial\": 4,\n    \"lineage\": \"[UUID]\",\n    \"outputs\": {},\n    \"resources\": [\n      {\n        \"mode\": \"managed\",\n        \"type\": \"databricks_job\",\n        \"name\": \"test_job\",\n        \"provider\": \"provider[\\\"registry.terraform.io/databricks/databricks\\\"]\",\n        \"instances\": [\n          {\n            \"schema_version\": 2,\n            \"attributes\": {\n              \"always_running\": false,\n              \"budget_policy_id\": null,\n              \"continuous\": [],\n              \"control_run_state\": false,\n              \"dbt_task\": [],\n              \"deployment\": [\n                {\n                  \"kind\": \"BUNDLE\",\n                  \"metadata_file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\"\n                }\n              ],\n              \"description\": null,\n              \"edit_mode\": \"UI_LOCKED\",\n              \"email_notifications\": [\n                {\n                  \"no_alert_for_skipped_runs\": false,\n                  \"on_duration_warning_threshold_exceeded\": [],\n                  \"on_failure\": [],\n                  \"on_start\": [],\n                  \"on_streaming_backlog_exceeded\": [],\n                  \"on_success\": []\n                }\n              ],\n              \"environment\": [],\n              \"existing_cluster_id\": null,\n              \"format\": \"MULTI_TASK\",\n              \"git_source\": [],\n              \"health\": [],\n              \"id\": \"[NUMID]\",\n              \"job_cluster\": [],\n              \"library\": [],\n              \"max_concurrent_runs\": 1,\n              \"max_retries\": 0,\n              \"min_retry_interval_millis\": 0,\n              \"name\": \"Test Migration Job\",\n              \"new_cluster\": [],\n              \"notebook_task\": [],\n              \"notification_settings\": [],\n              \"parameter\": [],\n              \"performance_target\": null,\n              \"pipeline_task\": [],\n              \"provider_config\": [],\n              \"python_wheel_task\": [],\n              \"queue\": [\n                {\n                  \"enabled\": true\n                }\n              ],\n              \"retry_on_timeout\": false,\n              \"run_as\": [\n                {\n                  \"group_name\": \"\",\n                  \"service_principal_name\": \"\",\n                  \"user_name\": \"[USERNAME]\"\n                }\n              ],\n              \"run_job_task\": [],\n              \"schedule\": [],\n              \"spark_jar_task\": [],\n              \"spark_python_task\": [],\n              \"spark_submit_task\": [],\n              \"tags\": null,\n              \"task\": [\n                {\n                  \"alert_task\": [],\n                  \"clean_rooms_notebook_task\": [],\n                  \"compute\": [],\n                  \"condition_task\": [],\n                  \"dashboard_task\": [],\n                  \"dbt_cloud_task\": [],\n                  \"dbt_platform_task\": [],\n                  \"dbt_task\": [],\n                  \"depends_on\": [],\n                  \"description\": \"\",\n                  \"disable_auto_optimization\": false,\n                  \"disabled\": false,\n                  \"email_notifications\": [\n                    {\n                      \"no_alert_for_skipped_runs\": false,\n                      \"on_duration_warning_threshold_exceeded\": [],\n                      \"on_failure\": [],\n                      \"on_start\": [],\n                      \"on_streaming_backlog_exceeded\": [],\n                      \"on_success\": []\n                    }\n                  ],\n                  \"environment_key\": \"\",\n                  \"existing_cluster_id\": \"\",\n                  \"for_each_task\": [],\n                  \"gen_ai_compute_task\": [],\n                  \"health\": [],\n                  \"job_cluster_key\": \"\",\n                  \"library\": [],\n                  \"max_retries\": 0,\n                  \"min_retry_interval_millis\": 0,\n                  \"new_cluster\": [],\n                  \"notebook_task\": [\n                    {\n                      \"base_parameters\": null,\n                      \"notebook_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook\",\n                      \"source\": \"WORKSPACE\",\n                      \"warehouse_id\": \"\"\n                    }\n                  ],\n                  \"notification_settings\": [],\n                  \"pipeline_task\": [],\n                  \"power_bi_task\": [],\n                  \"python_wheel_task\": [],\n                  \"retry_on_timeout\": false,\n                  \"run_if\": \"ALL_SUCCESS\",\n                  \"run_job_task\": [],\n                  \"spark_jar_task\": [],\n                  \"spark_python_task\": [],\n                  \"spark_submit_task\": [],\n                  \"sql_task\": [],\n                  \"task_key\": \"main\",\n                  \"timeout_seconds\": 0,\n                  \"webhook_notifications\": []\n                }\n              ],\n              \"timeout_seconds\": 0,\n              \"timeouts\": null,\n              \"trigger\": [],\n              \"url\": \"[DATABRICKS_URL]/#job/[NUMID]\",\n              \"usage_policy_id\": null,\n              \"webhook_notifications\": [\n                {\n                  \"on_duration_warning_threshold_exceeded\": [],\n                  \"on_failure\": [],\n                  \"on_start\": [],\n                  \"on_streaming_backlog_exceeded\": [],\n                  \"on_success\": []\n                }\n              ]\n            },\n            \"sensitive_attributes\": [],\n            \"private\": \"eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJ1cGRhdGUiOjE4MDAwMDAwMDAwMDB9LCJzY2hlbWFfdmVyc2lvbiI6IjIifQ==\"\n          }\n        ]\n      },\n      {\n        \"mode\": \"managed\",\n        \"type\": \"databricks_pipeline\",\n        \"name\": \"test_pipeline\",\n        \"provider\": \"provider[\\\"registry.terraform.io/databricks/databricks\\\"]\",\n        \"instances\": [\n          {\n            \"schema_version\": 0,\n            \"attributes\": {\n              \"allow_duplicate_names\": false,\n              \"budget_policy_id\": null,\n              \"catalog\": null,\n              \"cause\": null,\n              \"channel\": \"CURRENT\",\n              \"cluster\": [],\n              \"cluster_id\": null,\n              \"configuration\": null,\n              \"continuous\": false,\n              \"creator_user_name\": \"[USERNAME]\",\n              \"deployment\": [\n                {\n                  \"kind\": \"BUNDLE\",\n                  \"metadata_file_path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json\"\n                }\n              ],\n              \"development\": false,\n              \"edition\": \"ADVANCED\",\n              \"environment\": [],\n              \"event_log\": [],\n              \"expected_last_modified\": 0,\n              \"filters\": [],\n              \"gateway_definition\": [],\n              \"health\": null,\n              \"id\": \"[UUID]\",\n              \"ingestion_definition\": [],\n              \"last_modified\": [UNIX_TIME_MILLIS][1],\n              \"latest_updates\": null,\n              \"library\": [\n                {\n                  \"file\": [],\n                  \"glob\": [],\n                  \"jar\": \"\",\n                  \"maven\": [],\n                  \"notebook\": [\n                    {\n                      \"path\": \"/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline\"\n                    }\n                  ],\n                  \"whl\": \"\"\n                }\n              ],\n              \"name\": \"Test Migration Pipeline\",\n              \"notification\": [],\n              \"photon\": false,\n              \"provider_config\": [],\n              \"restart_window\": [],\n              \"root_path\": null,\n              \"run_as\": [],\n              \"run_as_user_name\": \"[USERNAME]\",\n              \"schema\": null,\n              \"serverless\": false,\n              \"state\": \"IDLE\",\n              \"storage\": \"dbfs:/pipelines/[UUID]\",\n              \"tags\": {\n                \"myjob_id\": \"[NUMID]\",\n                \"myjob_name\": \"Test Migration Job\",\n                \"myjob_timeout\": \"0\",\n                \"myvolume_id\": \"mycat.myschema.myvol\",\n                \"volume_catalog_name\": \"mycat\",\n                \"volume_storage_location\": \"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\"\n              },\n              \"target\": null,\n              \"timeouts\": null,\n              \"trigger\": [],\n              \"url\": \"[DATABRICKS_URL]/#joblist/pipelines/[UUID]\",\n              \"usage_policy_id\": null\n            },\n            \"sensitive_attributes\": [],\n            \"private\": \"eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWZhdWx0IjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19\",\n            \"dependencies\": [\n              \"databricks_job.test_job\",\n              \"databricks_volume.test_volume\"\n            ]\n          }\n        ]\n      },\n      {\n        \"mode\": \"managed\",\n        \"type\": \"databricks_volume\",\n        \"name\": \"test_volume\",\n        \"provider\": \"provider[\\\"registry.terraform.io/databricks/databricks\\\"]\",\n        \"instances\": [\n          {\n            \"schema_version\": 0,\n            \"attributes\": {\n              \"catalog_name\": \"mycat\",\n              \"comment\": null,\n              \"id\": \"mycat.myschema.myvol\",\n              \"name\": \"myvol\",\n              \"owner\": \"[USERNAME]\",\n              \"provider_config\": [],\n              \"schema_name\": \"myschema\",\n              \"storage_location\": \"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\",\n              \"volume_path\": \"/Volumes/mycat/myschema/myvol\",\n              \"volume_type\": \"MANAGED\"\n            },\n            \"sensitive_attributes\": [],\n            \"private\": \"bnVsbA==\"\n          }\n        ]\n      }\n    ],\n    \"check_results\": null\n  }\n}\n{\n  \"headers\": {\n    \"User-Agent\": [\n      \"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat\"\n    ]\n  },\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/output.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"\\n\\u003e\\u003e\\u003e musterr [CLI] bundle deployment migrate\\nError: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.\\n\\nTo start using direct engine, set \\\"engine: direct\\\" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n\\u003e\\u003e\\u003e [CLI] bundle deployment migrate\\nNote: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\nSuccess! Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json\\n\\nValidate the migration by running \\\"databricks bundle plan\\\", there should be no actions planned.\\n\\nThe state file is not synchronized to the workspace yet. To do that and finalize the migration, run \\\"bundle deploy\\\".\\n\\nTo undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate\\n\\n\\n\\u003e\\u003e\\u003e diff out.original_state.json out.backup_state.json\\n\\n\\u003e\\u003e\\u003e jq .state.\\\"resources.pipelines.test_pipeline\\\".state.tags.volume_storage_location out.new_state.json\\n\\\"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n=== Should show that it's already migrated\\n\\u003e\\u003e\\u003e musterr [CLI] bundle deployment migrate\\nError: already using direct engine\\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=7 lineage=\\\"[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n\\u003e\\u003e\\u003e print_requests.py --get //jobs/get\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.2/jobs/get\\\",\\n  \\\"q\\\": {\\n    \\\"job_id\\\": \\\"[NUMID]\\\"\\n  }\\n}\\n{\\n  \\\"headers\\\": {\\n    \\\"User-Agent\\\": [\\n      \\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n    ]\\n  },\\n  \\\"method\\\": \\\"GET\\\",\\n  \\\"path\\\": \\\"/api/2.2/jobs/get\\\",\\n  \\\"q\\\": {\\n    \\\"job_id\\\": \\\"[NUMID]\\\"\\n  }\\n}\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n\\u003e\\u003e\\u003e print_requests.py --get //jobs/get\\n\\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n\\\"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat\\\"\\n\\n=== Should show that it's already migrated\\n\\u003e\\u003e\\u003e musterr [CLI] bundle deployment migrate\\nError: already using direct engine\\nDetails: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\"[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states\\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\"[UUID]\\\"\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull\\nresources.json: remote direct state serial=8 lineage=\\\"[UUID]\\\"\\n[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=8 lineage=\\\"[UUID]\\\"\\n\\n=== Extra plan: should have no drift\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\nPlan: 0 to add, 0 to change, 0 to delete, 3 unchanged\\n\\n=== Update databricks.yml, run plan \\u0026 update\\n\\u003e\\u003e\\u003e update_file.py databricks.yml Migration Migrated\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan\\nupdate jobs.test_job\\nupdate pipelines.test_pipeline\\n\\nPlan: 0 to add, 2 to change, 0 to delete, 1 unchanged\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json\\n\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n=== Different target, still on terraform\\n\\u003e\\u003e\\u003e DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy -t prod\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...\\n\"\n}\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/repls.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": [
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/\\.terraformrc",
+      "New": "[DATABRICKS_TF_CLI_CONFIG_FILE]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/terraform",
+      "New": "[TERRAFORM]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/libs/vendored_py_packages",
+      "New": "[VENDORED_PY_PACKAGES]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/databricks_bundles-0\\.298\\.0-py3-none-any\\.whl",
+      "New": "[DATABRICKS_BUNDLES_WHEEL]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/databricks",
+      "New": "[CLI]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64/0\\.293\\.0/databricks",
+      "New": "[CLI_293]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_DEFAULT_WAREHOUSE_ID]",
+      "New": "[TEST_DEFAULT_WAREHOUSE_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_DEFAULT_CLUSTER_ID]",
+      "New": "[TEST_DEFAULT_CLUSTER_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_INSTANCE_POOL_ID]",
+      "New": "[TEST_INSTANCE_POOL_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance/build/linux_amd64",
+      "New": "[BUILD_DIR]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "0\\.0\\.0-dev([-+][a-f0-9]{10,16})?",
+      "New": "[DEV_VERSION]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "databricks-sdk-go/[0-9]+\\.[0-9]+\\.[0-9]+",
+      "New": "databricks-sdk-go/[SDK_VERSION]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "1\\.26\\.2",
+      "New": "[GO_VERSION]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "/home/denis\\.bilenko/work/cli-trees/random-bugfixes-4/acceptance",
+      "New": "[TESTROOT]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "dbapi[0-9a-f]+",
+      "New": "[DATABRICKS_TOKEN]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "i3\\.xlarge",
+      "New": "[NODE_TYPE_ID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[UNIQUE_NAME]",
+      "New": "[UNIQUE_NAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_TMP_DIR]",
+      "New": "[TEST_TMP_DIR]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[TEST_TMP_DIR]_PARENT",
+      "New": "[TEST_TMP_DIR]_PARENT",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[USERNAME]@databricks\\.com",
+      "New": "[USERNAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[USERNAME]",
+      "New": "[USERNAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[USERID]",
+      "New": "[USERID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "https://127\\.0\\.0\\.1:38177",
+      "New": "[DATABRICKS_URL]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "http://127\\.0\\.0\\.1:38177",
+      "New": "[DATABRICKS_URL]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "127\\.0\\.0\\.1:38177",
+      "New": "[DATABRICKS_HOST]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}",
+      "New": "[UUID]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "\\d{20,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "1[78]\\d{17}",
+      "New": "[UNIX_TIME_NANOS]",
+      "Order": 10,
+      "Distinct": true
+    },
+    {
+      "Old": "\\d{17,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "\\d{14,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "1[78]\\d{11}",
+      "New": "[UNIX_TIME_MILLIS]",
+      "Order": 10,
+      "Distinct": true
+    },
+    {
+      "Old": "\\d{11,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "1[78]\\d{8}",
+      "New": "[UNIX_TIME_S]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "\\d{8,}",
+      "New": "[NUMID]",
+      "Order": 10,
+      "Distinct": false
+    },
+    {
+      "Old": "2\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d\\d:\\d\\d:\\d\\d\\.\\d+(Z|\\+\\d\\d:\\d\\d)?",
+      "New": "[TIMESTAMP]",
+      "Order": 9,
+      "Distinct": false
+    },
+    {
+      "Old": "2\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d\\d:\\d\\d:\\d\\dZ?",
+      "New": "[TIMESTAMP]",
+      "Order": 9,
+      "Distinct": false
+    },
+    {
+      "Old": "[METASTORE_NAME]|[METASTORE_NAME]",
+      "New": "[METASTORE_NAME]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "os/[OS]",
+      "New": "os/[OS]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "os/[OS]",
+      "New": "os/[OS]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "os/[OS]",
+      "New": "os/[OS]",
+      "Order": 0,
+      "Distinct": false
+    },
+    {
+      "Old": "",
+      "New": "",
+      "Order": 0,
+      "Distinct": false
+    }
+  ]
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/notebook.py",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "# Databricks notebook source\nprint(\"Hello from test migration job\")\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/out.plan_update.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "plan_version": 2,
+    "cli_version": "[DEV_VERSION]",
+    "lineage": "[UUID]",
+    "serial": 8,
+    "plan": {
+      "resources.jobs.test_job": {
+        "action": "update",
+        "new_state": {
+          "value": {
+            "deployment": {
+              "kind": "BUNDLE",
+              "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+            },
+            "edit_mode": "UI_LOCKED",
+            "format": "MULTI_TASK",
+            "max_concurrent_runs": 1,
+            "name": "Test Migrated Job",
+            "queue": {
+              "enabled": true
+            },
+            "tasks": [
+              {
+                "notebook_task": {
+                  "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook"
+                },
+                "task_key": "main"
+              }
+            ]
+          }
+        },
+        "remote_state": {
+          "created_time": [UNIX_TIME_MILLIS][0],
+          "creator_user_name": "[USERNAME]",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
+          "format": "MULTI_TASK",
+          "job_id": [NUMID],
+          "max_concurrent_runs": 1,
+          "name": "Test Migration Job",
+          "queue": {
+            "enabled": true
+          },
+          "run_as_user_name": "[USERNAME]",
+          "tasks": [
+            {
+              "email_notifications": {},
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook",
+                "source": "WORKSPACE"
+              },
+              "run_if": "ALL_SUCCESS",
+              "task_key": "main",
+              "timeout_seconds": 0
+            }
+          ],
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        },
+        "changes": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "empty",
+            "remote": {}
+          },
+          "name": {
+            "action": "update",
+            "old": "Test Migration Job",
+            "new": "Test Migrated Job",
+            "remote": "Test Migration Job"
+          },
+          "tasks[task_key='main'].email_notifications": {
+            "action": "skip",
+            "reason": "empty",
+            "remote": {}
+          },
+          "tasks[task_key='main'].notebook_task.source": {
+            "action": "skip",
+            "reason": "backend_default",
+            "remote": "WORKSPACE"
+          },
+          "tasks[task_key='main'].run_if": {
+            "action": "skip",
+            "reason": "backend_default",
+            "remote": "ALL_SUCCESS"
+          },
+          "tasks[task_key='main'].timeout_seconds": {
+            "action": "skip",
+            "reason": "empty",
+            "remote": 0
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "empty",
+            "remote": 0
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "empty",
+            "remote": {}
+          }
+        }
+      },
+      "resources.pipelines.test_pipeline": {
+        "depends_on": [
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.id}"
+          },
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.name}"
+          },
+          {
+            "node": "resources.jobs.test_job",
+            "label": "${resources.jobs.test_job.timeout_seconds}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.catalog_name}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.id}"
+          },
+          {
+            "node": "resources.volumes.test_volume",
+            "label": "${resources.volumes.test_volume.storage_location}"
+          }
+        ],
+        "action": "update",
+        "new_state": {
+          "value": {
+            "channel": "CURRENT",
+            "deployment": {
+              "kind": "BUNDLE",
+              "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+            },
+            "edition": "ADVANCED",
+            "libraries": [
+              {
+                "notebook": {
+                  "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+                }
+              }
+            ],
+            "name": "Test Migrated Pipeline",
+            "tags": {
+              "myjob_id": "[NUMID]",
+              "myjob_name": "Test Migrated Job",
+              "myjob_timeout": "${resources.jobs.test_job.timeout_seconds}",
+              "myvolume_id": "mycat.myschema.myvol",
+              "volume_catalog_name": "mycat",
+              "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+            }
+          },
+          "vars": {
+            "tags.myjob_timeout": "${resources.jobs.test_job.timeout_seconds}"
+          }
+        },
+        "remote_state": {
+          "channel": "CURRENT",
+          "creator_user_name": "[USERNAME]",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+          "id": "[UUID]",
+          "last_modified": [UNIX_TIME_MILLIS][1],
+          "libraries": [
+            {
+              "notebook": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+              }
+            }
+          ],
+          "name": "Test Migration Pipeline",
+          "pipeline_id": "[UUID]",
+          "run_as_user_name": "[USERNAME]",
+          "state": "IDLE",
+          "storage": "dbfs:/pipelines/[UUID]",
+          "tags": {
+            "myjob_id": "[NUMID]",
+            "myjob_name": "Test Migration Job",
+            "myjob_timeout": "0",
+            "myvolume_id": "mycat.myschema.myvol",
+            "volume_catalog_name": "mycat",
+            "volume_storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+          }
+        },
+        "changes": {
+          "name": {
+            "action": "update",
+            "old": "Test Migration Pipeline",
+            "new": "Test Migrated Pipeline",
+            "remote": "Test Migration Pipeline"
+          },
+          "storage": {
+            "action": "skip",
+            "reason": "backend_default",
+            "remote": "dbfs:/pipelines/[UUID]"
+          },
+          "tags['myjob_name']": {
+            "action": "update",
+            "old": "Test Migration Job",
+            "new": "Test Migrated Job",
+            "remote": "Test Migration Job"
+          },
+          "tags['myjob_timeout']": {
+            "action": "update",
+            "old": "0",
+            "new": "${resources.jobs.test_job.timeout_seconds}",
+            "remote": "0"
+          }
+        }
+      },
+      "resources.volumes.test_volume": {
+        "action": "skip",
+        "remote_state": {
+          "catalog_name": "mycat",
+          "created_at": [UNIX_TIME_MILLIS][2],
+          "created_by": "[USERNAME]",
+          "full_name": "mycat.myschema.myvol",
+          "name": "myvol",
+          "owner": "[USERNAME]",
+          "schema_name": "myschema",
+          "storage_location": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
+          "updated_at": [UNIX_TIME_MILLIS][2],
+          "volume_id": "[UUID]",
+          "volume_type": "MANAGED"
+        },
+        "changes": {
+          "storage_location": {
+            "action": "skip",
+            "reason": "backend_default",
+            "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
+          }
+        }
+      }
+    }
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/pipeline.py",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "# Databricks notebook source\n# This is a test pipeline notebook\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/test.toml",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "RecordRequests = true\nIncludeRequestHeaders = [\"User-Agent\"]\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/databricks.yml",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "bundle:\n  name: migrate-basic-test\n\nresources:\n  jobs:\n    test_job:\n      name: \"Test Migrated Job\"\n      tasks:\n        - task_key: \"main\"\n          notebook_task:\n            notebook_path: \"./notebook.py\"\n  volumes:\n    test_volume:\n      catalog_name: \"mycat\"\n      schema_name: \"myschema\"\n      name: \"myvol\"\n\n  pipelines:\n    test_pipeline:\n      name: \"Test Migrated Pipeline\"\n      tags:\n        # ids\n        myjob_id: ${resources.jobs.test_job.id}\n        myvolume_id: ${resources.volumes.test_volume.id}\n\n        # local field, string:\n        myjob_name: ${resources.jobs.test_job.name}\n        volume_catalog_name: ${resources.volumes.test_volume.catalog_name}\n\n        # remote field, int\n        myjob_timeout: ${resources.jobs.test_job.timeout_seconds}\n\n        # remote field, string:\n        volume_storage_location: ${resources.volumes.test_volume.storage_location}\n      libraries:\n        - notebook:\n            path: \"./pipeline.py\"\n\ntargets:\n  dev:\n    default: true\n  prod:\n    resources:\n      schemas:\n        test_schema:\n          catalog_name: mycat\n          name: myschema\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files/script",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "errcode() {\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\n    set +e\n    # Execute the provided command with all arguments\n    \"$@\"\n    local exit_code=$?\n    # Re-enable 'set -e' if it was previously set\n    set -e\n    if [ $exit_code -ne 0 ]; then\n        \u003e\u00262 printf \"\\nExit code: $exit_code\\n\"\n    fi\n}\n\nmusterr() {\n    # Temporarily disable 'set -e' to prevent the script from exiting on error\n    set +e\n    # Execute the provided command with all arguments\n    \"$@\"\n    local exit_code=$?\n    # Re-enable 'set -e'\n    set -e\n    if [ $exit_code -eq 0 ]; then\n        \u003e\u00262 printf \"\\nUnexpected success\\n\"\n        exit 1\n    fi\n}\n\ntrace() {\n    \u003e\u00262 printf \"\\n\u003e\u003e\u003e %s\\n\" \"$*\"\n\n    if [[ \"$1\" == *\"=\"* ]]; then\n        # If the first argument contains '=', collect all env vars\n        local env_vars=()\n        while [[ \"$1\" == *\"=\"* ]]; do\n            env_vars+=(\"$1\")\n            shift\n        done\n        # Export environment variables in a subshell and execute the command\n        (\n            export \"${env_vars[@]}\"\n            \"$@\"\n        )\n    else\n        # Execute the command normally\n        \"$@\"\n    fi\n\n    return $?\n}\n\ngit-repo-init() {\n    git init -qb main\n    git config core.autocrlf false\n    git config user.name \"Tester\"\n    git config user.email \"[USERNAME]\"\n    git config core.hooksPath no-hooks\n    git add databricks.yml\n    git commit -qm 'Add databricks.yml'\n}\n\ntitle() {\n    local label=\"$1\"\n    printf \"\\n=== %b\" \"$label\"\n}\n\nwithdir() {\n    local dir=\"$1\"\n    shift\n    local orig_dir=\"$(pwd)\"\n    cd \"$dir\" || return $?\n    \"$@\"\n    local exit_code=$?\n    cd \"$orig_dir\" || return $?\n    return $exit_code\n}\n\nuuid() {\n    python3 -c 'import uuid; print(uuid.uuid4())'\n}\n\nvenv_activate() {\n    if [[ \"$OSTYPE\" == \"msys\" || \"$OSTYPE\" == \"cygwin\" || \"$OSTYPE\" == \"win32\" ]]; then\n        source .venv/Scripts/activate\n    else\n        source .venv/bin/activate\n    fi\n}\n\nenvsubst() {\n    # We need to disable MSYS_NO_PATHCONV when running the python script.\n    # This is because the python interpreter is otherwise unable to find the python script\n    # when MSYS_NO_PATHCONV is enabled.\n    env -u MSYS_NO_PATHCONV envsubst.py\n}\n\nprint_telemetry_bool_values() {\n    jq -r 'select(.path? == \"/telemetry-ext\") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map(\"\\(.key) \\(.value)\") | .[]' out.requests.txt | sort\n}\n\nsethome() {\n    local home=\"$1\"\n    mkdir -p \"$home\"\n\n    # For macOS and Linux, use HOME.\n    export HOME=\"$home\"\n\n    # For Windows, use USERPROFILE.\n    export USERPROFILE=\"$home\"\n}\n\nas-test-sp() {\n    if [[ -z \"$TEST_SP_TOKEN\" ]]; then\n        echo \"Error: TEST_SP_TOKEN is not set.\" \u003e\u00262\n        return 1\n    fi\n\n    DATABRICKS_TOKEN=\"$TEST_SP_TOKEN\" \\\n    DATABRICKS_CLIENT_SECRET=\"\" \\\n    DATABRICKS_CLIENT_ID=\"\" \\\n    DATABRICKS_AUTH_TYPE=\"\" \\\n    \"$@\"\n}\n\nreadplanarg() {\n    # Expands into \"--plan \u003cfilename\u003e\" based on READPLAN env var\n    # Use it with \"bundle deploy\" to configure two runs: once with saved plan and one without.\n    # Note: READPLAN is specially handled in test runner so that engine=terraform/readplan is set combination is skipped.\n    if [[ -n \"$READPLAN\" ]]; then\n        printf -- \"--plan %s\" \"$1\"\n    else\n        printf \"\"\n    fi\n}\n\n(\nexport DATABRICKS_BUNDLE_ENGINE=\n# Migrating without state, should print a message about missing state.\ntrace musterr $CLI bundle deployment migrate\n\ntrace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy\nprint_state.py -t dev \u003e out.original_state.json\n\ntrace $CLI bundle deployment migrate 2\u003e\u00261 | contains.py 'Migrated 3 resources'\nprint_state.py -t dev \u003e out.new_state.json\nprint_state.py -t dev --backup \u003e out.backup_state.json\ntrace diff out.original_state.json out.backup_state.json\nrm out.backup_state.json\n\n# check that this is stored as resolved value, not as reference:\ntrace jq '.state.\"resources.pipelines.test_pipeline\".state.tags.volume_storage_location' out.new_state.json | contains.py 's3://'\n\n# this is expected to warn because state does not match env var, but still succeed using state engine\ntrace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan\ntrace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy\n\ntitle \"Should show that it's already migrated\"\ntrace musterr $CLI bundle deployment migrate\n\nrm out.requests.txt\n# Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work\ntrace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py \"3 unchanged\"\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py \"3 unchanged\"\ntrace print_requests.py --get //jobs/get | contains.py 'engine/direct'\n\ntrace DATABRICKS_BUNDLE_ENGINE=\"\" $CLI bundle deploy\ntrace print_requests.py --get //jobs/get | jq '.headers[\"User-Agent\"][0]' | contains.py 'engine/direct'\n\ntitle \"Should show that it's already migrated\"\ntrace musterr $CLI bundle deployment migrate\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull\n\ntitle \"Extra plan: should have no drift\"\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py \"3 unchanged\"\n\nrm out.requests.txt\n\ntitle \"Update databricks.yml, run plan \u0026 update\"\ntrace update_file.py databricks.yml Migration Migrated\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json \u003e out.plan_update.json\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy\n\ntitle \"Different target, still on terraform\"\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy -t prod\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod\ntrace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod --force-pull\n\nrm out.requests.txt\n)\n\nrm -fr .databricks .gitignore\n"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "seq": 1,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": [
+      {
+        "local_path": "out.plan_update.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.requests.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "output.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "pipeline.py",
+        "is_notebook": true
+      },
+      {
+        "local_path": "repls.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "notebook.py",
+        "is_notebook": true
+      },
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
+      {
+        "local_path": "test.toml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.new_state.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.original_state.json",
+        "is_notebook": false
+      }
+    ],
+    "id": "[UUID]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}

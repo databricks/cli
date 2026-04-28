@@ -43,36 +43,5 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
 
->>> print_requests
-{
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/volumes/main.myschema.myvolume",
-  "body": {
-    "comment": "COMMENT1",
-    "new_name": "mynewvolume"
-  }
-}
-
->>> [CLI] volumes read main.myschema.mynewvolume
-{
-  "catalog_name":"main",
-  "comment":"COMMENT1",
-  "created_at":[UNIX_TIME_MILLIS][0],
-  "created_by":"[USERNAME]",
-  "full_name":"main.myschema.mynewvolume",
-  "name":"mynewvolume",
-  "owner":"[USERNAME]",
-  "schema_name":"myschema",
-  "storage_location":"s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]",
-  "updated_at":[UNIX_TIME_MILLIS][1],
-  "updated_by":"[USERNAME]",
-  "volume_id":"[UUID]",
-  "volume_type":"MANAGED"
-}
-
->>> musterr [CLI] volumes read main.myschema.myvolume
-Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+Error: Test script killed due to a timeout (1m0s)

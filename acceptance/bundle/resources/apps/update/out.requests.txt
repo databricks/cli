@@ -1,0 +1,217 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/apps/myappname"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "\n\u003e\u003e\u003e [CLI] bundle plan\ncreate apps.mykey\n\nPlan: 1 to add, 0 to change, 0 to delete, 0 unchanged\n\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...\nDeploying resources...\nUpdating deployment state...\nDeployment complete!\n\n\u003e\u003e\u003e print_requests\n\n\u003e\u003e\u003e [CLI] bundle summary\nName: test-bundle\nTarget: default\nWorkspace:\n  User: [USERNAME]\n  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default\nResources:\n  Apps:\n    mykey:\n      Name: myappname\n      URL:  (not deployed)\n\n=== Update description and re-deploy\n\u003e\u003e\u003e update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION\n\n\u003e\u003e\u003e [CLI] bundle plan\nupdate apps.mykey\n\nPlan: 0 to add, 1 to change, 0 to delete, 0 unchanged\n\n\u003e\u003e\u003e [CLI] bundle deploy\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.terraform.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "body": {
+      "description": "my_app_description",
+      "name": "myappname"
+    },
+    "method": "POST",
+    "path": "/api/2.0/apps",
+    "q": {
+      "no_compute": "true"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "bundle:\n  name: test-bundle\n\nresources:\n  apps:\n    mykey:\n      name: myappname\n      description: MY_APP_DESCRIPTION\n      source_code_path: ./app\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt",
+  "q": {
+    "overwrite": "true"
+  },
+  "raw_body": "{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/.well-known/databricks-config\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/preview/scim/v2/Me\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/apps/myappname\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate\"\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock\",\n  \"q\": {\n    \"overwrite\": \"false\"\n  },\n  \"body\": {\n    \"ID\": \"[UUID]\",\n    \"AcquisitionTime\": \"[TIMESTAMP]\",\n    \"IsForced\": false,\n    \"User\": \"[USERNAME]\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock\",\n    \"return_export_info\": \"true\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/export\",\n  \"q\": {\n    \"direct_download\": \"true\",\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/delete\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal\",\n    \"recursive\": true\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace/mkdirs\",\n  \"body\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal\"\n  }\n}\n{\n  \"method\": \"GET\",\n  \"path\": \"/api/2.0/workspace/get-status\",\n  \"q\": {\n    \"path\": \"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files\"\n  }\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"raw_body\": \"\\n\\u003e\\u003e\\u003e [CLI] bundle plan\\ncreate apps.mykey\\n\\nPlan: 1 to add, 0 to change, 0 to delete, 0 unchanged\\n\\n\\u003e\\u003e\\u003e [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...\\nDeploying resources...\\nUpdating deployment state...\\nDeployment complete!\\n\\n\\u003e\\u003e\\u003e print_requests\\n\\n\\u003e\\u003e\\u003e [CLI] bundle summary\\nName: test-bundle\\nTarget: default\\nWorkspace:\\n  User: [USERNAME]\\n  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default\\nResources:\\n  Apps:\\n    mykey:\\n      Name: myappname\\n      URL:  (not deployed)\\n\\n=== Update description and re-deploy\\n\\u003e\\u003e\\u003e update_file.py databricks.yml my_app_description MY_APP_DESCRIPTION\\n\\n\\u003e\\u003e\\u003e [CLI] bundle plan\\nupdate apps.mykey\\n\\nPlan: 0 to add, 1 to change, 0 to delete, 0 unchanged\\n\\n\\u003e\\u003e\\u003e [CLI] bundle deploy\\nUploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...\\n\"\n}\n{\n  \"method\": \"POST\",\n  \"path\": \"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.terraform.json\",\n  \"q\": {\n    \"overwrite\": \"true\"\n  },\n  \"body\": {\n    \"body\": {\n      \"description\": \"my_app_description\",\n      \"name\": \"myappname\"\n    },\n    \"method\": \"POST\",\n    \"path\": \"/api/2.0/apps\",\n    \"q\": {\n      \"no_compute\": \"true\"\n    }\n  }\n}\n"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "seq": 2,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": [
+      {
+        "local_path": "out.requests.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "output.txt",
+        "is_notebook": false
+      },
+      {
+        "local_path": "repls.json",
+        "is_notebook": false
+      },
+      {
+        "local_path": "script",
+        "is_notebook": false
+      },
+      {
+        "local_path": "app/app.py",
+        "is_notebook": false
+      },
+      {
+        "local_path": "databricks.yml",
+        "is_notebook": false
+      },
+      {
+        "local_path": "out.requests.terraform.json",
+        "is_notebook": false
+      }
+    ],
+    "id": "[UUID]"
+  }
+}

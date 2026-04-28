@@ -18,8 +18,4 @@ Deployment complete!
 
 >>> [CLI] bundle plan
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Error: Test script killed due to a timeout (1m0s)

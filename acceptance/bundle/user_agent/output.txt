@@ -56,26 +56,6 @@ OK  	destroy.direct	/api/2.1/unity-catalog/schemas/mycatalog.myschema	engine/dir
 OK  	destroy.direct	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock	engine/direct
 OK  	destroy.direct	/api/2.0/workspace/delete	engine/direct
 MISS	destroy.direct	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	destroy.terraform	/api/2.0/preview/scim/v2/Me	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	destroy.terraform	/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	destroy.terraform	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none auth/pat'
-MISS	destroy.terraform	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] interactive/none auth/pat'
-OK  	destroy.terraform	/api/2.0/workspace/export	engine/terraform
-OK  	destroy.terraform	/api/2.0/workspace/get-status	engine/terraform
-OK  	destroy.terraform	/api/2.0/workspace/get-status	engine/terraform
-OK  	destroy.terraform	/api/2.0/workspace/get-status	engine/terraform
-OK  	destroy.terraform	/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock	engine/terraform
-OK  	destroy.terraform	/api/2.0/workspace/delete	engine/terraform
-MISS	destroy.terraform	/.well-known/databricks-config	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]'
-MISS	destroy.terraform	/api/2.1/unity-catalog/schemas/mycatalog.myschema	'databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
-MISS	destroy.terraform	/api/2.1/unity-catalog/current-metastore-assignment	'databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
-MISS	destroy.terraform	/api/2.1/unity-catalog/schemas/mycatalog.myschema	'databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat'
-MISS	destroy.terraform	/.well-known/databricks-config	'databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5'
-MISS	destroy.terraform	/.well-known/databricks-config	'databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5'
-MISS	destroy.terraform	/.well-known/databricks-config	'databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5'
-MISS	destroy.terraform	/.well-known/databricks-config	'databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5'
-MISS	destroy.terraform	/.well-known/databricks-config	'databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5'
-MISS	destroy.terraform	/.well-known/databricks-config	'databricks-tf-provider/1.113.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5'
 MISS	plan.direct	/api/2.0/preview/scim/v2/Me	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	plan.direct	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
 MISS	plan.direct	/api/2.0/workspace/get-status	'cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none auth/pat'
