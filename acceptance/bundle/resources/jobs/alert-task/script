@@ -1,0 +1,13 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+job_id=$($CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
+echo "$job_id:JOB_ID" >> ACC_REPLS
+
+trace $CLI jobs get $job_id | jq '.settings.tasks[0].alert_task'
