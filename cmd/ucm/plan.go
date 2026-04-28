@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/deployplan"
 	"github.com/databricks/cli/ucm/phases"
 	"github.com/databricks/cli/ucm/render"
@@ -35,11 +36,21 @@ Common invocations:
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	var force bool
-	cmd.Flags().BoolVar(&force, "force", false, "Force override of Git branch validation (no-op for UCM; accepted for DAB parity).")
-	_ = cmd.Flags().MarkHidden("force")
+	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
+			InitFunc: func(u *ucm.Ucm) {
+				u.Force = force
+			},
+			AlwaysPull:   true,
+			FastValidate: true,
+			// Build and PreDeployChecks are intentionally NOT set: until #103
+			// plumbs Backend through ProcessOptions, those would call
+			// phases.Build / PreDeployChecks with a zero-value phases.Options
+			// that lacks the Backend and TerraformFactory the verb body's
+			// buildPhaseOptions provides below. Once #103 lands, fold them in.
+		})
 		ctx := cmd.Context()
 		if err != nil {
 			return err
