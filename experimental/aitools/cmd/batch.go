@@ -198,7 +198,11 @@ func cancelInFlight(ctx context.Context, api sql.StatementExecutionInterface, st
 			// marker meaning the goroutine bailed without telling the server.
 			// Either way, send CancelExecution.
 		}
-		cancelCtx, cancel := context.WithTimeout(ctx, cancelTimeout)
+		// Detach from the inbound ctx (which is typically already cancelled by
+		// the time we reach this sweep): WithoutCancel keeps the caller's
+		// values but drops the cancellation signal so the cancel RPC actually
+		// reaches the warehouse instead of short-circuiting on ctx.Err().
+		cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cancelTimeout)
 		if err := api.CancelExecution(cancelCtx, sql.CancelExecutionRequest{StatementId: sid}); err != nil {
 			log.Warnf(ctx, "Failed to cancel statement %s: %v", sid, err)
 		}

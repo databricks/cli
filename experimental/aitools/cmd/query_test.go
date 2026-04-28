@@ -146,8 +146,12 @@ func TestExecuteAndPollCancelledContextCallsCancelExecution(t *testing.T) {
 		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
 	}, nil)
 
-	// CancelExecution must be called when context is cancelled (not just on signal).
-	mockAPI.EXPECT().CancelExecution(mock.Anything, sql.CancelExecutionRequest{
+	// CancelExecution must be called when context is cancelled (not just on
+	// signal). Assert the RPC's own ctx is NOT cancelled, otherwise the SDK
+	// would short-circuit on ctx.Err() and never reach the warehouse.
+	mockAPI.EXPECT().CancelExecution(mock.MatchedBy(func(c context.Context) bool {
+		return c.Err() == nil
+	}), sql.CancelExecutionRequest{
 		StatementId: "stmt-1",
 	}).Return(nil).Once()
 

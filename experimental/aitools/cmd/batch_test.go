@@ -207,9 +207,15 @@ func TestExecuteBatchPreservesInputOrder(t *testing.T) {
 
 func TestExecuteBatchContextCancellationCancelsInFlight(t *testing.T) {
 	// All statements are PENDING when the context is cancelled. cancelInFlight
-	// sweeps the in-flight set with CancelExecution.
+	// sweeps the in-flight set with CancelExecution. Each cancel RPC must
+	// carry a NON-cancelled context, otherwise the SDK short-circuits on
+	// ctx.Err() and never reaches the warehouse.
 	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	aliveCtx := mock.MatchedBy(func(c context.Context) bool {
+		return c.Err() == nil
+	})
 
 	for i, sqlStr := range []string{"q1", "q2", "q3"} {
 		sid := fmt.Sprintf("stmt-%d", i+1)
@@ -220,7 +226,7 @@ func TestExecuteBatchContextCancellationCancelsInFlight(t *testing.T) {
 			Status:      &sql.StatementStatus{State: sql.StatementStatePending},
 		}, nil).Once()
 
-		mockAPI.EXPECT().CancelExecution(mock.Anything, sql.CancelExecutionRequest{
+		mockAPI.EXPECT().CancelExecution(aliveCtx, sql.CancelExecutionRequest{
 			StatementId: sid,
 		}).Return(nil).Once()
 	}

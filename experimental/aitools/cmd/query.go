@@ -345,8 +345,11 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 	// cancelStatement performs best-effort server-side cancellation.
 	// Called on any poll exit due to context cancellation (signal or parent).
 	cancelStatement := func() {
-		// Use the parent context (ctx), not the cancelled pollCtx.
-		cancelCtx, cancel := context.WithTimeout(ctx, cancelTimeout)
+		// Detach from any cancellation on the inbound ctx (the caller might
+		// have cancelled the parent before invoking this path): WithoutCancel
+		// preserves values but drops cancellation so the cancel RPC actually
+		// reaches the warehouse.
+		cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cancelTimeout)
 		defer cancel()
 		if err := api.CancelExecution(cancelCtx, sql.CancelExecutionRequest{
 			StatementId: statementID,
