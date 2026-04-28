@@ -929,8 +929,9 @@ tasks:
     dir: python
     sources:
       - codegen/**
-      - databricks/**
       - databricks_tests/**
+      # codegen/jsonschema.py loads this to drive generation.
+      - ../bundle/schema/jsonschema.json
     generates:
       - databricks/bundles/**
     cmds:
