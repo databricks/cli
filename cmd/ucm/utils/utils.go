@@ -11,19 +11,19 @@ import (
 	"github.com/databricks/cli/ucm"
 )
 
-// PreMutateHook is a deprecated test seam retained as a no-op so the
-// existing cmd/ucm/utils/testing_seed_test.go and the verb-test seed
-// helpers compile until Task 18 of sub-project A removes them. SETTING
-// THIS VARIABLE HAS NO EFFECT ON PRODUCTION CODE PATHS — the new
-// ProcessUcm does not call it. Scheduled for removal alongside the test
-// migration.
-var PreMutateHook func(context.Context, *ucm.Ucm)
-
 const (
 	sourceConfig  = "config"
 	sourceEnv     = "env"
 	sourceDefault = "default"
 )
+
+// TestProcessHook is a test-only seam ProcessUcm calls right before the
+// mutator chain runs, with the runtime logdiag context (the one ProcessUcm
+// initializes, not the test's pre-init). Production code MUST leave this nil
+// — setting it from production is a layering bug. Tests use it to seed
+// diagnostics or workspace state that's hard to reproduce via fixtures alone
+// (e.g. strict-mode warning behavior in policy-check / validate).
+var TestProcessHook func(context.Context, *ucm.Ucm)
 
 // configureVariables assigns .Value on each named variable via
 // Config.InitializeVariables. Errors are surfaced as diagnostics.

@@ -144,6 +144,9 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 	if opts.InitFunc != nil {
 		ucm.ApplyFuncContext(ctx, u, func(context.Context, *ucm.Ucm) { opts.InitFunc(u) })
 	}
+	if TestProcessHook != nil {
+		TestProcessHook(ctx, u)
+	}
 
 	if !opts.SkipInitialize {
 		t0 := time.Now()

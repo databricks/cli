@@ -50,13 +50,13 @@ func TestCmd_PolicyCheck_StrictOnFailsOnWarning(t *testing.T) {
 	assert.Contains(t, err.Error(), "Warnings are not allowed in strict mode")
 }
 
-// withWarningSeed chains an extra PreMutateHook on top of the existing test
-// hook so ProcessUcm emits exactly one diag.Warning into the logdiag context
-// for this test. Cleanup restores the previous hook.
+// withWarningSeed installs a TestProcessHook so ProcessUcm emits exactly one
+// diag.Warning into the runtime logdiag context for this test. Cleanup
+// restores the previous hook (the package-level default is nil in production).
 func withWarningSeed(t *testing.T) {
 	t.Helper()
-	prev := utils.PreMutateHook
-	utils.PreMutateHook = func(ctx context.Context, u *ucmpkg.Ucm) {
+	prev := utils.TestProcessHook
+	utils.TestProcessHook = func(ctx context.Context, u *ucmpkg.Ucm) {
 		if prev != nil {
 			prev(ctx, u)
 		}
@@ -65,5 +65,5 @@ func withWarningSeed(t *testing.T) {
 			Summary:  "test-seeded warning",
 		})
 	}
-	t.Cleanup(func() { utils.PreMutateHook = prev })
+	t.Cleanup(func() { utils.TestProcessHook = prev })
 }
