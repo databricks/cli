@@ -255,7 +255,14 @@ func discoverTable(ctx context.Context, gate *sqlGate, w *databricks.WorkspaceCl
 
 	nullCountExprs := make([]string, len(columns))
 	for i, col := range columns {
-		nullCountExprs[i] = fmt.Sprintf("SUM(CASE WHEN `%s` IS NULL THEN 1 ELSE 0 END) AS `%s_nulls`", col, col)
+		// Backticks inside an identifier are escaped by doubling them in
+		// Databricks/Delta SQL (`` ` `` → `` `` ``). Without this, a column
+		// name containing a backtick would terminate the quoted identifier
+		// mid-string and produce a PARSE_SYNTAX_ERROR. Sample-data uses
+		// SELECT * so the failure shows up only as a confusing
+		// "NULL COUNTS: Error - ..." line in the user-facing output.
+		escaped := strings.ReplaceAll(col, "`", "``")
+		nullCountExprs[i] = fmt.Sprintf("SUM(CASE WHEN `%s` IS NULL THEN 1 ELSE 0 END) AS `%s_nulls`", escaped, escaped)
 	}
 	nullSQL := fmt.Sprintf("SELECT COUNT(*) AS total_rows, %s FROM %s",
 		strings.Join(nullCountExprs, ", "), quoted)

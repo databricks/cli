@@ -244,6 +244,53 @@ func TestDiscoverTableSampleErrorDoesNotAbortNullCounts(t *testing.T) {
 	assert.Contains(t, out, "total_rows: 100")
 }
 
+func TestDiscoverTableEscapesBackticksInColumnNames(t *testing.T) {
+	// Databricks/Delta DDL allows backticks in column names via doubled-
+	// backtick escaping (e.g. CREATE TABLE t (`weird``col` STRING)). Without
+	// escaping in the null-counts SQL the embedded backtick would terminate
+	// the quoted identifier mid-string and produce a PARSE_SYNTAX_ERROR.
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
+		return strings.HasPrefix(req.Statement, "DESCRIBE TABLE")
+	})).Return(&dbsql.StatementResponse{
+		StatementId: "stmt-desc",
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
+		Result: &dbsql.ResultData{DataArray: [][]string{
+			{"weird`col", "STRING", ""},
+		}},
+	}, nil).Once()
+
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
+		return strings.HasPrefix(req.Statement, "SELECT *")
+	})).Return(&dbsql.StatementResponse{
+		StatementId: "stmt-sample",
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
+	}, nil).Once()
+
+	// Null-counts SQL must escape the embedded backtick. Both the identifier
+	// and the alias positions must use the doubled form.
+	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req dbsql.ExecuteStatementRequest) bool {
+		return strings.Contains(req.Statement, "`weird``col`") &&
+			strings.Contains(req.Statement, "`weird``col_nulls`") &&
+			!strings.Contains(req.Statement, "`weird`col`")
+	})).Return(&dbsql.StatementResponse{
+		StatementId: "stmt-null",
+		Status:      &dbsql.StatementStatus{State: dbsql.StatementStateSucceeded},
+		Manifest:    &dbsql.ResultManifest{Schema: &dbsql.ResultSchema{Columns: []dbsql.ColumnInfo{{Name: "total_rows"}, {Name: "weird`col_nulls"}}}},
+		Result:      &dbsql.ResultData{DataArray: [][]string{{"5", "0"}}},
+	}, nil).Once()
+
+	w := &databricks.WorkspaceClient{StatementExecution: mockAPI}
+	gate := newSQLGate(8)
+
+	out, err := discoverTable(ctx, gate, w, "wh-1", "main.public.orders")
+	require.NoError(t, err)
+	assert.Contains(t, out, "weird`col")
+	assert.NotContains(t, out, "Error - ")
+}
+
 func TestCancelDiscoverInFlightCallsAPIPerID(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
