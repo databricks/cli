@@ -120,5 +120,12 @@ Deployment complete!
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...
 Deploying resources...
+Updating deployment state...
+Deployment complete!
 
-Error: Test script killed due to a timeout (1m0s)
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod
+[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod --force-pull
+terraform.tfstate: remote terraform state serial=5 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"

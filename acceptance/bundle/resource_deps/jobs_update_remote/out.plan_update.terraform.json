@@ -1,0 +1,11 @@
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.bar": {
+      "action": "skip"
+    },
+    "resources.jobs.foo": {
+      "action": "update"
+    }
+  }
+}

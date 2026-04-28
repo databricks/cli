@@ -66,4 +66,63 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] jobs reset --json @job_update.json
 
-Error: Test script killed due to a timeout (1m0s)
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.bar
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py //jobs
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset",
+  "body": {
+    "job_id": [FOO_ID],
+    "new_settings": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "job_clusters": [
+        {
+          "job_cluster_key": "key",
+          "new_cluster": {
+            "spark_version": "13.3.x-scala2.12"
+          }
+        }
+      ],
+      "max_concurrent_runs": 1,
+      "name": "foo",
+      "queue": {
+        "enabled": true
+      },
+      "trigger": {
+        "pause_status": "UNPAUSED",
+        "periodic": {
+          "interval": 1,
+          "unit": "HOURS"
+        }
+      }
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [BAR_ID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [FOO_ID]
+  }
+}

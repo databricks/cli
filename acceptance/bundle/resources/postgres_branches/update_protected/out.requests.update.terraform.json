@@ -1,0 +1,23 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/[DEV_BRANCH_ID]"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/[DEV_BRANCH_ID]",
+  "q": {
+    "update_mask": "spec"
+  },
+  "body": {
+    "name": "[DEV_BRANCH_ID]",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+    "spec": {
+      "is_protected": true,
+      "no_expiry": true
+    }
+  }
+}

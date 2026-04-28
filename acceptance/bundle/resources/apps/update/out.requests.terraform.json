@@ -9,3 +9,35 @@
     "no_compute": "true"
   }
 }
+{
+  "body": {
+    "description": "MY_APP_DESCRIPTION",
+    "name": "myappname",
+    "service_principal_client_id": "[UUID]",
+    "service_principal_id": [NUMID],
+    "service_principal_name": "app-myappname"
+  },
+  "method": "PATCH",
+  "path": "/api/2.0/apps/myappname"
+}
+{
+  "body": {},
+  "method": "DELETE",
+  "path": "/api/2.0/apps/myappname"
+}
+{
+  "body": {
+    "description": "MY_APP_DESCRIPTION",
+    "name": "mynewappname"
+  },
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  }
+}
+{
+  "body": {},
+  "method": "DELETE",
+  "path": "/api/2.0/apps/mynewappname"
+}

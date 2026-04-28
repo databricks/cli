@@ -93,5 +93,10 @@ Deployment complete!
 }
 
 >>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.model_serving_endpoints.test_endpoint
 
-Error: Test script killed due to a timeout (1m0s)
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

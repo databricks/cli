@@ -17,5 +17,19 @@ Deployment complete!
 }
 
 >>> [CLI] bundle deployment unbind experiment1
+Updating deployment state...
 
-Error: Test script killed due to a timeout (1m0s)
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] experiments get-experiment [NUMID]
+{
+  "name": "/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
+  "lifecycle_stage": "active"
+}
+
+=== Test cleanup:
+=== Delete the pre-defined experiment: 0

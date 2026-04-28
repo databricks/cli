@@ -1,12 +1,8 @@
 {
   "method": "GET",
-  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/state/terraform.tfstate",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/state/resources.json",
     "return_export_info": "true"
   }
 }
@@ -14,7 +10,7 @@
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/state/resources.json",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/state/terraform.tfstate",
     "return_export_info": "true"
   }
 }
@@ -33,4 +29,90 @@
 {
   "method": "GET",
   "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/state/deployment.json"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/state/deploy.lock",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/artifacts/.internal",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/artifacts/.internal"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/state/deployment.json",
+  "q": {
+    "overwrite": "true"
+  },
+  "body": {
+    "version": 1,
+    "seq": 4,
+    "cli_version": "[DEV_VERSION]",
+    "timestamp": "[TIMESTAMP]",
+    "files": null,
+    "id": "[UUID]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
 }

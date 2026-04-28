@@ -25,5 +25,12 @@ Deployment complete!
 
 >>> [CLI] bundle deployment migrate -p non_existent321 -t prod
 Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/prod/resources.json
 
-Error: Test script killed due to a timeout (1m0s)
+Validate the migration by running "databricks bundle plan -t prod -p non_existent321", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy -t prod -p non_existent321".
+
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/prod/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate
+

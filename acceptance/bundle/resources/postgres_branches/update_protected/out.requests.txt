@@ -6,7 +6,7 @@
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/state/resources.json",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/state/terraform.tfstate",
     "return_export_info": "true"
   }
 }
@@ -14,7 +14,7 @@
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/state/terraform.tfstate",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/state/resources.json",
     "return_export_info": "true"
   }
 }
@@ -26,11 +26,35 @@
   "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/state/deployment.json",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/state/deploy.lock",
+  "q": {
+    "overwrite": "false"
+  },
+  "body": {
+    "ID": "[UUID]",
+    "AcquisitionTime": "[TIMESTAMP]",
+    "IsForced": false,
+    "User": "[USERNAME]"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/state/deploy.lock",
     "return_export_info": "true"
   }
 }
 {
   "method": "GET",
-  "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/state/deployment.json"
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/state/deploy.lock"
+  }
 }

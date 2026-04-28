@@ -28,5 +28,19 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run some_other_job
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[SOME_OTHER_JOB_ID]/run/[NUMID]
 
-Error: Test script killed due to a timeout (1m0s)
+[TIMESTAMP] "My Wheel Job" RUNNING
+[TIMESTAMP] "My Wheel Job" TERMINATED SUCCESS
+UPDATED MY FUNC
+Got arguments:
+['my_test_code']
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.some_other_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

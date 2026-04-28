@@ -42,7 +42,7 @@
             "format": "MULTI_TASK",
             "git_source": [],
             "health": [],
-            "id": "[NUMID]",
+            "id": "[FOO_ID]",
             "job_cluster": [
               {
                 "job_cluster_key": "key",
@@ -140,7 +140,7 @@
                 "table_update": []
               }
             ],
-            "url": "[DATABRICKS_URL]/#job/[NUMID]",
+            "url": "[DATABRICKS_URL]/#job/[FOO_ID]",
             "usage_policy_id": null,
             "webhook_notifications": [
               {

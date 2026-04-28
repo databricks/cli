@@ -275,5 +275,21 @@ Deployment complete!
 
 === Destroy all via bundle destroy
 >>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.chain_bottom
+  delete resources.jobs.chain_mid
+  delete resources.jobs.chain_top
+  delete resources.jobs.diamond_bottom
+  delete resources.jobs.diamond_left
+  delete resources.jobs.diamond_right
+  delete resources.jobs.diamond_top
+  delete resources.jobs.independent1
+  delete resources.jobs.independent2
+  delete resources.jobs.multi_child
+  delete resources.jobs.multi_parent1
+  delete resources.jobs.multi_parent2
 
-Error: Test script killed due to a timeout (1m0s)
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!

@@ -21,5 +21,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/task-source/default/files...
 Deploying resources...
+Updating deployment state...
+Deployment complete!
 
-Error: Test script killed due to a timeout (1m0s)
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="git_job") | .body out.requests.txt
+
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="workspace_job") | .body out.requests.txt

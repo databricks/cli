@@ -8,5 +8,8 @@ Run 'bundle deploy' to deploy changes to your workspace
 
 >>> uv run --with [DATABRICKS_BUNDLES_WHEEL] -q [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
 
-Error: Test script killed due to a timeout (40s)
+>>> [CLI] jobs get [NUMID] --output json

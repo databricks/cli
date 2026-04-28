@@ -9,5 +9,3 @@ Deployment complete!
 update jobs.foo
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
-
-Error: Test script killed due to a timeout (1m0s)
