@@ -267,8 +267,10 @@ func TestToken_loadToken(t *testing.T) {
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureInvalidResponse}}),
 				},
 			},
-			wantErr: "token refresh: oauth2: cannot parse json: invalid character 'N' looking for beginning of value. Try logging in again with " +
-				"`databricks auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
+			wantErr: "token refresh: oauth2: cannot parse json: invalid character 'N' looking for beginning of value.\n\n" +
+				"To reauthenticate, run the following command:\n\n" +
+				"  $ databricks auth login --profile active\n\n" +
+				"If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
 		},
 		{
 			name: "prints helpful login message on other error response",
@@ -285,8 +287,10 @@ func TestToken_loadToken(t *testing.T) {
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshFailureOtherError}}),
 				},
 			},
-			wantErr: "token refresh: Databricks is down (error code: other_error). Try logging in again with " +
-				"`databricks auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
+			wantErr: "token refresh: Databricks is down (error code: other_error).\n\n" +
+				"To reauthenticate, run the following command:\n\n" +
+				"  $ databricks auth login --profile active\n\n" +
+				"If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
 		},
 		{
 			name: "succeeds with profile",
@@ -404,8 +408,9 @@ func TestToken_loadToken(t *testing.T) {
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 				},
 			},
-			wantErr: "cache: databricks OAuth is not configured for this host. " +
-				"Try logging in again with `databricks auth login --host https://nonexistent.cloud.databricks.com` before retrying. " +
+			wantErr: "cache: databricks OAuth is not configured for this host.\n\n" +
+				"To reauthenticate, run the following command:\n\n" +
+				"  $ databricks auth login --host https://nonexistent.cloud.databricks.com\n\n" +
 				"If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new",
 		},
 		{

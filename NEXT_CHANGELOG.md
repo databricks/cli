@@ -10,6 +10,8 @@
 * Added experimental OS-native secure token storage opt-in via `DATABRICKS_AUTH_STORAGE=secure`. Legacy file-backed token storage remains the default.
 
 
+* Improve `auth token` error formatting for easier copy-paste of login commands ([#4602](https://github.com/databricks/cli/pull/4602))
+
 ### Bundles
 
 * Translate relative paths in `alert_task.workspace_path` on job tasks to fully qualified workspace paths, matching the behavior of other task path fields. Applies to both regular tasks and `for_each_task` nested tasks ([#4836](https://github.com/databricks/cli/pull/4836)).

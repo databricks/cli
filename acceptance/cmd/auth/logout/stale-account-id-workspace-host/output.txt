@@ -36,4 +36,10 @@ logfood (Default)  [DATABRICKS_URL]  NO
 
 === Logged out profile should no longer return a token
 >>> musterr [CLI] auth token --profile logfood
-Error: cache: databricks OAuth is not configured for this host. Try logging in again with `databricks auth login --profile logfood` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new
+Error: cache: databricks OAuth is not configured for this host.
+
+To reauthenticate, run the following command:
+
+  $ databricks auth login --profile logfood
+
+If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new
