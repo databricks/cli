@@ -61,6 +61,8 @@ dist/
 # Local development notes, tmp
 /pr-*
 /tmp/
+
+# Per-module golangci-lint TMPDIR (configured in Taskfile.yml)
 /.tmp/
 
 # Go workspace file

@@ -795,6 +795,11 @@ tasks:
       - bundle/schema/jsonschema_for_docs.json
       - bundle/internal/schema/annotations.yml
     cmds:
+      # since_version.go reads `git tag --list 'v*'` to compute sinceVersion
+      # annotations. Without tags (e.g. shallow clone), those annotations are
+      # silently dropped from the output. Restore the fetch that lived in the
+      # old tools/post-generate.sh.
+      - git fetch origin 'refs/tags/v*:refs/tags/v*'
       - "{{.SANDBOX_CMD}} go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs"
 
   generate-docs:
