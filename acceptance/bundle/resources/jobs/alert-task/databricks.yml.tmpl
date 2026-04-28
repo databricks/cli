@@ -1,0 +1,12 @@
+bundle:
+  name: alert-task-$UNIQUE_NAME
+
+resources:
+  jobs:
+    my_job:
+      name: alert-task-$UNIQUE_NAME
+      tasks:
+        - task_key: alert_task
+          alert_task:
+            workspace_path: ./my_alert.dbalert.json
+            warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID

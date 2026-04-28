@@ -454,7 +454,8 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	if err := client.Config.Authenticate(req); err != nil {
 		return 0, "", "", err
 	}
-	resp, err := http.DefaultClient.Do(req)
+	httpClient := &http.Client{Transport: client.Config.HTTPTransport}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, "", "", err
 	}
