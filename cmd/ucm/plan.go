@@ -50,7 +50,7 @@ Common invocations:
 
 		opts, err := buildPhaseOptions(ctx, u)
 		if err != nil {
-			return fmt.Errorf("resolve deploy options: %w", err)
+			return fmt.Errorf("resolve plan options: %w", err)
 		}
 		opts.ForceLock = forceLock
 
