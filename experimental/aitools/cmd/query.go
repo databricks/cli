@@ -75,32 +75,47 @@ func selectQueryOutputMode(outputType flags.Output, stdoutInteractive, promptSup
 
 func newQueryCmd() *cobra.Command {
 	var warehouseID string
-	var filePath string
+	var filePaths []string
 	var outputFormat string
+	var concurrency int
 
 	cmd := &cobra.Command{
-		Use:   "query [SQL | file.sql]",
+		Use:   "query [SQL | file.sql]...",
 		Short: "Execute SQL against a Databricks warehouse",
-		Long: `Execute a SQL statement against a Databricks SQL warehouse and return results.
+		Long: `Execute one or more SQL statements against a Databricks SQL warehouse
+and return results.
 
-SQL can be provided as a positional argument, read from a file with --file,
-or piped via stdin. If the positional argument ends in .sql and the file
-exists, it is read as a SQL file automatically.
+A single SQL can be provided as a positional argument, read from a file with
+--file, or piped via stdin. If a positional argument ends in .sql and the
+file exists, it is read as a SQL file automatically.
+
+Pass multiple positional arguments and/or repeat --file to run several
+queries in parallel against the warehouse. Multi-query output is always
+JSON: an array of {sql, statement_id, state, elapsed_ms, columns, rows,
+error} objects. Result order is: --file inputs first (in flag order),
+then positional SQLs (in arg order). The exit code is non-zero if any
+query failed.
 
 The command auto-detects an available warehouse unless --warehouse is set
 or the DATABRICKS_WAREHOUSE_ID environment variable is configured.
 
-Output is JSON in non-interactive contexts. In interactive terminals it renders
-tables, and large results open an interactive table browser. Use --output csv
-to export results as CSV.`,
+For a single query, output is JSON in non-interactive contexts. In
+interactive terminals it renders tables, and large results open an
+interactive table browser. Use --output csv to export results as CSV.`,
 		Example: `  databricks experimental aitools tools query "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
   databricks experimental aitools tools query --warehouse abc123 "SELECT 1"
   databricks experimental aitools tools query --file report.sql
   databricks experimental aitools tools query report.sql
   databricks experimental aitools tools query --output csv "SELECT * FROM samples.nyctaxi.trips LIMIT 5"
+  databricks experimental aitools tools query --output json "SELECT 1" "SELECT 2" "SELECT 3"
   echo "SELECT 1" | databricks experimental aitools tools query`,
-		Args:    cobra.MaximumNArgs(1),
-		PreRunE: root.MustWorkspaceClient,
+		Args: cobra.ArbitraryArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if concurrency <= 0 {
+				return errInvalidBatchConcurrency
+			}
+			return root.MustWorkspaceClient(cmd, args)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -124,19 +139,29 @@ to export results as CSV.`,
 				return fmt.Errorf("unsupported output format %q, accepted values: text, json, csv", outputFormat)
 			}
 
-			w := cmdctx.WorkspaceClient(ctx)
-
-			sqlStatement, err := resolveSQL(ctx, cmd, args, filePath)
+			sqls, err := resolveSQLs(ctx, cmd, args, filePaths)
 			if err != nil {
 				return err
 			}
+
+			// Reject incompatible flag combinations before any API call so the
+			// user sees the real error instead of an auth/warehouse failure.
+			if len(sqls) > 1 && flags.Output(outputFormat) != flags.OutputJSON {
+				return fmt.Errorf("multiple queries require --output json (got %q); pass --output json to receive a JSON array of per-statement results", outputFormat)
+			}
+
+			w := cmdctx.WorkspaceClient(ctx)
 
 			wID, err := resolveWarehouseID(ctx, w, warehouseID)
 			if err != nil {
 				return err
 			}
 
-			resp, err := executeAndPoll(ctx, w.StatementExecution, wID, sqlStatement)
+			if len(sqls) > 1 {
+				return runBatch(ctx, cmd, w.StatementExecution, wID, sqls, concurrency)
+			}
+
+			resp, err := executeAndPoll(ctx, w.StatementExecution, wID, sqls[0])
 			if err != nil {
 				return err
 			}
@@ -177,7 +202,8 @@ to export results as CSV.`,
 	}
 
 	cmd.Flags().StringVarP(&warehouseID, "warehouse", "w", "", "SQL warehouse ID to use for execution")
-	cmd.Flags().StringVarP(&filePath, "file", "f", "", "Path to a SQL file to execute")
+	cmd.Flags().StringSliceVarP(&filePaths, "file", "f", nil, "Path to a SQL file to execute (repeatable; pair with positional SQLs to run a batch)")
+	cmd.Flags().IntVar(&concurrency, "concurrency", defaultBatchConcurrency, "Maximum in-flight statements when running a batch of queries")
 	// Local --output flag shadows the root command's persistent --output flag,
 	// adding csv support for this command only.
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", string(flags.OutputText), "Output format: text, json, or csv")
@@ -188,59 +214,85 @@ to export results as CSV.`,
 	return cmd
 }
 
-// resolveSQL determines the SQL statement to execute from the available input sources.
-// Priority: --file flag > positional arg > stdin.
-func resolveSQL(ctx context.Context, cmd *cobra.Command, args []string, filePath string) (string, error) {
-	var raw string
+// resolveSQLs collects SQL statements from --file paths, positional args, and
+// stdin. The returned slice preserves source order: --file paths first (in flag
+// order), then positional args (in arg order), then stdin (only if no other
+// source produced anything). Each SQL is run through cleanSQL.
+func resolveSQLs(ctx context.Context, cmd *cobra.Command, args, filePaths []string) ([]string, error) {
+	var raws []string
 
-	switch {
-	case filePath != "":
-		if len(args) > 0 {
-			return "", errors.New("cannot use both --file and a positional SQL argument")
-		}
-		data, err := os.ReadFile(filePath)
+	for _, path := range filePaths {
+		data, err := os.ReadFile(path)
 		if err != nil {
-			return "", fmt.Errorf("read SQL file: %w", err)
+			return nil, fmt.Errorf("read SQL file %s: %w", path, err)
 		}
-		raw = string(data)
+		raws = append(raws, string(data))
+	}
 
-	case len(args) > 0:
+	for _, arg := range args {
 		// If the argument looks like a .sql file, try to read it.
 		// Only fall through to literal SQL if the file doesn't exist.
 		// Surface other errors (permission denied, etc.) directly.
-		if strings.HasSuffix(args[0], sqlFileExtension) {
-			data, err := os.ReadFile(args[0])
+		if strings.HasSuffix(arg, sqlFileExtension) {
+			data, err := os.ReadFile(arg)
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				return "", fmt.Errorf("read SQL file: %w", err)
+				return nil, fmt.Errorf("read SQL file: %w", err)
 			}
 			if err == nil {
-				raw = string(data)
-				break
+				raws = append(raws, string(data))
+				continue
 			}
 		}
-		raw = args[0]
+		raws = append(raws, arg)
+	}
 
-	default:
-		// No args: try reading from stdin if it's piped.
+	if len(raws) == 0 {
+		// No --file and no positional args: try reading from stdin if it's piped.
 		// If stdin was overridden (e.g. cmd.SetIn in tests), always read from it.
 		// Otherwise, only read if stdin is not a TTY (i.e. piped input).
 		in := cmd.InOrStdin()
 		_, isOsFile := in.(*os.File)
 		if isOsFile && cmdio.IsPromptSupported(ctx) {
-			return "", errors.New("no SQL provided; pass a SQL string, use --file, or pipe via stdin")
+			return nil, errors.New("no SQL provided; pass a SQL string, use --file, or pipe via stdin")
 		}
 		data, err := io.ReadAll(in)
 		if err != nil {
-			return "", fmt.Errorf("read stdin: %w", err)
+			return nil, fmt.Errorf("read stdin: %w", err)
 		}
-		raw = string(data)
+		raws = append(raws, string(data))
 	}
 
-	result := cleanSQL(raw)
-	if result == "" {
-		return "", errors.New("SQL statement is empty after removing comments and blank lines")
+	cleaned := make([]string, 0, len(raws))
+	for i, raw := range raws {
+		c := cleanSQL(raw)
+		if c == "" {
+			if len(raws) == 1 {
+				return nil, errors.New("SQL statement is empty after removing comments and blank lines")
+			}
+			return nil, fmt.Errorf("SQL statement #%d is empty after removing comments and blank lines", i+1)
+		}
+		cleaned = append(cleaned, c)
 	}
-	return result, nil
+	return cleaned, nil
+}
+
+// runBatch executes multiple SQL statements in parallel and renders the result
+// as a JSON array. Returns root.ErrAlreadyPrinted (so the exit code is non-zero
+// without an extra error message) when any statement failed; the failure detail
+// is already encoded in the printed JSON. The caller is responsible for
+// rejecting incompatible output formats before invoking this.
+func runBatch(ctx context.Context, cmd *cobra.Command, api sql.StatementExecutionInterface, warehouseID string, sqls []string, concurrency int) error {
+	results := executeBatch(ctx, api, warehouseID, sqls, concurrency)
+	if err := renderBatchJSON(cmd.OutOrStdout(), results); err != nil {
+		return err
+	}
+
+	for _, r := range results {
+		if r.Error != nil {
+			return root.ErrAlreadyPrinted
+		}
+	}
+	return nil
 }
 
 // resolveWarehouseID returns the warehouse ID to use for query execution.
@@ -293,8 +345,11 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 	// cancelStatement performs best-effort server-side cancellation.
 	// Called on any poll exit due to context cancellation (signal or parent).
 	cancelStatement := func() {
-		// Use the parent context (ctx), not the cancelled pollCtx.
-		cancelCtx, cancel := context.WithTimeout(ctx, cancelTimeout)
+		// Detach from any cancellation on the inbound ctx (the caller might
+		// have cancelled the parent before invoking this path): WithoutCancel
+		// preserves values but drops cancellation so the cancel RPC actually
+		// reaches the warehouse.
+		cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cancelTimeout)
 		defer cancel()
 		if err := api.CancelExecution(cancelCtx, sql.CancelExecutionRequest{
 			StatementId: statementID,
