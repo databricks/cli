@@ -25,7 +25,9 @@ sort_acl_requests() {
 }
 
 sort_acl() {
-    jq '.access_control_list |= if . != null then sort_by(.all_permissions[0].permission_level, (.group_name // ""), (.user_name != null), (.service_principal_name != null)) else . end'
+    # ucws workspaces omit display_name on user entries while non-ucws workspaces echo it back as user_name.
+    # Strip display_name on user entries to make output stable across workspace types.
+    jq '.access_control_list |= if . != null then sort_by(.all_permissions[0].permission_level, (.group_name // ""), (.user_name != null), (.service_principal_name != null)) | map(if .user_name != null then del(.display_name) else . end) else . end'
 }
 
 trace $CLI bundle deploy
