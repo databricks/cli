@@ -374,7 +374,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			// We do this before skipping the test, so the configs are generated for all tests.
 			materializedConfig, err := internal.GenerateMaterializedConfig(config)
 			require.NoError(t, err)
-			testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			outPath := filepath.Join(dir, internal.MaterializedConfigFile)
+			if existing, _ := os.ReadFile(outPath); string(existing) != materializedConfig {
+				testutil.WriteFile(t, outPath, materializedConfig)
+			}
 
 			// If only regenerating out.test.toml, skip the actual test execution
 			if OnlyOutTestToml {
