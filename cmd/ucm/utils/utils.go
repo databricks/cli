@@ -9,16 +9,14 @@ import (
 
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
-	"github.com/spf13/cobra"
 )
 
-// PreMutateHook is a deprecated test-only seam. Pre-fork ProcessUcm called it
-// to install fake CurrentUser / WorkspaceClient injectors in unit tests; the
-// new ProcessUcm fork (#98) routes those concerns through MustConfigureUcm
-// and a context-scoped Ucm seed instead. PreMutateHook is retained as a
-// no-op until cmd/ucm tests migrate (tracked in sub-project A.iv, Task 18).
-//
-// MUST NOT be set outside of tests.
+// PreMutateHook is a deprecated test seam retained as a no-op so the
+// existing cmd/ucm/utils/testing_seed_test.go and the verb-test seed
+// helpers compile until Task 18 of sub-project A removes them. SETTING
+// THIS VARIABLE HAS NO EFFECT ON PRODUCTION CODE PATHS — the new
+// ProcessUcm does not call it. Scheduled for removal alongside the test
+// migration.
 var PreMutateHook func(context.Context, *ucm.Ucm)
 
 const (
@@ -38,26 +36,4 @@ func configureVariables(ctx context.Context, u *ucm.Ucm, vars []string) {
 			logdiag.LogError(ctx, err)
 		}
 	})
-}
-
-// varsFromCmd reads the `--var` StringSlice flag if it is wired on cmd.
-// Returns nil if the flag is absent (e.g. tests that build cmds without it).
-func varsFromCmd(cmd *cobra.Command) []string {
-	f := cmd.Flag("var")
-	if f == nil {
-		return nil
-	}
-	vals, err := cmd.Flags().GetStringSlice("var")
-	if err != nil {
-		return nil
-	}
-	return vals
-}
-
-// getTargetFromCmd returns the target name from command flags.
-func getTargetFromCmd(cmd *cobra.Command) string {
-	if flag := cmd.Flag("target"); flag != nil {
-		return flag.Value.String()
-	}
-	return ""
 }

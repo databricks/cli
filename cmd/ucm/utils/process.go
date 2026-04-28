@@ -88,6 +88,9 @@ type ProcessOptions struct {
 //
 // Errors are reported via logdiag. The caller should check
 // logdiag.HasError(cmd.Context()) and render diagnostics before returning.
+//
+// When opts.Deploy is set, ProcessUcm defers a call to
+// phases.LogDeployTelemetry on every exit path, including error returns.
 func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 	var err error
 	ctx := cmd.Context()
@@ -198,9 +201,10 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 		}
 		stateEngine = requiredEngine
 
-		// UCM's state is pulled inside phases.Initialize; there's no
-		// cmd-layer PullResourcesState. The fork keeps this branch as a
-		// place-holder so the bundle parallel stays visible.
+		// State pull happens inside phases.Plan/Deploy/Destroy, not at the
+		// cmd layer. The bundle parallel runs PullResourcesState here;
+		// ucm's verbs drive their own phase calls which Initialize and
+		// Pull internally.
 
 		// Direct-engine state DB open is bundle-only; the corresponding
 		// path in UCM is handled inside the direct-engine deploy code in
@@ -234,7 +238,7 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 
 	if opts.ReadPlanPath != "" {
 		if !stateEngine.Type.IsDirect() {
-			logdiag.LogError(ctx, errors.New(`--plan is only supported with direct engine (set ucm.engine to "direct" or DATABRICKS_UCM_ENGINE=direct)`))
+			logdiag.LogError(ctx, errors.New(`ucm: --plan is only supported with direct engine (set ucm.engine to "direct" or DATABRICKS_UCM_ENGINE=direct)`))
 			return u, root.ErrAlreadyPrinted
 		}
 		// TODO(#95): plan-file loading and direct.ValidatePlanAgainstState
@@ -333,8 +337,10 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 	return u, nil
 }
 
-// ResolveEngineSetting determines the effective engine setting by combining ucm config and env var.
+// ResolveEngineSetting returns the effective engine for a ucm project.
 // Priority: ucm.engine config > DATABRICKS_UCM_ENGINE env var > Default.
+// Source labels use short forms ("config"/"env"/"default") rather than
+// bundle's longer descriptions, matching ucm's existing test expectations.
 func ResolveEngineSetting(ctx context.Context, u *config.Ucm) (engine.EngineSetting, error) {
 	var configEngine engine.EngineType
 	if u != nil {
@@ -367,9 +373,8 @@ func ResolveEngineSetting(ctx context.Context, u *config.Ucm) (engine.EngineSett
 	return engine.EngineSetting{Type: engine.Default, Source: sourceDefault}, nil
 }
 
-// rejectDefinitions is the ucm-side parallel of bundle/utils.rejectDefinitions.
-// UCM has no Definitions field yet, so this is a placeholder kept to mirror
-// bundle's IsPipelinesCLI gate. When ucm gains a definitions concept this
-// should reject open-source SDP definitions in the pipelines CLI mode.
+// rejectDefinitions parallels bundle's Pipelines-CLI guard. UCM has no
+// Pipelines CLI mode today; reachable only via IsPipelinesCLI which no verb
+// sets. Retained for fork-shape parity with cmd/bundle/utils/process.go.
 func rejectDefinitions(_ context.Context, _ *ucm.Ucm) {
 }
