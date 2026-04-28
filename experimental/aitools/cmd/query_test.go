@@ -2,6 +2,7 @@ package aitools
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,7 +49,9 @@ func TestExecuteAndPollImmediateSuccess(t *testing.T) {
 	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
 
 	mockAPI.EXPECT().ExecuteStatement(mock.Anything, mock.MatchedBy(func(req sql.ExecuteStatementRequest) bool {
-		return req.WarehouseId == "wh-123" && req.Statement == "SELECT 1" && req.WaitTimeout == "0s"
+		return req.WarehouseId == "wh-123" && req.Statement == "SELECT 1" &&
+			req.WaitTimeout == "0s" &&
+			req.OnWaitTimeout == sql.ExecuteStatementRequestOnWaitTimeoutContinue
 	})).Return(&sql.StatementResponse{
 		StatementId: "stmt-1",
 		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
@@ -152,6 +155,106 @@ func TestExecuteAndPollCancelledContextCallsCancelExecution(t *testing.T) {
 
 	_, err := executeAndPoll(ctx, mockAPI, "wh-123", "SELECT 1")
 	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+}
+
+func TestPollStatementImmediateTerminal(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	resp := &sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+		Manifest:    &sql.ResultManifest{Schema: &sql.ResultSchema{Columns: []sql.ColumnInfo{{Name: "1"}}}},
+		Result:      &sql.ResultData{DataArray: [][]string{{"1"}}},
+	}
+
+	pollResp, err := pollStatement(ctx, mockAPI, resp)
+	require.NoError(t, err)
+	assert.Equal(t, sql.StatementStateSucceeded, pollResp.Status.State)
+	assert.Equal(t, "stmt-1", pollResp.StatementId)
+}
+
+func TestPollStatementTerminalFailureNotErrored(t *testing.T) {
+	// pollStatement returns the response without erroring on failed terminal
+	// states; callers (e.g. executeAndPoll) decide what to do via checkFailedState.
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	resp := &sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status: &sql.StatementStatus{
+			State: sql.StatementStateFailed,
+			Error: &sql.ServiceError{ErrorCode: "ERR", Message: "boom"},
+		},
+	}
+
+	pollResp, err := pollStatement(ctx, mockAPI, resp)
+	require.NoError(t, err)
+	assert.Equal(t, sql.StatementStateFailed, pollResp.Status.State)
+}
+
+func TestPollStatementEventualSuccess(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	initial := &sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
+	}
+
+	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStateRunning},
+	}, nil).Once()
+
+	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").Return(&sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStateSucceeded},
+		Result:      &sql.ResultData{DataArray: [][]string{{"42"}}},
+	}, nil).Once()
+
+	pollResp, err := pollStatement(ctx, mockAPI, initial)
+	require.NoError(t, err)
+	assert.Equal(t, sql.StatementStateSucceeded, pollResp.Status.State)
+	assert.Equal(t, [][]string{{"42"}}, pollResp.Result.DataArray)
+}
+
+func TestPollStatementContextCancellationDoesNotCancelServerSide(t *testing.T) {
+	// The mock asserts (via t.Cleanup) that no unexpected calls are made.
+	// Specifically, pollStatement must NOT call CancelExecution on context
+	// cancellation; that is the caller's responsibility.
+	ctx, cancel := context.WithCancel(cmdio.MockDiscard(t.Context()))
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	initial := &sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
+	}
+
+	cancel()
+
+	pollResp, err := pollStatement(ctx, mockAPI, initial)
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Nil(t, pollResp)
+}
+
+func TestPollStatementGetErrorPropagated(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	mockAPI := mocksql.NewMockStatementExecutionInterface(t)
+
+	initial := &sql.StatementResponse{
+		StatementId: "stmt-1",
+		Status:      &sql.StatementStatus{State: sql.StatementStatePending},
+	}
+
+	mockAPI.EXPECT().GetStatementByStatementId(mock.Anything, "stmt-1").
+		Return(nil, errors.New("network unreachable")).Once()
+
+	pollResp, err := pollStatement(ctx, mockAPI, initial)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "poll statement status")
+	assert.Contains(t, err.Error(), "network unreachable")
+	assert.Nil(t, pollResp)
 }
 
 func TestResolveWarehouseIDWithFlag(t *testing.T) {

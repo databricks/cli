@@ -262,20 +262,16 @@ func resolveWarehouseID(ctx context.Context, w any, flagValue string) (string, e
 func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, warehouseID, statement string) (*sql.StatementResponse, error) {
 	// Submit asynchronously to get the statement ID immediately for cancellation.
 	resp, err := api.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
-		WarehouseId: warehouseID,
-		Statement:   statement,
-		WaitTimeout: "0s",
+		WarehouseId:   warehouseID,
+		Statement:     statement,
+		WaitTimeout:   "0s",
+		OnWaitTimeout: sql.ExecuteStatementRequestOnWaitTimeoutContinue,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("execute statement: %w", err)
 	}
 
 	statementID := resp.StatementId
-
-	// Check if it completed immediately.
-	if isTerminalState(resp.Status) {
-		return resp, checkFailedState(resp.Status)
-	}
 
 	// Set up Ctrl+C: signal cancels the poll context, cleanup is unified below.
 	pollCtx, pollCancel := context.WithCancel(ctx)
@@ -327,34 +323,59 @@ func executeAndPoll(ctx context.Context, api sql.StatementExecutionInterface, wa
 		}
 	}()
 
+	pollResp, err := pollStatement(pollCtx, api, resp)
+	if err != nil {
+		if pollCtx.Err() != nil {
+			cancelStatement()
+			cmdio.LogString(ctx, "Query cancelled.")
+			return nil, root.ErrAlreadyPrinted
+		}
+		return nil, err
+	}
+
+	sp.Close()
+	if err := checkFailedState(pollResp.Status); err != nil {
+		return nil, err
+	}
+	return pollResp, nil
+}
+
+// pollStatement polls until the statement reaches a terminal state.
+//
+// On context cancellation it returns the context error WITHOUT cancelling the
+// server-side statement. Callers that want server-side cancellation should
+// invoke CancelExecution explicitly.
+//
+// If the input response is already in a terminal state, it is returned without
+// further polling.
+func pollStatement(ctx context.Context, api sql.StatementExecutionInterface, resp *sql.StatementResponse) (*sql.StatementResponse, error) {
+	if isTerminalState(resp.Status) {
+		return resp, nil
+	}
+
+	statementID := resp.StatementId
+	start := time.Now()
+
 	// Poll with additive backoff: 1s, 2s, 3s, 4s, 5s (capped).
 	interval := pollIntervalInitial
 	for {
 		select {
-		case <-pollCtx.Done():
-			cancelStatement()
-			cmdio.LogString(ctx, "Query cancelled.")
-			return nil, root.ErrAlreadyPrinted
+		case <-ctx.Done():
+			return nil, ctx.Err()
 		case <-time.After(interval):
 		}
 
 		log.Debugf(ctx, "Polling statement %s: %s elapsed", statementID, time.Since(start).Truncate(time.Second))
 
-		pollResp, err := api.GetStatementByStatementId(pollCtx, statementID)
+		pollResp, err := api.GetStatementByStatementId(ctx, statementID)
 		if err != nil {
-			if pollCtx.Err() != nil {
-				cancelStatement()
-				cmdio.LogString(ctx, "Query cancelled.")
-				return nil, root.ErrAlreadyPrinted
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
 			}
 			return nil, fmt.Errorf("poll statement status: %w", err)
 		}
 
 		if isTerminalState(pollResp.Status) {
-			sp.Close()
-			if err := checkFailedState(pollResp.Status); err != nil {
-				return nil, err
-			}
 			return &sql.StatementResponse{
 				StatementId: pollResp.StatementId,
 				Status:      pollResp.Status,
