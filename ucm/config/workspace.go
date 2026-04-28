@@ -1,5 +1,9 @@
 package config
 
+import (
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+)
+
 // Workspace describes a Databricks workspace that ucm targets.
 //
 // M0 holds only the host URL. Profile was added to support the
@@ -19,4 +23,14 @@ type Workspace struct {
 	// (terraform.tfstate, ucm-state.json). Defaults to "<RootPath>/state" via
 	// DefineDefaultWorkspacePaths.
 	StatePath string `json:"state_path,omitempty"`
+}
+
+// Config returns the SDK config built from this Workspace's auth fields.
+// Mirrors bundle/config/workspace.go's Workspace.Config(); ucm's M0 surface
+// is only Host+Profile, so the returned config is intentionally minimal.
+func (w *Workspace) Config() *sdkconfig.Config {
+	return &sdkconfig.Config{
+		Host:    w.Host,
+		Profile: w.Profile,
+	}
 }
