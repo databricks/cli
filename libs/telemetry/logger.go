@@ -171,9 +171,23 @@ func Upload(ctx context.Context, ec protos.ExecutionContext) error {
 	return errors.New("failed to upload telemetry logs after three attempts")
 }
 
+// orgIDHeaders returns headers with X-Databricks-Org-Id set if a workspace ID
+// is configured. SPOG hosts require this header to route requests to the
+// correct workspace; without it, telemetry is recorded in a central shard
+// instead of the correct workspace.
+func orgIDHeaders(apiClient *client.DatabricksClient) map[string]string {
+	wsID := apiClient.Config.WorkspaceID
+	if wsID == "" {
+		return nil
+	}
+	return map[string]string{
+		"X-Databricks-Org-Id": wsID,
+	}
+}
+
 func attempt(ctx context.Context, apiClient *client.DatabricksClient, protoLogs []string) (*ResponseBody, error) {
 	resp := &ResponseBody{}
-	err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", nil, nil, RequestBody{
+	err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", orgIDHeaders(apiClient), nil, RequestBody{
 		UploadTime: time.Now().UnixMilli(),
 		// There is a bug in the `/telemetry-ext` API which requires us to
 		// send an empty array for the `Items` field. Otherwise the API returns

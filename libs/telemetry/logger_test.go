@@ -7,10 +7,63 @@ import (
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestOrgIDHeaders(t *testing.T) {
+	tests := []struct {
+		name        string
+		workspaceID string
+		expect      map[string]string
+	}{
+		{
+			name:        "with workspace ID",
+			workspaceID: "7474644166319138",
+			expect:      map[string]string{"X-Databricks-Org-Id": "7474644166319138"},
+		},
+		{
+			name:        "without workspace ID",
+			workspaceID: "",
+			expect:      nil,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			apiClient := &client.DatabricksClient{
+				Config: &config.Config{WorkspaceID: tc.workspaceID},
+			}
+			assert.Equal(t, tc.expect, orgIDHeaders(apiClient))
+		})
+	}
+}
+
+func TestTelemetryUploadSendsOrgIDHeader(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	const workspaceID = "7474644166319138"
+	var gotHeader string
+	server.Handle("POST", "/telemetry-ext", func(req testserver.Request) any {
+		gotHeader = req.Headers.Get("X-Databricks-Org-Id")
+		return ResponseBody{NumProtoSuccess: 1}
+	})
+
+	ctx := WithNewLogger(t.Context())
+	Log(ctx, protos.DatabricksCliLog{
+		CliTestEvent: &protos.CliTestEvent{Name: protos.DummyCliEnumValue1},
+	})
+	ctx = cmdctx.SetConfigUsed(ctx, &config.Config{
+		Host:        server.URL,
+		Token:       "token",
+		WorkspaceID: workspaceID,
+	})
+
+	require.NoError(t, Upload(ctx, protos.ExecutionContext{}))
+	assert.Equal(t, workspaceID, gotHeader)
+}
 
 func TestTelemetryUploadRetriesOnPartialSuccess(t *testing.T) {
 	server := testserver.New(t)
