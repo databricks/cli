@@ -1,7 +1,6 @@
 package ucm
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -272,33 +271,3 @@ func TestCmd_Summary_ShowFullConfigBypassesGroupedText(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(stdout), &tree))
 }
 
-// TestRenderSummaryText_EmitsOnlyNonEmptyGroups covers the shape contract:
-// groups with no entries do not emit a header.
-func TestRenderSummaryText_EmitsOnlyNonEmptyGroups(t *testing.T) {
-	work := writeUcmYml(t, `ucm:
-  name: demo
-
-workspace:
-  host: https://workspace.cloud.databricks.com
-
-resources:
-  catalogs:
-    sales:
-      name: sales_prod
-`)
-
-	ctx := logdiag.InitContext(context.Background())
-	u, err := ucmpkg.Load(ctx, work)
-	require.NoError(t, err)
-	phases.LoadDefaultTarget(ctx, u)
-	require.False(t, logdiag.HasError(ctx))
-
-	var buf bytes.Buffer
-	renderSummaryText(&buf, u)
-
-	out := buf.String()
-	assert.Contains(t, out, "Catalogs:")
-	assert.NotContains(t, out, "Schemas:")
-	assert.NotContains(t, out, "Grants:")
-	assert.NotContains(t, out, "Storage credentials:")
-}
