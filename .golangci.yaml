@@ -1,8 +1,4 @@
 version: "2"
-run:
-  # Needed when multiple worktrees or CI shards invoke golangci-lint
-  # concurrently; without it they collide on the shared /tmp lockfile.
-  allow-parallel-runners: true
 linters:
   default: none
   enable:
