@@ -51,7 +51,7 @@ func TestProcessUcmTerraformEngineNoBackendError(t *testing.T) {
 
 	got, err := ProcessUcm(cmd, ProcessOptions{
 		// Seed CurrentUser so PopulateCurrentUser short-circuits without
-		// hitting the network. Mirrors the PreMutateHook seam used by other
+		// hitting the network. Mirrors the TestProcessHook seam used by other
 		// ucm tests; InitFunc runs before the mutator chain in our fork.
 		InitFunc: func(u *ucmpkg.Ucm) {
 			u.CurrentUser = &config.User{
