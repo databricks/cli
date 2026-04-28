@@ -45,8 +45,7 @@ Common invocations:
   databricks ucm import catalog sales_prod
   databricks ucm import schema sales_prod.raw --key raw_landing
   databricks ucm import storage_credential my_cred --auto-approve`,
-		Args:    root.ExactArgs(2),
-		PreRunE: utils.MustWorkspaceClient,
+		Args: root.ExactArgs(2),
 	}
 
 	var key string
@@ -81,8 +80,11 @@ Common invocations:
 			}
 		}
 
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx = cmd.Context()
+		if err != nil {
+			return err
+		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

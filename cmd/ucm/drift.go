@@ -38,13 +38,15 @@ Exit codes:
 Note: drift currently operates on direct-engine state only. Terraform-engine
 drift requires parsing generic attribute maps from tfstate and is a follow-up;
 the command still routes all live reads through the SDK regardless of engine.`,
-		Args:    root.NoArgs,
-		PreRunE: utils.MustWorkspaceClient,
+		Args: root.NoArgs,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx := cmd.Context()
+		if err != nil {
+			return err
+		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

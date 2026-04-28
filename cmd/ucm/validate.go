@@ -43,8 +43,11 @@ Common invocations:
 	_ = cmd.Flags().MarkHidden("include-locations")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{Validate: true})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{Validate: true})
 		ctx := cmd.Context()
+		if err != nil {
+			return err
+		}
 
 		if includeLocations && u != nil && !logdiag.HasError(ctx) {
 			ucm.ApplyContext(ctx, u, mutator.PopulateLocations())

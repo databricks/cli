@@ -37,8 +37,7 @@ Examples:
 
 To re-bind later, use:
   databricks ucm deployment bind <KEY> <UC_NAME>`,
-		Args:    root.ExactArgs(1),
-		PreRunE: utils.MustWorkspaceClient,
+		Args: root.ExactArgs(1),
 	}
 
 	var autoApprove bool
@@ -50,8 +49,11 @@ To re-bind later, use:
 		key := args[0]
 		ctx := cmd.Context()
 
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx = cmd.Context()
+		if err != nil {
+			return err
+		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

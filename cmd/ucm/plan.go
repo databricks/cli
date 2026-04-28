@@ -28,8 +28,7 @@ Common invocations:
   databricks ucm plan                   # Plan against the default target
   databricks ucm plan --target prod     # Plan against a specific target
   databricks ucm plan -o json           # Emit the structured plan as JSON`,
-		Args:    root.NoArgs,
-		PreRunE: utils.MustWorkspaceClient,
+		Args: root.NoArgs,
 	}
 
 	var forceLock bool
@@ -40,8 +39,11 @@ Common invocations:
 	_ = cmd.Flags().MarkHidden("force")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx := cmd.Context()
+		if err != nil {
+			return err
+		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

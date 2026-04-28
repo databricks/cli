@@ -23,8 +23,7 @@ the previous seq; re-running the command will re-attempt from a fresh pull.
 Common invocations:
   databricks ucm deploy                  # Deploy the default target
   databricks ucm deploy --target prod    # Deploy a specific target`,
-		Args:    root.NoArgs,
-		PreRunE: utils.MustWorkspaceClient,
+		Args: root.NoArgs,
 	}
 
 	var autoApprove bool
@@ -33,8 +32,11 @@ Common invocations:
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
 		ctx := cmd.Context()
+		if err != nil {
+			return err
+		}
 		if u == nil || logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
