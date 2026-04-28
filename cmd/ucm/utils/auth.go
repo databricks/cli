@@ -1,15 +1,9 @@
 package utils
 
 import (
-	"errors"
-	"fmt"
-	"strings"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
-	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
@@ -40,7 +34,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 			return root.ErrAlreadyPrinted
 		}
 
-		selected, resolveErr := resolveProfileAmbiguity(cmd, u.Config.Workspace.Host, err, names)
+		selected, resolveErr := resolveProfileAmbiguity(cmd, u, err, names)
 		if resolveErr != nil {
 			logdiag.LogError(ctx, resolveErr)
 			return root.ErrAlreadyPrinted
@@ -61,68 +55,3 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveProfileAmbiguity is the UCM copy of cmd/root/bundle.go:resolveProfileAmbiguity.
-// The DAB version takes a *bundle.Bundle which we can't import here, so we
-// pass the host URL directly — it's the only Bundle field the upstream
-// function actually reads.
-func resolveProfileAmbiguity(cmd *cobra.Command, host string, originalErr error, names []string) (string, error) {
-	ctx := cmd.Context()
-
-	namesMatcher := profile.MatchProfileNames(names...)
-	profiler := profile.GetProfiler(ctx)
-	profiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
-		return namesMatcher(p) && profile.MatchWorkspaceProfiles(p)
-	})
-	if err != nil {
-		if errors.Is(err, profile.ErrNoConfiguration) {
-			return "", originalErr
-		}
-		return "", err
-	}
-
-	switch len(profiles) {
-	case 0:
-		return "", originalErr
-	case 1:
-		return profiles[0].Name, nil
-	}
-
-	_, hasProfileFlag := profileFlagValue(cmd)
-	if hasProfileFlag || !cmdio.IsPromptSupported(ctx) {
-		return "", fmt.Errorf(
-			"%w\n\nMatching workspace profiles: %s\n\n"+
-				"Fix (pick one):\n"+
-				"  1. Set profile in ucm.yml:\n"+
-				"       workspace:\n"+
-				"         profile: %s\n"+
-				"  2. Pass a flag:\n"+
-				"       %s --profile %s\n"+
-				"  3. Set env var:\n"+
-				"       DATABRICKS_CONFIG_PROFILE=%s",
-			originalErr,
-			strings.Join(profiles.Names(), ", "),
-			profiles[0].Name,
-			cmd.CommandPath(),
-			profiles[0].Name,
-			profiles[0].Name,
-		)
-	}
-
-	return profile.SelectProfile(ctx, profile.SelectConfig{
-		Label:             "Multiple profiles match host " + host,
-		Profiles:          profiles,
-		StartInSearchMode: true,
-		ActiveTemplate:    `{{.Name | bold}}{{if .AccountID}} (account: {{.AccountID|faint}}){{end}}{{if .WorkspaceID}} (workspace: {{.WorkspaceID|faint}}){{end}}`,
-		InactiveTemplate:  `{{.Name}}{{if .AccountID}} (account: {{.AccountID}}){{end}}{{if .WorkspaceID}} (workspace: {{.WorkspaceID}}){{end}}`,
-		SelectedTemplate:  `{{ "Using profile" | faint }}: {{ .Name | bold }}`,
-	})
-}
-
-func profileFlagValue(cmd *cobra.Command) (string, bool) {
-	flag := cmd.Flag("profile")
-	if flag == nil {
-		return "", false
-	}
-	value := flag.Value.String()
-	return value, value != ""
-}
