@@ -1,0 +1,88 @@
+version: '3'
+
+# Tasks for the python/databricks-bundles package. Included from the root
+# Taskfile via `includes:` with `flatten: true`, so `./task pydabs-codegen`
+# works from the repo root and `task pydabs-codegen` works from this dir.
+
+vars:
+  # Resolved relative to TASKFILE_DIR (this file's dir) so the same expression
+  # works whether this Taskfile is the root or included from ../Taskfile.yml.
+  SANDBOX_CMD: '{{if eq .SANDBOX "1"}}{{.TASKFILE_DIR}}/../tools/sandboxed_run.py{{else}}{{.SANDBOX}}{{end}}'
+
+env:
+  TASK_NAME: '{{.TASK}}'
+
+tasks:
+  pydabs-test:
+    desc: Run pydabs tests
+    sources:
+      - "**/*.py"
+      - pyproject.toml
+      - uv.lock
+      - README.md
+      - LICENSE
+    cmds:
+      - "{{.SANDBOX_CMD}} uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv"
+
+  pydabs-lint:
+    desc: Run pydabs lint checks
+    sources:
+      - "**/*.py"
+      - pyproject.toml
+      - uv.lock
+      - README.md
+      - LICENSE
+    cmds:
+      - "{{.SANDBOX_CMD}} uv lock --check"
+      - "{{.SANDBOX_CMD}} uv run ruff check databricks databricks_tests"
+      - "{{.SANDBOX_CMD}} uv run pyright"
+      - "{{.SANDBOX_CMD}} uv run ruff format --diff databricks databricks_tests"
+
+  pydabs-fmt:
+    desc: Format pydabs code
+    sources:
+      - "**/*.py"
+      - pyproject.toml
+    cmds:
+      - uv run ruff check --fix databricks databricks_tests || true
+      - uv run ruff format
+
+  pydabs-docs:
+    desc: Generate pydabs documentation
+    sources:
+      - "**/*.py"
+      - docs/**
+      - pyproject.toml
+      - uv.lock
+      - README.md
+      - LICENSE
+    generates:
+      - docs/_output/**
+    cmds:
+      - "{{.SANDBOX_CMD}} uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going"
+
+  pydabs-codegen:
+    desc: Run pydabs codegen
+    sources:
+      - codegen/**
+      - databricks_tests/**
+      # codegen/jsonschema.py loads this to drive generation.
+      - ../bundle/schema/jsonschema.json
+    generates:
+      - databricks/bundles/**
+    cmds:
+      - |
+        find databricks/bundles -type d -mindepth 1 -maxdepth 1 \
+          ! -path databricks/bundles/core \
+          ! -path databricks/bundles/resources \
+          -exec rm -rf {} \;
+      - cd codegen && uv run -m pytest codegen_tests
+      - cd codegen && uv run -m codegen.main --output ..
+      - uv run ruff check --fix databricks databricks_tests || true
+      - uv run ruff format
+
+  pydabs-build:
+    desc: Build pydabs wheel
+    cmds:
+      - rm -rf build dist
+      - uv build .

@@ -27,6 +27,14 @@ vars:
 env:
   TASK_NAME: '{{.TASK}}'
 
+# pydabs-* tasks live in python/Taskfile.yml so `task pydabs-foo` works when
+# run from python/. Flattened so they keep their `pydabs-` names at the root.
+includes:
+  pydabs:
+    taskfile: ./python/Taskfile.yml
+    dir: ./python
+    flatten: true
+
 tasks:
   default:
     desc: Quick dev loop (checks, formatters, incremental lint, tests). Use `full` for non-incremental linters.
@@ -868,89 +876,7 @@ tasks:
     cmds:
       - "wget -O .codegen/openapi.json.tmp \"https://openapi.dev.databricks.com/$(cat .codegen/_openapi_sha)/specs/all-internal.json\" && mv .codegen/openapi.json.tmp .codegen/openapi.json"
 
-  # --- pydabs (python/databricks-bundles package) ---
-  # Sources list every tracked *.py file; .venv / caches / generated outputs
-  # are excluded. `uv run` recreates .venv on demand from the uv cache.
-
-  pydabs-test:
-    desc: Run pydabs tests
-    dir: python
-    sources:
-      - "**/*.py"
-      - pyproject.toml
-      - uv.lock
-      - README.md
-      - LICENSE
-    cmds:
-      - "{{.SANDBOX_CMD}} uv run python -m pytest databricks_tests --cov=databricks.bundles --cov-report html -vv"
-
-  pydabs-lint:
-    desc: Run pydabs lint checks
-    dir: python
-    sources:
-      - "**/*.py"
-      - pyproject.toml
-      - uv.lock
-      - README.md
-      - LICENSE
-    cmds:
-      - "{{.SANDBOX_CMD}} uv lock --check"
-      - "{{.SANDBOX_CMD}} uv run ruff check databricks databricks_tests"
-      - "{{.SANDBOX_CMD}} uv run pyright"
-      - "{{.SANDBOX_CMD}} uv run ruff format --diff databricks databricks_tests"
-
-  pydabs-fmt:
-    desc: Format pydabs code
-    dir: python
-    sources:
-      - "**/*.py"
-      - pyproject.toml
-    cmds:
-      - uv run ruff check --fix databricks databricks_tests || true
-      - uv run ruff format
-
-  pydabs-docs:
-    desc: Generate pydabs documentation
-    dir: python
-    sources:
-      - "**/*.py"
-      - docs/**
-      - pyproject.toml
-      - uv.lock
-      - README.md
-      - LICENSE
-    generates:
-      - docs/_output/**
-    cmds:
-      - "{{.SANDBOX_CMD}} uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going"
-
-  pydabs-codegen:
-    desc: Run pydabs codegen
-    dir: python
-    sources:
-      - codegen/**
-      - databricks_tests/**
-      # codegen/jsonschema.py loads this to drive generation.
-      - ../bundle/schema/jsonschema.json
-    generates:
-      - databricks/bundles/**
-    cmds:
-      - |
-        find databricks/bundles -type d -mindepth 1 -maxdepth 1 \
-          ! -path databricks/bundles/core \
-          ! -path databricks/bundles/resources \
-          -exec rm -rf {} \;
-      - cd codegen && uv run -m pytest codegen_tests
-      - cd codegen && uv run -m codegen.main --output ..
-      - uv run ruff check --fix databricks databricks_tests || true
-      - uv run ruff format
-
-  pydabs-build:
-    desc: Build pydabs wheel
-    dir: python
-    cmds:
-      - rm -rf build dist
-      - uv build .
+  # pydabs-* tasks are defined in python/Taskfile.yml (included above).
 
   # --- Benchmarks ---
 
