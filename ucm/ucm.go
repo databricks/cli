@@ -54,6 +54,12 @@ type Ucm struct {
 	// config block today, so the field lives directly on Ucm.
 	ForceLock bool
 
+	// Force mirrors --force. Set by verb InitFuncs; read by checks that may
+	// be bypassed when the user passes --force (e.g. modified-remotely
+	// guards). Bundle's equivalent lives at b.Config.Bundle.Force; ucm has
+	// no Bundle config block, so the field lives directly on Ucm.
+	Force bool
+
 	// getClient memoizes the workspace client built from Config.Workspace.
 	// Initialized lazily by WorkspaceClientE via initClientOnce.
 	getClient func() (*databricks.WorkspaceClient, error)
