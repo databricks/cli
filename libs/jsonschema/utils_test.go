@@ -95,7 +95,9 @@ func TestTemplateFromString(t *testing.T) {
 
 	v, err = fromString("1.1", NumberType)
 	assert.NoError(t, err)
-	assert.Equal(t, 1.1, v)
+	// Delta 0: assert.Equal would trigger testifylint's float-compare; we want
+	// exact equality here to verify the float64 ParseFloat precision fix.
+	assert.InDelta(t, 1.1, v, 0)
 
 	v, err = fromString("12345", IntegerType)
 	assert.NoError(t, err)
@@ -103,7 +105,7 @@ func TestTemplateFromString(t *testing.T) {
 
 	v, err = fromString("123", NumberType)
 	assert.NoError(t, err)
-	assert.Equal(t, float64(123), v)
+	assert.InDelta(t, float64(123), v, 0)
 
 	_, err = fromString("qrt", ArrayType)
 	assert.EqualError(t, err, "cannot parse string as object of type array. Value of string: \"qrt\"")
