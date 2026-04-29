@@ -1,0 +1,6 @@
+
+>>> [CLI] ucm import catalog test_catalog --auto-approve
+Error: ucm: direct engine is not yet supported via ProcessUcm; set engine: terraform or unset DATABRICKS_UCM_ENGINE
+
+
+Exit code: 1

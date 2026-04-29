@@ -1,0 +1,9 @@
+ucm:
+  name: import-happy
+  engine: direct
+
+resources:
+  catalogs:
+    test_catalog:
+      name: test_catalog
+      comment: imported test catalog

@@ -1,0 +1,9 @@
+ucm:
+  name: drift-happy
+  engine: terraform
+
+resources:
+  catalogs:
+    main:
+      name: main
+      comment: drift-happy catalog
