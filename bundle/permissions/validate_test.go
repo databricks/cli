@@ -44,7 +44,7 @@ func TestValidateSharedRootPermissionsForSharedError(t *testing.T) {
 				RootPath: "/Workspace/Shared/foo/bar",
 			},
 			Permissions: []resources.Permission{
-				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
+				{Level: CAN_MANAGE, UserName: "foo@bar.test"},
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{

@@ -51,7 +51,7 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 		SyncRoot:       vfs.MustNew(root),
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath: "/Workspace/Users/foo@bar.com/",
+				RootPath: "/Workspace/Users/foo@bar.test/",
 			},
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
@@ -107,7 +107,7 @@ func setupTestApp(t *testing.T, initialAppState apps.ApplicationState, initialCo
 		AppName: "my_app",
 		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
+			SourceCodePath: "/Workspace/Users/foo@bar.test/files/my_app",
 		},
 	}).Return(wait, nil)
 
@@ -210,7 +210,7 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 		AppName: "my_app",
 		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
+			SourceCodePath: "/Workspace/Users/foo@bar.test/files/my_app",
 		},
 	}).Return(nil, errors.New("deployment in progress")).Once()
 
@@ -234,7 +234,7 @@ func TestAppDeployWithDeploymentInProgress(t *testing.T) {
 		AppName: "my_app",
 		AppDeployment: apps.AppDeployment{
 			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
+			SourceCodePath: "/Workspace/Users/foo@bar.test/files/my_app",
 		},
 	}).Return(wait, nil).Once()
 

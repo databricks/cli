@@ -16,7 +16,7 @@ Deployment complete!
         "whl": "/Workspace/foo/bar/artifacts/.internal/source.whl"
       },
       {
-        "whl": "/Workspace/Users/foo@bar.com/mywheel.whl"
+        "whl": "/Workspace/Users/foo@bar.test/mywheel.whl"
       }
     ],
     "python_wheel_task": {
@@ -35,7 +35,7 @@ Deployment complete!
             "whl": "/Workspace/foo/bar/artifacts/.internal/source.whl"
           },
           {
-            "whl": "/Workspace/Users/foo@bar.com/mywheel.whl"
+            "whl": "/Workspace/Users/foo@bar.test/mywheel.whl"
           }
         ],
         "python_wheel_task": {
@@ -63,7 +63,7 @@ Deployment complete!
       "client": "1",
       "dependencies": [
         "/Workspace/foo/bar/artifacts/.internal/source.whl",
-        "/Workspace/Users/foo@bar.com/mywheel.whl"
+        "/Workspace/Users/foo@bar.test/mywheel.whl"
       ]
     }
   }
