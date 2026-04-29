@@ -15,11 +15,12 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// tagsStyleKeys lists the config keys whose string values the emitter should
+// TagsStyleKeys lists the config keys whose string values the emitter should
 // double-quote. yamlsaver matches by key name across every nesting level,
 // so "tags" / "options" / "properties" are covered regardless of where they
-// appear.
-var tagsStyleKeys = map[string]yaml.Style{
+// appear. Exported so the per-kind subcommands in cmd/ucm/generate can
+// share the same style map.
+var TagsStyleKeys = map[string]yaml.Style{
 	"tags":       yaml.DoubleQuotedStyle,
 	"options":    yaml.DoubleQuotedStyle,
 	"properties": yaml.DoubleQuotedStyle,
@@ -32,7 +33,7 @@ func SaveToFile(r *config.Root, filename string, force bool) error {
 	if err != nil {
 		return err
 	}
-	saver := yamlsaver.NewSaverWithStyle(tagsStyleKeys)
+	saver := yamlsaver.NewSaverWithStyle(TagsStyleKeys)
 	return saver.SaveAsYAML(data, filename, force)
 }
 

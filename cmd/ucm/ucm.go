@@ -8,6 +8,7 @@ package ucm
 
 import (
 	"github.com/databricks/cli/cmd/ucm/deployment"
+	"github.com/databricks/cli/cmd/ucm/generate"
 	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/spf13/cobra"
 )
@@ -26,8 +27,8 @@ Common workflows:
   databricks ucm destroy --target dev         # Tear down a target
 
 Import existing resources:
-  databricks ucm generate --metastore-name m1  # Scan an account + emit ucm.yml
-  databricks ucm import catalog team_alpha     # Import a single catalog into state
+  databricks ucm generate catalog --existing-catalog-name prod  # Per-kind import
+  databricks ucm import catalog team_alpha                      # Import a single catalog into state
 
 Governance:
   databricks ucm drift --target prod           # Detect out-of-band changes
@@ -48,7 +49,7 @@ Online documentation: https://docs.databricks.com/en/dev-tools/ucm/index.html`,
 	cmd.AddCommand(newDestroyCommand())
 	cmd.AddCommand(newSummaryCommand())
 	cmd.AddCommand(newInitCommand())
-	cmd.AddCommand(newGenerateCommand())
+	cmd.AddCommand(generate.New())
 	cmd.AddCommand(deployment.New())
 	cmd.AddCommand(newDebugCommand())
 	cmd.AddCommand(newDiffCommand())
