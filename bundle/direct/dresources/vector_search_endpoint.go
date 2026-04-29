@@ -149,7 +149,7 @@ func (r *ResourceVectorSearchEndpoint) DoDelete(ctx context.Context, id string) 
 }
 
 // OverrideChangeDesc classifies endpoint_uuid drift: Recreate when saved UUID
-// differs from remote (endpoint replaced out-of-band), Skip otherwise. This
+// differs from remote (endpoint replaced out-of-band), Skip otherwise. The
 // field is not in config, so a synthetic diff between saved state and an empty
 // newState is expected on every plan.
 func (*ResourceVectorSearchEndpoint) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *VectorSearchEndpointRemote) error {
@@ -163,10 +163,8 @@ func (*ResourceVectorSearchEndpoint) OverrideChangeDesc(_ context.Context, path 
 	}
 	if savedUuid != "" && remoteUuid != "" && savedUuid != remoteUuid {
 		change.Action = deployplan.Recreate
-		change.Reason = "endpoint replaced out-of-band"
 	} else {
 		change.Action = deployplan.Skip
-		change.Reason = "state-only field"
 	}
 	return nil
 }
