@@ -1,0 +1,5 @@
+
+>>> [CLI] ucm plan
+Warning: cannot initialize resource URLs: workspace.host is not set
+
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

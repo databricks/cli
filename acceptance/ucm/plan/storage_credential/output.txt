@@ -1,0 +1,10 @@
+
+>>> [CLI] ucm plan
+Warning: cannot initialize resource URLs: workspace.host is not set
+
+create catalogs.partner
+create catalogs.sales
+create storage_credentials.sales_cred
+create storage_credentials.shared_cred
+
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
