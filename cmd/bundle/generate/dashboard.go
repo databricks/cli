@@ -17,6 +17,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/generate"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -391,10 +392,11 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
 
 	if stateDesc.Engine.IsDirect() {
 		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(localPath); err != nil {
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
+		defer b.DeploymentBundle.StateDB.Close(ctx)
 	}
 
 	bundle.ApplySeqContext(ctx, b,
