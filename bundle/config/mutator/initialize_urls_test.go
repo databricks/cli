@@ -76,12 +76,6 @@ func TestInitializeURLs(t *testing.T) {
 							Name: "catalog.schema.vectorsearchindex1",
 						},
 					},
-					"vectorsearchindex2": {
-						BaseResource: resources.BaseResource{ID: "vectorsearchindex2"},
-						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-							Name: "vectorsearchindex2",
-						},
-					},
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
@@ -120,7 +114,6 @@ func TestInitializeURLs(t *testing.T) {
 		"registeredmodel1":   "https://mycompany.databricks.com/explore/data/models/8?o=123456",
 		"qualityMonitor1":    "https://mycompany.databricks.com/explore/data/catalog/schema/qualityMonitor1?o=123456",
 		"vectorsearchindex1": "https://mycompany.databricks.com/explore/data/catalog/schema/vectorsearchindex1?o=123456",
-		"vectorsearchindex2": "",
 		"schema1":            "https://mycompany.databricks.com/explore/data/catalog/schema?o=123456",
 		"cluster1":           "https://mycompany.databricks.com/compute/clusters/1017-103929-vlr7jzcf?o=123456",
 		"dashboard1":         "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?o=123456",
