@@ -26,6 +26,7 @@ type Resources struct {
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
+	AppSpaces             map[string]*resources.AppSpace             `json:"app_spaces,omitempty"`
 	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
 	Alerts                map[string]*resources.Alert                `json:"alerts,omitempty"`
 	SqlWarehouses         map[string]*resources.SqlWarehouse         `json:"sql_warehouses,omitempty"`
@@ -103,6 +104,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
+		collectResourceMap(descriptions["app_spaces"], r.AppSpaces),
 		collectResourceMap(descriptions["alerts"], r.Alerts),
 		collectResourceMap(descriptions["secret_scopes"], r.SecretScopes),
 		collectResourceMap(descriptions["sql_warehouses"], r.SqlWarehouses),
@@ -158,6 +160,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
 		"apps":                    (&resources.App{}).ResourceDescription(),
+		"app_spaces":              (&resources.AppSpace{}).ResourceDescription(),
 		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
 		"alerts":                  (&resources.Alert{}).ResourceDescription(),
 		"sql_warehouses":          (&resources.SqlWarehouse{}).ResourceDescription(),

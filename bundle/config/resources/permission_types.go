@@ -25,6 +25,7 @@ func (p Permission) String() string {
 // If the SDK exposes a resource's permission level, add it here.
 type (
 	AppPermission                  PermissionT[apps.AppPermissionLevel]
+	AppSpacePermission             PermissionT[iam.PermissionLevel]
 	ClusterPermission              PermissionT[compute.ClusterPermissionLevel]
 	JobPermission                  PermissionT[jobs.JobPermissionLevel]
 	MlflowExperimentPermission     PermissionT[ml.ExperimentPermissionLevel]

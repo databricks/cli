@@ -126,6 +126,16 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		))
 	}
 
+	// App spaces do not support run_as in the API.
+	if len(b.Config.Resources.AppSpaces) > 0 {
+		diags = diags.Extend(reportRunAsNotSupported(
+			"app_spaces",
+			b.Config.GetLocation("resources.app_spaces"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		))
+	}
+
 	return diags
 }
 

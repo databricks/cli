@@ -16,6 +16,7 @@ import (
 var permissionResourceToObjectType = map[string]string{
 	"alerts":                  "/alertsv2/",
 	"apps":                    "/apps/",
+	"app_spaces":              "/app-spaces/",
 	"clusters":                "/clusters/",
 	"dashboards":              "/dashboards/",
 	"database_instances":      "/database-instances/",

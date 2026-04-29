@@ -1,0 +1,24 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/app-spaces",
+  "body": {
+    "description": "my_space_description",
+    "name": "original-space-name"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/app-spaces/original-space-name"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/app-spaces",
+  "body": {
+    "description": "my_space_description",
+    "name": "renamed-space"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/app-spaces/renamed-space"
+}

@@ -1,0 +1,7 @@
+trace $CLI bundle validate
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //app-spaces > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle summary
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //app-spaces >> out.requests.$DATABRICKS_BUNDLE_ENGINE.json

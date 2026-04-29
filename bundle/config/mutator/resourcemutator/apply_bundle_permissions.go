@@ -51,6 +51,11 @@ var (
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_USE",
 		},
+		"app_spaces": {
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_READ",
+			permissions.CAN_RUN:    "CAN_CREATE_APP",
+		},
 		"secret_scopes": {
 			permissions.CAN_MANAGE: "MANAGE",
 			permissions.CAN_VIEW:   "READ",

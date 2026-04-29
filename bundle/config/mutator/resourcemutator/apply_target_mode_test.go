@@ -161,6 +161,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				AppSpaces: map[string]*resources.AppSpace{
+					"app_space1": {
+						Space: apps.Space{
+							Name: "app-space-1",
+						},
+					},
+				},
 				SecretScopes: map[string]*resources.SecretScope{
 					"secretScope1": {
 						Name: "secretScope1",
@@ -442,7 +449,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 
 				// Skip resources that are not renamed (either because they don't have a user-facing Name field,
 				// or because their Name is server-generated rather than user-specified)
-				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" || resourceType == "PostgresProjects" || resourceType == "PostgresBranches" || resourceType == "PostgresEndpoints" {
+				if resourceType == "Apps" || resourceType == "AppSpaces" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" || resourceType == "PostgresProjects" || resourceType == "PostgresBranches" || resourceType == "PostgresEndpoints" {
 					continue
 				}
 

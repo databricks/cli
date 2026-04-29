@@ -160,6 +160,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "alerts":
     "description": |-
       PLACEHOLDER
+  "app_spaces":
+    "description": |-
+      PLACEHOLDER
   "apps":
     "description": |-
       The app resource defines a Databricks app.
@@ -549,6 +552,74 @@ github.com/databricks/cli/bundle/config/resources.AppEnvVar:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.AppSpace:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "creator":
+    "description": |-
+      PLACEHOLDER
+  "description":
+    "description": |-
+      PLACEHOLDER
+  "effective_usage_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "effective_user_api_scopes":
+    "description": |-
+      PLACEHOLDER
+  "id":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "resources":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_client_id":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_id":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "updater":
+    "description": |-
+      PLACEHOLDER
+  "usage_policy_id":
+    "description": |-
+      PLACEHOLDER
+  "user_api_scopes":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.AppSpacePermission:
   "group_name":
     "description": |-
       PLACEHOLDER

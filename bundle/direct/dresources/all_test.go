@@ -40,6 +40,12 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"app_spaces": &resources.AppSpace{
+		Space: apps.Space{
+			Name: "my-app-space",
+		},
+	},
+
 	"catalogs": &resources.Catalog{
 		CreateCatalog: catalog.CreateCatalog{
 			Name:    "mycatalog",
@@ -367,6 +373,29 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/apps/" + waiter.Response.Name,
+			EmbeddedSlice: []StatePermission{{
+				Level:    "CAN_MANAGE",
+				UserName: "user@example.com",
+			}},
+		}, nil
+	},
+
+	"app_spaces.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.Apps.CreateSpace(ctx, apps.CreateSpaceRequest{
+			Space: apps.Space{
+				Name: "space-permissions",
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		space, err := waiter.Wait(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/app-spaces/" + space.Name,
 			EmbeddedSlice: []StatePermission{{
 				Level:    "CAN_MANAGE",
 				UserName: "user@example.com",
