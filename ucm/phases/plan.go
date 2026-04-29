@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -11,23 +12,35 @@ import (
 	"github.com/databricks/cli/ucm/config/engine"
 	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/config/validate"
-	"github.com/databricks/cli/ucm/deploy/direct"
+	"github.com/databricks/cli/ucm/deploy"
 	"github.com/databricks/cli/ucm/deploy/terraform"
 	"github.com/databricks/cli/ucm/deployplan"
+	"github.com/databricks/cli/ucm/direct"
 	"github.com/databricks/cli/ucm/render"
 )
+
+// directStatePath returns the on-disk location of the direct-engine state
+// file for u's currently-selected target. Mirrors bundle's
+// StateFilenameDirect local-path: <RootPath>/.databricks/ucm/<target>/resources.json.
+// The file is read by dstate.DeploymentState.Open and rewritten by Finalize.
+func directStatePath(u *ucm.Ucm) string {
+	return filepath.Join(u.RootPath, filepath.FromSlash(deploy.LocalCacheDir), u.Config.Ucm.Target, "resources.json")
+}
 
 // PreDeployChecks is common set of mutators between "ucm plan" and "ucm deploy".
 // Note, it is not run in "ucm migrate" so it must not modify the config.
 //
-// When downgradeWarningToError is true, any warning emitted by the validator
-// pack is promoted to an error. Mirrors bundle's PreDeployChecks contract:
-// the plan path passes true (warnings during planning should fail) while the
-// deploy path passes false (warnings during deploy are tolerated).
-func PreDeployChecks(ctx context.Context, u *ucm.Ucm, downgradeWarningToError bool, e engine.EngineType) {
+// validate.ReferenceClosure runs here so dangling ${resources.<kind>.<key>}
+// typos surface as a clean diagnostic before either engine attempts work.
+// Mirrors bundle's process_static_resources position; previously the check
+// was duplicated inside planTerraform/deployTerraform and skipped entirely
+// on the direct path, where the dynamic per-entry resolution inside
+// direct.DeploymentUcm is not equivalent to the static closure check.
+func PreDeployChecks(ctx context.Context, u *ucm.Ucm, e engine.EngineType) {
 	ucm.ApplySeqContext(ctx, u,
-		promoteWarningsIfRequested(mutator.ValidateDirectOnlyResources(e), downgradeWarningToError),
-		promoteWarningsIfRequested(mutator.ValidateLifecycleStarted(e), downgradeWarningToError),
+		mutator.ValidateDirectOnlyResources(e),
+		mutator.ValidateLifecycleStarted(e),
+		validate.ReferenceClosure(),
 	)
 	if logdiag.HasError(ctx) {
 		return
@@ -131,25 +144,26 @@ func planTerraform(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
 	}
 }
 
-func planDirect(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
-	ucm.ApplyContext(ctx, u, mutator.ResolveVariableReferencesOnlyResources("resources"))
-	if logdiag.HasError(ctx) {
-		return nil
-	}
-	ucm.ApplyContext(ctx, u, validate.ReferenceClosure())
-	if logdiag.HasError(ctx) {
+// planDirect computes a plan via the ucm/direct.DeploymentUcm machinery:
+// open the local dstate file, build the adapter set from the workspace
+// client, then walk the config + state to produce the per-resource action
+// list. Mirrors bundle.RunPlan's direct branch (b.DeploymentBundle.CalculatePlan).
+//
+// Plan never advances state — Finalize is reserved for Deploy/Destroy.
+func planDirect(ctx context.Context, u *ucm.Ucm, _ Options) *PlanOutcome {
+	var d direct.DeploymentUcm
+	if err := d.StateDB.Open(directStatePath(u)); err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("open direct state: %w", err))
 		return nil
 	}
 
-	state, err := direct.LoadState(direct.StatePath(u))
+	plan, err := d.CalculatePlan(ctx, u.WorkspaceClient(), &u.Config)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("load direct state: %w", err))
+		logdiag.LogError(ctx, fmt.Errorf("direct plan: %w", err))
 		return nil
 	}
 
-	plan := direct.CalculatePlan(u, state)
 	hasChanges := planHasChanges(plan)
-	_ = opts // direct engine doesn't currently need client access to plan
 	return &PlanOutcome{
 		Plan:       plan,
 		HasChanges: hasChanges,

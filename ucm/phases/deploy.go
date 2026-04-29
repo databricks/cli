@@ -10,11 +10,10 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
 	"github.com/databricks/cli/ucm/config"
-	"github.com/databricks/cli/ucm/config/mutator"
 	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/databricks/cli/ucm/deploy"
-	"github.com/databricks/cli/ucm/deploy/direct"
 	"github.com/databricks/cli/ucm/deployplan"
+	"github.com/databricks/cli/ucm/direct"
 	"github.com/databricks/cli/ucm/metadata"
 	"github.com/databricks/cli/ucm/permissions"
 	"github.com/databricks/cli/ucm/scripts"
@@ -198,31 +197,24 @@ func uploadMetadataBestEffort(ctx context.Context, u *ucm.Ucm, b deploy.Backend)
 	}
 }
 
+// deployDirect computes the plan via direct.DeploymentUcm.CalculatePlan,
+// asks for approval if any destructive actions are present, then runs
+// Apply. Whether Apply succeeds or not, Finalize is invoked for non-empty
+// plans so partial progress (resources created before a mid-apply failure)
+// survives the process exit. Mirrors bundle.deployCore's direct branch.
 func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
-	ucm.ApplyContext(ctx, u, mutator.ResolveVariableReferencesOnlyResources("resources"))
-	if logdiag.HasError(ctx) {
-		return
-	}
-	ucm.ApplyContext(ctx, u, validate.ReferenceClosure())
-	if logdiag.HasError(ctx) {
+	var d direct.DeploymentUcm
+	if err := d.StateDB.Open(directStatePath(u)); err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("open direct state: %w", err))
 		return
 	}
 
-	factory := opts.directClientFactoryOrDefault()
-	client, err := factory(ctx, u)
+	plan, err := d.CalculatePlan(ctx, u.WorkspaceClient(), &u.Config)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("resolve direct client: %w", err))
+		logdiag.LogError(ctx, fmt.Errorf("direct plan: %w", err))
 		return
 	}
 
-	statePath := direct.StatePath(u)
-	state, err := direct.LoadState(statePath)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("load direct state: %w", err))
-		return
-	}
-
-	plan := direct.CalculatePlan(u, state)
 	approved, err := approvalForDeploy(ctx, u, plan, opts)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -232,18 +224,25 @@ func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 		return
 	}
-	applyErr := direct.Apply(ctx, u, client, plan, state)
-	// Always persist state — Apply mutates it as it goes, so partial progress
-	// from a mid-apply error must survive the process exit.
-	if saveErr := direct.SaveState(statePath, state); saveErr != nil {
-		if applyErr == nil {
-			logdiag.LogError(ctx, fmt.Errorf("save direct state: %w", saveErr))
-			return
+
+	d.Apply(ctx, u.WorkspaceClient(), plan, direct.MigrateMode(false))
+	// Always Finalize for non-empty plans — Apply may log errors via logdiag
+	// while still having mutated state in memory; we must persist that
+	// partial progress before bubbling the error up through HasError.
+	// Skip Finalize for empty plans to avoid creating a state file when
+	// nothing was deployed (mirrors bundle.deployCore).
+	//
+	// A Finalize error is logged but does NOT short-circuit metadata upload:
+	// bundle.deployCore continues to subsequent steps after a Finalize log,
+	// and the trailing logdiag.HasError check below is what gates the
+	// process exit. Returning early here would silently skip metadata upload
+	// on partial-progress failures.
+	if len(plan.Plan) > 0 {
+		if err := d.StateDB.Finalize(); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("finalize direct state: %w", err))
 		}
-		log.Warnf(ctx, "save direct state after apply error: %v", saveErr)
 	}
-	if applyErr != nil {
-		logdiag.LogError(ctx, fmt.Errorf("direct apply: %w", applyErr))
+	if logdiag.HasError(ctx) {
 		return
 	}
 

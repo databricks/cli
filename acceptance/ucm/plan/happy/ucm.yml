@@ -12,9 +12,3 @@ resources:
     raw:
       name: raw
       catalog_name: main
-
-  grants:
-    analysts:
-      securable: {type: schema, name: main.raw}
-      principal: analysts
-      privileges: [USE_SCHEMA, SELECT]

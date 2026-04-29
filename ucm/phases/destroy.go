@@ -13,8 +13,8 @@ import (
 	"github.com/databricks/cli/ucm/config"
 	"github.com/databricks/cli/ucm/config/validate"
 	"github.com/databricks/cli/ucm/deploy"
-	"github.com/databricks/cli/ucm/deploy/direct"
 	"github.com/databricks/cli/ucm/deployplan"
+	"github.com/databricks/cli/ucm/direct"
 	"github.com/databricks/cli/ucm/scripts"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
@@ -127,45 +127,10 @@ func destroyPlanFromConfig(u *ucm.Ucm) *deployplan.Plan {
 	return plan
 }
 
-// destroyPlanFromState builds a synthetic destroy plan marking every
-// resource recorded in the direct-engine state for deletion. Mirrors the
-// plan direct.Destroy constructs internally; duplicating the walk here lets
-// destroyDirect surface affected resources to approvalForDestroy before the
-// actual delete calls fire.
-func destroyPlanFromState(state *direct.State) *deployplan.Plan {
-	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{}}
-	add := func(group string, keys ...string) {
-		for _, k := range keys {
-			plan.Plan["resources."+group+"."+k] = &deployplan.PlanEntry{Action: deployplan.Delete}
-		}
-	}
-	for k := range state.Catalogs {
-		add("catalogs", k)
-	}
-	for k := range state.Schemas {
-		add("schemas", k)
-	}
-	for k := range state.Volumes {
-		add("volumes", k)
-	}
-	for k := range state.Grants {
-		add("grants", k)
-	}
-	for k := range state.StorageCredentials {
-		add("storage_credentials", k)
-	}
-	for k := range state.ExternalLocations {
-		add("external_locations", k)
-	}
-	for k := range state.Connections {
-		add("connections", k)
-	}
-	return plan
-}
-
 // Destroy runs the initialize → terraform-init → terraform-destroy →
 // state-push sequence for the terraform engine, or the direct engine's
-// equivalent: delete every recorded resource and persist the emptied state.
+// equivalent: load state, plan an all-delete pass via CalculatePlan(nil),
+// approve, Apply, then Finalize the emptied state.
 //
 // For the terraform engine, the Build phase is skipped — destroy operates
 // on the already-rendered terraform config cached from the last apply
@@ -173,11 +138,12 @@ func destroyPlanFromState(state *direct.State) *deployplan.Plan {
 // resource graph). The final Push uploads the post-destroy terraform.tfstate
 // so peers observe the emptied state.
 //
-// For the direct engine, destroy walks the recorded state in reverse UC
-// dependency order (grants → schemas → catalogs) and issues per-resource
-// delete calls. The state file is rewritten on every successful delete so a
-// mid-destroy error leaves the file consistent with whatever actually
-// survived the run.
+// For the direct engine, destroy uses the same DeploymentUcm machinery as
+// Deploy with the configRoot argument set to nil — that signals
+// CalculatePlan to walk only the recorded state, marking every entry for
+// deletion. Apply then issues per-resource delete calls in dependency
+// order; Finalize rewrites the (now-empty) state file even if a mid-apply
+// failure stops short of full deletion.
 func Destroy(ctx context.Context, u *ucm.Ucm, opts Options) {
 	log.Info(ctx, "Phase: destroy")
 
@@ -262,22 +228,27 @@ func destroyTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 	}
 }
 
+// destroyDirect drives the all-delete pass through the same direct.DeploymentUcm
+// machinery used by Deploy. Passing nil for the configRoot tells CalculatePlan
+// to mark every entry recorded in state for deletion. Apply then issues the
+// per-resource delete calls; Finalize persists the (post-destroy) state so a
+// mid-destroy failure leaves the file consistent with whatever survived.
+// Mirrors bundle.destroyCore's direct branch.
 func destroyDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
-	factory := opts.directClientFactoryOrDefault()
-	client, err := factory(ctx, u)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("resolve direct client: %w", err))
+	var d direct.DeploymentUcm
+	if err := d.StateDB.Open(directStatePath(u)); err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("open direct state: %w", err))
 		return
 	}
 
-	statePath := direct.StatePath(u)
-	state, err := direct.LoadState(statePath)
+	// nil configRoot: every resource currently in state becomes a Delete.
+	plan, err := d.CalculatePlan(ctx, u.WorkspaceClient(), nil)
 	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("load direct state: %w", err))
+		logdiag.LogError(ctx, fmt.Errorf("direct destroy plan: %w", err))
 		return
 	}
 
-	approved, err := approvalForDestroy(ctx, u, destroyPlanFromState(state), opts)
+	approved, err := approvalForDestroy(ctx, u, plan, opts)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -287,15 +258,15 @@ func destroyDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
 		return
 	}
 
-	_, destroyErr := direct.Destroy(ctx, u, client, state)
-	if saveErr := direct.SaveState(statePath, state); saveErr != nil {
-		if destroyErr == nil {
-			logdiag.LogError(ctx, fmt.Errorf("save direct state: %w", saveErr))
+	d.Apply(ctx, u.WorkspaceClient(), plan, direct.MigrateMode(false))
+	// Always Finalize for non-empty plans — Apply may have partially deleted
+	// resources before logging an error, so we must persist the surviving
+	// entries before bubbling the error up. Skip for empty plans to avoid
+	// creating a state file when nothing was destroyed.
+	if len(plan.Plan) > 0 {
+		if err := d.StateDB.Finalize(); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("finalize direct state: %w", err))
 			return
 		}
-		log.Warnf(ctx, "save direct state after destroy error: %v", saveErr)
-	}
-	if destroyErr != nil {
-		logdiag.LogError(ctx, fmt.Errorf("direct destroy: %w", destroyErr))
 	}
 }
