@@ -9,6 +9,14 @@ trap cleanup EXIT
 
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
+pipeline_id="$(read_id.py my_pipeline)"
+
+title "Append a new dependency to the pipeline environment"
+edit_resource.py pipelines $pipeline_id <<EOF
+# Existing dependency uses \${workspace.file_path} via compound interpolation.
+# After the user adds a new dep, the existing one must stay as a variable.
+r["environment"]["dependencies"].append("nonexistent-test-pkg==1.2.3")
+EOF
 
 title "Add and replace parameters remotely"
 edit_resource.py jobs $job_id <<EOF
@@ -63,6 +71,13 @@ for p in r["parameters"]:
     if p["name"] == "catalog":
         p["default"] = "staging_catalog"
 
+# Re-target to a different variable: "env" was \${var.target_env} (= "production").
+# New value "main" doesn't match target_env but uniquely matches \${var.my_catalog},
+# so the field is re-targeted to \${var.my_catalog} via the fallback lookup.
+for p in r["parameters"]:
+    if p["name"] == "env":
+        p["default"] = "main"
+
 # --- Non-sequence Add (false-positive prevention) ---
 # Add tags to the job. Tags is a map (not a sequence), so Add restoration is
 # skipped entirely: "main" stays hardcoded even though it matches \${var.my_catalog}.
@@ -75,6 +90,25 @@ for t in r["tasks"]:
     bp = t.get("notebook_task", {}).get("base_parameters", {})
     if "source_path" in bp:
         bp["source_path"] = "/mnt/main/default/raw/landing_v2"
+
+# --- Environments coverage ---
+# Add a new environments entry. The sibling at environment_key='default' has
+# dependencies = ["\${var.my_env_dep}"]; the new entry uses the same resolved
+# value, so sibling-based restoration should restore the ref.
+r["environments"].append({
+    "environment_key": "secondary",
+    "spec": {
+        "environment_version": "4",
+        "dependencies": ["nonexistent-test-pkg==1.2.3"],
+    },
+})
+
+# Replace the existing environment's dependencies: keep the variable-backed
+# entry and append an unrelated literal. Existing \${var.my_env_dep} must be
+# preserved at index 0; the new dep stays hardcoded.
+for e in r["environments"]:
+    if e["environment_key"] == "default":
+        e["spec"]["dependencies"].append("nonexistent-other-pkg==2.0")
 EOF
 
 title "Detect and save changes"

@@ -15,6 +15,11 @@ variables:
   # Variable set via .databricks/bundle/<target>/variable-overrides.json
   file_override_var:
     description: "Set from variable-overrides.json"
+  # Used by job environments below. Resolves to a pip-style spec; the same
+  # spec is then targeted by both an Add (new environment_key) and a Replace
+  # (appending another dep to the existing environment).
+  my_env_dep:
+    default: nonexistent-test-pkg==1.2.3
   # Complex variable to verify no panics
   cluster_config:
     type: complex
@@ -30,6 +35,12 @@ resources:
       libraries:
         - notebook:
             path: /Users/{{workspace_user_name}}/notebook
+      # Pipeline environment.dependencies uses ${workspace.file_path} via
+      # compound interpolation. Adding a new dependency must keep the
+      # existing variable-backed entry intact.
+      environment:
+        dependencies:
+          - --editable ${workspace.file_path}
 
   jobs:
     my_job:
@@ -63,6 +74,15 @@ resources:
           pipeline_task:
             pipeline_id: ${resources.pipelines.my_pipeline.id}
             full_refresh: false
+      # Job environments use ${var.my_env_dep} via a pure variable reference.
+      # The script adds a separate environments entry and modifies the existing
+      # one to verify the variable survives both code paths.
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4"
+            dependencies:
+              - ${var.my_env_dep}
 
 targets:
   default:

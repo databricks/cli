@@ -7,47 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExtractSequenceParent(t *testing.T) {
-	tests := []struct {
-		input  string
-		parent string
-		ok     bool
-	}{
-		{"resources.jobs.my_job.tasks[*]", "resources.jobs.my_job.tasks", true},
-		{"resources.jobs.my_job.parameters[5]", "resources.jobs.my_job.parameters", true},
-		{"resources.jobs.my_job.parameters[0]", "resources.jobs.my_job.parameters", true},
-		{"resources.jobs.my_job.tags.team", "", false},
-		{"resources.jobs.my_job.name", "", false},
-		{"resources.jobs.my_job.trigger", "", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			parent, ok := extractSequenceParent(tt.input)
-			assert.Equal(t, tt.ok, ok)
-			if ok {
-				assert.Equal(t, tt.parent, parent)
-			}
-		})
-	}
-}
-
-func TestStripBracketStars(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"resources.jobs.my_job.parameters[*]", "resources.jobs.my_job.parameters"},
-		{"resources.jobs.my_job.tasks[*].notebook_task", "resources.jobs.my_job.tasks.notebook_task"},
-		{"resources.jobs.my_job.name", "resources.jobs.my_job.name"},
-		{"[*].field[*]", ".field"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			assert.Equal(t, tt.want, stripBracketStars(tt.input))
-		})
-	}
-}
-
 // TestRestoreOriginalRefs_HardcodedFieldNotRewritten fences the Replace safety
 // invariant: a hardcoded leaf must never be rewritten to a variable reference
 // just because the remote value coincidentally matches a variable elsewhere.

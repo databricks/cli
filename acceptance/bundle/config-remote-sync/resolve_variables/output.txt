@@ -3,15 +3,19 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+=== Append a new dependency to the pipeline environment
 === Add and replace parameters remotely
 === Detect and save changes
-Detected changes in 1 resource(s):
+Detected changes in 2 resource(s):
 
 Resource: resources.jobs.my_job
+  environments[environment_key='default'].spec.dependencies: replace
+  environments[environment_key='secondary']: add
   parameters[name='catalog'].default: replace
   parameters[name='data_catalog']: add
   parameters[name='deploy_env']: add
   parameters[name='deploy_target']: add
+  parameters[name='env'].default: replace
   parameters[name='file_sourced']: add
   parameters[name='region']: add
   parameters[name='some_schema']: add
@@ -22,6 +26,9 @@ Resource: resources.jobs.my_job
   tasks[task_key='run_pipeline_again']: add
   tasks[task_key='secondary']: add
 
+Resource: resources.pipelines.my_pipeline
+  environment.dependencies: replace
+
 
 
 === Configuration changes
@@ -29,14 +36,23 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -36,5 +36,5 @@
+@@ -42,12 +42,12 @@
+         dependencies:
+           - --editable ${workspace.file_path}
+-
++          - nonexistent-test-pkg==1.2.3
+   jobs:
+     my_job:
        parameters:
          - name: catalog
--          default: ${var.my_catalog}
 +          default: staging_catalog
-         - name: env
-           default: ${var.target_env}
-@@ -50,4 +50,16 @@
++        - name: env
+           default: ${var.my_catalog}
+-        - name: env
+-          default: ${var.target_env}
+         - name: file_val
+           default: ${var.file_override_var}
+@@ -61,4 +61,16 @@
          - name: curated
            default: ${var.curated_schema}
 +        - default: ${var.my_catalog}
@@ -53,14 +69,14 @@ Resource: resources.jobs.my_job
 +          name: some_schema
        tasks:
          - task_key: main
-@@ -56,5 +68,5 @@
+@@ -67,5 +79,5 @@
              base_parameters:
                # Compound interpolation: mixes ${var.X} and ${bundle.X} refs.
 -              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing
 +              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing_v2
          # Resource reference: ${resources.pipelines.my_pipeline.id} resolves to
          # the deployed pipeline's ID. Used to test that resource refs are
-@@ -63,5 +75,15 @@
+@@ -74,5 +86,13 @@
            pipeline_task:
              pipeline_id: ${resources.pipelines.my_pipeline.id}
 -            full_refresh: false
@@ -73,6 +89,17 @@ Resource: resources.jobs.my_job
 +              source_path: /mnt/${var.my_catalog}/${bundle.target}/raw/landing_v2
 +            notebook_path: /Users/{{workspace_user_name}}/notebook
 +          task_key: secondary
+       # Job environments use ${var.my_env_dep} via a pure variable reference.
+       # The script adds a separate environments entry and modifies the existing
+@@ -84,4 +104,12 @@
+             dependencies:
+               - ${var.my_env_dep}
++              - nonexistent-other-pkg==2.0
++        - environment_key: secondary
++          spec:
++            dependencies:
++              - ${var.my_env_dep}
++            environment_version: "4"
 +      tags:
 +        deployment: main
 

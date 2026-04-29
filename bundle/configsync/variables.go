@@ -2,7 +2,6 @@ package configsync
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -11,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // varPrefix is the dyn.Path prefix for the ${var.X} shorthand.
@@ -22,12 +22,19 @@ var varPrefix = dyn.NewPath(dyn.Key("var"))
 // are injected from state since they aren't materialized into the resolved
 // config's dyn.Value tree.
 //
-// For Replace operations, restoration requires the pre-resolved YAML at the
-// exact field position. Pure variable references (e.g., ${var.catalog}) are
-// restored when their resolved value matches. Compound interpolation strings
-// (e.g., "/mnt/${var.account}/raw/landing") are reconstructed by preserving
-// variables whose resolved values still appear at their expected positions
-// and updating only the literal segments.
+// For Replace operations, restoration consults the pre-resolved YAML at the
+// exact field position and tries three steps in order:
+//  1. If the YAML had a pure ref (${var.X}, ${bundle.X}, ${resources.X.Y.id})
+//     and its resolved value equals the new value, the original ref is kept.
+//  2. If the YAML had a compound string (e.g., "/mnt/${var.account}/raw/X"),
+//     the template is realigned: variables whose resolved values still appear
+//     at their expected positions are kept, and only literal segments change.
+//  3. Fallback for fields whose YAML was a pure ${var.X} but whose resolved
+//     value doesn't match: search all bundle variables for a unique scalar
+//     match. On a unique match, the field is re-targeted to that variable
+//     (e.g., ${var.schema} → ${var.dev_schema}). Multiple matches are
+//     ambiguous and skipped. The fallback is gated on the YAML field already
+//     being a pure ${var.X}, so hardcoded literals are never promoted.
 //
 // For Add operations, restoration is limited to new sequence elements (e.g.,
 // a new task appended to the tasks array). Within the new element, a leaf is
@@ -204,6 +211,10 @@ func resolveReferencePath(refStr string) (dyn.Path, bool) {
 // operations. For pure variable references, restores when the resolved value
 // matches. For compound interpolation (e.g., "${var.X}_suffix"), preserves
 // variables whose resolved values still appear at their expected positions.
+// When the original is a pure ${var.X} but its resolved value doesn't match the
+// new value, falls back to a global lookup: if the new value uniquely matches
+// a different variable, that variable is used instead. The field's prior use
+// of a variable is the false-positive guard.
 func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 	switch v := value.(type) {
 	case string, bool, int64:
@@ -213,6 +224,11 @@ func restoreOriginalRefs(value any, preResolved, resolved dyn.Value) any {
 		if s, ok := value.(string); ok {
 			if restored, ok := restoreCompoundInterpolation(s, preResolved, resolved); ok {
 				return restored
+			}
+		}
+		if isPureVarRef(preResolved) {
+			if ref, ok := matchAnyVariable(value, resolved); ok {
+				return ref
 			}
 		}
 		return value
@@ -313,6 +329,66 @@ func restoreFromSiblingsAt(value any, siblings []dyn.Value, resolved dyn.Value, 
 	default:
 		return value
 	}
+}
+
+// isPureVarRef reports whether the pre-resolved value at the field is a pure
+// ${var.X} reference. Used to gate the fallback substitution: only fields that
+// already used a variable can be re-targeted to a different variable.
+func isPureVarRef(preResolved dyn.Value) bool {
+	if !preResolved.IsValid() {
+		return false
+	}
+	s, ok := preResolved.AsString()
+	if !ok || !dynvar.IsPureVariableReference(s) {
+		return false
+	}
+	p, ok := dynvar.PureReferenceToPath(s)
+	if !ok {
+		return false
+	}
+	return p.HasPrefix(varPrefix)
+}
+
+// matchAnyVariable searches all bundle variables for a unique scalar value that
+// equals remoteValue. Returns the ${var.X} reference on a unique match, ""
+// otherwise. Multiple matches are treated as ambiguous and skipped.
+func matchAnyVariable(remoteValue any, resolved dyn.Value) (string, bool) {
+	variables, err := dyn.GetByPath(resolved, dyn.NewPath(dyn.Key("variables")))
+	if err != nil {
+		return "", false
+	}
+	vmap, ok := variables.AsMap()
+	if !ok {
+		return "", false
+	}
+	var match string
+	count := 0
+	for _, pair := range vmap.Pairs() {
+		name, ok := pair.Key.AsString()
+		if !ok {
+			continue
+		}
+		v, getErr := dyn.GetByPath(pair.Value, dyn.NewPath(dyn.Key("value")))
+		if getErr != nil {
+			continue
+		}
+		switch v.Kind() {
+		case dyn.KindString, dyn.KindInt, dyn.KindBool:
+			if v.AsAny() == remoteValue {
+				match = pathToRef(varPrefix.Append(dyn.Key(name)))
+				count++
+			}
+		}
+	}
+	if count == 1 {
+		return match, true
+	}
+	return "", false
+}
+
+// pathToRef formats a dyn.Path as a "${...}" interpolation reference.
+func pathToRef(p dyn.Path) string {
+	return "${" + p.String() + "}"
 }
 
 // matchOriginalRef checks if the pre-resolved config value at this position
@@ -519,7 +595,6 @@ func findAnchorOffset(segments []templateSegment, from int, remaining string) in
 // if the field exists in the merged pre-resolved config.
 func preResolvedValueAt(preResolved dyn.Value, candidates []string) (dyn.Value, bool) {
 	for _, candidate := range candidates {
-		candidate = stripBracketStars(candidate)
 		p, err := dyn.NewPathFromString(candidate)
 		if err != nil {
 			continue
@@ -539,19 +614,20 @@ func preResolvedValueAt(preResolved dyn.Value, candidates []string) (dyn.Value, 
 // Adds (e.g., new map fields).
 func sequenceSiblings(preResolved dyn.Value, candidates []string) ([]dyn.Value, bool) {
 	for _, candidate := range candidates {
-		parent, ok := extractSequenceParent(candidate)
-		if !ok {
+		node, err := structpath.ParsePattern(candidate)
+		if err != nil {
 			continue
 		}
-		p, err := dyn.NewPathFromString(parent)
+		_, hasIndex := node.Index()
+		if !hasIndex && !node.BracketStar() {
+			continue
+		}
+		p, err := dyn.NewPathFromString(node.Parent().String())
 		if err != nil {
 			continue
 		}
 		parentValue, err := dyn.GetByPath(preResolved, p)
 		if err != nil {
-			continue
-		}
-		if parentValue.Kind() != dyn.KindSequence {
 			continue
 		}
 		seq, ok := parentValue.AsSequence()
@@ -563,29 +639,3 @@ func sequenceSiblings(preResolved dyn.Value, candidates []string) ([]dyn.Value, 
 	return nil, false
 }
 
-// extractSequenceParent returns the parent path if the candidate ends in an
-// index (either [*] or [N]).
-func extractSequenceParent(candidate string) (string, bool) {
-	if before, ok := strings.CutSuffix(candidate, "[*]"); ok {
-		return before, true
-	}
-	if !strings.HasSuffix(candidate, "]") {
-		return "", false
-	}
-	idx := strings.LastIndex(candidate, "[")
-	if idx < 0 {
-		return "", false
-	}
-	inner := candidate[idx+1 : len(candidate)-1]
-	if _, err := strconv.Atoi(inner); err != nil {
-		return "", false
-	}
-	return candidate[:idx], true
-}
-
-// stripBracketStars removes all [*] segments from a structpath string.
-// resolveSelectors inserts [*] at any array position for Add operations
-// where the target element doesn't exist yet.
-func stripBracketStars(candidate string) string {
-	return strings.ReplaceAll(candidate, "[*]", "")
-}
