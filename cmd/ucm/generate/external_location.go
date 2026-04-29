@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewGenerateExternalLocationCommand returns the `ucm generate external-location` cobra subcommand.
 func NewGenerateExternalLocationCommand() *cobra.Command {
 	var existingExternalLocationName string
 	var outputDir string

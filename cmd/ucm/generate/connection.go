@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewGenerateConnectionCommand returns the `ucm generate connection` cobra subcommand.
 func NewGenerateConnectionCommand() *cobra.Command {
 	var existingConnectionName string
 	var outputDir string

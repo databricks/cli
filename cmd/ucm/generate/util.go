@@ -2,24 +2,16 @@ package generate
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	ucmgenerate "github.com/databricks/cli/ucm/config/generate"
 	"github.com/spf13/cobra"
-	"go.yaml.in/yaml/v3"
 )
-
-// tagsStyleKeys mirrors ucm/config/generate.tagsStyleKeys: keys whose string
-// values must round-trip as double-quoted YAML so numeric-looking values
-// don't decay to bare scalars. Matches by key name across nesting depths.
-var tagsStyleKeys = map[string]yaml.Style{
-	"tags":       yaml.DoubleQuotedStyle,
-	"options":    yaml.DoubleQuotedStyle,
-	"properties": yaml.DoubleQuotedStyle,
-}
 
 // getKey returns the parent's --key flag if set, otherwise derives a sane
 // key from the resource name. UC FQNs (a.b.c) become a_b_c so the key is a
@@ -29,6 +21,19 @@ func getKey(cmd *cobra.Command, fallbackName string) string {
 		return f.Value.String()
 	}
 	return strings.ReplaceAll(fallbackName, ".", "_")
+}
+
+// copyMap returns a copy of in, or nil when in is empty. Centralised here so
+// the per-kind subcommands don't each duplicate the empty-vs-nil rule.
+func copyMap(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 // writeResourceYAML marshals a single typed UC resource into the
@@ -42,6 +47,10 @@ func writeResourceYAML(outputDir, kind, key string, resource any, force bool) (s
 	abs, err := filepath.Abs(outputDir)
 	if err != nil {
 		return "", fmt.Errorf("resolve output dir: %w", err)
+	}
+
+	if err := os.MkdirAll(abs, 0o755); err != nil {
+		return "", fmt.Errorf("create output dir %q: %w", abs, err)
 	}
 
 	v, err := convert.FromTyped(resource, dyn.NilValue)
@@ -60,7 +69,7 @@ func writeResourceYAML(outputDir, kind, key string, resource any, force bool) (s
 	}
 
 	outPath := filepath.Join(abs, fmt.Sprintf("%s_%s.yml", kind, key))
-	saver := yamlsaver.NewSaverWithStyle(tagsStyleKeys)
+	saver := yamlsaver.NewSaverWithStyle(ucmgenerate.TagsStyleKeys)
 	if err := saver.SaveAsYAML(payload, outPath, force); err != nil {
 		return "", err
 	}

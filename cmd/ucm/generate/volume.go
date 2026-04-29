@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewGenerateVolumeCommand returns the `ucm generate volume` cobra subcommand.
 func NewGenerateVolumeCommand() *cobra.Command {
 	var existingVolumeName string
 	var outputDir string
@@ -26,6 +27,9 @@ func NewGenerateVolumeCommand() *cobra.Command {
 Fetches the volume by its full name (catalog.schema.volume) and writes a
 per-resource YAML fragment to --output-dir that you can include from your
 ucm.yml.
+
+Note: Managed volumes have their server-assigned storage_location dropped
+from the output; UC re-derives it on deploy.
 
 Example:
   databricks ucm generate volume --existing-volume-name prod.raw.landing --key landing_volume`,

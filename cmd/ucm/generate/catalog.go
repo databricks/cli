@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewGenerateCatalogCommand returns the `ucm generate catalog` cobra subcommand.
 func NewGenerateCatalogCommand() *cobra.Command {
 	var existingCatalogName string
 	var outputDir string
@@ -68,17 +69,4 @@ Example:
 	}
 
 	return cmd
-}
-
-// copyMap returns a copy of in, or nil when in is empty. Centralised here so
-// the per-kind subcommands don't each duplicate the empty-vs-nil rule.
-func copyMap(in map[string]string) map[string]string {
-	if len(in) == 0 {
-		return nil
-	}
-	out := make(map[string]string, len(in))
-	for k, v := range in {
-		out[k] = v
-	}
-	return out
 }

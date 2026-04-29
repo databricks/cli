@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewGenerateSchemaCommand returns the `ucm generate schema` cobra subcommand.
 func NewGenerateSchemaCommand() *cobra.Command {
 	var existingSchemaName string
 	var outputDir string

@@ -8,9 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// New registers the parent `ucm generate` command and wires up the per-kind
-// subcommands. The shared --key flag lives on the parent so each subcommand
-// can read it via cmd.Flag("key") (cobra walks the parent chain).
+// New returns the `ucm generate` parent cobra command. Subcommands are
+// registered per UC resource kind; each is a brownfield import for one
+// named resource into ucm.yml. The shared --key flag lives on the parent
+// so each subcommand can read it via cmd.Flag("key") (cobra walks the
+// parent chain).
 func New() *cobra.Command {
 	var key string
 

@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewGenerateStorageCredentialCommand returns the `ucm generate storage-credential` cobra subcommand.
 func NewGenerateStorageCredentialCommand() *cobra.Command {
 	var existingStorageCredentialName string
 	var outputDir string
