@@ -42,7 +42,7 @@ the command still routes all live reads through the SDK regardless of engine.`,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{InitIDs: true})
 		ctx := cmd.Context()
 		if err != nil {
 			return err
