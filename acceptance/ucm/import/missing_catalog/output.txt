@@ -1,0 +1,15 @@
+
+>>> [CLI] ucm import catalog test_catalog --auto-approve
+Warning: cannot initialize resource URLs: workspace.host is not set
+
+Warning: cannot initialize resource URLs: workspace.host is not set
+
+Error: direct import: get catalog test_catalog: Resource catalog.CatalogInfo not found: test_catalog (404 <nil>)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.1/unity-catalog/catalogs/test_catalog?
+HTTP Status: 404 Not Found
+API error_code: <nil>
+API message: Resource catalog.CatalogInfo not found: test_catalog
+
+
+Exit code: 1
