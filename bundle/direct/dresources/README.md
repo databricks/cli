@@ -42,20 +42,10 @@ For resources whose create or update is asynchronous (the resource is not immedi
 
 If the API may return a slice's elements in a different order between calls (e.g., `depends_on` in job tasks, `privileges` in grants), implement `KeyedSlices` to compare elements by a natural key rather than by index. Without this, every deploy after any reordering shows phantom diffs.
 
-```go
-func (*ResourceJob) KeyedSlices() map[string]any {
-    return map[string]any{
-        "tasks":               getTaskKey,
-        "tasks[*].depends_on": getDependsOnTaskKey,
-    }
-}
-```
-
 ## State backward compatibility
 
-The state struct is serialized to JSON and persisted between deploys. Changing a `json:"..."` tag on a state field — including the `__embed__` convention — is a **backward compatibility break**: existing state files will fail to deserialize.
-
-When you must rename a JSON key, bump the state schema version and add migration logic. Verify with a test that deserializes state written by the old schema.
+The state struct is serialized to JSON and persisted between deploys. Backward incompatible changes will result in a drift, which depending
+on field behaviour might result in recreate. See dstate/migrate.go on how to handle state migration.
 
 ## OverrideChangeDesc
 
