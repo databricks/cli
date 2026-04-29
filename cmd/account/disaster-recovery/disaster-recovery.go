@@ -77,7 +77,7 @@ func newCreateFailoverGroup() *cobra.Command {
 	cmd.Use = "create-failover-group PARENT FAILOVER_GROUP_ID REGIONS WORKSPACE_SETS INITIAL_PRIMARY_REGION"
 	cmd.Short = `Create a Failover Group.`
 	cmd.Long = `Create a Failover Group.
-  
+
   Create a new failover group.
 
   Arguments:
@@ -184,7 +184,7 @@ func newCreateStableUrl() *cobra.Command {
 	cmd.Use = "create-stable-url PARENT STABLE_URL_ID INITIAL_WORKSPACE_ID"
 	cmd.Short = `Create a Stable URL.`
 	cmd.Long = `Create a Stable URL.
-  
+
   Create a new stable URL.
 
   Arguments:
@@ -271,7 +271,7 @@ func newDeleteFailoverGroup() *cobra.Command {
 	cmd.Use = "delete-failover-group NAME"
 	cmd.Short = `Delete a Failover Group.`
 	cmd.Long = `Delete a Failover Group.
-  
+
   Delete a failover group.
 
   Arguments:
@@ -328,7 +328,7 @@ func newDeleteStableUrl() *cobra.Command {
 	cmd.Use = "delete-stable-url NAME"
 	cmd.Short = `Delete a Stable URL.`
 	cmd.Long = `Delete a Stable URL.
-  
+
   Delete a stable URL.
 
   Arguments:
@@ -390,7 +390,7 @@ func newFailoverFailoverGroup() *cobra.Command {
 	cmd.Use = "failover-failover-group NAME TARGET_PRIMARY_REGION FAILOVER_TYPE"
 	cmd.Short = `Failover a Failover Group to a new primary region.`
 	cmd.Long = `Failover a Failover Group to a new primary region.
-  
+
   Initiate a failover to a new primary region.
 
   Arguments:
@@ -399,7 +399,7 @@ func newFailoverFailoverGroup() *cobra.Command {
     TARGET_PRIMARY_REGION: The target primary region. Must be one of the derived regions and
       different from the current effective_primary_region. Serves as an
       idempotency check.
-    FAILOVER_TYPE: The type of failover to perform. 
+    FAILOVER_TYPE: The type of failover to perform.
       Supported values: [FORCED]`
 
 	cmd.Annotations = make(map[string]string)
@@ -482,7 +482,7 @@ func newGetFailoverGroup() *cobra.Command {
 	cmd.Use = "get-failover-group NAME"
 	cmd.Short = `Get a Failover Group.`
 	cmd.Long = `Get a Failover Group.
-  
+
   Get a failover group.
 
   Arguments:
@@ -540,7 +540,7 @@ func newGetStableUrl() *cobra.Command {
 	cmd.Use = "get-stable-url NAME"
 	cmd.Short = `Get a Stable URL.`
 	cmd.Long = `Get a Stable URL.
-  
+
   Get a stable URL.
 
   Arguments:
@@ -611,7 +611,7 @@ func newListFailoverGroups() *cobra.Command {
 	cmd.Use = "list-failover-groups PARENT"
 	cmd.Short = `List Failover Groups.`
 	cmd.Long = `List Failover Groups.
-  
+
   List failover groups.
 
   Arguments:
@@ -684,7 +684,7 @@ func newListStableUrls() *cobra.Command {
 	cmd.Use = "list-stable-urls PARENT"
 	cmd.Short = `List Stable URLs.`
 	cmd.Long = `List Stable URLs.
-  
+
   List stable URLs for an account.
 
   Arguments:
@@ -752,7 +752,7 @@ func newUpdateFailoverGroup() *cobra.Command {
 	cmd.Use = "update-failover-group NAME UPDATE_MASK REGIONS WORKSPACE_SETS INITIAL_PRIMARY_REGION"
 	cmd.Short = `Update a Failover Group.`
 	cmd.Long = `Update a Failover Group.
-  
+
   Update a failover group.
 
   Arguments:

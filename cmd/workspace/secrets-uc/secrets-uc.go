@@ -28,7 +28,7 @@ func New() *cobra.Command {
 		Long: `A secret is a Unity Catalog securable object that stores sensitive credential
   data (such as passwords, tokens, and keys) within a three-level namespace
   (**catalog_name.schema_name.secret_name**).
-  
+
   Secrets can be managed using standard Unity Catalog permissions and are scoped
   to a schema within a catalog.`,
 		GroupID: "catalog",
@@ -79,13 +79,13 @@ func newCreateSecret() *cobra.Command {
 	cmd.Use = "create-secret NAME CATALOG_NAME SCHEMA_NAME VALUE"
 	cmd.Short = `Create a secret.`
 	cmd.Long = `Create a secret.
-  
+
   Creates a new secret in Unity Catalog.
-  
+
   You must be the owner of the parent schema or have the **CREATE_SECRET** and
   **USE SCHEMA** privileges on the parent schema and **USE CATALOG** on the
   parent catalog.
-  
+
   The secret is stored in the specified catalog and schema, and the **value**
   field contains the sensitive data to be securely stored.
 
@@ -190,9 +190,9 @@ func newDeleteSecret() *cobra.Command {
 	cmd.Use = "delete-secret FULL_NAME"
 	cmd.Short = `Delete a secret.`
 	cmd.Long = `Delete a secret.
-  
+
   Deletes a secret by its three-level (fully qualified) name.
-  
+
   You must be the owner of the secret or a metastore admin.
 
   Arguments:
@@ -251,12 +251,12 @@ func newGetSecret() *cobra.Command {
 	cmd.Use = "get-secret FULL_NAME"
 	cmd.Short = `Get a secret.`
 	cmd.Long = `Get a secret.
-  
+
   Gets a secret by its three-level (fully qualified) name.
-  
+
   You must be a metastore admin, the owner of the secret, or have the **MANAGE**
   privilege on the secret.
-  
+
   The secret value isn't returned by default. To retrieve it, you must also have
   the **READ_SECRET** privilege and set **include_value** to true in the
   request.
@@ -332,12 +332,12 @@ func newListSecrets() *cobra.Command {
 	cmd.Use = "list-secrets"
 	cmd.Short = `List secrets.`
 	cmd.Long = `List secrets.
-  
+
   Lists secrets in Unity Catalog.
-  
+
   You must be a metastore admin, the owner of the secret, or have the **MANAGE**
   privilege on the secret.
-  
+
   Both **catalog_name** and **schema_name** must be specified together to filter
   secrets within a specific schema. Results are paginated; use the
   **page_token** field from the response to retrieve subsequent pages.`
@@ -403,12 +403,12 @@ func newUpdateSecret() *cobra.Command {
 	cmd.Use = "update-secret FULL_NAME UPDATE_MASK NAME CATALOG_NAME SCHEMA_NAME VALUE"
 	cmd.Short = `Update a secret.`
 	cmd.Long = `Update a secret.
-  
+
   Updates an existing secret in Unity Catalog.
-  
+
   You must be the owner of the secret or a metastore admin. If you are a
   metastore admin, only the **owner** field can be changed.
-  
+
   Use the **update_mask** field to specify which fields to update. Supported
   updatable fields include **value**, **comment**, **owner**, and
   **expire_time**.

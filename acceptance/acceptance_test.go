@@ -726,6 +726,10 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
+	// SDK agent detection uses os.LookupEnv, so a var set to "" still counts
+	// as "agent detected". Strip these entirely so user-agent strings stay
+	// deterministic regardless of who runs the tests.
+	cmd.Env = stripEnvKeys(cmd.Env, agentEnvVarsToStrip)
 	cmd.Dir = tmpDir
 
 	outputPath := filepath.Join(tmpDir, "output.txt")
@@ -840,6 +844,40 @@ func hasKey(env []string, key string) bool {
 		}
 	}
 	return false
+}
+
+// agentEnvVarsToStrip mirrors databricks-sdk-go/useragent/agent.go.
+// Keep in sync with the SDK's listKnownAgents plus the agents.md AGENT
+// fallback. Used to keep the recorded user-agent stable across machines.
+var agentEnvVarsToStrip = []string{
+	"AGENT",
+	"AMP_CURRENT_THREAD_ID",
+	"ANTIGRAVITY_AGENT",
+	"AUGMENT_AGENT",
+	"CLAUDECODE",
+	"CLINE_ACTIVE",
+	"CODEX_CI",
+	"COPILOT_CLI",
+	"COPILOT_MODEL",
+	"CURSOR_AGENT",
+	"GEMINI_CLI",
+	"GOOSE_TERMINAL",
+	"KIRO",
+	"OPENCLAW_SHELL",
+	"OPENCODE",
+	"WINDSURF_AGENT",
+}
+
+func stripEnvKeys(env, keys []string) []string {
+	out := env[:0]
+	for _, kv := range env {
+		k, _, _ := strings.Cut(kv, "=")
+		if slices.Contains(keys, k) {
+			continue
+		}
+		out = append(out, kv)
+	}
+	return out
 }
 
 func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, key, value string, envRepl map[string]bool, defaultRepl bool) []string {

@@ -27,7 +27,7 @@ func New() *cobra.Command {
   via AWS Security Token Service (STS), Azure utilizes Shared Access Signatures
   (SAS) for its data storage services, and Google Cloud supports temporary
   credentials through OAuth 2.0.
-  
+
   Temporary volume credentials ensure that data access is limited in scope and
   duration, reducing the risk of unauthorized access or misuse. To use the
   temporary volume credentials API, a metastore admin needs to enable the
@@ -77,7 +77,7 @@ func newGenerateTemporaryVolumeCredentials() *cobra.Command {
 	cmd.Use = "generate-temporary-volume-credentials"
 	cmd.Short = `Generate a temporary volume credential.`
 	cmd.Long = `Generate a temporary volume credential.
-  
+
   Get a short-lived credential for directly accessing the volume data on cloud
   storage. The metastore must have **external_access_enabled** flag set to true
   (default false). The caller must have the **EXTERNAL_USE_SCHEMA** privilege on

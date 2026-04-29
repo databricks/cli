@@ -72,7 +72,7 @@ func newCreateSupervisorAgent() *cobra.Command {
 	cmd.Use = "create-supervisor-agent DISPLAY_NAME DESCRIPTION"
 	cmd.Short = `Create a Supervisor Agent.`
 	cmd.Long = `Create a Supervisor Agent.
-  
+
   Creates a new Supervisor Agent.
 
   Arguments:
@@ -166,7 +166,7 @@ func newCreateTool() *cobra.Command {
 	cmd.Use = "create-tool PARENT TOOL_ID TOOL_TYPE DESCRIPTION"
 	cmd.Short = `Create a Tool.`
 	cmd.Long = `Create a Tool.
-  
+
   Creates a Tool under a Supervisor Agent. Specify one of "genie_space",
   "knowledge_assistant", "uc_function", "uc_connection", "app", "volume",
   "lakeview_dashboard", "uc_table", "vector_search_index" in the request body.
@@ -258,7 +258,7 @@ func newDeleteSupervisorAgent() *cobra.Command {
 	cmd.Use = "delete-supervisor-agent NAME"
 	cmd.Short = `Delete a Supervisor Agent.`
 	cmd.Long = `Delete a Supervisor Agent.
-  
+
   Deletes a Supervisor Agent.
 
   Arguments:
@@ -315,7 +315,7 @@ func newDeleteTool() *cobra.Command {
 	cmd.Use = "delete-tool NAME"
 	cmd.Short = `Delete a Tool.`
 	cmd.Long = `Delete a Tool.
-  
+
   Deletes a Tool.
 
   Arguments:
@@ -372,7 +372,7 @@ func newGetSupervisorAgent() *cobra.Command {
 	cmd.Use = "get-supervisor-agent NAME"
 	cmd.Short = `Get a Supervisor Agent.`
 	cmd.Long = `Get a Supervisor Agent.
-  
+
   Gets a Supervisor Agent.
 
   Arguments:
@@ -430,7 +430,7 @@ func newGetTool() *cobra.Command {
 	cmd.Use = "get-tool NAME"
 	cmd.Short = `Get a Tool.`
 	cmd.Long = `Get a Tool.
-  
+
   Gets a Tool.
 
   Arguments:
@@ -501,7 +501,7 @@ func newListSupervisorAgents() *cobra.Command {
 	cmd.Use = "list-supervisor-agents"
 	cmd.Short = `List Supervisor Agents.`
 	cmd.Long = `List Supervisor Agents.
-  
+
   Lists Supervisor Agents.`
 
 	cmd.Annotations = make(map[string]string)
@@ -569,7 +569,7 @@ func newListTools() *cobra.Command {
 	cmd.Use = "list-tools PARENT"
 	cmd.Short = `List Tools.`
 	cmd.Long = `List Tools.
-  
+
   Lists Tools under a Supervisor Agent.
 
   Arguments:
@@ -637,7 +637,7 @@ func newUpdateSupervisorAgent() *cobra.Command {
 	cmd.Use = "update-supervisor-agent NAME UPDATE_MASK DISPLAY_NAME DESCRIPTION"
 	cmd.Short = `Update a Supervisor Agent.`
 	cmd.Long = `Update a Supervisor Agent.
-  
+
   Updates a Supervisor Agent. The fields that are required depend on the paths
   specified in update_mask. Only fields included in the mask will be updated.
 
@@ -740,7 +740,7 @@ func newUpdateTool() *cobra.Command {
 	cmd.Use = "update-tool NAME UPDATE_MASK TOOL_TYPE DESCRIPTION"
 	cmd.Short = `Update a Tool.`
 	cmd.Long = `Update a Tool.
-  
+
   Updates a Tool. Only the description field can be updated. To change
   immutable fields such as tool type, spec, or tool ID, delete the tool and
   recreate it.
