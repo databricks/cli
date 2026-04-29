@@ -38,8 +38,6 @@ class TableSpec:
 
     connector_options: VariableOrOptional[ConnectorOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     (Optional) Source Specific Connector Options
     """
 
@@ -91,8 +89,6 @@ class TableSpecDict(TypedDict, total=False):
 
     connector_options: VariableOrOptional[ConnectorOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     (Optional) Source Specific Connector Options
     """
 

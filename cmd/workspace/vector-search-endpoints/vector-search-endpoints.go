@@ -69,7 +69,7 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createEndpointReq.BudgetPolicyId, "budget-policy-id", createEndpointReq.BudgetPolicyId, `The budget policy id to be applied.`)
-	cmd.Flags().Int64Var(&createEndpointReq.MinQps, "min-qps", createEndpointReq.MinQps, `Min QPS for the endpoint.`)
+	cmd.Flags().Int64Var(&createEndpointReq.MinQps, "min-qps", createEndpointReq.MinQps, `Deprecated: use target_qps.`)
 	cmd.Flags().StringVar(&createEndpointReq.UsagePolicyId, "usage-policy-id", createEndpointReq.UsagePolicyId, `The usage policy id to be applied once we've migrated to usage policies.`)
 
 	cmd.Use = "create-endpoint NAME ENDPOINT_TYPE"
@@ -359,7 +359,7 @@ func newPatchEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&patchEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Int64Var(&patchEndpointReq.MinQps, "min-qps", patchEndpointReq.MinQps, `Min QPS for the endpoint.`)
+	cmd.Flags().Int64Var(&patchEndpointReq.MinQps, "min-qps", patchEndpointReq.MinQps, `Deprecated: use target_qps.`)
 
 	cmd.Use = "patch-endpoint ENDPOINT_NAME"
 	cmd.Short = `Update an endpoint.`

@@ -38,8 +38,6 @@ class SchemaSpec:
 
     connector_options: VariableOrOptional[ConnectorOptions] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     (Optional) Source Specific Connector Options
     """
 
@@ -81,8 +79,6 @@ class SchemaSpecDict(TypedDict, total=False):
 
     connector_options: VariableOrOptional[ConnectorOptionsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     (Optional) Source Specific Connector Options
     """
 

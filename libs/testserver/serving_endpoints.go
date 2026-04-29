@@ -53,6 +53,10 @@ func servedModelsInputToOutput(input []serving.ServedModelInput) []serving.Serve
 	return models
 }
 
+// SDK v0.131.0 deprecated AutoCaptureConfig{Input,Output} in favor of AI Gateway inference tables.
+// Test fake still mirrors the legacy field; migration tracked separately.
+//
+//nolint:staticcheck
 func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfigInput) *serving.AutoCaptureConfigOutput {
 	return &serving.AutoCaptureConfigOutput{
 		CatalogName:     input.CatalogName,

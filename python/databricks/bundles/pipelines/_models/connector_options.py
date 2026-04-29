@@ -12,9 +12,21 @@ from databricks.bundles.pipelines._models.google_drive_options import (
     GoogleDriveOptions,
     GoogleDriveOptionsParam,
 )
+from databricks.bundles.pipelines._models.jira_connector_options import (
+    JiraConnectorOptions,
+    JiraConnectorOptionsParam,
+)
+from databricks.bundles.pipelines._models.outlook_options import (
+    OutlookOptions,
+    OutlookOptionsParam,
+)
 from databricks.bundles.pipelines._models.sharepoint_options import (
     SharepointOptions,
     SharepointOptionsParam,
+)
+from databricks.bundles.pipelines._models.smartsheet_options import (
+    SmartsheetOptions,
+    SmartsheetOptionsParam,
 )
 from databricks.bundles.pipelines._models.tik_tok_ads_options import (
     TikTokAdsOptions,
@@ -28,8 +40,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ConnectorOptions:
     """
-    :meta private: [EXPERIMENTAL]
-
     Wrapper message for source-specific options to support multiple connector types
     """
 
@@ -47,9 +57,28 @@ class ConnectorOptions:
     (source_configurations).
     """
 
+    jira_options: VariableOrOptional[JiraConnectorOptions] = None
+    """
+    Jira specific options for ingestion
+    """
+
+    outlook_options: VariableOrOptional[OutlookOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Outlook specific options for ingestion
+    """
+
     sharepoint_options: VariableOrOptional[SharepointOptions] = None
     """
     :meta private: [EXPERIMENTAL]
+    """
+
+    smartsheet_options: VariableOrOptional[SmartsheetOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Smartsheet specific options for ingestion
     """
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptions] = None
@@ -84,9 +113,28 @@ class ConnectorOptionsDict(TypedDict, total=False):
     (source_configurations).
     """
 
+    jira_options: VariableOrOptional[JiraConnectorOptionsParam]
+    """
+    Jira specific options for ingestion
+    """
+
+    outlook_options: VariableOrOptional[OutlookOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Outlook specific options for ingestion
+    """
+
     sharepoint_options: VariableOrOptional[SharepointOptionsParam]
     """
     :meta private: [EXPERIMENTAL]
+    """
+
+    smartsheet_options: VariableOrOptional[SmartsheetOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Smartsheet specific options for ingestion
     """
 
     tiktok_ads_options: VariableOrOptional[TikTokAdsOptionsParam]

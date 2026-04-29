@@ -25,9 +25,9 @@ func New() *cobra.Command {
   **[Cluster permissions](:service:clusters)** — Manage which users can
   manage, restart, or attach to clusters. * **[Cluster policy
   permissions](:service:clusterpolicies)** — Manage which users can use
-  cluster policies. * **[Delta Live Tables pipeline
+  cluster policies. * **[Spark Declarative Pipelines
   permissions](:service:pipelines)** — Manage which users can view, manage,
-  run, cancel, or own a Delta Live Tables pipeline. * **[Job
+  run, cancel, or own a Spark Declarative Pipeline. * **[Job
   permissions](:service:jobs)** — Manage which users can view, manage,
   trigger, cancel, or own a job. * **[MLflow experiment
   permissions](:service:experiments)** — Manage which users can read, edit, or
@@ -93,8 +93,8 @@ func newGet() *cobra.Command {
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
       database-projects, dbsql-dashboards, directories, experiments, files,
-      genie, instance-pools, jobs, notebooks, pipelines, queries,
-      registered-models, repos, serving-endpoints, or warehouses.
+      genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
+      queries, registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -156,8 +156,8 @@ func newGetPermissionLevels() *cobra.Command {
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
       database-projects, dbsql-dashboards, directories, experiments, files,
-      genie, instance-pools, jobs, notebooks, pipelines, queries,
-      registered-models, repos, serving-endpoints, or warehouses.
+      genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
+      queries, registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
@@ -226,8 +226,8 @@ func newSet() *cobra.Command {
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
       database-projects, dbsql-dashboards, directories, experiments, files,
-      genie, instance-pools, jobs, notebooks, pipelines, queries,
-      registered-models, repos, serving-endpoints, or warehouses.
+      genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
+      queries, registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -307,8 +307,8 @@ func newUpdate() *cobra.Command {
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
       database-projects, dbsql-dashboards, directories, experiments, files,
-      genie, instance-pools, jobs, notebooks, pipelines, queries,
-      registered-models, repos, serving-endpoints, or warehouses.
+      genie, instance-pools, jobs, knowledge-assistants, notebooks, pipelines,
+      queries, registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)

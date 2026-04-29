@@ -156,9 +156,7 @@
                       },
                       "git_repository": {
                         "description": "Git repository configuration for app deployments. When specified, deployments can\nreference code from this repository by providing only the git reference (branch, tag, or commit).",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitRepository",
-                        "x-databricks-preview": "PRIVATE",
-                        "doNotSuggest": true
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitRepository"
                       },
                       "git_source": {
                         "description": "Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)\nto use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.\nThe source_code_path within git_source specifies the relative path to the app code within the repository.",
@@ -303,9 +301,7 @@
                       },
                       "managed_encryption_settings": {
                         "description": "Control CMK encryption for managed catalog data",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.EncryptionSettings",
-                        "x-databricks-preview": "PRIVATE",
-                        "doNotSuggest": true
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.EncryptionSettings"
                       },
                       "name": {
                         "$ref": "#/$defs/string"
@@ -1207,7 +1203,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "channel": {
-                        "description": "DLT Release Channel that specifies which version to use.",
+                        "description": "SDP Release Channel that specifies which version to use.",
                         "$ref": "#/$defs/string"
                       },
                       "clusters": {
@@ -1949,7 +1945,9 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "min_qps": {
-                        "$ref": "#/$defs/int64"
+                        "$ref": "#/$defs/int64",
+                        "deprecationMessage": "This field is deprecated",
+                        "deprecated": true
                       },
                       "name": {
                         "$ref": "#/$defs/string"
@@ -2833,9 +2831,7 @@
                     },
                     "git_source": {
                       "description": "Git repository to use as the source for the app deployment.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource"
                     },
                     "mode": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentMode"
@@ -4600,6 +4596,22 @@
                 }
               ]
             },
+            "compute.ConfidentialComputeType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Confidential computing technology for GCP instances.\nAligns with gcloud's --confidential-compute-type flag and the REST API's\nconfidentialInstanceConfig.confidentialInstanceType field.\nSee: https://cloud.google.com/confidential-computing/confidential-vm/docs/create-a-confidential-vm-instance",
+                  "enum": [
+                    "CONFIDENTIAL_COMPUTE_TYPE_NONE",
+                    "SEV_SNP"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "compute.DataSecurityMode": {
               "oneOf": [
                 {
@@ -4709,7 +4721,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip and java dependencies are supported.",
+                  "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and SDP's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip and java dependencies are supported.",
                   "properties": {
                     "base_environment": {
                       "description": "The base environment this environment is built on top of. A base environment defines the environment version and a\nlist of dependencies for serverless compute. The value can be a file path to a custom `env.yaml` file\n(e.g., `/Workspace/path/to/env.yaml`). Support for a Databricks-provided base environment ID\n(e.g., `workspace-base-environments/databricks_ai_v4`) and workspace base environment ID\n(e.g., `workspace-base-environments/dbe_b849b66e-b31a-4cb5-b161-1f2b10877fb7`) is in Beta.\nEither `environment_version` or `base_environment` can be provided.  For more information, see",
@@ -4753,6 +4765,12 @@
                     "boot_disk_size": {
                       "description": "Boot disk size in GB",
                       "$ref": "#/$defs/int"
+                    },
+                    "confidential_compute_type": {
+                      "description": "The confidential computing technology for this cluster's instances.\nCurrently only SEV_SNP is supported, and only on N2D instance types.\nWhen not set, no confidential computing is applied.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ConfidentialComputeType",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "first_on_demand": {
                       "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nThis value should be greater than 0, to make sure the cluster driver node is placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster.",
@@ -7914,8 +7932,24 @@
                       "x-databricks-preview": "PRIVATE",
                       "doNotSuggest": true
                     },
+                    "jira_options": {
+                      "description": "Jira specific options for ingestion",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.JiraConnectorOptions"
+                    },
+                    "outlook_options": {
+                      "description": "Outlook specific options for ingestion",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookOptions",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
                     "sharepoint_options": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SharepointOptions",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
+                    "smartsheet_options": {
+                      "description": "Smartsheet specific options for ingestion",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SmartsheetOptions",
                       "x-databricks-preview": "PRIVATE",
                       "doNotSuggest": true
                     },
@@ -8223,6 +8257,24 @@
                 }
               ]
             },
+            "pipelines.GoogleAdsConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "manager_account_id": {
+                      "description": "(Required) Manager Account ID (also called MCC Account ID) used to list and access\ncustomer accounts under this manager account. This is required for fetching the list\nof customer accounts during source selection.\nIf the same field is also set in the object-level GoogleAdsOptions (connector_options),\nthe object-level value takes precedence over this top-level config.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.GoogleAdsOptions": {
               "oneOf": [
                 {
@@ -8393,9 +8445,7 @@
                     },
                     "ingest_from_uc_foreign_catalog": {
                       "description": "Immutable. If set to true, the pipeline will ingest tables from the\nUC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.\nThe `source_catalog` fields in objects of IngestionConfig are interpreted as\nthe UC foreign catalogs to ingest from.",
-                      "$ref": "#/$defs/bool",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/bool"
                     },
                     "ingestion_gateway_id": {
                       "description": "Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.\nThis is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).\nUnder certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc\nManaged Ingestion Pipeline.",
@@ -8435,21 +8485,15 @@
                   "properties": {
                     "cursor_columns": {
                       "description": "The names of the monotonically increasing columns in the source table that are used to enable\nthe table to be read and ingested incrementally through structured streaming.\nThe columns are allowed to have repeated values but have to be non-decreasing.\nIf the source data is merged into the destination (e.g., using SCD Type 1 or Type 2), these\ncolumns will implicitly define the `sequence_by` behavior. You can still explicitly set\n`sequence_by` to override this default.",
-                      "$ref": "#/$defs/slice/string",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/slice/string"
                     },
                     "deletion_condition": {
                       "description": "Specifies a SQL WHERE condition that specifies that the source row has been deleted.\nThis is sometimes referred to as \"soft-deletes\".\nFor example: \"Operation = 'DELETE'\" or \"is_deleted = true\".\nThis field is orthogonal to `hard_deletion_sync_interval_in_seconds`,\none for soft-deletes and the other for hard-deletes.\nSee also the hard_deletion_sync_min_interval_in_seconds field for\nhandling of \"hard deletes\" where the source rows are physically removed from the table.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/string"
                     },
                     "hard_deletion_sync_min_interval_in_seconds": {
                       "description": "Specifies the minimum interval (in seconds) between snapshots on primary keys\nfor detecting and synchronizing hard deletions—i.e., rows that have been\nphysically removed from the source table.\nThis interval acts as a lower bound. If ingestion runs less frequently than\nthis value, hard deletion synchronization will align with the actual ingestion\nfrequency instead of happening more often.\nIf not set, hard deletion synchronization via snapshots is disabled.\nThis field is mutable and can be updated without triggering a full snapshot.",
-                      "$ref": "#/$defs/int64",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/int64"
                     }
                   },
                   "additionalProperties": false
@@ -8541,6 +8585,25 @@
                 }
               ]
             },
+            "pipelines.JiraConnectorOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Jira specific options for ingestion",
+                  "properties": {
+                    "include_jira_spaces": {
+                      "description": "(Optional) Projects to filter Jira data on",
+                      "$ref": "#/$defs/slice/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.ManualTrigger": {
               "oneOf": [
                 {
@@ -8616,6 +8679,101 @@
                   "required": [
                     "start_hour"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.OutlookAttachmentMode": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Attachment behavior mode for Outlook ingestion",
+                  "enum": [
+                    "ALL",
+                    "NON_INLINE_ONLY",
+                    "INLINE_ONLY",
+                    "NONE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.OutlookBodyFormat": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Body format for Outlook email content",
+                  "enum": [
+                    "TEXT_HTML",
+                    "TEXT_PLAIN"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.OutlookOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Outlook specific options for ingestion",
+                  "properties": {
+                    "attachment_mode": {
+                      "description": "(Optional) Controls which attachments to ingest.\nIf not specified, defaults to ALL.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookAttachmentMode"
+                    },
+                    "body_format": {
+                      "description": "(Optional) Defines how the body_content column is populated.\nTEXT_HTML: Preserves full formatting, links, and styling.\nTEXT_PLAIN: Converts body to plain text. Recommended for AI/RAG pipelines to reduce token usage and noise.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OutlookBodyFormat"
+                    },
+                    "folder_filter": {
+                      "description": "Deprecated. Use include_folders instead.",
+                      "$ref": "#/$defs/slice/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
+                    },
+                    "include_folders": {
+                      "description": "(Optional) Filter mail folders to include in the sync.\nIf not specified, all folders will be synced.\nExamples: Inbox, Sent Items, Custom_Folder\nFilter semantics: OR between different folders.",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "include_mailboxes": {
+                      "description": "(Optional) List of mailboxes to sync (e.g. mailbox email addresses or identifiers).\nIf not specified, all accessible mailboxes are ingested.\nFilter semantics: OR between different mailboxes.",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "include_senders": {
+                      "description": "(Optional) Filter emails by sender address. Uses exact email match.\nExamples: user@vendor.com, alerts@system.io, noreply@company.com\nIf not specified, emails from all senders will be synced.\nFilter semantics: OR between different senders.",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "include_subjects": {
+                      "description": "(Optional) Filter emails by subject line. Values ending with \"*\" use prefix match (subject starts with\nthe part before \"*\"); otherwise substring match (subject contains the value).\nExamples: \"Invoice\" (substring), \"Re:*\" (prefix), \"Support Ticket\", \"URGENT*\"\nIf not specified, emails with all subjects will be synced.\nFilter semantics: OR between different subjects.",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "sender_filter": {
+                      "description": "Deprecated. Use include_senders instead.",
+                      "$ref": "#/$defs/slice/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
+                    },
+                    "start_date": {
+                      "description": "(Optional) Start date for the initial sync in YYYY-MM-DD format.\nFormat: YYYY-MM-DD (e.g., 2024-01-01)\nThis determines the earliest date from which to sync historical data.\nIf not specified, complete history is ingested.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "subject_filter": {
+                      "description": "Deprecated. Use include_subjects instead.",
+                      "$ref": "#/$defs/slice/string",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -8888,7 +9046,7 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip dependencies are supported.",
+                  "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and SDP's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip dependencies are supported.",
                   "properties": {
                     "dependencies": {
                       "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e",
@@ -9049,9 +9207,7 @@
                   "properties": {
                     "connector_options": {
                       "description": "(Optional) Source Specific Connector Options",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions"
                     },
                     "destination_catalog": {
                       "description": "Required. Destination catalog to store tables.",
@@ -9130,6 +9286,25 @@
                 }
               ]
             },
+            "pipelines.SmartsheetOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Smartsheet specific options for ingestion",
+                  "properties": {
+                    "enforce_schema": {
+                      "description": "(Optional) When true, maps each column to its Smartsheet-declared type (Text/Number/Date/\nCheckbox/etc.). Cells that do not conform to the declared type are set to NULL.\nWhen false, all columns land as STRING. Use false for sheets with irregular data or columns\nthat frequently violate their own declared type.\nIf not specified, defaults to true.",
+                      "$ref": "#/$defs/bool"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.SourceCatalogConfig": {
               "oneOf": [
                 {
@@ -9161,6 +9336,11 @@
                     "catalog": {
                       "description": "Catalog-level source configuration parameters",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig"
+                    },
+                    "google_ads_config": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.GoogleAdsConfig",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -9178,9 +9358,7 @@
                   "properties": {
                     "connector_options": {
                       "description": "(Optional) Source Specific Connector Options",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectorOptions"
                     },
                     "destination_catalog": {
                       "description": "Required. Destination catalog to store table.",
@@ -9247,15 +9425,11 @@
                     },
                     "query_based_connector_config": {
                       "description": "Configurations that are only applicable for query-based ingestion connectors.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig"
                     },
                     "row_filter": {
                       "description": "(Optional, Immutable) The row filter condition to be applied to the table.\nIt must not contain the WHERE keyword, only the actual filter condition.\nIt must be in DBSQL format.",
-                      "$ref": "#/$defs/string",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/string"
                     },
                     "salesforce_include_formula_fields": {
                       "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector",
@@ -9265,9 +9439,7 @@
                     },
                     "scd_type": {
                       "description": "The SCD type to use to ingest the table.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScdType",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScdType"
                     },
                     "sequence_by": {
                       "description": "The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.",
@@ -9487,7 +9659,7 @@
                       "$ref": "#/$defs/float64"
                     },
                     "no_suspension": {
-                      "description": "When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.",
+                      "description": "When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.\nMutually exclusive with `suspend_timeout_duration`. When updating, use `spec.project_default_settings.suspension` in the update_mask.",
                       "$ref": "#/$defs/bool"
                     },
                     "pg_settings": {
@@ -9495,7 +9667,7 @@
                       "$ref": "#/$defs/map/string"
                     },
                     "suspend_timeout_duration": {
-                      "description": "Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).",
+                      "description": "Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).\nMutually exclusive with `no_suspension`. When updating, use `spec.project_default_settings.suspension` in the update_mask.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                     }
                   },
@@ -9887,6 +10059,7 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "description": "Deprecated: legacy inference table configuration. Please use AI Gateway inference tables instead.\nSee https://docs.databricks.com/aws/en/ai-gateway/inference-tables.",
                   "properties": {
                     "catalog_name": {
                       "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if the inference table is already enabled.",
@@ -10048,8 +10221,10 @@
                   "type": "object",
                   "properties": {
                     "auto_capture_config": {
-                      "description": "Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.\nNote: this field is deprecated for creating new provisioned throughput endpoints,\nor updating existing provisioned throughput endpoints that never have inference table configured;\nin these cases please use AI Gateway to manage inference tables.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AutoCaptureConfigInput"
+                      "description": "Configuration for legacy Inference Tables which automatically log requests and responses to Unity\nCatalog.\nDeprecated: please use AI Gateway inference tables instead. See\nhttps://docs.databricks.com/aws/en/ai-gateway/inference-tables.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AutoCaptureConfigInput",
+                      "deprecationMessage": "This field is deprecated",
+                      "deprecated": true
                     },
                     "served_entities": {
                       "description": "The list of served entities under the serving endpoint config.",

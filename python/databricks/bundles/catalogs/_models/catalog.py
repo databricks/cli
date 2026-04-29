@@ -40,8 +40,6 @@ class Catalog(Resource):
 
     managed_encryption_settings: VariableOrOptional[EncryptionSettings] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Control CMK encryption for managed catalog data
     """
 
@@ -78,8 +76,6 @@ class CatalogDict(TypedDict, total=False):
 
     managed_encryption_settings: VariableOrOptional[EncryptionSettingsParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Control CMK encryption for managed catalog data
     """
 

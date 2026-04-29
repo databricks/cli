@@ -141,7 +141,8 @@ var testConfig map[string]any = map[string]any{
 			Name: "my-endpoint",
 			Config: &serving.EndpointCoreConfigInput{
 				Name: "my-endpoint",
-				AutoCaptureConfig: &serving.AutoCaptureConfigInput{
+				// SDK v0.131.0 deprecated AutoCaptureConfig in favor of AI Gateway inference tables; this test exercises the legacy path.
+				AutoCaptureConfig: &serving.AutoCaptureConfigInput{ //nolint:staticcheck
 					CatalogName:     "main",
 					SchemaName:      "myschema",
 					TableNamePrefix: "my_table",

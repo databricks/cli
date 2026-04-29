@@ -39,7 +39,8 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 			State: vectorsearch.EndpointStatusStateOnline, // initial create is no-op, returns ONLINE immediately
 		},
 		ScalingInfo: &vectorsearch.EndpointScalingInfo{
-			RequestedMinQps: createReq.MinQps,
+			// SDK v0.131.0 deprecated RequestedMinQps/MinQps in favor of TargetQps. Test fake still mirrors the legacy field.
+			RequestedMinQps: createReq.MinQps, //nolint:staticcheck
 		},
 	}
 	endpoint.LastUpdatedTimestamp = endpoint.CreationTimestamp
@@ -106,7 +107,8 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdate(req Request, endpointName str
 	if endpoint.ScalingInfo == nil {
 		endpoint.ScalingInfo = &vectorsearch.EndpointScalingInfo{}
 	}
-	endpoint.ScalingInfo.RequestedMinQps = patchReq.MinQps
+	// SDK v0.131.0 deprecated RequestedMinQps/MinQps in favor of TargetQps. Test fake still mirrors the legacy field.
+	endpoint.ScalingInfo.RequestedMinQps = patchReq.MinQps //nolint:staticcheck
 	endpoint.LastUpdatedTimestamp = nowMilli()
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 

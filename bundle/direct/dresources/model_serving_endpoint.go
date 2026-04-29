@@ -34,6 +34,10 @@ func (*ResourceModelServingEndpoint) PrepareState(input *resources.ModelServingE
 	return &input.CreateServingEndpoint
 }
 
+// SDK v0.131.0 deprecated AutoCaptureConfig{Input,Output} in favor of AI Gateway inference tables.
+// Migration tracked separately; we still need to round-trip the legacy field for existing endpoints.
+//
+//nolint:staticcheck
 func autoCaptureConfigOutputToInput(output *serving.AutoCaptureConfigOutput) *serving.AutoCaptureConfigInput {
 	if output == nil {
 		return nil

@@ -70,6 +70,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newListEndpoints())
 	cmd.AddCommand(newListProjects())
 	cmd.AddCommand(newListRoles())
+	cmd.AddCommand(newUndeleteProject())
 	cmd.AddCommand(newUpdateBranch())
 	cmd.AddCommand(newUpdateDatabase())
 	cmd.AddCommand(newUpdateEndpoint())
@@ -108,6 +109,7 @@ func newCreateBranch() *cobra.Command {
 
 	cmd.Flags().Var(&createBranchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createBranchReq.ReplaceExisting, "replace-existing", createBranchReq.ReplaceExisting, `If true, update the branch if it already exists instead of returning an error.`)
 	cmd.Flags().StringVar(&createBranchReq.Branch.Name, "name", createBranchReq.Branch.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
@@ -478,6 +480,7 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createEndpointReq.ReplaceExisting, "replace-existing", createEndpointReq.ReplaceExisting, `If true, update the endpoint if it already exists instead of returning an error.`)
 	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
@@ -1371,6 +1374,8 @@ func newDeleteProject() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteProjectSkipWait, "no-wait", deleteProjectSkipWait, `do not wait to reach DONE state`)
 	cmd.Flags().DurationVar(&deleteProjectTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
+	cmd.Flags().BoolVar(&deleteProjectReq.Purge, "purge", deleteProjectReq.Purge, `If true, permanently deletes the project (hard delete).`)
+
 	cmd.Use = "delete-project NAME"
 	cmd.Short = `Delete a Project.`
 	cmd.Long = `Delete a Project.
@@ -2165,8 +2170,9 @@ func newGetSyncedTable() *cobra.Command {
   Get a Synced Table.
 
   Arguments:
-    NAME: Format: "synced_tables/{catalog}.{schema}.{table}", where (catalog,
-      schema, table) are the entity names in the Unity Catalog.`
+    NAME: The Full resource name of the synced table. Format:
+      "synced_tables/{catalog}.{schema}.{table}", where (catalog, schema, table)
+      are the entity names in the Unity Catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2446,6 +2452,7 @@ func newListProjects() *cobra.Command {
 	var listProjectsLimit int
 
 	cmd.Flags().IntVar(&listProjectsReq.PageSize, "page-size", listProjectsReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().BoolVar(&listProjectsReq.ShowDeleted, "show-deleted", listProjectsReq.ShowDeleted, `Whether to include soft-deleted projects in the response.`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listProjectsLimit, "limit", 0, `Maximum number of results to return.`)
@@ -2565,6 +2572,109 @@ func newListRoles() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listRolesOverrides {
 		fn(cmd, &listRolesReq)
+	}
+
+	return cmd
+}
+
+// start undelete-project command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var undeleteProjectOverrides []func(
+	*cobra.Command,
+	*postgres.UndeleteProjectRequest,
+)
+
+func newUndeleteProject() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var undeleteProjectReq postgres.UndeleteProjectRequest
+
+	var undeleteProjectSkipWait bool
+	var undeleteProjectTimeout time.Duration
+
+	cmd.Flags().BoolVar(&undeleteProjectSkipWait, "no-wait", undeleteProjectSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&undeleteProjectTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "undelete-project NAME"
+	cmd.Short = `Undelete a Project.`
+	cmd.Long = `Undelete a Project.
+
+  Undeletes a soft-deleted project.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: The full resource path of the project to undelete. Format:
+      projects/{project_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		undeleteProjectReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case undeleteProjectSkipWait:
+			wait, err := w.Postgres.UndeleteProject(ctx, undeleteProjectReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.UndeleteProject(ctx, undeleteProjectReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for undelete-project to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(undeleteProjectTimeout)
+
+			err = wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return nil
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range undeleteProjectOverrides {
+		fn(cmd, &undeleteProjectReq)
 	}
 
 	return cmd
