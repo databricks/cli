@@ -116,24 +116,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		cmdio.LogString(ctx, "")
 	}
 
-	deltaSyncIndexActions, directAccessIndexActions, otherIndexActions := splitVectorSearchIndexActions(b, vectorSearchIndexActions)
-	if len(deltaSyncIndexActions) > 0 {
-		cmdio.LogString(ctx, deleteDeltaSyncIndexMessage)
-		for _, a := range deltaSyncIndexActions {
-			cmdio.Log(ctx, a)
-		}
-		cmdio.LogString(ctx, "")
-	}
-	if len(directAccessIndexActions) > 0 {
-		cmdio.LogString(ctx, deleteDirectAccessIndexMessage)
-		for _, a := range directAccessIndexActions {
-			cmdio.Log(ctx, a)
-		}
-		cmdio.LogString(ctx, "")
-	}
-	if len(otherIndexActions) > 0 {
+	if len(vectorSearchIndexActions) > 0 {
 		cmdio.LogString(ctx, deleteVectorSearchIndexMessage)
-		for _, a := range otherIndexActions {
+		for _, a := range vectorSearchIndexActions {
 			cmdio.Log(ctx, a)
 		}
 		cmdio.LogString(ctx, "")

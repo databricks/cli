@@ -120,25 +120,14 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		}
 	}
 
-	// One or more Vector Search indexes is being deleted or recreated. Split by
-	// index_type so the warning explains the actual cost (Delta Sync rebuilds
-	// the embedding pipeline; Direct Access loses every upserted vector).
-	deltaSyncActions, directAccessActions, otherIndexActions := splitVectorSearchIndexActions(b, vectorSearchIndexActions)
-	if len(deltaSyncActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDeltaSyncIndexMessage)
-		for _, action := range deltaSyncActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-	if len(directAccessActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDirectAccessIndexMessage)
-		for _, action := range directAccessActions {
-			cmdio.Log(ctx, action)
-		}
-	}
-	if len(otherIndexActions) != 0 {
+	// One or more Vector Search indexes is being deleted or recreated. The
+	// message intentionally covers both index types; using the bundle config to
+	// pick a specific message would be wrong on type changes (e.g. flipping
+	// DELTA_SYNC -> DIRECT_ACCESS makes config say "Direct Access" while the
+	// remote being torn down is still Delta Sync).
+	if len(vectorSearchIndexActions) != 0 {
 		cmdio.LogString(ctx, deleteOrRecreateVectorSearchIndexMessage)
-		for _, action := range otherIndexActions {
+		for _, action := range vectorSearchIndexActions {
 			cmdio.Log(ctx, action)
 		}
 	}

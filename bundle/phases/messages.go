@@ -37,14 +37,6 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 This action will result in the deletion or recreation of the following Lakebase branches.
 All data stored in them will be permanently lost:`
 
-	deleteOrRecreateDeltaSyncIndexMessage = `
-This action will result in the deletion or recreation of the following Delta Sync Vector Search
-indexes. Recreation re-runs the full embedding pipeline against the source Delta table:`
-
-	deleteOrRecreateDirectAccessIndexMessage = `
-This action will result in the deletion or recreation of the following Direct Access Vector Search
-indexes. All upserted vectors will be lost and must be re-upserted after recreation:`
-
 	deleteOrRecreateVectorSearchIndexMessage = `
 This action will result in the deletion or recreation of the following Vector Search indexes.
 Delta Sync indexes re-run their embedding pipeline; Direct Access indexes lose all upserted vectors:`
@@ -73,12 +65,6 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 	deletePostgresBranchMessage = `This action will result in the deletion of the following Lakebase branches.
 All data stored in them will be permanently lost:`
-
-	deleteDeltaSyncIndexMessage = `This action will result in the deletion of the following Delta Sync Vector Search indexes.
-The source Delta table is preserved, but the embedding pipeline is removed:`
-
-	deleteDirectAccessIndexMessage = `This action will result in the deletion of the following Direct Access Vector Search indexes.
-All upserted vectors are permanently lost:`
 
 	deleteVectorSearchIndexMessage = `This action will result in the deletion of the following Vector Search indexes.
 For Delta Sync indexes, the source Delta table is preserved but the embedding pipeline is removed.
