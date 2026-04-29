@@ -537,6 +537,9 @@ jobs:
             const fs = require('fs');
             const MARKER = '<!-- regression-test-report -->';
             const report = fs.readFileSync(process.env.GITHUB_WORKSPACE + '/REGRESSION_REPORT.md', 'utf8');
+            if (report.includes('No acceptance or unit tests were changed on this branch.')) {
+              return;
+            }
             const body = MARKER + '\n' + report;
 
             const { owner, repo } = context.repo;
