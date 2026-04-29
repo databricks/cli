@@ -745,6 +745,8 @@ def main():
                 "passing_leaves": passing_leaves,
             }
             print(f"    status={parent_status}, leaves={len(leaves)}, passing={len(passing_leaves)}")
+            if proc.returncode != 0:
+                print(readable_output(proc.stdout + proc.stderr))
 
     if unit_selected:
         print("\n=== Phase 1b: Running unit tests on current branch ===")
