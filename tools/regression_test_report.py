@@ -471,11 +471,9 @@ def render_report(
         "",
         commit_header,
         "",
-        f"Base: {base_ref} {base_commit}",
-        f"Latest release tested: {latest_label}",
-        f"Acceptance tests analyzed: {len(acc_selected)} "
+        f"Acceptance tests: {len(acc_selected)} "
         f"({n_acc_added} added, {len(acc_selected) - n_acc_added} modified)",
-        f"Unit tests analyzed: {len(unit_selected)} "
+        f"Unit tests: {len(unit_selected)} "
         f"({n_unit_added} added, {len(unit_selected) - n_unit_added} modified)",
         "",
     ]
@@ -689,7 +687,7 @@ def main():
     head_hash = git("rev-parse", "--short", "HEAD").stdout.strip()
     head_title = git("log", "-1", "--format=%s", "HEAD").stdout.strip()
     is_dirty = bool(git("status", "--porcelain").stdout.strip())
-    commit_header = f"commit {head_hash}{'-dirty' if is_dirty else ''} {head_title}"
+    commit_header = f"Tested commit: {head_hash}{'-dirty' if is_dirty else ''} {head_title}"
 
     print(f"Analyzing branch vs {base_ref}")
     print(f"HEAD: {commit_header}")
@@ -716,8 +714,6 @@ def main():
         report = (
             "# Regression Test Report\n\n"
             f"{commit_header}\n\n"
-            f"Base: {base_ref} {base_commit}\n"
-            f"Latest release tested: {latest_label}\n\n"
             "No acceptance or unit tests were changed on this branch.\n"
         )
         _emit(report, args)
