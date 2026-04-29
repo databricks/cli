@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/statemgmt"
