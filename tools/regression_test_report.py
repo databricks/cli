@@ -253,7 +253,7 @@ def readable_output(json_text, max_lines=80):
         action = entry.get("Action", "")
         if action in ("output", "build-output"):
             out_lines.append(entry.get("Output", ""))
-    text = "".join(out_lines)
+    text = "".join(out_lines).replace("\r\n", "\n").replace("\r", "\n")
     lines = text.splitlines(keepends=True)
     if len(lines) > max_lines:
         lines = lines[:max_lines] + [f"\n... ({len(lines) - max_lines} more lines)\n"]
