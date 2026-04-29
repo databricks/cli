@@ -1,0 +1,3 @@
+Cloud = false
+Local = true
+Ignore = [".databricks"]

@@ -1,0 +1,9 @@
+
+>>> [CLI] ucm validate
+Name: validate-happy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/databricks/ucm/validate-happy/default
+
+Validation OK!

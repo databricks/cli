@@ -1,0 +1,9 @@
+
+>>> [CLI] ucm policy-check
+Name: policy-check-happy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/databricks/ucm/policy-check-happy/default
+
+Validation OK!

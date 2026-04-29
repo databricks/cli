@@ -1,0 +1,42 @@
+
+>>> [CLI] ucm schema --help
+Print the JSON schema for ucm.yml.
+
+Pipe into a file and point your editor at it for autocomplete and validation:
+
+  databricks ucm schema > ucm.schema.json
+
+Usage:
+  databricks ucm schema [flags]
+
+Flags:
+  -h, --help   help for schema
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    ucm target to use (if applicable)
+      --var strings      set values for variables defined in ucm config. Example: --var="foo=bar"
+
+>>> [CLI] ucm schema
+{
+  "$defs": {
+    "bool": {
+      "type": "boolean"
+    },
+    "github.com": {
+      "databricks": {
+        "cli": {
+          "libs": {
+            "dyn": {
+              "dynloc.Locations": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "$ref": "#/$defs/slice/string"
+                  },
+                  "locations": {
+                    "$ref": "#/$defs/map/slice/slice/int"
+                  },
+                  "version": {

@@ -1,0 +1,22 @@
+
+>>> [CLI] ucm summary
+Warning: cannot initialize resource URLs: workspace.host is not set
+
+Name: summary-happy
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/databricks/ucm/summary-happy/default
+Resources:
+  Catalogs:
+    main:
+      Name: main
+      URL:  (not deployed)
+  Grants:
+    analysts:
+      Name: schema main.raw -> analysts
+      URL:  (not deployed)
+  Schemas:
+    raw:
+      Name: main.raw
+      URL:  (not deployed)

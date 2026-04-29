@@ -1,0 +1,19 @@
+ucm:
+  name: validate-happy
+
+resources:
+  catalogs:
+    main:
+      name: main
+      comment: validate-happy catalog
+
+  schemas:
+    raw:
+      name: raw
+      catalog_name: main
+
+  grants:
+    analysts:
+      securable: {type: schema, name: main.raw}
+      principal: analysts
+      privileges: [USE_SCHEMA, SELECT]
