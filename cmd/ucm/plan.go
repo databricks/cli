@@ -43,13 +43,10 @@ Common invocations:
 			InitFunc: func(u *ucm.Ucm) {
 				u.Force = force
 			},
-			AlwaysPull:   true,
-			FastValidate: true,
-			// Build and PreDeployChecks are intentionally NOT set: until #103
-			// plumbs Backend through ProcessOptions, those would call
-			// phases.Build / PreDeployChecks with a zero-value phases.Options
-			// that lacks the Backend and TerraformFactory the verb body's
-			// buildPhaseOptions provides below. Once #103 lands, fold them in.
+			AlwaysPull:      true,
+			FastValidate:    true,
+			Build:           true,
+			PreDeployChecks: true,
 		})
 		ctx := cmd.Context()
 		if err != nil {
@@ -59,7 +56,7 @@ Common invocations:
 			return root.ErrAlreadyPrinted
 		}
 
-		opts, err := buildPhaseOptions(ctx, u)
+		opts, err := utils.BuildPhaseOptionsHook(ctx, u)
 		if err != nil {
 			return fmt.Errorf("resolve plan options: %w", err)
 		}
@@ -94,4 +91,3 @@ Common invocations:
 
 	return cmd
 }
-

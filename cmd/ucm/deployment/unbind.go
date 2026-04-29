@@ -81,9 +81,7 @@ To re-bind later, use:
 			}
 		}
 
-		// UCM's phases.Unbind needs a Backend + TerraformFactory that
-		// ProcessUcm does not yet plumb (tracked in #103).
-		opts, err := buildPhaseOptions(ctx, u)
+		opts, err := utils.BuildPhaseOptionsHook(ctx, u)
 		if err != nil {
 			return fmt.Errorf("resolve unbind options: %w", err)
 		}
