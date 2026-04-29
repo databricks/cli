@@ -533,12 +533,18 @@ jobs:
       - name: Generate regression test report
         run: python3 tools/regression_test_report.py
 
+      - name: Count commits since main
+        id: commits
+        run: echo "count=$(git rev-list --count $(git merge-base origin/main HEAD)..HEAD)" >> $GITHUB_OUTPUT
+
       - name: Post or update PR comment
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const fs = require('fs');
-            const MARKER = '<!-- regression-test-report -->';
+            const count = parseInt('${{ steps.commits.outputs.count }}', 10);
+            const MARKER_PREFIX = '<!-- regression-test-report ';
+            const MARKER = MARKER_PREFIX + count + ' -->';
             const report = fs.readFileSync(process.env.GITHUB_WORKSPACE + '/REGRESSION_REPORT.md', 'utf8');
             if (report.includes('No acceptance or unit tests were changed on this branch.')) {
               return;
@@ -551,9 +557,15 @@ jobs:
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number,
             });
-            const existing = comments.find(c => c.body && c.body.startsWith(MARKER));
+            const existing = comments.find(c => c.body && c.body.startsWith(MARKER_PREFIX));
 
             if (existing) {
+              const match = existing.body.match(/^<!-- regression-test-report (\d+) -->/);
+              const existingCount = match ? parseInt(match[1], 10) : 0;
+              if (count < existingCount) {
+                core.info(`Skipping: this run has ${count} commits, existing comment has ${existingCount}`);
+                return;
+              }
               if (existing.body !== body) {
                 await github.rest.issues.updateComment({
                   owner, repo, comment_id: existing.id, body,
