@@ -210,8 +210,6 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 }
 
 func (db *DeploymentState) Reload(ctx context.Context) error {
-	
-
 	db.stateIDs = make(map[string]string)
 	data, err := os.ReadFile(db.Path)
 	if err != nil {
@@ -249,7 +247,7 @@ func (db *DeploymentState) validateWALHeader(ctx context.Context, header *WALHea
 	}
 
 	if header.StateVersion != db.Data.StateVersion {
-		return fmt.Errorf("state_version in the header (%q) does not match the one in the state (%q)", header.StateVersion, db.Data.StateVersion)
+		return fmt.Errorf("state_version in the header (%d) does not match the one in the state (%d)", header.StateVersion, db.Data.StateVersion)
 	}
 
 	if header.Lineage != db.Data.Lineage && db.Data.Lineage != "" {
@@ -257,7 +255,7 @@ func (db *DeploymentState) validateWALHeader(ctx context.Context, header *WALHea
 	}
 
 	if header.Serial != db.Data.Serial+1 {
-		return fmt.Errorf("serial in the header (%q) is not one higher than the one in the state (%q)", header.Serial, db.Data.Serial)
+		return fmt.Errorf("serial in the header (%d) is not one higher than the one in the state (%d)", header.Serial, db.Data.Serial)
 	}
 
 	return nil
@@ -280,7 +278,7 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) error {
 	lineNumber := 0
 
 	for scanner.Scan() {
-		lineNumber += 1
+		lineNumber++
 		line := scanner.Bytes()
 		if lineNumber == 1 {
 			var header WALHeader

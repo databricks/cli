@@ -143,13 +143,6 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 
 	if targetEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(false))
-		// Finalize state: write to disk even if deploy failed, so partial progress is saved.
-		// Skip for empty plans to avoid creating a state file when nothing was deployed.
-		if len(plan.Plan) > 0 {
-			if err := b.DeploymentBundle.StateDB.Finalize(); err != nil {
-				logdiag.LogError(ctx, err)
-			}
-		}
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}

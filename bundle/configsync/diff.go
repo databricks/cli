@@ -135,15 +135,11 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 	} else {
 		deployBundle = &direct.DeploymentBundle{}
 		_, statePath := b.StateFilenameConfigSnapshot(ctx)
-		if err := deployBundle.StateDB.Open(statePath); err != nil {
+		if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
 			return nil, fmt.Errorf("failed to open state: %w", err)
 		}
+		defer deployBundle.StateDB.Close(ctx)
 	}
-
-	if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-		return nil, fmt.Errorf("failed to open state: %w", err)
-	}
-	defer deployBundle.StateDB.Close(ctx)
 
 	plan, err := deployBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 	if err != nil {
