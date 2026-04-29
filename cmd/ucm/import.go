@@ -80,7 +80,7 @@ Common invocations:
 			}
 		}
 
-		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{})
+		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{InitIDs: true})
 		ctx = cmd.Context()
 		if err != nil {
 			return err
