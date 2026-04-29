@@ -23,6 +23,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+// Match the conflicting path in the "<path> already exists. Please pass
+// overwrite=true to overwrite it." message that workspace-files import-file
+// returns for a notebook conflict. \S+ (rather than .* anchored to the start)
+// so the regex still works when the SDK wraps the message with a "Request
+// failed for ..." prefix.
+var alreadyExistsRegex = regexp.MustCompile(`(\S+) already exists\. Please pass overwrite=true to overwrite it\.`)
+
 // Type that implements fs.DirEntry for WSFS.
 type wsfsDirEntry struct {
 	wsfsFileInfo
@@ -204,22 +211,20 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// This API returns 409 if the file already exists, when the object type is file
+	// File conflicts return 409 without an error code; the conflict is at the request path.
 	if aerr.StatusCode == http.StatusConflict {
 		return fileAlreadyExistsError{absPath}
 	}
 
-	// This API returns 400 if the file already exists, when the object type is notebook
-	regex := regexp.MustCompile(`Path \((.*)\) already exists.`)
-	if aerr.StatusCode == http.StatusBadRequest && regex.MatchString(aerr.Message) {
-		// Parse file path from regex capture group
-		matches := regex.FindStringSubmatch(aerr.Message)
-		if len(matches) == 2 {
+	// Notebook conflicts return HTTP 400 with a JSON body that has only a
+	// "message" field — no "error_code" — so errors.Is(aerr, ErrResourceAlreadyExists)
+	// would miss the match. Detect via the message regex and extract the
+	// conflicting path (which differs from the request path because notebooks
+	// are stored without the file extension).
+	if aerr.StatusCode == http.StatusBadRequest {
+		if matches := alreadyExistsRegex.FindStringSubmatch(aerr.Message); len(matches) == 2 {
 			return fileAlreadyExistsError{matches[1]}
 		}
-
-		// Default to path specified to filer.Write if regex capture fails
-		return fileAlreadyExistsError{absPath}
 	}
 
 	// This API returns StatusForbidden when you have read access but don't have write access to a file
