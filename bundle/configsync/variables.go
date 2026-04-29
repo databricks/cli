@@ -545,23 +545,6 @@ func parseTemplateSegments(template string, resolved dyn.Value) []templateSegmen
 	return segments
 }
 
-// findAnchorOffset searches for the next literal segment's text in remaining
-// and returns the offset where it starts. Returns len(remaining) if no
-// subsequent literal exists. Returns -1 if a subsequent literal exists but
-// can't be found.
-func findAnchorOffset(segments []templateSegment, from int, remaining string) int {
-	for i := from; i < len(segments); i++ {
-		if !segments[i].isVariable {
-			idx := strings.Index(remaining, segments[i].raw)
-			if idx < 0 {
-				return -1
-			}
-			return idx
-		}
-	}
-	return len(remaining)
-}
-
 // preResolvedValueAt returns the pre-resolved dyn.Value at the field path,
 // if the field exists in the merged pre-resolved config.
 func preResolvedValueAt(preResolved dyn.Value, candidates []string) (dyn.Value, bool) {
