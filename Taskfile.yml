@@ -12,7 +12,7 @@ vars:
   # Limitation: git grep only scans tracked files; new //go:embed directives in
   # untracked files are missed until the file is staged or committed.
   EMBED_SOURCES:
-    sh: 'python3 {{.ROOT_DIR}}/tools/list_embeds.py'
+    sh: 'uv run tools/list_embeds.py'
 
 # pydabs-* tasks live in python/Taskfile.yml so `task pydabs-foo` works when
 # run from python/. Flattened so they keep their `pydabs-` names at the root.
