@@ -29,6 +29,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 The following resources will be deleted:
   delete resources.vector_search_indexes.my_index
 
+This action will result in the deletion of the following Vector Search indexes.
+For Delta Sync indexes, the source Delta Table is preserved but the embedding pipeline is removed.
+For Direct Access indexes, all upserted vectors are permanently lost:
+  delete resources.vector_search_indexes.my_index
+
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-columns-[UNIQUE_NAME]/default
 
 Deleting files...
