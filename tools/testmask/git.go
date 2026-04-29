@@ -23,4 +23,3 @@ func GetChangedFiles(headRef, baseRef string) ([]string, error) {
 
 	return lines, nil
 }
-
