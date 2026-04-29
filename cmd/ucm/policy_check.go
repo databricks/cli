@@ -5,8 +5,10 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/ucm/utils"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm/phases"
+	"github.com/databricks/cli/ucm/render"
 	"github.com/spf13/cobra"
 )
 
@@ -39,6 +41,18 @@ required fields). No network I/O.`,
 			return root.ErrAlreadyPrinted
 		}
 
+		out := cmd.OutOrStdout()
+		if root.OutputType(cmd) == flags.OutputText {
+			if err1 := render.RenderDiagnosticsSummary(ctx, out, u); err1 != nil {
+				return err1
+			}
+		}
+		if root.OutputType(cmd) == flags.OutputJSON {
+			if err1 := renderJsonOutput(cmd, u); err1 != nil {
+				return err1
+			}
+		}
+
 		numWarnings := logdiag.NumWarnings(ctx)
 		if strict && numWarnings > 0 {
 			noun := "warning"
@@ -48,7 +62,6 @@ required fields). No network I/O.`,
 			return fmt.Errorf("%d %s found. Warnings are not allowed in strict mode", numWarnings, noun)
 		}
 
-		fmt.Fprintln(cmd.OutOrStdout(), "Policy check OK!")
 		return nil
 	}
 

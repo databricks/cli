@@ -18,7 +18,7 @@ func TestCmd_PolicyCheck_ValidFixturePasses(t *testing.T) {
 	t.Logf("stdout=%q stderr=%q", stdout, stderr)
 
 	require.NoError(t, err)
-	assert.Contains(t, stdout, "Policy check OK!")
+	assert.Contains(t, stdout, "Validation OK!")
 }
 
 func TestCmd_PolicyCheck_MissingTagFixtureFails(t *testing.T) {
@@ -36,7 +36,7 @@ func TestCmd_PolicyCheck_StrictOffAllowsWarnings(t *testing.T) {
 	stdout, _, err := runVerb(t, validFixtureDir(t), "policy-check")
 
 	require.NoError(t, err)
-	assert.Contains(t, stdout, "Policy check OK!")
+	assert.Contains(t, stdout, "Found 1 warning")
 }
 
 // TestCmd_PolicyCheck_StrictOnFailsOnWarning verifies that --strict promotes
