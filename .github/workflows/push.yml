@@ -341,14 +341,14 @@ jobs:
       - name: Verify that the schema is up to date
         run: |
           if ! ( ./task --force generate-schema && git diff --exit-code ); then
-            echo "The schema is not up to date. Please run 'task generate-schema' and commit the changes."
+            echo "The schema is not up to date. Please run './task generate-schema' and commit the changes."
             exit 1
           fi
 
       - name: Verify that the generated enum and required fields are up to date
         run: |
           if ! ( ./task --force generate-validation && git diff --exit-code ); then
-            echo "The generated enum and required fields are not up to date. Please run 'task generate-validation' and commit the changes."
+            echo "The generated enum and required fields are not up to date. Please run './task generate-validation' and commit the changes."
             exit 1
           fi
 
@@ -375,7 +375,7 @@ jobs:
           ./task pydabs-codegen
 
           if ! ( git diff --exit-code ); then
-            echo "Generated Python code is not up-to-date. Please run 'task pydabs-codegen' and commit the changes."
+            echo "Generated Python code is not up-to-date. Please run './task pydabs-codegen' and commit the changes."
 
             exit 1
           fi

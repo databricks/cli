@@ -16,6 +16,8 @@ EMBED = "//go:embed "
 def main():
     root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), ".."))
     os.chdir(root)
+    # git grep only scans tracked files — new //go:embed directives in untracked
+    # files are silently missed until the file is staged or committed.
     out = subprocess.check_output(
         ["git", "grep", "--no-color", "-E", "^" + EMBED, "--", "*.go"],
         text=True,

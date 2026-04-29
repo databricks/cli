@@ -71,6 +71,16 @@ func LoadTargetMappings(taskfilePath string) ([]targetMapping, error) {
 		for _, src := range t.Sources {
 			s, ok := src.(string)
 			if !ok {
+				// exclude: entries are maps; they narrow the trigger set but
+				// testmask is conservative (false negatives are safe), so skip.
+				fmt.Fprintf(os.Stderr, "warning: task %q: skipping non-string source entry: %v\n", name, src)
+				continue
+			}
+			if strings.Contains(s, "{{") {
+				// Template expressions (e.g. {{.EMBED_SOURCES}}) expand at Task
+				// runtime; testmask cannot evaluate them, so the files they cover
+				// are not tracked. commonTriggerPatterns catches harness changes.
+				fmt.Fprintf(os.Stderr, "warning: task %q: skipping template expression in sources: %q\n", name, s)
 				continue
 			}
 			prefixes = append(prefixes, sourceToPrefix(s))

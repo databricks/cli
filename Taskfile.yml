@@ -9,6 +9,8 @@ vars:
   # computed by grepping `//go:embed` directives. Evaluated lazily by Task so
   # tasks that don't reference it pay nothing. testdata/ dirs are covered by
   # a separate static `**/testdata/**` glob, not this script.
+  # Limitation: git grep only scans tracked files; new //go:embed directives in
+  # untracked files are missed until the file is staged or committed.
   EMBED_SOURCES:
     sh: '{{.ROOT_DIR}}/tools/list_embeds.py'
 
@@ -150,6 +152,7 @@ tasks:
       TMPDIR: '{{.ROOT_DIR}}/.tmp/golangci-lint-root'
     sources:
       - "**/*.go"
+      - exclude: tools/**
       - exclude: bundle/internal/tf/codegen/**
       - .golangci.yaml
       - go.mod
@@ -493,8 +496,10 @@ tasks:
 
   test-update:
     desc: Update acceptance test output (local)
-    # Excludes out.* because the task rewrites them; keeping them in sources would
+    # Excludes out* because the task rewrites them; keeping them in sources would
     # invalidate the checksum and force a re-run on every invocation.
+    # Note: output.txt / output.*.txt are outputs here (Phase 0 regenerates them
+    # so Phase 1 tests can read the fresh versions via $TESTDIR) — not inputs.
     sources: &ACC_SOURCES_UPDATE
       - "**/*.go"
       - exclude: "**/*_test.go"
@@ -507,7 +512,7 @@ tasks:
       - libs/vendored_py_packages/**
       - tools/go.mod
       - tools/go.sum
-      - exclude: acceptance/**/out.*
+      - exclude: acceptance/**/out*
       - go.mod
       - go.sum
       - "{{.EMBED_SOURCES}}"
@@ -590,6 +595,7 @@ tasks:
     sources:
       - experimental/aitools/**
       - acceptance/apps/**
+      - "{{.EMBED_SOURCES}}"
     deps:
       - task: test-unit-root
         vars:

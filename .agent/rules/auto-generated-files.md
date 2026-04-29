@@ -90,9 +90,8 @@ Files matching this rule's glob pattern are most likely generated artifacts. Aut
 
 Regeneration commands:
 
-- `make test-update`
-- `make test-update-templates` (templates only)
-- `make generate-out-test-toml` (only `out.test.toml`)
+- `./task test-update`
+- `./task test-update-templates` (templates only)
 
 Typical generated files:
 
