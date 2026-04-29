@@ -128,7 +128,6 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 			if errMsg == "" && err != nil && !errors.Is(err, root.ErrAlreadyPrinted) {
 				errMsg = err.Error()
 			}
-			// TODO(#100): wire real LogDeployTelemetry; this is a no-op stub.
 			phases.LogDeployTelemetry(ctx, u, errMsg)
 		}()
 	}

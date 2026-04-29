@@ -24,13 +24,3 @@ type LibLocationMap map[string]string
 func BuildArtifacts(_ context.Context, _ *ucm.Ucm) LibLocationMap {
 	return nil
 }
-
-// LogDeployTelemetry is a no-op stub for bundle.phases.LogDeployTelemetry.
-// Bundle's implementation records deploy outcome telemetry on every exit
-// path. UCM has no telemetry pipeline yet; the cmd/ucm/utils.ProcessUcm fork
-// (#98) defers this stub on Deploy=true so the function shape stays parallel
-// to bundle's ProcessBundleRet.
-//
-// Tracked in #100.
-func LogDeployTelemetry(_ context.Context, _ *ucm.Ucm, _ string) {
-}
