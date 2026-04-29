@@ -446,7 +446,6 @@ def run_unit_tests_on_main(pkg_dir, changed_files, functions, base_ref):
 
 def render_report(
     commit_header,
-    base_ref,
     base_commit,
     # acceptance
     acc_selected,
@@ -471,10 +470,8 @@ def render_report(
         "",
         commit_header,
         "",
-        f"Acceptance tests: {len(acc_selected)} "
-        f"({n_acc_added} added, {len(acc_selected) - n_acc_added} modified)",
-        f"Unit tests: {len(unit_selected)} "
-        f"({n_unit_added} added, {len(unit_selected) - n_unit_added} modified)",
+        f"Acceptance tests: {len(acc_selected)} ({n_acc_added} added, {len(acc_selected) - n_acc_added} modified)",
+        f"Unit tests: {len(unit_selected)} ({n_unit_added} added, {len(unit_selected) - n_unit_added} modified)",
         "",
     ]
 
@@ -709,13 +706,7 @@ def main():
     print(f"Unit tests:       {len(unit_added)} added, {len(unit_modified)} modified → {len(unit_selected)} selected")
 
     if not acc_selected and not unit_selected:
-        latest_version = read_latest_release_version()
-        latest_label = f"v{latest_version}" if latest_version else "latest"
-        report = (
-            "# Regression Test Report\n\n"
-            f"{commit_header}\n\n"
-            "No acceptance or unit tests were changed on this branch.\n"
-        )
+        report = f"# Regression Test Report\n\n{commit_header}\n\nNo acceptance or unit tests were changed on this branch.\n"
         _emit(report, args)
         return
 
@@ -833,7 +824,6 @@ def main():
 
     report = render_report(
         commit_header,
-        base_ref,
         base_commit,
         acc_selected,
         acc_added,
