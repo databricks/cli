@@ -530,32 +530,35 @@ def render_report(
         base = f"{label}: {total} ({n_added} added, {total - n_added} modified)"
         return base + (" — " + ", ".join(parts) if parts else "")
 
+    acc_summary = _summary(
+        "Acceptance tests",
+        len(acc_selected),
+        n_acc_added,
+        [
+            ("regression", len(acc_regression)),
+            ("unreleased", len(acc_unreleased)),
+            ("coverage", len(acc_coverage)),
+            ("failing", len(acc_failing)),
+        ],
+    )
+    unit_summary = _summary(
+        "Unit tests",
+        len(unit_selected),
+        n_unit_added,
+        [
+            ("regression", len(unit_regression)),
+            ("coverage", len(unit_coverage)),
+            ("failing", len(unit_failing)),
+        ],
+    )
+
     lines = [
         "# Regression Test Report",
         "",
         commit_header,
         "",
-        _summary(
-            "Acceptance tests",
-            len(acc_selected),
-            n_acc_added,
-            [
-                ("regression", len(acc_regression)),
-                ("unreleased", len(acc_unreleased)),
-                ("coverage", len(acc_coverage)),
-                ("failing", len(acc_failing)),
-            ],
-        ),
-        _summary(
-            "Unit tests",
-            len(unit_selected),
-            n_unit_added,
-            [
-                ("regression", len(unit_regression)),
-                ("coverage", len(unit_coverage)),
-                ("failing", len(unit_failing)),
-            ],
-        ),
+        f"<!-- {acc_summary} -->",
+        f"<!-- {unit_summary} -->",
         "",
     ]
 
