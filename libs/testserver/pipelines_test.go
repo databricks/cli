@@ -62,3 +62,12 @@ func TestPipelineStop_AfterUpdate(t *testing.T) {
 	assert.Equal(t, pipelineId, stopBody.PipelineId)
 	assert.Equal(t, pipelines.PipelineStateIdle, stopBody.State)
 }
+
+func TestAlwaysSucceeds(t *testing.T) {
+	t.Run("subtest1", func(t *testing.T) {
+		assert.True(t, true)
+	})
+	t.Run("subtest2", func(t *testing.T) {
+		assert.True(t, true)
+	})
+}
