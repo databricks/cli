@@ -7,7 +7,8 @@ resources:
       name: test-endpoint-$UNIQUE_NAME
       endpoint_type: STANDARD
     bar:
-      name: test-endpoint-with-permissions-$UNIQUE_NAME
+      # Endpoint names must be < 50 chars, so keep this prefix short.
+      name: test-vse-perm-$UNIQUE_NAME
       endpoint_type: STANDARD
       permissions:
         - level: CAN_USE
