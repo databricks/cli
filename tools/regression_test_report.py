@@ -461,7 +461,6 @@ def render_report(
     unit_main_info,
 ):
     """Return the full markdown report as a string."""
-    latest_label = f"v{latest_version}" if latest_version else "latest"
     n_acc_added = sum(1 for t in acc_selected if t in acc_added)
     n_unit_added = sum(1 for k in unit_selected if k in unit_added_keys)
 
@@ -544,7 +543,7 @@ def render_report(
 
     # ---- table ----
     col_main = f"main ({base_commit})"
-    col_latest = f"latest ({latest_label})"
+    col_latest = f"latest (v{latest_version})" if latest_version else "latest"
     columns = ["test", "branch", col_main, col_latest]
     rows = []
 
