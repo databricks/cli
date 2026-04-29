@@ -987,6 +987,8 @@ github.com/databricks/cli/bundle/config/resources.VectorSearchEndpoint:
     "description": |-
       PLACEHOLDER
   "usage_policy_id":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.VectorSearchIndex:
   "delta_sync_index_spec":
     "description": |-
