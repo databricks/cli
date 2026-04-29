@@ -1,0 +1,5 @@
+
+>>> [CLI] ucm drift
+Warning: cannot initialize resource URLs: workspace.host is not set
+
+No drift detected.

@@ -1,0 +1,1 @@
+trace $CLI ucm import catalog test_catalog --auto-approve
