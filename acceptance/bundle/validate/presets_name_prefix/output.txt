@@ -40,7 +40,7 @@
     "vs_index": {
       "endpoint_name": "vs_endpoint",
       "index_type": "DELTA_SYNC",
-      "name": "c.${resources.schemas.schema1.name}.prefixmy_index",
+      "name": "my_catalog.my_schema.prefixmy_index",
       "primary_key": "id"
     }
   },
@@ -95,7 +95,7 @@
     "vs_index": {
       "endpoint_name": "vs_endpoint",
       "index_type": "DELTA_SYNC",
-      "name": "c.${resources.schemas.schema1.name}.prefix_my_index",
+      "name": "my_catalog.my_schema.prefix_my_index",
       "primary_key": "id"
     }
   },
@@ -150,7 +150,7 @@
     "vs_index": {
       "endpoint_name": "vs_endpoint",
       "index_type": "DELTA_SYNC",
-      "name": "c.${resources.schemas.schema1.name}.my_index",
+      "name": "my_catalog.my_schema.my_index",
       "primary_key": "id"
     }
   },
