@@ -509,7 +509,9 @@ jobs:
       !github.event.pull_request.head.repo.fork &&
       github.actor != 'dependabot[bot]'
 
-    runs-on: ubuntu-latest
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
 
     permissions:
       contents: read
