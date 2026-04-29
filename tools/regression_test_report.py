@@ -683,7 +683,7 @@ def main():
 
     head_hash = git("rev-parse", "--short", "HEAD").stdout.strip()
     head_title = git("log", "-1", "--format=%s", "HEAD").stdout.strip()
-    is_dirty = bool(git("status", "--porcelain").stdout.strip())
+    is_dirty = bool(git("status", "--porcelain", "--untracked-files=no").stdout.strip())
     commit_header = f"Tested commit: {head_hash}{'-dirty' if is_dirty else ''} {head_title}"
 
     print(f"Analyzing branch vs {base_ref}")
@@ -706,7 +706,9 @@ def main():
     print(f"Unit tests:       {len(unit_added)} added, {len(unit_modified)} modified → {len(unit_selected)} selected")
 
     if not acc_selected and not unit_selected:
-        report = f"# Regression Test Report\n\n{commit_header}\n\nNo acceptance or unit tests were changed on this branch.\n"
+        report = (
+            f"# Regression Test Report\n\n{commit_header}\n\nNo acceptance or unit tests were changed on this branch.\n"
+        )
         _emit(report, args)
         return
 

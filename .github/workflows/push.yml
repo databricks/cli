@@ -527,8 +527,8 @@ jobs:
         with:
           cache-key: regression-report
 
-      - name: Fetch base branch for diff
-        run: git fetch origin main --depth=1
+      - name: Fetch full history for diff
+        run: git fetch --unshallow || true
 
       - name: Generate regression test report
         run: python3 tools/regression_test_report.py
