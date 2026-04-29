@@ -14,6 +14,7 @@ type ResourceVectorSearchIndexDeltaSyncIndexSpecEmbeddingVectorColumns struct {
 }
 
 type ResourceVectorSearchIndexDeltaSyncIndexSpec struct {
+	ColumnsToSync           []string                                                            `json:"columns_to_sync,omitempty"`
 	EmbeddingWritebackTable string                                                              `json:"embedding_writeback_table,omitempty"`
 	PipelineId              string                                                              `json:"pipeline_id,omitempty"`
 	PipelineType            string                                                              `json:"pipeline_type,omitempty"`
@@ -40,7 +41,7 @@ type ResourceVectorSearchIndexDirectAccessIndexSpec struct {
 }
 
 type ResourceVectorSearchIndexProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceVectorSearchIndex struct {

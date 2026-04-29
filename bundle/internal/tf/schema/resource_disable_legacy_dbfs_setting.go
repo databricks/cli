@@ -7,7 +7,7 @@ type ResourceDisableLegacyDbfsSettingDisableLegacyDbfs struct {
 }
 
 type ResourceDisableLegacyDbfsSettingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceDisableLegacyDbfsSetting struct {

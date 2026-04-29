@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceDatabaseSyncedDatabaseTablesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesDataSynchronizationStatusContinuousUpdateStatusInitialPipelineSyncProgress struct {
@@ -77,7 +77,7 @@ type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesDataSynchronizationStatus
 }
 
 type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpecNewPipelineSpec struct {

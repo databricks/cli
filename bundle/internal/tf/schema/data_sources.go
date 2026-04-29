@@ -47,6 +47,10 @@ type DataSources struct {
 	DbfsFile                                    map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths                               map[string]any `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory                                   map[string]any `json:"databricks_directory,omitempty"`
+	DisasterRecoveryFailoverGroup               map[string]any `json:"databricks_disaster_recovery_failover_group,omitempty"`
+	DisasterRecoveryFailoverGroups              map[string]any `json:"databricks_disaster_recovery_failover_groups,omitempty"`
+	DisasterRecoveryStableUrl                   map[string]any `json:"databricks_disaster_recovery_stable_url,omitempty"`
+	DisasterRecoveryStableUrls                  map[string]any `json:"databricks_disaster_recovery_stable_urls,omitempty"`
 	Endpoint                                    map[string]any `json:"databricks_endpoint,omitempty"`
 	Endpoints                                   map[string]any `json:"databricks_endpoints,omitempty"`
 	EntityTagAssignment                         map[string]any `json:"databricks_entity_tag_assignment,omitempty"`
@@ -113,6 +117,8 @@ type DataSources struct {
 	RfaAccessRequestDestinations                map[string]any `json:"databricks_rfa_access_request_destinations,omitempty"`
 	Schema                                      map[string]any `json:"databricks_schema,omitempty"`
 	Schemas                                     map[string]any `json:"databricks_schemas,omitempty"`
+	SecretUc                                    map[string]any `json:"databricks_secret_uc,omitempty"`
+	SecretUcs                                   map[string]any `json:"databricks_secret_ucs,omitempty"`
 	ServicePrincipal                            map[string]any `json:"databricks_service_principal,omitempty"`
 	ServicePrincipalFederationPolicies          map[string]any `json:"databricks_service_principal_federation_policies,omitempty"`
 	ServicePrincipalFederationPolicy            map[string]any `json:"databricks_service_principal_federation_policy,omitempty"`
@@ -125,6 +131,10 @@ type DataSources struct {
 	SqlWarehouses                               map[string]any `json:"databricks_sql_warehouses,omitempty"`
 	StorageCredential                           map[string]any `json:"databricks_storage_credential,omitempty"`
 	StorageCredentials                          map[string]any `json:"databricks_storage_credentials,omitempty"`
+	SupervisorAgent                             map[string]any `json:"databricks_supervisor_agent,omitempty"`
+	SupervisorAgentTool                         map[string]any `json:"databricks_supervisor_agent_tool,omitempty"`
+	SupervisorAgentTools                        map[string]any `json:"databricks_supervisor_agent_tools,omitempty"`
+	SupervisorAgents                            map[string]any `json:"databricks_supervisor_agents,omitempty"`
 	Table                                       map[string]any `json:"databricks_table,omitempty"`
 	Tables                                      map[string]any `json:"databricks_tables,omitempty"`
 	TagPolicies                                 map[string]any `json:"databricks_tag_policies,omitempty"`
@@ -189,6 +199,10 @@ func NewDataSources() *DataSources {
 		DbfsFile:                        make(map[string]any),
 		DbfsFilePaths:                   make(map[string]any),
 		Directory:                       make(map[string]any),
+		DisasterRecoveryFailoverGroup:   make(map[string]any),
+		DisasterRecoveryFailoverGroups:  make(map[string]any),
+		DisasterRecoveryStableUrl:       make(map[string]any),
+		DisasterRecoveryStableUrls:      make(map[string]any),
 		Endpoint:                        make(map[string]any),
 		Endpoints:                       make(map[string]any),
 		EntityTagAssignment:             make(map[string]any),
@@ -255,6 +269,8 @@ func NewDataSources() *DataSources {
 		RfaAccessRequestDestinations:                make(map[string]any),
 		Schema:                                      make(map[string]any),
 		Schemas:                                     make(map[string]any),
+		SecretUc:                                    make(map[string]any),
+		SecretUcs:                                   make(map[string]any),
 		ServicePrincipal:                            make(map[string]any),
 		ServicePrincipalFederationPolicies:          make(map[string]any),
 		ServicePrincipalFederationPolicy:            make(map[string]any),
@@ -267,6 +283,10 @@ func NewDataSources() *DataSources {
 		SqlWarehouses:                               make(map[string]any),
 		StorageCredential:                           make(map[string]any),
 		StorageCredentials:                          make(map[string]any),
+		SupervisorAgent:                             make(map[string]any),
+		SupervisorAgentTool:                         make(map[string]any),
+		SupervisorAgentTools:                        make(map[string]any),
+		SupervisorAgents:                            make(map[string]any),
 		Table:                                       make(map[string]any),
 		Tables:                                      make(map[string]any),
 		TagPolicies:                                 make(map[string]any),

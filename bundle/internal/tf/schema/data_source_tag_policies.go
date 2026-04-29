@@ -3,11 +3,11 @@
 package schema
 
 type DataSourceTagPoliciesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceTagPoliciesTagPoliciesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceTagPoliciesTagPoliciesValues struct {

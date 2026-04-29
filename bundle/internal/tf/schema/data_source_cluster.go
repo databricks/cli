@@ -106,6 +106,7 @@ type DataSourceClusterClusterInfoExecutors struct {
 type DataSourceClusterClusterInfoGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -239,6 +240,7 @@ type DataSourceClusterClusterInfoSpecDriverNodeTypeFlexibility struct {
 type DataSourceClusterClusterInfoSpecGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	ConfidentialComputeType string `json:"confidential_compute_type,omitempty"`
 	FirstOnDemand           int    `json:"first_on_demand,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
@@ -301,28 +303,23 @@ type DataSourceClusterClusterInfoSpecLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
-type DataSourceClusterClusterInfoSpecLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
-}
-
 type DataSourceClusterClusterInfoSpecLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecLibrary struct {
-	Egg            string                                                 `json:"egg,omitempty"`
-	Jar            string                                                 `json:"jar,omitempty"`
-	Requirements   string                                                 `json:"requirements,omitempty"`
-	Whl            string                                                 `json:"whl,omitempty"`
-	Cran           *DataSourceClusterClusterInfoSpecLibraryCran           `json:"cran,omitempty"`
-	Maven          *DataSourceClusterClusterInfoSpecLibraryMaven          `json:"maven,omitempty"`
-	ProviderConfig *DataSourceClusterClusterInfoSpecLibraryProviderConfig `json:"provider_config,omitempty"`
-	Pypi           *DataSourceClusterClusterInfoSpecLibraryPypi           `json:"pypi,omitempty"`
+	Egg          string                                        `json:"egg,omitempty"`
+	Jar          string                                        `json:"jar,omitempty"`
+	Requirements string                                        `json:"requirements,omitempty"`
+	Whl          string                                        `json:"whl,omitempty"`
+	Cran         *DataSourceClusterClusterInfoSpecLibraryCran  `json:"cran,omitempty"`
+	Maven        *DataSourceClusterClusterInfoSpecLibraryMaven `json:"maven,omitempty"`
+	Pypi         *DataSourceClusterClusterInfoSpecLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecWorkerNodeTypeFlexibility struct {
@@ -454,7 +451,7 @@ type DataSourceClusterClusterInfo struct {
 }
 
 type DataSourceClusterProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceCluster struct {

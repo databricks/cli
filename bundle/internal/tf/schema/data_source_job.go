@@ -241,24 +241,19 @@ type DataSourceJobJobSettingsSettingsLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
-type DataSourceJobJobSettingsSettingsLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
-}
-
 type DataSourceJobJobSettingsSettingsLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsLibrary struct {
-	Egg            string                                                 `json:"egg,omitempty"`
-	Jar            string                                                 `json:"jar,omitempty"`
-	Requirements   string                                                 `json:"requirements,omitempty"`
-	Whl            string                                                 `json:"whl,omitempty"`
-	Cran           *DataSourceJobJobSettingsSettingsLibraryCran           `json:"cran,omitempty"`
-	Maven          *DataSourceJobJobSettingsSettingsLibraryMaven          `json:"maven,omitempty"`
-	ProviderConfig *DataSourceJobJobSettingsSettingsLibraryProviderConfig `json:"provider_config,omitempty"`
-	Pypi           *DataSourceJobJobSettingsSettingsLibraryPypi           `json:"pypi,omitempty"`
+	Egg          string                                        `json:"egg,omitempty"`
+	Jar          string                                        `json:"jar,omitempty"`
+	Requirements string                                        `json:"requirements,omitempty"`
+	Whl          string                                        `json:"whl,omitempty"`
+	Cran         *DataSourceJobJobSettingsSettingsLibraryCran  `json:"cran,omitempty"`
+	Maven        *DataSourceJobJobSettingsSettingsLibraryMaven `json:"maven,omitempty"`
+	Pypi         *DataSourceJobJobSettingsSettingsLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterAutoscale struct {
@@ -600,24 +595,19 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
-type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
-}
-
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibrary struct {
-	Egg            string                                                                    `json:"egg,omitempty"`
-	Jar            string                                                                    `json:"jar,omitempty"`
-	Requirements   string                                                                    `json:"requirements,omitempty"`
-	Whl            string                                                                    `json:"whl,omitempty"`
-	Cran           *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryCran           `json:"cran,omitempty"`
-	Maven          *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven          `json:"maven,omitempty"`
-	ProviderConfig *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryProviderConfig `json:"provider_config,omitempty"`
-	Pypi           *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi           `json:"pypi,omitempty"`
+	Egg          string                                                           `json:"egg,omitempty"`
+	Jar          string                                                           `json:"jar,omitempty"`
+	Requirements string                                                           `json:"requirements,omitempty"`
+	Whl          string                                                           `json:"whl,omitempty"`
+	Cran         *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryCran  `json:"cran,omitempty"`
+	Maven        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven `json:"maven,omitempty"`
+	Pypi         *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAutoscale struct {
@@ -974,24 +964,19 @@ type DataSourceJobJobSettingsSettingsTaskLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
-type DataSourceJobJobSettingsSettingsTaskLibraryProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
-}
-
 type DataSourceJobJobSettingsSettingsTaskLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskLibrary struct {
-	Egg            string                                                     `json:"egg,omitempty"`
-	Jar            string                                                     `json:"jar,omitempty"`
-	Requirements   string                                                     `json:"requirements,omitempty"`
-	Whl            string                                                     `json:"whl,omitempty"`
-	Cran           *DataSourceJobJobSettingsSettingsTaskLibraryCran           `json:"cran,omitempty"`
-	Maven          *DataSourceJobJobSettingsSettingsTaskLibraryMaven          `json:"maven,omitempty"`
-	ProviderConfig *DataSourceJobJobSettingsSettingsTaskLibraryProviderConfig `json:"provider_config,omitempty"`
-	Pypi           *DataSourceJobJobSettingsSettingsTaskLibraryPypi           `json:"pypi,omitempty"`
+	Egg          string                                            `json:"egg,omitempty"`
+	Jar          string                                            `json:"jar,omitempty"`
+	Requirements string                                            `json:"requirements,omitempty"`
+	Whl          string                                            `json:"whl,omitempty"`
+	Cran         *DataSourceJobJobSettingsSettingsTaskLibraryCran  `json:"cran,omitempty"`
+	Maven        *DataSourceJobJobSettingsSettingsTaskLibraryMaven `json:"maven,omitempty"`
+	Pypi         *DataSourceJobJobSettingsSettingsTaskLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterAutoscale struct {
@@ -1423,7 +1408,7 @@ type DataSourceJobJobSettings struct {
 }
 
 type DataSourceJobProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceJob struct {

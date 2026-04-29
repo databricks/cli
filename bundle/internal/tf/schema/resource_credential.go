@@ -27,7 +27,7 @@ type ResourceCredentialDatabricksGcpServiceAccount struct {
 }
 
 type ResourceCredentialProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceCredential struct {

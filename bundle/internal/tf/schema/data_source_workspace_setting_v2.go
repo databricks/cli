@@ -110,7 +110,7 @@ type DataSourceWorkspaceSettingV2PersonalCompute struct {
 }
 
 type DataSourceWorkspaceSettingV2ProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceWorkspaceSettingV2RestrictWorkspaceAdmins struct {

@@ -101,7 +101,7 @@ type DataSourceFunctionsFunctions struct {
 }
 
 type DataSourceFunctionsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceFunctions struct {

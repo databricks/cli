@@ -3,7 +3,7 @@
 package schema
 
 type ResourceGroupInstanceProfileProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceGroupInstanceProfile struct {

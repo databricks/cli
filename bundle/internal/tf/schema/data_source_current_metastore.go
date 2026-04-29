@@ -25,7 +25,7 @@ type DataSourceCurrentMetastoreMetastoreInfo struct {
 }
 
 type DataSourceCurrentMetastoreProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceCurrentMetastore struct {

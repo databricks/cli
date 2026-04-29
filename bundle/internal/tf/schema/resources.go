@@ -44,6 +44,8 @@ type Resources struct {
 	DisableLegacyAccessSetting                   map[string]any `json:"databricks_disable_legacy_access_setting,omitempty"`
 	DisableLegacyDbfsSetting                     map[string]any `json:"databricks_disable_legacy_dbfs_setting,omitempty"`
 	DisableLegacyFeaturesSetting                 map[string]any `json:"databricks_disable_legacy_features_setting,omitempty"`
+	DisasterRecoveryFailoverGroup                map[string]any `json:"databricks_disaster_recovery_failover_group,omitempty"`
+	DisasterRecoveryStableUrl                    map[string]any `json:"databricks_disaster_recovery_stable_url,omitempty"`
 	Endpoint                                     map[string]any `json:"databricks_endpoint,omitempty"`
 	EnhancedSecurityMonitoringWorkspaceSetting   map[string]any `json:"databricks_enhanced_security_monitoring_workspace_setting,omitempty"`
 	Entitlements                                 map[string]any `json:"databricks_entitlements,omitempty"`
@@ -123,6 +125,7 @@ type Resources struct {
 	Secret                                       map[string]any `json:"databricks_secret,omitempty"`
 	SecretAcl                                    map[string]any `json:"databricks_secret_acl,omitempty"`
 	SecretScope                                  map[string]any `json:"databricks_secret_scope,omitempty"`
+	SecretUc                                     map[string]any `json:"databricks_secret_uc,omitempty"`
 	ServicePrincipal                             map[string]any `json:"databricks_service_principal,omitempty"`
 	ServicePrincipalFederationPolicy             map[string]any `json:"databricks_service_principal_federation_policy,omitempty"`
 	ServicePrincipalRole                         map[string]any `json:"databricks_service_principal_role,omitempty"`
@@ -138,6 +141,8 @@ type Resources struct {
 	SqlVisualization                             map[string]any `json:"databricks_sql_visualization,omitempty"`
 	SqlWidget                                    map[string]any `json:"databricks_sql_widget,omitempty"`
 	StorageCredential                            map[string]any `json:"databricks_storage_credential,omitempty"`
+	SupervisorAgent                              map[string]any `json:"databricks_supervisor_agent,omitempty"`
+	SupervisorAgentTool                          map[string]any `json:"databricks_supervisor_agent_tool,omitempty"`
 	SystemSchema                                 map[string]any `json:"databricks_system_schema,omitempty"`
 	Table                                        map[string]any `json:"databricks_table,omitempty"`
 	TagPolicy                                    map[string]any `json:"databricks_tag_policy,omitempty"`
@@ -184,26 +189,28 @@ func NewResources() *Resources {
 		Cluster:                                make(map[string]any),
 		ClusterPolicy:                          make(map[string]any),
 		ComplianceSecurityProfileWorkspaceSetting: make(map[string]any),
-		Connection:                      make(map[string]any),
-		Credential:                      make(map[string]any),
-		CustomAppIntegration:            make(map[string]any),
-		Dashboard:                       make(map[string]any),
-		DataClassificationCatalogConfig: make(map[string]any),
-		DataQualityMonitor:              make(map[string]any),
-		DataQualityRefresh:              make(map[string]any),
-		DatabaseDatabaseCatalog:         make(map[string]any),
-		DatabaseInstance:                make(map[string]any),
-		DatabaseSyncedDatabaseTable:     make(map[string]any),
-		DbfsFile:                        make(map[string]any),
-		DefaultNamespaceSetting:         make(map[string]any),
-		Directory:                       make(map[string]any),
-		DisableLegacyAccessSetting:      make(map[string]any),
-		DisableLegacyDbfsSetting:        make(map[string]any),
-		DisableLegacyFeaturesSetting:    make(map[string]any),
-		Endpoint:                        make(map[string]any),
-		EnhancedSecurityMonitoringWorkspaceSetting: make(map[string]any),
-		Entitlements:        make(map[string]any),
-		EntityTagAssignment: make(map[string]any),
+		Connection:                                  make(map[string]any),
+		Credential:                                  make(map[string]any),
+		CustomAppIntegration:                        make(map[string]any),
+		Dashboard:                                   make(map[string]any),
+		DataClassificationCatalogConfig:             make(map[string]any),
+		DataQualityMonitor:                          make(map[string]any),
+		DataQualityRefresh:                          make(map[string]any),
+		DatabaseDatabaseCatalog:                     make(map[string]any),
+		DatabaseInstance:                            make(map[string]any),
+		DatabaseSyncedDatabaseTable:                 make(map[string]any),
+		DbfsFile:                                    make(map[string]any),
+		DefaultNamespaceSetting:                     make(map[string]any),
+		Directory:                                   make(map[string]any),
+		DisableLegacyAccessSetting:                  make(map[string]any),
+		DisableLegacyDbfsSetting:                    make(map[string]any),
+		DisableLegacyFeaturesSetting:                make(map[string]any),
+		DisasterRecoveryFailoverGroup:               make(map[string]any),
+		DisasterRecoveryStableUrl:                   make(map[string]any),
+		Endpoint:                                    make(map[string]any),
+		EnhancedSecurityMonitoringWorkspaceSetting:  make(map[string]any),
+		Entitlements:                                make(map[string]any),
+		EntityTagAssignment:                         make(map[string]any),
 		EnvironmentsDefaultWorkspaceBaseEnvironment: make(map[string]any),
 		EnvironmentsWorkspaceBaseEnvironment:        make(map[string]any),
 		ExternalLocation:                            make(map[string]any),
@@ -279,6 +286,7 @@ func NewResources() *Resources {
 		Secret:                                      make(map[string]any),
 		SecretAcl:                                   make(map[string]any),
 		SecretScope:                                 make(map[string]any),
+		SecretUc:                                    make(map[string]any),
 		ServicePrincipal:                            make(map[string]any),
 		ServicePrincipalFederationPolicy:            make(map[string]any),
 		ServicePrincipalRole:                        make(map[string]any),
@@ -294,6 +302,8 @@ func NewResources() *Resources {
 		SqlVisualization:                            make(map[string]any),
 		SqlWidget:                                   make(map[string]any),
 		StorageCredential:                           make(map[string]any),
+		SupervisorAgent:                             make(map[string]any),
+		SupervisorAgentTool:                         make(map[string]any),
 		SystemSchema:                                make(map[string]any),
 		Table:                                       make(map[string]any),
 		TagPolicy:                                   make(map[string]any),

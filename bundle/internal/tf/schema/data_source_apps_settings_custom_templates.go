@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceAppsSettingsCustomTemplatesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceAppsSettingsCustomTemplatesTemplatesManifestResourceSpecsExperimentSpec struct {
@@ -50,7 +50,7 @@ type DataSourceAppsSettingsCustomTemplatesTemplatesManifest struct {
 }
 
 type DataSourceAppsSettingsCustomTemplatesTemplatesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceAppsSettingsCustomTemplatesTemplates struct {

@@ -73,7 +73,7 @@ type DataSourceDatabaseSyncedDatabaseTableDataSynchronizationStatus struct {
 }
 
 type DataSourceDatabaseSyncedDatabaseTableProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDatabaseSyncedDatabaseTableSpecNewPipelineSpec struct {

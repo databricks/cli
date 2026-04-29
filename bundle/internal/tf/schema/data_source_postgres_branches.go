@@ -3,7 +3,7 @@
 package schema
 
 type DataSourcePostgresBranchesBranchesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePostgresBranchesBranchesSpec struct {
@@ -17,6 +17,7 @@ type DataSourcePostgresBranchesBranchesSpec struct {
 }
 
 type DataSourcePostgresBranchesBranchesStatus struct {
+	BranchId         string `json:"branch_id,omitempty"`
 	CurrentState     string `json:"current_state,omitempty"`
 	Default          bool   `json:"default,omitempty"`
 	ExpireTime       string `json:"expire_time,omitempty"`
@@ -41,7 +42,7 @@ type DataSourcePostgresBranchesBranches struct {
 }
 
 type DataSourcePostgresBranchesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePostgresBranches struct {

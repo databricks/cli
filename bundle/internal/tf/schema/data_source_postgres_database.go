@@ -3,7 +3,7 @@
 package schema
 
 type DataSourcePostgresDatabaseProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePostgresDatabaseSpec struct {
@@ -12,6 +12,7 @@ type DataSourcePostgresDatabaseSpec struct {
 }
 
 type DataSourcePostgresDatabaseStatus struct {
+	DatabaseId       string `json:"database_id,omitempty"`
 	PostgresDatabase string `json:"postgres_database,omitempty"`
 	Role             string `json:"role,omitempty"`
 }

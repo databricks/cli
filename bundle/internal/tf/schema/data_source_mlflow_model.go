@@ -24,7 +24,7 @@ type DataSourceMlflowModelLatestVersions struct {
 }
 
 type DataSourceMlflowModelProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceMlflowModelTags struct {

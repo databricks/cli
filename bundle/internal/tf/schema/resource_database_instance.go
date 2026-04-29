@@ -29,7 +29,7 @@ type ResourceDatabaseInstanceParentInstanceRef struct {
 }
 
 type ResourceDatabaseInstanceProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceDatabaseInstance struct {

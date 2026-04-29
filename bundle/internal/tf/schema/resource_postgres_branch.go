@@ -3,7 +3,7 @@
 package schema
 
 type ResourcePostgresBranchProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourcePostgresBranchSpec struct {
@@ -17,6 +17,7 @@ type ResourcePostgresBranchSpec struct {
 }
 
 type ResourcePostgresBranchStatus struct {
+	BranchId         string `json:"branch_id,omitempty"`
 	CurrentState     string `json:"current_state,omitempty"`
 	Default          bool   `json:"default,omitempty"`
 	ExpireTime       string `json:"expire_time,omitempty"`
@@ -30,13 +31,14 @@ type ResourcePostgresBranchStatus struct {
 }
 
 type ResourcePostgresBranch struct {
-	BranchId       string                                `json:"branch_id"`
-	CreateTime     string                                `json:"create_time,omitempty"`
-	Name           string                                `json:"name,omitempty"`
-	Parent         string                                `json:"parent"`
-	ProviderConfig *ResourcePostgresBranchProviderConfig `json:"provider_config,omitempty"`
-	Spec           *ResourcePostgresBranchSpec           `json:"spec,omitempty"`
-	Status         *ResourcePostgresBranchStatus         `json:"status,omitempty"`
-	Uid            string                                `json:"uid,omitempty"`
-	UpdateTime     string                                `json:"update_time,omitempty"`
+	BranchId        string                                `json:"branch_id"`
+	CreateTime      string                                `json:"create_time,omitempty"`
+	Name            string                                `json:"name,omitempty"`
+	Parent          string                                `json:"parent"`
+	ProviderConfig  *ResourcePostgresBranchProviderConfig `json:"provider_config,omitempty"`
+	ReplaceExisting bool                                  `json:"replace_existing,omitempty"`
+	Spec            *ResourcePostgresBranchSpec           `json:"spec,omitempty"`
+	Status          *ResourcePostgresBranchStatus         `json:"status,omitempty"`
+	Uid             string                                `json:"uid,omitempty"`
+	UpdateTime      string                                `json:"update_time,omitempty"`
 }

@@ -13,28 +13,23 @@ type ResourceClusterPolicyLibrariesMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
-type ResourceClusterPolicyLibrariesProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
-}
-
 type ResourceClusterPolicyLibrariesPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceClusterPolicyLibraries struct {
-	Egg            string                                        `json:"egg,omitempty"`
-	Jar            string                                        `json:"jar,omitempty"`
-	Requirements   string                                        `json:"requirements,omitempty"`
-	Whl            string                                        `json:"whl,omitempty"`
-	Cran           *ResourceClusterPolicyLibrariesCran           `json:"cran,omitempty"`
-	Maven          *ResourceClusterPolicyLibrariesMaven          `json:"maven,omitempty"`
-	ProviderConfig *ResourceClusterPolicyLibrariesProviderConfig `json:"provider_config,omitempty"`
-	Pypi           *ResourceClusterPolicyLibrariesPypi           `json:"pypi,omitempty"`
+	Egg          string                               `json:"egg,omitempty"`
+	Jar          string                               `json:"jar,omitempty"`
+	Requirements string                               `json:"requirements,omitempty"`
+	Whl          string                               `json:"whl,omitempty"`
+	Cran         *ResourceClusterPolicyLibrariesCran  `json:"cran,omitempty"`
+	Maven        *ResourceClusterPolicyLibrariesMaven `json:"maven,omitempty"`
+	Pypi         *ResourceClusterPolicyLibrariesPypi  `json:"pypi,omitempty"`
 }
 
 type ResourceClusterPolicyProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceClusterPolicy struct {

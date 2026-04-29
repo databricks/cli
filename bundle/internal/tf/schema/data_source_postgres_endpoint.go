@@ -3,7 +3,7 @@
 package schema
 
 type DataSourcePostgresEndpointProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourcePostgresEndpointSpecGroup struct {
@@ -47,6 +47,7 @@ type DataSourcePostgresEndpointStatus struct {
 	AutoscalingLimitMinCu  float64                                   `json:"autoscaling_limit_min_cu,omitempty"`
 	CurrentState           string                                    `json:"current_state,omitempty"`
 	Disabled               bool                                      `json:"disabled,omitempty"`
+	EndpointId             string                                    `json:"endpoint_id,omitempty"`
 	EndpointType           string                                    `json:"endpoint_type,omitempty"`
 	Group                  *DataSourcePostgresEndpointStatusGroup    `json:"group,omitempty"`
 	Hosts                  *DataSourcePostgresEndpointStatusHosts    `json:"hosts,omitempty"`

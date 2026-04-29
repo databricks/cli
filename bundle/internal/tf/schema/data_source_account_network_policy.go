@@ -15,6 +15,11 @@ type DataSourceAccountNetworkPolicyEgressNetworkAccessAllowedStorageDestinations
 	StorageDestinationType string `json:"storage_destination_type,omitempty"`
 }
 
+type DataSourceAccountNetworkPolicyEgressNetworkAccessBlockedInternetDestinations struct {
+	Destination             string `json:"destination,omitempty"`
+	InternetDestinationType string `json:"internet_destination_type,omitempty"`
+}
+
 type DataSourceAccountNetworkPolicyEgressNetworkAccessPolicyEnforcement struct {
 	DryRunModeProductFilter []string `json:"dry_run_mode_product_filter,omitempty"`
 	EnforcementMode         string   `json:"enforcement_mode,omitempty"`
@@ -23,6 +28,7 @@ type DataSourceAccountNetworkPolicyEgressNetworkAccessPolicyEnforcement struct {
 type DataSourceAccountNetworkPolicyEgressNetworkAccess struct {
 	AllowedInternetDestinations []DataSourceAccountNetworkPolicyEgressNetworkAccessAllowedInternetDestinations `json:"allowed_internet_destinations,omitempty"`
 	AllowedStorageDestinations  []DataSourceAccountNetworkPolicyEgressNetworkAccessAllowedStorageDestinations  `json:"allowed_storage_destinations,omitempty"`
+	BlockedInternetDestinations []DataSourceAccountNetworkPolicyEgressNetworkAccessBlockedInternetDestinations `json:"blocked_internet_destinations,omitempty"`
 	PolicyEnforcement           *DataSourceAccountNetworkPolicyEgressNetworkAccessPolicyEnforcement            `json:"policy_enforcement,omitempty"`
 	RestrictionMode             string                                                                         `json:"restriction_mode"`
 }
@@ -41,6 +47,14 @@ type DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesAuthentication s
 	IdentityType string                                                                                `json:"identity_type,omitempty"`
 }
 
+type DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationAppsRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationLakebaseRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
 type DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationWorkspaceApi struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
@@ -50,9 +64,11 @@ type DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationWorks
 }
 
 type DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestination struct {
-	AllDestinations bool                                                                                `json:"all_destinations,omitempty"`
-	WorkspaceApi    *DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationWorkspaceApi `json:"workspace_api,omitempty"`
-	WorkspaceUi     *DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationWorkspaceUi  `json:"workspace_ui,omitempty"`
+	AllDestinations bool                                                                                   `json:"all_destinations,omitempty"`
+	AppsRuntime     *DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationAppsRuntime     `json:"apps_runtime,omitempty"`
+	LakebaseRuntime *DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationLakebaseRuntime `json:"lakebase_runtime,omitempty"`
+	WorkspaceApi    *DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationWorkspaceApi    `json:"workspace_api,omitempty"`
+	WorkspaceUi     *DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationWorkspaceUi     `json:"workspace_ui,omitempty"`
 }
 
 type DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesOriginExcludedIpRanges struct {
@@ -86,6 +102,14 @@ type DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesAuthentication st
 	IdentityType string                                                                               `json:"identity_type,omitempty"`
 }
 
+type DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationAppsRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationLakebaseRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
 type DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationWorkspaceApi struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
@@ -95,9 +119,11 @@ type DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationWorksp
 }
 
 type DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestination struct {
-	AllDestinations bool                                                                               `json:"all_destinations,omitempty"`
-	WorkspaceApi    *DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationWorkspaceApi `json:"workspace_api,omitempty"`
-	WorkspaceUi     *DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationWorkspaceUi  `json:"workspace_ui,omitempty"`
+	AllDestinations bool                                                                                  `json:"all_destinations,omitempty"`
+	AppsRuntime     *DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationAppsRuntime     `json:"apps_runtime,omitempty"`
+	LakebaseRuntime *DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationLakebaseRuntime `json:"lakebase_runtime,omitempty"`
+	WorkspaceApi    *DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationWorkspaceApi    `json:"workspace_api,omitempty"`
+	WorkspaceUi     *DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationWorkspaceUi     `json:"workspace_ui,omitempty"`
 }
 
 type DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesOriginExcludedIpRanges struct {
@@ -141,6 +167,14 @@ type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesAuthentica
 	IdentityType string                                                                                      `json:"identity_type,omitempty"`
 }
 
+type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinationAppsRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinationLakebaseRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
 type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinationWorkspaceApi struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
@@ -150,9 +184,11 @@ type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinatio
 }
 
 type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestination struct {
-	AllDestinations bool                                                                                      `json:"all_destinations,omitempty"`
-	WorkspaceApi    *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinationWorkspaceApi `json:"workspace_api,omitempty"`
-	WorkspaceUi     *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinationWorkspaceUi  `json:"workspace_ui,omitempty"`
+	AllDestinations bool                                                                                         `json:"all_destinations,omitempty"`
+	AppsRuntime     *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinationAppsRuntime     `json:"apps_runtime,omitempty"`
+	LakebaseRuntime *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinationLakebaseRuntime `json:"lakebase_runtime,omitempty"`
+	WorkspaceApi    *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinationWorkspaceApi    `json:"workspace_api,omitempty"`
+	WorkspaceUi     *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinationWorkspaceUi     `json:"workspace_ui,omitempty"`
 }
 
 type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesOriginExcludedIpRanges struct {
@@ -186,6 +222,14 @@ type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesAuthenticat
 	IdentityType string                                                                                     `json:"identity_type,omitempty"`
 }
 
+type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestinationAppsRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
+type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestinationLakebaseRuntime struct {
+	AllDestinations bool `json:"all_destinations,omitempty"`
+}
+
 type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestinationWorkspaceApi struct {
 	Scopes []string `json:"scopes,omitempty"`
 }
@@ -195,9 +239,11 @@ type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestination
 }
 
 type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestination struct {
-	AllDestinations bool                                                                                     `json:"all_destinations,omitempty"`
-	WorkspaceApi    *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestinationWorkspaceApi `json:"workspace_api,omitempty"`
-	WorkspaceUi     *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestinationWorkspaceUi  `json:"workspace_ui,omitempty"`
+	AllDestinations bool                                                                                        `json:"all_destinations,omitempty"`
+	AppsRuntime     *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestinationAppsRuntime     `json:"apps_runtime,omitempty"`
+	LakebaseRuntime *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestinationLakebaseRuntime `json:"lakebase_runtime,omitempty"`
+	WorkspaceApi    *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestinationWorkspaceApi    `json:"workspace_api,omitempty"`
+	WorkspaceUi     *DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestinationWorkspaceUi     `json:"workspace_ui,omitempty"`
 }
 
 type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesOriginExcludedIpRanges struct {

@@ -215,7 +215,7 @@ type ResourceModelServingEmailNotifications struct {
 }
 
 type ResourceModelServingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceModelServingRateLimits struct {

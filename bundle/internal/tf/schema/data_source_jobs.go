@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceJobsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceJobs struct {

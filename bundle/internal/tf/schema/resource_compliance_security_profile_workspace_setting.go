@@ -8,7 +8,7 @@ type ResourceComplianceSecurityProfileWorkspaceSettingComplianceSecurityProfileW
 }
 
 type ResourceComplianceSecurityProfileWorkspaceSettingProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceComplianceSecurityProfileWorkspaceSetting struct {

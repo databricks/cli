@@ -12,7 +12,7 @@ type ResourceSqlTableColumn struct {
 }
 
 type ResourceSqlTableProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceSqlTable struct {

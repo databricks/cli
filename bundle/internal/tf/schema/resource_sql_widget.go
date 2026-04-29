@@ -20,7 +20,7 @@ type ResourceSqlWidgetPosition struct {
 }
 
 type ResourceSqlWidgetProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type ResourceSqlWidget struct {

@@ -16,7 +16,7 @@ type DataSourceDashboardsDashboards struct {
 }
 
 type DataSourceDashboardsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceDashboards struct {

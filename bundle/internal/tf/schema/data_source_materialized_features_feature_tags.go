@@ -3,7 +3,7 @@
 package schema
 
 type DataSourceMaterializedFeaturesFeatureTagsFeatureTagsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceMaterializedFeaturesFeatureTagsFeatureTags struct {
@@ -13,7 +13,7 @@ type DataSourceMaterializedFeaturesFeatureTagsFeatureTags struct {
 }
 
 type DataSourceMaterializedFeaturesFeatureTagsProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceMaterializedFeaturesFeatureTags struct {

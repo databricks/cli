@@ -9,7 +9,7 @@ type DataSourceQualityMonitorV2AnomalyDetectionConfig struct {
 }
 
 type DataSourceQualityMonitorV2ProviderConfig struct {
-	WorkspaceId string `json:"workspace_id"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
 type DataSourceQualityMonitorV2ValidityCheckConfigurationsPercentNullValidityCheck struct {
