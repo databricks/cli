@@ -258,11 +258,6 @@ tasks:
       - "go mod tidy"
 
   ws:
-    desc: Check whitespace
-    cmds:
-      - "./tools/validate_whitespace.py"
-
-  ws-fix:
     desc: Fix whitespace issues
     cmds:
       - "./tools/validate_whitespace.py --fix"
@@ -746,7 +741,7 @@ tasks:
           sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
         fi
       - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
-      - task: ws-fix
+      - task: ws
 
   # Refreshes out.fields.txt, which records the field paths / types emitted by
   # `bundle debug refschema` (see cmd/bundle/debug/refschema.go). It reflects
