@@ -72,6 +72,12 @@ type IResource interface {
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
 	WaitAfterUpdate(ctx context.Context, newState any) (remoteState any, e error)
 
+	// [Optional] WaitAfterDelete waits for the resource to be fully removed after DoDelete returns.
+	// Useful for backends with asynchronous deletion: a follow-up create on the same name (recreate path)
+	// would otherwise race with the in-progress teardown. State is dropped before this is called, so a
+	// timeout here leaves the bundle consistent (resource was requested deleted, retry on next plan).
+	WaitAfterDelete(ctx context.Context, id string) error
+
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
 	KeyedSlices() map[string]any
@@ -92,6 +98,7 @@ type Adapter struct {
 	doUpdateWithID     *calladapt.BoundCaller
 	waitAfterCreate    *calladapt.BoundCaller
 	waitAfterUpdate    *calladapt.BoundCaller
+	waitAfterDelete    *calladapt.BoundCaller
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 
@@ -124,6 +131,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		doResize:                nil,
 		waitAfterCreate:         nil,
 		waitAfterUpdate:         nil,
+		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
@@ -202,6 +210,11 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterUpdate")
+	if err != nil {
+		return err
+	}
+
+	a.waitAfterDelete, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterDelete")
 	if err != nil {
 		return err
 	}
@@ -514,6 +527,16 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 
 	remoteState := normalizeNilPointer(outs[0])
 	return remoteState, nil
+}
+
+// WaitAfterDelete waits for the resource to be fully removed after DoDelete.
+// If the resource doesn't implement this method, this is a no-op.
+func (a *Adapter) WaitAfterDelete(ctx context.Context, id string) error {
+	if a.waitAfterDelete == nil {
+		return nil // no-op if not implemented
+	}
+	_, err := a.waitAfterDelete.Call(ctx, id)
+	return err
 }
 
 // HasOverrideChangeDesc returns true if OverrideChangeDesc is defined for this resource impl

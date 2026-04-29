@@ -891,6 +891,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID)
 	require.NoError(t, err)
 
+	err = adapter.WaitAfterDelete(ctx, createdID)
+	require.NoError(t, err)
+
 	p, err := structpath.ParsePath("name")
 	require.NoError(t, err)
 
