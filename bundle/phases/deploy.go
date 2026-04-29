@@ -120,11 +120,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		}
 	}
 
-	// One or more Vector Search indexes is being deleted or recreated. The
-	// message intentionally covers both index types; using the bundle config to
-	// pick a specific message would be wrong on type changes (e.g. flipping
-	// DELTA_SYNC -> DIRECT_ACCESS makes config say "Direct Access" while the
-	// remote being torn down is still Delta Sync).
+	// One or more Vector Search indexes is being deleted or recreated.
 	if len(vectorSearchIndexActions) != 0 {
 		cmdio.LogString(ctx, deleteOrRecreateVectorSearchIndexMessage)
 		for _, action := range vectorSearchIndexActions {
