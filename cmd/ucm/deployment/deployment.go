@@ -1,6 +1,7 @@
 // Package deployment wires the `databricks ucm deployment` subcommand group:
 // `bind` attaches a ucm-declared resource to an existing UC object; `unbind`
-// drops that recorded binding. Mirrors cmd/bundle/deployment in shape, but
+// drops that recorded binding; `migrate` converts a terraform-engine UCM
+// project to the direct engine. Mirrors cmd/bundle/deployment in shape, but
 // forks rather than imports so the bundle package can evolve upstream
 // independently of ucm.
 package deployment

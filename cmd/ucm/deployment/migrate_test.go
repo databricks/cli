@@ -29,6 +29,8 @@ func TestMigrate_HelpTextIsUcmFlavored(t *testing.T) {
 	require.NotEmpty(t, long)
 	assert.NotContains(t, long, "bundle deploy")
 	assert.NotContains(t, long, "bundle plan")
+	// Catch any leftover "bundle"-framed phrasing anywhere in the long help.
+	assert.NotContains(t, strings.ToLower(long), "bundle")
 	// Sanity: it should mention the ucm flow.
 	assert.Contains(t, long, "ucm deploy")
 }

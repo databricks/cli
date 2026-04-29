@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNew_RegistersBindAndUnbind(t *testing.T) {
+func TestNew_RegistersAllSubcommands(t *testing.T) {
 	cmd := New()
 	got := map[string]bool{}
 	for _, sub := range cmd.Commands() {

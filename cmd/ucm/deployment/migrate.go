@@ -246,6 +246,11 @@ To start using direct engine, set "engine: direct" under ucm in your ucm.yml or 
 		if _, err = os.Stat(tempStatePath); err == nil {
 			return fmt.Errorf("temporary state file %s already exists, another migration is in progress or was interrupted. In the latter case, delete the file", tempStatePath)
 		}
+		// "Already using direct" is detected by the local resources.json
+		// file, not via StateDesc (which UCM does not have today; see #145).
+		// A user who deletes resources.json and re-runs migrate against a
+		// still-present terraform.tfstate.backup would re-create the direct
+		// state cleanly.
 		if _, err = os.Stat(localPath); err == nil {
 			return fmt.Errorf("state file %s already exists", localPath)
 		}
