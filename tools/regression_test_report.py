@@ -465,17 +465,14 @@ def render_report(
     n_acc_added = sum(1 for t in acc_selected if t in acc_added)
     n_unit_added = sum(1 for k in unit_selected if k in unit_added_keys)
 
-    lines = [
-        "# Regression Test Report",
-        "",
-        commit_header,
-        "",
-        f"Acceptance tests: {len(acc_selected)} ({n_acc_added} added, {len(acc_selected) - n_acc_added} modified)",
-        f"Unit tests: {len(unit_selected)} ({n_unit_added} added, {len(unit_selected) - n_unit_added} modified)",
-        "",
-    ]
+    PASS = "✅"
+    FAIL = "❌"
+    NA = "➖"
 
-    # ---- classify acceptance tests ----
+    def mark(status):
+        return PASS if status in ("pass", "skip") else (NA if not status else FAIL)
+
+    # ---- classify ----
     acc_regression, acc_unreleased, acc_coverage, acc_failing = [], [], [], []
     for tp in acc_selected:
         info = acc_branch_info[tp]
@@ -496,7 +493,6 @@ def render_report(
         else:
             acc_coverage.append(tp)
 
-    # ---- classify unit tests ----
     unit_regression, unit_coverage, unit_failing = [], [], []
     for key in unit_selected:
         info = unit_branch_info[key]
@@ -511,139 +507,86 @@ def render_report(
         )
         (unit_regression if cat == "regression" else unit_coverage).append(key)
 
-    # ---- rendering helpers ----
-    def details_block(label, raw):
-        if not raw:
-            return
-        lines.append(f"<details><summary>go test output ({label})</summary>")
-        lines.append("")
-        lines.append("```")
-        lines.append(readable_output(raw).rstrip())
-        lines.append("```")
-        lines.append("")
-        lines.append("</details>")
-        lines.append("")
+    # ---- summary header ----
+    def _summary(label, total, n_added, cats):
+        parts = [f"{n} {name}" for name, n in cats if n]
+        base = f"{label}: {total} ({n_added} added, {total - n_added} modified)"
+        return base + (" — " + ", ".join(parts) if parts else "")
 
-    def acc_leaf_rows(tp):
-        for leaf in acc_branch_info[tp]["passing_leaves"]:
-            ms = acc_main_info.get(leaf, {}).get("status", "N/A")
-            ls = acc_latest_info.get(leaf, {}).get("status", "N/A")
-            lines.append(f"**Subtest:** `{leaf}`  ")
-            lines.append(f"**Main:** {ms} | **Latest release:** {ls}")
-            lines.append("")
-            for label, d in [
-                (f"main {base_commit}", acc_main_info.get(leaf, {})),
-                (f"latest release {latest_label}", acc_latest_info.get(leaf, {})),
-            ]:
-                if d.get("status") not in ("pass", "skip", "N/A", ""):
-                    details_block(label, d.get("output", ""))
+    lines = [
+        "# Regression Test Report",
+        "",
+        commit_header,
+        "",
+        _summary(
+            "Acceptance tests",
+            len(acc_selected),
+            n_acc_added,
+            [
+                ("regression", len(acc_regression)),
+                ("unreleased", len(acc_unreleased)),
+                ("coverage", len(acc_coverage)),
+                ("failing", len(acc_failing)),
+            ],
+        ),
+        _summary(
+            "Unit tests",
+            len(unit_selected),
+            n_unit_added,
+            [
+                ("regression", len(unit_regression)),
+                ("coverage", len(unit_coverage)),
+                ("failing", len(unit_failing)),
+            ],
+        ),
+        "",
+    ]
 
-    def unit_leaf_rows(key):
+    # ---- table ----
+    col_main = f"main ({base_commit})"
+    col_latest = f"latest ({latest_label})"
+    columns = ["test", "branch", col_main, col_latest]
+    rows = []
+
+    for tp in acc_selected:
+        info = acc_branch_info[tp]
+        leaves = info["leaves"]
+        passing_set = set(info["passing_leaves"])
+        if leaves:
+            for leaf in leaves:
+                is_pass = leaf in passing_set
+                name = leaf[len("TestAccept/"):]
+                if is_pass:
+                    m = mark(acc_main_info.get(leaf, {}).get("status", ""))
+                    l = mark(acc_latest_info.get(leaf, {}).get("status", ""))
+                else:
+                    m = l = NA
+                rows.append({"test": name, "branch": PASS if is_pass else FAIL, col_main: m, col_latest: l})
+        else:
+            rows.append({"test": tp, "branch": FAIL, col_main: NA, col_latest: NA})
+
+    for key in unit_selected:
         info = unit_branch_info[key]
+        pkg = info["package_dir"]
         mr = unit_main_info.get(key, {})
-        if mr.get("compile_fail"):
-            lines.append("**Cannot compile on main**")
-            lines.append("")
-            details_block(f"main {base_commit} compile error", mr.get("raw_output", ""))
-            return
-        for func in info["passing_functions"]:
-            ms = mr.get("function_results", {}).get(func, "N/A")
-            lines.append(f"**Function:** `{func}`  ")
-            lines.append(f"**Main:** {ms}")
-            lines.append("")
-            if ms not in ("pass", "skip", "N/A", ""):
-                details_block(f"main {base_commit}", mr.get("raw_output", ""))
-
-    def acc_section(title, description, test_paths):
-        if not test_paths:
-            return
-        lines.append(f"### {title}")
-        lines.append("")
-        lines.append(description)
-        lines.append("")
-        for tp in test_paths:
-            tag = "added" if tp in acc_added else "modified"
-            lines.append(f"#### `{tp}` ({tag})")
-            lines.append("")
-            lines.append(f"Branch status: **{acc_branch_info[tp]['parent_status']}**")
-            lines.append("")
-            acc_leaf_rows(tp)
-
-    def unit_section(title, description, pkg_keys):
-        if not pkg_keys:
-            return
-        lines.append(f"### {title}")
-        lines.append("")
-        lines.append(description)
-        lines.append("")
-        for key in pkg_keys:
-            info = unit_branch_info[key]
-            tag = "added" if key in unit_added_keys else "modified"
-            lines.append(f"#### `{info['package_dir']}` ({tag})")
-            lines.append("")
-            status = "cannot compile" if info["compile_fail"] else info["parent_status"]
-            lines.append(f"Branch status: **{status}**")
-            lines.append("")
-            if info["compile_fail"]:
-                details_block("branch compile error", info.get("raw_output", ""))
+        passing_set = set(info["passing_functions"])
+        if info["compile_fail"]:
+            rows.append({"test": f"{pkg} [cannot compile]", "branch": FAIL, col_main: NA, col_latest: NA})
+            continue
+        for func in info["all_functions"]:
+            is_pass = func in passing_set
+            if is_pass and not mr.get("compile_fail"):
+                m = mark(mr.get("function_results", {}).get(func, ""))
             else:
-                unit_leaf_rows(key)
+                m = NA
+            rows.append({"test": f"{pkg}: {func}", "branch": PASS if is_pass else FAIL, col_main: m, col_latest: NA})
 
-    # ---- acceptance section ----
-    if acc_selected:
-        lines.append("## Acceptance Tests")
+    if rows:
+        lines.append("| " + " | ".join(columns) + " |")
+        lines.append("| " + " | ".join("---" for _ in columns) + " |")
+        for row in rows:
+            lines.append("| " + " | ".join(row.get(c, "") for c in columns) + " |")
         lines.append("")
-        acc_section(
-            "Possible Regression Tests",
-            "Pass on the current branch but fail on main — exercise behavior introduced by this branch.",
-            acc_regression,
-        )
-        acc_section(
-            "Unreleased Behavior Tests",
-            "Pass on the current branch and main's code, but fail with the latest release. "
-            "No changelog entry needed for this PR.",
-            acc_unreleased,
-        )
-        acc_section(
-            "Additional Coverage Tests",
-            "Pass everywhere — add coverage for already-released behavior.",
-            acc_coverage,
-        )
-        if acc_failing:
-            lines.append("### Failing on Current Branch")
-            lines.append("")
-            lines.append("Not compared against main.")
-            lines.append("")
-            for tp in acc_failing:
-                tag = "added" if tp in acc_added else "modified"
-                lines.append(f"- `{tp}` ({tag}) — {acc_branch_info[tp]['parent_status']}")
-            lines.append("")
-
-    # ---- unit section ----
-    if unit_selected:
-        lines.append("## Unit Tests")
-        lines.append("")
-        unit_section(
-            "Possible Regression Tests",
-            "Pass on the current branch but fail on main (or cannot compile on main).",
-            unit_regression,
-        )
-        unit_section(
-            "Additional Coverage Tests",
-            "Pass everywhere — add coverage for already-working behavior.",
-            unit_coverage,
-        )
-        if unit_failing:
-            lines.append("### Failing on Current Branch")
-            lines.append("")
-            lines.append("Not compared against main.")
-            lines.append("")
-            for key in unit_failing:
-                info = unit_branch_info[key]
-                tag = "added" if key in unit_added_keys else "modified"
-                status = "cannot compile" if info["compile_fail"] else info["parent_status"]
-                lines.append(f"- `{info['package_dir']}` ({tag}) — {status}")
-            lines.append("")
 
     return "\n".join(lines) + "\n"
 
@@ -751,6 +694,7 @@ def main():
                     "compile_fail": True,
                     "raw_output": proc.stdout,
                     "parent_status": "cannot_compile",
+                    "all_functions": functions,
                     "passing_functions": [],
                 }
                 continue
@@ -762,6 +706,7 @@ def main():
                 "compile_fail": False,
                 "raw_output": proc.stdout,
                 "parent_status": parent_status,
+                "all_functions": functions,
                 "passing_functions": passing,
             }
             print(f"    status={parent_status}, functions={len(functions)}, passing={len(passing)}")
