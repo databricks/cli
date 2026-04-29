@@ -247,9 +247,6 @@ func TestCountFuzz(t *testing.T) {
 					args[i] = "x"
 				}
 				h.run(t, leaf, args)
-				if t.Failed() {
-					return
-				}
 			}
 		})
 	}
