@@ -207,8 +207,16 @@ GENKIT_BINARY := $(UNIVERSE_DIR)/bazel-bin/openapi/genkit/genkit_/genkit
 
 .PHONY: generate
 generate:
-	@echo "Checking out universe at SHA: $$(cat .codegen/_openapi_sha)"
-	cd $(UNIVERSE_DIR) && git cat-file -e $$(cat $(PWD)/.codegen/_openapi_sha) 2>/dev/null || git fetch --filter=blob:none origin master && git checkout $$(cat $(PWD)/.codegen/_openapi_sha)
+	@if [ -z "$$UNIVERSE_SKIP_CHECKOUT" ]; then \
+		if ! git -C $(UNIVERSE_DIR) diff --quiet || ! git -C $(UNIVERSE_DIR) diff --cached --quiet; then \
+			echo "Error: universe repo at $(UNIVERSE_DIR) has uncommitted changes; commit or stash them, or set UNIVERSE_SKIP_CHECKOUT=1 to skip checkout"; \
+			exit 1; \
+		fi; \
+		echo "Checking out universe at SHA: $$(cat .codegen/_openapi_sha)"; \
+		cd $(UNIVERSE_DIR) && (git cat-file -e $$(cat $(PWD)/.codegen/_openapi_sha) 2>/dev/null || (git fetch --filter=blob:none origin master && git checkout $$(cat $(PWD)/.codegen/_openapi_sha))); \
+	else \
+		echo "UNIVERSE_SKIP_CHECKOUT set; using current $(UNIVERSE_DIR) HEAD"; \
+	fi
 	@echo "Building genkit..."
 	cd $(UNIVERSE_DIR) && bazel build //openapi/genkit
 	@echo "Generating CLI code..."

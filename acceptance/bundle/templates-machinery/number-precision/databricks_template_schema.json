@@ -1,0 +1,9 @@
+{
+    "properties": {
+        "n": {
+            "type": "number",
+            "description": "A number variable",
+            "default": 1.1
+        }
+    }
+}
