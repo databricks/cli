@@ -89,7 +89,7 @@ Common invocations:
 			return root.ErrAlreadyPrinted
 		}
 
-		opts, err := buildPhaseOptions(ctx, u)
+		opts, err := utils.BuildPhaseOptionsHook(ctx, u)
 		if err != nil {
 			return fmt.Errorf("resolve import options: %w", err)
 		}

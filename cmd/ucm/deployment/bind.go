@@ -99,9 +99,7 @@ made outside ucm may be overwritten on the next deploy.`,
 			}
 		}
 
-		// UCM's phases.Bind needs a Backend + TerraformFactory that ProcessUcm
-		// does not yet plumb (tracked in #103).
-		opts, err := buildPhaseOptions(ctx, u)
+		opts, err := utils.BuildPhaseOptionsHook(ctx, u)
 		if err != nil {
 			return fmt.Errorf("resolve bind options: %w", err)
 		}

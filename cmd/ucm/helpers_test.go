@@ -116,11 +116,11 @@ func (f *fakeTf) StateRm(_ context.Context, _ *ucmpkg.Ucm, address string) error
 }
 
 // verbHarness bundles the fake terraform wrapper, the remote-state filer
-// backing Pull/Push, and an override of buildPhaseOptions so the verb under
-// test runs against the fake instead of reaching for a real workspace client.
-// directClient is optional — set it via WithDirectClient before runVerb to
-// route the direct-engine verbs (drift, and the direct branches of
-// plan/deploy/destroy) through an in-memory fake.
+// backing Pull/Push, and an override of utils.BuildPhaseOptionsHook so the
+// verb under test runs against the fake instead of reaching for a real
+// workspace client. directClient is optional — set it via WithDirectClient
+// before runVerb to route the direct-engine verbs (drift, and the direct
+// branches of plan/deploy/destroy) through an in-memory fake.
 type verbHarness struct {
 	tf           *fakeTf
 	remote       libsfiler.Filer
@@ -135,9 +135,9 @@ func (h *verbHarness) WithDirectClient(c direct.Client) *verbHarness {
 }
 
 // newVerbHarness builds a harness keyed to a temp-dir "remote" filer and
-// reassigns the package-level buildPhaseOptions to emit phases.Options that
-// point at the fake. The original buildPhaseOptions is restored on test
-// cleanup so later tests observe the production default.
+// reassigns utils.BuildPhaseOptionsHook to emit phases.Options that point at
+// the fake. The original hook is restored on test cleanup so later tests
+// observe the production default.
 func newVerbHarness(t *testing.T) *verbHarness {
 	t.Helper()
 
@@ -150,8 +150,8 @@ func newVerbHarness(t *testing.T) *verbHarness {
 		remote: remote,
 	}
 
-	prev := buildPhaseOptions
-	buildPhaseOptions = func(_ context.Context, _ *ucmpkg.Ucm) (phases.Options, error) {
+	prev := utils.BuildPhaseOptionsHook
+	utils.BuildPhaseOptionsHook = func(_ context.Context, _ *ucmpkg.Ucm) (phases.Options, error) {
 		opts := phases.Options{
 			Backend: deploy.Backend{
 				StateFiler: ucmfiler.NewStateFilerFromFiler(remote),
@@ -169,7 +169,7 @@ func newVerbHarness(t *testing.T) *verbHarness {
 		}
 		return opts, nil
 	}
-	t.Cleanup(func() { buildPhaseOptions = prev })
+	t.Cleanup(func() { utils.BuildPhaseOptionsHook = prev })
 
 	return h
 }
@@ -372,8 +372,8 @@ var assertSentinel = errors.New("ucm verb test sentinel")
 // stripAuthHooks recursively clears PersistentPreRunE and PreRunE on cmd and
 // all of its subcommands. The ucm verbs that need live auth (init, generate)
 // wire root.MustWorkspaceClient as PreRunE; tests stand in their own Backend
-// via buildPhaseOptions and a TestProcessHook so the real auth hook would just
-// fail on a missing ~/.databrickscfg.
+// via utils.BuildPhaseOptionsHook and a TestProcessHook so the real auth hook
+// would just fail on a missing ~/.databrickscfg.
 func stripAuthHooks(cmd *cobra.Command) {
 	cmd.PersistentPreRunE = nil
 	cmd.PersistentPreRun = nil

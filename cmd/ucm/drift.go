@@ -51,9 +51,9 @@ the command still routes all live reads through the SDK regardless of engine.`,
 			return root.ErrAlreadyPrinted
 		}
 
-		opts, err := buildPhaseOptions(ctx, u)
+		opts, err := utils.BuildPhaseOptionsHook(ctx, u)
 		if err != nil {
-			return fmt.Errorf("resolve deploy options: %w", err)
+			return fmt.Errorf("resolve drift options: %w", err)
 		}
 
 		report := phases.Drift(ctx, u, opts)

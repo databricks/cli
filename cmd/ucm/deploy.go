@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/cmd/ucm/utils"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
-	"github.com/databricks/cli/ucm/phases"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +39,7 @@ Common invocations:
 	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
+		_, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
 			InitFunc: func(u *ucm.Ucm) {
 				u.ForceLock = forceLock
 				u.AutoApprove = autoApprove
@@ -48,32 +47,13 @@ Common invocations:
 			Verbose:      verbose,
 			AlwaysPull:   true,
 			FastValidate: true,
-			Build:        true,
+			Deploy:       true,
 			ReadPlanPath: readPlanPath,
 		})
 		ctx := cmd.Context()
 		if err != nil {
 			return err
 		}
-		if u == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		// UCM's phases.Deploy needs a Backend + TerraformFactory that ProcessUcm
-		// does not yet plumb (tracked in #103). Until then the verb assembles
-		// phases.Options here and runs Deploy directly.
-		// (Build: true above is safe — phases.BuildArtifacts is a no-op stub
-		// today per #101. Deploy: true would trigger phases.Deploy with
-		// zero-value Options that lacks Backend; we run Deploy ourselves below
-		// until #103 plumbs Backend through ProcessOptions.)
-		opts, err := buildPhaseOptions(ctx, u)
-		if err != nil {
-			return fmt.Errorf("resolve deploy options: %w", err)
-		}
-		opts.ForceLock = u.ForceLock
-		opts.AutoApprove = u.AutoApprove
-
-		phases.Deploy(ctx, u, opts)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

@@ -76,6 +76,16 @@ type ProcessOptions struct {
 	// (after state is opened and IDs loaded, before deferred Finalize).
 	PostStateFunc func(ctx context.Context, u *ucm.Ucm) error
 
+	// BuildPhaseOptions, when non-nil, supplies the phases.Options ProcessUcm
+	// passes to phases.Deploy (and that verbs that drive their own phase
+	// calls retrieve via utils.BuildPhaseOptionsHook). When nil, ProcessUcm
+	// falls back to BuildPhaseOptionsHook (which defaults to
+	// DefaultBuildPhaseOptions and is the seam tests overwrite to inject a
+	// fake Backend + factories). Verbs almost always leave this nil — set it
+	// only if a single call needs a non-default Options without disturbing
+	// the package-level hook.
+	BuildPhaseOptions func(ctx context.Context, u *ucm.Ucm) (phases.Options, error)
+
 	// IsPipelinesCLI is parameter parity with bundle.ProcessOptions; ucm has
 	// no pipelines-CLI mode today, so this flag is currently a no-op.
 	IsPipelinesCLI bool
@@ -150,15 +160,14 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 
 	if !opts.SkipInitialize {
 		t0 := time.Now()
-		// UCM's phases.Initialize requires a Backend that's only available
-		// after the verb builds opts; we run only the workspace-context
-		// mutators and variable resolution here, deferring state pull and
-		// full Initialize to the verb's own phase calls. Sub-project C
-		// (#103) will close this gap by plumbing Backend through
-		// ProcessOptions so ProcessUcm can call phases.Initialize like
-		// bundle does.
-		// TODO(#103): wire Backend through ProcessOptions when verbs adopt
-		// opts-driven orchestration (sub-project C).
+		// Workspace-context mutators + variables run unconditionally; the
+		// state pull side of bundle's phases.Initialize is performed below
+		// in shouldReadState, gated by opts so that read-only verbs don't
+		// pay for a state pull they don't need. Verbs that do need Options
+		// (Deploy, Bind, Unbind, Plan, Destroy, Drift, Import) set
+		// BuildPhaseOptions on ProcessOptions or rely on
+		// BuildPhaseOptionsHook so ProcessUcm can supply real Backend +
+		// factories.
 		ucm.ApplySeqContext(ctx, u,
 			mutator.PopulateCurrentUser(),
 			mutator.DefineDefaultWorkspaceRoot(),
@@ -207,17 +216,10 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 		// State pull happens inside phases.Plan/Deploy/Destroy, not at the
 		// cmd layer. The bundle parallel runs PullResourcesState here;
 		// ucm's verbs drive their own phase calls which Initialize and
-		// Pull internally.
-
-		// Direct-engine state DB open is bundle-only; the corresponding
-		// path in UCM is handled inside the direct-engine deploy code in
-		// ucm/deploy/direct. Tracked in #95.
-		if requiredEngine.Type.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil) {
-			// TODO(#95): direct-engine path not yet wired through ProcessUcm.
-			logdiag.LogError(ctx, errors.New(
-				"ucm: direct engine is not yet supported via ProcessUcm; set engine: terraform or unset DATABRICKS_UCM_ENGINE"))
-			return u, root.ErrAlreadyPrinted
-		}
+		// Pull internally. Direct-engine state DB open is handled inside
+		// ucm/deploy/direct (tracked in #95) — ProcessUcm no longer gates
+		// on engine type, so direct flows through naturally and any
+		// not-yet-wired code path errors at its own boundary.
 
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.
 		if opts.InitIDs || opts.ErrorOnEmptyState {
@@ -244,12 +246,10 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 			logdiag.LogError(ctx, errors.New(`ucm: --plan is only supported with direct engine (set ucm.engine to "direct" or DATABRICKS_UCM_ENGINE=direct)`))
 			return u, root.ErrAlreadyPrinted
 		}
-		// TODO(#95): plan-file loading and direct.ValidatePlanAgainstState
-		// require the direct-engine state DB which is not wired through
-		// ProcessUcm yet.
-		logdiag.LogError(ctx, errors.New(
-			"ucm: --plan is not yet supported via ProcessUcm"))
-		return u, root.ErrAlreadyPrinted
+		// TODO(#95): plan-file loading + direct.ValidatePlanAgainstState
+		// hooks into the direct-engine state DB which is not wired through
+		// ProcessUcm yet. ProcessUcm no longer gates on this; the not-yet-
+		// wired code path errors at its own boundary inside phases.Deploy.
 	} else if opts.Deploy {
 		opts.Build = true
 		opts.PreDeployChecks = true
@@ -314,13 +314,19 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 	}
 
 	if opts.Deploy {
-		// UCM's phases.Deploy takes Options (Backend, factories) — the
-		// foundation port (#98) doesn't have those wired through verbs yet,
-		// so call with a zero-value Options and rely on the verb's existing
-		// buildPhaseOptions chain (sub-project C) to supersede this in the
-		// next phase of work.
+		buildOpts := opts.BuildPhaseOptions
+		if buildOpts == nil {
+			buildOpts = BuildPhaseOptionsHook
+		}
+		phaseOpts, perr := buildOpts(ctx, u)
+		if perr != nil {
+			return u, fmt.Errorf("resolve deploy options: %w", perr)
+		}
+		phaseOpts.ForceLock = u.ForceLock
+		phaseOpts.AutoApprove = u.AutoApprove
+
 		t3 := time.Now()
-		phases.Deploy(ctx, u, phases.Options{})
+		phases.Deploy(ctx, u, phaseOpts)
 		u.Metrics.ExecutionTimes = append(u.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),

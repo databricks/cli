@@ -1,6 +1,7 @@
 package ucm
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -40,32 +41,31 @@ Common invocations:
 			return errors.New("please specify --auto-approve since terminal does not support interactive prompts")
 		}
 
-		u, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
+		_, err := utils.ProcessUcm(cmd, utils.ProcessOptions{
 			InitFunc: func(u *ucm.Ucm) {
 				u.ForceLock = forceLock
 				u.AutoApprove = autoApprove
 			},
 			AlwaysPull: true,
+			PostStateFunc: func(ctx context.Context, u *ucm.Ucm) error {
+				opts, err := utils.BuildPhaseOptionsHook(ctx, u)
+				if err != nil {
+					return fmt.Errorf("resolve destroy options: %w", err)
+				}
+				opts.ForceLock = u.ForceLock
+				opts.AutoApprove = u.AutoApprove
+
+				phases.Destroy(ctx, u, opts)
+				if logdiag.HasError(ctx) {
+					return root.ErrAlreadyPrinted
+				}
+				return nil
+			},
 		})
 		ctx = cmd.Context()
 		if err != nil {
 			return err
 		}
-		if u == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		// UCM's phases.Destroy needs a Backend + TerraformFactory that
-		// ProcessUcm does not yet plumb (tracked in #103). Until then the verb
-		// assembles phases.Options here and runs Destroy directly.
-		opts, err := buildPhaseOptions(ctx, u)
-		if err != nil {
-			return fmt.Errorf("resolve destroy options: %w", err)
-		}
-		opts.ForceLock = u.ForceLock
-		opts.AutoApprove = u.AutoApprove
-
-		phases.Destroy(ctx, u, opts)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
