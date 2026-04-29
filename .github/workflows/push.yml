@@ -20,7 +20,27 @@ env:
   GOTESTSUM_FORMAT: github-actions
 
 jobs:
+  fork-check:
+    runs-on: ubuntu-latest
+    outputs:
+      is_fork: ${{ steps.check.outputs.is_fork }}
+    steps:
+      - name: Detect fork PR
+        id: check
+        run: |
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" != "" ] && \
+             [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+            echo "is_fork=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_fork=false" >> "$GITHUB_OUTPUT"
+          fi
+
   cleanups:
+    # Skip for fork PRs: the deco runner group is inaccessible to forks and
+    # cache cleanup is only meaningful on scheduled runs from the main branch.
+    if: >-
+      github.event_name != 'pull_request' ||
+      !github.event.pull_request.head.repo.fork
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -74,9 +94,11 @@ jobs:
     needs:
       - cleanups
       - testmask
+      - fork-check
 
-    # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
+    # Only run if the target is in the list of targets from testmask, and not a fork PR
+    # (fork PRs use the test-fork job below with public runners and no JFrog auth)
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') && needs.fork-check.outputs.is_fork != 'true' }}
     name: "make test (${{matrix.os.name}}, ${{matrix.deployment}})"
     runs-on: ${{ matrix.os.runner }}
 
@@ -161,9 +183,10 @@ jobs:
     needs:
       - cleanups
       - testmask
+      - fork-check
 
-    # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
+    # Only run if the target is in the list of targets from testmask, and not a fork PR
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') && needs.fork-check.outputs.is_fork != 'true' }}
     name: "make test-exp-aitools (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
 
@@ -207,9 +230,10 @@ jobs:
     needs:
       - cleanups
       - testmask
+      - fork-check
 
-    # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
+    # Only run if the target is in the list of targets from testmask, and not a fork PR
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') && needs.fork-check.outputs.is_fork != 'true' }}
     name: "make test-exp-ssh (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
 
@@ -252,9 +276,10 @@ jobs:
     needs:
       - cleanups
       - testmask
+      - fork-check
 
-    # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') }}
+    # Only run if the target is in the list of targets from testmask, and not a fork PR
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') && needs.fork-check.outputs.is_fork != 'true' }}
     name: "make test-pipelines (${{matrix.os.name}})"
     runs-on: ${{ matrix.os.runner }}
 
@@ -293,6 +318,118 @@ jobs:
         run: |
           make test-pipelines
 
+  # Fork PR variants: run on ubuntu-latest with public Go/Python proxies.
+  # Protected runner groups and JFrog OIDC auth are not available for fork PRs.
+  # Each job mirrors its non-fork counterpart but uses a single OS and is-fork: 'true'.
+
+  test-fork:
+    needs:
+      - fork-check
+      - testmask
+
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') && needs.fork-check.outputs.is_fork == 'true' }}
+    name: "make test (fork, ${{matrix.deployment}})"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        deployment:
+          - "terraform"
+          - "direct"
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-fork-${{ matrix.deployment }}
+          is-fork: 'true'
+
+      - name: Run tests without coverage
+        env:
+          ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
+        run: make test
+
+      - name: Analyze slow tests
+        run: make slowest
+
+      - name: Check out.test.toml files are up to date
+        shell: bash
+        run: |
+          if ! git diff --exit-code; then
+            echo "ERROR: detected changed files in the repository; Most likely you have out.test.toml files that are out of date. Run 'make generate-out-test-toml' to update."
+            exit 1
+          fi
+
+  test-exp-aitools-fork:
+    needs:
+      - fork-check
+      - testmask
+
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') && needs.fork-check.outputs.is_fork == 'true' }}
+    name: "make test-exp-aitools (fork)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-exp-aitools-fork
+          is-fork: 'true'
+
+      - name: Run tests
+        run: make test-exp-aitools
+
+  test-exp-ssh-fork:
+    needs:
+      - fork-check
+      - testmask
+
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') && needs.fork-check.outputs.is_fork == 'true' }}
+    name: "make test-exp-ssh (fork)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-exp-ssh-fork
+          is-fork: 'true'
+
+      - name: Run tests
+        run: make test-exp-ssh
+
+  test-pipelines-fork:
+    needs:
+      - fork-check
+      - testmask
+
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') && needs.fork-check.outputs.is_fork == 'true' }}
+    name: "make test-pipelines (fork)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-pipelines-fork
+          is-fork: 'true'
+
+      - name: Run tests
+        run: make test-pipelines
+
   # This job groups the result of all the above test jobs.
   # It is a required check, so it blocks auto-merge and the merge queue.
   #
@@ -305,9 +442,13 @@ jobs:
   test-result:
     needs:
       - test
+      - test-fork
       - test-exp-aitools
+      - test-exp-aitools-fork
       - test-exp-ssh
+      - test-exp-ssh-fork
       - test-pipelines
+      - test-pipelines-fork
 
     if: ${{ always() }}
     name: test-result
