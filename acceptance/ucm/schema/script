@@ -1,0 +1,2 @@
+trace $CLI ucm schema --help
+trace $CLI ucm schema | head -20
