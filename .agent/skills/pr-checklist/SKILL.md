@@ -3,28 +3,28 @@ name: pr-checklist
 description: Checklist to run before submitting a PR
 ---
 
-Before submitting a PR, run these commands to match what CI checks. CI uses the **full** variants (not the diff-only wrappers), so `make lint` alone is insufficient.
+Before submitting a PR, run these commands to match what CI checks. CI uses the full variants (not the `-q` diff-only wrappers), so `./task lint-q` alone is insufficient.
 
 ```bash
-# 1. Formatting and checks (CI runs fmtfull, not fmt)
-make fmtfull
-make checks
+# 1. Formatting and checks (CI runs fmt, not fmt-q)
+./task fmt
+./task checks
 
-# 2. Linting (CI runs full golangci-lint, not the diff-only wrapper)
-make lintfull
+# 2. Linting (CI runs full golangci-lint across all modules, not the diff-only wrapper)
+./task lint
 
 # 3. Tests (CI runs with both deployment engines)
-make test
+./task test
 
 # 4. If you changed bundle config structs or schema-related code:
-make schema
+./task generate-schema
 
 # 5. If you changed files in python/:
-cd python && make codegen && make test && make lint && make docs
+./task pydabs-codegen pydabs-test pydabs-lint pydabs-docs
 
 # 6. If you changed experimental/aitools or experimental/ssh:
-make test-exp-aitools   # only if aitools code changed
-make test-exp-ssh       # only if ssh code changed
+./task test-exp-aitools   # only if aitools code changed
+./task test-exp-ssh       # only if ssh code changed
 ```
 
 ## Final cleanup scan

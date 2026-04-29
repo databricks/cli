@@ -1,9 +1,6 @@
 package main
 
 import (
-	"os"
-	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,6 +8,9 @@ import (
 )
 
 func TestGetTargets(t *testing.T) {
+	mappings, err := LoadTargetMappings("../../Taskfile.yml")
+	require.NoError(t, err)
+
 	tests := []struct {
 		name    string
 		files   []string
@@ -30,6 +30,13 @@ func TestGetTargets(t *testing.T) {
 				"cmd/pipelines/main.go",
 			},
 			targets: []string{"test-pipelines"},
+		},
+		{
+			name: "acceptance_apps_triggers_aitools",
+			files: []string{
+				"acceptance/apps/basic/script",
+			},
+			targets: []string{"test-exp-aitools"},
 		},
 		{
 			name: "non_matching",
@@ -77,54 +84,13 @@ func TestGetTargets(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			targets := GetTargets(tt.files)
+			targets := GetTargets(tt.files, mappings)
 			assert.Equal(t, tt.targets, targets)
 		})
 	}
 }
 
-func TestTargetsExistInMakefile(t *testing.T) {
-	// Collect all targets from fileTargetMappings
-	expectedTargets := make(map[string]bool)
-	for _, mapping := range fileTargetMappings {
-		expectedTargets[mapping.target] = true
-	}
-
-	// Also include "test" since it's used in GetTargets
-	expectedTargets["test"] = true
-
-	// Read and parse Makefile to extract target names
-	makefileTargets := parseMakefileTargets(t, "../../Makefile")
-
-	// Verify all expected targets exist in Makefile
-	var missingTargets []string
-	for target := range expectedTargets {
-		if !makefileTargets[target] {
-			missingTargets = append(missingTargets, target)
-		}
-	}
-
-	if len(missingTargets) > 0 {
-		t.Errorf("The following targets are defined in targets.go but do not exist in Makefile: %v", missingTargets)
-	}
-}
-
-// parseMakefileTargets parses a Makefile and returns a set of target names
-func parseMakefileTargets(t *testing.T, makefilePath string) map[string]bool {
-	targets := make(map[string]bool)
-	targetRegex := regexp.MustCompile(`^([a-zA-Z0-9_-]+):`)
-
-	content, err := os.ReadFile(makefilePath)
-	require.NoError(t, err)
-
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
-		// Match Makefile target pattern: target:
-		matches := targetRegex.FindStringSubmatch(line)
-		if len(matches) > 1 {
-			targets[matches[1]] = true
-		}
-	}
-
-	return targets
+func TestLoadTargetMappingsMissingFile(t *testing.T) {
+	_, err := LoadTargetMappings("nonexistent.yml")
+	assert.Error(t, err)
 }
