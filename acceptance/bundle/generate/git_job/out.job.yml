@@ -8,7 +8,7 @@ resources:
             notebook_path: some/test/notebook.py
         - task_key: test_task_2
           notebook_task:
-            notebook_path: /Workspace/Users/foo@bar.com/some/test/notebook.py
+            notebook_path: /Workspace/Users/foo@bar.test/some/test/notebook.py
             source: WORKSPACE
       git_source:
         git_branch: main
