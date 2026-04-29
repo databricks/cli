@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
@@ -55,6 +56,19 @@ func RestoreVariableReferences(ctx context.Context, b *bundle.Bundle, fieldChang
 		return
 	}
 	resolved := b.Config.Value()
+
+	// Mirror mutator.lookup's source-linked deployment override: when enabled,
+	// ${workspace.file_path} resolves to b.SyncRootPath rather than the typed
+	// workspace.file_path field (which still holds the default deploy path).
+	// Without this, substring matching against the typed value misses the
+	// actual deployed path and variables are lost on Replace. Keep this in
+	// sync with mutator.lookup if new overrides are added there.
+	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+		fpPath := dyn.NewPath(dyn.Key("workspace"), dyn.Key("file_path"))
+		if updated, err := dyn.SetByPath(resolved, fpPath, dyn.V(b.SyncRootPath)); err == nil {
+			resolved = updated
+		}
+	}
 
 	// Augment resolved with resource IDs from state — only when the config
 	// actually uses ${resources.X.Y.id} references. The IDs aren't materialized
