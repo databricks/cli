@@ -1,0 +1,14 @@
+
+=== Doctor with --profile flag
+
+>>> [CLI] experimental doctor --profile my-workspace --output json
+CLI Version: info - [DEV_VERSION]
+Updates: info - development build ([DEV_VERSION])
+Toolchain: info - [TOOLCHAIN]
+Proxy/TLS: info - no proxy or TLS overrides configured
+Log File: info - not configured (set DATABRICKS_LOG_FILE or pass --log-file to enable)
+Config File: pass - ~/.databrickscfg (1 profiles)
+Current Profile: info - my-workspace
+Authentication: pass - OK (pat)
+Identity: pass - test@example.com
+Network: pass - [DATABRICKS_URL] is reachable

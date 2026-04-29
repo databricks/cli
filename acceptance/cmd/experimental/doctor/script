@@ -1,0 +1,10 @@
+sethome "./home"
+
+cat > "./home/.databrickscfg" <<EOF
+[my-workspace]
+host  = $DATABRICKS_HOST
+token = $DATABRICKS_TOKEN
+EOF
+
+title "Doctor with --profile flag\n"
+trace $CLI experimental doctor --profile my-workspace --output json | jq -r '.results[] | "\(.name): \(.status) - \(.message)"'
