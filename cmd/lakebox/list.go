@@ -56,7 +56,7 @@ Example:
 			// Compute column width.
 			col := 10
 			for _, e := range entries {
-				if l := len(extractLakeboxID(e.Name)); l > col {
+				if l := len(e.LakeboxID); l > col {
 					col = l
 				}
 			}
@@ -67,7 +67,7 @@ Example:
 			fmt.Fprintf(out, "  %s%s%s\n", dm, strings.Repeat("─", col+22), rs)
 
 			for _, e := range entries {
-				id := extractLakeboxID(e.Name)
+				id := e.LakeboxID
 				def := ""
 				if id == defaultID {
 					def = accent("*")

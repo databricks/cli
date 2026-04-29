@@ -25,16 +25,19 @@ type createRequest struct {
 }
 
 // createResponse is the JSON body returned by POST /api/2.0/lakebox.
+// Mirrors the `Lakebox` proto message after JSON transcoding.
 type createResponse struct {
-	LakeboxID string `json:"lakebox_id"`
+	LakeboxID string `json:"lakeboxId"`
 	Status    string `json:"status"`
+	FQDN      string `json:"fqdn"`
 }
 
 // lakeboxEntry is a single item in the list response.
+// Mirrors the `Lakebox` proto message after JSON transcoding.
 type lakeboxEntry struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	FQDN   string `json:"fqdn"`
+	LakeboxID string `json:"lakeboxId"`
+	Status    string `json:"status"`
+	FQDN      string `json:"fqdn"`
 }
 
 // listResponse is the JSON body returned by GET /api/2.0/lakebox.
@@ -70,7 +73,7 @@ func (a *lakeboxAPI) create(ctx context.Context, publicKey string) (*createRespo
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusOK {
 		return nil, parseAPIError(resp)
 	}
 
@@ -127,7 +130,7 @@ func (a *lakeboxAPI) delete(ctx context.Context, id string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusOK {
 		return parseAPIError(resp)
 	}
 	return nil
@@ -163,12 +166,17 @@ func parseAPIError(resp *http.Response) error {
 	return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
 }
 
-// registerKeyRequest is the JSON body for POST /api/2.0/lakebox/register-key.
+// User keys live at /api/2.0/lakebox-keys (separate top-level collection so
+// the path doesn't structurally overlap with /api/2.0/lakebox/{lakebox_id}).
+const lakeboxKeysAPIPath = "/api/2.0/lakebox-keys"
+
+// registerKeyRequest is the JSON body for POST /api/2.0/lakebox-keys.
 type registerKeyRequest struct {
 	PublicKey string `json:"public_key"`
+	Name      string `json:"name,omitempty"`
 }
 
-// registerKey calls POST /api/2.0/lakebox/register-key.
+// registerKey calls POST /api/2.0/lakebox-keys.
 func (a *lakeboxAPI) registerKey(ctx context.Context, publicKey string) error {
 	body := registerKeyRequest{PublicKey: publicKey}
 	jsonBody, err := json.Marshal(body)
@@ -176,7 +184,7 @@ func (a *lakeboxAPI) registerKey(ctx context.Context, publicKey string) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := a.doRequest(ctx, "POST", lakeboxAPIPath+"/register-key", bytes.NewReader(jsonBody))
+	resp, err := a.doRequest(ctx, "POST", lakeboxKeysAPIPath, bytes.NewReader(jsonBody))
 	if err != nil {
 		return err
 	}
@@ -186,14 +194,4 @@ func (a *lakeboxAPI) registerKey(ctx context.Context, publicKey string) error {
 		return parseAPIError(resp)
 	}
 	return nil
-}
-
-// extractLakeboxID extracts the short ID from a full resource name.
-// e.g. "apps/lakebox/instances/happy-panda-1234" -> "happy-panda-1234"
-func extractLakeboxID(name string) string {
-	parts := strings.Split(name, "/")
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return name
 }

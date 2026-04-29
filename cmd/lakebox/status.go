@@ -41,7 +41,7 @@ Example:
 
 			out := cmd.OutOrStdout()
 			blank(out)
-			field(out, "id", bold(extractLakeboxID(entry.Name)))
+			field(out, "id", bold(entry.LakeboxID))
 			field(out, "status", status(entry.Status))
 			if entry.FQDN != "" {
 				field(out, "fqdn", dim(entry.FQDN))
