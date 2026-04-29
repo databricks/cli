@@ -239,7 +239,8 @@ func TestCaptureUCDependenciesModelServingEndpointEdgeCases(t *testing.T) {
 					// AutoCaptureConfig path.
 					"auto_capture": {CreateServingEndpoint: serving.CreateServingEndpoint{
 						Config: &serving.EndpointCoreConfigInput{
-							AutoCaptureConfig: &serving.AutoCaptureConfigInput{
+							// SDK v0.131.0 deprecated AutoCaptureConfig in favor of AI Gateway inference tables; test exercises the legacy path.
+							AutoCaptureConfig: &serving.AutoCaptureConfigInput{ //nolint:staticcheck
 								CatalogName: "mycatalog", SchemaName: "myschema",
 							},
 						},

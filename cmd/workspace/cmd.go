@@ -96,18 +96,21 @@ import (
 	rfa "github.com/databricks/cli/cmd/workspace/rfa"
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
+	secrets_uc "github.com/databricks/cli/cmd/workspace/secrets-uc"
 	service_principal_secrets_proxy "github.com/databricks/cli/cmd/workspace/service-principal-secrets-proxy"
 	service_principals_v2 "github.com/databricks/cli/cmd/workspace/service-principals-v2"
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
 	settings "github.com/databricks/cli/cmd/workspace/settings"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
 	storage_credentials "github.com/databricks/cli/cmd/workspace/storage-credentials"
+	supervisor_agents "github.com/databricks/cli/cmd/workspace/supervisor-agents"
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
 	table_constraints "github.com/databricks/cli/cmd/workspace/table-constraints"
 	tables "github.com/databricks/cli/cmd/workspace/tables"
 	tag_policies "github.com/databricks/cli/cmd/workspace/tag-policies"
 	temporary_path_credentials "github.com/databricks/cli/cmd/workspace/temporary-path-credentials"
 	temporary_table_credentials "github.com/databricks/cli/cmd/workspace/temporary-table-credentials"
+	temporary_volume_credentials "github.com/databricks/cli/cmd/workspace/temporary-volume-credentials"
 	token_management "github.com/databricks/cli/cmd/workspace/token-management"
 	tokens "github.com/databricks/cli/cmd/workspace/tokens"
 	users_v2 "github.com/databricks/cli/cmd/workspace/users-v2"
@@ -224,18 +227,21 @@ func All() []*cobra.Command {
 	out = append(out, rfa.New())
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
+	out = append(out, secrets_uc.New())
 	out = append(out, service_principal_secrets_proxy.New())
 	out = append(out, service_principals_v2.New())
 	out = append(out, serving_endpoints.New())
 	out = append(out, settings.New())
 	out = append(out, shares.New())
 	out = append(out, storage_credentials.New())
+	out = append(out, supervisor_agents.New())
 	out = append(out, system_schemas.New())
 	out = append(out, table_constraints.New())
 	out = append(out, tables.New())
 	out = append(out, tag_policies.New())
 	out = append(out, temporary_path_credentials.New())
 	out = append(out, temporary_table_credentials.New())
+	out = append(out, temporary_volume_credentials.New())
 	out = append(out, token_management.New())
 	out = append(out, tokens.New())
 	out = append(out, users_v2.New())

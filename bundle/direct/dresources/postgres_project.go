@@ -64,7 +64,9 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 
 			// Output-only fields.
 			CreateTime:      nil,
+			DeleteTime:      nil,
 			Name:            "",
+			PurgeTime:       nil,
 			Status:          nil,
 			Uid:             "",
 			UpdateTime:      nil,
@@ -98,7 +100,9 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 
 			// Output-only fields.
 			CreateTime:      nil,
+			DeleteTime:      nil,
 			Name:            "",
+			PurgeTime:       nil,
 			Status:          nil,
 			Uid:             "",
 			UpdateTime:      nil,
@@ -120,7 +124,9 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 
 func (r *ResourcePostgresProject) DoDelete(ctx context.Context, id string) error {
 	waiter, err := r.client.Postgres.DeleteProject(ctx, postgres.DeleteProjectRequest{
-		Name: id,
+		Name:            id,
+		Purge:           false,
+		ForceSendFields: nil,
 	})
 	if err != nil {
 		return err

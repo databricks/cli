@@ -150,6 +150,7 @@ Database Instances
 
 Agent Bricks
   knowledge-assistants                   Manage Knowledge Assistants and related resources.
+  supervisor-agents                      Manage Supervisor Agents and related resources.
 
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.

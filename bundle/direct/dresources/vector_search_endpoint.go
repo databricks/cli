@@ -45,6 +45,10 @@ func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchE
 	return &input.CreateEndpoint
 }
 
+// SDK v0.131.0 deprecated MinQps/RequestedMinQps in favor of TargetQps.
+// Migration tracked separately; we still need to round-trip the legacy field for existing endpoints.
+//
+//nolint:staticcheck
 func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpoint {
 	var minQps int64
 	if remote.ScalingInfo != nil {
@@ -97,9 +101,10 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 	}
 
 	if entry.Changes.HasChange(pathMinQps) {
+		// SDK v0.131.0 deprecated MinQps in favor of TargetQps. Migration tracked separately.
 		_, err := r.client.VectorSearchEndpoints.PatchEndpoint(ctx, vectorsearch.PatchEndpointRequest{
 			EndpointName:    id,
-			MinQps:          config.MinQps,
+			MinQps:          config.MinQps, //nolint:staticcheck
 			ForceSendFields: nil,
 		})
 		if err != nil {

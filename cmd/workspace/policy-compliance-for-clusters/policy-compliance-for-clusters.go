@@ -81,7 +81,7 @@ func newEnforceCompliance() *cobra.Command {
   TERMINATED. The next time the cluster is started, the new attributes will
   take effect.
 
-  Clusters created by the Databricks Jobs, DLT, or Models services cannot be
+  Clusters created by the Databricks Jobs, SDP, or Models services cannot be
   enforced by this API. Instead, use the "Enforce job policy compliance" API to
   enforce policy compliance on jobs.
 

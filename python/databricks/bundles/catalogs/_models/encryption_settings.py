@@ -16,8 +16,6 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class EncryptionSettings:
     """
-    :meta private: [EXPERIMENTAL]
-
     Encryption Settings are used to carry metadata for securable encryption at rest.
     Currently used for catalogs, we can use the information supplied here to interact with a CMK.
     """

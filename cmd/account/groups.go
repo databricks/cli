@@ -32,5 +32,9 @@ func Groups() []cobra.Group {
 			ID:    "oauth2",
 			Title: "OAuth",
 		},
+		{
+			ID:    "disasterrecovery",
+			Title: "Disaster Recovery",
+		},
 	}
 }

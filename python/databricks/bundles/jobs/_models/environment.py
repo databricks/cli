@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class Environment:
     """
-    The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
+    The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and SDP's environment for classic and serverless pipelines.
     In this minimal environment spec, only pip and java dependencies are supported.
     """
 

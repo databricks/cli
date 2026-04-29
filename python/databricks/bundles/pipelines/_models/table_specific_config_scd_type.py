@@ -4,8 +4,6 @@ from typing import Literal
 
 class TableSpecificConfigScdType(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     The SCD type to use to ingest the table.
     """
 

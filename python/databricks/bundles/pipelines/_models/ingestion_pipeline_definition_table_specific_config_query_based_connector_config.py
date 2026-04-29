@@ -12,15 +12,11 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig:
     """
-    :meta private: [EXPERIMENTAL]
-
     Configurations that are only applicable for query-based ingestion connectors.
     """
 
     cursor_columns: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
     The names of the monotonically increasing columns in the source table that are used to enable
     the table to be read and ingested incrementally through structured streaming.
     The columns are allowed to have repeated values but have to be non-decreasing.
@@ -31,8 +27,6 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig:
 
     deletion_condition: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Specifies a SQL WHERE condition that specifies that the source row has been deleted.
     This is sometimes referred to as "soft-deletes".
     For example: "Operation = 'DELETE'" or "is_deleted = true".
@@ -44,8 +38,6 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig:
 
     hard_deletion_sync_min_interval_in_seconds: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Specifies the minimum interval (in seconds) between snapshots on primary keys
     for detecting and synchronizing hard deletions—i.e., rows that have been
     physically removed from the source table.
@@ -76,8 +68,6 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDic
 
     cursor_columns: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
     The names of the monotonically increasing columns in the source table that are used to enable
     the table to be read and ingested incrementally through structured streaming.
     The columns are allowed to have repeated values but have to be non-decreasing.
@@ -88,8 +78,6 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDic
 
     deletion_condition: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Specifies a SQL WHERE condition that specifies that the source row has been deleted.
     This is sometimes referred to as "soft-deletes".
     For example: "Operation = 'DELETE'" or "is_deleted = true".
@@ -101,8 +89,6 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDic
 
     hard_deletion_sync_min_interval_in_seconds: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Specifies the minimum interval (in seconds) between snapshots on primary keys
     for detecting and synchronizing hard deletions—i.e., rows that have been
     physically removed from the source table.

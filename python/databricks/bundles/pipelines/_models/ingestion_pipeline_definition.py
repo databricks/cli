@@ -73,8 +73,6 @@ class IngestionPipelineDefinition:
 
     ingest_from_uc_foreign_catalog: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Immutable. If set to true, the pipeline will ingest tables from the
     UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
     The `source_catalog` fields in objects of IngestionConfig are interpreted as
@@ -156,8 +154,6 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     ingest_from_uc_foreign_catalog: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Immutable. If set to true, the pipeline will ingest tables from the
     UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
     The `source_catalog` fields in objects of IngestionConfig are interpreted as

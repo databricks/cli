@@ -112,6 +112,8 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
+		ReplaceExisting: false,
+		ForceSendFields: nil,
 	})
 	if err != nil {
 		return "", nil, err

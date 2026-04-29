@@ -18,6 +18,8 @@ __all__ = [
     "ClusterLogConf",
     "ClusterLogConfDict",
     "ClusterLogConfParam",
+    "ConfidentialComputeType",
+    "ConfidentialComputeTypeParam",
     "ConnectionParameters",
     "ConnectionParametersDict",
     "ConnectionParametersParam",
@@ -63,6 +65,9 @@ __all__ = [
     "GcsStorageInfo",
     "GcsStorageInfoDict",
     "GcsStorageInfoParam",
+    "GoogleAdsConfig",
+    "GoogleAdsConfigDict",
+    "GoogleAdsConfigParam",
     "GoogleAdsOptions",
     "GoogleAdsOptionsDict",
     "GoogleAdsOptionsParam",
@@ -92,6 +97,9 @@ __all__ = [
     "InitScriptInfo",
     "InitScriptInfoDict",
     "InitScriptInfoParam",
+    "JiraConnectorOptions",
+    "JiraConnectorOptionsDict",
+    "JiraConnectorOptionsParam",
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
@@ -113,6 +121,13 @@ __all__ = [
     "OperationTimeWindow",
     "OperationTimeWindowDict",
     "OperationTimeWindowParam",
+    "OutlookAttachmentMode",
+    "OutlookAttachmentModeParam",
+    "OutlookBodyFormat",
+    "OutlookBodyFormatParam",
+    "OutlookOptions",
+    "OutlookOptionsDict",
+    "OutlookOptionsParam",
     "PathPattern",
     "PathPatternDict",
     "PathPatternParam",
@@ -164,6 +179,9 @@ __all__ = [
     "SharepointOptionsParam",
     "SharepointOptionsSharepointEntityType",
     "SharepointOptionsSharepointEntityTypeParam",
+    "SmartsheetOptions",
+    "SmartsheetOptionsDict",
+    "SmartsheetOptionsParam",
     "SourceCatalogConfig",
     "SourceCatalogConfigDict",
     "SourceCatalogConfigParam",
@@ -226,6 +244,10 @@ from databricks.bundles.pipelines._models.cluster_log_conf import (
     ClusterLogConf,
     ClusterLogConfDict,
     ClusterLogConfParam,
+)
+from databricks.bundles.pipelines._models.confidential_compute_type import (
+    ConfidentialComputeType,
+    ConfidentialComputeTypeParam,
 )
 from databricks.bundles.pipelines._models.connection_parameters import (
     ConnectionParameters,
@@ -303,6 +325,11 @@ from databricks.bundles.pipelines._models.gcs_storage_info import (
     GcsStorageInfoDict,
     GcsStorageInfoParam,
 )
+from databricks.bundles.pipelines._models.google_ads_config import (
+    GoogleAdsConfig,
+    GoogleAdsConfigDict,
+    GoogleAdsConfigParam,
+)
 from databricks.bundles.pipelines._models.google_ads_options import (
     GoogleAdsOptions,
     GoogleAdsOptionsDict,
@@ -352,6 +379,11 @@ from databricks.bundles.pipelines._models.init_script_info import (
     InitScriptInfoDict,
     InitScriptInfoParam,
 )
+from databricks.bundles.pipelines._models.jira_connector_options import (
+    JiraConnectorOptions,
+    JiraConnectorOptionsDict,
+    JiraConnectorOptionsParam,
+)
 from databricks.bundles.pipelines._models.lifecycle import (
     Lifecycle,
     LifecycleDict,
@@ -386,6 +418,19 @@ from databricks.bundles.pipelines._models.operation_time_window import (
     OperationTimeWindow,
     OperationTimeWindowDict,
     OperationTimeWindowParam,
+)
+from databricks.bundles.pipelines._models.outlook_attachment_mode import (
+    OutlookAttachmentMode,
+    OutlookAttachmentModeParam,
+)
+from databricks.bundles.pipelines._models.outlook_body_format import (
+    OutlookBodyFormat,
+    OutlookBodyFormatParam,
+)
+from databricks.bundles.pipelines._models.outlook_options import (
+    OutlookOptions,
+    OutlookOptionsDict,
+    OutlookOptionsParam,
 )
 from databricks.bundles.pipelines._models.path_pattern import (
     PathPattern,
@@ -469,6 +514,11 @@ from databricks.bundles.pipelines._models.sharepoint_options import (
 from databricks.bundles.pipelines._models.sharepoint_options_sharepoint_entity_type import (
     SharepointOptionsSharepointEntityType,
     SharepointOptionsSharepointEntityTypeParam,
+)
+from databricks.bundles.pipelines._models.smartsheet_options import (
+    SmartsheetOptions,
+    SmartsheetOptionsDict,
+    SmartsheetOptionsParam,
 )
 from databricks.bundles.pipelines._models.source_catalog_config import (
     SourceCatalogConfig,

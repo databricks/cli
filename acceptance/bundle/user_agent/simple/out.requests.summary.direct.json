@@ -1,7 +1,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat agent/multiple"
     ]
   },
   "method": "GET",
@@ -10,7 +10,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat agent/multiple"
     ]
   },
   "method": "GET",
@@ -23,7 +23,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none auth/pat agent/multiple"
     ]
   },
   "method": "GET",
@@ -32,6 +32,15 @@
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate",
     "return_export_info": "true"
   }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_summary cmd-exec-id/[UUID] interactive/none engine/direct auth/pat agent/multiple"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
 }
 {
   "headers": {

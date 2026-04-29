@@ -18,3 +18,6 @@
 ### Dependency updates
 
 * Added `github.com/zalando/go-keyring` as a new dependency (dormant until a later release enables experimental secure-storage for OAuth tokens).
+* Bump `github.com/databricks/databricks-sdk-go` from v0.128.0 to v0.131.0.
+
+### API Changes

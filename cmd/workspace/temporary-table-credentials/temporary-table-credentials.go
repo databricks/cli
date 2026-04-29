@@ -33,8 +33,8 @@ func New() *cobra.Command {
   temporary table credentials API, a metastore admin needs to enable the
   external_access_enabled flag (off by default) at the metastore level, and user
   needs to be granted the EXTERNAL USE SCHEMA permission at the schema level by
-  catalog admin. Note that EXTERNAL USE SCHEMA is a schema level permission that
-  can only be granted by catalog admin explicitly and is not included in schema
+  catalog owner. Note that EXTERNAL USE SCHEMA is a schema level permission that
+  can only be granted by catalog owner explicitly and is not included in schema
   ownership or ALL PRIVILEGES on the schema for security reasons.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
