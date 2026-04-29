@@ -1509,26 +1509,7 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 }
 
 func BuildYamlfmt(t *testing.T) {
-	output := filepath.Join("..", "tools", "yamlfmt"+exeSuffix)
-	// Only rebuild when module files change, mirroring the old make rule.
-	if outInfo, err := os.Stat(output); err == nil {
-		upToDate := true
-		for _, src := range []string{filepath.Join("..", "tools", "go.mod"), filepath.Join("..", "tools", "go.sum")} {
-			if srcInfo, err := os.Stat(src); err != nil || srcInfo.ModTime().After(outInfo.ModTime()) {
-				upToDate = false
-				break
-			}
-		}
-		if upToDate {
-			return
-		}
-	}
-	RunCommand(t, []string{
-		"go", "build",
-		"-modfile=tools/go.mod",
-		"-o", "tools/yamlfmt" + exeSuffix,
-		"github.com/google/yamlfmt/cmd/yamlfmt",
-	}, "..", []string{})
+	RunCommand(t, []string{"./task", "build-yamlfmt"}, "..", []string{})
 }
 
 // setupTerraform installs terraform and configures environment variables for tests.

@@ -3,6 +3,7 @@ version: '3'
 vars:
   # Absolute path so tasks with `dir:` (lint-go-tools, lint-go-codegen) can use it.
   GO_TOOL: go tool -modfile={{.ROOT_DIR}}/tools/go.mod
+  EXE_EXT: '{{if eq OS "windows"}}.exe{{end}}'
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
@@ -302,6 +303,17 @@ tasks:
   # The root binary only imports bundle/, cmd/, experimental/, internal/, libs/,
   # so changes to test-only trees (acceptance/, integration/), separate modules
   # (tools/, bundle/internal/tf/codegen/), and _test.go files don't affect the build.
+  build-yamlfmt:
+    desc: Build the yamlfmt binary used by acceptance tests
+    dir: tools
+    sources:
+      - go.mod
+      - go.sum
+    generates:
+      - yamlfmt{{.EXE_EXT}}
+    cmds:
+      - go build -o yamlfmt{{.EXE_EXT}} github.com/google/yamlfmt/cmd/yamlfmt
+
   build:
     desc: Build the CLI binary
     deps: ['tidy-root']
