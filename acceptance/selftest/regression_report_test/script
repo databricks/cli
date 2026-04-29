@@ -1,0 +1,5 @@
+# This will pass on this branch but fail on main since it does not exist there
+trace ls -1 $TESTDIR/../../../tools/regression_test_report.py
+
+# This passes on dev version but will fail with "-useversion latest"
+trace $CLI --version | grep 0.0.0 | wc -l

@@ -1,0 +1,6 @@
+
+>>> ls -1 [TESTROOT]/selftest/regression_test_test/../../../tools/regression_test_report.py
+[TESTROOT]/selftest/regression_test_test/../../../tools/regression_test_report.py
+
+>>> [CLI] --version
+       1
