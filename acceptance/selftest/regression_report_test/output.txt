@@ -3,4 +3,4 @@
 [TESTROOT]/selftest/regression_report_test/../../../tools/regression_test_report.py
 
 >>> [CLI] --version
-       1
+Databricks CLI v[DEV_VERSION]

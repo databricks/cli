@@ -2,4 +2,4 @@
 trace ls -1 $TESTDIR/../../../tools/regression_test_report.py
 
 # This passes on dev version but will fail with "-useversion latest"
-trace $CLI --version | grep 0.0.0 | wc -l
+trace $CLI --version | grep 0.0.0
