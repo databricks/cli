@@ -12,11 +12,9 @@ Deployment complete!
   "effective_budget_policy_id":"remote-policy"
 }
 
-=== Plan detects drift and proposes update
+=== budget_policy_id drift is ignored (effective vs requested mismatch)
 >>> [CLI] bundle plan
-update vector_search_endpoints.my_endpoint
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
