@@ -596,15 +596,19 @@ tasks:
       - experimental/aitools/**
       - acceptance/apps/**
       - "{{.EMBED_SOURCES}}"
-    deps:
-      - task: test-unit-root
-        vars:
-          TEST_PACKAGES: ./experimental/aitools/...
-      - task: test-acc
-        vars:
-          ACCEPTANCE_TEST_FILTER: TestAccept/apps
     cmds:
-      - cat test-output-unit-root.json test-output-acc.json > test-output.json
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./experimental/aitools/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/apps"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests
@@ -612,30 +616,38 @@ tasks:
       - experimental/ssh/**
       - acceptance/ssh/**
       - "{{.EMBED_SOURCES}}"
-    deps:
-      - task: test-unit-root
-        vars:
-          TEST_PACKAGES: ./experimental/ssh/...
-      - task: test-acc
-        vars:
-          ACCEPTANCE_TEST_FILTER: TestAccept/ssh
     cmds:
-      - cat test-output-unit-root.json test-output-acc.json > test-output.json
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./experimental/ssh/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/ssh"
 
   test-pipelines:
     desc: Run pipelines unit and acceptance tests
     sources:
       - cmd/pipelines/**
       - acceptance/pipelines/**
-    deps:
-      - task: test-unit-root
-        vars:
-          TEST_PACKAGES: ./cmd/pipelines/...
-      - task: test-acc
-        vars:
-          ACCEPTANCE_TEST_FILTER: TestAccept/pipelines
     cmds:
-      - cat test-output-unit-root.json test-output-acc.json > test-output.json
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./cmd/pipelines/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m}
+      - |
+        {{.GO_TOOL}} gotestsum \
+          --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
+          --no-summary=skipped \
+          --packages ./acceptance/... \
+          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/pipelines"
 
   # --- Integration tests ---
 
