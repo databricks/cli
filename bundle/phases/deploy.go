@@ -120,10 +120,25 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		}
 	}
 
-	// One or more Vector Search indexes is being deleted or recreated.
-	if len(vectorSearchIndexActions) != 0 {
+	// One or more Vector Search indexes is being deleted or recreated. Split by
+	// index_type so the warning explains the actual cost (Delta Sync rebuilds
+	// the embedding pipeline; Direct Access loses every upserted vector).
+	deltaSyncActions, directAccessActions, otherIndexActions := splitVectorSearchIndexActions(b, vectorSearchIndexActions)
+	if len(deltaSyncActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateDeltaSyncIndexMessage)
+		for _, action := range deltaSyncActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+	if len(directAccessActions) != 0 {
+		cmdio.LogString(ctx, deleteOrRecreateDirectAccessIndexMessage)
+		for _, action := range directAccessActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+	if len(otherIndexActions) != 0 {
 		cmdio.LogString(ctx, deleteOrRecreateVectorSearchIndexMessage)
-		for _, action := range vectorSearchIndexActions {
+		for _, action := range otherIndexActions {
 			cmdio.Log(ctx, action)
 		}
 	}

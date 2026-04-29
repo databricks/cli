@@ -1,0 +1,54 @@
+
+>>> [CLI] vector-search-endpoints create-endpoint vs-endpoint-[UNIQUE_NAME] STANDARD
+{
+  "name": "vs-endpoint-[UNIQUE_NAME]",
+  "endpoint_type": "STANDARD"
+}
+
+=== Initial deploy with one Delta Sync and one Direct Access index
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-mixed-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Force a recreate of both indexes (primary_key changes are immutable)
+>>> [CLI] bundle plan
+recreate vector_search_indexes.my_delta_sync
+recreate vector_search_indexes.my_direct_access
+
+Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-mixed-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following Delta Sync Vector Search
+indexes. Recreation re-runs the full embedding pipeline against the source Delta table:
+  recreate resources.vector_search_indexes.my_delta_sync
+
+This action will result in the deletion or recreation of the following Direct Access Vector Search
+indexes. All upserted vectors will be lost and must be re-upserted after recreation:
+  recreate resources.vector_search_indexes.my_direct_access
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_indexes.my_delta_sync
+  delete resources.vector_search_indexes.my_direct_access
+
+This action will result in the deletion of the following Delta Sync Vector Search indexes.
+The source Delta table is preserved, but the embedding pipeline is removed:
+  delete resources.vector_search_indexes.my_delta_sync
+
+This action will result in the deletion of the following Direct Access Vector Search indexes.
+All upserted vectors are permanently lost:
+  delete resources.vector_search_indexes.my_direct_access
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-vs-index-mixed-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] vector-search-endpoints delete-endpoint vs-endpoint-[UNIQUE_NAME]

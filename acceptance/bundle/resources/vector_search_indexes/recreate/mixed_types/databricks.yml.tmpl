@@ -1,0 +1,23 @@
+bundle:
+  name: deploy-vs-index-mixed-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  vector_search_indexes:
+    my_delta_sync:
+      name: vs-index-delta-$UNIQUE_NAME
+      endpoint_name: vs-endpoint-$UNIQUE_NAME
+      primary_key: id
+      index_type: PRIMARY_KEY_PLACEHOLDER
+      delta_sync_index_spec:
+        source_table: main.default.source_$UNIQUE_NAME
+        pipeline_type: TRIGGERED
+    my_direct_access:
+      name: vs-index-direct-$UNIQUE_NAME
+      endpoint_name: vs-endpoint-$UNIQUE_NAME
+      primary_key: id
+      index_type: DIRECT_ACCESS
+      direct_access_index_spec:
+        schema_json: '{"columns":[{"name":"id","type":"integer"}]}'

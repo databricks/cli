@@ -1,0 +1,6 @@
+Cloud = false
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]

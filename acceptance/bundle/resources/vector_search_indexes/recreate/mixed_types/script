@@ -1,0 +1,23 @@
+endpoint_name="vs-endpoint-${UNIQUE_NAME}"
+delta_index_name="vs-index-delta-${UNIQUE_NAME}"
+direct_index_name="vs-index-direct-${UNIQUE_NAME}"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    trace $CLI vector-search-endpoints delete-endpoint "${endpoint_name}"
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI vector-search-endpoints create-endpoint "${endpoint_name}" STANDARD | jq '{name, endpoint_type}'
+
+title "Initial deploy with one Delta Sync and one Direct Access index"
+sed "s/PRIMARY_KEY_PLACEHOLDER/DELTA_SYNC/" databricks.yml.tmpl | envsubst > databricks.yml
+trace $CLI bundle deploy
+
+title "Force a recreate of both indexes (primary_key changes are immutable)"
+sed "s/primary_key: id/primary_key: id_v2/" databricks.yml > databricks.yml.new
+mv databricks.yml.new databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
