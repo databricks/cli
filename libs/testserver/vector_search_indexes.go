@@ -25,6 +25,15 @@ func (s *FakeWorkspace) VectorSearchIndexCreate(req Request) Response {
 			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Vector search index with name %s already exists", createReq.Name)},
 		}
 	}
+	if _, pending := s.vectorSearchIndexesPendingDeletion[createReq.Name]; pending {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    fmt.Sprintf("Index %s is currently pending deletion. Operations on the index are not permitted while the index is being deleted.", createReq.Name),
+			},
+		}
+	}
 	if _, exists := s.VectorSearchEndpoints[createReq.EndpointName]; !exists {
 		return Response{
 			StatusCode: http.StatusNotFound,
@@ -66,5 +75,55 @@ func remapDeltaSyncSpec(req *vectorsearch.DeltaSyncVectorIndexSpecRequest) *vect
 		EmbeddingWritebackTable: req.EmbeddingWritebackTable,
 		PipelineType:            req.PipelineType,
 		SourceTable:             req.SourceTable,
+	}
+}
+
+// VectorSearchIndexDelete moves the index out of the live map into a
+// "pending deletion" buffer. CREATE on the same name returns the
+// pending-deletion error until a GET (i.e. a poll) consumes the buffer entry,
+// which is how the real backend's async deletion window manifests to a client
+// that doesn't wait between DELETE and CREATE.
+func (s *FakeWorkspace) VectorSearchIndexDelete(indexName string) Response {
+	defer s.LockUnlock()()
+
+	index, ok := s.VectorSearchIndexes[indexName]
+	if !ok {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Vector search index %s not found", indexName),
+			},
+		}
+	}
+	if index.Status == nil {
+		index.Status = &vectorsearch.VectorIndexStatus{}
+	}
+	index.Status.Ready = false
+	index.Status.Message = "Index is currently pending deletion"
+	s.vectorSearchIndexesPendingDeletion[indexName] = index
+	delete(s.VectorSearchIndexes, indexName)
+	return Response{}
+}
+
+// VectorSearchIndexGet returns 404 once the index has been moved to the
+// pending-deletion buffer. The pending entry is consumed as a side effect, so
+// CREATE-during-pending only fires when the caller skips the wait and races
+// straight from DELETE to CREATE without polling. This preserves the
+// "remote not found -> recreate" behavior for tests that delete out-of-band
+// and immediately re-plan.
+func (s *FakeWorkspace) VectorSearchIndexGet(indexName string) Response {
+	defer s.LockUnlock()()
+
+	if index, ok := s.VectorSearchIndexes[indexName]; ok {
+		return Response{Body: index}
+	}
+	delete(s.vectorSearchIndexesPendingDeletion, indexName)
+	return Response{
+		StatusCode: http.StatusNotFound,
+		Body: map[string]string{
+			"error_code": "RESOURCE_DOES_NOT_EXIST",
+			"message":    fmt.Sprintf("Vector search index %s not found", indexName),
+		},
 	}
 }

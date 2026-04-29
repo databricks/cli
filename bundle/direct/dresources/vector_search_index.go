@@ -2,6 +2,8 @@ package dresources
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -10,8 +12,14 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
+
+// deleteIndexTimeout caps the wait for an index deletion to complete.
+// In practice deletion finishes in a minute or two, but worst case the
+// embedding pipeline shutdown can stretch closer to ten minutes.
+const deleteIndexTimeout = 15 * time.Minute
 
 // VectorSearchIndexState tracks the UUID of the endpoint the index is attached
 // to. Without it the planner cannot tell that an index pointing at a deleted
@@ -116,8 +124,27 @@ func (r *ResourceVectorSearchIndex) DoUpdate(ctx context.Context, id string, con
 	return nil, nil
 }
 
+// DoDelete kicks off deletion and waits for it to complete. The DELETE call
+// is asynchronous: a follow-up CREATE for the same name (e.g. during recreate)
+// is rejected with "index is currently pending deletion" until the backend
+// finishes tearing down the embedding pipeline. We poll GetIndex until it
+// returns 404 to make recreate paths idempotent.
 func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string) error {
-	return r.client.VectorSearchIndexes.DeleteIndexByIndexName(ctx, id)
+	err := r.client.VectorSearchIndexes.DeleteIndexByIndexName(ctx, id)
+	if err != nil {
+		return err
+	}
+	_, err = retries.Poll[struct{}](ctx, deleteIndexTimeout, func() (*struct{}, *retries.Err) {
+		_, getErr := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, id)
+		if getErr == nil {
+			return nil, retries.Continues("index still exists, waiting for deletion to complete")
+		}
+		if errors.Is(getErr, apierr.ErrResourceDoesNotExist) || errors.Is(getErr, apierr.ErrNotFound) {
+			return &struct{}{}, nil
+		}
+		return nil, retries.Halt(getErr)
+	})
+	return err
 }
 
 // OverrideChangeDesc classifies endpoint_uuid drift: Recreate when the saved

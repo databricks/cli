@@ -835,11 +835,11 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
+		return req.Workspace.VectorSearchIndexGet(req.Vars["index_name"])
 	})
 
 	server.Handle("DELETE", "/api/2.0/vector-search/indexes/{index_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.VectorSearchIndexes, req.Vars["index_name"])
+		return req.Workspace.VectorSearchIndexDelete(req.Vars["index_name"])
 	})
 
 	// Generic permissions endpoints
