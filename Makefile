@@ -134,6 +134,13 @@ showcover:
 acc-showcover:
 	go tool cover -html=coverage-acceptance.txt
 
+.PHONY: fetch-compat-manifest
+fetch-compat-manifest:
+	@curl -sfL https://raw.githubusercontent.com/databricks/appkit/main/cli-compat.json \
+		-o libs/apps/compat/cli-compat.json \
+		&& echo "Fetched latest cli-compat.json" \
+		|| echo "Warning: failed to fetch cli-compat.json, using existing copy"
+
 .PHONY: build
 build: tidy
 	go build

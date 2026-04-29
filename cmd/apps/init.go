@@ -18,7 +18,9 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/experimental/aitools/lib/installer"
+	"github.com/databricks/cli/libs/apps/compat"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
@@ -62,6 +64,16 @@ func normalizeVersion(version string) string {
 		return appkitTemplateTagPfx + version
 	}
 	return version
+}
+
+// resolveFromManifest fetches the compatibility manifest and resolves the
+// entry for the current CLI version.
+func resolveFromManifest(ctx context.Context) (compat.Entry, error) {
+	m, err := compat.FetchManifest(ctx)
+	if err != nil {
+		return compat.Entry{}, err
+	}
+	return compat.Resolve(m, build.GetInfo().Version)
 }
 
 func newInitCmd() *cobra.Command {
@@ -768,6 +780,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Resolve the git reference (branch/tag) to use for default appkit template
 	gitRef := opts.branch
 	usingDefaultTemplate := templateSrc == ""
+	var resolvedSkillsVersion string
 	if usingDefaultTemplate {
 		// Using default appkit template - resolve version
 		switch {
@@ -776,8 +789,15 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		case opts.version != "":
 			gitRef = normalizeVersion(opts.version)
 		default:
-			// Default: use pinned version
-			gitRef = appkitDefaultVersion
+			// Resolve from compatibility manifest (fetch from GitHub, fall back to embedded).
+			if entry, err := resolveFromManifest(ctx); err != nil {
+				log.Warnf(ctx, "Manifest resolution failed (%v), using hardcoded default %s", err, appkitDefaultVersion)
+				gitRef = appkitDefaultVersion
+			} else {
+				gitRef = normalizeVersion(entry.Appkit)
+				resolvedSkillsVersion = entry.Skills
+				log.Infof(ctx, "Resolved AppKit template version %s (skills %s) from compatibility manifest for CLI %s", entry.Appkit, entry.Skills, build.GetInfo().Version)
+			}
 		}
 		templateSrc = appkitRepoURL
 	}
@@ -1131,13 +1151,21 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		prompt.PrintSetupNotes(ctx, notes)
 	}
 
+	// If the manifest resolved a skills version, set it on the context so the
+	// skills installer uses the manifest-compatible version instead of its
+	// embedded SKILLS_VERSION default.
+	skillsCtx := ctx
+	if resolvedSkillsVersion != "" {
+		skillsCtx = env.Set(ctx, "DATABRICKS_SKILLS_REF", "v"+resolvedSkillsVersion)
+	}
+
 	// Recommend skills installation if coding agents are detected without skills.
 	// In flags mode, only print a hint — never prompt interactively.
 	if flagsMode {
-		if !agents.HasDatabricksSkillsInstalled(ctx) {
+		if !agents.HasDatabricksSkillsInstalled(skillsCtx) {
 			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
 		}
-	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
+	} else if err := agents.RecommendSkillsInstall(skillsCtx, installer.InstallAllSkills); err != nil {
 		log.Warnf(ctx, "Skills recommendation failed: %v", err)
 	}
 
