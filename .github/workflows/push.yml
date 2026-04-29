@@ -503,6 +503,54 @@ jobs:
             --ref main \
             -f commit_sha=${{ github.event.after }}
 
+  regression-report:
+    if: >-
+      github.event_name == 'pull_request' &&
+      !github.event.pull_request.head.repo.fork &&
+      github.actor != 'dependabot[bot]'
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Generate regression test report
+        run: python3 tools/regression_test_report.py
+
+      - name: Post or update PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          MARKER="<!-- regression-test-report -->"
+          { echo "$MARKER"; cat REGRESSION_REPORT.md; } > comment_body.txt
+
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          REPO="${{ github.repository }}"
+
+          COMMENT_ID=$(gh api --paginate "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --jq '.[] | select(.body | startswith("<!-- regression-test-report -->")) | .id' \
+            | head -1)
+
+          if [ -n "$COMMENT_ID" ]; then
+            gh api "repos/${REPO}/issues/comments/${COMMENT_ID}" \
+              -X PATCH -f body="$(cat comment_body.txt)"
+          else
+            gh pr comment "${PR_NUMBER}" --body-file comment_body.txt
+          fi
+
   # Skip integration tests for dependabot PRs.
   # Dependabot has no access to the "test-trigger-is" environment secrets,
   # so we use the built-in GITHUB_TOKEN to mark the required "Integration
