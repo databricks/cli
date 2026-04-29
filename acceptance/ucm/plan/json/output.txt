@@ -1,0 +1,12 @@
+
+>>> [CLI] ucm plan -o json
+Warning: cannot initialize resource URLs: workspace.host is not set
+
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.catalogs.main": {
+      "action": "create"
+    }
+  }
+}
