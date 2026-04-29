@@ -181,7 +181,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		// Rather than failing delete and requiring user to unbind, we perform unbind automatically there.
 		// Some services, e.g. jobs, return 403 for missing resources if caller did not have permissions to it when job existed.
 		// In those cases 403 hides 404. In other cases, user not having permissions to resource but having in the bundle might
-		// mean configuration error that user is trying to fix by permission-restoring or removing the resource from their bundle.
+		// mean configuration error that user is trying to fix by removing resource from their bundle.
 		if errors.Is(err, apierr.ErrPermissionDenied) {
 			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
 		} else {
