@@ -36,7 +36,7 @@ func directStatePath(u *ucm.Ucm) string {
 // was duplicated inside planTerraform/deployTerraform and skipped entirely
 // on the direct path, where the dynamic per-entry resolution inside
 // direct.DeploymentUcm is not equivalent to the static closure check.
-func PreDeployChecks(ctx context.Context, u *ucm.Ucm, e engine.EngineType) {
+func PreDeployChecks(ctx context.Context, u *ucm.Ucm, downgradeWarningToError bool, e engine.EngineType) {
 	ucm.ApplySeqContext(ctx, u,
 		mutator.ValidateDirectOnlyResources(e),
 		mutator.ValidateLifecycleStarted(e),
