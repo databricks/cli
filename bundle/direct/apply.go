@@ -86,7 +86,9 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, "", nil, nil)
+	// Drop the state entry so a subsequent failure of Create leaves no malformed
+	// (empty-ID) entry behind. The next plan will see "no state" and retry as Create.
+	err = db.DeleteState(d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
