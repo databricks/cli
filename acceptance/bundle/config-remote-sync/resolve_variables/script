@@ -11,11 +11,18 @@ $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 pipeline_id="$(read_id.py my_pipeline)"
 
-title "Append a new dependency to the pipeline environment"
+title "Modify pipeline environment dependencies"
 edit_resource.py pipelines $pipeline_id <<EOF
-# Existing dependency uses \${workspace.file_path} via compound interpolation.
-# After the user adds a new dep, the existing one must stay as a variable.
-r["environment"]["dependencies"].append("nonexistent-test-pkg==1.2.3")
+# [1] Trim "--editable " prefix AND append "/extra" suffix. The variable's
+# resolved value still appears in the new string, so substring substitution
+# restores \${workspace.file_path} and keeps "/extra" as the literal tail.
+# [0] (\${var.my_env_dep}) and [2] (hardcoded literal) are untouched.
+r["environment"]["dependencies"][1] = (
+    r["environment"]["dependencies"][1].replace("--editable ", "") + "/extra"
+)
+# Append a fully new dep to force a Replace on the dependencies array, which
+# exercises the recursion through indexes [0], [1], [2], and [3].
+r["environment"]["dependencies"].append("another-pkg==2.0")
 EOF
 
 title "Add and replace parameters remotely"

@@ -35,12 +35,17 @@ resources:
       libraries:
         - notebook:
             path: /Users/{{workspace_user_name}}/notebook
-      # Pipeline environment.dependencies uses ${workspace.file_path} via
-      # compound interpolation. Adding a new dependency must keep the
-      # existing variable-backed entry intact.
+      # Three deps cover the compound-interpolation cases:
+      #   [0] pure ${var.X}, untouched in the test → stays as ${var.my_env_dep}
+      #   [1] compound with ${workspace.file_path} → trimmed/extended in the
+      #       script; substring substitution must preserve the variable
+      #   [2] hardcoded literal that happens to equal ${var.my_env_dep}'s
+      #       resolved value → must stay literal (no false-positive promotion)
       environment:
         dependencies:
+          - ${var.my_env_dep}
           - --editable ${workspace.file_path}
+          - nonexistent-test-pkg==1.2.3
 
   jobs:
     my_job:

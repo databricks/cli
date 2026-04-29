@@ -419,15 +419,19 @@ func matchOriginalRef(remoteValue any, preResolved, resolved dyn.Value) (string,
 }
 
 // restoreCompoundInterpolation handles strings with mixed variable references
-// and literal text, e.g., "/mnt/${var.account}/raw/landing". It checks whether
-// each variable's resolved value still appears at its expected position in the
-// remote string. Variables that match are preserved; changed literal segments
-// are updated. Falls back to false if the template can't be aligned.
+// and literal text, e.g., "/mnt/${var.account}/raw/landing".
 //
-// Known limitation: variable matching is prefix-greedy. If ${var.X}="foo" and
-// the remote starts with "footbar...", HasPrefix matches "foo" and the leftover
-// "tbar" becomes literal garbage. Adjacent variables without a literal separator
-// (e.g., "${var.A}${var.B}") cannot be reliably split if either value changes.
+// Algorithm: for each variable in the template, find the first occurrence of
+// its resolved value in the remote string and substitute it back to its raw
+// ${...} form. Variables whose resolved value no longer appears are dropped
+// (the user changed them); literal segments can grow, shrink, or disappear
+// freely. Returns false if no variable ends up in the result (e.g., the user
+// replaced everything with an unrelated string).
+//
+// Known limitation: substring-matching is unanchored. If ${var.X}="in" and the
+// new value contains "in" inside an unrelated word, that occurrence is still
+// rewritten to ${var.X}. Variables in the template are processed in order of
+// appearance, which is usually what the user expects.
 func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.Value) (string, bool) {
 	if !preResolved.IsValid() {
 		return "", false
@@ -442,69 +446,22 @@ func restoreCompoundInterpolation(remoteValue string, preResolved, resolved dyn.
 		return "", false
 	}
 
-	// Walk the remote string, aligning each segment against the template.
-	// For each segment we try an exact match first. On mismatch we search
-	// ahead for the next literal anchor to determine the boundary.
-	// The last segment always consumes all remaining text.
-	var result strings.Builder
-	pos := 0
-
-	for i, seg := range segments {
-		if pos > len(remoteValue) {
-			return "", false
+	result := remoteValue
+	for _, seg := range segments {
+		if !seg.isVariable || seg.resolvedValue == "" {
+			continue
 		}
-
-		remaining := remoteValue[pos:]
-		isLast := i == len(segments)-1
-
-		if seg.isVariable {
-			if seg.resolvedValue == "" {
-				return "", false
-			}
-			if isLast {
-				if remaining == seg.resolvedValue {
-					result.WriteString(seg.raw)
-				} else {
-					result.WriteString(remaining)
-				}
-				pos = len(remoteValue)
-			} else if strings.HasPrefix(remaining, seg.resolvedValue) {
-				result.WriteString(seg.raw)
-				pos += len(seg.resolvedValue)
-			} else {
-				end := findAnchorOffset(segments, i+1, remaining)
-				if end < 0 {
-					return "", false
-				}
-				result.WriteString(remaining[:end])
-				pos += end
-			}
-		} else {
-			if isLast {
-				result.WriteString(remaining)
-				pos = len(remoteValue)
-			} else if strings.HasPrefix(remaining, seg.raw) {
-				result.WriteString(seg.raw)
-				pos += len(seg.raw)
-			} else {
-				end := findAnchorOffset(segments, i+1, remaining)
-				if end < 0 {
-					return "", false
-				}
-				result.WriteString(remaining[:end])
-				pos += end
-			}
+		idx := strings.Index(result, seg.resolvedValue)
+		if idx < 0 {
+			continue
 		}
+		result = result[:idx] + seg.raw + result[idx+len(seg.resolvedValue):]
 	}
 
-	restored := result.String()
-	if restored == template {
-		return template, true
-	}
-	if !dynvar.ContainsVariableReference(restored) {
+	if !dynvar.ContainsVariableReference(result) {
 		return "", false
 	}
-	return restored, true
+	return result, true
 }
 
 // templateSegment represents either a literal string or a variable reference
