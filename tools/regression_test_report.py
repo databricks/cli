@@ -555,15 +555,14 @@ def render_report(
         if leaves:
             for leaf in leaves:
                 is_pass = leaf in passing_set
-                name = leaf[len("TestAccept/") :]
                 if is_pass:
                     m = mark(acc_main_info.get(leaf, {}).get("status", ""))
                     l = mark(acc_latest_info.get(leaf, {}).get("status", ""))
                 else:
                     m = l = NA
-                rows.append({"test": name, "branch": PASS if is_pass else FAIL, col_main: m, col_latest: l})
+                rows.append({"test": leaf, "branch": PASS if is_pass else FAIL, col_main: m, col_latest: l})
         else:
-            rows.append({"test": tp, "branch": FAIL, col_main: NA, col_latest: NA})
+            rows.append({"test": f"TestAccept/{tp}", "branch": FAIL, col_main: NA, col_latest: NA})
 
     for key in unit_selected:
         info = unit_branch_info[key]
