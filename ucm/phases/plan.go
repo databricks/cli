@@ -27,11 +27,19 @@ func directStatePath(u *ucm.Ucm) string {
 }
 
 // PreDeployChecks is common set of mutators between "ucm plan" and "ucm deploy".
-// Note, it is not run in "ucm migrate" so it must not modify the config
+// Note, it is not run in "ucm migrate" so it must not modify the config.
+//
+// validate.ReferenceClosure runs here so dangling ${resources.<kind>.<key>}
+// typos surface as a clean diagnostic before either engine attempts work.
+// Mirrors bundle's process_static_resources position; previously the check
+// was duplicated inside planTerraform/deployTerraform and skipped entirely
+// on the direct path, where the dynamic per-entry resolution inside
+// direct.DeploymentUcm is not equivalent to the static closure check.
 func PreDeployChecks(ctx context.Context, u *ucm.Ucm, e engine.EngineType) {
 	ucm.ApplySeqContext(ctx, u,
 		mutator.ValidateDirectOnlyResources(e),
 		mutator.ValidateLifecycleStarted(e),
+		validate.ReferenceClosure(),
 	)
 	if logdiag.HasError(ctx) {
 		return

@@ -231,10 +231,15 @@ func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
 	// partial progress before bubbling the error up through HasError.
 	// Skip Finalize for empty plans to avoid creating a state file when
 	// nothing was deployed (mirrors bundle.deployCore).
+	//
+	// A Finalize error is logged but does NOT short-circuit metadata upload:
+	// bundle.deployCore continues to subsequent steps after a Finalize log,
+	// and the trailing logdiag.HasError check below is what gates the
+	// process exit. Returning early here would silently skip metadata upload
+	// on partial-progress failures.
 	if len(plan.Plan) > 0 {
 		if err := d.StateDB.Finalize(); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("finalize direct state: %w", err))
-			return
 		}
 	}
 	if logdiag.HasError(ctx) {
