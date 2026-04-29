@@ -555,7 +555,7 @@ def render_report(
         if leaves:
             for leaf in leaves:
                 is_pass = leaf in passing_set
-                name = leaf[len("TestAccept/"):]
+                name = leaf[len("TestAccept/") :]
                 if is_pass:
                     m = mark(acc_main_info.get(leaf, {}).get("status", ""))
                     l = mark(acc_latest_info.get(leaf, {}).get("status", ""))
