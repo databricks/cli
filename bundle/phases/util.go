@@ -28,18 +28,46 @@ func filterGroup(changes []deployplan.Action, group string, actionTypes ...deplo
 	return result
 }
 
-// splitVectorSearchIndexActions partitions the given vector_search_indexes
-// actions by index_type. Actions for resources not in the bundle config (e.g.
-// removed-from-bundle deletes) fall into the "other" bucket where they get a
-// generic message instead of a type-specific one.
+// vsIndexBucket categorizes which destructive-action message a Vector Search
+// index belongs in.
+type vsIndexBucket int
+
+const (
+	vsIndexBucketOther vsIndexBucket = iota
+	vsIndexBucketDeltaSync
+	vsIndexBucketDirectAccess
+)
+
+// vectorSearchIndexBucket maps an SDK VectorIndexType onto our prompt buckets.
+// The inner switch is intentionally exhaustive (no default branch) so the
+// `exhaustive` linter flags new SDK constants the next time the dependency is
+// bumped — without that, new types would silently get the generic "other"
+// message and users would lose the type-specific recovery cost warning.
+func vectorSearchIndexBucket(t vectorsearch.VectorIndexType) vsIndexBucket {
+	switch t {
+	case vectorsearch.VectorIndexTypeDeltaSync:
+		return vsIndexBucketDeltaSync
+	case vectorsearch.VectorIndexTypeDirectAccess:
+		return vsIndexBucketDirectAccess
+	}
+	// Falls through for empty strings (resource missing from bundle config)
+	// and for any value that escaped the exhaustive switch (impossible if
+	// lint is enforced).
+	return vsIndexBucketOther
+}
+
+// splitVectorSearchIndexActions partitions vector_search_indexes actions by
+// index_type. Actions for resources not in the bundle config (e.g. removed-
+// from-bundle deletes) end up in the "other" bucket and pick up a generic
+// message instead of a type-specific one.
 func splitVectorSearchIndexActions(b *bundle.Bundle, actions []deployplan.Action) (deltaSync, directAccess, other []deployplan.Action) {
 	for _, action := range actions {
-		switch indexTypeForAction(b, action) {
-		case vectorsearch.VectorIndexTypeDeltaSync:
+		switch vectorSearchIndexBucket(indexTypeForAction(b, action)) {
+		case vsIndexBucketDeltaSync:
 			deltaSync = append(deltaSync, action)
-		case vectorsearch.VectorIndexTypeDirectAccess:
+		case vsIndexBucketDirectAccess:
 			directAccess = append(directAccess, action)
-		default:
+		case vsIndexBucketOther:
 			other = append(other, action)
 		}
 	}
