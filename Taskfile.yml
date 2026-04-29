@@ -384,6 +384,9 @@ tasks:
       - "**/*.go"
       - exclude: tools/**
       - exclude: bundle/internal/tf/codegen/**
+      - exclude: integration/**
+      - exclude: acceptance/**
+      - acceptance/internal/**
       - go.mod
       - go.sum
       - "{{.EMBED_SOURCES}}"

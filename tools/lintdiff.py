@@ -13,6 +13,7 @@ import sys
 import argparse
 import subprocess
 
+# Each entry is a path prefix: "tools" also covers "tools/task", "tools/other", etc.
 NESTED_MODULES = ("bundle/internal/tf/codegen", "tools")
 
 
