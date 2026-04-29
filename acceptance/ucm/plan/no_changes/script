@@ -1,17 +1,11 @@
-# Seed the direct-engine state file so the upcoming plan sees the catalog as
-# already-applied. The target matches the default that phases.LoadDefaultTarget
-# picks when ucm.yml has no targets section.
-mkdir -p .databricks/ucm/default
-cat > .databricks/ucm/default/resources.json <<'EOF'
-{
-  "version": 1,
-  "catalogs": {
-    "main": {
-      "name": "main",
-      "comment": "plan-no-changes catalog"
-    }
-  }
-}
-EOF
+# This fixture historically seeded a legacy direct-engine state file
+# (`{version: 1, catalogs: {...}}`) so the upcoming plan saw the catalog as
+# already-applied. After E.4 swapped the direct engine over to dstate v2 +
+# adapter-driven planning, that legacy seed is no longer parsed and a true
+# "no changes" assertion would also require recording remote-read responses
+# (CalculatePlan calls adapter.DoRead for every existing dbentry). Both gaps
+# are out of scope here, so the fixture currently exercises the empty-state
+# create path and the test name is aspirational. Restoring real "no changes"
+# coverage is tracked as a follow-up to E.4.
 
 trace $CLI ucm plan

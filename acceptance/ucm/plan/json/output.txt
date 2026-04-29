@@ -3,10 +3,16 @@
 Warning: cannot initialize resource URLs: workspace.host is not set
 
 {
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.catalogs.main": {
-      "action": "create"
+      "action": "create",
+      "new_state": {
+        "value": {
+          "name": "main"
+        }
+      }
     }
   }
 }
