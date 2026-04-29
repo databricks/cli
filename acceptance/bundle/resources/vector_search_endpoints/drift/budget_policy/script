@@ -14,5 +14,5 @@ endpoint_name="vs-endpoint-${UNIQUE_NAME}"
 title "Simulate remote drift: set budget_policy_id outside the bundle"
 trace $CLI vector-search-endpoints update-endpoint-budget-policy "${endpoint_name}" "remote-policy"
 
-title "budget_policy_id drift is ignored (effective vs requested mismatch)"
-trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+title "Plan detects drift and proposes update"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged"
