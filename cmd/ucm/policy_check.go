@@ -5,8 +5,10 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/ucm/utils"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm/phases"
+	"github.com/databricks/cli/ucm/render"
 	"github.com/spf13/cobra"
 )
 
@@ -39,16 +41,30 @@ required fields). No network I/O.`,
 			return root.ErrAlreadyPrinted
 		}
 
-		numWarnings := logdiag.NumWarnings(ctx)
-		if strict && numWarnings > 0 {
-			noun := "warning"
-			if numWarnings != 1 {
-				noun = "warnings"
+		out := cmd.OutOrStdout()
+		if root.OutputType(cmd) == flags.OutputText {
+			if err1 := render.RenderDiagnosticsSummary(ctx, out, u); err1 != nil {
+				return err1
 			}
-			return fmt.Errorf("%d %s found. Warnings are not allowed in strict mode", numWarnings, noun)
+		}
+		if root.OutputType(cmd) == flags.OutputJSON {
+			if err1 := renderJsonOutput(cmd, u); err1 != nil {
+				return err1
+			}
 		}
 
-		fmt.Fprintln(cmd.OutOrStdout(), "Policy check OK!")
+		// err is always nil here (early-return above); guard preserved for parity with validate.go
+		numWarnings := logdiag.NumWarnings(ctx)
+		if strict && numWarnings > 0 {
+			prefix := ""
+			if numWarnings == 1 {
+				prefix = "1 warning was found"
+			} else {
+				prefix = fmt.Sprintf("%d warnings were found", numWarnings)
+			}
+			return fmt.Errorf("%s. Warnings are not allowed in strict mode", prefix)
+		}
+
 		return nil
 	}
 
