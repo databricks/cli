@@ -204,7 +204,7 @@ func uploadMetadataBestEffort(ctx context.Context, u *ucm.Ucm, b deploy.Backend)
 // survives the process exit. Mirrors bundle.deployCore's direct branch.
 func deployDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
 	var d direct.DeploymentUcm
-	if err := d.StateDB.Open(directStatePath(u)); err != nil {
+	if err := d.StateDB.Open(DirectStatePath(u)); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("open direct state: %w", err))
 		return
 	}

@@ -236,7 +236,7 @@ func destroyTerraform(ctx context.Context, u *ucm.Ucm, opts Options) {
 // Mirrors bundle.destroyCore's direct branch.
 func destroyDirect(ctx context.Context, u *ucm.Ucm, opts Options) {
 	var d direct.DeploymentUcm
-	if err := d.StateDB.Open(directStatePath(u)); err != nil {
+	if err := d.StateDB.Open(DirectStatePath(u)); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("open direct state: %w", err))
 		return
 	}

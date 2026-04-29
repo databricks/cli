@@ -30,6 +30,7 @@ Common workflow:
 	}
 
 	cmd.AddCommand(newBindCommand())
+	cmd.AddCommand(newMigrateCommand())
 	cmd.AddCommand(newUnbindCommand())
 	return cmd
 }

@@ -19,11 +19,11 @@ import (
 	"github.com/databricks/cli/ucm/render"
 )
 
-// directStatePath returns the on-disk location of the direct-engine state
+// DirectStatePath returns the on-disk location of the direct-engine state
 // file for u's currently-selected target. Mirrors bundle's
 // StateFilenameDirect local-path: <RootPath>/.databricks/ucm/<target>/resources.json.
 // The file is read by dstate.DeploymentState.Open and rewritten by Finalize.
-func directStatePath(u *ucm.Ucm) string {
+func DirectStatePath(u *ucm.Ucm) string {
 	return filepath.Join(u.RootPath, filepath.FromSlash(deploy.LocalCacheDir), u.Config.Ucm.Target, "resources.json")
 }
 
@@ -152,7 +152,7 @@ func planTerraform(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
 // Plan never advances state — Finalize is reserved for Deploy/Destroy.
 func planDirect(ctx context.Context, u *ucm.Ucm, _ Options) *PlanOutcome {
 	var d direct.DeploymentUcm
-	if err := d.StateDB.Open(directStatePath(u)); err != nil {
+	if err := d.StateDB.Open(DirectStatePath(u)); err != nil {
 		logdiag.LogError(ctx, fmt.Errorf("open direct state: %w", err))
 		return nil
 	}
