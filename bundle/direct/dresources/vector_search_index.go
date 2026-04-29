@@ -114,6 +114,9 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 	if err != nil {
 		return "", nil, err
 	}
+	// Exceptional: a second API call. The index API does not return the endpoint
+	// UUID, but we need to persist it in state so a future plan can detect that
+	// the endpoint was replaced out-of-band (same name, different UUID -> orphan).
 	endpointUuid := r.lookupEndpointUuid(ctx, config.EndpointName)
 	config.EndpointUuid = endpointUuid
 	return config.Name, &VectorSearchIndexRemote{VectorIndex: index, EndpointUuid: endpointUuid}, nil
