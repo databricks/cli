@@ -25,10 +25,6 @@
     }
   },
   "schemas": {
-    "my_schema": {
-      "catalog_name": "my_catalog",
-      "name": "prefixmy_schema"
-    },
     "schema1": {
       "catalog_name": "c",
       "name": "prefixschema1"
@@ -44,7 +40,7 @@
     "vs_index": {
       "endpoint_name": "vs_endpoint",
       "index_type": "DELTA_SYNC",
-      "name": "my_catalog.${resources.schemas.my_schema.name}.prefixmy_index",
+      "name": "c.${resources.schemas.schema1.name}.prefixmy_index",
       "primary_key": "id"
     }
   },
@@ -84,10 +80,6 @@
     }
   },
   "schemas": {
-    "my_schema": {
-      "catalog_name": "my_catalog",
-      "name": "prefix_my_schema"
-    },
     "schema1": {
       "catalog_name": "c",
       "name": "prefix_schema1"
@@ -103,7 +95,7 @@
     "vs_index": {
       "endpoint_name": "vs_endpoint",
       "index_type": "DELTA_SYNC",
-      "name": "my_catalog.${resources.schemas.my_schema.name}.prefix_my_index",
+      "name": "c.${resources.schemas.schema1.name}.prefix_my_index",
       "primary_key": "id"
     }
   },
@@ -143,10 +135,6 @@
     }
   },
   "schemas": {
-    "my_schema": {
-      "catalog_name": "my_catalog",
-      "name": "my_schema"
-    },
     "schema1": {
       "catalog_name": "c",
       "name": "schema1"
@@ -162,7 +150,7 @@
     "vs_index": {
       "endpoint_name": "vs_endpoint",
       "index_type": "DELTA_SYNC",
-      "name": "my_catalog.${resources.schemas.my_schema.name}.my_index",
+      "name": "c.${resources.schemas.schema1.name}.my_index",
       "primary_key": "id"
     }
   },
