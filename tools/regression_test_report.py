@@ -353,21 +353,39 @@ def run_acceptance_on_main(test_path, subtest, base_ref):
             git("worktree", "remove", "--force", str(worktree_dir))
 
 
-def run_acceptance_with_latest_release(subtest, cwd):
-    """Run acceptance subtest against the latest released CLI binary."""
-    return run_go_test(subtest, cwd, extra_args=["-useversion", "latest"])
+def run_acceptance_with_latest_release(subtest, version, cwd):
+    """Run acceptance subtest against the given released CLI version."""
+    return run_go_test(subtest, cwd, extra_args=["-useversion", version])
 
 
-def read_latest_release_version():
-    """Return the cached latest release version written by resolveLatestVersion, or None."""
+def fetch_latest_release_version():
+    """Return the latest released CLI version (e.g. '0.321.0'), with a 1-hour file cache."""
+    import urllib.request
+
     r = subprocess.run(["go", "env", "GOOS", "GOARCH"], capture_output=True, text=True, cwd=str(REPO_ROOT))
-    if r.returncode != 0:
+    if r.returncode == 0:
+        goos, goarch = r.stdout.strip().split("\n", 1)
+        cache = ACCEPTANCE_DIR / "build" / f"{goos}_{goarch}" / "latest_version.txt"
+        if cache.exists():
+            import time
+
+            if time.time() - cache.stat().st_mtime < 3600:
+                version = cache.read_text().strip()
+                if version:
+                    return version
+    else:
+        cache = None
+
+    url = "https://api.github.com/repos/databricks/cli/releases/latest"
+    with urllib.request.urlopen(url, timeout=10) as resp:
+        data = json.loads(resp.read())
+    version = data.get("tag_name", "").lstrip("v")
+    if not version:
         return None
-    goos, goarch = r.stdout.strip().split("\n", 1)
-    cache = ACCEPTANCE_DIR / "build" / f"{goos}_{goarch}" / "latest_version.txt"
-    if cache.exists():
-        return cache.read_text().strip() or None
-    return None
+    if cache is not None:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(version)
+    return version
 
 
 # ---------------------------------------------------------------------------
@@ -752,20 +770,25 @@ def main():
 
     # Phase 3: compare acceptance tests against latest release
     acc_latest_info: dict[str, dict] = {}
+    latest_version = None
 
     if acc_selected:
         print("\n=== Phase 3: Testing acceptance tests against latest release ===")
-        for tp in acc_selected:
-            for leaf in acc_branch_info[tp]["passing_leaves"]:
-                print(f"  {leaf} ...", flush=True)
-                proc = run_acceptance_with_latest_release(leaf, REPO_ROOT)
-                tests = parse_json_output(proc.stdout)
-                entry = tests.get(leaf)
-                status = entry.status if entry else ("fail" if proc.returncode != 0 else "unknown")
-                acc_latest_info[leaf] = {"status": status, "output": proc.stdout}
-                print(f"    latest status: {status}")
-
-    latest_version = read_latest_release_version()
+        try:
+            latest_version = fetch_latest_release_version()
+        except Exception as e:
+            print(f"  Warning: could not fetch latest release version: {e}")
+        if latest_version:
+            print(f"  Latest release: v{latest_version}")
+            for tp in acc_selected:
+                for leaf in acc_branch_info[tp]["passing_leaves"]:
+                    print(f"  {leaf} ...", flush=True)
+                    proc = run_acceptance_with_latest_release(leaf, latest_version, REPO_ROOT)
+                    tests = parse_json_output(proc.stdout)
+                    entry = tests.get(leaf)
+                    status = entry.status if entry else ("fail" if proc.returncode != 0 else "unknown")
+                    acc_latest_info[leaf] = {"status": status, "output": proc.stdout}
+                    print(f"    latest status: {status}")
 
     report = render_report(
         commit_header,
