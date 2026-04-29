@@ -76,7 +76,7 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 	}
 
 	if state.Version != SupportedStateVersion {
-		return nil, fmt.Errorf("unsupported deployment state version: %d. Try re-deploying the bundle", state.Version)
+		return nil, fmt.Errorf("unsupported deployment state version: %d. Try re-running ucm deploy", state.Version)
 	}
 
 	result := make(ExportedResourcesMap)
