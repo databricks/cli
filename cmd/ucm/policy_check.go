@@ -53,13 +53,16 @@ required fields). No network I/O.`,
 			}
 		}
 
+		// err is always nil here (early-return above); guard preserved for parity with validate.go
 		numWarnings := logdiag.NumWarnings(ctx)
 		if strict && numWarnings > 0 {
-			noun := "warning"
-			if numWarnings != 1 {
-				noun = "warnings"
+			prefix := ""
+			if numWarnings == 1 {
+				prefix = "1 warning was found"
+			} else {
+				prefix = fmt.Sprintf("%d warnings were found", numWarnings)
 			}
-			return fmt.Errorf("%d %s found. Warnings are not allowed in strict mode", numWarnings, noun)
+			return fmt.Errorf("%s. Warnings are not allowed in strict mode", prefix)
 		}
 
 		return nil
