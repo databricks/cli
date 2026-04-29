@@ -18,5 +18,5 @@ title "Plan must cascade-recreate the index because its endpoint is being recrea
 trace $CLI bundle plan | contains.py "create vector_search_endpoints.vs_endpoint" "recreate vector_search_indexes.my_index"
 
 title "Deploy recreates endpoint and rebinds index"
-trace $CLI bundle deploy
+trace $CLI bundle deploy --auto-approve
 trace $CLI vector-search-indexes get-index "${index_name}" | jq '{name, endpoint_name, index_type, primary_key}'
