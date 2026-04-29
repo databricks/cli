@@ -531,25 +531,33 @@ jobs:
         run: python3 tools/regression_test_report.py
 
       - name: Post or update PR comment
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          MARKER="<!-- regression-test-report -->"
-          { echo "$MARKER"; cat REGRESSION_REPORT.md; } > comment_body.txt
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const MARKER = '<!-- regression-test-report -->';
+            const report = fs.readFileSync(process.env.GITHUB_WORKSPACE + '/REGRESSION_REPORT.md', 'utf8');
+            const body = MARKER + '\n' + report;
 
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          REPO="${{ github.repository }}"
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
 
-          COMMENT_ID=$(gh api --paginate "repos/${REPO}/issues/${PR_NUMBER}/comments" \
-            --jq '.[] | select(.body | startswith("<!-- regression-test-report -->")) | .id' \
-            | head -1)
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number,
+            });
+            const existing = comments.find(c => c.body && c.body.startsWith(MARKER));
 
-          if [ -n "$COMMENT_ID" ]; then
-            gh api "repos/${REPO}/issues/comments/${COMMENT_ID}" \
-              -X PATCH -f body="$(cat comment_body.txt)"
-          else
-            gh pr comment "${PR_NUMBER}" --body-file comment_body.txt
-          fi
+            if (existing) {
+              if (existing.body !== body) {
+                await github.rest.issues.updateComment({
+                  owner, repo, comment_id: existing.id, body,
+                });
+              }
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number, body,
+              });
+            }
 
   # Skip integration tests for dependabot PRs.
   # Dependabot has no access to the "test-trigger-is" environment secrets,
