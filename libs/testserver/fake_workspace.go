@@ -154,12 +154,6 @@ type FakeWorkspace struct {
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]vectorsearch.VectorIndex
 
-	// vectorSearchIndexesPendingDeletion stores indexes that have received a DELETE
-	// but whose deletion has not yet "completed". GETs against a name in this map
-	// return the index once (mirroring the real backend's async deletion window),
-	// then the entry is consumed and subsequent GETs return 404.
-	vectorSearchIndexesPendingDeletion map[string]vectorsearch.VectorIndex
-
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
 	Acls         map[string][]workspace.AclItem
@@ -292,28 +286,27 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				State: sql.StateRunning,
 			},
 		},
-		ServingEndpoints:                   map[string]serving.ServingEndpointDetailed{},
-		VectorSearchEndpoints:              map[string]vectorsearch.EndpointInfo{},
-		VectorSearchIndexes:                map[string]vectorsearch.VectorIndex{},
-		vectorSearchIndexesPendingDeletion: map[string]vectorsearch.VectorIndex{},
-		Repos:                              map[string]workspace.RepoInfo{},
-		SecretScopes:                       map[string]workspace.SecretScope{},
-		Secrets:                            map[string]map[string]string{},
-		Acls:                               map[string][]workspace.AclItem{},
-		Permissions:                        map[string]iam.ObjectPermissions{},
-		Groups:                             map[string]iam.Group{},
-		DatabaseInstances:                  map[string]database.DatabaseInstance{},
-		DatabaseCatalogs:                   map[string]database.DatabaseCatalog{},
-		SyncedDatabaseTables:               map[string]database.SyncedDatabaseTable{},
-		PostgresProjects:                   map[string]postgres.Project{},
-		PostgresBranches:                   map[string]postgres.Branch{},
-		PostgresEndpoints:                  map[string]postgres.Endpoint{},
-		PostgresOperations:                 map[string]postgres.Operation{},
-		clusterVenvs:                       map[string]*clusterEnv{},
-		Alerts:                             map[string]sql.AlertV2{},
-		Experiments:                        map[string]ml.GetExperimentResponse{},
-		ModelRegistryModels:                map[string]ml.Model{},
-		ModelRegistryModelIDs:              map[string]string{},
+		ServingEndpoints:      map[string]serving.ServingEndpointDetailed{},
+		VectorSearchEndpoints: map[string]vectorsearch.EndpointInfo{},
+		VectorSearchIndexes:   map[string]vectorsearch.VectorIndex{},
+		Repos:                 map[string]workspace.RepoInfo{},
+		SecretScopes:          map[string]workspace.SecretScope{},
+		Secrets:               map[string]map[string]string{},
+		Acls:                  map[string][]workspace.AclItem{},
+		Permissions:           map[string]iam.ObjectPermissions{},
+		Groups:                map[string]iam.Group{},
+		DatabaseInstances:     map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:      map[string]database.DatabaseCatalog{},
+		SyncedDatabaseTables:  map[string]database.SyncedDatabaseTable{},
+		PostgresProjects:      map[string]postgres.Project{},
+		PostgresBranches:      map[string]postgres.Branch{},
+		PostgresEndpoints:     map[string]postgres.Endpoint{},
+		PostgresOperations:    map[string]postgres.Operation{},
+		clusterVenvs:          map[string]*clusterEnv{},
+		Alerts:                map[string]sql.AlertV2{},
+		Experiments:           map[string]ml.GetExperimentResponse{},
+		ModelRegistryModels:   map[string]ml.Model{},
+		ModelRegistryModelIDs: map[string]string{},
 		Clusters: map[string]compute.ClusterDetails{
 			TestDefaultClusterId: {
 				ClusterId:   TestDefaultClusterId,
