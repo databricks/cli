@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/ucm"
@@ -17,11 +18,16 @@ import (
 )
 
 // PreDeployChecks is common set of mutators between "ucm plan" and "ucm deploy".
-// Note, it is not run in "ucm migrate" so it must not modify the config
-func PreDeployChecks(ctx context.Context, u *ucm.Ucm, e engine.EngineType) {
+// Note, it is not run in "ucm migrate" so it must not modify the config.
+//
+// When downgradeWarningToError is true, any warning emitted by the validator
+// pack is promoted to an error. Mirrors bundle's PreDeployChecks contract:
+// the plan path passes true (warnings during planning should fail) while the
+// deploy path passes false (warnings during deploy are tolerated).
+func PreDeployChecks(ctx context.Context, u *ucm.Ucm, downgradeWarningToError bool, e engine.EngineType) {
 	ucm.ApplySeqContext(ctx, u,
-		mutator.ValidateDirectOnlyResources(e),
-		mutator.ValidateLifecycleStarted(e),
+		promoteWarningsIfRequested(mutator.ValidateDirectOnlyResources(e), downgradeWarningToError),
+		promoteWarningsIfRequested(mutator.ValidateLifecycleStarted(e), downgradeWarningToError),
 	)
 	if logdiag.HasError(ctx) {
 		return
@@ -30,8 +36,37 @@ func PreDeployChecks(ctx context.Context, u *ucm.Ucm, e engine.EngineType) {
 	// drift phase (ucm/phases/drift.go). Empty kinds today keeps this a no-op
 	// scaffold — concrete UC resource kinds get wired here in later tasks.
 	if !e.IsDirect() {
-		ucm.ApplyContext(ctx, u, terraform.CheckResourcesModifiedRemotely(nil))
+		ucm.ApplyContext(ctx, u, promoteWarningsIfRequested(terraform.CheckResourcesModifiedRemotely(nil), downgradeWarningToError))
 	}
+}
+
+// promoteWarningsIfRequested returns m unchanged when promote is false. When
+// promote is true it wraps m so warning-severity diagnostics are rewritten to
+// errors before being forwarded. This is how PreDeployChecks honours the
+// downgradeWarningToError contract without each validator needing a flag.
+func promoteWarningsIfRequested(m ucm.Mutator, promote bool) ucm.Mutator {
+	if !promote {
+		return m
+	}
+	return &warningPromoter{wrapped: m}
+}
+
+type warningPromoter struct {
+	wrapped ucm.Mutator
+}
+
+func (w *warningPromoter) Name() string {
+	return w.wrapped.Name()
+}
+
+func (w *warningPromoter) Apply(ctx context.Context, u *ucm.Ucm) diag.Diagnostics {
+	diags := w.wrapped.Apply(ctx, u)
+	for i := range diags {
+		if diags[i].Severity == diag.Warning {
+			diags[i].Severity = diag.Error
+		}
+	}
+	return diags
 }
 
 // Plan runs the initialize → build → engine-specific plan sequence and
@@ -53,7 +88,7 @@ func Plan(ctx context.Context, u *ucm.Ucm, opts Options) *PlanOutcome {
 		return nil
 	}
 
-	PreDeployChecks(ctx, u, setting.Type)
+	PreDeployChecks(ctx, u, true, setting.Type)
 	if logdiag.HasError(ctx) {
 		return nil
 	}

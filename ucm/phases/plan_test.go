@@ -73,7 +73,7 @@ func TestPreDeployChecksNoResourcesNoDiags(t *testing.T) {
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 
-	phases.PreDeployChecks(ctx, f.u, engine.EngineTerraform)
+	phases.PreDeployChecks(ctx, f.u, false, engine.EngineTerraform)
 
 	assert.False(t, logdiag.HasError(ctx))
 }
@@ -88,7 +88,7 @@ func TestPreDeployChecksTerraformInvokesRemoteDriftScaffold(t *testing.T) {
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 
-	phases.PreDeployChecks(ctx, f.u, engine.EngineTerraform)
+	phases.PreDeployChecks(ctx, f.u, false, engine.EngineTerraform)
 
 	require.False(t, logdiag.HasError(ctx))
 	assert.Empty(t, logdiag.FlushCollected(ctx))
@@ -99,7 +99,7 @@ func TestPreDeployChecksDirectEngineNoDiags(t *testing.T) {
 	ctx := logdiag.InitContext(t.Context())
 	logdiag.SetCollect(ctx, true)
 
-	phases.PreDeployChecks(ctx, f.u, engine.EngineDirect)
+	phases.PreDeployChecks(ctx, f.u, false, engine.EngineDirect)
 
 	assert.False(t, logdiag.HasError(ctx))
 }

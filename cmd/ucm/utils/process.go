@@ -302,10 +302,8 @@ func ProcessUcm(cmd *cobra.Command, opts ProcessOptions) (*ucm.Ucm, error) {
 	}
 
 	if opts.PreDeployChecks {
-		// UCM's PreDeployChecks today takes only (ctx, u, EngineType) —
-		// the downgradeWarningToError toggle bundle exposes maps to the
-		// pre-deploy validator pack and will land with #102.
-		phases.PreDeployChecks(ctx, u, stateEngine.Type)
+		downgradeWarningToError := !opts.Deploy
+		phases.PreDeployChecks(ctx, u, downgradeWarningToError, stateEngine.Type)
 
 		if logdiag.HasError(ctx) {
 			return u, root.ErrAlreadyPrinted
