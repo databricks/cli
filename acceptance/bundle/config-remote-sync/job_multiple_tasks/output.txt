@@ -125,7 +125,7 @@ Resource: resources.jobs.rename_task_job
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/c_task
-@@ -79,7 +79,14 @@
+@@ -79,9 +79,16 @@
          - task_key: a_task
            notebook_task:
 -            notebook_path: /Users/{{workspace_user_name}}/a_task
@@ -141,6 +141,8 @@ Resource: resources.jobs.rename_task_job
 +          notebook_task:
 +            notebook_path: ./synced_notebook.py
 +          task_key: synced_task
+
+ targets:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

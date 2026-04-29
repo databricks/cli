@@ -17,9 +17,12 @@ edit_resource.py jobs $job_id <<EOF
 r["tasks"][0]["pipeline_task"]["full_refresh"] = True
 EOF
 
-title "Modify pipeline development to True"
+title "Modify pipeline continuous to True"
+# Dev mode auto-sets pipelines.development=true, so flipping it would be a
+# no-op. Use continuous instead — it's not affected by dev mode and exercises
+# the same Replace path.
 edit_resource.py pipelines $pipeline_id <<EOF
-r["development"] = True
+r["continuous"] = True
 EOF
 
 
