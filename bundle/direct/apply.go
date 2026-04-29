@@ -86,11 +86,20 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
-	// Drop the state entry so a subsequent failure of Create leaves no malformed
-	// (empty-ID) entry behind. The next plan will see "no state" and retry as Create.
+	// Drop the state entry so a subsequent failure of Create or WaitAfterDelete
+	// leaves no malformed (empty-ID) entry behind. The next plan will see "no
+	// state" and retry as Create.
 	err = db.DeleteState(d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
+	}
+
+	// Wait for asynchronous teardown to finish before re-creating the same
+	// name. Done after DeleteState so the bundle stays consistent if the wait
+	// times out — the resource is no longer tracked in state, retry on next plan.
+	err = d.Adapter.WaitAfterDelete(ctx, oldID)
+	if err != nil {
+		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
 	return d.Create(ctx, db, newState)
@@ -172,7 +181,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 		// Rather than failing delete and requiring user to unbind, we perform unbind automatically there.
 		// Some services, e.g. jobs, return 403 for missing resources if caller did not have permissions to it when job existed.
 		// In those cases 403 hides 404. In other cases, user not having permissions to resource but having in the bundle might
-		// mean configuration error that user is trying to fix by removing resource from their bundle.
+		// mean configuration error that user is trying to fix by permission-restoring or removing the resource from their bundle.
 		if errors.Is(err, apierr.ErrPermissionDenied) {
 			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
 		} else {
@@ -183,6 +192,14 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	err = db.DeleteState(d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
+	}
+
+	// Wait for asynchronous teardown after dropping state. Mirrors Recreate so
+	// the contract is the same regardless of whether the user triggered
+	// `bundle destroy` or a recreate.
+	err = d.Adapter.WaitAfterDelete(ctx, oldID)
+	if err != nil {
+		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
 	return nil

@@ -124,17 +124,17 @@ func (r *ResourceVectorSearchIndex) DoUpdate(ctx context.Context, id string, con
 	return nil, nil
 }
 
-// DoDelete kicks off deletion and waits for it to complete. The DELETE call
-// is asynchronous: a follow-up CREATE for the same name (e.g. during recreate)
-// is rejected with "index is currently pending deletion" until the backend
-// finishes tearing down the embedding pipeline. We poll GetIndex until it
-// returns 404 to make recreate paths idempotent.
 func (r *ResourceVectorSearchIndex) DoDelete(ctx context.Context, id string) error {
-	err := r.client.VectorSearchIndexes.DeleteIndexByIndexName(ctx, id)
-	if err != nil {
-		return err
-	}
-	_, err = retries.Poll[struct{}](ctx, deleteIndexTimeout, func() (*struct{}, *retries.Err) {
+	return r.client.VectorSearchIndexes.DeleteIndexByIndexName(ctx, id)
+}
+
+// WaitAfterDelete polls GetIndex until it returns 404. The DELETE call is
+// asynchronous: a follow-up CREATE for the same name (e.g. during recreate) is
+// rejected with "index is currently pending deletion" until the backend finishes
+// tearing down the embedding pipeline. The framework calls this after dropping
+// state so a wait-time failure leaves the bundle consistent.
+func (r *ResourceVectorSearchIndex) WaitAfterDelete(ctx context.Context, id string) error {
+	_, err := retries.Poll[struct{}](ctx, deleteIndexTimeout, func() (*struct{}, *retries.Err) {
 		_, getErr := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, id)
 		if getErr == nil {
 			return nil, retries.Continues("index still exists, waiting for deletion to complete")
