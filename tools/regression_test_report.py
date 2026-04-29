@@ -47,9 +47,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
-_git_root = subprocess.run(
-    ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True
-)
+_git_root = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True)
 REPO_ROOT = Path(_git_root.stdout.strip()) if _git_root.returncode == 0 else Path(__file__).parent.parent
 ACCEPTANCE_DIR = REPO_ROOT / "acceptance"
 DEFAULT_MAX_TESTS = 20
@@ -313,10 +311,9 @@ def scan_acceptance_test_dirs(acceptance_dir):
 def collect_changed_acceptance_tests(changed_files, base_ref):
     """Return (added, modified) lists of acceptance test paths."""
     test_dirs = scan_acceptance_test_dirs(ACCEPTANCE_DIR)
-    test_paths = sorted({
-        tp for tp in (find_acceptance_test_for_path(f, test_dirs) for f in changed_files)
-        if tp is not None
-    })
+    test_paths = sorted(
+        {tp for tp in (find_acceptance_test_for_path(f, test_dirs) for f in changed_files) if tp is not None}
+    )
     added = [tp for tp in test_paths if not file_exists_at_ref(f"acceptance/{tp}/script", base_ref)]
     modified = [tp for tp in test_paths if file_exists_at_ref(f"acceptance/{tp}/script", base_ref)]
     return added, modified
@@ -325,9 +322,13 @@ def collect_changed_acceptance_tests(changed_files, base_ref):
 def run_go_test(pattern, cwd, extra_args=None):
     """Run go test ./acceptance -run PATTERN -json and return CompletedProcess."""
     cmd = [
-        "go", "test", "./acceptance",
+        "go",
+        "test",
+        "./acceptance",
         f"-run={pattern}",
-        "-json", "-count=1", "-timeout=300s",
+        "-json",
+        "-count=1",
+        "-timeout=300s",
     ] + (extra_args or [])
     return subprocess.run(cmd, capture_output=True, text=True, cwd=str(cwd))
 
@@ -359,9 +360,7 @@ def run_acceptance_with_latest_release(subtest, cwd):
 
 def read_latest_release_version():
     """Return the cached latest release version written by resolveLatestVersion, or None."""
-    r = subprocess.run(
-        ["go", "env", "GOOS", "GOARCH"], capture_output=True, text=True, cwd=str(REPO_ROOT)
-    )
+    r = subprocess.run(["go", "env", "GOOS", "GOARCH"], capture_output=True, text=True, cwd=str(REPO_ROOT))
     if r.returncode != 0:
         return None
     goos, goarch = r.stdout.strip().split("\n", 1)
@@ -411,9 +410,13 @@ def run_unit_tests(pkg_dir, functions, cwd):
     """Run specific test functions in a Go package."""
     run_pattern = "^(" + "|".join(re.escape(f) for f in functions) + ")$"
     cmd = [
-        "go", "test", "./" + pkg_dir,
+        "go",
+        "test",
+        "./" + pkg_dir,
         f"-run={run_pattern}",
-        "-json", "-count=1", "-timeout=120s",
+        "-json",
+        "-count=1",
+        "-timeout=120s",
     ]
     return subprocess.run(cmd, capture_output=True, text=True, cwd=str(cwd))
 
@@ -533,8 +536,10 @@ def render_report(
             lines.append(f"**Subtest:** `{leaf}`  ")
             lines.append(f"**Main:** {ms} | **Latest release:** {ls}")
             lines.append("")
-            for label, d in [(f"main {base_commit}", acc_main_info.get(leaf, {})),
-                              (f"latest release {latest_label}", acc_latest_info.get(leaf, {}))]:
+            for label, d in [
+                (f"main {base_commit}", acc_main_info.get(leaf, {})),
+                (f"latest release {latest_label}", acc_latest_info.get(leaf, {})),
+            ]:
                 if d.get("status") not in ("pass", "skip", "N/A", ""):
                     details_block(label, d.get("output", ""))
 
@@ -654,9 +659,7 @@ def render_report(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--output",
         default=str(REPO_ROOT / "REGRESSION_REPORT.md"),
@@ -808,10 +811,7 @@ def main():
                 unit_main_info[key] = {"compile_fail": True, "raw_output": proc.stdout, "function_results": {}}
                 continue
             tests = parse_json_output(proc.stdout)
-            func_results = {
-                f: (tests[f].status if f in tests else "not_found")
-                for f in info["passing_functions"]
-            }
+            func_results = {f: (tests[f].status if f in tests else "not_found") for f in info["passing_functions"]}
             unit_main_info[key] = {"compile_fail": False, "function_results": func_results, "raw_output": proc.stdout}
             for f, s in func_results.items():
                 print(f"    {f}: {s}")
@@ -834,26 +834,41 @@ def main():
     latest_version = read_latest_release_version()
 
     report = render_report(
-        commit_header, base_ref, base_commit,
-        acc_selected, acc_added, acc_branch_info, acc_main_info, acc_latest_info, latest_version,
-        unit_selected, unit_added_keys, unit_branch_info, unit_main_info,
+        commit_header,
+        base_ref,
+        base_commit,
+        acc_selected,
+        acc_added,
+        acc_branch_info,
+        acc_main_info,
+        acc_latest_info,
+        latest_version,
+        unit_selected,
+        unit_added_keys,
+        unit_branch_info,
+        unit_main_info,
     )
 
-    _print_counts(acc_selected, acc_branch_info, acc_main_info, acc_latest_info,
-                  unit_selected, unit_branch_info, unit_main_info)
+    _print_counts(
+        acc_selected, acc_branch_info, acc_main_info, acc_latest_info, unit_selected, unit_branch_info, unit_main_info
+    )
     _emit(report, args)
 
 
-def _print_counts(acc_selected, acc_branch_info, acc_main_info, acc_latest_info,
-                  unit_selected, unit_branch_info, unit_main_info):
+def _print_counts(
+    acc_selected, acc_branch_info, acc_main_info, acc_latest_info, unit_selected, unit_branch_info, unit_main_info
+):
     def acc_cat(tp):
         pl = acc_branch_info[tp]["passing_leaves"]
         if not pl:
             return "failing"
-        cats = {classify_acceptance_result(
-            acc_main_info.get(l, {}).get("status", ""),
-            acc_latest_info.get(l, {}).get("status", ""),
-        ) for l in pl}
+        cats = {
+            classify_acceptance_result(
+                acc_main_info.get(l, {}).get("status", ""),
+                acc_latest_info.get(l, {}).get("status", ""),
+            )
+            for l in pl
+        }
         return "regression" if "regression" in cats else ("unreleased" if "unreleased" in cats else "coverage")
 
     def unit_cat(key):
@@ -869,8 +884,10 @@ def _print_counts(acc_selected, acc_branch_info, acc_main_info, acc_latest_info,
 
     ac = Counter(acc_cat(tp) for tp in acc_selected)
     uc = Counter(unit_cat(k) for k in unit_selected)
-    print(f"\nAcceptance: regression={ac['regression']} unreleased={ac['unreleased']} "
-          f"coverage={ac['coverage']} failing={ac['failing']}")
+    print(
+        f"\nAcceptance: regression={ac['regression']} unreleased={ac['unreleased']} "
+        f"coverage={ac['coverage']} failing={ac['failing']}"
+    )
     print(f"Unit:       regression={uc['regression']} coverage={uc['coverage']} failing={uc['failing']}")
 
 
