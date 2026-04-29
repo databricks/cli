@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
 func main() {
@@ -18,13 +17,7 @@ func main() {
 	headRef := os.Args[1]
 	baseRef := os.Args[2]
 
-	repoRoot, err := GitRepoRoot()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error finding repo root: %v\n", err)
-		os.Exit(1)
-	}
-
-	mappings, err := LoadTargetMappings(filepath.Join(repoRoot, "Taskfile.yml"))
+	mappings, err := LoadTargetMappings("../../Taskfile.yml")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading target mappings: %v\n", err)
 		os.Exit(1)

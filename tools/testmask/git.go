@@ -24,11 +24,3 @@ func GetChangedFiles(headRef, baseRef string) ([]string, error) {
 	return lines, nil
 }
 
-// GitRepoRoot returns the absolute path to the top-level directory of the git repo.
-func GitRepoRoot() (string, error) {
-	output, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
-	if err != nil {
-		return "", fmt.Errorf("failed to find git repo root: %w", err)
-	}
-	return strings.TrimSpace(string(output)), nil
-}
