@@ -1,0 +1,977 @@
+package direct
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"maps"
+	"reflect"
+	"slices"
+	"strings"
+
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/cli/ucm/config"
+	"github.com/databricks/cli/ucm/deployplan"
+	"github.com/databricks/cli/ucm/direct/dresources"
+	"github.com/databricks/cli/ucm/direct/dstate"
+	"github.com/databricks/databricks-sdk-go"
+)
+
+var errDelayed = errors.New("must be resolved after apply")
+
+func (u *DeploymentUcm) init(client *databricks.WorkspaceClient) error {
+	if u.Adapters != nil {
+		return nil
+	}
+	var err error
+	u.Adapters, err = dresources.InitAll(client)
+	return err
+}
+
+// ValidatePlanAgainstState validates that a plan's lineage and serial match the current state.
+// This should be called early in the deployment process, before any file operations.
+// If the plan has no lineage (first deployment), validation is skipped.
+func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
+	// If plan has no lineage, this is a first deployment before any state exists
+	// No validation needed
+	if plan.Lineage == "" {
+		return nil
+	}
+
+	stateDB.AssertOpened()
+
+	// Validate that the plan's lineage matches the current state's lineage
+	if plan.Lineage != stateDB.Data.Lineage {
+		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
+	}
+
+	// Validate that the plan's serial matches the current state's serial
+	if plan.Serial != stateDB.Data.Serial {
+		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
+	}
+
+	return nil
+}
+
+// InitForApply initializes the DeploymentUcm for applying a pre-computed plan.
+// This is used when --plan is specified to skip the planning phase.
+func (u *DeploymentUcm) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
+	u.StateDB.AssertOpened()
+
+	err := u.init(client)
+	if err != nil {
+		return err
+	}
+
+	// Eagerly parse all StructVarJSON entries to catch parsing errors early.
+	// When the plan is read from JSON, Value contains raw JSON bytes.
+	// We parse them into typed structs and cache them for later use.
+	for resourceKey, entry := range plan.Plan {
+		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
+			continue
+		}
+
+		adapter, err := u.getAdapterForKey(resourceKey)
+		if err != nil {
+			return fmt.Errorf("converting plan entry %s: %w", resourceKey, err)
+		}
+
+		sv, err := entry.NewState.ToStructVar(adapter.StateType())
+		if err != nil {
+			return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
+		}
+
+		u.StateCache.Store(resourceKey, sv)
+	}
+
+	u.Plan = plan
+	return nil
+}
+
+func (u *DeploymentUcm) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
+	u.StateDB.AssertOpened()
+
+	err := u.init(client)
+	if err != nil {
+		return nil, err
+	}
+
+	plan, err := u.makePlan(ctx, configRoot, &u.StateDB.Data)
+	if err != nil {
+		return nil, fmt.Errorf("reading config: %w", err)
+	}
+
+	u.Plan = plan
+
+	g, err := makeGraph(plan)
+	if err != nil {
+		return nil, err
+	}
+
+	err = g.DetectCycle()
+	if err != nil {
+		return nil, err
+	}
+
+	// We're processing resources in DAG order because we're resolving references (that can be resolved at plan stage).
+	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
+		errorPrefix := "cannot plan " + resourceKey
+
+		entry, err := plan.WriteLockEntry(resourceKey)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: %w", errorPrefix, err))
+			return false
+		}
+
+		if entry == nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: node not in graph", errorPrefix))
+			return false
+		}
+
+		defer plan.WriteUnlockEntry(resourceKey)
+
+		if failedDependency != nil {
+			// TODO: this should be a warning
+			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
+			return false
+		}
+
+		adapter, err := u.getAdapterForKey(resourceKey)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: getting adapter: %w", errorPrefix, err))
+			return false
+		}
+
+		if entry.Action == deployplan.Delete {
+			id := u.StateDB.GetResourceID(resourceKey)
+			if id == "" {
+				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
+				return false
+			}
+
+			remoteState, err := adapter.DoRead(ctx, id)
+			if err != nil {
+				if isResourceGone(err) {
+					// no such resource
+					plan.RemoveEntry(resourceKey)
+				} else {
+					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, id, err)
+					// This is not an error during deletion, so don't return false here
+				}
+			}
+
+			entry.RemoteState = remoteState
+
+			return true
+		}
+
+		// Process all references in the resource using Refs map
+		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
+		if !u.resolveReferences(ctx, resourceKey, entry, errorPrefix, true) {
+			return false
+		}
+
+		dbentry, hasEntry := u.StateDB.GetResourceEntry(resourceKey)
+		if !hasEntry {
+			entry.Action = deployplan.Create
+			return true
+		}
+
+		if dbentry.ID == "" {
+			logdiag.LogError(ctx, fmt.Errorf("%s: invalid state: empty id", errorPrefix))
+			return false
+		}
+
+		savedState, err := parseState(adapter.StateType(), dbentry.State)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
+			return false
+		}
+
+		// Note, currently we're diffing static structs, not dynamic value.
+		// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
+		// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
+		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
+		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
+		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
+		sv, ok := u.StateCache.Load(resourceKey)
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
+			return false
+		}
+		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
+			return false
+		}
+
+		remoteState, err := adapter.DoRead(ctx, dbentry.ID)
+		if err != nil {
+			if isResourceGone(err) {
+				remoteState = nil
+			} else {
+				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+		}
+
+		// We have a choice whether to include remoteState or remoteStateComparable from below.
+		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
+		entry.RemoteState = remoteState
+
+		var action deployplan.ActionType
+		var remoteDiff []structdiff.Change
+		var remoteStateComparable any
+
+		if remoteState != nil {
+			remoteStateComparable, err = adapter.RemapState(remoteState)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+
+			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
+				return false
+			}
+		}
+
+		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteStateComparable)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			return false
+		}
+
+		err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
+			return false
+		}
+
+		if remoteState == nil {
+			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
+			// because we know remote does not exist.
+			action = deployplan.Create
+		} else {
+			action = getMaxAction(entry.Changes)
+		}
+
+		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
+		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
+		u.RemoteStateCache.Store(resourceKey, remoteState)
+
+		// Validate that resources without DoUpdate don't have update actions
+		if action == deployplan.Update && !adapter.HasDoUpdate() {
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource does not support update action but plan produced update", errorPrefix))
+			return false
+		}
+
+		entry.Action = action
+		return true
+	})
+
+	if logdiag.HasError(ctx) {
+		return nil, errors.New("planning failed")
+	}
+
+	for _, entry := range plan.Plan {
+		if entry.Action == deployplan.Skip {
+			entry.NewState = nil
+		}
+	}
+
+	return plan, nil
+}
+
+func getMaxAction(m map[string]*deployplan.ChangeDesc) deployplan.ActionType {
+	result := deployplan.Skip
+	for _, ch := range m {
+		result = deployplan.GetHigherAction(result, ch.Action)
+	}
+	return result
+}
+
+func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff, remoteDiff []structdiff.Change, oldState, remoteState any) (deployplan.Changes, error) {
+	m := make(deployplan.Changes)
+
+	for _, ch := range localDiff {
+		e := deployplan.ChangeDesc{
+			Old: ch.Old,
+			New: ch.New,
+		}
+		if remoteState != nil {
+			// We cannot assume e.Remote is the same as config: if the whole struct is missing, there might be diff entry for parent
+			e.Remote, _ = structaccess.Get(remoteState, ch.Path)
+		}
+		m[ch.Path.String()] = &e
+	}
+
+	for _, ch := range remoteDiff {
+		entry := m[ch.Path.String()]
+		if entry == nil {
+			// we have difference for remoteState but not difference for localState
+			// from remoteDiff we can find out remote value (ch.Old) and new config value (ch.New) but we don't know oldState value
+			oldStateVal, err := structaccess.Get(oldState, ch.Path)
+			var notFound *structaccess.NotFoundError
+			if err != nil && !errors.As(err, &notFound) {
+				log.Debugf(ctx, "Constructing diff: accessing %q on %T: %s", ch.Path, oldState, err)
+			}
+			m[ch.Path.String()] = &deployplan.ChangeDesc{
+				Old:    oldStateVal,
+				New:    ch.New,
+				Remote: ch.Old,
+			}
+		} else {
+			entry.Remote = ch.Old
+			if !structdiff.IsEqual(entry.New, ch.New) {
+				// this is not fatal (may result in unexpected drift or undetected change but not incorrect deploy), but good to log this
+				log.Warnf(ctx, "unexpected local and remote diffs (%T, %T); entry=%v ch=%v", entry.New, ch.New, entry, ch)
+			}
+		}
+	}
+
+	return m, nil
+}
+
+func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
+	cfg := adapter.ResourceConfig()
+	generatedCfg := adapter.GeneratedResourceConfig()
+
+	var toDrop []string
+
+	for pathString, ch := range changes {
+		path, err := structpath.ParsePath(pathString)
+		if err != nil {
+			return err
+		}
+
+		if structdiff.IsEqual(ch.Remote, ch.New) {
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonRemoteAlreadySet
+		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonEmpty
+		} else if reason, ok := shouldSkip(cfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if reason, ok := shouldSkip(generatedCfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if reason, ok := shouldSkipBackendDefault(cfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if reason, ok := shouldSkipBackendDefault(generatedCfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if action, reason := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
+			ch.Action = action
+			ch.Reason = reason
+		} else if action, reason := shouldUpdateOrRecreate(generatedCfg, path); action != deployplan.Undefined {
+			ch.Action = action
+			ch.Reason = reason
+		} else {
+			ch.Action = deployplan.Update
+		}
+
+		if adapter.HasOverrideChangeDesc() {
+			savedAction := ch.Action
+			savedReason := ch.Reason
+
+			err = adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
+			if err != nil {
+				return fmt.Errorf("internal error: failed to classify change: %w", err)
+			}
+
+			if savedAction != ch.Action && savedReason == ch.Reason {
+				// ch.Action was changed but not Reason field; set it to "custom"
+				ch.Reason = deployplan.ReasonCustom
+			}
+		}
+
+		if ch.Reason == deployplan.ReasonDrop {
+			toDrop = append(toDrop, pathString)
+		}
+	}
+
+	for _, key := range toDrop {
+		delete(changes, key)
+	}
+
+	return nil
+}
+
+func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
+	for _, r := range rules {
+		if path.HasPatternPrefix(r.Field) {
+			return r.Reason, true
+		}
+	}
+	return "", false
+}
+
+func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
+	if cfg == nil {
+		return "", false
+	}
+	if reason, ok := findMatchingRule(path, cfg.IgnoreLocalChanges); ok && !structdiff.IsEqual(ch.Old, ch.New) {
+		return reason, true
+	}
+	if reason, ok := findMatchingRule(path, cfg.IgnoreRemoteChanges); ok && structdiff.IsEqual(ch.Old, ch.New) {
+		return reason, true
+	}
+	return "", false
+}
+
+func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) (deployplan.ActionType, string) {
+	if cfg == nil {
+		return deployplan.Undefined, ""
+	}
+	if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
+		return deployplan.Recreate, reason
+	}
+	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
+		return deployplan.UpdateWithID, reason
+	}
+	return deployplan.Undefined, ""
+}
+
+// shouldSkipBackendDefault checks if a change should be skipped because the remote value
+// is a known backend default. Applies when old and new are nil but remote is set.
+// If the rule has allowed values, the remote value must match one of them.
+func shouldSkipBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
+	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
+		return "", false
+	}
+	for _, rule := range cfg.BackendDefaults {
+		if !path.HasPatternPrefix(rule.Field) {
+			continue
+		}
+		if len(rule.Values) == 0 {
+			return deployplan.ReasonBackendDefault, true
+		}
+		if matchesAllowedValue(ch.Remote, rule.Values) {
+			return deployplan.ReasonBackendDefault, true
+		}
+	}
+	return "", false
+}
+
+// matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
+// Each json.RawMessage is unmarshaled into the same type as remote for comparison.
+func matchesAllowedValue(remote any, values []json.RawMessage) bool {
+	remoteType := reflect.TypeOf(remote)
+	for _, raw := range values {
+		candidate := reflect.New(remoteType).Interface()
+		if err := json.Unmarshal(raw, candidate); err != nil {
+			continue
+		}
+		if structdiff.IsEqual(remote, reflect.ValueOf(candidate).Elem().Interface()) {
+			return true
+		}
+	}
+	return false
+}
+
+func allEmpty(values ...any) bool {
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+		rv := reflect.ValueOf(v)
+
+		if !isEmpty(rv) {
+			return false
+		}
+
+	}
+	return true
+}
+
+func isEmpty(rv reflect.Value) bool {
+	// certain fields can change between "" and null when processed by backend.
+	// in some cases, e.g. model_serving_endpoints.descriptions those fields are also marked as recreate, so we ignore such cases
+	if rv.IsZero() {
+		return true
+	}
+
+	// Empty slices and maps cannot be represented in proto and because of that they cannot be represented
+	// by SDK's JSON encoder. However, they can be provided by users in the config and can be represented in
+	// Bundle struct (currently libs/structs and libs/dyn use ForceSendFields for maps and slices, unlike SDK).
+	// Thus we get permanent drift because we see that new config is [] but in the state it is omitted.
+
+	if rv.Kind() == reflect.Slice {
+		return rv.Len() == 0
+	}
+
+	if rv.Kind() == reflect.Map {
+		return rv.Len() == 0
+	}
+
+	// Certain structs come up set even if fully empty and and not set by client, e.g. email_notifications and webhook_notifications
+	if isEmptyStruct(rv) {
+		return true
+	}
+
+	return false
+}
+
+func isEmptyStruct(rv reflect.Value) bool {
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return false
+		}
+		rv = rv.Elem()
+	}
+
+	if rv.Kind() != reflect.Struct {
+		return false
+	}
+
+	rt := rv.Type()
+	for i := range rt.NumField() {
+		field := rt.Field(i)
+
+		if !field.IsExported() {
+			continue
+		}
+
+		fieldValue := rv.Field(i)
+		if !fieldValue.IsZero() {
+			return false
+		}
+	}
+	return true
+}
+
+// splitResourcePath splits a reference path into resource key and field path.
+// For regular resources like "resources.jobs.foo.name", returns ("resources.jobs.foo", "name").
+// For sub-resources like "resources.jobs.foo.permissions[0].level", returns ("resources.jobs.foo.permissions", "[0].level").
+func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode) {
+	// Check if the 4th component is "permissions" or "grants" (sub-resource)
+	if path.Len() > 4 {
+		first := path.SkipPrefix(3).Prefix(1)
+		if key, ok := first.StringKey(); ok && (key == "permissions" || key == "grants") {
+			return path.Prefix(4).String(), path.SkipPrefix(4)
+		}
+	}
+	return path.Prefix(3).String(), path.SkipPrefix(3)
+}
+
+func (u *DeploymentUcm) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
+	targetResourceKey, fieldPath := splitResourcePath(path)
+	fieldPathS := fieldPath.String()
+
+	targetEntry, err := u.Plan.ReadLockEntry(targetResourceKey)
+	if err != nil {
+		return nil, err
+	}
+
+	if targetEntry == nil {
+		return nil, fmt.Errorf("internal error: %s: missing entry in the plan", targetResourceKey)
+	}
+
+	defer u.Plan.ReadUnlockEntry(targetResourceKey)
+
+	targetAction := targetEntry.Action
+	if targetAction == deployplan.Undefined {
+		return nil, fmt.Errorf("internal error: %s: missing action in the plan", targetResourceKey)
+	}
+
+	if fieldPathS == "id" {
+		if targetAction.KeepsID() {
+			id := u.StateDB.GetResourceID(targetResourceKey)
+			if id == "" {
+				return nil, errors.New("internal error: no db entry")
+			}
+			return id, nil
+		}
+		// id may change after deployment, this needs to be done later
+		return nil, errDelayed
+	}
+
+	if targetEntry.NewState == nil {
+		return nil, fmt.Errorf("internal error: %s: action is %q missing new_state", targetResourceKey, targetEntry.Action)
+	}
+
+	sv, ok := u.StateCache.Load(targetResourceKey)
+	if !ok {
+		return nil, fmt.Errorf("internal error: %s: missing state cache entry", targetResourceKey)
+	}
+
+	_, isUnresolved := sv.Refs[fieldPathS]
+	if isUnresolved {
+		// The value that is requested is itself a reference; this means it will be resolved after apply
+		return nil, errDelayed
+	}
+
+	localConfig := sv.Value
+
+	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
+	adapter := u.Adapters[targetGroup]
+	if adapter == nil {
+		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)
+	}
+
+	configValidErr := structaccess.ValidatePath(reflect.TypeOf(localConfig), fieldPath)
+	remoteValidErr := structaccess.ValidatePath(adapter.RemoteType(), fieldPath)
+	// Note: using adapter.RemoteType() over reflect.TypeOf(remoteState) because remoteState might be untyped nil
+
+	if configValidErr != nil && remoteValidErr != nil {
+		return nil, fmt.Errorf("schema mismatch: %w; %w", configValidErr, remoteValidErr)
+	}
+
+	if configValidErr == nil && remoteValidErr != nil {
+		// The field is only present in local schema; it must be resolved here.
+		value, err := structaccess.Get(localConfig, fieldPath)
+		if err != nil {
+			return nil, fmt.Errorf("field not set: %w", err)
+		}
+
+		return value, nil
+	}
+
+	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.IsFieldInRecreateOnChanges(fieldPath))
+
+	if configValidErr != nil && remoteValidErr == nil {
+		// The field is only present in remote state schema.
+		if canReadRemoteCache {
+			remoteState, ok := u.RemoteStateCache.Load(targetResourceKey)
+			if ok {
+				return structaccess.Get(remoteState, fieldPath)
+			} else {
+				return nil, fmt.Errorf("internal error: no entry in remote state cache for %q (remote-only)", targetResourceKey)
+			}
+		}
+		return nil, errDelayed
+	}
+
+	// Field is present in both: try local, fallback to remote (if skip) then delayed.
+
+	value, err := structaccess.Get(localConfig, fieldPath)
+
+	if err == nil && value != nil {
+		return value, nil
+	}
+
+	if canReadRemoteCache {
+		remoteState, ok := u.RemoteStateCache.Load(targetResourceKey)
+		if ok {
+			return structaccess.Get(remoteState, fieldPath)
+		} else {
+			return nil, fmt.Errorf("internal error: no entry in remote state cache for %q", targetResourceKey)
+		}
+	}
+
+	return nil, errDelayed
+}
+
+// resolveReferences processes all references in entry.NewState.Refs.
+func (u *DeploymentUcm) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isPreDeploy bool) bool {
+	sv, ok := u.StateCache.Load(resourceKey)
+	if !ok {
+		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no cache entry found for %q", errorPrefix, resourceKey))
+		return false
+	}
+
+	var resolved bool
+	for fieldPathStr, refString := range sv.Refs {
+		refs, ok := dynvar.NewRef(dyn.V(refString))
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
+			return false
+		}
+
+		for _, pathString := range refs.References() {
+			ref := "${" + pathString + "}"
+			targetPath, err := structpath.ParsePath(pathString)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
+				return false
+			}
+
+			var value any
+			if isPreDeploy {
+				value, err = u.LookupReferencePreDeploy(ctx, targetPath)
+				if err != nil {
+					if errors.Is(err, errDelayed) {
+						continue
+					}
+					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
+					return false
+				}
+			} else {
+				value, err = u.LookupReferencePostDeploy(ctx, targetPath)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
+					return false
+				}
+			}
+
+			err = sv.ResolveRef(ref, value)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s with value of %q: %w", errorPrefix, fieldPathStr, ref, err))
+				return false
+			}
+			resolved = true
+		}
+	}
+
+	// Sync resolved values back to StructVarJSON for serialization
+	if resolved {
+		if err := sv.SyncToJSON(entry.NewState); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: cannot save state: %w", errorPrefix, err))
+			return false
+		}
+	}
+
+	return true
+}
+
+func (u *DeploymentUcm) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database) (*deployplan.Plan, error) {
+	p := deployplan.NewPlanDirect()
+
+	// Copy state metadata to plan for validation during apply
+	p.Lineage = db.Lineage
+	p.Serial = db.Serial
+
+	// Collect and sort nodes first, because MapByPattern gives them in randomized order
+	var nodes []string
+
+	existingKeys := maps.Clone(db.State)
+
+	patterns := []dyn.Pattern{
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("permissions")),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey(), dyn.Key("grants")),
+	}
+
+	// Walk?
+	if configRoot != nil {
+		for _, pat := range patterns {
+			_, err := dyn.MapByPattern(
+				configRoot.Value(),
+				pat,
+				func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+					s := p.String()
+					resourceType := config.GetResourceTypeFromKey(s)
+					if resourceType == "" {
+						return v, fmt.Errorf("cannot parse resource key: %q", s)
+					}
+					_, ok := dresources.SupportedResources[resourceType]
+					if !ok {
+						return v, fmt.Errorf("unsupported resource type: %s", resourceType)
+					}
+
+					nodes = append(nodes, s)
+					return dyn.InvalidValue, nil
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	slices.Sort(nodes)
+
+	for _, node := range nodes {
+		delete(existingKeys, node)
+
+		prefix := "cannot plan " + node
+		inputConfig, err := configRoot.GetResourceConfig(node)
+		if err != nil {
+			return nil, err
+		}
+
+		adapter, err := u.getAdapterForKey(node)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+
+		baseRefs := map[string]string{}
+
+		if strings.HasSuffix(node, ".permissions") {
+			inputConfigStructVar, err := dresources.PreparePermissionsInputConfig(inputConfig, node)
+			if err != nil {
+				return nil, err
+			}
+			inputConfig = inputConfigStructVar.Value
+			baseRefs = inputConfigStructVar.Refs
+		} else if strings.HasSuffix(node, ".grants") {
+			inputConfigStructVar, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
+			if err != nil {
+				return nil, err
+			}
+			inputConfig = inputConfigStructVar.Value
+			baseRefs = inputConfigStructVar.Refs
+		}
+
+		newStateConfig, err := adapter.PrepareState(inputConfig)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+
+		// Note, we're extracting references in input config but resolving them in newState.Config which is PrepareState(inputConfig)
+		// This means input and state must be compatible: input can have more fields, but existing fields should not be moved
+		// This means one cannot refer to fields not present in state (e.g. ${resources.jobs.foo.permissions})
+
+		refs, err := extractReferences(configRoot.Value(), node)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
+		}
+
+		maps.Copy(refs, baseRefs)
+
+		var dependsOn []deployplan.DependsOnEntry
+		for _, reference := range refs {
+			ref, ok := dynvar.NewRef(dyn.V(reference))
+			if !ok {
+				continue
+			}
+
+			for _, targetPath := range ref.References() {
+				targetPathParsed, err := dyn.NewPathFromString(targetPath)
+				if err != nil {
+					return nil, fmt.Errorf("parsing %q: %w", targetPath, err)
+				}
+
+				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
+				targetNode := targetNodeDP.String()
+
+				fullRef := "${" + targetPath + "}"
+
+				found := false
+				for _, dep := range dependsOn {
+					if dep.Node == targetNode && dep.Label == fullRef {
+						found = true
+						break
+					}
+				}
+				if !found {
+					dependsOn = append(dependsOn, deployplan.DependsOnEntry{
+						Node:  targetNode,
+						Label: fullRef,
+					})
+				}
+			}
+		}
+
+		slices.SortFunc(dependsOn, func(a, b deployplan.DependsOnEntry) int {
+			if a.Node != b.Node {
+				return strings.Compare(a.Node, b.Node)
+			}
+			return strings.Compare(a.Label, b.Label)
+		})
+
+		newState := &structvar.StructVar{
+			Value: newStateConfig,
+			Refs:  refs,
+		}
+
+		// Store in cache for use during planning phase
+		u.StateCache.Store(node, newState)
+
+		// Convert to JSON for serialization in plan
+		newStateJSON, err := newState.ToJSON()
+		if err != nil {
+			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)
+		}
+
+		e := deployplan.PlanEntry{
+			DependsOn: dependsOn,
+			NewState:  newStateJSON,
+		}
+
+		p.Plan[node] = &e
+	}
+
+	for n, entry := range existingKeys {
+		if p.Plan[n] != nil {
+			panic("unexpected node " + n)
+		}
+
+		p.Plan[n] = &deployplan.PlanEntry{
+			Action:    deployplan.Delete,
+			DependsOn: entry.DependsOn,
+		}
+	}
+
+	return p, nil
+}
+
+func extractReferences(root dyn.Value, node string) (map[string]string, error) {
+	nodeType := config.GetResourceTypeFromKey(node)
+	refs := make(map[string]string)
+
+	path, err := dyn.NewPathFromString(node)
+	if err != nil {
+		return nil, fmt.Errorf("internal error: bad node key: %q: %w", node, err)
+	}
+
+	val, err := dyn.GetByPath(root, path)
+	if err != nil {
+		return nil, err
+	}
+
+	err = dyn.WalkReadOnly(val, func(p dyn.Path, v dyn.Value) error {
+		fullPath := append(path, p...)
+		targetType := config.GetResourceTypeFromKey(fullPath.String())
+		if targetType != nodeType {
+			// Make sure these are associated with different nodes:
+			// resources.jobs.foo...
+			// resources.jobs.foo.permissions...
+			// resources.jobs.foo.grants...
+			return nil
+		}
+		ref, ok := dynvar.NewRef(v)
+		if !ok {
+			return nil
+		}
+		// Store the original string that contains references, not individual references.
+		// Convert dyn.Path to structpath string because refs are later parsed by structpath.ParsePath.
+		// dyn.Path.String() uses dot notation which is ambiguous for keys containing dots;
+		// structpath uses bracket notation (['key.with.dots']) which round-trips correctly.
+		refs[dynPathToStructPath(p).String()] = ref.Str
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("parsing refs: %w", err)
+	}
+	return refs, nil
+}
+
+// dynPathToStructPath converts a dyn.Path to a structpath.PathNode.
+func dynPathToStructPath(p dyn.Path) *structpath.PathNode {
+	var node *structpath.PathNode
+	for _, c := range p {
+		if key := c.Key(); key != "" {
+			node = structpath.NewStringKey(node, key)
+		} else {
+			node = structpath.NewIndex(node, c.Index())
+		}
+	}
+	return node
+}
+
+func (u *DeploymentUcm) getAdapterForKey(resourceKey string) (*dresources.Adapter, error) {
+	group := config.GetResourceTypeFromKey(resourceKey)
+	if group == "" {
+		return nil, fmt.Errorf("internal error: bad node: %s", resourceKey)
+	}
+
+	adapter, ok := u.Adapters[group]
+	if !ok {
+		return nil, fmt.Errorf("resource type %q not supported, available: %s", group, strings.Join(slices.Sorted(maps.Keys(u.Adapters)), ", "))
+	}
+
+	return adapter, nil
+}
