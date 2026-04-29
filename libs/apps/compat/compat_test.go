@@ -5,11 +5,35 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// roundTripFunc adapts a function into an http.RoundTripper.
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+// redirectToServer returns an http.Client whose transport rewrites every
+// request URL to point at srv, keeping manifestURL as a const.
+func redirectToServer(t *testing.T, srv *httptest.Server) {
+	t.Helper()
+	orig := httpClient
+	httpClient = &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			target, _ := url.Parse(srv.URL)
+			req.URL.Scheme = target.Scheme
+			req.URL.Host = target.Host
+			return http.DefaultTransport.RoundTrip(req)
+		}),
+	}
+	t.Cleanup(func() { httpClient = orig })
+}
 
 func testManifest() Manifest {
 	return Manifest{
@@ -96,46 +120,42 @@ func TestResolve_MissingNextKey(t *testing.T) {
 }
 
 func TestFetchManifest_RemoteSuccess(t *testing.T) {
-	m := testManifest()
-	body, _ := json.Marshal(m)
+	want := Manifest{
+		"next":    {Appkit: "0.99.0", Skills: "0.9.9"},
+		"0.296.0": {Appkit: "0.99.0", Skills: "0.9.9"},
+	}
+	body, _ := json.Marshal(want)
 
+	var called bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
 		w.Write(body)
 	}))
 	defer srv.Close()
+	redirectToServer(t, srv)
 
-	// Override the manifest URL and HTTP client for this test.
-	origURL := manifestURL
-	origClient := httpClient
-	defer func() {
-		// Restore. We can't assign to const so we test via fetchRemote indirectly.
-		httpClient = origClient
-	}()
-	httpClient = srv.Client()
-
-	// We need to test fetchRemote directly since manifestURL is a const.
-	// Instead, test the full FetchManifest with embedded fallback.
 	result, err := FetchManifest(context.Background())
 	require.NoError(t, err)
-	// Should get a valid manifest from the embedded fallback (since we can't override the const URL).
-	assert.NotNil(t, result)
-	assert.Contains(t, result, "next")
-	_ = origURL
+	assert.True(t, called, "test server should have been called")
+	// Verify we got the remote manifest, not the embedded one.
+	assert.Equal(t, "0.99.0", result["next"].Appkit)
 }
 
 func TestFetchManifest_FallbackToEmbedded(t *testing.T) {
-	// Create a server that always returns 500.
+	var called bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer srv.Close()
+	redirectToServer(t, srv)
 
-	// FetchManifest with the real URL will fail (or succeed if GitHub is up),
-	// but embedded fallback always works.
 	result, err := FetchManifest(context.Background())
 	require.NoError(t, err)
-	assert.NotNil(t, result)
+	assert.True(t, called, "test server should have been called")
+	// Should fall back to embedded manifest.
 	assert.Contains(t, result, "next")
+	assert.Equal(t, "0.27.0", result["next"].Appkit)
 }
 
 func TestParseManifest_Valid(t *testing.T) {

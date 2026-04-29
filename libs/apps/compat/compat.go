@@ -122,7 +122,8 @@ func fetchRemote(ctx context.Context) (Manifest, error) {
 		return nil, fmt.Errorf("HTTP %d fetching manifest", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	// Cap response size to guard against corrupted or malicious responses.
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return nil, err
 	}
