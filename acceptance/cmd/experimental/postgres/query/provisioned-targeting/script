@@ -1,5 +1,0 @@
-title "Provisioned target in non-AVAILABLE state should error:"
-trace musterr $CLI experimental postgres query --target starting-instance "SELECT 1"
-
-title "Provisioned target not found should surface SDK 404:"
-trace musterr $CLI experimental postgres query --target missing-instance "SELECT 1"

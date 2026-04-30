@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/lakebase/target"
 	libpsql "github.com/databricks/cli/libs/psql"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -15,6 +15,18 @@ import (
 
 // autoscalingDefaultDatabase is the default database for Lakebase Autoscaling projects.
 const autoscalingDefaultDatabase = "databricks_postgres"
+
+// extractIDFromName extracts the ID component from a resource name.
+// For example, extractIDFromName("projects/foo/branches/bar", "branches") returns "bar".
+func extractIDFromName(name, component string) string {
+	parts := strings.Split(name, "/")
+	for i := range len(parts) - 1 {
+		if parts[i] == component {
+			return parts[i+1]
+		}
+	}
+	return name
+}
 
 // connectAutoscaling connects to a Lakebase Autoscaling endpoint.
 func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID string, retryConfig libpsql.RetryConfig, extraArgs []string) error {
@@ -38,9 +50,11 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 		return errors.New("endpoint host information is not available")
 	}
 
-	token, err := target.AutoscalingCredential(ctx, w, endpoint.Name)
+	cred, err := w.Postgres.GenerateDatabaseCredential(ctx, postgres.GenerateDatabaseCredentialRequest{
+		Endpoint: endpoint.Name,
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get database credentials: %w", err)
 	}
 
 	var endpointType string
@@ -61,7 +75,7 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 	case postgres.EndpointStatusStateIdle:
 		suffix = " (idle, waking up)"
 	default:
-		return fmt.Errorf("endpoint is not ready for accepting connections (state: %s)", state)
+		return errors.New("endpoint is not ready for accepting connections")
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s endpoint%s...", endpointType, suffix))
@@ -69,7 +83,7 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 	return libpsql.Connect(ctx, libpsql.ConnectOptions{
 		Host:            endpoint.Status.Hosts.Host,
 		Username:        user.UserName,
-		Password:        token,
+		Password:        cred.Token,
 		DefaultDatabase: autoscalingDefaultDatabase,
 		ExtraArgs:       extraArgs,
 	}, retryConfig)
@@ -88,7 +102,7 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 	}
 
 	// Get project to display its name
-	project, err := target.GetProject(ctx, w, projectID)
+	project, err := w.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: "projects/" + projectID})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project: %w", err)
 	}
@@ -122,7 +136,7 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 	}
 
 	// Get endpoint to validate and return it
-	endpoint, err := target.GetEndpoint(ctx, w, projectID, branchID, endpointID)
+	endpoint, err := w.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: branch.Name + "/endpoints/" + endpointID})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get endpoint: %w", err)
 	}
@@ -131,40 +145,38 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 	return endpoint, nil
 }
 
-// selectAmbiguous prompts the user to pick one of the choices in an
-// AmbiguousError. Caller is expected to have logged a header (e.g. via the
-// spinner) before invoking. Used to keep psql's interactive UX while letting
-// the shared lib do the actual list+filter work.
-//
-// Choice.DisplayName is empty when the producer has no friendlier label than
-// the ID (e.g. branches and endpoints, where the ID is the human label).
-// The promptui template renders an empty Name as a blank row, so we fall back
-// to the ID before handing off to cmdio.SelectOrdered.
-func selectAmbiguous(ctx context.Context, amb *target.AmbiguousError, prompt string) (string, error) {
-	items := make([]cmdio.Tuple, 0, len(amb.Choices))
-	for _, c := range amb.Choices {
-		name := c.DisplayName
-		if name == "" {
-			name = c.ID
-		}
-		items = append(items, cmdio.Tuple{Name: name, Id: c.ID})
-	}
-	return cmdio.SelectOrdered(ctx, items, prompt)
-}
-
 // selectProjectID auto-selects if there's only one project, otherwise prompts user to select.
 // Returns the project ID (not the full project object).
 func selectProjectID(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading projects...")
-	id, err := target.AutoSelectProject(ctx, w)
+	projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
 	sp.Close()
-
-	var amb *target.AmbiguousError
-	if !errors.As(err, &amb) {
-		return id, err
+	if err != nil {
+		return "", err
 	}
-	return selectAmbiguous(ctx, amb, "Select project")
+
+	if len(projects) == 0 {
+		return "", errors.New("no Lakebase Autoscaling projects found in workspace")
+	}
+
+	// Auto-select if there's only one project
+	if len(projects) == 1 {
+		return extractIDFromName(projects[0].Name, "projects"), nil
+	}
+
+	// Multiple projects, prompt user to select
+	var items []cmdio.Tuple
+	for _, project := range projects {
+		projectID := extractIDFromName(project.Name, "projects")
+		displayName := projectID
+		if project.Status != nil && project.Status.DisplayName != "" {
+			displayName = project.Status.DisplayName
+		}
+		items = append(items, cmdio.Tuple{Name: displayName, Id: projectID})
+	}
+
+	return cmdio.SelectOrdered(ctx, items, "Select project")
 }
 
 // selectBranchID auto-selects if there's only one branch, otherwise prompts user to select.
@@ -172,14 +184,31 @@ func selectProjectID(ctx context.Context, w *databricks.WorkspaceClient) (string
 func selectBranchID(ctx context.Context, w *databricks.WorkspaceClient, projectName string) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading branches...")
-	id, err := target.AutoSelectBranch(ctx, w, projectName)
+	branches, err := w.Postgres.ListBranchesAll(ctx, postgres.ListBranchesRequest{
+		Parent: projectName,
+	})
 	sp.Close()
-
-	var amb *target.AmbiguousError
-	if !errors.As(err, &amb) {
-		return id, err
+	if err != nil {
+		return "", err
 	}
-	return selectAmbiguous(ctx, amb, "Select branch")
+
+	if len(branches) == 0 {
+		return "", errors.New("no branches found in project")
+	}
+
+	// Auto-select if there's only one branch
+	if len(branches) == 1 {
+		return extractIDFromName(branches[0].Name, "branches"), nil
+	}
+
+	// Multiple branches, prompt user to select
+	var items []cmdio.Tuple
+	for _, branch := range branches {
+		branchID := extractIDFromName(branch.Name, "branches")
+		items = append(items, cmdio.Tuple{Name: branchID, Id: branchID})
+	}
+
+	return cmdio.SelectOrdered(ctx, items, "Select branch")
 }
 
 // selectEndpointID auto-selects if there's only one endpoint, otherwise prompts user to select.
@@ -187,12 +216,29 @@ func selectBranchID(ctx context.Context, w *databricks.WorkspaceClient, projectN
 func selectEndpointID(ctx context.Context, w *databricks.WorkspaceClient, branchName string) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading endpoints...")
-	id, err := target.AutoSelectEndpoint(ctx, w, branchName)
+	endpoints, err := w.Postgres.ListEndpointsAll(ctx, postgres.ListEndpointsRequest{
+		Parent: branchName,
+	})
 	sp.Close()
-
-	var amb *target.AmbiguousError
-	if !errors.As(err, &amb) {
-		return id, err
+	if err != nil {
+		return "", err
 	}
-	return selectAmbiguous(ctx, amb, "Select endpoint")
+
+	if len(endpoints) == 0 {
+		return "", errors.New("no endpoints found in branch")
+	}
+
+	// Auto-select if there's only one endpoint
+	if len(endpoints) == 1 {
+		return extractIDFromName(endpoints[0].Name, "endpoints"), nil
+	}
+
+	// Multiple endpoints, prompt user to select
+	var items []cmdio.Tuple
+	for _, endpoint := range endpoints {
+		endpointID := extractIDFromName(endpoint.Name, "endpoints")
+		items = append(items, cmdio.Tuple{Name: endpointID, Id: endpointID})
+	}
+
+	return cmdio.SelectOrdered(ctx, items, "Select endpoint")
 }
