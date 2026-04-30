@@ -61,7 +61,7 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 	case postgres.EndpointStatusStateIdle:
 		suffix = " (idle, waking up)"
 	default:
-		return errors.New("endpoint is not ready for accepting connections")
+		return fmt.Errorf("endpoint is not ready for accepting connections (state: %s)", state)
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s endpoint%s...", endpointType, suffix))

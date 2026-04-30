@@ -58,6 +58,7 @@ func connectProvisioned(ctx context.Context, instanceName string, retryConfig li
 // resolveInstance resolves an instance name to a full instance object.
 // If instanceName is empty, prompts the user to select one.
 func resolveInstance(ctx context.Context, w *databricks.WorkspaceClient, instanceName string) (*database.DatabaseInstance, error) {
+	// If instance not specified, select one
 	if instanceName == "" {
 		var err error
 		instanceName, err = selectInstanceID(ctx, w)
@@ -66,6 +67,8 @@ func resolveInstance(ctx context.Context, w *databricks.WorkspaceClient, instanc
 		}
 	}
 
+	// target.GetProvisioned patches Name on the response; the SDK's
+	// GetDatabaseInstance does not always populate it.
 	instance, err := target.GetProvisioned(ctx, w, instanceName)
 	if err != nil {
 		return nil, err

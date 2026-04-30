@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	// PathSegmentProjects is the leading path segment that identifies an
-	// autoscaling resource path. Provisioned instance names never start with it.
-	PathSegmentProjects  = "projects"
+	// pathSegmentProjects is the leading path segment that identifies an
+	// autoscaling resource path. Provisioned instance names never start with
+	// it. Use IsAutoscalingPath / ProjectIDFromName from outside this package
+	// instead of comparing the literal.
+	pathSegmentProjects  = "projects"
 	pathSegmentBranches  = "branches"
 	pathSegmentEndpoints = "endpoints"
 )
@@ -28,10 +30,26 @@ type AutoscalingSpec struct {
 
 // Choice is a single candidate returned alongside an AmbiguousError so callers
 // can either render the list to the user or prompt interactively.
+//
+// DisplayName is the optional friendlier label for the choice. Producers
+// should leave it empty when no friendlier label exists; callers that prompt
+// interactively can fall back to the ID.
 type Choice struct {
 	ID          string
 	DisplayName string
 }
+
+// AmbiguousKind is the typed enum for what an AmbiguousError refers to. A
+// typed enum (vs raw string) keeps producers and the pluralisation switch in
+// AmbiguousError.Error in sync.
+type AmbiguousKind string
+
+const (
+	KindProject  AmbiguousKind = "project"
+	KindBranch   AmbiguousKind = "branch"
+	KindEndpoint AmbiguousKind = "endpoint"
+	KindInstance AmbiguousKind = "instance"
+)
 
 // AmbiguousError is returned by AutoSelect* helpers when the SDK returns more
 // than one candidate and the caller did not specify which one to pick.
@@ -41,26 +59,27 @@ type Choice struct {
 // scriptable `postgres query` command) propagate it as a plain error: the
 // formatted message already enumerates the choices.
 type AmbiguousError struct {
-	// Kind identifies what was ambiguous: "project", "branch", or "endpoint".
-	Kind string
+	Kind AmbiguousKind
 	// Parent is the SDK resource name that contained the ambiguity (e.g.
 	// "projects/foo" when listing branches), or empty when listing projects.
 	Parent string
 	// FlagHint is the flag a user would set to disambiguate (e.g. "--branch").
 	FlagHint string
-	// Choices enumerates the candidates returned by the SDK.
+	// Choices enumerates the candidates returned by the SDK. DisplayName is
+	// only set when it carries information beyond ID; an empty DisplayName
+	// suppresses the parenthetical suffix in Error().
 	Choices []Choice
 }
 
 func (e *AmbiguousError) Error() string {
-	plural := map[string]string{
-		"project":  "projects",
-		"branch":   "branches",
-		"endpoint": "endpoints",
-		"instance": "instances",
+	plural := map[AmbiguousKind]string{
+		KindProject:  "projects",
+		KindBranch:   "branches",
+		KindEndpoint: "endpoints",
+		KindInstance: "instances",
 	}[e.Kind]
 	if plural == "" {
-		plural = e.Kind
+		plural = string(e.Kind)
 	}
 
 	var sb strings.Builder
@@ -72,7 +91,7 @@ func (e *AmbiguousError) Error() string {
 	for _, c := range e.Choices {
 		sb.WriteString("\n  - ")
 		sb.WriteString(c.ID)
-		if c.DisplayName != "" && c.DisplayName != c.ID {
+		if c.DisplayName != "" {
 			fmt.Fprintf(&sb, " (%s)", c.DisplayName)
 		}
 	}
@@ -90,7 +109,7 @@ func (e *AmbiguousError) Error() string {
 func ParseAutoscalingPath(input string) (AutoscalingSpec, error) {
 	parts := strings.Split(input, "/")
 
-	if len(parts) < 2 || parts[0] != PathSegmentProjects {
+	if len(parts) < 2 || parts[0] != pathSegmentProjects {
 		return AutoscalingSpec{}, fmt.Errorf("invalid resource path: %s", input)
 	}
 	if parts[1] == "" {
@@ -125,10 +144,10 @@ func ParseAutoscalingPath(input string) (AutoscalingSpec, error) {
 	return spec, nil
 }
 
-// ExtractID returns the value following component in a resource name.
-// ExtractID("projects/foo/branches/bar", "branches") returns "bar".
+// extractID returns the value following component in a resource name.
+// extractID("projects/foo/branches/bar", "branches") returns "bar".
 // Returns the original name unchanged if component is not found.
-func ExtractID(name, component string) string {
+func extractID(name, component string) string {
 	parts := strings.Split(name, "/")
 	for i := range len(parts) - 1 {
 		if parts[i] == component {
@@ -138,8 +157,25 @@ func ExtractID(name, component string) string {
 	return name
 }
 
+// ProjectIDFromName extracts the project ID from a fully-qualified
+// SDK resource name like "projects/foo" or "projects/foo/branches/bar".
+// Returns the input unchanged if the name does not contain a "projects/" segment.
+func ProjectIDFromName(name string) string {
+	return extractID(name, pathSegmentProjects)
+}
+
+// BranchIDFromName extracts the branch ID from an SDK resource name.
+func BranchIDFromName(name string) string {
+	return extractID(name, pathSegmentBranches)
+}
+
+// EndpointIDFromName extracts the endpoint ID from an SDK resource name.
+func EndpointIDFromName(name string) string {
+	return extractID(name, pathSegmentEndpoints)
+}
+
 // IsAutoscalingPath reports whether s is an autoscaling resource path
 // (i.e. starts with "projects/"). Provisioned instance names never do.
 func IsAutoscalingPath(s string) bool {
-	return strings.HasPrefix(s, PathSegmentProjects+"/")
+	return strings.HasPrefix(s, pathSegmentProjects+"/")
 }

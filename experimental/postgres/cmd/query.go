@@ -31,9 +31,8 @@ func newQueryCmd() *cobra.Command {
 	var f queryFlags
 
 	cmd := &cobra.Command{
-		Use:     "query [SQL]",
-		Short:   "Run a SQL statement against a Lakebase Postgres endpoint",
-		GroupID: "",
+		Use:   "query [SQL]",
+		Short: "Run a SQL statement against a Lakebase Postgres endpoint",
 		Long: `Execute a single SQL statement against a Lakebase Postgres endpoint and
 render the result as text.
 
@@ -72,7 +71,7 @@ Limitations (this release):
 	cmd.Flags().StringVar(&f.endpoint, "endpoint", "", "Autoscaling endpoint ID (default: auto-select if exactly one)")
 	cmd.Flags().StringVarP(&f.database, "database", "d", defaultDatabase, "Database name")
 	cmd.Flags().DurationVar(&f.connectTimeout, "connect-timeout", defaultConnectTimeout, "Connect timeout")
-	cmd.Flags().IntVar(&f.maxRetries, "max-retries", 3, "Total connect attempts on idle/waking endpoint (1 disables retry)")
+	cmd.Flags().IntVar(&f.maxRetries, "max-retries", 3, "Total connect attempts on idle/waking endpoint (must be >= 1; 1 disables retry)")
 
 	cmd.MarkFlagsMutuallyExclusive("target", "project")
 	cmd.MarkFlagsMutuallyExclusive("target", "branch")
@@ -88,6 +87,9 @@ func runQuery(ctx context.Context, cmd *cobra.Command, sql string, f queryFlags)
 	sql = strings.TrimSpace(sql)
 	if sql == "" {
 		return errors.New("no SQL provided")
+	}
+	if f.maxRetries < 1 {
+		return fmt.Errorf("--max-retries must be at least 1; got %d", f.maxRetries)
 	}
 	if err := validateTargeting(f.targetingFlags); err != nil {
 		return err
@@ -113,7 +115,7 @@ func runQuery(ctx context.Context, cmd *cobra.Command, sql string, f queryFlags)
 	}
 
 	rc := retryConfig{
-		MaxAttempts:  max(1, f.maxRetries),
+		MaxAttempts:  f.maxRetries,
 		InitialDelay: time.Second,
 		MaxDelay:     10 * time.Second,
 	}

@@ -51,6 +51,11 @@ func (f targetingFlags) hasGranular() bool {
 // validateTargeting enforces "exactly one targeting form" before any SDK call.
 // Returns a typed error so the JSON envelope renderer (added in a later PR)
 // can surface a structured error.
+//
+// We require --branch when --endpoint is set: this command is non-interactive
+// and scriptable, and the alternative (auto-select-then-look-up-endpoint)
+// produces confusing errors when the resolved branch does not contain the
+// requested endpoint. Asking the user to be explicit is friendlier.
 func validateTargeting(f targetingFlags) error {
 	switch {
 	case f.target == "" && !f.hasGranular():
@@ -59,6 +64,8 @@ func validateTargeting(f targetingFlags) error {
 		return errors.New("--target is mutually exclusive with --project, --branch, --endpoint")
 	case f.target == "" && f.project == "" && (f.branch != "" || f.endpoint != ""):
 		return errors.New("--project is required when using --branch or --endpoint")
+	case f.endpoint != "" && f.branch == "":
+		return errors.New("--branch is required when using --endpoint")
 	}
 	return nil
 }

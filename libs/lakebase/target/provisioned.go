@@ -29,8 +29,10 @@ func GetProvisioned(ctx context.Context, w *databricks.WorkspaceClient, name str
 	return instance, nil
 }
 
-// AutoSelectProvisioned returns the only provisioned instance in the workspace,
-// or an AmbiguousError if there are multiple. Returns a plain error if none.
+// AutoSelectProvisioned returns the only provisioned instance's name (e.g.
+// "my-instance"; the database SDK uses flat names, not the "projects/..."
+// path shape used by autoscaling). Returns an *AmbiguousError if there are
+// multiple, or a plain error if none.
 func AutoSelectProvisioned(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	instances, err := ListProvisionedInstances(ctx, w)
 	if err != nil {
@@ -45,9 +47,9 @@ func AutoSelectProvisioned(ctx context.Context, w *databricks.WorkspaceClient) (
 
 	choices := make([]Choice, 0, len(instances))
 	for _, inst := range instances {
-		choices = append(choices, Choice{ID: inst.Name, DisplayName: inst.Name})
+		choices = append(choices, Choice{ID: inst.Name})
 	}
-	return "", &AmbiguousError{Kind: "instance", FlagHint: "--target", Choices: choices}
+	return "", &AmbiguousError{Kind: KindInstance, FlagHint: "--target", Choices: choices}
 }
 
 // ProvisionedCredential issues a short-lived OAuth token for the provisioned

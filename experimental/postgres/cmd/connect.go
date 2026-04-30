@@ -70,11 +70,10 @@ func buildPgxConfig(c connectConfig) (*pgx.ConnConfig, error) {
 // indicate the endpoint is asleep or in the middle of a wake-up. Errors that
 // cannot be improved by retrying (auth failures, permission errors,
 // post-query errors) are returned immediately.
+//
+// MaxAttempts must be >= 1 (caller validates). 1 means a single attempt
+// with no retries.
 func connectWithRetry(ctx context.Context, cfg *pgx.ConnConfig, rc retryConfig, dial connectFunc) (*pgx.Conn, error) {
-	if rc.MaxAttempts < 1 {
-		rc.MaxAttempts = 1
-	}
-
 	delay := rc.InitialDelay
 	var lastErr error
 
@@ -115,6 +114,10 @@ func connectWithRetry(ctx context.Context, cfg *pgx.ConnConfig, rc retryConfig, 
 //   - pgconn.ConnectError that wraps a retryable network error.
 //   - Postgres connection-establishment SQLSTATE codes (08xxx). Lakebase
 //     emits these during cold-start.
+//   - Postgres "cannot_connect_now" (57P03), which Postgres returns during
+//     server startup ("the database system is starting up"). Plausibly emitted
+//     during the wake-up handshake window. We do NOT broaden to all of class 57:
+//     57P01/57P02 are admin shutdowns (debatable) and 57014 is query_canceled.
 //
 // Not retryable: auth errors (28xxx), permission errors (42501),
 // context cancellation/deadlines, anything after Query has been issued
@@ -128,6 +131,9 @@ func isRetryableConnectError(err error) bool {
 	if errors.As(err, &pgErr) {
 		// 08xxx is the connection_exception class.
 		if len(pgErr.Code) == 5 && pgErr.Code[:2] == "08" {
+			return true
+		}
+		if pgErr.Code == "57P03" {
 			return true
 		}
 		return false

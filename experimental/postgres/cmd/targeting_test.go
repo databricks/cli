@@ -66,6 +66,14 @@ func TestValidateTargeting(t *testing.T) {
 			},
 			wantErr: "--project is required when using --branch or --endpoint",
 		},
+		{
+			name: "endpoint with project but no branch",
+			flags: targetingFlags{
+				project:  "foo",
+				endpoint: "primary",
+			},
+			wantErr: "--branch is required when using --endpoint",
+		},
 	}
 
 	for _, tc := range tests {

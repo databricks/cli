@@ -27,6 +27,14 @@ Error: --project is required when using --branch or --endpoint
 >>> musterr [CLI] experimental postgres query --endpoint primary SELECT 1
 Error: --project is required when using --branch or --endpoint
 
+=== Endpoint without branch should error:
+>>> musterr [CLI] experimental postgres query --project foo --endpoint primary SELECT 1
+Error: --branch is required when using --endpoint
+
+=== Max-retries 0 should error:
+>>> musterr [CLI] experimental postgres query --project foo --branch main --max-retries 0 SELECT 1
+Error: --max-retries must be at least 1; got 0
+
 === Provisioned-shaped target should error pointing at psql:
 >>> musterr [CLI] experimental postgres query --target my-instance SELECT 1
 Error: provisioned instances are not yet supported by this experimental command; use 'databricks psql <instance>' for now

@@ -59,6 +59,10 @@ Error: invalid resource path: missing branch ID
 >>> musterr [CLI] psql projects/my-project/branches/main/endpoints/
 Error: invalid resource path: missing endpoint ID
 
+=== Trailing components after endpoint should error:
+>>> musterr [CLI] psql projects/my-project/branches/main/endpoints/primary/extra
+Error: invalid resource path: trailing components after endpoint: projects/my-project/branches/main/endpoints/primary/extra
+
 === Provisioned flag with --project should error:
 >>> musterr [CLI] psql --provisioned --project foo
 Error: cannot use --project, --branch, or --endpoint flags with --provisioned

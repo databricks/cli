@@ -64,6 +64,16 @@ func TestParseAutoscalingPath(t *testing.T) {
 			input:   "projects/foo/branches/bar/endpoints/baz/extra",
 			wantErr: "trailing components after endpoint",
 		},
+		{
+			name:    "empty input",
+			input:   "",
+			wantErr: "invalid resource path",
+		},
+		{
+			name:    "single slash",
+			input:   "/",
+			wantErr: "invalid resource path",
+		},
 	}
 
 	for _, tc := range tests {
@@ -80,11 +90,12 @@ func TestParseAutoscalingPath(t *testing.T) {
 	}
 }
 
-func TestExtractID(t *testing.T) {
-	assert.Equal(t, "bar", ExtractID("projects/foo/branches/bar", "branches"))
-	assert.Equal(t, "foo", ExtractID("projects/foo", "projects"))
-	assert.Equal(t, "baz", ExtractID("projects/foo/branches/bar/endpoints/baz", "endpoints"))
-	assert.Equal(t, "no-component", ExtractID("no-component", "missing"))
+func TestIDFromName(t *testing.T) {
+	assert.Equal(t, "foo", ProjectIDFromName("projects/foo"))
+	assert.Equal(t, "foo", ProjectIDFromName("projects/foo/branches/bar"))
+	assert.Equal(t, "bar", BranchIDFromName("projects/foo/branches/bar"))
+	assert.Equal(t, "bar", BranchIDFromName("projects/foo/branches/bar/endpoints/baz"))
+	assert.Equal(t, "baz", EndpointIDFromName("projects/foo/branches/bar/endpoints/baz"))
 }
 
 func TestIsAutoscalingPath(t *testing.T) {
@@ -96,14 +107,14 @@ func TestIsAutoscalingPath(t *testing.T) {
 }
 
 func TestAmbiguousErrorMessage(t *testing.T) {
-	t.Run("with parent", func(t *testing.T) {
+	t.Run("with parent, no display names", func(t *testing.T) {
 		err := &AmbiguousError{
-			Kind:     "branch",
+			Kind:     KindBranch,
 			Parent:   "projects/foo",
 			FlagHint: "--branch",
 			Choices: []Choice{
-				{ID: "main", DisplayName: "main"},
-				{ID: "feature-x", DisplayName: "feature-x"},
+				{ID: "main"},
+				{ID: "feature-x"},
 			},
 		}
 		assert.Equal(t,
@@ -112,13 +123,13 @@ func TestAmbiguousErrorMessage(t *testing.T) {
 		)
 	})
 
-	t.Run("without parent", func(t *testing.T) {
+	t.Run("without parent, mixed display names", func(t *testing.T) {
 		err := &AmbiguousError{
-			Kind:     "project",
+			Kind:     KindProject,
 			FlagHint: "--project",
 			Choices: []Choice{
 				{ID: "alpha", DisplayName: "Alpha Project"},
-				{ID: "beta", DisplayName: "beta"},
+				{ID: "beta"},
 			},
 		}
 		assert.Equal(t,
@@ -129,8 +140,8 @@ func TestAmbiguousErrorMessage(t *testing.T) {
 
 	t.Run("errors.As", func(t *testing.T) {
 		var amb *AmbiguousError
-		err := error(&AmbiguousError{Kind: "endpoint", FlagHint: "--endpoint"})
+		err := error(&AmbiguousError{Kind: KindEndpoint, FlagHint: "--endpoint"})
 		assert.ErrorAs(t, err, &amb)
-		assert.Equal(t, "endpoint", amb.Kind)
+		assert.Equal(t, KindEndpoint, amb.Kind)
 	})
 }

@@ -257,7 +257,7 @@ func showSelectionAndConnect(ctx context.Context, retryConfig libpsql.RetryConfi
 		})
 	}
 	for _, proj := range projects {
-		displayName := target.ExtractID(proj.Name, target.PathSegmentProjects)
+		displayName := target.ProjectIDFromName(proj.Name)
 		if proj.Status != nil && proj.Status.DisplayName != "" {
 			displayName = proj.Status.DisplayName
 		}
@@ -278,7 +278,7 @@ func showSelectionAndConnect(ctx context.Context, retryConfig libpsql.RetryConfi
 	}
 	if after, ok := strings.CutPrefix(selected, "autoscaling:"); ok {
 		projectName := after
-		projectID := target.ExtractID(projectName, target.PathSegmentProjects)
+		projectID := target.ProjectIDFromName(projectName)
 		return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
 	}
 

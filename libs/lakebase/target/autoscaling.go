@@ -26,20 +26,23 @@ func ListEndpoints(ctx context.Context, w *databricks.WorkspaceClient, branchNam
 	return w.Postgres.ListEndpointsAll(ctx, postgres.ListEndpointsRequest{Parent: branchName})
 }
 
-// GetProject fetches a single project by ID.
+// GetProject fetches a single project by ID. Unlike GetProvisioned, the
+// Postgres autoscaling API populates the Name field on the response so we do
+// not need to patch it.
 func GetProject(ctx context.Context, w *databricks.WorkspaceClient, projectID string) (*postgres.Project, error) {
-	return w.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: PathSegmentProjects + "/" + projectID})
+	return w.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: pathSegmentProjects + "/" + projectID})
 }
 
-// GetEndpoint fetches a single endpoint by ID, given its parent IDs.
+// GetEndpoint fetches a single endpoint by ID, given its parent IDs. Unlike
+// GetProvisioned, the Postgres autoscaling API populates the Name field.
 func GetEndpoint(ctx context.Context, w *databricks.WorkspaceClient, projectID, branchID, endpointID string) (*postgres.Endpoint, error) {
 	name := fmt.Sprintf("projects/%s/branches/%s/endpoints/%s", projectID, branchID, endpointID)
 	return w.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: name})
 }
 
-// AutoSelectProject returns the only project in the workspace, or an
-// AmbiguousError carrying the choices if there are multiple. Returns a plain
-// error if there are no projects.
+// AutoSelectProject returns the trailing project ID (e.g. "foo", not
+// "projects/foo") if exactly one project exists. Returns an *AmbiguousError
+// carrying the choices if there are multiple, or a plain error if there are none.
 func AutoSelectProject(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	projects, err := ListProjects(ctx, w)
 	if err != nil {
@@ -49,23 +52,24 @@ func AutoSelectProject(ctx context.Context, w *databricks.WorkspaceClient) (stri
 		return "", errors.New("no Lakebase Autoscaling projects found in workspace")
 	}
 	if len(projects) == 1 {
-		return ExtractID(projects[0].Name, PathSegmentProjects), nil
+		return extractID(projects[0].Name, pathSegmentProjects), nil
 	}
 
 	choices := make([]Choice, 0, len(projects))
 	for _, p := range projects {
-		id := ExtractID(p.Name, PathSegmentProjects)
-		display := id
-		if p.Status != nil && p.Status.DisplayName != "" {
+		id := extractID(p.Name, pathSegmentProjects)
+		var display string
+		if p.Status != nil && p.Status.DisplayName != "" && p.Status.DisplayName != id {
 			display = p.Status.DisplayName
 		}
 		choices = append(choices, Choice{ID: id, DisplayName: display})
 	}
-	return "", &AmbiguousError{Kind: "project", FlagHint: "--project", Choices: choices}
+	return "", &AmbiguousError{Kind: KindProject, FlagHint: "--project", Choices: choices}
 }
 
-// AutoSelectBranch returns the only branch under projectName, or an
-// AmbiguousError if there are multiple.
+// AutoSelectBranch returns the trailing branch ID under projectName if
+// exactly one branch exists. Returns an *AmbiguousError if there are multiple.
+// projectName is the SDK resource name (e.g. "projects/foo").
 func AutoSelectBranch(ctx context.Context, w *databricks.WorkspaceClient, projectName string) (string, error) {
 	branches, err := ListBranches(ctx, w, projectName)
 	if err != nil {
@@ -75,19 +79,20 @@ func AutoSelectBranch(ctx context.Context, w *databricks.WorkspaceClient, projec
 		return "", errors.New("no branches found in project")
 	}
 	if len(branches) == 1 {
-		return ExtractID(branches[0].Name, pathSegmentBranches), nil
+		return extractID(branches[0].Name, pathSegmentBranches), nil
 	}
 
 	choices := make([]Choice, 0, len(branches))
 	for _, b := range branches {
-		id := ExtractID(b.Name, pathSegmentBranches)
-		choices = append(choices, Choice{ID: id, DisplayName: id})
+		id := extractID(b.Name, pathSegmentBranches)
+		choices = append(choices, Choice{ID: id})
 	}
-	return "", &AmbiguousError{Kind: "branch", Parent: projectName, FlagHint: "--branch", Choices: choices}
+	return "", &AmbiguousError{Kind: KindBranch, Parent: projectName, FlagHint: "--branch", Choices: choices}
 }
 
-// AutoSelectEndpoint returns the only endpoint under branchName, or an
-// AmbiguousError if there are multiple.
+// AutoSelectEndpoint returns the trailing endpoint ID under branchName if
+// exactly one endpoint exists. Returns an *AmbiguousError if there are multiple.
+// branchName is the SDK resource name (e.g. "projects/foo/branches/bar").
 func AutoSelectEndpoint(ctx context.Context, w *databricks.WorkspaceClient, branchName string) (string, error) {
 	endpoints, err := ListEndpoints(ctx, w, branchName)
 	if err != nil {
@@ -97,15 +102,15 @@ func AutoSelectEndpoint(ctx context.Context, w *databricks.WorkspaceClient, bran
 		return "", errors.New("no endpoints found in branch")
 	}
 	if len(endpoints) == 1 {
-		return ExtractID(endpoints[0].Name, pathSegmentEndpoints), nil
+		return extractID(endpoints[0].Name, pathSegmentEndpoints), nil
 	}
 
 	choices := make([]Choice, 0, len(endpoints))
 	for _, e := range endpoints {
-		id := ExtractID(e.Name, pathSegmentEndpoints)
-		choices = append(choices, Choice{ID: id, DisplayName: id})
+		id := extractID(e.Name, pathSegmentEndpoints)
+		choices = append(choices, Choice{ID: id})
 	}
-	return "", &AmbiguousError{Kind: "endpoint", Parent: branchName, FlagHint: "--endpoint", Choices: choices}
+	return "", &AmbiguousError{Kind: KindEndpoint, Parent: branchName, FlagHint: "--endpoint", Choices: choices}
 }
 
 // AutoscalingCredential issues a short-lived OAuth token that can be used to

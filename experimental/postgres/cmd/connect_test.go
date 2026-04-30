@@ -45,6 +45,21 @@ func TestIsRetryableConnectError(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "57P03 cannot_connect_now",
+			err:  &pgconn.PgError{Code: "57P03", Message: "the database system is starting up"},
+			want: true,
+		},
+		{
+			name: "57P01 admin shutdown not retryable",
+			err:  &pgconn.PgError{Code: "57P01"},
+			want: false,
+		},
+		{
+			name: "57014 query_canceled not retryable",
+			err:  &pgconn.PgError{Code: "57014"},
+			want: false,
+		},
+		{
 			name: "28000 invalid auth",
 			err:  &pgconn.PgError{Code: "28000", Message: "invalid authorization specification"},
 			want: false,
@@ -113,21 +128,6 @@ func TestConnectWithRetry_StopsOnNonRetryable(t *testing.T) {
 	_, err := connectWithRetry(ctx, cfg, rc, dial)
 	require.Error(t, err)
 	assert.Equal(t, 1, calls, "auth errors should not retry")
-}
-
-func TestConnectWithRetry_ZeroMaxAttemptsTreatedAsOne(t *testing.T) {
-	ctx := testCtx(t)
-	calls := 0
-	dial := func(ctx context.Context, cfg *pgx.ConnConfig) (*pgx.Conn, error) {
-		calls++
-		return nil, errors.New("nope")
-	}
-	cfg := &pgx.ConnConfig{}
-	rc := retryConfig{MaxAttempts: 0, InitialDelay: time.Millisecond}
-
-	_, err := connectWithRetry(ctx, cfg, rc, dial)
-	require.Error(t, err)
-	assert.Equal(t, 1, calls)
 }
 
 func TestBuildPgxConfig(t *testing.T) {
