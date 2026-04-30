@@ -1,0 +1,21 @@
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin"
+    ]
+  },
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin cmd/api_get cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/accounts/abc-123/oauth2/published-app-integrations"
+}

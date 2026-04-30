@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] api get /api/2.0/accounts/{account_id}/oauth2/published-app-integrations
+Error: path contains {account_id} but no account_id is set on profile "" (set account_id in ~/.databrickscfg, export DATABRICKS_ACCOUNT_ID, or replace {account_id} in the path)
+
+Exit code: 1

@@ -1,0 +1,12 @@
+# Profile with workspace_id = none overrides the host-metadata back-fill.
+# The CLI must strip the sentinel before the header decision; the recorded
+# request should not carry the routing identifier.
+sethome "./home"
+cat > "./home/.databrickscfg" <<EOF
+[spog-account]
+host         = $DATABRICKS_HOST
+token        = $DATABRICKS_TOKEN
+workspace_id = none
+EOF
+
+$CLI api get /api/2.0/clusters/list --profile spog-account
