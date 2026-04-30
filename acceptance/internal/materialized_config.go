@@ -12,7 +12,7 @@ const MaterializedConfigFile = "out.test.toml"
 
 // GenerateMaterializedConfig creates a TOML representation of the configuration fields
 // that determine where and how a test is executed.
-func GenerateMaterializedConfig(config TestConfig) (string, error) {
+func GenerateMaterializedConfig(config *TestConfig) string {
 	var buf strings.Builder
 
 	writeBool := func(key string, v *bool) {
@@ -41,7 +41,7 @@ func GenerateMaterializedConfig(config TestConfig) (string, error) {
 		writeTomlStringArray(&buf, "EnvMatrix."+k, config.EnvMatrix[k])
 	}
 
-	return buf.String(), nil
+	return buf.String()
 }
 
 // writeTomlStringArray writes a TOML string array. Arrays with more than 3 elements

@@ -372,8 +372,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 			// Generate materialized config for this test.
 			// We do this before skipping the test, so the configs are generated for all tests.
-			materializedConfig, err := internal.GenerateMaterializedConfig(config)
-			require.NoError(t, err)
+			materializedConfig := internal.GenerateMaterializedConfig(&config)
 			outPath := filepath.Join(dir, internal.MaterializedConfigFile)
 			if existing, _ := os.ReadFile(outPath); string(existing) != materializedConfig {
 				testutil.WriteFile(t, outPath, materializedConfig)
