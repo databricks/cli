@@ -298,9 +298,9 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	return lineNumber > 1, scanner.Err()
 }
 
-// Close replays the WAL (if open for write) and resets the state.
-// Safe to call multiple times or on an already-closed state.
-func (db *DeploymentState) Close(ctx context.Context) error {
+// Finalize replays the WAL (if open for write) and resets the state.
+// Safe to call multiple times or on an already-finalized state.
+func (db *DeploymentState) Finalize(ctx context.Context) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 

@@ -293,14 +293,14 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			}
 		}
 
-		deploymentBundle.StateDB.Close(ctx)
+		deploymentBundle.StateDB.Finalize(ctx)
 		err = deploymentBundle.StateDB.Open(ctx, tempStatePath, dstate.WithRecovery(false), dstate.WithWrite(true))
 		if err != nil {
 			return fmt.Errorf("reopening state for apply: %w", err)
 		}
 
 		deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
-		if err := deploymentBundle.StateDB.Close(ctx); err != nil {
+		if err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		if logdiag.HasError(ctx) {

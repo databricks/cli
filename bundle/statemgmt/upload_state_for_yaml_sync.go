@@ -183,7 +183,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 
 	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &uninterpolatedConfig)
 	if err != nil {
-		deploymentBundle.StateDB.Close(ctx)
+		deploymentBundle.StateDB.Finalize(ctx)
 		return false, err
 	}
 
@@ -207,7 +207,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 	}
 
 	// Close read state and reopen for write so Apply can record state changes via WAL.
-	if err := deploymentBundle.StateDB.Close(ctx); err != nil {
+	if err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
 		return false, fmt.Errorf("closing state after plan: %w", err)
 	}
 	if err := deploymentBundle.StateDB.Open(ctx, snapshotPath, dstate.WithRecovery(false), dstate.WithWrite(true)); err != nil {
@@ -215,7 +215,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 	}
 
 	deploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, direct.MigrateMode(true))
-	if err := deploymentBundle.StateDB.Close(ctx); err != nil {
+	if err := deploymentBundle.StateDB.Finalize(ctx); err != nil {
 		return false, err
 	}
 

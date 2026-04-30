@@ -81,7 +81,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	// Close state to replay WAL into state file, then reopen for read.
 	// PushResourcesState needs the file on disk, Load needs the state in memory.
 	if targetEngine.IsDirect() {
-		if err := b.DeploymentBundle.StateDB.Close(ctx); err != nil {
+		if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		_, localPath := b.StateFilenameDirect(ctx)
@@ -166,7 +166,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 				return
 			}
 			defer func() {
-				if err := b.DeploymentBundle.StateDB.Close(ctx); err != nil {
+				if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
 					logdiag.LogError(ctx, err)
 				}
 			}()
@@ -187,7 +187,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 				return
 			}
 			defer func() {
-				if err := b.DeploymentBundle.StateDB.Close(ctx); err != nil {
+				if err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
 					logdiag.LogError(ctx, err)
 				}
 			}()
