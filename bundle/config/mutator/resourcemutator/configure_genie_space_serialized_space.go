@@ -33,10 +33,20 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			if path, ok := v.Get(filePathFieldName).AsString(); ok {
-				contents, err := b.SyncRoot.ReadFile(path)
+			filePath, hasFilePath := v.Get(filePathFieldName).AsString()
+			ss := v.Get(serializedSpaceFieldName)
+
+			if hasFilePath {
+				if ss.IsValid() && ss.Kind() != dyn.KindNil {
+					diags = diags.Append(diag.Diagnostic{
+						Severity:  diag.Warning,
+						Summary:   "both file_path and serialized_space are set; file_path will be used and serialized_space will be ignored",
+						Locations: ss.Locations(),
+					})
+				}
+				contents, err := b.SyncRoot.ReadFile(filePath)
 				if err != nil {
-					return dyn.InvalidValue, fmt.Errorf("failed to read serialized genie space from file_path %s: %w", path, err)
+					return dyn.InvalidValue, fmt.Errorf("failed to read serialized genie space from file_path %s: %w", filePath, err)
 				}
 				return dyn.Set(v, serializedSpaceFieldName, dyn.V(string(contents)))
 			}
@@ -46,7 +56,6 @@ func (c configureGenieSpaceSerializedSpace) Apply(_ context.Context, b *bundle.B
 			// Otherwise YAML decodes small ints as Go `int` while state JSON
 			// round-trip decodes them as `float64`, and structdiff reports
 			// false drift on every plan.
-			ss := v.Get(serializedSpaceFieldName)
 			switch ss.Kind() {
 			case dyn.KindMap, dyn.KindSequence:
 				jsonBytes, err := json.Marshal(ss.AsAny())
