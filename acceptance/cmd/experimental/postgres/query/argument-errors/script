@@ -30,3 +30,17 @@ trace musterr $CLI experimental postgres query --target projects/ "SELECT 1"
 
 title "Trailing components after endpoint should error:"
 trace musterr $CLI experimental postgres query --target projects/foo/branches/bar/endpoints/baz/extra "SELECT 1"
+
+title "Multi-statement string should error with hint:"
+trace musterr $CLI experimental postgres query --target projects/foo "SELECT 1; SELECT 2"
+
+title "CSV with multiple inputs should reject pre-flight:"
+trace musterr $CLI experimental postgres query --target projects/foo --output csv "SELECT 1" "SELECT 2"
+
+title "Empty file should error:"
+echo "" > empty.sql
+trace musterr $CLI experimental postgres query --target projects/foo --file empty.sql
+rm -f empty.sql
+
+title "Missing file should error:"
+trace musterr $CLI experimental postgres query --target projects/foo --file /tmp/does-not-exist.sql
