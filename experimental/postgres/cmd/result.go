@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/databricks/cli/experimental/libs/sqlcli"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
@@ -30,7 +31,7 @@ func (r *unitResult) IsRowsProducing() bool {
 // as a thin wrapper that hands a bufferSink to executeOne, so error wrapping
 // and the rowSink contract stay in one place rather than parallel-evolving
 // across two query loops.
-func runUnitBuffered(ctx context.Context, conn *pgx.Conn, unit inputUnit) (*unitResult, error) {
+func runUnitBuffered(ctx context.Context, conn *pgx.Conn, unit sqlcli.Input) (*unitResult, error) {
 	start := time.Now()
 	r := &unitResult{Source: unit.Source, SQL: unit.SQL}
 	sink := &bufferSink{result: r}
