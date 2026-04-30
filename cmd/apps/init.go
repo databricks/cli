@@ -282,6 +282,28 @@ func pluginHasResourceField(p *manifest.Plugin, resourceKey, fieldName string) b
 	return false
 }
 
+// validateRequiredResources checks that all required resources have at least one
+// value in resourceValues. Returns an error with a --set hint if any are missing.
+func validateRequiredResources(resources []manifest.Resource, resourceValues map[string]string) error {
+	for _, r := range resources {
+		found := false
+		for k := range resourceValues {
+			if strings.HasPrefix(k, r.Key()+".") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			fieldHint := "id"
+			if names := r.FieldNames(); len(names) > 0 {
+				fieldHint = names[0]
+			}
+			return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s.%s=value)", r.Alias, r.PluginName, r.Key(), fieldHint)
+		}
+	}
+	return nil
+}
+
 // tmplBundle holds the generated bundle configuration strings.
 type tmplBundle struct {
 	Variables       string
@@ -967,21 +989,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 
 		// Validate that all required resources are provided.
-		for _, r := range resources {
-			found := false
-			for k := range resourceValues {
-				if strings.HasPrefix(k, r.Key()+".") {
-					found = true
-					break
-				}
-			}
-			if !found {
-				fieldHint := "id"
-				if names := r.FieldNames(); len(names) > 0 {
-					fieldHint = names[0]
-				}
-				return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s=value)", r.Alias, r.Key(), fieldHint)
-			}
+		if err := validateRequiredResources(resources, resourceValues); err != nil {
+			return err
 		}
 	}
 
