@@ -1,6 +1,24 @@
 RecordRequests = true
 IncludeRequestHeaders = ["Authorization", "User-Agent", "X-Databricks-Org-Id"]
 
+# Normalize OS-dependent and CI-only User-Agent segments so the recorded
+# requests are stable across local macOS/Linux runs and GitHub Actions.
+[[Repls]]
+Old = '(linux|darwin|windows)'
+New = '[OS]'
+
+[[Repls]]
+Old = " cicd/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " upstream/[A-Za-z0-9.-]+"
+New = ""
+
+[[Repls]]
+Old = " upstream-version/[A-Za-z0-9.-]+"
+New = ""
+
 # Common stubs for paths used across variants. Each returns an empty JSON
 # object; the variants assert on the *recorded request* (out.requests.txt),
 # not on the response body, so any well-formed JSON is fine.

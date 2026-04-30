@@ -1,7 +1,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS]"
     ]
   },
   "method": "GET",
@@ -13,7 +13,7 @@
       "Bearer [DATABRICKS_TOKEN]"
     ],
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/darwin cmd/api_get cmd-exec-id/[UUID] interactive/none auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/api_get cmd-exec-id/[UUID] interactive/none auth/pat"
     ],
     "X-Databricks-Org-Id": [
       "999"
