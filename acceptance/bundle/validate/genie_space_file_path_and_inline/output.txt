@@ -1,0 +1,10 @@
+Warning: both file_path and serialized_space are set; file_path will be used and serialized_space will be ignored
+  in databricks.yml:11:9
+
+Name: genie-space-file-path-and-inline
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/genie-space-file-path-and-inline/default
+
+Found 1 warning
