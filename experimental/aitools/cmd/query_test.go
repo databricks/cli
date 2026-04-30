@@ -539,7 +539,7 @@ func TestResolveSQLsUnreadableSQLFileReturnsError(t *testing.T) {
 	cmd := newTestCmd()
 	_, err = resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, []string{path}, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "read SQL file")
+	assert.Contains(t, err.Error(), "permission denied")
 }
 
 func TestResolveSQLsFromStdin(t *testing.T) {
@@ -579,14 +579,14 @@ func TestResolveSQLsBatchEmptyAtIndexReturnsIndexedError(t *testing.T) {
 	cmd := newTestCmd()
 	_, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, []string{"SELECT 1", "-- comment only", "SELECT 3"}, nil)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "SQL statement #2 is empty")
+	assert.Contains(t, err.Error(), "argv[2] is empty")
 }
 
 func TestResolveSQLsMissingFileReturnsError(t *testing.T) {
 	cmd := newTestCmd()
 	_, err := resolveSQLs(cmdio.MockDiscard(t.Context()), cmd, nil, []string{"/nonexistent/path/query.sql"})
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "read SQL file")
+	assert.Contains(t, err.Error(), "no such file")
 }
 
 func TestQueryCommandUnsupportedOutputReturnsError(t *testing.T) {
