@@ -62,9 +62,10 @@ func (s *textSink) End(commandTag string) error {
 	return err
 }
 
-// OnError for text sinks is a no-op: text output prints whatever rows have
-// already been collected, with no open structure to close. The caller
-// surfaces the error separately (cobra's default error rendering).
+// OnError for text sinks is a no-op. Text mode buffers all rows for
+// tabwriter alignment, so a partial result is discarded on iteration error;
+// only cobra's error message reaches the user. The streaming sinks (json,
+// csv) handle the partial-result case themselves.
 func (s *textSink) OnError(err error) {}
 
 func headerSeparator(cols []string) []string {

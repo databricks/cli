@@ -3,6 +3,7 @@ package postgrescmd
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/env"
@@ -74,9 +75,5 @@ func joinOutputFormats(formats []outputFormat) string {
 }
 
 func isKnownOutputFormat(f outputFormat) bool {
-	switch f {
-	case outputText, outputJSON, outputCSV:
-		return true
-	}
-	return false
+	return slices.Contains(allOutputFormats, f)
 }

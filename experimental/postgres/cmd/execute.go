@@ -21,9 +21,11 @@ type rowSink interface {
 	Row(values []any) error
 	// End is called once on successful completion.
 	End(commandTag string) error
-	// OnError is called if iteration errors after Begin returned. The sink
-	// is expected to flush any in-progress output structures so stdout
-	// remains well-formed. The caller still surfaces err to its caller.
+	// OnError is called if iteration errors after Begin returned successfully.
+	// The sink is expected to flush any in-progress output structures so
+	// stdout remains well-formed. The caller still surfaces err to its caller.
+	// If Begin itself errors, OnError is NOT called: sinks must not write any
+	// framing before Begin succeeds.
 	OnError(err error)
 }
 

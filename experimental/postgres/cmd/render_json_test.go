@@ -59,7 +59,9 @@ func TestJSONSink_CommandOnly_WithRowCount(t *testing.T) {
 	s := newJSONSink(&stdout, &stderr)
 	require.NoError(t, s.Begin(nil))
 	require.NoError(t, s.End("INSERT 0 5"))
-	assert.JSONEq(t, `{"command":"INSERT","rows_affected":5}`, stdout.String())
+	// Byte-equal: pins the field order so adding a future field (e.g. last_oid)
+	// must update the test rather than silently drift.
+	assert.Equal(t, `{"command":"INSERT","rows_affected":5}`+"\n", stdout.String())
 }
 
 func TestJSONSink_CommandOnly_NoRowCount(t *testing.T) {
@@ -67,7 +69,7 @@ func TestJSONSink_CommandOnly_NoRowCount(t *testing.T) {
 	s := newJSONSink(&stdout, &stderr)
 	require.NoError(t, s.Begin(nil))
 	require.NoError(t, s.End("CREATE DATABASE"))
-	assert.JSONEq(t, `{"command":"CREATE"}`, stdout.String())
+	assert.Equal(t, `{"command":"CREATE"}`+"\n", stdout.String())
 }
 
 func TestJSONSink_DuplicateColumns(t *testing.T) {
@@ -89,10 +91,15 @@ func TestJSONSink_OnError_AfterRows(t *testing.T) {
 	require.NoError(t, s.Begin(fieldsWithOIDs([]string{"id"}, []uint32{pgtype.Int8OID})))
 	require.NoError(t, s.Row([]any{int64(1)}))
 	s.OnError(assert.AnError)
+	assert.Equal(t, "[\n"+`{"id":1}`+"\n]\n", stdout.String())
+}
 
-	assert.Contains(t, stdout.String(), "[\n")
-	assert.Contains(t, stdout.String(), `{"id":1}`)
-	assert.Contains(t, stdout.String(), "\n]\n")
+func TestJSONSink_OnError_AfterBeginNoRows(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	s := newJSONSink(&stdout, &stderr)
+	require.NoError(t, s.Begin(fieldsWithOIDs([]string{"id"}, []uint32{pgtype.Int8OID})))
+	s.OnError(assert.AnError)
+	assert.Equal(t, "[\n]\n", stdout.String())
 }
 
 func TestJSONSink_OnError_BeforeBegin(t *testing.T) {

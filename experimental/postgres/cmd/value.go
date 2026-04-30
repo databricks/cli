@@ -26,10 +26,12 @@ const safeIntegerBound = 1<<53 - 1
 // than appearing as an empty cell. CSV converts that back to an empty field
 // at write time (matches `psql --csv`).
 //
-// Floats are rendered with Postgres' canonical wording for the IEEE specials
-// ("NaN" / "Infinity" / "-Infinity"), not Go's `fmt.Sprintf("%v")` defaults
-// (which would emit "+Inf"/"-Inf"). This keeps text/CSV consistent with what
-// `psql` would print.
+// IEEE special floats use Postgres' canonical wording ("NaN" / "Infinity"
+// / "-Infinity"), not Go's `fmt.Sprintf("%v")` defaults (which would emit
+// "+Inf"/"-Inf"). Finite floats use Go's shortest-round-trip 'g' format,
+// which may differ from psql in exponential vs fixed notation around the
+// 'g' boundary (e.g. Go prints `1e+10`; psql prints `10000000000`). Full
+// psql parity is not worth a custom formatter.
 func textValue(v any) string {
 	if v == nil {
 		return "NULL"
